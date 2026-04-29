@@ -1,0 +1,32 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo con gradiente -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a4d7a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d9561;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo redondeado -->
+  <rect width="192" height="192" rx="32" fill="url(#bgGradient)"/>
+  
+  <!-- Icono de comida/banco alimentario -->
+  <g transform="translate(96, 96)">
+    <!-- Canasta/Caja -->
+    <rect x="-40" y="-30" width="80" height="60" rx="4" fill="white" opacity="0.9"/>
+    
+    <!-- Corazón (símbolo de ayuda) -->
+    <path d="M 0,-45 C -5,-50 -15,-50 -20,-40 C -25,-30 -20,-20 0,-10 C 20,-20 25,-30 20,-40 C 15,-50 5,-50 0,-45 Z" 
+          fill="#ffffff" opacity="0.95"/>
+    
+    <!-- Líneas decorativas (representando productos) -->
+    <line x1="-25" y1="-15" x2="-25" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
+    <line x1="-10" y1="-15" x2="-10" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
+    <line x1="10" y1="-15" x2="10" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
+    <line x1="25" y1="-15" x2="25" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
+    
+    <!-- Texto BA (Banque Alimentaire) -->
+    <text x="0" y="50" font-family="Arial, sans-serif" font-size="20" font-weight="bold" 
+          fill="white" text-anchor="middle">BA</text>
+  </g>
+</svg>

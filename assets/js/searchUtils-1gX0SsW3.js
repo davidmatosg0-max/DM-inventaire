@@ -1,0 +1,1 @@
+const i=(e,t)=>{if(!t||typeof t!="string"||t.trim()==="")return!0;if(!e)return!1;const r=String(e).toLowerCase().trim(),s=String(t).toLowerCase().trim();return r.includes(s)},n=(e,t)=>!t||typeof t!="string"||t.trim()===""?!0:e.some(r=>i(r,t)),o=i,f=n;export{f as a,o as f};

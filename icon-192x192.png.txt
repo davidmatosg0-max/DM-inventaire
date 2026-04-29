@@ -1,0 +1,13 @@
+Este archivo es un marcador de posición para el icono de 192x192 píxeles.
+
+Para crear el icono real:
+1. Crea una imagen PNG de 192x192 píxeles con el logo de la Banque Alimentaire
+2. Usa colores: #1a4d7a (azul marino) y #2d9561 (verde)
+3. Asegúrate de que tenga fondo transparente o blanco
+4. Guárdalo como: /public/icon-192x192.png
+5. Elimina este archivo .txt
+
+Herramientas recomendadas:
+- https://www.pwabuilder.com/imageGenerator
+- https://realfavicongenerator.net/
+- Canva, Figma, o cualquier editor de imágenes
