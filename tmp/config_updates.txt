@@ -1,0 +1,53 @@
+Line 751: window.confirm('⚠️ ¿Estás seguro de que deseas restablecer toda la configuración a los valores por defecto?\\n\\nEsta acción eliminará todos los programas, categorías y productos personalizados.')
+Replace with: window.confirm(t('configuration.confirmResetConfiguration'))
+
+Line 753: toast.success('✅ Configuración restablecida - Actualizando...'
+Replace with: toast.success(t('configuration.configurationResetSuccess')
+
+Line 976: toast.error('El nombre de la variante es requerido');
+Replace with: toast.error(t('configuration.variantNameRequired'));
+
+Line 981: toast.error('No se ha seleccionado una subcategoría base');
+Replace with: toast.error(t('configuration.noSubcategorySelected'));
+
+Line 1023: toast.success('Variante actualizada correctamente');
+Replace with: toast.success(t('configuration.variantUpdatedSuccess'));
+
+Line 1056: toast.success('Variante creada correctamente');
+Replace with: toast.success(t('configuration.variantCreatedSuccess'));
+
+Line 1096: toast.error('Debe seleccionar el producto origen');
+Replace with: toast.error(t('configuration.selectOriginProduct'));
+
+Line 1101: toast.error('Debe agregar al menos un producto destino');
+Replace with: toast.error(t('configuration.addAtLeastOneDestination'));
+
+Line 1106: toast.error('La cantidad a convertir debe ser mayor a 0');
+Replace with: toast.error(t('configuration.quantityMustBeGreaterThanZero'));
+
+Line 1112: toast.error('Producto origen no encontrado');
+Replace with: toast.error(t('configuration.originProductNotFound'));
+
+Line 1119: toast.error(`Stock insuficiente. Disponible: ${productoOrigen.stockActual} ${productoOrigen.unidad}`);
+Replace with: toast.error(t('configuration.insufficientStock', { available: productoOrigen.stockActual, unit: productoOrigen.unidad }));
+
+Line 1126: toast.error('Debe seleccionar todos los productos destino');
+Replace with: toast.error(t('configuration.selectAllDestinations'));
+
+Line 1130: toast.error('Todos los ratios deben ser mayores a 0');
+Replace with: toast.error(t('configuration.allRatiosMustBePositive'));
+
+Line 1240: toast.error('No se puede revertir esta conversión');
+Replace with: toast.error(t('configuration.cannotRevertConversion'));
+
+Line 2279: 'Modifique los datos del programa'
+Replace with: t('configuration.modifyProgramData')
+
+Line 2279: 'Complete la información del nuevo programa de entrada'
+Replace with: t('configuration.completeProgramInfo')
+
+Line 2316: "Ingresa un emoji"
+Replace with: t('configuration.enterEmoji')
+
+Line 2326: "Selecciona un icono:"
+Replace with: t('configuration.selectAnIcon')

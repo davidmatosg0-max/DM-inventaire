@@ -1,0 +1,116 @@
+/* Variables CSS para personalización de marca */
+:root {
+  --color-primary: #1E73BE;
+  --color-secondary: #4CAF50;
+  --color-success: #4CAF50;
+  --color-danger: #DC3545;
+  --color-warning: #FFC107;
+}
+
+/* Clases utilitarias que usan las variables de marca */
+.bg-brand-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.bg-brand-secondary {
+  background-color: var(--color-secondary) !important;
+}
+
+.bg-brand-success {
+  background-color: var(--color-success) !important;
+}
+
+.bg-brand-danger {
+  background-color: var(--color-danger) !important;
+}
+
+.bg-brand-warning {
+  background-color: var(--color-warning) !important;
+}
+
+.text-brand-primary {
+  color: var(--color-primary) !important;
+}
+
+.text-brand-secondary {
+  color: var(--color-secondary) !important;
+}
+
+.text-brand-success {
+  color: var(--color-success) !important;
+}
+
+.text-brand-danger {
+  color: var(--color-danger) !important;
+}
+
+.text-brand-warning {
+  color: var(--color-warning) !important;
+}
+
+.border-brand-primary {
+  border-color: var(--color-primary) !important;
+}
+
+.border-brand-secondary {
+  border-color: var(--color-secondary) !important;
+}
+
+.hover\:bg-brand-primary:hover {
+  background-color: var(--color-primary) !important;
+}
+
+.hover\:bg-brand-secondary:hover {
+  background-color: var(--color-secondary) !important;
+}
+
+/* Botones con colores de marca */
+.btn-brand-primary {
+  background-color: var(--color-primary);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-brand-primary:hover {
+  filter: brightness(0.9);
+}
+
+.btn-brand-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-brand-secondary:hover {
+  filter: brightness(0.9);
+}
+
+.btn-brand-success {
+  background-color: var(--color-success);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-brand-success:hover {
+  filter: brightness(0.9);
+}
+
+.btn-brand-danger {
+  background-color: var(--color-danger);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-brand-danger:hover {
+  filter: brightness(0.9);
+}
+
+.btn-brand-warning {
+  background-color: var(--color-warning);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-brand-warning:hover {
+  filter: brightness(0.9);
+}

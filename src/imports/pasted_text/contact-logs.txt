@@ -1,0 +1,219 @@
+🔍 DEBUG - Intentando asignar bénévole: {id: 3, identifiant: '', tipo: 'benevole', nom: 'Sylvain', prenom: 'Forget', …}
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 📤 [CONTACTOS] Retornando todos los contactos: 7
+ 📝 DEBUG - Guardando nuevo contacto: {departamentoId: '1', departamentoIds: Array(1), tipo: 'benevole', nombre: 'Sylvain', apellido: 'Forget', …}
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 📤 [CONTACTOS] Retornando todos los contactos: 7
+ ✅ Contacto guardado exitosamente: {departamentoId: '1', departamentoIds: Array(1), tipo: 'Bénévole', nombre: 'Forget', apellido: 'Sylvain', …}
+ 📊 DEBUG - departamentoId: 1
+ 📊 DEBUG - departamentoIds: ['1']
+ 📊 DEBUG - activo: true
+ ✅ VERIFICADO - Contacto guardado en localStorage: {departamentoId: '1', departamentoIds: Array(1), tipo: 'Bénévole', nombre: 'Forget', apellido: 'Sylvain', …}
+ 🔔 Evento contactos-actualizados recibido: {action: 'create', departamentoId: '1', contactoId: '1773712534744'}
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 📤 [CONTACTOS] Retornando todos los contactos: 7
+ 🔍 DEBUG - Contactos cargados pour département 1 : (2) [{…}, {…}]
+ 🔍 DEBUG - Total bénévoles: 2
+ 🔍 DEBUG - Filtrados 5 contactos (donadores/fournisseurs)
+   - Forest Mario  (tipo: benevole, activo: true, deptId: 1, deptIds: 1)
+     📍 Dirección: 235 Avenue Desmarteau, Apt: N/A, Ciudad: Laval, CP: H7N 3N8
+   - Asselin Yves  (tipo: benevole, activo: true, deptId: 1, deptIds: 1)
+     📍 Dirección: 1915 rue de bruxelles, Apt: N/A, Ciudad: Laval, CP: H7M 3V1
+ 📦 DEBUG - Total contactos en localStorage: 7
+ 📦 DEBUG - Contactos por departamento:
+   📁 Dept 1: 7 contactos
+4     Contact  (donador, activo:true)
+     Forget Sylvain (Bénévole, activo:true)
+     Forest Mario  (benevole, activo:true)
+     Asselin Yves  (benevole, activo:true)
+ ✅ Contacto actualizado en este departamento (1)
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 📤 [CONTACTOS] Retornando todos los contactos: 7
+ 🔍 DEBUG - Contactos cargados pour département 1 : (2) [{…}, {…}]
+ 🔍 DEBUG - Total bénévoles: 2
+ 🔍 DEBUG - Filtrados 5 contactos (donadores/fournisseurs)
+   - Forest Mario  (tipo: benevole, activo: true, deptId: 1, deptIds: 1)
+     📍 Dirección: 235 Avenue Desmarteau, Apt: N/A, Ciudad: Laval, CP: H7N 3N8
+   - Asselin Yves  (tipo: benevole, activo: true, deptId: 1, deptIds: 1)
+     📍 Dirección: 1915 rue de bruxelles, Apt: N/A, Ciudad: Laval, CP: H7M 3V1
+ 📦 DEBUG - Total contactos en localStorage: 7
+ 📦 DEBUG - Contactos por departamento:
+   📁 Dept 1: 7 contactos
+4     Contact  (donador, activo:true)
+     Forget Sylvain (Bénévole, activo:true)
+     Forest Mario  (benevole, activo:true)
+     Asselin Yves  (benevole, activo:true)
+ ✅ Contactos después de filtros: 2/2
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 📤 [CONTACTOS] Retornando todos los contactos: 7
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 1: 7 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 2: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 3: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 4: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 5: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 6: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 7: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 8: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 9: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 10: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 1: 7 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 2: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 3: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 4: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 5: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 6: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 7: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 8: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 9: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 10: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 1: 7 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 2: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 3: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 4: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 5: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 6: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 7: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 8: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 9: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 🔍 [CONTACTOS] Filtrados por departamento 10: 0 contactos
+ 🔍 [CONTACTOS] Intentando leer desde localStorage...
+ 🔍 [CONTACTOS] Valor raw desde localStorage: 11840 caracteres
+ 🔍 [CONTACTOS] Datos parseados desde localStorage: 7 contactos
+ ✅ [CONTACTOS] Datos ya normalizados, usando directamente: 7 contactos
+ 📤 [CONTACTOS] Retornando todos los contactos: 7
+vendor-core-83c17265f2588e9e.min.js.br:54 [Violation] 'requestAnimationFrame' handler took 62ms

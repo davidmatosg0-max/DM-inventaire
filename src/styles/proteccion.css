@@ -1,0 +1,54 @@
+/**
+ * 🛡️ ESTILOS PARA SISTEMA DE PROTECCIÓN DE DATOS
+ * Última actualización: 16/03/2026
+ */
+
+/* Animación de entrada para notificaciones */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(400px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Animación de salida para notificaciones */
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(400px);
+  }
+}
+
+/* Animación de pulso suave para alertas */
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+/* Clases de utilidad para protección */
+.proteccion-activa {
+  position: relative;
+}
+
+.proteccion-activa::before {
+  content: '🛡️';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 16px;
+  animation: pulse-soft 2s ease-in-out infinite;
+}

@@ -1,0 +1,12 @@
+      // Crear nuevo programa
+      const nuevoPrograma = guardarProgramaEntrada(formPrograma);
+      // Recargar programas desde localStorage
+      const programasActualizados = obtenerProgramasEntrada();
+      setProgramasEntrada(programasActualizados);
+      
+      // 🔔 Emitir evento para actualizar programas en otros componentes
+      window.dispatchEvent(new CustomEvent('programaEntradaCreado', { 
+        detail: nuevoPrograma 
+      }));
+      
+      toast.success(t('configuration.programCreated') + ` - Tipo de entrada \"${nuevoPrograma.codigo.toLowerCase()}\" ahora disponible`);

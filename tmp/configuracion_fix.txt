@@ -1,0 +1,16 @@
+    // Guardar en localStorage
+    guardarProducto(nuevoProducto);
+    
+    // Actualizar en estado local
+    setProductos([...productos, nuevoProducto]);
+    
+    // Construir descripción del toast con información completa
+    let toastDescription = `📦 ${t('common.code')}: ${codigo} | 📂 ${t('configuration.category')}: ${categoria.nombre}`;
+    if (subcategoria.pesoUnitario) {
+      toastDescription += ` | ⚖️ ${t('configuration.unitWeight')}: ${subcategoria.pesoUnitario} kg`;
+    }
+    
+    toast.success(`✅ ${t('configuration.productGeneratedAuto')}: \"${nombre}\"`, {
+      description: toastDescription,
+      duration: 5000
+    });

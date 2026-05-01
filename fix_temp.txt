@@ -1,0 +1,13 @@
+                                      )}
+                                      <span className="text-[#666666]">→</span>
+                                      <Badge
+                                        className={`${
+                                          item.temperatura === 'ambiente' ? 'bg-[#FFC107]' :
+                                          item.temperatura === 'refrigerado' ? 'bg-[#2196F3]' :
+                                          'bg-[#00BCD4]'
+                                        } text-white`}
+                                      >
+                                        {item.temperatura === 'ambiente' ? '🌡️ Ambiente' :
+                                         item.temperatura === 'refrigerado' ? '❄️ Refrigerado' :
+                                         '🧊 Congelado'}
+                                      </Badge>

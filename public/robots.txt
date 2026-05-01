@@ -1,0 +1,11 @@
+# robots.txt para Banque Alimentaire
+
+User-agent: *
+Allow: /
+
+# Deshabilitado por defecto - descomentar si se desea indexación
+# Sitemap: https://tudominio.com/sitemap.xml
+
+# Si no deseas que ciertos bots indexen el sitio
+# User-agent: *
+# Disallow: /

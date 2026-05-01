@@ -1,0 +1,289 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║       💰 SISTEMA DE CÁLCULO AUTOMÁTICO DE VALOR MONETARIO 💰                 ║
+║                  Sistema Integral - Banque Alimentaire                       ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📅 FECHA: 16 de Marzo de 2026
+✅ ESTADO: IMPLEMENTADO Y FUNCIONAL
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 ¿QUÉ SE IMPLEMENTÓ?
+
+   ✅ Sistema completo de cálculo de valores monetarios
+   ✅ Fórmula automática: Valor Total = Stock × Peso Unitario × Valor por Kg
+   ✅ Actualización automática en todas las columnas
+   ✅ Funciones de consola para recalculo masivo
+   ✅ Reporte visual con estadísticas
+   ✅ Diagnóstico de productos sin configurar
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📐 FÓRMULA DE CÁLCULO
+
+   Paso 1: Valor Unitario = Peso Unitario (kg) × Valor por Kg (CAD$)
+   
+   Paso 2: Valor Total = Stock Actual × Valor Unitario
+   
+   Ejemplo:
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Producto: Arroz Blanco                                      │
+   │ Stock: 100 unidades                                         │
+   │ Peso Unitario: 2 kg                                         │
+   │ Valor por Kg: 3.50 CAD$                                     │
+   │                                                             │
+   │ → Valor Unitario = 2 kg × 3.50 = 7.00 CAD$                 │
+   │ → Valor Total = 100 × 7.00 = 700.00 CAD$                   │
+   └─────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 ARCHIVOS CREADOS
+
+   1. /src/app/utils/calcularValorMonetarioProductos.ts
+      • Módulo principal de cálculo
+      • Funciones de recalculo automático
+      • Generación de reportes
+   
+   2. /src/app/App.tsx (modificado)
+      • Import automático del módulo
+      • Inicialización en startup
+   
+   3. /src/app/utils/productStorage.ts (mejorado)
+      • Funciones de consola agregadas
+      • Debugging y diagnóstico
+   
+   4. /INSTRUCCIONES_VALOR_MONETARIO.md
+      • Documentación completa
+      • Guías de uso
+      • Solución de problemas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 CÓMO USAR - INICIO RÁPIDO
+
+   ╔════════════════════════════════════════════════════════════╗
+   ║                                                            ║
+   ║  1. Abre la Consola del Navegador (F12)                   ║
+   ║                                                            ║
+   ║  2. Ejecuta el Comando:                                    ║
+   ║     recalcularTodosLosValores()                            ║
+   ║                                                            ║
+   ║  3. Verás un Reporte Completo con:                         ║
+   ║     • Productos actualizados                               ║
+   ║     • Valor total del inventario                           ║
+   ║     • Top 10 productos por valor                           ║
+   ║                                                            ║
+   ║  4. Refresca la Página (F5)                                ║
+   ║     ¡Los valores aparecerán en todas las columnas!         ║
+   ║                                                            ║
+   ╚════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💻 FUNCIONES DISPONIBLES EN CONSOLA
+
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ FUNCIÓN                          │ DESCRIPCIÓN                  │
+   ├─────────────────────────────────────────────────────────────────┤
+   │ recalcularTodosLosValores()      │ 🔥 Recalcula TODO            │
+   │                                  │    Muestra reporte visual    │
+   │                                  │    Actualiza inventario      │
+   ├─────────────────────────────────────────────────────────────────┤
+   │ verificarProductosSinPeso()      │ 🔍 Diagnóstico               │
+   │                                  │    Lista productos sin peso  │
+   │                                  │    Muestra tabla detallada   │
+   ├─────────────────────────────────────────────────────────────────┤
+   │ migrarPesoUnitarioProductos()    │ 🔧 Corrección automática     │
+   │                                  │    Establece pesos faltantes │
+   │                                  │    Repara productos          │
+   ├─────────────────────────────────────────────────────────────────┤
+   │ recalcularValoresMonetarios()    │ 💰 Actualiza valores         │
+   │                                  │    Similar a recalcularTodos │
+   └─────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 DONDE SE MUESTRA EL VALOR MONETARIO
+
+   ✅ INVENTARIO - Lista de Productos
+      • Columna "Valor/kg": Precio por kilogramo
+      • Columna "Valor Unitario": Precio de 1 unidad
+      • Columna "Valor Total": Valor total del stock
+
+   ✅ DASHBOARD - Resumen General
+      • Card "Valor Total Inventario"
+      • Gráficos de distribución de valor
+      • Métricas financieras
+
+   ✅ COMANDAS - Órdenes
+      • Valor de cada producto en la comanda
+      • Valor total de la comanda
+      • Subtotales por organismo
+
+   ✅ REPORTES - Exportaciones
+      • Excel con columnas de valores
+      • PDF con valores monetarios
+      • Reportes financieros
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️ REQUISITOS PARA CALCULAR VALOR
+
+   Para que un producto tenga valor monetario necesita:
+
+   1. ✅ Categoría con "Valor por Kg" configurado
+      └─→ Ir a: Configuración → Categorías → Editar
+          Establecer: "Valor por Kg" (ej: 3.50 CAD$)
+
+   2. ✅ Producto con "Peso Unitario" definido
+      └─→ Se establece automáticamente al crear producto
+          Si falta: ejecutar migrarPesoUnitarioProductos()
+
+   3. ✅ Stock Actual mayor a 0
+      └─→ Se actualiza con movimientos de inventario
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔄 ACTUALIZACIÓN AUTOMÁTICA
+
+   El sistema recalcula automáticamente cuando:
+
+   ✓ Se crea un nuevo producto
+   ✓ Se actualiza el stock
+   ✓ Se modifica el peso unitario
+   ✗ Se cambia el precio en categoría → EJECUTAR recalcularTodosLosValores()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 EJEMPLO DE REPORTE
+
+   Al ejecutar recalcularTodosLosValores() verás:
+
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   💰 REPORTE DE VALORES MONETARIOS
+   Sistema Integral - Banque Alimentaire
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   📊 ESTADÍSTICAS
+      Productos actualizados: 150
+      Productos con valor: 145
+      Productos sin valor: 5
+      Valor total inventario: CAD$ 45,678.90
+
+   📦 TOP 10 PRODUCTOS POR VALOR
+      1. Arroz Blanco - Total: CAD$ 700.00
+      2. Aceite de Oliva - Total: CAD$ 600.00
+      3. Frijoles Negros - Total: CAD$ 450.00
+      ...
+
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆘 SOLUCIÓN DE PROBLEMAS
+
+   PROBLEMA: "Productos sin valor monetario"
+   SOLUCIÓN:
+   1. verificarProductosSinPeso()  ← Ver productos problemáticos
+   2. migrarPesoUnitarioProductos()  ← Corregir automáticamente
+   3. recalcularTodosLosValores()  ← Actualizar valores
+   4. F5  ← Refrescar página
+
+   ─────────────────────────────────────────────────────────────
+
+   PROBLEMA: "Valores no aparecen en interfaz"
+   SOLUCIÓN:
+   1. recalcularTodosLosValores()  ← Forzar recalculo
+   2. F5  ← Refrescar página
+   3. Verificar consola (F12) por errores
+
+   ─────────────────────────────────────────────────────────────
+
+   PROBLEMA: "Error al calcular"
+   SOLUCIÓN:
+   1. F12  ← Abrir consola
+   2. verificarProductosSinPeso()  ← Diagnosticar
+   3. Verificar que la categoría tenga "Valor por Kg"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 MEJORES PRÁCTICAS
+
+   ✓ Ejecuta recalcularTodosLosValores() después de:
+     • Cambiar precios en categorías
+     • Importar datos masivos
+     • Restaurar backups
+     • Modificar categorías
+
+   ✓ Ejecuta verificarProductosSinPeso() antes de:
+     • Generar reportes de valor
+     • Exportar datos
+     • Crear comandas
+
+   ✓ Mantén actualizado el "Valor por Kg" en categorías:
+     • Revisar mensualmente
+     • Ajustar según inflación
+     • Documentar cambios
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 PASOS INMEDIATOS
+
+   1. Abre la Consola del Navegador
+      └─→ Presiona F12
+
+   2. Ejecuta el Comando de Recalculo
+      └─→ recalcularTodosLosValores()
+
+   3. Revisa el Reporte
+      └─→ Verifica productos actualizados
+          Anota el valor total del inventario
+
+   4. Diagnostica Problemas (si hay)
+      └─→ verificarProductosSinPeso()
+          migrarPesoUnitarioProductos()
+
+   5. Refresca la Página
+      └─→ F5 para ver cambios
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CONFIRMACIÓN DE IMPLEMENTACIÓN
+
+   ╔═══════════════════════════════════════════════════════════════╗
+   ║                                                               ║
+   ║              ✅ SISTEMA COMPLETAMENTE FUNCIONAL               ║
+   ║                                                               ║
+   ║  El sistema de valor monetario está implementado y listo     ║
+   ║  para usar. Ejecuta recalcularTodosLosValores() y los        ║
+   ║  valores aparecerán en TODAS las columnas del inventario.    ║
+   ║                                                               ║
+   ║  Características:                                             ║
+   ║  ✓ Cálculo automático                                         ║
+   ║  ✓ Actualización en tiempo real                               ║
+   ║  ✓ Funciones de diagnóstico                                   ║
+   ║  ✓ Reportes visuales                                          ║
+   ║  ✓ Corrección automática de errores                           ║
+   ║                                                               ║
+   ║  Estado: LISTO PARA PRODUCCIÓN ✅                             ║
+   ║                                                               ║
+   ╚═══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTACIÓN ADICIONAL
+
+   • /INSTRUCCIONES_VALOR_MONETARIO.md  ← Guía completa
+   • Código fuente: /src/app/utils/calcularValorMonetarioProductos.ts
+   • Funciones de consola disponibles al cargar la app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                      🎉 IMPLEMENTACIÓN COMPLETADA 🎉
+                Sistema Integral - Banque Alimentaire
+                        Versión 5.0 PRO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

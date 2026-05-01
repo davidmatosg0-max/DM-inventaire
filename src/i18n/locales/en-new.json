@@ -1,0 +1,172 @@
+{
+  "audit": {
+    "title": "Audit",
+    "subtitle": "Complete system traceability",
+    "logs": "Logs",
+    "statistics": "Statistics",
+    "recentLogs": "Recent Records",
+    "filters": "Filters",
+    "search": "Search",
+    "searchPlaceholder": "Search in logs...",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "module": "Module",
+    "severity": "Severity",
+    "user": "User",
+    "action": "Action",
+    "status": "Status",
+    "success": "Success",
+    "error": "Error",
+    "refresh": "Refresh",
+    "export": "Export",
+    "clearFilters": "Clear Filters",
+    "noLogs": "No records found",
+    "mostActiveUsers": "Most Active Users",
+    "mostUsedModules": "Most Used Modules",
+    "systemInfo": "System Information",
+    "cleanOldLogs": "Clean Old Logs (>90 days)",
+    "allSeverities": "All",
+    "info": "Info",
+    "warning": "Warning",
+    "critical": "Critical",
+    "exportCSV": "Export to CSV",
+    "exportJSON": "Export to JSON"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "System notification center",
+    "markAsRead": "Mark as read",
+    "markAllAsRead": "Mark all as read",
+    "delete": "Delete",
+    "deleteAll": "Delete all",
+    "noNotifications": "No notifications",
+    "new": "New",
+    "unread": "Unread",
+    "read": "Read",
+    "filter": {
+      "all": "All",
+      "unread": "Unread",
+      "alerts": "Alerts",
+      "info": "Information"
+    },
+    "types": {
+      "stockAlert": "Stock Alert",
+      "expirationWarning": "Expiration Warning",
+      "orderUpdate": "Order Update",
+      "systemNotification": "System Notification"
+    }
+  },
+  "globalSearch": {
+    "title": "Global Search",
+    "placeholder": "Search across the system... (Ctrl+K)",
+    "noResults": "No results found",
+    "searching": "Searching...",
+    "recentSearches": "Recent searches",
+    "categories": {
+      "all": "All",
+      "products": "Products",
+      "orders": "Orders",
+      "organisms": "Organisms",
+      "contacts": "Contacts",
+      "documents": "Documents"
+    },
+    "results": {
+      "found": "{count} result(s) found",
+      "in": "in"
+    },
+    "shortcuts": {
+      "open": "Open",
+      "navigate": "Navigate",
+      "close": "Close"
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome, {name}",
+    "overview": "Overview",
+    "quickStats": "Quick Statistics",
+    "recentActivity": "Recent Activity",
+    "alerts": "Alerts",
+    "charts": {
+      "inventoryTrend": "Inventory Trend",
+      "ordersByStatus": "Orders by Status",
+      "topProducts": "Top Distributed Products",
+      "monthlyDistribution": "Monthly Distribution",
+      "categoryBreakdown": "Category Breakdown"
+    },
+    "metrics": {
+      "totalInventory": "Total Inventory",
+      "activeOrders": "Active Orders",
+      "pendingAlerts": "Pending Alerts",
+      "activeOrganisms": "Active Organisms",
+      "weeklyGrowth": "Weekly Growth",
+      "monthlyGrowth": "Monthly Growth",
+      "comparedToLastMonth": "Compared to Last Month",
+      "comparedToLastWeek": "Compared to Last Week"
+    },
+    "actions": {
+      "viewAll": "View All",
+      "addNew": "Add New",
+      "export": "Export",
+      "refresh": "Refresh"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "System configuration",
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "languageChanged": "Language changed successfully",
+    "languageChangeError": "Error changing language",
+    "languageNote": "The system will adapt automatically",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "appearance": "Appearance",
+    "security": "Security",
+    "backup": "Backup",
+    "advanced": "Advanced"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "print": "Print",
+    "download": "Download",
+    "upload": "Upload",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Finish",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All",
+    "none": "None",
+    "actions": "Actions",
+    "details": "Details",
+    "view": "View",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "nav": {
+    "mainDashboard": "Main Dashboard",
+    "inventory": "Inventory",
+    "orders": "Orders",
+    "organisms": "Organisms",
+    "transport": "Transport",
+    "reports": "Reports",
+    "users": "Users/Roles",
+    "contacts": "Contacts",
+    "settings": "Settings",
+    "logout": "Logout"
+  }
+}

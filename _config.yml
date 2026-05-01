@@ -1,0 +1,51 @@
+# Configuration Jekyll pour GitHub Pages
+# Si vous n'utilisez pas Jekyll, ajoutez un fichier .nojekyll à la racine
+
+# Exclude des fichiers du build
+exclude:
+  - node_modules/
+  - package.json
+  - package-lock.json
+  - pnpm-lock.yaml
+  - vite.config.ts
+  - tsconfig.json
+  - netlify.toml
+  - vercel.json
+  - README.md
+  - CHANGELOG.md
+  - LICENSE
+  - "*.log"
+  - .git/
+  - .gitignore
+  - scripts/
+  - tmp/
+  - workflows/
+  - src/
+  - public/
+  - dist/
+  - "*.sh"
+  - "*.py"
+  - "*.js"
+  - "*.ts"
+  - "*.tsx"
+  - "*.md"
+
+# Include seulement le build final
+include:
+  - .nojekyll
+  - _headers
+  - _redirects
+
+# Plugins GitHub Pages
+plugins:
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+
+# Désactiver le markdown processing
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+
+# Ne pas générer de pages pour les fichiers markdown
+collections: {}

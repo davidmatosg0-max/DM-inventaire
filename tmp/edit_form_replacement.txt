@@ -1,0 +1,356 @@
+              <CardContent className="p-6 bg-gradient-to-b from-gray-50 to-white">
+                {/* Photo de Profil */}
+                <div className="mb-6 bg-[#F4F4F4] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Photo de Profil
+                  </h3>
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <div 
+                        className="w-32 h-32 rounded-full border-4 overflow-hidden bg-gray-100 flex items-center justify-center"
+                        style={{ borderColor: branding.primaryColor }}
+                      >
+                        {editFormPhotoPreview ? (
+                          <img src={editFormPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-16 h-16 text-gray-400" />
+                        )}
+                      </div>
+                      <Button
+                        size="icon"
+                        type="button"
+                        className="absolute bottom-0 right-0 rounded-full text-white"
+                        style={{ backgroundColor: branding.primaryColor }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Camera className="w-4 h-4" />
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleEditFormPhotoChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informations de Base */}
+                <div className="mb-6 bg-white border-2 border-[#E0E0E0] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Informations de Base
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-prenom">Prénom *</Label>
+                      <Input
+                        id="edit-prenom"
+                        value={editForm.prenom}
+                        onChange={(e) => setEditForm({ ...editForm, prenom: e.target.value })}
+                        placeholder="Ej: Jean"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-nom">Nom de famille *</Label>
+                      <Input
+                        id="edit-nom"
+                        value={editForm.nom}
+                        onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })}
+                        placeholder="Ej: Dupont"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-dateNaissance">Date de Naissance</Label>
+                      <Input
+                        id="edit-dateNaissance"
+                        type="date"
+                        value={editForm.dateNaissance || ''}
+                        onChange={(e) => setEditForm({ ...editForm, dateNaissance: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-sexe">Genre</Label>
+                      <Select
+                        value={editForm.sexe || 'Non spécifié'}
+                        onValueChange={(value: any) => setEditForm({ ...editForm, sexe: value })}
+                      >
+                        <SelectTrigger id="edit-sexe">
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Homme">Homme</SelectItem>
+                          <SelectItem value="Femme">Femme</SelectItem>
+                          <SelectItem value="Autre">Autre</SelectItem>
+                          <SelectItem value="Non spécifié">Non spécifié</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="edit-email">Email</Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        placeholder="jean.dupont@email.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Type de Contact */}
+                <div className="mb-6 bg-white border-2 border-[#E0E0E0] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Type de Contact
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    {(['benevole', 'stagiaire', 'employe', 'coordinateur', 'responsable', 'autre'] as TipoBenevole[]).map((tipo) => {
+                      const config = getTipoBenevoleConfig(tipo);
+                      const Icon = config.icon;
+                      const isSelected = editForm.tipo === tipo;
+                      return (
+                        <div
+                          key={tipo}
+                          onClick={() => setEditForm({ ...editForm, tipo })}
+                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                            isSelected ? 'ring-2' : ''
+                          }`}
+                          style={{
+                            borderColor: isSelected ? config.color : '#E0E0E0',
+                            backgroundColor: isSelected ? config.bgColor : 'white',
+                            ringColor: config.color
+                          }}
+                        >
+                          <div className="flex flex-col items-center text-center gap-2">
+                            <div 
+                              className="p-3 rounded-full"
+                              style={{ backgroundColor: isSelected ? 'white' : config.bgColor }}
+                            >
+                              <Icon className="w-6 h-6" style={{ color: config.color }} />
+                            </div>
+                            <span className="text-xs font-medium text-[#333333] leading-tight">
+                              {config.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Informations de Contact */}
+                <div className="mb-6 bg-white border-2 border-[#E0E0E0] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Informations de Contact
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="edit-telephone">Téléphone</Label>
+                      <Input
+                        id="edit-telephone"
+                        type="tel"
+                        value={editForm.telephone}
+                        onChange={(e) => setEditForm({ ...editForm, telephone: e.target.value })}
+                        placeholder="(514) 555-0123"
+                      />
+                    </div>
+                    <div>
+                      <Label>Adresse</Label>
+                      <AddressAutocomplete
+                        value={editForm.adresse || ''}
+                        onChange={(value, details) => {
+                          setEditForm({
+                            ...editForm,
+                            adresse: value,
+                            ville: details?.city || editForm.ville || '',
+                            codePostal: details?.postalCode || editForm.codePostal || ''
+                          });
+                        }}
+                        placeholder="Ex: 123 Boulevard Saint-Laurent Est"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-ville">Ville / Secteur</Label>
+                        <Input
+                          id="edit-ville"
+                          value={editForm.ville || ''}
+                          onChange={(e) => setEditForm({ ...editForm, ville: e.target.value })}
+                          placeholder="Ex: saint-eustache"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-codePostal">Code</Label>
+                        <Input
+                          id="edit-codePostal"
+                          value={editForm.codePostal || ''}
+                          onChange={(e) => setEditForm({ ...editForm, codePostal: e.target.value })}
+                          placeholder="H0H0H0"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Selector de idiomas */}
+                    <div>
+                      <Label className="mb-2 block">Langues parlées</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {[
+                          { code: 'Français', label: '🇫🇷 Français', color: branding.primaryColor },
+                          { code: 'Arabe', label: '🇸🇦 العربية', color: '#F59E0B' },
+                          { code: 'Anglais', label: '🇬🇧 English', color: branding.secondaryColor },
+                          { code: 'Espagnol', label: '🇪🇸 Español', color: '#8B5CF6' }
+                        ].map((idioma) => {
+                          const isSelected = editForm.langues?.includes(idioma.code);
+                          return (
+                            <div
+                              key={idioma.code}
+                              onClick={() => toggleIdiomaEdit(idioma.code)}
+                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all text-center ${
+                                isSelected ? 'ring-2' : ''
+                              }`}
+                              style={{
+                                borderColor: isSelected ? idioma.color : '#E0E0E0',
+                                backgroundColor: isSelected ? `${idioma.color}10` : 'white',
+                                ringColor: idioma.color
+                              }}
+                            >
+                              <span className="text-sm font-medium">{idioma.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informations Professionnelles */}
+                <div className="mb-6 bg-white border-2 border-[#E0E0E0] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <Briefcase className="w-5 h-5" style={{ color: branding.primaryColor }} />
+                    Informations Professionnelles
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="edit-poste">Poste/Rôle</Label>
+                      <Select
+                        value={editForm.poste || editForm.departement}
+                        onValueChange={(value) => setEditForm({ ...editForm, poste: value, departement: value })}
+                      >
+                        <SelectTrigger id="edit-poste">
+                          <SelectValue placeholder="Sélectionner un rôle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departements.map(dept => (
+                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-heuresSemaines">Heures Semaines</Label>
+                      <Input
+                        id="edit-heuresSemaines"
+                        type="number"
+                        value={editForm.heuresSemaines || 0}
+                        onChange={(e) => setEditForm({ ...editForm, heuresSemaines: parseInt(e.target.value) || 0 })}
+                        placeholder="40"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-reference">Référence</Label>
+                      <Input
+                        id="edit-reference"
+                        value={editForm.reference || ''}
+                        onChange={(e) => setEditForm({ ...editForm, reference: e.target.value })}
+                        placeholder="REF-001"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Disponibilités */}
+                <div className="mb-6 bg-white border-2 border-[#E0E0E0] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <Calendar className="w-5 h-5" style={{ color: branding.primaryColor }} />
+                    Disponibilités
+                  </h3>
+                  <div className="space-y-2">
+                    {editForm.disponibilidadesSemanal?.map((dia, index) => (
+                      <div key={dia.jour} className="flex items-center gap-4 p-3 bg-[#F9FAFB] rounded-lg">
+                        <span className="font-medium text-[#333333] w-24">{dia.jour}</span>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={dia.am}
+                              onCheckedChange={(checked) => updateDisponibilidadEdit(index, 'am', checked as boolean)}
+                            />
+                            <span className="text-sm">Matin</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={dia.pm}
+                              onCheckedChange={(checked) => updateDisponibilidadEdit(index, 'pm', checked as boolean)}
+                            />
+                            <span className="text-sm">Après-midi</span>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="mb-6 bg-white border-2 border-[#E0E0E0] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Notes
+                  </h3>
+                  <Textarea
+                    value={editForm.notasGenerales || ''}
+                    onChange={(e) => setEditForm({ ...editForm, notasGenerales: e.target.value })}
+                    placeholder="Ajoutez des notes sur ce contact..."
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+
+                {/* Documents PDF */}
+                <div className="mb-6 bg-white border-2 border-[#E0E0E0] rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-[#333333] mb-4 flex items-center justify-between" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <span className="flex items-center gap-2">
+                      <FileUp className="w-5 h-5" style={{ color: branding.primaryColor }} />
+                      Documents PDF (Contrats, Assurables, etc.)
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4" />
+                      Jouter PDF
+                    </Button>
+                  </h3>
+                  <div className="text-sm text-[#666666] text-center py-4">
+                    Fonctionnalité de téléchargement de documents disponible
+                  </div>
+                </div>
+
+                <div className="flex gap-4 justify-end pt-4 border-t">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setEditModalOpen(false)}
+                    className="px-6 py-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    className="px-8 py-2 bg-gradient-to-r from-[#1E73BE] to-[#1557a0] hover:from-[#1557a0] hover:to-[#1E73BE] text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    onClick={handleSaveEdit}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Enregistrer les modifications
+                  </Button>
+                </div>
+              </CardContent>

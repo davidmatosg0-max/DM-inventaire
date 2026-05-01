@@ -1,0 +1,231 @@
+/**
+ * ESTILOS GLOBALES PARA LOGO CIRCULAR DMi
+ * ========================================
+ * 
+ * Estos estilos aseguran que el logo circular DMi se vea
+ * profesional y consistente en toda la aplicación.
+ * 
+ * Características:
+ * - Forma circular perfecta (border-radius: 50%)
+ * - Relleno completo del círculo sin espacios vacíos
+ * - Sombras internas y externas para profundidad
+ * - Ajuste de imagen optimizado (object-fit: cover, object-position: center)
+ * - Bordes blancos elegantes
+ * - Efectos de hover sutiles
+ */
+
+/* Clase base para logos circulares */
+.logo-circular {
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Efecto hover para logos interactivos */
+.logo-circular-hover:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Logo pequeño (header) */
+.logo-circular-sm {
+  width: 1.75rem; /* 28px */
+  height: 1.75rem;
+  border-width: 2px;
+}
+
+@media (min-width: 640px) {
+  .logo-circular-sm {
+    width: 2.25rem; /* 36px */
+    height: 2.25rem;
+  }
+}
+
+/* Logo mediano (cards, sidebars) */
+.logo-circular-md {
+  width: 2.5rem; /* 40px */
+  height: 2.5rem;
+  border-width: 2px;
+}
+
+@media (min-width: 640px) {
+  .logo-circular-md {
+    width: 3rem; /* 48px */
+    height: 3rem;
+  }
+}
+
+/* Logo grande (login, páginas principales) */
+.logo-circular-lg {
+  width: 4rem; /* 64px */
+  height: 4rem;
+  border-width: 3px;
+}
+
+@media (min-width: 640px) {
+  .logo-circular-lg {
+    width: 5rem; /* 80px */
+    height: 5rem;
+    border-width: 4px;
+  }
+}
+
+@media (min-width: 768px) {
+  .logo-circular-lg {
+    width: 6rem; /* 96px */
+    height: 6rem;
+  }
+}
+
+/* Logo extra grande (pantallas de bienvenida) */
+.logo-circular-xl {
+  width: 7rem; /* 112px */
+  height: 7rem;
+  border-width: 4px;
+}
+
+@media (min-width: 640px) {
+  .logo-circular-xl {
+    width: 8rem; /* 128px */
+    height: 8rem;
+  }
+}
+
+/* Contenedor con efecto glow */
+.logo-glow-container {
+  position: relative;
+  display: inline-block;
+}
+
+.logo-glow-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0.5;
+  filter: blur(12px);
+  animation: glow-pulse 3s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Sombra interna sutil para dar profundidad */
+.logo-inner-shadow {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) inset;
+}
+
+/* Logo con borde de color primario */
+.logo-border-primary {
+  border: 3px solid var(--color-primary, #1a4d7a);
+}
+
+/* Logo con borde de color secundario */
+.logo-border-secondary {
+  border: 3px solid var(--color-secondary, #2d9561);
+}
+
+/* Ajuste para logos dentro de botones */
+button .logo-circular {
+  border-width: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Ajuste para logos en tarjetas */
+.card .logo-circular {
+  border-width: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Animación de entrada para logos */
+@keyframes logo-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.logo-animate-in {
+  animation: logo-fade-in 0.4s ease-out;
+}
+
+/* Loader para cuando el logo está cargando */
+.logo-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Placeholder cuando no hay logo */
+.logo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary, #1a4d7a) 0%, var(--color-secondary, #2d9561) 100%);
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: bold;
+  border-radius: 50%;
+}
+
+/* Optimización para impresión */
+@media print {
+  .logo-circular {
+    border-color: #000;
+    box-shadow: none;
+  }
+  
+  .logo-glow-container::before {
+    display: none;
+  }
+}
+
+/* Accesibilidad: foco visible para logos interactivos */
+button:focus-visible .logo-circular,
+a:focus-visible .logo-circular {
+  outline: 2px solid var(--color-primary, #1a4d7a);
+  outline-offset: 2px;
+}
+
+/* Dark mode (si se implementa en el futuro) */
+@media (prefers-color-scheme: dark) {
+  .logo-circular {
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+  }
+}

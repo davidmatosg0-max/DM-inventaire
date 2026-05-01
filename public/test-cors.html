@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Configuration CORS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 800px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .test-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .test-section h2 {
+      color: #333;
+      font-size: 18px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status.pending {
+      background: #ffc107;
+      color: #000;
+    }
+    
+    .status.success {
+      background: #4caf50;
+      color: white;
+    }
+    
+    .status.error {
+      background: #f44336;
+      color: white;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    .success-text {
+      color: #4caf50;
+    }
+    
+    .error-text {
+      color: #f44336;
+    }
+    
+    .info-text {
+      color: #2196f3;
+    }
+    
+    .header-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+      padding: 8px;
+      background: #f0f0f0;
+      border-radius: 4px;
+    }
+    
+    .header-name {
+      font-weight: 600;
+      color: #667eea;
+      min-width: 200px;
+    }
+    
+    .header-value {
+      color: #333;
+      flex: 1;
+    }
+    
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    .info-box h3 {
+      color: #1976d2;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .info-box ul {
+      margin-left: 20px;
+    }
+    
+    .info-box li {
+      color: #333;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔒 Test de Configuration CORS</h1>
+    <p class="subtitle">Vérification des headers CORS et Authorization</p>
+    
+    <!-- Test 1: Headers du site -->
+    <div class="test-section">
+      <h2>
+        <span>1️⃣ Headers CORS du site actuel</span>
+        <span class="status pending" id="status-1">En attente</span>
+      </h2>
+      <button onclick="testCurrentSite()">Tester les headers</button>
+      <div class="result" id="result-1" style="display: none;"></div>
+    </div>
+    
+    <!-- Test 2: Requête avec Authorization -->
+    <div class="test-section">
+      <h2>
+        <span>2️⃣ Test avec header Authorization</span>
+        <span class="status pending" id="status-2">En attente</span>
+      </h2>
+      <button onclick="testWithAuth()">Tester Authorization</button>
+      <div class="result" id="result-2" style="display: none;"></div>
+    </div>
+    
+    <!-- Test 3: Preflight OPTIONS -->
+    <div class="test-section">
+      <h2>
+        <span>3️⃣ Test Preflight (OPTIONS)</span>
+        <span class="status pending" id="status-3">En attente</span>
+      </h2>
+      <button onclick="testPreflight()">Tester Preflight</button>
+      <div class="result" id="result-3" style="display: none;"></div>
+    </div>
+    
+    <!-- Test 4: API externe -->
+    <div class="test-section">
+      <h2>
+        <span>4️⃣ Test API externe (optionnel)</span>
+        <span class="status pending" id="status-4">En attente</span>
+      </h2>
+      <input 
+        type="text" 
+        id="api-url" 
+        placeholder="https://api.example.com/endpoint" 
+        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px;"
+      >
+      <button onclick="testExternalAPI()">Tester API</button>
+      <div class="result" id="result-4" style="display: none;"></div>
+    </div>
+    
+    <!-- Info box -->
+    <div class="info-box">
+      <h3>ℹ️ Headers CORS attendus</h3>
+      <ul>
+        <li><strong>Access-Control-Allow-Origin:</strong> * (ou domaine spécifique)</li>
+        <li><strong>Access-Control-Allow-Methods:</strong> GET, POST, PUT, DELETE, OPTIONS, PATCH</li>
+        <li><strong>Access-Control-Allow-Headers:</strong> Content-Type, <strong>Authorization</strong>, X-Requested-With, Accept, Origin</li>
+        <li><strong>Access-Control-Max-Age:</strong> 86400</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Test 1: Headers du site actuel
+    async function testCurrentSite() {
+      const statusEl = document.getElementById('status-1');
+      const resultEl = document.getElementById('result-1');
+      
+      statusEl.textContent = 'Test en cours...';
+      statusEl.className = 'status pending';
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<span class="info-text">Récupération des headers...</span>';
+      
+      try {
+        const response = await fetch(window.location.href, {
+          method: 'HEAD'
+        });
+        
+        const headers = {};
+        for (let [key, value] of response.headers.entries()) {
+          headers[key] = value;
+        }
+        
+        let html = '<div class="success-text">✅ Headers reçus:</div><br>';
+        
+        // Vérifier les headers CORS
+        const corsHeaders = [
+          'access-control-allow-origin',
+          'access-control-allow-methods',
+          'access-control-allow-headers',
+          'access-control-max-age'
+        ];
+        
+        let allCorsPresent = true;
+        corsHeaders.forEach(header => {
+          if (headers[header]) {
+            html += `<div class="header-item">
+              <div class="header-name">${header}:</div>
+              <div class="header-value">${headers[header]}</div>
+            </div>`;
+          } else {
+            html += `<div class="header-item">
+              <div class="header-name error-text">${header}:</div>
+              <div class="header-value error-text">❌ Non présent</div>
+            </div>`;
+            allCorsPresent = false;
+          }
+        });
+        
+        // Vérifier si Authorization est dans Allow-Headers
+        if (headers['access-control-allow-headers']) {
+          const allowedHeaders = headers['access-control-allow-headers'].toLowerCase();
+          if (allowedHeaders.includes('authorization')) {
+            html += '<br><div class="success-text">✅ Header "Authorization" est autorisé!</div>';
+          } else {
+            html += '<br><div class="error-text">❌ Header "Authorization" n\'est PAS autorisé!</div>';
+            allCorsPresent = false;
+          }
+        }
+        
+        resultEl.innerHTML = html;
+        
+        if (allCorsPresent) {
+          statusEl.textContent = 'Succès';
+          statusEl.className = 'status success';
+        } else {
+          statusEl.textContent = 'Incomplet';
+          statusEl.className = 'status error';
+        }
+        
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error-text">❌ Erreur: ${error.message}</span>`;
+        statusEl.textContent = 'Échec';
+        statusEl.className = 'status error';
+      }
+    }
+    
+    // Test 2: Avec Authorization header
+    async function testWithAuth() {
+      const statusEl = document.getElementById('status-2');
+      const resultEl = document.getElementById('result-2');
+      
+      statusEl.textContent = 'Test en cours...';
+      statusEl.className = 'status pending';
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<span class="info-text">Test avec header Authorization...</span>';
+      
+      try {
+        const response = await fetch(window.location.href, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer test-token-123',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        let html = '';
+        if (response.ok) {
+          html = '<div class="success-text">✅ Requête avec Authorization réussie!</div><br>';
+          html += `<div>Status: ${response.status} ${response.statusText}</div><br>`;
+          html += '<div class="success-text">Le header Authorization est correctement traité.</div>';
+          
+          statusEl.textContent = 'Succès';
+          statusEl.className = 'status success';
+        } else {
+          html = `<div class="error-text">⚠️ Status: ${response.status} ${response.statusText}</div>`;
+          statusEl.textContent = 'Avertissement';
+          statusEl.className = 'status error';
+        }
+        
+        resultEl.innerHTML = html;
+        
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error-text">❌ Erreur: ${error.message}</span>`;
+        statusEl.textContent = 'Échec';
+        statusEl.className = 'status error';
+      }
+    }
+    
+    // Test 3: Preflight OPTIONS
+    async function testPreflight() {
+      const statusEl = document.getElementById('status-3');
+      const resultEl = document.getElementById('result-3');
+      
+      statusEl.textContent = 'Test en cours...';
+      statusEl.className = 'status pending';
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<span class="info-text">Envoi de requête OPTIONS...</span>';
+      
+      try {
+        const response = await fetch(window.location.href, {
+          method: 'OPTIONS',
+          headers: {
+            'Access-Control-Request-Method': 'POST',
+            'Access-Control-Request-Headers': 'Authorization, Content-Type'
+          }
+        });
+        
+        const headers = {};
+        for (let [key, value] of response.headers.entries()) {
+          if (key.startsWith('access-control')) {
+            headers[key] = value;
+          }
+        }
+        
+        let html = '<div class="success-text">✅ Réponse Preflight reçue:</div><br>';
+        
+        Object.entries(headers).forEach(([key, value]) => {
+          html += `<div class="header-item">
+            <div class="header-name">${key}:</div>
+            <div class="header-value">${value}</div>
+          </div>`;
+        });
+        
+        resultEl.innerHTML = html;
+        statusEl.textContent = 'Succès';
+        statusEl.className = 'status success';
+        
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error-text">❌ Erreur: ${error.message}</span>`;
+        statusEl.textContent = 'Échec';
+        statusEl.className = 'status error';
+      }
+    }
+    
+    // Test 4: API externe
+    async function testExternalAPI() {
+      const statusEl = document.getElementById('status-4');
+      const resultEl = document.getElementById('result-4');
+      const apiUrl = document.getElementById('api-url').value;
+      
+      if (!apiUrl) {
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = '<span class="error-text">❌ Veuillez entrer une URL d\'API</span>';
+        return;
+      }
+      
+      statusEl.textContent = 'Test en cours...';
+      statusEl.className = 'status pending';
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<span class="info-text">Test de l\'API externe...</span>';
+      
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer test-token',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        let html = '';
+        if (response.ok) {
+          const data = await response.json();
+          html = '<div class="success-text">✅ API accessible!</div><br>';
+          html += `<div>Status: ${response.status}</div><br>`;
+          html += `<div>Réponse: ${JSON.stringify(data, null, 2)}</div>`;
+          
+          statusEl.textContent = 'Succès';
+          statusEl.className = 'status success';
+        } else {
+          html = `<div class="error-text">❌ Status: ${response.status} ${response.statusText}</div>`;
+          statusEl.textContent = 'Échec';
+          statusEl.className = 'status error';
+        }
+        
+        resultEl.innerHTML = html;
+        
+      } catch (error) {
+        let html = `<div class="error-text">❌ Erreur: ${error.message}</div><br>`;
+        
+        if (error.message.includes('CORS')) {
+          html += '<div class="info-text">💡 Cela peut être un problème CORS du serveur API cible, pas de votre configuration.</div>';
+        }
+        
+        resultEl.innerHTML = html;
+        statusEl.textContent = 'Échec';
+        statusEl.className = 'status error';
+      }
+    }
+  </script>
+</body>
+</html>

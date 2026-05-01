@@ -1,0 +1,52 @@
+═══════════════════════════════════════════════════════════════
+  🚀 INSTRUCCIONES RÁPIDAS - Ver Cambios 15 Marzo 2026
+═══════════════════════════════════════════════════════════════
+
+¿NO VES LOS CAMBIOS? SIGUE ESTOS PASOS:
+
+1️⃣  PRESIONA: Ctrl + Shift + R (Windows) o Cmd + Shift + R (Mac)
+    IMPORTANTE: Presiona 3-5 veces seguidas
+
+2️⃣  Si sigue sin funcionar:
+    - F12 (abrir DevTools)
+    - Clic DERECHO en el botón refrescar
+    - "Vaciar caché y recargar de forma forzada"
+
+───────────────────────────────────────────────────────────────
+
+📍 DÓNDE VER EL CAMPO PESO UNITARIO:
+
+Inventario → Entradas → ➕ Nueva Entrada → Seleccionar programa 
+→ Seleccionar categoría → "Créer sous-catégorie"
+
+BUSCAR: Campo con icono ⚖️ y borde AZUL
+
+───────────────────────────────────────────────────────────────
+
+📍 DÓNDE VER EL BOTÓN ANULAR:
+
+Inventario → Entradas → (lista de entradas)
+
+BUSCAR: Botón ROJO "Anular" junto al botón azul "Editar"
+
+───────────────────────────────────────────────────────────────
+
+✅ CAMBIOS APLICADOS:
+
+✓ Campo Peso Unitario con borde azul mejorado
+✓ Botón Anular con borde rojo mejorado
+✓ Timestamps añadidos en App.tsx, index.html, vite.config.ts
+✓ Build ID: 15-03-2026-1835
+
+───────────────────────────────────────────────────────────────
+
+📚 MÁS INFORMACIÓN:
+
+- /LEEME_CAMBIOS_15MAR2026.md (léeme primero)
+- /RESUMEN_VISUAL_CAMBIOS.md (referencia visual)
+- /FORZAR_RECARGA.md (guía de caché)
+- /VERIFICACION_IMPLEMENTACION.md (técnico)
+
+═══════════════════════════════════════════════════════════════
+  Estado: ✅ LISTO - Solo necesitas limpiar el caché
+═══════════════════════════════════════════════════════════════

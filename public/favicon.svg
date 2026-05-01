@@ -1,0 +1,27 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo con gradiente -->
+  <defs>
+    <linearGradient id="favGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a4d7a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d9561;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo -->
+  <rect width="32" height="32" rx="6" fill="url(#favGradient)"/>
+  
+  <!-- Icono simplificado -->
+  <g transform="translate(16, 16)">
+    <!-- Canasta/Caja -->
+    <rect x="-8" y="-6" width="16" height="12" rx="1" fill="white" opacity="0.9"/>
+    
+    <!-- Corazón pequeño -->
+    <path d="M 0,-9 C -1,-10 -3,-10 -4,-8 C -5,-6 -4,-4 0,-2 C 4,-4 5,-6 4,-8 C 3,-10 1,-10 0,-9 Z" 
+          fill="#ffffff" opacity="0.95"/>
+    
+    <!-- Líneas -->
+    <line x1="-5" y1="-3" x2="-5" y2="3" stroke="white" stroke-width="1" opacity="0.7"/>
+    <line x1="0" y1="-3" x2="0" y2="3" stroke="white" stroke-width="1" opacity="0.7"/>
+    <line x1="5" y1="-3" x2="5" y2="3" stroke="white" stroke-width="1" opacity="0.7"/>
+  </g>
+</svg>

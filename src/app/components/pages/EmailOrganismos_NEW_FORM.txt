@@ -1,0 +1,14 @@
+Este archivo contiene la referencia de que necesito reemplazar el formulario completo del componente EmailOrganismos con el de Organismos.tsx
+
+Debido al tamaño del cambio, necesito hacerlo por partes.
+
+Las secciones que debe incluir el formulario completo son:
+1. Información Básica
+2. Programación y Frecuencia  
+3. Capacidad y Servicios
+4. Logo y Documentos
+5. Contactos para Notificaciones
+6. Notas con Notificaciones
+7. Historial de Donaciones
+8. Historial de Registro PRS
+9. Botones de Acción

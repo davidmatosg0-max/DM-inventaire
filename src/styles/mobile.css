@@ -1,0 +1,225 @@
+/* Optimizaciones para dispositivos móviles */
+
+/* Mejora de touch targets para móviles (mínimo 44px x 44px según Apple HIG) */
+@media (max-width: 640px) {
+  button, 
+  a[role="button"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Inputs más grandes en móvil */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  textarea,
+  select {
+    font-size: 16px; /* Previene zoom automático en iOS */
+    min-height: 44px;
+  }
+
+  /* Scroll suave en móviles */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevenir selección de texto accidental */
+  .no-select-mobile {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Tablas responsive con scroll horizontal */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem; /* Extend to edges */
+    padding: 0 1rem;
+  }
+
+  /* Cards más compactas en móvil */
+  .card-mobile {
+    padding: 0.75rem;
+  }
+
+  /* Espaciado optimizado para móvil */
+  .section-mobile {
+    padding: 0.75rem;
+  }
+
+  /* Mejorar visibilidad de botones activos */
+  button:active,
+  a[role="button"]:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+    transition: all 0.1s ease;
+  }
+
+  /* Tooltips más grandes en móvil */
+  [role="tooltip"] {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+
+  /* Modales full-screen en móvil pequeño */
+  @media (max-width: 480px) {
+    [role="dialog"],
+    .dialog-mobile {
+      position: fixed;
+      inset: 0;
+      max-width: 100%;
+      max-height: 100%;
+      margin: 0;
+      border-radius: 0;
+    }
+  }
+}
+
+/* Optimizaciones para tablets */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Ajuste de tamaños para tablets */
+  .tablet-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Touch targets ligeramente más grandes que desktop */
+  button,
+  a[role="button"] {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+
+/* Mejoras de rendimiento para animaciones en móvil */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Ocultar scrollbars en móviles para una UI más limpia */
+@media (max-width: 640px) {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Safe area para dispositivos con notch */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+  
+  .safe-area-left {
+    padding-left: max(env(safe-area-inset-left), 1rem);
+  }
+  
+  .safe-area-right {
+    padding-right: max(env(safe-area-inset-right), 1rem);
+  }
+}
+
+/* Sticky headers en móvil */
+@media (max-width: 640px) {
+  .sticky-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Mejora de contraste para lectura en móvil */
+@media (max-width: 640px) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Grid responsive mejorado */
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .responsive-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Spacing utilities móvil-first */
+.mobile-stack > * + * {
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .mobile-stack > * + * {
+    margin-top: 1rem;
+  }
+}
+
+/* Prevenir zoom en inputs en iOS */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+  font-size: 16px !important;
+}
+
+/* Bottom navigation para móvil (si se necesita en el futuro) */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-around;
+  z-index: 50;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 1024px) {
+  .bottom-nav {
+    display: none;
+  }
+}

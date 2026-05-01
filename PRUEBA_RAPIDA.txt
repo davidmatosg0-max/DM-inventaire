@@ -1,0 +1,143 @@
+🧪 PRUEBA RÁPIDA - Verificar que los Tipos de Contacto son Permanentes
+═══════════════════════════════════════════════════════════════════════
+
+📋 INSTRUCCIONES (5 minutos):
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PASO 1: Crear un tipo de prueba                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Abrir la aplicación                                         │
+│  2. Ir a cualquier módulo de contactos (Ej: Comptoir)          │
+│  3. Clic en "Enregistrer un nouveau contact"                   │
+│  4. Buscar el icono ⚙️ junto a "Type"                           │
+│  5. Clic en "Créer un nouveau type"                            │
+│  6. Completar:                                                  │
+│     • Code: test-permanence                                    │
+│     • Label: TEST PERMANENCE - NE PAS SUPPRIMER               │
+│     • Icône: Seleccionar cualquiera                           │
+│     • Couleur: Seleccionar cualquiera                         │
+│  7. Clic en "Créer"                                            │
+│  8. ✅ Debe aparecer en la lista de tipos                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PASO 2: Verificar persistencia                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Recargar la página (presionar F5)                          │
+│  2. Esperar a que cargue completamente                         │
+│  3. Ir nuevamente al módulo de contactos                       │
+│  4. Abrir "Gestion des Types de Contact" (icono ⚙️)            │
+│  5. Buscar el tipo "TEST PERMANENCE - NE PAS SUPPRIMER"       │
+│                                                                 │
+│  ✅ ÉXITO: El tipo debe seguir en la lista                      │
+│  ❌ ERROR: Si no aparece, revisar solución de problemas         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PASO 3: Verificar en la consola (OPCIONAL)                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Abrir la consola del navegador (F12 > Console)             │
+│  2. Copiar y pegar este código:                                │
+│                                                                 │
+│     const tipos = JSON.parse(localStorage.getItem(             │
+│       'banque_alimentaire_tipos_contacto_personalizados'       │
+│     ));                                                         │
+│     const testTipo = tipos.find(t =>                           │
+│       t.code === 'test-permanence'                            │
+│     );                                                          │
+│     if (testTipo) {                                            │
+│       console.log('✅ ÉXITO: Tipo persistente encontrado');    │
+│       console.log('📋 Detalles:', testTipo);                   │
+│     } else {                                                   │
+│       console.log('❌ ERROR: Tipo no encontrado');             │
+│     }                                                           │
+│                                                                 │
+│  3. Presionar Enter                                            │
+│  4. ✅ Debe mostrar "ÉXITO: Tipo persistente encontrado"       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PASO 4: Probar exportar/importar (OPCIONAL)                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. En "Gestion des Types de Contact"                          │
+│  2. Clic en "Exporter/Importer"                                │
+│  3. Clic en "Télécharger le fichier JSON"                      │
+│  4. ✅ Debe descargarse un archivo .json                        │
+│  5. Abrir el archivo con un editor de texto                    │
+│  6. ✅ Debe ver todos los tipos en formato JSON                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PASO 5: Ver estadísticas (OPCIONAL)                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. En "Gestion des Types de Contact"                          │
+│  2. Clic en "Statistiques"                                     │
+│  3. ✅ Debe mostrar un popup con:                               │
+│     • Total de tipos                                           │
+│     • Cantidad de predefinidos                                 │
+│     • Fechas de creación                                       │
+│     • Mensaje confirmando persistencia permanente              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+
+🔍 RESULTADO ESPERADO:
+
+✅ El tipo "TEST PERMANENCE" debe permanecer en la lista después de:
+   • Recargar la página (F5)
+   • Cerrar y abrir el navegador
+   • Cerrar y abrir la pestaña
+   • Navegar a otros módulos y volver
+
+❌ El tipo se borrará SOLO si:
+   • Usas modo incógnito/privado (limitación del navegador)
+   • Borras manualmente localStorage
+   • Borras datos del sitio en configuración del navegador
+   • Usas "Remplacer tout" en importar sin incluir el tipo
+
+═══════════════════════════════════════════════════════════════════
+
+🛠️ SOLUCIÓN DE PROBLEMAS:
+
+Problema: El tipo desaparece al recargar
+└─ Causa 1: Modo incógnito activado
+   Solución: Usar navegador en modo normal
+
+└─ Causa 2: Configuración del navegador
+   Solución: Verificar que el navegador permita localStorage
+
+└─ Causa 3: Extensión bloqueando localStorage
+   Solución: Desactivar extensiones temporalmente
+
+Problema: No puedo crear el tipo
+└─ Causa: Código duplicado
+   Solución: Usar un código diferente
+
+Problema: Error al exportar
+└─ Causa: Bloqueador de descargas
+   Solución: Permitir descargas en el navegador
+
+═══════════════════════════════════════════════════════════════════
+
+📞 NECESITAS AYUDA?
+
+1. Consultar: /GUIA_TIPOS_CONTACTO_PERMANENTES.md (guía completa)
+2. Ejecutar: /PRUEBA_PERSISTENCIA_TIPOS.js (script automático)
+3. Leer: /README_TIPOS_PERMANENTES.md (resumen rápido)
+
+═══════════════════════════════════════════════════════════════════
+
+✨ Si el tipo "TEST PERMANENCE" sigue apareciendo después de
+   recargar la página, ¡LA PERSISTENCIA FUNCIONA CORRECTAMENTE!
+
+🎉 ¡Disfruta de tus tipos de contacto permanentes!

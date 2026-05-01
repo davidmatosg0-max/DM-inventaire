@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide Complet - Banque Alimentaire</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: white;
+            color: #1a1a1a;
+            overflow-x: hidden;
+        }
+
+        @media print {
+            .page-break {
+                page-break-after: always;
+                break-after: page;
+            }
+            
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: #1a4d7a;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-family: 'Montserrat', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+
+        .btn-close {
+            background: #c23934;
+        }
+
+        .btn-download {
+            background: #2d9561;
+        }
+
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a4d7a;
+        }
+
+        .slide h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1a4d7a;
+        }
+
+        .slide h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2d9561;
+        }
+
+        .slide p {
+            font-size: 20px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .slide ul {
+            font-size: 18px;
+            line-height: 1.8;
+            padding-left: 40px;
+        }
+
+        .slide li {
+            margin-bottom: 12px;
+        }
+
+        .gradient-primary {
+            background: linear-gradient(135deg, #1a4d7a 0%, #2d9561 100%);
+            color: white;
+        }
+
+        .gradient-secondary {
+            background: linear-gradient(135deg, #2d9561 0%, #4caf50 100%);
+            color: white;
+        }
+
+        .card-feature {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 12px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+        }
+
+        .footer-slide {
+            position: absolute;
+            bottom: 20px;
+            right: 60px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .logo-area {
+            position: absolute;
+            top: 30px;
+            left: 60px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a4d7a;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .module-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-left: 5px solid #1a4d7a;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 12px 0;
+        }
+
+        .stat-number {
+            font-size: 48px;
+            font-weight: 700;
+            color: #2d9561;
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .stat-label {
+            font-size: 18px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #2d9561;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controles (no se imprimen) -->
+    <div class="controls no-print">
+        <button class="btn btn-download" onclick="window.print()">🖨️ Imprimer / PDF</button>
+        <button class="btn btn-close" onclick="window.close()">❌ Fermer</button>
+    </div>
+
+    <!-- SLIDE 1: PORTADA -->
+    <div class="slide gradient-primary page-break">
+        <div class="center" style="padding-top: 15vh;">
+            <div style="font-size: 120px; margin-bottom: 40px;">📊</div>
+            <h1 style="font-size: 64px; margin-bottom: 30px; color: white;">
+                Système de Gestion
+            </h1>
+            <h1 style="font-size: 56px; margin-bottom: 40px; color: #e0f2f1;">
+                Banque Alimentaire
+            </h1>
+            <p style="font-size: 28px; color: #b3e5fc; margin-top: 40px;">
+                Solution Complète et Intégrée
+            </p>
+            <p style="font-size: 20px; color: #b3e5fc; margin-top: 20px;">
+                Guide de Présentation des Fonctionnalités
+            </p>
+        </div>
+        <div class="footer-slide" style="color: white; opacity: 0.8;">
+            Mars 2026
+        </div>
+    </div>
+
+    <!-- SLIDE 2: VUE D'ENSEMBLE -->
+    <div class="slide page-break">
+        <div class="logo-area">🏦 Banque Alimentaire</div>
+        <h2>Vue d'Ensemble du Système</h2>
+        <p style="font-size: 22px; color: #666; margin-bottom: 40px;">
+            Une plateforme moderne et complète pour optimiser la gestion de votre banque alimentaire
+        </p>
+        
+        <div class="grid-3" style="margin-top: 40px;">
+            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 16px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">📦</div>
+                <h3 style="font-size: 24px; margin-bottom: 12px; color: #1976d2;">Inventaire</h3>
+                <p style="font-size: 16px; color: #666;">Gestion complète des stocks en temps réel</p>
+            </div>
+            
+            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #f3e5f5, #e1bee7); border-radius: 16px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">📋</div>
+                <h3 style="font-size: 24px; margin-bottom: 12px; color: #7b1fa2;">Commandes</h3>
+                <p style="font-size: 16px; color: #666;">Gestion des demandes et distributions</p>
+            </div>
+            
+            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-radius: 16px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">🏢</div>
+                <h3 style="font-size: 24px; margin-bottom: 12px; color: #388e3c;">Organismes</h3>
+                <p style="font-size: 16px; color: #666;">Registre des bénéficiaires</p>
+            </div>
+        </div>
+
+        <div class="grid-3" style="margin-top: 24px;">
+            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #fff3e0, #ffe0b2); border-radius: 16px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">🚚</div>
+                <h3 style="font-size: 24px; margin-bottom: 12px; color: #f57c00;">Transport</h3>
+                <p style="font-size: 16px; color: #666;">Logistique et livraisons</p>
+            </div>
+            
+            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #fce4ec, #f8bbd0); border-radius: 16px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">💬</div>
+                <h3 style="font-size: 24px; margin-bottom: 12px; color: #c2185b;">Communication</h3>
+                <p style="font-size: 16px; color: #666;">Messagerie interne intégrée</p>
+            </div>
+            
+            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #e0f2f1, #b2dfdb); border-radius: 16px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">👥</div>
+                <h3 style="font-size: 24px; margin-bottom: 12px; color: #00796b;">Utilisateurs</h3>
+                <p style="font-size: 16px; color: #666;">Gestion des rôles et permissions</p>
+            </div>
+        </div>
+
+        <div class="footer-slide">Slide 2</div>
+    </div>
+
+    <!-- SLIDE 3: CARACTÉRISTIQUES -->
+    <div class="slide page-break">
+        <div class="logo-area">🏦 Banque Alimentaire</div>
+        <h2>Caractéristiques Principales</h2>
+        
+        <div class="grid-2" style="margin-top: 40px;">
+            <div class="card-feature">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <span style="font-size: 48px;">🌍</span>
+                    <h3 style="margin: 0;">Multilingue</h3>
+                </div>
+                <p>Support complet de 4 langues :</p>
+                <ul>
+                    <li>🇫🇷 Français (par défaut)</li>
+                    <li>🇬🇧 Anglais</li>
+                    <li>🇪🇸 Espagnol</li>
+                    <li>🇸🇦 Arabe (avec support RTL)</li>
+                </ul>
+            </div>
+
+            <div class="card-feature">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <span style="font-size: 48px;">✨</span>
+                    <h3 style="margin: 0;">Design Moderne</h3>
+                </div>
+                <p>Interface élégante avec :</p>
+                <ul>
+                    <li>✨ Effets glassmorphism</li>
+                    <li>🎨 Gradients sophistiqués</li>
+                    <li>💫 Animations fluides</li>
+                    <li>📱 Design responsive</li>
+                </ul>
+            </div>
+
+            <div class="card-feature">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <span style="font-size: 48px;">⚡</span>
+                    <h3 style="margin: 0;">Temps Réel</h3>
+                </div>
+                <p>Mises à jour instantanées :</p>
+                <ul>
+                    <li>⚡ Synchronisation automatique</li>
+                    <li>📊 Tableaux de bord dynamiques</li>
+                    <li>🔔 Notifications en direct</li>
+                    <li>📈 Statistiques actualisées</li>
+                </ul>
+            </div>
+
+            <div class="card-feature">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <span style="font-size: 48px;">🛡️</span>
+                    <h3 style="margin: 0;">Sécurisé</h3>
+                </div>
+                <p>Protection avancée :</p>
+                <ul>
+                    <li>🔐 Authentification sécurisée</li>
+                    <li>👥 Gestion des rôles</li>
+                    <li>🛡️ Permissions granulaires</li>
+                    <li>📝 Journal d'activités</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-slide">Slide 3</div>
+    </div>
+
+    <!-- SLIDE 4: MODULE INVENTAIRE -->
+    <div class="slide gradient-secondary page-break">
+        <h2 style="color: white; margin-bottom: 40px;">
+            <span style="font-size: 56px; margin-right: 20px;">📦</span>
+            Module Inventaire
+        </h2>
+        
+        <div style="background: white; padding: 40px; border-radius: 24px; margin-top: 40px;">
+            <div class="grid-2" style="gap: 30px;">
+                <div>
+                    <h3 style="color: #1a4d7a; margin-bottom: 24px;">Fonctionnalités Clés</h3>
+                    <ul style="font-size: 18px; line-height: 2;">
+                        <li>✅ Gestion complète des produits</li>
+                        <li>✅ Catégories et sous-catégories</li>
+                        <li>✅ Codes-barres et QR codes</li>
+                        <li>✅ Tracking des lots et dates d'expiration</li>
+                        <li>✅ Alertes de stock automatiques</li>
+                        <li>✅ Gestion des unités dynamiques</li>
+                        <li>✅ Support produits PRS</li>
+                        <li>✅ Import/Export Excel</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 style="color: #2d9561; margin-bottom: 24px;">Avantages</h3>
+                    <div class="module-card">
+                        <p style="font-size: 18px; margin-bottom: 12px;"><strong>🎯 Précision</strong></p>
+                        <p style="font-size: 16px; color: #666;">Suivi précis de chaque produit avec traçabilité complète</p>
+                    </div>
+                    <div class="module-card">
+                        <p style="font-size: 18px; margin-bottom: 12px;"><strong>⚡ Rapidité</strong></p>
+                        <p style="font-size: 16px; color: #666;">Accès instantané aux informations de stock</p>
+                    </div>
+                    <div class="module-card">
+                        <p style="font-size: 18px; margin-bottom: 12px;"><strong>📊 Visibilité</strong></p>
+                        <p style="font-size: 16px; color: #666;">Tableaux de bord et rapports détaillés</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-slide" style="color: white;">Slide 4</div>
+    </div>
+
+    <!-- SLIDE 5: BÉNÉFICES -->
+    <div class="slide page-break">
+        <div class="logo-area">🏦 Banque Alimentaire</div>
+        <h2>Bénéfices pour votre Organisation</h2>
+        
+        <div class="grid-2" style="gap: 30px; margin-top: 40px;">
+            <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 40px; border-radius: 24px;">
+                <h3 style="color: #1565c0; margin-bottom: 24px; font-size: 28px;">💼 Opérationnels</h3>
+                <ul style="font-size: 18px; line-height: 2;">
+                    <li>✅ Réduction du temps de gestion jusqu'à 60%</li>
+                    <li>✅ Diminution des erreurs de stock de 85%</li>
+                    <li>✅ Traçabilité complète des produits</li>
+                    <li>✅ Optimisation des livraisons</li>
+                    <li>✅ Meilleure allocation des ressources</li>
+                </ul>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #f3e5f5, #e1bee7); padding: 40px; border-radius: 24px;">
+                <h3 style="color: #6a1b9a; margin-bottom: 24px; font-size: 28px;">📊 Stratégiques</h3>
+                <ul style="font-size: 18px; line-height: 2;">
+                    <li>✅ Rapports détaillés pour la direction</li>
+                    <li>✅ Analyse des tendances et prévisions</li>
+                    <li>✅ Transparence totale des opérations</li>
+                    <li>✅ Conformité réglementaire</li>
+                    <li>✅ Prise de décision basée sur les données</li>
+                </ul>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); padding: 40px; border-radius: 24px;">
+                <h3 style="color: #2e7d32; margin-bottom: 24px; font-size: 28px;">👥 Humains</h3>
+                <ul style="font-size: 18px; line-height: 2;">
+                    <li>✅ Interface intuitive et facile à apprendre</li>
+                    <li>✅ Formation rapide des nouveaux utilisateurs</li>
+                    <li>✅ Satisfaction accrue des équipes</li>
+                    <li>✅ Réduction du stress opérationnel</li>
+                    <li>✅ Focus sur l'impact social</li>
+                </ul>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #fff3e0, #ffe0b2); padding: 40px; border-radius: 24px;">
+                <h3 style="color: #e65100; margin-bottom: 24px; font-size: 28px;">💰 Financiers</h3>
+                <ul style="font-size: 18px; line-height: 2;">
+                    <li>✅ Réduction du gaspillage alimentaire</li>
+                    <li>✅ Optimisation des coûts opérationnels</li>
+                    <li>✅ Meilleure gestion budgétaire</li>
+                    <li>✅ ROI mesurable et rapide</li>
+                    <li>✅ Économies à long terme</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-slide">Slide 5</div>
+    </div>
+
+    <!-- SLIDE 6: CONCLUSION -->
+    <div class="slide gradient-primary page-break">
+        <div class="center" style="padding-top: 10vh;">
+            <div style="font-size: 100px; margin-bottom: 40px;">✨</div>
+            <h2 style="font-size: 48px; margin-bottom: 40px; color: white;">
+                Système Complet et Évolutif
+            </h2>
+            
+            <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; margin-top: 60px; max-width: 900px; margin-left: auto; margin-right: auto;">
+                <p style="font-size: 28px; line-height: 1.8; color: white; margin-bottom: 30px;">
+                    Une solution moderne qui s'adapte à vos besoins et grandit avec votre organisation
+                </p>
+                
+                <div class="grid-3" style="margin-top: 40px; gap: 20px;">
+                    <div>
+                        <div class="stat-number" style="color: white;">15+</div>
+                        <p style="color: #b3e5fc; font-size: 18px;">Modules Intégrés</p>
+                    </div>
+                    <div>
+                        <div class="stat-number" style="color: white;">100%</div>
+                        <p style="color: #b3e5fc; font-size: 18px;">Personnalisable</p>
+                    </div>
+                    <div>
+                        <div class="stat-number" style="color: white;">24/7</div>
+                        <p style="color: #b3e5fc; font-size: 18px;">Disponibilité</p>
+                    </div>
+                </div>
+            </div>
+
+            <p style="font-size: 24px; margin-top: 60px; color: #b3e5fc;">
+                Merci de votre attention ! 🙏
+            </p>
+        </div>
+
+        <div class="footer-slide" style="color: white; opacity: 0.8;">
+            Slide 6
+        </div>
+    </div>
+
+</body>
+</html>

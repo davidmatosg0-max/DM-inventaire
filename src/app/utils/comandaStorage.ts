@@ -1,0 +1,282 @@
+import { Comanda, EstadoComanda, EstadoComandaLegacy } from '../types';
+import { toast } from 'sonner';
+import { registrarActividad } from './actividadLogger';
+import { descontarInventarioReservado, validarReservaInventario } from './inventoryReservations';
+import { obtenerProductos } from './productStorage';
+import {
+  resolverTemperaturaProductoCanonica,
+  resolverTemperaturaOriginalEntradaProducto,
+} from './productTemperature';
+
+const COMANDAS_KEY = 'banco_alimentos_comandas';
+const ESTADOS_COMANDA_LEGACY: Record<EstadoComandaLegacy, EstadoComanda> = {
+  preparada: 'completada',
+  en_transito: 'entregada',
+  cancelada: 'anulada'
+};
+
+type ComandaPersistida = Omit<Comanda, 'estado'> & {
+  estado?: Comanda['estado'] | EstadoComandaLegacy | string;
+  organismoNombre?: string;
+  usuarioCreacion?: string;
+  creadoPor?: string;
+  numeroComanda?: string;
+  items?: Comanda['items'] | unknown;
+};
+
+function normalizarItemComanda(item: any, productos = obtenerProductos()) {
+  const producto = productos.find(productoActual => productoActual.id === item?.productoId);
+  const nombreProducto = item?.nombreProducto || item?.productoNombre || producto?.nombre || '';
+  const productoNombre = item?.productoNombre || item?.nombreProducto || producto?.nombre || '';
+  const temperatura = resolverTemperaturaProductoCanonica({
+    ...(producto || {}),
+    nombre: producto?.nombre || nombreProducto,
+    nombreProducto,
+    productoNombre,
+    categoria: producto?.categoria || item?.categoria,
+    subcategoria: producto?.subcategoria || item?.subcategoria,
+    temperatura: item?.temperatura || producto?.temperatura,
+    temperaturaAlmacenamiento: producto?.temperaturaAlmacenamiento,
+    temperaturaOriginalEntrada: item?.temperaturaOriginalEntrada || producto?.temperaturaOriginalEntrada,
+  });
+  const temperaturaOriginalEntrada = resolverTemperaturaOriginalEntradaProducto({
+    ...(producto || {}),
+    nombre: producto?.nombre || nombreProducto,
+    nombreProducto,
+    productoNombre,
+    categoria: producto?.categoria || item?.categoria,
+    subcategoria: producto?.subcategoria || item?.subcategoria,
+    temperatura: item?.temperatura || producto?.temperatura,
+    temperaturaAlmacenamiento: producto?.temperaturaAlmacenamiento,
+    temperaturaOriginalEntrada: item?.temperaturaOriginalEntrada || producto?.temperaturaOriginalEntrada,
+  });
+
+  return {
+    ...item,
+    nombreProducto,
+    productoNombre,
+    unidad: item?.unidad || producto?.unidad || 'kg',
+    icono: item?.icono || producto?.icono,
+    temperatura,
+    temperaturaOriginalEntrada,
+  };
+}
+
+function normalizarEstadoComanda(estado?: string): EstadoComanda {
+  if (!estado) {
+    return 'pendiente';
+  }
+
+  if (estado in ESTADOS_COMANDA_LEGACY) {
+    return ESTADOS_COMANDA_LEGACY[estado as EstadoComandaLegacy];
+  }
+
+  const estadosValidos = new Set<EstadoComanda>(['pendiente', 'en_preparacion', 'completada', 'entregada', 'anulada']);
+  return estadosValidos.has(estado as EstadoComanda) ? (estado as EstadoComanda) : 'pendiente';
+}
+
+function normalizarComanda(comanda: ComandaPersistida, productos = obtenerProductos()): Comanda {
+  return {
+    ...comanda,
+    numero: comanda.numero || comanda.numeroComanda || '',
+    numeroComanda: comanda.numeroComanda || comanda.numero || '',
+    nombreOrganismo: comanda.nombreOrganismo || comanda.organismoNombre || '',
+    usuarioCreacion: comanda.usuarioCreacion || comanda.creadoPor || '',
+    creadoPor: comanda.creadoPor || comanda.usuarioCreacion || '',
+    items: Array.isArray(comanda.items) ? comanda.items.map(item => normalizarItemComanda(item, productos)) : [],
+    estado: normalizarEstadoComanda(comanda.estado)
+  } as Comanda;
+}
+
+function extraerCantidadesComanda(comanda: Comanda) {
+  return (comanda.items || []).map(item => ({
+    productoId: item.productoId,
+    cantidad: Number(item.cantidad || 0)
+  }));
+}
+
+function comandaExigeReserva(estado?: string): boolean {
+  return !['entregada', 'anulada', 'cancelada', 'rechazada'].includes(estado || '');
+}
+
+// Obtener todas las comandas
+export function obtenerComandas(): Comanda[] {
+  try {
+    const comandasJSON = localStorage.getItem(COMANDAS_KEY);
+    if (comandasJSON !== null) {
+      const comandasPersistidas = JSON.parse(comandasJSON);
+      const productos = obtenerProductos();
+      const comandasNormalizadas = Array.isArray(comandasPersistidas)
+        ? comandasPersistidas.map((comanda) => normalizarComanda(comanda, productos))
+        : [];
+
+      if (JSON.stringify(comandasPersistidas) !== JSON.stringify(comandasNormalizadas)) {
+        localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasNormalizadas));
+      }
+
+      return comandasNormalizadas;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error al cargar comandas:', error);
+    return [];
+  }
+}
+
+// Guardar una nueva comanda
+export function guardarComanda(comanda: Comanda): void {
+  try {
+    const comandaNormalizada = normalizarComanda(comanda, obtenerProductos());
+
+    if (comandaExigeReserva(comandaNormalizada.estado)) {
+      const validacion = validarReservaInventario(extraerCantidadesComanda(comandaNormalizada));
+      if (!validacion.ok) {
+        const mensaje = validacion.errores[0] || 'No fue posible reservar inventario para la comanda';
+        toast.error(mensaje);
+        throw new Error(mensaje);
+      }
+    }
+
+    const comandas = obtenerComandas();
+    comandas.push(comandaNormalizada);
+    localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
+    
+    // Registrar actividad
+    registrarActividad(
+      'Commandes',
+      'crear',
+      `Commande ${comandaNormalizada.numero} créée pour "${comandaNormalizada.organismoNombre}"`,
+      { comandaId: comandaNormalizada.id, numero: comandaNormalizada.numero, organismoId: comandaNormalizada.organismoId }
+    );
+  } catch (error) {
+    console.error('Error al guardar comanda:', error);
+    throw error;
+  }
+}
+
+// Actualizar una comanda existente
+export function actualizarComanda(comandaActualizada: Comanda): void {
+  try {
+    const comandas = obtenerComandas();
+    const comandaNormalizada = normalizarComanda(comandaActualizada, obtenerProductos());
+    const index = comandas.findIndex(c => c.id === comandaNormalizada.id);
+    
+    if (index !== -1) {
+      const comandaAnterior = normalizarComanda(comandas[index]);
+
+      if (comandaAnterior.estado === 'entregada' && comandaNormalizada.estado !== 'entregada') {
+        const mensaje = 'Una comanda expedida no puede volver a un estado anterior';
+        toast.error(mensaje);
+        throw new Error(mensaje);
+      }
+
+      if (comandaExigeReserva(comandaNormalizada.estado)) {
+        const validacion = validarReservaInventario(extraerCantidadesComanda(comandaNormalizada), {
+          excludeComandaId: comandaNormalizada.id
+        });
+
+        if (!validacion.ok) {
+          const mensaje = validacion.errores[0] || 'No fue posible mantener la reserva de inventario para la comanda';
+          toast.error(mensaje);
+          throw new Error(mensaje);
+        }
+      }
+
+      if (comandaAnterior.estado !== 'entregada' && comandaNormalizada.estado === 'entregada') {
+        const resultado = descontarInventarioReservado(extraerCantidadesComanda(comandaNormalizada));
+        if (!resultado.ok) {
+          const mensaje = resultado.error || 'No fue posible descontar inventario al expedir la comanda';
+          toast.error(mensaje);
+          throw new Error(mensaje);
+        }
+      }
+
+      comandas[index] = comandaNormalizada;
+      localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
+      
+      // Registrar actividad con cambios
+      const cambios = [];
+      if (comandaAnterior.estado !== comandaNormalizada.estado) {
+        cambios.push(`Statut: ${comandaAnterior.estado} → ${comandaNormalizada.estado}`);
+      }
+      
+      registrarActividad(
+        'Commandes',
+        'modificar',
+        `Commande ${comandaNormalizada.numero} modifiée${cambios.length > 0 ? ' - ' + cambios.join(', ') : ''}`,
+        { comandaId: comandaNormalizada.id, cambios: { estadoAnterior: comandaAnterior.estado, estadoNuevo: comandaNormalizada.estado } }
+      );
+    }
+  } catch (error) {
+    console.error('Error al actualizar comanda:', error);
+    throw error;
+  }
+}
+
+// Eliminar una comanda
+export function eliminarComanda(comandaId: string): void {
+  try {
+    const comandas = obtenerComandas();
+    const comandaEliminar = comandas.find(c => c.id === comandaId);
+    const comandasFiltradas = comandas.filter(c => c.id !== comandaId);
+    localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasFiltradas));
+    
+    // Registrar actividad
+    if (comandaEliminar) {
+      registrarActividad(
+        'Commandes',
+        'eliminar',
+        `Commande ${comandaEliminar.numero} supprimée`,
+        { comandaId, numero: comandaEliminar.numero }
+      );
+    }
+  } catch (error) {
+    console.error('Error al eliminar comanda:', error);
+    throw error;
+  }
+}
+
+// Obtener comanda por ID
+export function obtenerComandaPorId(comandaId: string): Comanda | null {
+  const comandas = obtenerComandas();
+  return comandas.find(c => c.id === comandaId) || null;
+}
+
+// Obtener comandas por organismo
+export function obtenerComandasPorOrganismo(organismoId: string): Comanda[] {
+  const comandas = obtenerComandas();
+  return comandas.filter(c => c.organismoId === organismoId);
+}
+
+// Obtener comandas por estado
+export function obtenerComandasPorEstado(estado: Comanda['estado']): Comanda[] {
+  const comandas = obtenerComandas();
+  return comandas.filter(c => c.estado === estado);
+}
+
+// Generar número de comanda
+export function generarNumeroComanda(): string {
+  const comandas = obtenerComandas();
+  const ultimoNumero = comandas.length > 0 
+    ? Math.max(...comandas.map(c => {
+        const match = c.numero.match(/CMD-(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      }))
+    : 0;
+  
+  return `CMD-${String(ultimoNumero + 1).padStart(4, '0')}`;
+}
+
+// Obtener estadísticas de comandas
+export function obtenerEstadisticasComandas() {
+  const comandas = obtenerComandas();
+  
+  return {
+    total: comandas.length,
+    pendientes: comandas.filter(c => c.estado === 'pendiente').length,
+    enPreparacion: comandas.filter(c => c.estado === 'en_preparacion').length,
+    completadas: comandas.filter(c => c.estado === 'completada').length,
+    entregadas: comandas.filter(c => c.estado === 'entregada').length,
+    anuladas: comandas.filter(c => c.estado === 'anulada').length,
+  };
+}

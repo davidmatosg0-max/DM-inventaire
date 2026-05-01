@@ -1,0 +1,4 @@
+// Este archivo marca donde debe terminar Inventario.tsx
+// La línea 1265 debe ser la última línea con solo: }
+
+// Todo después de esa línea debe eliminarse

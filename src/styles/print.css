@@ -1,0 +1,1447 @@
+/* Estilos para impresión PDF - Verificaciones SAAQ */
+@media print {
+  /* Imprimir solo el documento dedicado de verificacion */
+  body > *:not([data-verificacion-print-root]) {
+    display: none !important;
+  }
+
+  [data-verificacion-print-root] {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0.65cm 0.8cm !important;
+    background: white !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Ocultar el overlay del diálogo */
+  [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+
+  /* Ocultar elementos innecesarios */
+  button,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Configuración general de página - Orientación horizontal para más espacio */
+  @page {
+    size: A4 portrait;
+    margin: 0.65cm 0.8cm;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    background: white !important;
+    color: #111827 !important;
+  }
+
+  /* Ocultar cualquier resto del diálogo interactivo */
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Tamaño de fuentes optimizado para lectura */
+  * {
+    font-size: 8.5px !important;
+    line-height: 1.2 !important;
+  }
+
+  h1, h2, h3 {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+  }
+
+  .text-lg {
+    font-size: 10px !important;
+  }
+
+  .text-base {
+    font-size: 9px !important;
+  }
+
+  .text-sm {
+    font-size: 7.5px !important;
+  }
+
+  .text-xs {
+    font-size: 6.8px !important;
+  }
+
+  .text-2xl {
+    font-size: 13px !important;
+  }
+
+  /* Reducir espaciados pero mantener legibilidad */
+  .space-y-4 > * + * {
+    margin-top: 0.18rem !important;
+  }
+
+  .space-y-3 > * + * {
+    margin-top: 0.15rem !important;
+  }
+
+  .space-y-2 > * + * {
+    margin-top: 0.1rem !important;
+  }
+
+  .gap-4 {
+    gap: 0.18rem !important;
+  }
+
+  .gap-3 {
+    gap: 0.15rem !important;
+  }
+
+  .gap-2 {
+    gap: 0.1rem !important;
+  }
+
+  .gap-1 {
+    gap: 0.1rem !important;
+  }
+
+  /* Padding optimizado */
+  .p-4 {
+    padding: 0.24rem !important;
+  }
+
+  .p-3 {
+    padding: 0.2rem !important;
+  }
+
+  .p-2 {
+    padding: 0.12rem !important;
+  }
+
+  .py-4 {
+    padding-top: 0.18rem !important;
+    padding-bottom: 0.18rem !important;
+  }
+
+  .pb-3 {
+    padding-bottom: 0.16rem !important;
+  }
+
+  .mb-2 {
+    margin-bottom: 0.2rem !important;
+  }
+
+  .mb-4 {
+    margin-bottom: 0.2rem !important;
+  }
+
+  .mt-1 {
+    margin-top: 0.1rem !important;
+  }
+
+  /* Iconos y SVGs */
+  svg {
+    width: 12px !important;
+    height: 12px !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Badges más compactos pero legibles */
+  .inline-flex.rounded-full,
+  .inline-flex.rounded-lg,
+  .inline-flex.rounded {
+    padding: 0.08rem 0.22rem !important;
+    font-size: 7px !important;
+    font-weight: 700 !important;
+    border: 1px solid #111827 !important;
+    color: #111827 !important;
+    background: white !important;
+  }
+
+  /* Grid optimizado */
+  .grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.4rem !important;
+  }
+
+  /* Bordes */
+  .border {
+    border-width: 1px !important;
+  }
+
+  .border-l-4 {
+    border-left-width: 3px !important;
+  }
+
+  /* Ocultar el título del diálogo y descripción */
+  [role="dialog"] > div > div:first-child {
+    display: none !important;
+  }
+
+  [role="dialog"] > div > div:first-child h2,
+  [role="dialog"] > div > div:first-child p {
+    display: none !important;
+  }
+
+  /* Header compacto pero legible */
+  [class*="CardHeader"] {
+    padding: 0.22rem !important;
+  }
+
+  [class*="CardContent"] {
+    padding: 0.24rem !important;
+  }
+
+  [class*="CardTitle"] {
+    font-size: 9px !important;
+    margin-bottom: 0.08rem !important;
+    font-weight: 700 !important;
+  }
+
+  /* Reducir altura de barras de progreso */
+  .h-2 {
+    height: 5px !important;
+  }
+
+  .h-3 {
+    height: 6px !important;
+  }
+
+  /* Hacer más compactos los items del checklist */
+  .bg-gray-50 {
+    padding: 0.16rem !important;
+    margin-bottom: 0.08rem !important;
+  }
+
+  /* Evitar cortes de página en elementos importantes */
+  .border-l-4 {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Permitir cortes en listas largas pero evitar huérfanas */
+  [class*="CardContent"] {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* El header de cada card siempre con su contenido */
+  [class*="CardHeader"] {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Ajustar ancho completo */
+  .max-w-6xl,
+  .max-w-5xl {
+    max-width: 100% !important;
+  }
+
+  .max-h-\\[90vh\\] {
+    max-height: none !important;
+  }
+
+  .overflow-y-auto {
+    overflow: visible !important;
+  }
+
+  /* Hacer visible el contenido de las categorías - forzar expansión */
+  [data-state="open"],
+  [data-state="closed"] {
+    display: block !important;
+    height: auto !important;
+  }
+
+  /* Ocultar iconos de expansión */
+  .cursor-pointer svg {
+    display: none !important;
+  }
+
+  /* Mantener colores de badges */
+  .bg-\[\#4CAF50\] {
+    background-color: #e5e7eb !important;
+    color: #111827 !important;
+    border: 1px solid #111827 !important;
+  }
+
+  .bg-\\[\\#FFC107\\] {
+    background-color: #f3f4f6 !important;
+    color: #111827 !important;
+    border: 1px solid #111827 !important;
+  }
+
+  .bg-\\[\\#DC3545\\] {
+    background-color: #d1d5db !important;
+    color: #111827 !important;
+    border: 1px solid #111827 !important;
+  }
+
+  .bg-gray-200 {
+    background-color: #e5e7eb !important;
+    color: #111827 !important;
+    border: 1px solid #6b7280 !important;
+  }
+
+  .text-gray-700 {
+    color: #374151 !important;
+  }
+
+  /* Colores de fondo */
+  .bg-red-50 {
+    background-color: #f9fafb !important;
+  }
+
+  .bg-blue-50 {
+    background-color: #f9fafb !important;
+  }
+
+  .bg-gray-50 {
+    background-color: #ffffff !important;
+  }
+
+  /* Colores de texto */
+  .text-red-800 {
+    color: #111827 !important;
+  }
+
+  .text-red-700 {
+    color: #111827 !important;
+  }
+
+  .text-\\[\\#4CAF50\\] {
+    color: #111827 !important;
+  }
+
+  .text-\\[\\#FFC107\\] {
+    color: #111827 !important;
+  }
+
+  .text-\\[\\#DC3545\\] {
+    color: #111827 !important;
+  }
+
+  .text-\\[\\#666666\\] {
+    color: #374151 !important;
+  }
+
+  .text-\\[\\#1E73BE\\] {
+    color: #111827 !important;
+  }
+
+  /* Bordes con colores */
+  .border-red-200 {
+    border-color: #9ca3af !important;
+  }
+
+  .border-blue-200 {
+    border-color: #9ca3af !important;
+  }
+
+  .border-l-\\[\\#1E73BE\\] {
+    border-left-color: #111827 !important;
+  }
+
+  /* Mantener estilos de texto */
+  p, span, div, li {
+    color: inherit !important;
+  }
+
+  strong {
+    font-weight: 700 !important;
+  }
+
+  /* Tipografías */
+  h1, h2, h3 {
+    font-family: 'Montserrat', sans-serif !important;
+    color: #333 !important;
+  }
+
+  /* Barras de progreso visibles */
+  .bg-\\[\\#4CAF50\\].rounded-full {
+    background-color: #4CAF50 !important;
+  }
+
+  .bg-gray-200.rounded-full {
+    background-color: #e5e7eb !important;
+  }
+
+  /* Asegurar que los badges de estado sean visibles */
+  .hidden.print\\:block {
+    display: block !important;
+  }
+
+  /* Listas */
+  ul {
+    margin: 0 !important;
+    padding-left: 1.2rem !important;
+  }
+
+  li {
+    margin-bottom: 0.1rem !important;
+  }
+
+  /* Inputs y textareas ocultos en impresión (solo mostrar valores) */
+  input,
+  textarea {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  /* Bordes para mejor estructura visual */
+  .border,
+  .border-l-4 {
+    border-style: solid !important;
+  }
+
+  /* Añadir encabezado en primera página */
+  [role="dialog"]::before {
+    content: "REPORTE DE VERIFICACIÓN SAAQ";
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    text-align: center;
+    padding: 0.22rem;
+    margin-bottom: 0.22rem;
+    border-bottom: 2px solid #111827;
+    color: #111827;
+  }
+
+  /* Optimizar espacios en grid de resumen */
+  .grid.gap-4 {
+    gap: 0.18rem !important;
+  }
+
+  /* Mejorar legibilidad de números grandes */
+  .font-bold {
+    font-weight: 700 !important;
+  }
+
+  /* Asegurar que las cards de categorías no se corten a mitad */
+  .space-y-3 > * {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Evitar páginas vacías */
+  * {
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* Eliminar espacios en blanco excesivos al final de las páginas */
+  [role="dialog"] > div {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Reducir márgenes innecesarios que puedan causar páginas vacías */
+  .space-y-4,
+  .space-y-3,
+  .space-y-2 {
+    margin-bottom: 0 !important;
+  }
+
+  /* Evitar saltos de página después del último elemento */
+  .space-y-3 > *:last-child,
+  .space-y-4 > *:last-child {
+    margin-bottom: 0 !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Forzar que el contenido se ajuste sin crear páginas vacías */
+  [role="dialog"] {
+    page-break-after: avoid !important;
+  }
+
+  /* Optimizar el último card para no forzar página nueva */
+  .border-l-4:last-child {
+    margin-bottom: 0 !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Mostrar solo items no conformes en modo resumen */
+  body[data-print-mode="resumen"] .print-solo-problemas {
+    display: block !important;
+  }
+
+  body[data-print-mode="resumen"] .print-ocultar-conforme {
+    display: none !important;
+  }
+
+  /* En modo completo mostrar todo */
+  body[data-print-mode="completo"] .print-solo-problemas,
+  body[data-print-mode="completo"] .print-ocultar-conforme {
+    display: block !important;
+  }
+
+  /* Ocultar categorías sin problemas en modo resumen */
+  body[data-print-mode="resumen"] .print-categoria-sin-problemas {
+    display: none !important;
+  }
+
+  [role="dialog"] .print-verificacion-resumen-grid {
+    background: #ffffff !important;
+    border: 1.5px solid #111827 !important;
+    border-radius: 0.18rem !important;
+    padding: 0.12rem !important;
+  }
+
+  [role="dialog"] .print-verificacion-resumen-card {
+    background: white !important;
+    border: 1.5px solid #111827 !important;
+    border-radius: 0.12rem !important;
+    padding: 0.14rem 0.08rem !important;
+  }
+
+  [role="dialog"] .print-verificacion-resumen-card p:first-child {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    color: #111827 !important;
+  }
+
+  [role="dialog"] .print-verificacion-resumen-card--conforme {
+    background: #ffffff !important;
+    border-left: 4px solid #111827 !important;
+  }
+
+  [role="dialog"] .print-verificacion-resumen-card--reparar {
+    background: #f9fafb !important;
+    border-left: 4px solid #6b7280 !important;
+  }
+
+  [role="dialog"] .print-verificacion-resumen-card--no-conforme {
+    background: #e5e7eb !important;
+    border-left: 4px solid #111827 !important;
+  }
+
+  [role="dialog"] .print-verificacion-checklist > * {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    margin-top: 0.08rem !important;
+  }
+
+  [role="dialog"] .print-verificacion-categoria {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    margin-bottom: 0.05rem !important;
+    border: 1px solid #111827 !important;
+  }
+
+  [role="dialog"] .print-verificacion-categoria-header {
+    background: #f3f4f6 !important;
+    border-bottom: 1px solid #111827 !important;
+    padding: 0.14rem 0.2rem !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  [role="dialog"] .print-verificacion-progreso {
+    background: #d1d5db !important;
+    border: 1px solid #111827 !important;
+    height: 4px !important;
+    padding: 0 !important;
+  }
+
+  [role="dialog"] .print-verificacion-progreso-fill {
+    background: #111827 !important;
+  }
+
+  [role="dialog"] .print-verificacion-item {
+    background: #ffffff !important;
+    border: 1px solid #9ca3af !important;
+    padding: 0.12rem 0.16rem !important;
+    margin-bottom: 0.04rem !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  [role="dialog"] .print-verificacion-estado {
+    min-width: 58px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento {
+    display: block !important;
+    color: #111827 !important;
+    width: 18.8cm !important;
+    max-width: 18.8cm !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 0.18rem !important;
+    border-bottom: 2px solid #111827 !important;
+    padding-bottom: 0.12rem !important;
+    margin-bottom: 0.12rem !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-kicker {
+    font-size: 6.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #4b5563 !important;
+    margin: 0 0 0.02rem 0 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-encabezado {
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    margin: 0 0 0.02rem 0 !important;
+    color: #111827 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-subtitulo {
+    font-size: 6.4px !important;
+    line-height: 1.2 !important;
+    color: #4b5563 !important;
+    margin: 0 0 0.05rem 0 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-titulo {
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-resumen-header {
+    font-size: 6.5px !important;
+    line-height: 1.15 !important;
+    color: #374151 !important;
+    margin: 0.04rem 0 0 0 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-badges {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.05rem !important;
+    align-items: flex-end !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-badge {
+    display: inline-flex !important;
+    border: 1px solid #111827 !important;
+    border-radius: 999px !important;
+    padding: 0.04rem 0.22rem !important;
+    font-size: 6.3px !important;
+    font-weight: 700 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    white-space: nowrap !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-badge--estado {
+    background: #f3f4f6 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-resumen {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.08rem !important;
+    margin-bottom: 0.1rem !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-resumen > div {
+    border: 1px solid #9ca3af !important;
+    background: #ffffff !important;
+    padding: 0.08rem 0.1rem !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-resumen span {
+    display: block !important;
+    font-size: 6.2px !important;
+    text-transform: uppercase !important;
+    color: #6b7280 !important;
+    margin-bottom: 0.01rem !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-resumen strong {
+    display: block !important;
+    font-size: 7.4px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-notas {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.08rem !important;
+    margin-bottom: 0.1rem !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-nota {
+    border: 1px solid #9ca3af !important;
+    background: #ffffff !important;
+    padding: 0.08rem 0.1rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-nota--observaciones {
+    background: #f9fafb !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-nota-titulo {
+    font-size: 6.2px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    margin: 0 0 0.03rem 0 !important;
+    color: #111827 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-nota p:last-child {
+    font-size: 6.4px !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-categorias {
+    display: block !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-categoria {
+    margin-bottom: 0.1rem !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    border: 1px solid #111827 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-categoria-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: baseline !important;
+    gap: 0.14rem !important;
+    padding: 0.08rem 0.1rem !important;
+    border-bottom: 1px solid #111827 !important;
+    background: #f3f4f6 !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-categoria-header h3 {
+    font-size: 7.1px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-categoria-header p {
+    font-size: 6px !important;
+    margin: 0 !important;
+    color: #4b5563 !important;
+    text-align: right !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-tabla {
+    display: block !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-fila {
+    display: grid !important;
+    grid-template-columns: minmax(0, 2.9fr) minmax(68px, 0.9fr) minmax(0, 1.45fr) !important;
+    gap: 0.08rem !important;
+    align-items: start !important;
+    padding: 0.05rem 0.1rem !important;
+    border-bottom: 1px solid #d1d5db !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-fila:last-child {
+    border-bottom: none !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-fila--cabecera {
+    background: #f9fafb !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-fila--cabecera span {
+    font-size: 5.9px !important;
+    color: #374151 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-fila--conforme {
+    background: #ffffff !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-fila--reparar {
+    background: #f9fafb !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-fila--no_conforme {
+    background: #f3f4f6 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-col {
+    font-size: 6.1px !important;
+    color: #111827 !important;
+    word-break: break-word !important;
+    line-height: 1.1 !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-col--estado {
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+  }
+
+  [data-verificacion-print-root] .print-verificacion-documento-col--observacion {
+    color: #374151 !important;
+  }
+
+  /* ========================================
+     ESTILOS PARA ESTADÍSTICAS Y RAPPORTS
+     ======================================== */
+  
+  /* Ocultar sidebar y navegación en impresión */
+  aside,
+  nav,
+  header button {
+    display: none !important;
+  }
+
+  /* Ocultar todos los botones excepto los que tengan print:block */
+  button:not(.print\\:block) {
+    display: none !important;
+  }
+
+  /* Mostrar contenido principal a ancho completo */
+  main,
+  .flex-1 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Optimizar gráficos para impresión */
+  .recharts-wrapper {
+    max-width: 100% !important;
+  }
+
+  svg.recharts-surface {
+    max-width: 100% !important;
+    width: 100% !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Tablas optimizadas para impresión */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9px !important;
+  }
+
+  th, td {
+    padding: 4px 6px !important;
+    border: 1px solid #E0E0E0 !important;
+  }
+
+  thead {
+    background-color: #F4F4F4 !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Evitar saltos de página en elementos importantes */
+  .grid > div,
+  table tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Cards y contenedores */
+  [class*="Card"] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Ocultar panel de filtros en impresión */
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Título de la página */
+  h2.text-2xl {
+    font-size: 18px !important;
+    margin-bottom: 0.5rem !important;
+    color: #1E73BE !important;
+  }
+
+  /* Grid de KPIs más compacto */
+  .grid-cols-1.md\\:grid-cols-3,
+  .grid-cols-1.md\\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Números grandes en KPIs */
+  .text-4xl,
+  .text-3xl {
+    font-size: 16px !important;
+  }
+
+  /* Mantener colores de marca en impresión */
+  .text-\\[\\#1E73BE\\],
+  [class*="text-[#1E73BE]"] {
+    color: #1E73BE !important;
+    print-color-adjust: exact !important;
+  }
+
+  .text-\\[\\#4CAF50\\],
+  [class*="text-[#4CAF50]"] {
+    color: #4CAF50 !important;
+    print-color-adjust: exact !important;
+  }
+
+  .text-\\[\\#DC3545\\],
+  [class*="text-[#DC3545]"] {
+    color: #DC3545 !important;
+    print-color-adjust: exact !important;
+  }
+
+  .text-\\[\\#9C27B0\\],
+  [class*="text-[#9C27B0]"] {
+    color: #9C27B0 !important;
+    print-color-adjust: exact !important;
+  }
+
+  .text-\\[\\#FFC107\\],
+  [class*="text-[#FFC107]"] {
+    color: #FFC107 !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Backgrounds con colores */
+  .bg-\\[\\#E3F2FD\\],
+  [class*="bg-[#E3F2FD]"] {
+    background-color: #E3F2FD !important;
+    print-color-adjust: exact !important;
+  }
+
+  .bg-\\[\\#F9F9F9\\],
+  [class*="bg-[#F9F9F9]"] {
+    background-color: #F9F9F9 !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Grid de 2 columnas para gráficos */
+  .lg\\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Reducir tamaño de iconos en print */
+  .w-16.h-16,
+  .w-12.h-12,
+  .w-20.h-20 {
+    width: 16px !important;
+    height: 16px !important;
+    opacity: 0.3 !important;
+  }
+
+  /* Leyendas de gráficos */
+  .recharts-legend-wrapper {
+    font-size: 8px !important;
+  }
+
+  /* Tooltips ocultos en impresión */
+  .recharts-tooltip-wrapper {
+    display: none !important;
+  }
+
+  /* Footer de tabla */
+  tfoot {
+    background-color: #F4F4F4 !important;
+    font-weight: bold !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ajustar márgenes de página para aprovechar espacio */
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+
+  /* Mensajes informativos */
+  .p-4.bg-\\[\\#E3F2FD\\] {
+    padding: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    break-inside: avoid !important;
+  }
+
+  /* Espaciado general más compacto */
+  .space-y-6 > * + * {
+    margin-top: 0.5rem !important;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 0.3rem !important;
+  }
+
+  /* Gráficos de barras y pies */
+  .recharts-pie,
+  .recharts-bar {
+    print-color-adjust: exact !important;
+  }
+
+  /* Mantener colores en celdas */
+  .w-4.h-4.rounded-full {
+    print-color-adjust: exact !important;
+  }
+
+  /* ========================================
+     ESTILOS ESPECÍFICOS PARA RÉPARTITION
+     ======================================== */
+  
+  /* Tabla de répartition - orientación horizontal si hay muchas columnas */
+  @media print {
+    /* Si la tabla tiene más de 5 columnas, sugerir orientación horizontal */
+    @page :has(table thead tr th:nth-child(6)) {
+      size: A4 landscape;
+    }
+  }
+
+  /* Optimizar tabla grande de répartition */
+  table.w-full {
+    font-size: 7px !important;
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  table.w-full th {
+    font-size: 7px !important;
+    padding: 2px 3px !important;
+    white-space: nowrap !important;
+    font-weight: 600 !important;
+  }
+
+  table.w-full td {
+    font-size: 7px !important;
+    padding: 2px 3px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Primera columna (nombres) un poco más ancha */
+  table.w-full th:first-child,
+  table.w-full td:first-child {
+    min-width: 80px !important;
+    padding-left: 4px !important;
+  }
+
+  /* Última columna (total) destacada */
+  table.w-full th:last-child,
+  table.w-full td:last-child {
+    font-weight: 700 !important;
+    padding-right: 4px !important;
+  }
+
+  /* Headers de tabla más compactos */
+  table thead.bg-\\[\\#F4F4F4\\] {
+    background-color: #F4F4F4 !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Filas hover no necesarias en impresión */
+  table tbody tr.hover\\:bg-\\[\\#F9F9F9\\]:hover {
+    background-color: transparent !important;
+  }
+
+  /* Alternar colores de fila para mejor legibilidad */
+  table tbody tr:nth-child(even) {
+    background-color: #FAFAFA !important;
+  }
+
+  /* Totales en negrita */
+  table td:last-child {
+    font-weight: 700 !important;
+  }
+
+  /* Grid de departamentos más compacto */
+  .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.3rem !important;
+  }
+
+  /* Cards de departamentos */
+  .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 > div {
+    break-inside: avoid !important;
+  }
+
+  /* Optimizar overflow de tabla */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  /* ========================================
+     AJUSTES FINALES PARA TODAS LAS SECCIONES
+     ======================================== */
+  
+  /* Asegurar que los contenedores no corten elementos */
+  .space-y-6,
+  .space-y-4 {
+    break-inside: auto !important;
+  }
+
+  /* Encabezados de sección siempre con su contenido */
+  h2,
+  h3,
+  [class*="CardTitle"] {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* ========================================
+     OPTIMIZACIONES DE BANNERS Y KPIS
+     ======================================== */
+  
+  /* Banner informativo de período */
+  .border-\\[\\#1E73BE\\].bg-\\[\\#E3F2FD\\] {
+    page-break-inside: avoid !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  /* KPIs Cards más compactas */
+  .p-6 {
+    padding: 0.4rem !important;
+  }
+
+  /* Números grandes en KPIs - legibles pero compactos */
+  .text-4xl {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Iconos en KPIs */
+  .w-16.h-16 {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Grid de KPIs */
+  .grid.gap-4 > div {
+    break-inside: avoid !important;
+  }
+
+  /* ========================================
+     OPTIMIZACIÓN DE ESPACIADO GLOBAL
+     ======================================== */
+  
+  /* Reducir espaciado vertical general */
+  .mb-4 {
+    margin-bottom: 0.3rem !important;
+  }
+
+  .mb-6 {
+    margin-bottom: 0.4rem !important;
+  }
+
+  .mt-6 {
+    margin-top: 0.4rem !important;
+  }
+
+  /* Padding de cards */
+  [class*="CardContent"] {
+    padding: 0.4rem !important;
+  }
+
+  [class*="CardHeader"] {
+    padding: 0.3rem 0.4rem !important;
+  }
+
+  /* Reducir altura de gráficos para ahorrar espacio */
+  .recharts-wrapper {
+    height: 200px !important;
+  }
+
+  /* ========================================
+     MANTENER COLORES EN BACKGROUNDS
+     ======================================== */
+  
+  .bg-\\[\\#F4F4F4\\] {
+    background-color: #F4F4F4 !important;
+    print-color-adjust: exact !important;
+  }
+
+  .border-\\[\\#1E73BE\\] {
+    border-color: #1E73BE !important;
+  }
+
+  .border-\\[\\#E0E0E0\\] {
+    border-color: #E0E0E0 !important;
+  }
+
+  /* Asegurar texto legible */
+  .text-\\[\\#333333\\] {
+    color: #333333 !important;
+  }
+
+  .text-\\[\\#666666\\] {
+    color: #666666 !important;
+  }
+
+  /* ========================================
+     OPTIMIZACIONES PARA TABLA DE RAPPORTS
+     ======================================== */
+  
+  /* Tabla de detalles de actividades con 6 columnas */
+  table.w-full tbody tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Evitar que el header de tabla quede huérfano */
+  table.w-full thead {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Mantener footer de tabla con última fila */
+  table.w-full tfoot {
+    break-before: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  /* Bordes de tabla */
+  .border-b-2.border-\\[\\#E0E0E0\\] {
+    border-color: #E0E0E0 !important;
+  }
+
+  .border-b.border-\\[\\#E0E0E0\\] {
+    border-color: #E0E0E0 !important;
+  }
+
+  /* Optimizar columna de notas (puede tener texto largo) */
+  table.w-full td.italic {
+    font-size: 6px !important;
+    max-width: 120px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Destacar totales en footer */
+  table.w-full tfoot td {
+    font-weight: 700 !important;
+    background-color: #F4F4F4 !important;
+  }
+
+  /* Tamaño de texto en footer */
+  table.w-full tfoot .text-lg {
+    font-size: 10px !important;
+  }
+
+  /* ========================================
+     AJUSTES PARA GRÁFICOS EN RAPPORTS
+     ======================================== */
+  
+  /* Gráfico de barras horizontal - más compacto */
+  .recharts-wrapper svg {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Labels de gráficos */
+  .recharts-text {
+    font-size: 7px !important;
+  }
+
+  /* Barras del gráfico */
+  .recharts-bar-rectangle path {
+    print-color-adjust: exact !important;
+  }
+
+  /* ========================================
+     MENSAJES DE ESTADO (sin datos)
+     ======================================== */
+  
+  /* Mensaje "Aucune activité trouvée" */
+  .py-12 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  .text-\\[\\#999999\\] {
+    color: #999999 !important;
+  }
+
+  /* Iconos grandes en mensajes vacíos */
+  .w-16.h-16.text-\\[\\#E0E0E0\\] {
+    color: #E0E0E0 !important;
+  }
+
+  /* ========================================
+     ESTILOS ESPECÍFICOS PARA COMANDAS
+     ======================================== */
+  
+  /* Configuración de página para comandas - UNA SOLA PÁGINA */
+  body:has([data-comanda-print]) @page {
+    size: A4 portrait;
+    margin: 0.5cm 0.8cm;
+  }
+
+  /* Escalar todo el contenido de la comanda para que quepa en una página */
+  [data-comanda-print] {
+    transform: scale(0.85);
+    transform-origin: top left;
+    width: 117.6% !important; /* Compensar el scale(0.85) = 100/0.85 */
+  }
+
+  /* QR Code - Asegurar visibilidad y tamaño correcto */
+  [data-comanda-print] svg[data-testid="qr-code"],
+  [data-comanda-print] .qrcode-container svg {
+    width: 80px !important;
+    height: 80px !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  /* Contenedor del QR */
+  [data-comanda-print] .qrcode-container,
+  [data-comanda-print] .bg-white.p-2.rounded-lg.shadow-md {
+    print-color-adjust: exact !important;
+    background-color: white !important;
+    padding: 0.3rem !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  /* Reducir espaciado en comandas para una página */
+  [data-comanda-print] .pb-6,
+  [data-comanda-print] .mb-6 {
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  [data-comanda-print] .mb-8 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  [data-comanda-print] .p-8 {
+    padding: 0.6rem !important;
+  }
+
+  [data-comanda-print] .p-5 {
+    padding: 0.4rem !important;
+  }
+
+  [data-comanda-print] .p-4 {
+    padding: 0.3rem !important;
+  }
+
+  /* Encabezados de comanda más compactos */
+  [data-comanda-print] h1 {
+    font-size: 18px !important;
+    margin-bottom: 0.2rem !important;
+  }
+
+  [data-comanda-print] h2 {
+    font-size: 14px !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  [data-comanda-print] h3 {
+    font-size: 12px !important;
+    margin-bottom: 0.2rem !important;
+  }
+
+  /* Tablas de productos en comandas */
+  [data-comanda-print] table {
+    font-size: 7px !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  [data-comanda-print] table th,
+  [data-comanda-print] table td {
+    padding: 2px 4px !important;
+    font-size: 7px !important;
+  }
+
+  /* Iconos de productos más pequeños */
+  [data-comanda-print] .text-3xl {
+    font-size: 18px !important;
+  }
+
+  /* Bordes de comanda */
+  [data-comanda-print] .border-4 {
+    border-width: 2px !important;
+  }
+
+  [data-comanda-print] .border-2 {
+    border-width: 1px !important;
+  }
+
+  /* Grid de resumen de comanda */
+  [data-comanda-print] .grid-cols-5 {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 0.2rem !important;
+  }
+
+  /* Información de organismo */
+  [data-comanda-print] .text-4xl {
+    font-size: 16px !important;
+  }
+
+  [data-comanda-print] .text-3xl {
+    font-size: 14px !important;
+  }
+
+  [data-comanda-print] .text-xl {
+    font-size: 11px !important;
+  }
+
+  /* Badges en comandas */
+  [data-comanda-print] .badge,
+  [data-comanda-print] [class*="Badge"] {
+    font-size: 7px !important;
+    padding: 0.1rem 0.3rem !important;
+  }
+
+  /* Evitar saltos de página en secciones de temperatura */
+  [data-comanda-print] .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Observaciones más compactas */
+  [data-comanda-print] .border-l-4 {
+    border-left-width: 2px !important;
+    padding: 0.3rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  /* Forzar que toda la comanda quepa en una página */
+  [data-comanda-print] {
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Ajuste de línea de altura para aprovechar espacio */
+  [data-comanda-print] * {
+    line-height: 1.2 !important;
+  }
+
+  /* Grid compacto para información de cita */
+  [data-comanda-print] .grid-cols-2 {
+    gap: 0.3rem !important;
+  }
+
+  /* Asegurar que los colores se impriman correctamente */
+  [data-comanda-print] .bg-gradient-to-r,
+  [data-comanda-print] [class*="bg-["] {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Reducir altura de secciones con gradientes */
+  [data-comanda-print] .bg-gradient-to-r {
+    padding-top: 0.3rem !important;
+    padding-bottom: 0.3rem !important;
+  }
+}

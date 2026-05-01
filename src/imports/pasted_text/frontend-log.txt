@@ -1,0 +1,238 @@
+Running frontend commit 107bbd51e86fce9a104f472597b3e63a6aa8ffa6
+vendor-core-ade2edecaf4781c7.min.js.br:54 Statsig is not ready to log exposures, will retry in 1 seconds
+(anonyme) @ vendor-core-ade2edecaf4781c7.min.js.br:54Comprendre cet avertissement
+vendor-core-ade2edecaf4781c7.min.js.br:54 [Livegraph] Connected 2026-03-14T02:55:50.890Z.
+vendor-core-ade2edecaf4781c7.min.js.br:54 [bootstrap_waiting_on_user_state] You appear to be logging a relative timestamp and not an epoch timestamp. Try adding performance.timeOrigin to the timestamp.
+(anonyme) @ vendor-core-ade2edecaf4781c7.min.js.br:54Comprendre cet avertissement
+8245-61d61b2c2a415443.min.js.br:7 The powerPreference option is currently ignored when calling requestAdapter() on Windows. See https://crbug.com/369219127
+initialize @ 8245-61d61b2c2a415443.min.js.br:7Comprendre cet avertissement
+vendor-core-ade2edecaf4781c7.min.js.br:54 [import] git: 640e7c0c7a50f673af49d46032d102e256b5e667, stamp: 8E3CE7D760547CC6
+vendor-core-ade2edecaf4781c7.min.js.br:54 Autosave Changes not available or already claimed by another tab undefined
+vendor-core-ade2edecaf4781c7.min.js.br:54 Loaded 34 scripts (5985687b), 0 from cache (0b)
+vendor-core-ade2edecaf4781c7.min.js.br:54 [Local fonts] using agent
+(index):1  Failed to load resource: net::ERR_FAILEDComprendre cette erreur
+vendor-core-ade2edecaf4781c7.min.js.br:54 [Fullscreen] Booting... (emscripten version 4.0.21)
+vendor-core-ade2edecaf4781c7.min.js.br:54 [GPU] graphicsAPI:"WebGPU", vendor:"Google Inc. (NVIDIA)" renderer:"ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F15) Direct3D11 vs_5_0 ps_5_0, D3D11)" deviceArchitecture:"turing" deviceDescription:"" webGPUDevice:"" webGPUVendor:"nvidia" bindings:"emdawnwebgpu"
+vendor-core-ade2edecaf4781c7.min.js.br:54 [Fullscreen] Ready in 1192.1ms
+vendor-core-ade2edecaf4781c7.min.js.br:54 [FullscreenApp] calling setEditorTheme and setting preference light
+vendor-core-ade2edecaf4781c7.min.js.br:54 [MultiplayerSession] connecting to wss://www.figma.com/api/multiplayer/MaJTFb4IxaAY7T2beXPGGI?role=editor&tracking_session_id=TqAOxtS8KlZ7PEko&version=151&recentReload=0&file-load-streaming-compression&user-id=1589090609799948722&client_release=107bbd51e86fce9a104f472597b3e63a6aa8ffa6
+vendor-core-ade2edecaf4781c7.min.js.br:54 [FullscreenApp] calling setEditorTheme and setting preference light
+vendor-core-ade2edecaf4781c7.min.js.br:54 [MultiplayerSession] Joining file version 106 (initial load)
+vendor-core-ade2edecaf4781c7.min.js.br:54 Migration succeeded: context: fullscreen_migrate_SceneGraphManager, version: 106, duration: 0ms.
+compiled_wasm.js.br:2 Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
+_BitmapContext_download @ compiled_wasm.js.br:2Comprendre cet avertissement
+/api/make/fetch_ds_code_gen_status:1  Failed to load resource: the server responded with a status of 400 ()Comprendre cette erreur
+vendor-core-ade2edecaf4781c7.min.js.br:54 [Fullscreen] loadtime=6.83s maxmem=588720580
+2vendor-core-ade2edecaf4781c7.min.js.br:54 [devtools] Initialized LS
+/api/make/MaJTFb4IxaAY7T2beXPGGI/cached_preview_urls?source_code_hash=992bc2bf03b8e4ddfb518cc04b21ed83a4162cb0:1  Failed to load resource: the server responded with a status of 404 ()Comprendre cette erreur
+ [vite] connecting...
+ [vite] connected.
+ 🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+ 
+ 🆘 ═══════════════════════════════════════════════════════════
+ 🆘 FUNCIONES DE EMERGENCIA DISPONIBLES EN CONSOLA
+ 🆘 ═══════════════════════════════════════════════════════════
+ 
+ 📋 Comandos disponibles:
+    proteccionEmergencia()  - Proteger datos inmediatamente
+    verificarProteccion()   - Ver estado de protección
+    listarDatos()           - Listar todos los datos
+ 
+ ✅ Colores predeterminados inicializados y guardados permanentemente
+ ✅ Usuarios inicializados: 1 usuarios
+ 🔒🔒🔒 PROTECCIÓN MÁXIMA ACTIVADA
+ 🛡️ Sistema marcado como CON DATOS REALES
+ 🛡️ Limpieza automática PERMANENTEMENTE DESHABILITADA
+ ✅ Sistema inicializado - Versión: 1.0.0
+ ✅ Sistema protegido - Limpieza automática omitida
+ ✅ Sistema de organismos inicializado (vacío - listo para producción)
+ ✅ Configuration de support initialisée avec succès
+ 🔄 Sistema de backup automático inicializado
+ 🔄 Sincronización automática de voluntarios Entrepôt inicializada
+ 📁 Sistema de archivos inicializado
+(index):1 [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) <input id=​"contrasena" type=​"password" class=​"w-full pl-11 pr-4 py-3 text-base border-2 border-gray-200 rounded-xl focus:​outline-none transition-all duration-300 bg-white/​50 backdrop-blur-sm" placeholder=​"Entrez votre mot de passe" data-fg-zgt48=​"2621.401:​2621.16248:​/​src/​app/​components/​pages/​Login.tsx:​233:​17:​8565:​564:​e:​input" data-fgid-zgt48=​":​r1j:​" value=​"Lettycia26" style=​"border-color:​ rgb(26, 77, 122)​;​">​
+ 🚀 Ejecutando sincronización inicial de voluntarios Entrepôt...
+ 
+ 🔄 ═══════════════════════════════════════════════════════════
+ 🔄 SINCRONIZACIÓN DE VOLUNTARIOS ENTREPÔT → CONTACTOS
+ 🔄 ═══════════════════════════════════════════════════════════
+ 
+ 📊 Total de bénévoles en sistema: 0
+ 📦 Bénévoles asignados a Entrepôt: 0
+ 
+ ℹ️ No hay bénévoles asignados a Entrepôt para sincronizar
+ 
+ 🔄 ═══════════════════════════════════════════════════════════
+ 
+ ✅ Login exitoso: David - Développeur Principal - Accès Total au Système
+ 💾 Guardando usuario en sesión: Object
+ 🔍 Verificando permiso transporte.ver: Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ ✅ Web Serial API soportado - Pennsylvania Scale compatible
+ 🔍 Verificando permiso transporte.ver: Object
+15[Violation] Permissions policy violation: serial is not allowed in this document.Comprendre cette erreur
+ [PWA] Service Worker no disponible (archivo no encontrado o MIME incorrecto)
+ ℹ️ Auto-conexión deshabilitada - esperando conexión manual del usuario
+ 🚪 Diálogo abierto - Cargando datos...
+ 🔄 Iniciando sincronización Donateurs & Fournisseurs...
+ ℹ️ No hay donateurs/fournisseurs para sincronizar
+ ✅ Sincronización: 0 donateurs/fournisseurs
+ 📦 0 productos cargados
+ 🏷️ 0 categorías cargadas
+ 🎯 0 programas cargados
+ 📏 6 unidades cargadas
+ 👥 0 contactos cargados
+ ✅ Carga de datos completada
+ 🔍 Verificando permiso transporte.ver: Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ 🔒🔒🔒 PRE-PROTECCIÓN ACTIVADA - Sistema marcado como CON DATOS REALES
+ ✅ Datos restaurados exitosamente
+ 🔒 Sistema marcado como con DATOS REALES - Protección activada
+ 🔒 Backup restaurado - Sistema RE-MARCADO como CON DATOS REALES
+ 
+ 🔒🔒🔒 ═══════════════════════════════════════════════════════════
+ 🔒🔒🔒 PROTECCIÓN POST-RESTAURACIÓN ACTIVADA
+ 🔒🔒🔒 ═══════════════════════════════════════════════════════════
+ 
+ ✅ NIVEL 1: Flags de protección establecidos
+ ✅ NIVEL 2: Flag de restauración establecido
+ ✅ NIVEL 3: Contador de protección = 2
+ 
+ 🛡️ PROTECCIÓN COMPLETA ACTIVADA
+ 
+ 📋 INSTRUCCIONES IMPORTANTES:
+    1️⃣  NO recargue la página inmediatamente
+    2️⃣  Espere 3-5 segundos para que se guarden los flags
+    3️⃣  Luego puede recargar la página con F5
+    4️⃣  Sus datos estarán 100% protegidos
+ 
+ ✅ GARANTÍA: Al recargar, verá el mensaje:
+    "🔒🔒🔒 PROTECCIÓN MÁXIMA ACTIVADA"
+    "🛡️ Sistema marcado como CON DATOS REALES"
+ 
+ ❌ NUNCA verá:
+    "🗑️ EJECUTANDO LIMPIEZA COMPLETA DEL SISTEMA"
+ 
+ 🔒🔒🔒 ═══════════════════════════════════════════════════════════
+2 
+ 🔍 ═══════════════════════════════════════════════════════════
+ 🔍 VERIFICACIÓN DE RESTAURACIÓN PROTEGIDA
+ 🔍 ═══════════════════════════════════════════════════════════
+ 
+ 📊 Estado de los flags de protección:
+    sistema_con_datos_reales: ✅ true
+    limpieza_completa_ejecutada: ✅ true
+    backup_restaurado: ✅ true
+ 
+ ✅ RESULTADO: RESTAURACIÓN PROTEGIDA CORRECTAMENTE
+ ✅ Puede recargar la página sin preocupaciones
+ 
+ 🔍 ═══════════════════════════════════════════════════════════
+2 
+ 📊 ═══════════════════════════════════════════════════════════
+ 📊 RESUMEN DE DATOS RESTAURADOS
+ 📊 ═══════════════════════════════════════════════════════════
+ 
+ 👥 USUARIOS: 0 registros
+ 🏢 ORGANISMOS: 0 registros
+ 📦 COMANDAS: 0 registros
+ 📊 PRODUCTOS: 5 registros
+ 📈 MOVIMIENTOS: 0 registros
+ 🚚 VEHÍCULOS: 0 registros
+ 🗺️ RUTAS: 0 registros
+ 🚛 TRANSPORTES: 0 registros
+ 👨‍👩‍👧‍👦 CONTACTOS: 0 registros
+ 🙋 BÉNÉVOLES: 0 registros
+ 💳 IDS DIGITALES: 0 registros
+ 
+ 📊 TOTAL: 5 registros restaurados
+ 
+ 📊 ═══════════════════════════════════════════════════════════
+ 
+ 🔒🔒🔒 PROTECCIÓN POST-RESTAURACIÓN COMPLETA
+ 🛡️ Limpieza automática PERMANENTEMENTE DESHABILITADA
+ 🔒 Sistema marcado como con DATOS REALES - Protección activada
+ 🔒🔒🔒 BACKUP RESTAURÉ ET PROTÉGÉ
+ 🛡️ Vous pouvez recharger la page en toute sécurité (F5)
+ 🔍 Verificando permiso transporte.ver: Object
+ 🔍 Verificando permiso transporte.ver: Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ 🔍 Verificando permiso transporte.ver: Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ ✅ Colores cargados desde localStorage (permanentes) Object
+ 🚪 Diálogo abierto - Cargando datos...
+ 🔄 Iniciando sincronización Donateurs & Fournisseurs...
+ 📋 4 donateurs/fournisseurs encontrados
+ ✅ Sincronización completada: 4 sincronizados, 0 errores
+ 🔄 Contactos actualizados
+ ✅ Sincronización: 4 donateurs/fournisseurs
+ 📦 5 productos cargados
+ 🏷️ 0 categorías cargadas
+ 🎯 4 programas cargados
+ 📏 6 unidades cargadas
+ 👥 4 contactos cargados
+ ✅ Carga de datos completada
+ [vite] hot updated: /src/app/components/EntradaDonAchat.tsx
+ [vite] hot updated: /src/styles/index.css
+ 2:59:56 AM [vite] (client) hmr update /src/app/components/EntradaDonAchat.tsx, /src/styles/index.css
+ 🚪 Diálogo abierto - Cargando datos...
+ 🔄 Iniciando sincronización Donateurs & Fournisseurs...
+ 📋 4 donateurs/fournisseurs encontrados
+ ✅ Sincronización completada: 4 sincronizados, 0 errores
+ 🔄 Contactos actualizados
+ ✅ Sincronización: 4 donateurs/fournisseurs
+ 📦 5 productos cargados
+ 🏷️ 0 categorías cargadas
+ 🎯 4 programas cargados
+ 📏 6 unidades cargadas
+ 👥 4 contactos cargados
+ ✅ Carga de datos completada
+vendor-core-ade2edecaf4781c7.min.js.br:54 Too many elapsed hits of react since last report
+(anonyme) @ vendor-core-ade2edecaf4781c7.min.js.br:54Comprendre cet avertissement
+ [vite] hot updated: /src/app/components/EntradaDonAchat.tsx
+ [vite] hot updated: /src/styles/index.css
+ 3:01:59 AM [vite] (client) hmr update /src/app/components/EntradaDonAchat.tsx, /src/styles/index.css
+ 🚪 Diálogo abierto - Cargando datos...
+ 🔄 Iniciando sincronización Donateurs & Fournisseurs...
+ 📋 4 donateurs/fournisseurs encontrados
+ ✅ Sincronización completada: 4 sincronizados, 0 errores
+ ✅ Sincronización: 4 donateurs/fournisseurs
+ 📦 5 productos cargados
+ 🏷️ 0 categorías cargadas
+ 🎯 4 programas cargados
+ 📏 6 unidades cargadas
+ 👥 4 contactos cargados
+ ✅ Carga de datos completada
+ 🚪 Diálogo abierto - Cargando datos...
+ 🔄 Iniciando sincronización Donateurs & Fournisseurs...
+ 📋 4 donateurs/fournisseurs encontrados
+ ✅ Sincronización completada: 4 sincronizados, 0 errores
+ 🔄 Contactos actualizados
+ ✅ Sincronización: 4 donateurs/fournisseurs
+ 📦 5 productos cargados
+ 🏷️ 0 categorías cargadas
+ 🎯 4 programas cargados
+ 📏 6 unidades cargadas
+ 👥 4 contactos cargados
+ ✅ Carga de datos completada
+ [vite] hot updated: /src/app/components/EntradaDonAchat.tsx
+ [vite] hot updated: /src/styles/index.css
+ 3:04:52 AM [vite] (client) hmr update /src/app/components/EntradaDonAchat.tsx, /src/styles/index.css
+ 🔍 DEBUG FILTRADO: Object
+ 🚪 Diálogo abierto - Cargando datos...
+ 🔄 Iniciando sincronización Donateurs & Fournisseurs...
+ 📋 4 donateurs/fournisseurs encontrados
+ ✅ Sincronización completada: 4 sincronizados, 0 errores
+ 🔄 Contactos actualizados
+ ✅ Sincronización: 4 donateurs/fournisseurs
+ 📦 5 productos cargados
+ 🏷️ 0 categorías cargadas
+ 🎯 4 programas cargados
+ 📏 6 unidades cargadas
+ 👥 4 contactos cargados
+ ✅ Carga de datos completada
+ 🔍 DEBUG FILTRADO: Object
+ 🔍 DEBUG FILTRADO: Object

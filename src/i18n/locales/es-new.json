@@ -1,0 +1,172 @@
+{
+  "audit": {
+    "title": "Auditoría",
+    "subtitle": "Trazabilidad completa del sistema",
+    "logs": "Registros",
+    "statistics": "Estadísticas",
+    "recentLogs": "Registros Recientes",
+    "filters": "Filtros",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar en registros...",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "module": "Módulo",
+    "severity": "Severidad",
+    "user": "Usuario",
+    "action": "Acción",
+    "status": "Estado",
+    "success": "Éxito",
+    "error": "Error",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "clearFilters": "Limpiar Filtros",
+    "noLogs": "No se encontraron registros",
+    "mostActiveUsers": "Usuarios Más Activos",
+    "mostUsedModules": "Módulos Más Utilizados",
+    "systemInfo": "Información del Sistema",
+    "cleanOldLogs": "Limpiar Registros Antiguos (>90 días)",
+    "allSeverities": "Todas",
+    "info": "Info",
+    "warning": "Advertencia",
+    "critical": "Crítico",
+    "exportCSV": "Exportar a CSV",
+    "exportJSON": "Exportar a JSON"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Centro de notificaciones del sistema",
+    "markAsRead": "Marcar como leída",
+    "markAllAsRead": "Marcar todas como leídas",
+    "delete": "Eliminar",
+    "deleteAll": "Eliminar todas",
+    "noNotifications": "Sin notificaciones",
+    "new": "Nueva",
+    "unread": "No leída",
+    "read": "Leída",
+    "filter": {
+      "all": "Todas",
+      "unread": "No leídas",
+      "alerts": "Alertas",
+      "info": "Información"
+    },
+    "types": {
+      "stockAlert": "Alerta de Stock",
+      "expirationWarning": "Advertencia de Vencimiento",
+      "orderUpdate": "Actualización de Pedido",
+      "systemNotification": "Notificación del Sistema"
+    }
+  },
+  "globalSearch": {
+    "title": "Búsqueda Global",
+    "placeholder": "Buscar en todo el sistema... (Ctrl+K)",
+    "noResults": "No se encontraron resultados",
+    "searching": "Buscando...",
+    "recentSearches": "Búsquedas recientes",
+    "categories": {
+      "all": "Todo",
+      "products": "Productos",
+      "orders": "Pedidos",
+      "organisms": "Organismos",
+      "contacts": "Contactos",
+      "documents": "Documentos"
+    },
+    "results": {
+      "found": "{count} resultado(s) encontrado(s)",
+      "in": "en"
+    },
+    "shortcuts": {
+      "open": "Abrir",
+      "navigate": "Navegar",
+      "close": "Cerrar"
+    }
+  },
+  "dashboard": {
+    "welcome": "Bienvenido/a, {name}",
+    "overview": "Resumen",
+    "quickStats": "Estadísticas Rápidas",
+    "recentActivity": "Actividad Reciente",
+    "alerts": "Alertas",
+    "charts": {
+      "inventoryTrend": "Tendencia del Inventario",
+      "ordersByStatus": "Pedidos por Estado",
+      "topProducts": "Productos Más Distribuidos",
+      "monthlyDistribution": "Distribución Mensual",
+      "categoryBreakdown": "Desglose por Categoría"
+    },
+    "metrics": {
+      "totalInventory": "Inventario Total",
+      "activeOrders": "Pedidos Activos",
+      "pendingAlerts": "Alertas Pendientes",
+      "activeOrganisms": "Organismos Activos",
+      "weeklyGrowth": "Crecimiento Semanal",
+      "monthlyGrowth": "Crecimiento Mensual",
+      "comparedToLastMonth": "Comparado con el Mes Anterior",
+      "comparedToLastWeek": "Comparado con la Semana Anterior"
+    },
+    "actions": {
+      "viewAll": "Ver Todo",
+      "addNew": "Agregar Nuevo",
+      "export": "Exportar",
+      "refresh": "Actualizar"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Configuración del sistema",
+    "language": "Idioma",
+    "selectLanguage": "Seleccionar Idioma",
+    "languageChanged": "Idioma cambiado exitosamente",
+    "languageChangeError": "Error al cambiar el idioma",
+    "languageNote": "El sistema se adaptará automáticamente",
+    "preferences": "Preferencias",
+    "notifications": "Notificaciones",
+    "appearance": "Apariencia",
+    "security": "Seguridad",
+    "backup": "Respaldo",
+    "advanced": "Avanzado"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "print": "Imprimir",
+    "download": "Descargar",
+    "upload": "Subir",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "finish": "Finalizar",
+    "yes": "Sí",
+    "no": "No",
+    "all": "Todos",
+    "none": "Ninguno",
+    "actions": "Acciones",
+    "details": "Detalles",
+    "view": "Ver",
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "nav": {
+    "mainDashboard": "Panel Principal",
+    "inventory": "Inventario",
+    "orders": "Pedidos",
+    "organisms": "Organismos",
+    "transport": "Transporte",
+    "reports": "Reportes",
+    "users": "Usuarios/Roles",
+    "contacts": "Contactos",
+    "settings": "Configuración",
+    "logout": "Cerrar Sesión"
+  }
+}

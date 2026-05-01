@@ -1,0 +1,172 @@
+{
+  "audit": {
+    "title": "التدقيق",
+    "subtitle": "تتبع كامل للنظام",
+    "logs": "السجلات",
+    "statistics": "الإحصائيات",
+    "recentLogs": "السجلات الأخيرة",
+    "filters": "المرشحات",
+    "search": "بحث",
+    "searchPlaceholder": "البحث في السجلات...",
+    "dateFrom": "من",
+    "dateTo": "إلى",
+    "module": "الوحدة",
+    "severity": "الخطورة",
+    "user": "المستخدم",
+    "action": "الإجراء",
+    "status": "الحالة",
+    "success": "نجح",
+    "error": "خطأ",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "clearFilters": "مسح المرشحات",
+    "noLogs": "لم يتم العثور على سجلات",
+    "mostActiveUsers": "المستخدمون الأكثر نشاطًا",
+    "mostUsedModules": "الوحدات الأكثر استخدامًا",
+    "systemInfo": "معلومات النظام",
+    "cleanOldLogs": "تنظيف السجلات القديمة (>90 يومًا)",
+    "allSeverities": "الكل",
+    "info": "معلومات",
+    "warning": "تحذير",
+    "critical": "حرج",
+    "exportCSV": "تصدير إلى CSV",
+    "exportJSON": "تصدير إلى JSON"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "subtitle": "مركز إشعارات النظام",
+    "markAsRead": "وضع علامة كمقروء",
+    "markAllAsRead": "وضع علامة على الكل كمقروء",
+    "delete": "حذف",
+    "deleteAll": "حذف الكل",
+    "noNotifications": "لا توجد إشعارات",
+    "new": "جديد",
+    "unread": "غير مقروء",
+    "read": "مقروء",
+    "filter": {
+      "all": "الكل",
+      "unread": "غير المقروءة",
+      "alerts": "التنبيهات",
+      "info": "معلومات"
+    },
+    "types": {
+      "stockAlert": "تنبيه المخزون",
+      "expirationWarning": "تحذير انتهاء الصلاحية",
+      "orderUpdate": "تحديث الطلب",
+      "systemNotification": "إشعار النظام"
+    }
+  },
+  "globalSearch": {
+    "title": "البحث الشامل",
+    "placeholder": "البحث في كل النظام... (Ctrl+K)",
+    "noResults": "لم يتم العثور على نتائج",
+    "searching": "جارٍ البحث...",
+    "recentSearches": "عمليات البحث الأخيرة",
+    "categories": {
+      "all": "الكل",
+      "products": "المنتجات",
+      "orders": "الطلبات",
+      "organisms": "المنظمات",
+      "contacts": "جهات الاتصال",
+      "documents": "المستندات"
+    },
+    "results": {
+      "found": "تم العثور على {count} نتيجة",
+      "in": "في"
+    },
+    "shortcuts": {
+      "open": "فتح",
+      "navigate": "التنقل",
+      "close": "إغلاق"
+    }
+  },
+  "dashboard": {
+    "welcome": "مرحبًا، {name}",
+    "overview": "نظرة عامة",
+    "quickStats": "إحصائيات سريعة",
+    "recentActivity": "النشاط الأخير",
+    "alerts": "التنبيهات",
+    "charts": {
+      "inventoryTrend": "اتجاه المخزون",
+      "ordersByStatus": "الطلبات حسب الحالة",
+      "topProducts": "المنتجات الأكثر توزيعًا",
+      "monthlyDistribution": "التوزيع الشهري",
+      "categoryBreakdown": "التصنيف حسب الفئة"
+    },
+    "metrics": {
+      "totalInventory": "إجمالي المخزون",
+      "activeOrders": "الطلبات النشطة",
+      "pendingAlerts": "التنبيهات المعلقة",
+      "activeOrganisms": "المنظمات النشطة",
+      "weeklyGrowth": "النمو الأسبوعي",
+      "monthlyGrowth": "النمو الشهري",
+      "comparedToLastMonth": "مقارنة بالشهر الماضي",
+      "comparedToLastWeek": "مقارنة بالأسبوع الماضي"
+    },
+    "actions": {
+      "viewAll": "عرض الكل",
+      "addNew": "إضافة جديد",
+      "export": "تصدير",
+      "refresh": "تحديث"
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "subtitle": "تكوين النظام",
+    "language": "اللغة",
+    "selectLanguage": "اختر اللغة",
+    "languageChanged": "تم تغيير اللغة بنجاح",
+    "languageChangeError": "خطأ في تغيير اللغة",
+    "languageNote": "سيتكيف النظام تلقائيًا",
+    "preferences": "التفضيلات",
+    "notifications": "الإشعارات",
+    "appearance": "المظهر",
+    "security": "الأمان",
+    "backup": "النسخ الاحتياطي",
+    "advanced": "متقدم"
+  },
+  "common": {
+    "loading": "جارٍ التحميل...",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "import": "استيراد",
+    "print": "طباعة",
+    "download": "تنزيل",
+    "upload": "تحميل",
+    "close": "إغلاق",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "finish": "إنهاء",
+    "yes": "نعم",
+    "no": "لا",
+    "all": "الكل",
+    "none": "لا شيء",
+    "actions": "الإجراءات",
+    "details": "التفاصيل",
+    "view": "عرض",
+    "success": "نجح",
+    "error": "خطأ",
+    "warning": "تحذير",
+    "info": "معلومات"
+  },
+  "nav": {
+    "mainDashboard": "لوحة التحكم الرئيسية",
+    "inventory": "المخزون",
+    "orders": "الطلبات",
+    "organisms": "المنظمات",
+    "transport": "النقل",
+    "reports": "التقارير",
+    "users": "المستخدمون/الأدوار",
+    "contacts": "جهات الاتصال",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج"
+  }
+}
