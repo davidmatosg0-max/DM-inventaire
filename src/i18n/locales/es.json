@@ -1425,6 +1425,7 @@
     "totalValue": "Valor total",
     "monthlyEvolution": "Evolución mensual",
     "periodComparison": "Comparación con el período anterior",
+    "comparisonTab": "Comparación",
     "periodComparisonDesc": "Mide la diferencia entre el período seleccionado y el período anterior equivalente.",
     "noMonthlyEvolution": "No hay evolución disponible para estos filtros.",
     "exportSuccess": "Reporte exportado correctamente",

@@ -1437,6 +1437,7 @@
     "totalValue": "Total value",
     "monthlyEvolution": "Monthly evolution",
     "periodComparison": "Comparison with previous period",
+    "comparisonTab": "Comparison",
     "periodComparisonDesc": "Measures the gap between the selected period and the equivalent previous period.",
     "noMonthlyEvolution": "No evolution available for these filters.",
     "exportSuccess": "Report exported successfully",

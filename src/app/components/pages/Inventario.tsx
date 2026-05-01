@@ -121,6 +121,7 @@ const AnalisisPredictivoStock = lazyNamed(() => import('../inventario/AnalisisPr
 const ExportacionAvanzada = lazyNamed(() => import('../inventario/ExportacionAvanzada'), 'ExportacionAvanzada');
 const ConversionUnidadesDialog = lazyNamed(() => import('../inventario/ConversionUnidadesDialog'), 'ConversionUnidadesDialog');
 const MovimientosInventario = lazyNamed(() => import('../inventario/MovimientosInventario'), 'MovimientosInventario');
+const ReportsModule = lazyNamed(() => import('../reports/ReportsModule'), 'ReportsModule');
 const ConversionDialog = lazyNamed(() => import('../conversion/ConversionDialog'), 'ConversionDialog');
 const HistorialConversiones = lazyNamed(() => import('../conversion/HistorialConversiones'), 'HistorialConversiones');
 const PlantillasConversion = lazyNamed(() => import('../conversion/PlantillasConversion'), 'PlantillasConversion');
@@ -1447,11 +1448,12 @@ export function Inventario() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-6 flex-shrink-0">
+        <TabsList className="grid w-full grid-cols-7 flex-shrink-0">
           <TabsTrigger value="productos">{t('inventory.products')}</TabsTrigger>
           <TabsTrigger value="movimientos">{t('inventory.movements')}</TabsTrigger>
           <TabsTrigger value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
           <TabsTrigger value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
+          <TabsTrigger value="rapports">📊 Rapports</TabsTrigger>
           <TabsTrigger value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
           <TabsTrigger value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
         </TabsList>
@@ -2310,6 +2312,15 @@ export function Inventario() {
           {activeTab === 'entradas' && (
             <DeferredPanel>
               <HistorialEntradasCompacto onAgregarAlCarrito={agregarEntradaAlCarrito} />
+            </DeferredPanel>
+          )}
+        </TabsContent>
+
+        {/* Rapports Tab */}
+        <TabsContent value="rapports" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
+          {activeTab === 'rapports' && (
+            <DeferredPanel>
+              <ReportsModule />
             </DeferredPanel>
           )}
         </TabsContent>

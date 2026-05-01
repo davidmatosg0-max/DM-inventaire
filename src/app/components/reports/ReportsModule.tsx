@@ -1,8 +1,8 @@
 /**
  * Módulo Principal de Reportes
  * 
- * Sistema completo de reportes para entradas, salidas,
- * donadores y programas con visualización y exportación.
+ * Sistema completo de reportes para approvisionnement, distribution
+ * y comparación con visualización y exportación.
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -78,6 +78,10 @@ function formatGrowth(growth: number | null): string {
   return `${growth > 0 ? '+' : ''}${growth.toFixed(1)}%`;
 }
 
+function getSafeMoneyValue(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
 export function ReportsModule() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ReportType>('entries');
@@ -110,8 +114,8 @@ export function ReportsModule() {
     const activeCommandes = commandes.filter((comanda) => comanda.estado !== 'cancelada');
     const currentCommandes = activeCommandes.filter((comanda) => isWithinRange(comanda.fecha, currentMonth));
     const previousCommandes = activeCommandes.filter((comanda) => isWithinRange(comanda.fecha, previousMonth));
-    const currentCommandeValue = currentCommandes.reduce((sum, comanda) => sum + comanda.totalValorMonetario, 0);
-    const previousCommandeValue = previousCommandes.reduce((sum, comanda) => sum + comanda.totalValorMonetario, 0);
+    const currentCommandeValue = currentCommandes.reduce((sum, comanda) => sum + getSafeMoneyValue(comanda.totalValorMonetario), 0);
+    const previousCommandeValue = previousCommandes.reduce((sum, comanda) => sum + getSafeMoneyValue(comanda.totalValorMonetario), 0);
 
     const currentActors = new Set(currentEntries.map((entry) => entry.donadorNombre).filter(Boolean));
     const allActors = new Set(entries.filter((entry) => entry.activo).map((entry) => entry.donadorNombre).filter(Boolean));
@@ -324,7 +328,7 @@ export function ReportsModule() {
         {/* Tabs de reportes */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportType)} className="space-y-6">
           <div className="backdrop-blur-xl bg-white/90 rounded-2xl border border-white/20 shadow-xl">
-            <TabsList className="grid grid-cols-4 w-full p-1 bg-gray-100/50">
+            <TabsList className="grid grid-cols-3 w-full p-1 bg-gray-100/50">
               <TabsTrigger value="entries" className="flex items-center gap-2">
                 <ArrowUpCircle className="w-4 h-4" />
                 {t('reports.procurement', 'Approvisionnement')}
@@ -333,13 +337,9 @@ export function ReportsModule() {
                 <ArrowDownCircle className="w-4 h-4" />
                 {t('reports.distribution', 'Distribution')}
               </TabsTrigger>
-              <TabsTrigger value="donors" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                {t('reports.donors', 'Donateurs')}
-              </TabsTrigger>
-              <TabsTrigger value="programs" className="flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                {t('reports.programs', 'Programmes')}
+              <TabsTrigger value="comparative" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                {t('reports.comparisonTab', 'Comparaison')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -354,14 +354,39 @@ export function ReportsModule() {
             <ExitReportView />
           </TabsContent>
 
-          {/* Tab: Reporte de Donadores */}
-          <TabsContent value="donors">
-            <DonorReportView />
-          </TabsContent>
+          {/* Tab: Reporte Comparativo */}
+          <TabsContent value="comparative" className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="border border-[#E0E0E0] shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <Users className="w-5 h-5 text-[#1a4d7a]" />
+                    {t('reports.donors', 'Donateurs')}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('reports.periodComparisonDesc', 'Mesure l\'écart entre la période sélectionnée et la période précédente équivalente.')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DonorReportView />
+                </CardContent>
+              </Card>
 
-          {/* Tab: Reporte de Programas */}
-          <TabsContent value="programs">
-            <ProgramReportView />
+              <Card className="border border-[#E0E0E0] shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <Activity className="w-5 h-5 text-[#2d9561]" />
+                    {t('reports.programs', 'Programmes')}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('reports.monthlyEvolutionDesc', 'Historique des 6 derniers mois selon les filtres structurels actifs.')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProgramReportView />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

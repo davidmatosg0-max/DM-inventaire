@@ -1455,6 +1455,7 @@
     "totalValue": "إجمالي القيمة",
     "monthlyEvolution": "التطور الشهري",
     "periodComparison": "المقارنة مع الفترة السابقة",
+    "comparisonTab": "مقارنة",
     "periodComparisonDesc": "يقيس الفارق بين الفترة المحددة والفترة السابقة المكافئة.",
     "noMonthlyEvolution": "لا يوجد تطور متاح لهذه المرشحات.",
     "exportSuccess": "تم تصدير التقرير بنجاح",

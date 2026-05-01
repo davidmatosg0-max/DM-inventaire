@@ -1433,6 +1433,7 @@
     "totalValue": "Valeur totale",
     "monthlyEvolution": "Évolution mensuelle",
     "periodComparison": "Comparaison avec la période précédente",
+    "comparisonTab": "Comparaison",
     "periodComparisonDesc": "Mesure l'écart entre la période sélectionnée et la période précédente équivalente.",
     "noMonthlyEvolution": "Aucune évolution disponible pour ces filtres.",
     "exportSuccess": "Rapport exporté avec succès",
