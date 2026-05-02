@@ -9,7 +9,7 @@
 
 import React from 'react';
 import QRCode from 'qrcode';
-import { buildComandaQRData } from '../../utils/comandaQr';
+import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
 
 interface EtiquetaComandaData {
   // Comanda
@@ -110,13 +110,8 @@ export async function generateStandardOrderLabel(
   let qrImageBase64 = '';
   try {
     qrImageBase64 = await QRCode.toDataURL(qrData, {
-      width: 140,
-      margin: 1,
-      errorCorrectionLevel: 'H',
-      color: {
-        dark: '#1E73BE',
-        light: '#FFFFFF'
-      }
+      width: 180,
+      ...COMANDA_QR_DATA_URL_OPTIONS,
     });
   } catch (err) {
     console.error('Error generando QR:', err);

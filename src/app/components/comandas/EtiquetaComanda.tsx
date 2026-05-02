@@ -2,7 +2,7 @@ import React from 'react';
 import { Package, MapPin, Phone, Calendar, User } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import JsBarcode from 'jsbarcode';
-import { buildComandaQRData } from '../../utils/comandaQr';
+import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 
 interface EtiquetaComandaProps {
   comanda: any;
@@ -139,8 +139,8 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
                 <div className="qrcode-container">
                   <QRCodeSVG 
                     value={qrData} 
-                    size={150}
-                    level="H"
+                    size={168}
+                    level={COMANDA_QR_SVG_LEVEL}
                     includeMargin={true}
                     data-testid="qr-code"
                   />

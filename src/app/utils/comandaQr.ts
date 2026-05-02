@@ -7,20 +7,17 @@ export interface ComandaQRPayload {
   organismo?: string;
   fecha?: string;
   items?: number;
-  organismoId?: string;
-  totalUnidades?: number;
-  fechaEntrega?: string;
-  datos: {
-    comanda: string;
-    organismo?: string;
-    fecha?: string;
-    items?: number;
-    organismoId?: string;
-    totalUnidades?: number;
-    fechaEntrega?: string;
-  };
-  generado: string;
 }
+
+export const COMANDA_QR_SVG_LEVEL = 'H' as const;
+export const COMANDA_QR_DATA_URL_OPTIONS = {
+  errorCorrectionLevel: 'H' as const,
+  margin: 2,
+  color: {
+    dark: '#000000',
+    light: '#FFFFFF',
+  },
+};
 
 interface BuildComandaQRInput {
   numeroComanda: string;
@@ -60,19 +57,6 @@ export function buildComandaQRPayload(input: BuildComandaQRInput): ComandaQRPayl
     organismo: input.organismo,
     fecha,
     items,
-    organismoId: input.organismoId,
-    totalUnidades: input.totalUnidades,
-    fechaEntrega: input.fechaEntrega,
-    datos: {
-      comanda: numeroComanda,
-      organismo: input.organismo,
-      fecha,
-      items,
-      organismoId: input.organismoId,
-      totalUnidades: input.totalUnidades,
-      fechaEntrega: input.fechaEntrega,
-    },
-    generado: new Date().toISOString(),
   };
 }
 

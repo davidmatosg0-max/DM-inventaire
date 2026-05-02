@@ -5,7 +5,7 @@
  */
 
 import QRCode from 'qrcode';
-import { buildComandaQRData } from '../../utils/comandaQr';
+import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
 
 interface ComandaParaImprimir {
   numero?: string;
@@ -58,8 +58,7 @@ async function generatePrintHTML(
   try {
     qrImageComanda = await QRCode.toDataURL(qrDataComanda, {
       width: 280,
-      margin: 2,
-      errorCorrectionLevel: 'H'
+      ...COMANDA_QR_DATA_URL_OPTIONS,
     });
   } catch (err) {
     console.error('Error generando QR comanda:', err);
@@ -77,13 +76,8 @@ async function generatePrintHTML(
   let qrImageEtiqueta = '';
   try {
     qrImageEtiqueta = await QRCode.toDataURL(qrDataEtiqueta, {
-      width: 140,
-      margin: 1,
-      errorCorrectionLevel: 'H',
-      color: {
-        dark: '#1E73BE',
-        light: '#FFFFFF'
-      }
+      width: 180,
+      ...COMANDA_QR_DATA_URL_OPTIONS,
     });
   } catch (err) {
     console.error('Error generando QR etiqueta:', err);
@@ -405,8 +399,8 @@ async function generatePrintHTML(
     }
     
     .qr-section img {
-      width: 120px;
-      height: 120px;
+      width: 140px;
+      height: 140px;
       display: block;
     }
     

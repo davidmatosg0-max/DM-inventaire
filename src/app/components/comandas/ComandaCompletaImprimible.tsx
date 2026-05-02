@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { useTranslation } from 'react-i18next';
 import { Calendar, Mail, MapPin, Package, Phone, Printer, User, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { buildComandaQRData } from '../../utils/comandaQr';
+import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 
 interface ComandaCompletaImprimibleProps {
@@ -120,13 +120,8 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
 
   try {
     qrImage = await QRCode.toDataURL(payload.qrData, {
-      width: 180,
-      margin: 1,
-      errorCorrectionLevel: 'H',
-      color: {
-        dark: '#1E73BE',
-        light: '#FFFFFF',
-      },
+      width: 220,
+      ...COMANDA_QR_DATA_URL_OPTIONS,
     });
   } catch (error) {
     console.error('Error al generar QR de la comanda:', error);
@@ -222,7 +217,7 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
           }
 
           .qr-box {
-            min-width: 126px;
+            min-width: 148px;
             border: 1px solid #cbd5e1;
             border-radius: 14px;
             padding: 10px;
@@ -232,8 +227,8 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
 
           .qr-box img {
             display: block;
-            width: 106px;
-            height: 106px;
+            width: 128px;
+            height: 128px;
             margin: 0 auto 6px;
           }
 
@@ -657,7 +652,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-2">
-                  <QRCodeSVG value={qrData} size={88} level="H" includeMargin />
+                  <QRCodeSVG value={qrData} size={112} level={COMANDA_QR_SVG_LEVEL} includeMargin />
                 </div>
               </div>
             </div>

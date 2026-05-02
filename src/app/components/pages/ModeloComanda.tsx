@@ -16,7 +16,7 @@ import { sortByTemperature } from '../../utils/temperatureSort';
 import { NotificacionComanda } from '../NotificacionComanda';
 import { obtenerPersonaPrincipal } from '../../utils/personasResponsablesStorage';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
-import { buildComandaQRData } from '../../utils/comandaQr';
+import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { useTranslation } from 'react-i18next';
 
 interface ModeloComandaProps {
@@ -526,8 +526,8 @@ export function ModeloComanda({
                 <div className="mb-4 bg-white p-2 rounded-lg shadow-md qrcode-container">
                   <QRCodeSVG 
                     value={qrData} 
-                    size={120}
-                    level="H"
+                    size={144}
+                    level={COMANDA_QR_SVG_LEVEL}
                     includeMargin={true}
                     data-testid="qr-code"
                   />
