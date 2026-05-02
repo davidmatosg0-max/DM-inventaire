@@ -146,9 +146,9 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
                       data-testid="qr-code"
                     />
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                      <div className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 shadow-[0_7px_18px_rgba(15,23,42,0.14)] backdrop-blur-[1px]">
-                        <div className="absolute inset-[3px] rounded-full border border-slate-100/90" />
-                        <span className="relative pl-[0.12em] font-semibold tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.8rem' }}>
+                      <div className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-300/80 bg-white/90 shadow-[0_4px_12px_rgba(15,23,42,0.09)]">
+                        <div className="absolute inset-[2px] rounded-full border border-slate-100/90" />
+                        <span className="relative pl-[0.08em] font-medium tracking-[0.08em] text-slate-600" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.68rem' }}>
                           DM
                         </span>
                       </div>

@@ -533,9 +533,9 @@ export function ModeloComanda({
                       data-testid="qr-code"
                     />
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                      <div className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 shadow-[0_6px_16px_rgba(15,23,42,0.12)] backdrop-blur-[1px]">
-                        <div className="absolute inset-[3px] rounded-full border border-slate-100/90" />
-                        <span className="relative pl-[0.12em] font-semibold tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.74rem' }}>
+                      <div className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-300/80 bg-white/90 shadow-[0_3px_10px_rgba(15,23,42,0.08)]">
+                        <div className="absolute inset-[2px] rounded-full border border-slate-100/90" />
+                        <span className="relative pl-[0.08em] font-medium tracking-[0.08em] text-slate-600" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.62rem' }}>
                           DM
                         </span>
                       </div>
