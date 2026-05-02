@@ -524,13 +524,23 @@ export function ModeloComanda({
               </div>
               <div className="text-right">
                 <div className="mb-4 bg-white p-2 rounded-lg shadow-md qrcode-container">
-                  <QRCodeSVG 
-                    value={qrData} 
-                    size={144}
-                    level={COMANDA_QR_SVG_LEVEL}
-                    includeMargin={true}
-                    data-testid="qr-code"
-                  />
+                  <div className="relative inline-flex items-center justify-center">
+                    <QRCodeSVG 
+                      value={qrData} 
+                      size={144}
+                      level={COMANDA_QR_SVG_LEVEL}
+                      includeMargin={true}
+                      data-testid="qr-code"
+                    />
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <div className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 shadow-[0_6px_16px_rgba(15,23,42,0.12)] backdrop-blur-[1px]">
+                        <div className="absolute inset-[3px] rounded-full border border-slate-100/90" />
+                        <span className="relative pl-[0.12em] font-semibold tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.74rem' }}>
+                          DM
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <p className="font-bold text-[#1E73BE]" style={{ fontSize: '1.3rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {comanda.numero}

@@ -652,7 +652,17 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-2">
-                  <QRCodeSVG value={qrData} size={112} level={COMANDA_QR_SVG_LEVEL} includeMargin />
+                  <div className="relative inline-flex items-center justify-center">
+                    <QRCodeSVG value={qrData} size={112} level={COMANDA_QR_SVG_LEVEL} includeMargin />
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <div className="relative flex h-7 w-7 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 shadow-[0_5px_12px_rgba(15,23,42,0.1)] backdrop-blur-[1px]">
+                        <div className="absolute inset-[2px] rounded-full border border-slate-100/90" />
+                        <span className="relative pl-[0.1em] font-semibold tracking-[0.1em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.58rem' }}>
+                          DM
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -137,13 +137,23 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
               {/* QR Code */}
               <div className="border-2 border-[#1E73BE] rounded-lg p-3 flex items-center justify-center bg-white shadow-md">
                 <div className="qrcode-container">
-                  <QRCodeSVG 
-                    value={qrData} 
-                    size={168}
-                    level={COMANDA_QR_SVG_LEVEL}
-                    includeMargin={true}
-                    data-testid="qr-code"
-                  />
+                  <div className="relative inline-flex items-center justify-center">
+                    <QRCodeSVG 
+                      value={qrData} 
+                      size={168}
+                      level={COMANDA_QR_SVG_LEVEL}
+                      includeMargin={true}
+                      data-testid="qr-code"
+                    />
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <div className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 shadow-[0_7px_18px_rgba(15,23,42,0.14)] backdrop-blur-[1px]">
+                        <div className="absolute inset-[3px] rounded-full border border-slate-100/90" />
+                        <span className="relative pl-[0.12em] font-semibold tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.8rem' }}>
+                          DM
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
