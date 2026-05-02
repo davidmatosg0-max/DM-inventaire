@@ -70,6 +70,129 @@ function formatDate(value: unknown, locale: string, withTime = false): string {
       });
 }
 
+function printElementInIsolatedFrame(elementId: string, title: string): void {
+  const sourceElement = document.getElementById(elementId);
+  if (!sourceElement) {
+    throw new Error(`No se encontró el elemento imprimible: ${elementId}`);
+  }
+
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.visibility = 'hidden';
+
+  const inheritedStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => node.outerHTML)
+    .join('\n');
+
+  const isolatedPrintStyles = `
+    <style>
+      @page {
+        size: letter portrait;
+        margin: 0.45cm;
+      }
+
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+      }
+
+      body {
+        font-family: Roboto, Arial, sans-serif;
+      }
+
+      #compact-order-print {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      tr,
+      td,
+      th,
+      .summary-card,
+      .detail-card {
+        page-break-inside: avoid;
+      }
+
+      .print-table {
+        font-size: 10px !important;
+      }
+
+      * {
+        print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+    </style>
+  `;
+
+  let cleanedUp = false;
+  const cleanup = () => {
+    if (cleanedUp) {
+      return;
+    }
+
+    cleanedUp = true;
+    setTimeout(() => {
+      iframe.remove();
+    }, 300);
+  };
+
+  document.body.appendChild(iframe);
+
+  const iframeWindow = iframe.contentWindow;
+  const iframeDocument = iframeWindow?.document;
+
+  if (!iframeWindow || !iframeDocument) {
+    cleanup();
+    throw new Error('No se pudo abrir el iframe de impresión');
+  }
+
+  const runPrint = () => {
+    if (cleanedUp) {
+      return;
+    }
+
+    iframeWindow.addEventListener('afterprint', cleanup, { once: true });
+    iframeWindow.focus();
+    iframeWindow.print();
+    window.setTimeout(cleanup, 2000);
+  };
+
+  iframe.onload = () => {
+    window.setTimeout(runPrint, 350);
+  };
+
+  iframeDocument.open();
+  iframeDocument.write(`
+    <!DOCTYPE html>
+    <html lang="fr">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${title}</title>
+        ${inheritedStyles}
+        ${isolatedPrintStyles}
+      </head>
+      <body>
+        ${sourceElement.outerHTML}
+      </body>
+    </html>
+  `);
+  iframeDocument.close();
+
+  window.setTimeout(runPrint, 900);
+}
+
 export function ComandaCompletaImprimible({ comanda, organismo, onClose }: ComandaCompletaImprimibleProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language || 'fr-CA';
@@ -91,7 +214,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
   });
 
   const handleImprimir = () => {
-    window.print();
+    printElementInIsolatedFrame('compact-order-print', `Comanda ${numeroComanda}`);
   };
 
   return (
@@ -102,23 +225,21 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
             size: letter portrait;
             margin: 0.45cm;
           }
-          
-          body * {
-            visibility: hidden;
-          }
-          
-          #compact-order-print,
-          #compact-order-print * {
-            visibility: visible;
+
+          html,
+          body {
+            background: white !important;
           }
           
           #compact-order-print {
-            position: absolute;
-            left: 0;
-            top: 0;
             width: 100%;
+            margin: 0;
             padding: 0;
             box-shadow: none;
+          }
+
+          .min-h-screen {
+            min-height: auto !important;
           }
           
           .no-print {
