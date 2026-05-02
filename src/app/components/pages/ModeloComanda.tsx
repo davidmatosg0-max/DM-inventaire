@@ -16,6 +16,7 @@ import { sortByTemperature } from '../../utils/temperatureSort';
 import { NotificacionComanda } from '../NotificacionComanda';
 import { obtenerPersonaPrincipal } from '../../utils/personasResponsablesStorage';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { buildComandaQRData } from '../../utils/comandaQr';
 import { useTranslation } from 'react-i18next';
 
 interface ModeloComandaProps {
@@ -234,11 +235,12 @@ export function ModeloComanda({
   });
 
   // Generar datos para QR (información de la comanda)
-  const qrData = JSON.stringify({
-    comanda: comanda.numero,
+  const qrData = buildComandaQRData({
+    numeroComanda: comanda.numero,
     organismo: organismo?.nombre || 'Sin organismo',
     fecha: comanda.fecha,
-    items: itemsComanda.length
+    items: itemsComanda.length,
+    organismoId: organismo?.id,
   });
 
   // Función para obtener icono de temperatura

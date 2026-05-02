@@ -494,7 +494,24 @@ export interface Alerta {
 export interface DatosQR {
   tipo: 'producto' | 'comanda' | 'organismo';
   id: string;
-  datos: any; // Depende del tipo
+  datos?: any; // Depende del tipo
+  codigo?: string;
+  producto?: string;
+  nombre?: string;
+  lote?: string;
+  fecha_vencimiento?: string;
+  ubicacion?: string;
+  comanda?: string;
+  numeroComanda?: string;
+  organismo?: string;
+  organismoId?: string;
+  fecha?: string;
+  fechaEntrega?: string;
+  items?: number;
+  totalItems?: number;
+  totalUnidades?: number;
+  text?: string;
+  [key: string]: any;
 }
 
 // ============================================================================

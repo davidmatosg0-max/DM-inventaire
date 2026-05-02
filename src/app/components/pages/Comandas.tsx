@@ -40,6 +40,7 @@ import { Sparkles } from 'lucide-react';
 import type { Comanda, ItemComanda, Organismo, ProductoOferta, Oferta as OfertaTipo, Solicitud, ProductoAceptado, DatosQR } from '../../types';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerOrganismos as obtenerOrganismosReales } from '../../utils/organismosStorage';
+import { normalizeScannedComandaQR } from '../../utils/comandaQr';
 import { formatNumberSimple } from '../../utils/formatUtils';
 import { sortByTemperature } from '../../utils/temperatureSort';
 
@@ -356,14 +357,30 @@ export function Comandas() {
   };
 
   // Handler para escanear QR
-  const handleScanQR = (data: DatosQR) => {
-    console.log('QR escaneado:', data);
-    
-    // Buscar la comanda por número
-    const comandaEncontrada = comandas.find(c => 
-      (c.numero && c.numero === data.comanda) || c.id === data.comanda
+  const handleScanQR = (rawData: DatosQR, _action: string) => {
+    console.log('QR escaneado:', rawData);
+
+    const data = normalizeScannedComandaQR(rawData);
+    const numeroComanda = data?.comanda;
+
+    if (!numeroComanda) {
+      setEscanerQROpen(false);
+      toast.error(
+        <div>
+          <span className="font-semibold">{t('orders.qrNotFound')}</span>
+          <p className="text-sm text-[#666666]">{typeof rawData === 'string' ? rawData : t('common.error')}</p>
+        </div>,
+        { duration: 3000 }
+      );
+      return;
+    }
+
+    const comandaEncontrada = comandas.find(c =>
+      (c.numero && c.numero === numeroComanda) ||
+      (c.numeroComanda && c.numeroComanda === numeroComanda) ||
+      c.id === numeroComanda
     );
-    
+
     if (comandaEncontrada) {
       setComandaSeleccionada(comandaEncontrada);
       setMostrarModeloComanda(true);
@@ -372,7 +389,7 @@ export function Comandas() {
       toast.success(
         <div>
           <span className="font-semibold">{t('orders.qrFound')}</span>
-          <p className="text-sm text-[#666666]">N° {data.comanda}</p>
+          <p className="text-sm text-[#666666]">N° {numeroComanda}</p>
         </div>,
         { duration: 3000 }
       );
@@ -381,7 +398,7 @@ export function Comandas() {
       toast.error(
         <div>
           <span className="font-semibold">{t('orders.qrNotFound')}</span>
-          <p className="text-sm text-[#666666]">N° {data.comanda || data.text}</p>
+          <p className="text-sm text-[#666666]">N° {numeroComanda}</p>
         </div>,
         { duration: 3000 }
       );

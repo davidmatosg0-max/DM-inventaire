@@ -5,6 +5,7 @@
  */
 
 import QRCode from 'qrcode';
+import { buildComandaQRData } from '../../utils/comandaQr';
 
 interface ComandaParaImprimir {
   numero?: string;
@@ -45,11 +46,12 @@ async function generatePrintHTML(
   const numeroComanda = comanda.numero || comanda.numeroComanda || comanda.id;
 
   // ========== PÁGINA 1: QR PARA COMANDA DETALLADA ==========
-  const qrDataComanda = JSON.stringify({
-    comanda: numeroComanda,
+  const qrDataComanda = buildComandaQRData({
+    numeroComanda,
     organismo: organismo.nombre,
     fecha: comanda.fechaEntrega,
-    items: comanda.items.length
+    items: comanda.items.length,
+    organismoId: organismo.id,
   });
 
   let qrImageComanda = '';
@@ -64,11 +66,12 @@ async function generatePrintHTML(
   }
 
   // ========== PÁGINA 2: QR PARA ETIQUETA ==========
-  const qrDataEtiqueta = JSON.stringify({
-    comanda: numeroComanda,
+  const qrDataEtiqueta = buildComandaQRData({
+    numeroComanda,
     organismo: organismo.nombre,
     fecha: comanda.fechaEntrega,
-    items: comanda.items.length
+    items: comanda.items.length,
+    organismoId: organismo.id,
   });
 
   let qrImageEtiqueta = '';

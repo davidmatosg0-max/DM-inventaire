@@ -2,6 +2,7 @@ import React from 'react';
 import { Package, MapPin, Phone, Calendar, User } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import JsBarcode from 'jsbarcode';
+import { buildComandaQRData } from '../../utils/comandaQr';
 
 interface EtiquetaComandaProps {
   comanda: any;
@@ -36,11 +37,12 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
   };
 
   // Generar datos para QR
-  const qrData = JSON.stringify({
-    comanda: comanda.numero || comanda.id,
+  const qrData = buildComandaQRData({
+    numeroComanda: comanda.numero || comanda.id,
     organismo: organismo?.nombre || 'Sin organismo',
     fecha: comanda.fechaEntrega || comanda.fecha,
-    items: comanda.items?.length || 0
+    items: comanda.items?.length || 0,
+    organismoId: organismo?.id,
   });
 
   const getEstadoLabel = () => {

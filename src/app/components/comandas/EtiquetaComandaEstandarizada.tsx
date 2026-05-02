@@ -9,6 +9,7 @@
 
 import React from 'react';
 import QRCode from 'qrcode';
+import { buildComandaQRData } from '../../utils/comandaQr';
 
 interface EtiquetaComandaData {
   // Comanda
@@ -99,11 +100,11 @@ export async function generateStandardOrderLabel(
   };
 
   // Generar QR Code (mismo tamaño que StandardProductLabel)
-  const qrData = JSON.stringify({
-    comanda: data.numeroComanda,
+  const qrData = buildComandaQRData({
+    numeroComanda: data.numeroComanda,
     organismo: data.organismoNombre,
     fecha: data.fechaEntrega,
-    items: data.items.length
+    items: data.items.length,
   });
   
   let qrImageBase64 = '';
