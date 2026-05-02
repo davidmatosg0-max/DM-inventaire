@@ -23,6 +23,7 @@ interface ModeloComandaProps {
   organismo: any;
   mostrar: boolean;
   onCerrar: () => void;
+  onAbrirImpresionCompacta?: () => void;
   onCambiarEstado?: (nuevoEstado: string) => void;
   onAceptarComanda?: (itemsAceptados: any[], comandaOrigen?: any) => void;
   onAnularComanda?: (comandaOrigen?: any) => void;
@@ -34,6 +35,7 @@ export function ModeloComanda({
   organismo, 
   mostrar, 
   onCerrar,
+  onAbrirImpresionCompacta,
   onCambiarEstado,
   onAceptarComanda,
   onAnularComanda,
@@ -86,6 +88,11 @@ export function ModeloComanda({
 
   // Función para imprimir
   const handleImprimir = () => {
+    if (onAbrirImpresionCompacta) {
+      onAbrirImpresionCompacta();
+      return;
+    }
+
     console.log('🖨️ Imprimiendo comanda completa desde modal...');
     window.print();
     

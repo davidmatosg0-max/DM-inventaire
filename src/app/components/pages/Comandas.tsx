@@ -57,6 +57,7 @@ export function Comandas() {
   const [dialogNotificacionOpen, setDialogNotificacionOpen] = useState(false);
   const [dialogListaDistribuidosOpen, setDialogListaDistribuidosOpen] = useState(false);
   const [mostrarModeloComanda, setMostrarModeloComanda] = useState(false);
+  const [mostrarImpresionCompacta, setMostrarImpresionCompacta] = useState(false);
   const [comandaSeleccionada, setComandaSeleccionada] = useState<Comanda | null>(null);
   const [selectedOrganismos, setSelectedOrganismos] = useState<string[]>([]);
   const [comandasSeleccionadas, setComandasSeleccionadas] = useState<string[]>([]);
@@ -531,6 +532,12 @@ export function Comandas() {
       toast.error(t('orders.printOrderAndLabelError'));
     }
   };
+
+  const handleAbrirImpresionCompacta = (comanda: Comanda) => {
+    setComandaSeleccionada(comanda);
+    setMostrarModeloComanda(false);
+    setMostrarImpresionCompacta(true);
+  };
   
   // Función helper para convertir solicitud a formato de comanda para etiqueta e impresión
   const convertirSolicitudAComanda = (solicitud: SolicitudOferta, oferta: Oferta) => {
@@ -593,6 +600,17 @@ export function Comandas() {
   const comandasPendientesCount = comandas.filter(c => c.estado === 'pendiente').length;
   const comandasCompletadas = comandas.filter(c => c.estado === 'entregada').length;
 
+  if (mostrarImpresionCompacta && comandaSeleccionada) {
+    const organismo = resolverOrganismoComanda(comandaSeleccionada);
+    return (
+      <ComandaCompletaImprimible
+        comanda={comandaSeleccionada}
+        organismo={organismo}
+        onClose={() => setMostrarImpresionCompacta(false)}
+      />
+    );
+  }
+
   if (mostrarModeloComanda && comandaSeleccionada) {
     const organismo = resolverOrganismoComanda(comandaSeleccionada);
     return (
@@ -601,6 +619,7 @@ export function Comandas() {
         organismo={organismo}
         mostrar={mostrarModeloComanda}
         onCerrar={() => setMostrarModeloComanda(false)}
+        onAbrirImpresionCompacta={() => handleAbrirImpresionCompacta(comandaSeleccionada)}
         onCambiarEstado={handleCambiarEstado}
         onAceptarComanda={handleAceptarComanda}
         onAnularComanda={handleAnularComanda}
@@ -875,6 +894,15 @@ export function Comandas() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleAbrirImpresionCompacta(comanda)}
+                              title={t('orders.printOrder')}
+                              className="text-[#2E7D32] hover:text-[#2E7D32]"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => {
                                 const organismo = resolverOrganismoComanda(comanda);
                                 handleImprimirEtiquetaEstandarizada(comanda, organismo);
@@ -882,7 +910,7 @@ export function Comandas() {
                               title={t('orders.printLabelTitle')}
                               className="text-[#1E73BE] hover:text-[#1E73BE]"
                             >
-                              <Printer className="w-4 h-4" />
+                              <QrCode className="w-4 h-4" />
                             </Button>
                           </div>
                         </TableCell>
