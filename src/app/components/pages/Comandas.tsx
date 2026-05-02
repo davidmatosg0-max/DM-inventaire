@@ -1543,6 +1543,22 @@ export function Comandas() {
         </DialogContent>
       </Dialog>
 
+      {!escanerQROpen && (
+        <Button
+          size="icon"
+          onClick={() => setEscanerQROpen(true)}
+          className="fixed right-6 top-24 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
+          style={{
+            background: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)',
+            boxShadow: '0 10px 25px rgba(147, 51, 234, 0.35)'
+          }}
+          title={t('orders.scanQrTitle')}
+          aria-label={t('orders.scanQrTitle')}
+        >
+          <QrCode className="w-5 h-5" />
+        </Button>
+      )}
+
       {/* Escáner QR */}
       {escanerQROpen && (
         <EscanerQR

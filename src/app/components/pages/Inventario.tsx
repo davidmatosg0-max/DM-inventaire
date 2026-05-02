@@ -2999,6 +2999,22 @@ export function Inventario() {
         </DialogContent>
       </Dialog>
 
+      {!escanerQROpen && (
+        <Button
+          size="icon"
+          onClick={() => setEscanerQROpen(true)}
+          className="fixed bottom-6 right-6 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
+          style={{
+            background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
+            boxShadow: '0 10px 25px rgba(156, 39, 176, 0.35)'
+          }}
+          title={t('inventory.scanQrTitle')}
+          aria-label={t('inventory.scanQrTitle')}
+        >
+          <QrCode className="h-5 w-5" />
+        </Button>
+      )}
+
       {/* Escáner QR para Inventario */}
       {escanerQROpen && (
         <DeferredPanel>
