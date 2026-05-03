@@ -246,7 +246,10 @@ export async function generateStandardProductLabel(
       border-radius: 6px;
       padding: 6px;
       background: white;
-      display: inline-block;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
@@ -254,6 +257,28 @@ export async function generateStandardProductLabel(
       display: block;
       width: 110px;
       height: 110px;
+    }
+
+    .qr-brand-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+      color: #475569;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      padding-left: 1px;
     }
     
     /* PRODUCTO SECTION - MUY DESTACADO */
@@ -488,6 +513,7 @@ export async function generateStandardProductLabel(
     <div class="qr-section">
       <div class="qr-code-wrapper">
         <img src="${qrImageBase64}" alt="QR Code">
+        <div class="qr-brand-badge" aria-hidden="true">DM</div>
       </div>
     </div>
     

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Package, MapPin, Phone, Calendar, User } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import JsBarcode from 'jsbarcode';
 import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
+import { BrandedQRCode } from '../shared/BrandedQRCode';
 
 interface EtiquetaComandaProps {
   comanda: any;
@@ -137,23 +137,13 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
               {/* QR Code */}
               <div className="border-2 border-[#1E73BE] rounded-lg p-3 flex items-center justify-center bg-white shadow-md">
                 <div className="qrcode-container">
-                  <div className="relative inline-flex items-center justify-center">
-                    <QRCodeSVG 
-                      value={qrData} 
-                      size={168}
-                      level={COMANDA_QR_SVG_LEVEL}
-                      includeMargin={true}
-                      data-testid="qr-code"
-                    />
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                      <div className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-300/80 bg-white/90 shadow-[0_4px_12px_rgba(15,23,42,0.09)]">
-                        <div className="absolute inset-[2px] rounded-full border border-slate-100/90" />
-                        <span className="relative pl-[0.08em] font-medium tracking-[0.08em] text-slate-600" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.68rem' }}>
-                          DM
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <BrandedQRCode
+                    value={qrData}
+                    size={168}
+                    level={COMANDA_QR_SVG_LEVEL}
+                    includeMargin={true}
+                    data-testid="qr-code"
+                  />
                 </div>
               </div>
 

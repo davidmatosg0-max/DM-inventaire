@@ -1,11 +1,11 @@
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { X, Download, Share2, Mail, Printer } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { VisuallyHidden } from '../ui/visually-hidden';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
+import { BrandedQRCode } from './BrandedQRCode';
 
 export interface IDDigitalData {
   // Información básica
@@ -236,7 +236,7 @@ export function IDDigitalGenerico({ data, isOpen, onClose }: IDDigitalGenericoPr
                 {/* Código QR */}
                 <div className="flex-shrink-0 flex flex-col items-center">
                   <div className="bg-white p-3 rounded-xl shadow-lg border-2 border-[#E0E0E0]">
-                    <QRCodeSVG
+                    <BrandedQRCode
                       value={qrData}
                       size={120}
                       level="H"

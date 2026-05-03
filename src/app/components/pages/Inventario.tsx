@@ -72,6 +72,7 @@ import {
 } from '../../utils/migrarValoresMonetarios';
 import { normalizeScannedProductQR } from '../../utils/barcode';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
+import { printStandardLabel, type ProductLabelData } from '../etiquetas/StandardProductLabel';
 import {
   clearPendingQrNavigation,
   navigateToQrPage,
@@ -340,6 +341,133 @@ export function Inventario() {
     setDialogLocalizacionOpen(true);
   };
 
+  const focusProductFromQr = (producto: ProductoCreado) => {
+    setEscanerQROpen(false);
+    setActiveTab('productos');
+    setSelectedCategories([]);
+    setShowFilters(false);
+    setSearchTerm(producto.nombre);
+    setSearchLote(producto.lote || '');
+  };
+
+  const openShareDialogForProduct = (producto: ProductoCreado) => {
+    focusProductFromQr(producto);
+    setProductosSeleccionados(prev =>
+      prev.map(item => ({
+        ...item,
+        seleccionado: item.id === producto.id,
+      }))
+    );
+    setNombreLista(`Liste ${producto.nombre}`);
+    setVistaPreviewLista(false);
+    setListaGenerada(null);
+    setOrganismosSeleccionados([]);
+    setCompartirDialogOpen(true);
+  };
+
+  const mapProductTemperatureForLabel = (producto: ProductoCreado): ProductLabelData['temperatura'] => {
+    const rawTemperature = String((producto as ProductoCreado & { temperaturaAlmacenamiento?: string }).temperaturaAlmacenamiento || '').toLowerCase();
+
+    if (rawTemperature.includes('congel')) {
+      return 'congelado';
+    }
+
+    if (rawTemperature.includes('refrig') || rawTemperature.includes('frio') || rawTemperature.includes('froid')) {
+      return 'refrigerado';
+    }
+
+    return 'ambiente';
+  };
+
+  const printProductLabelFromQr = async (producto: ProductoCreado) => {
+    const unitWeight = Number(producto.pesoUnitario || 0);
+    const totalWeight = unitWeight > 0
+      ? unitWeight * Number(producto.stockActual || 0)
+      : Number(producto.pesoRegistrado || producto.peso || 0);
+
+    const labelData: ProductLabelData = {
+      id: producto.id,
+      nombreProducto: producto.nombre,
+      productoIcono: obtenerIconoProducto(producto),
+      categoria: producto.categoria,
+      subcategoria: producto.subcategoria,
+      cantidad: Number(producto.stockActual || 0),
+      unidad: producto.unidad,
+      pesoTotal: totalWeight,
+      pesoUnidad: unitWeight > 0 ? unitWeight : undefined,
+      temperatura: mapProductTemperatureForLabel(producto),
+      lote: producto.lote,
+      fechaCaducidad: producto.fechaVencimiento,
+      fechaEntrada: new Date().toISOString(),
+      systemName: branding.systemName,
+      systemLogo: branding.logo,
+    };
+
+    await printStandardLabel(labelData, true);
+  };
+
+  const handleScannedProductAction = (producto: ProductoCreado, action = 'ver_detalles') => {
+    switch (action) {
+      case 'agregar_carrito':
+        setEscanerQROpen(false);
+        agregarAlCarrito(producto.id, 1);
+        setCarritoOpen(true);
+        return;
+      case 'ver_historial':
+        setEscanerQROpen(false);
+        abrirHistorialProducto(producto);
+        return;
+      case 'ver_ubicacion':
+        openScannedProduct(producto);
+        return;
+      case 'imprimir_etiqueta':
+        setEscanerQROpen(false);
+        void printProductLabelFromQr(producto)
+          .then(() => {
+            toast.success(`Étiquette imprimée pour ${producto.nombre}`);
+          })
+          .catch((error) => {
+            console.error('Erreur impression étiquette QR:', error);
+            toast.error(`Erreur lors de l'impression de l'étiquette de ${producto.nombre}`);
+          });
+        return;
+      case 'ver_estadisticas':
+        setEscanerQROpen(false);
+        setActiveTab('prediccion');
+        setSearchTerm(producto.nombre);
+        setSearchLote(producto.lote || '');
+        toast.info('Module d\'analyse ouvert pour ce produit');
+        return;
+      case 'compartir_producto':
+        openShareDialogForProduct(producto);
+        return;
+      case 'crear_oferta':
+        setEscanerQROpen(false);
+        agregarAlCarrito(producto.id, 1);
+        setCarritoOpen(true);
+        toast.info('Produit ajouté au panier. Créez ensuite une offre depuis le panier');
+        return;
+      case 'enviar_departamento':
+        setEscanerQROpen(false);
+        agregarAlCarrito(producto.id, 1);
+        setCarritoOpen(true);
+        toast.info('Produit ajouté au panier. Continuez la distribution depuis le panier');
+        return;
+      case 'ajustar_stock':
+        focusProductFromQr(producto);
+        toast.info('Produit filtré dans Inventaire pour ajuster le stock');
+        return;
+      case 'modificar_producto':
+        focusProductFromQr(producto);
+        toast.info('Produit filtré dans Inventaire pour modification');
+        return;
+      case 'ver_detalles':
+      default:
+        focusProductFromQr(producto);
+        toast.success(`${producto.nombre} prêt à consulter dans Inventaire`);
+    }
+  };
+
   // Función helper para obtener el icono del producto (variante o subcategoría)
   const obtenerIconoProducto = (producto: ProductoCreado): string => {
     // El icono ya fue asignado en el useMemo, solo devolverlo
@@ -374,8 +502,7 @@ export function Inventario() {
       return;
     }
 
-    openScannedProduct(producto);
-    toast.success('Produit détecté dans le module Inventaire');
+    handleScannedProductAction(producto, pendingNavigation.action);
   }, [todosLosProductos]);
 
   // Cargar conversiones y plantillas al montar el componente
@@ -832,7 +959,7 @@ export function Inventario() {
     const producto = findProductoByScannedData(data);
 
     if (producto) {
-      openScannedProduct(producto);
+      handleScannedProductAction(producto, action);
       return;
     }
 

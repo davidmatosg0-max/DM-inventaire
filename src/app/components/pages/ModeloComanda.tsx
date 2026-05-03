@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { Printer, X, Thermometer, Snowflake, Sun, Maximize2, Minimize2, Check, Ban, Edit2, Box } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -18,6 +17,7 @@ import { obtenerPersonaPrincipal } from '../../utils/personasResponsablesStorage
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { useTranslation } from 'react-i18next';
+import { BrandedQRCode } from '../shared/BrandedQRCode';
 
 interface ModeloComandaProps {
   comanda: any;
@@ -524,23 +524,13 @@ export function ModeloComanda({
               </div>
               <div className="text-right">
                 <div className="mb-4 bg-white p-2 rounded-lg shadow-md qrcode-container">
-                  <div className="relative inline-flex items-center justify-center">
-                    <QRCodeSVG 
-                      value={qrData} 
-                      size={144}
-                      level={COMANDA_QR_SVG_LEVEL}
-                      includeMargin={true}
-                      data-testid="qr-code"
-                    />
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                      <div className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-300/80 bg-white/90 shadow-[0_3px_10px_rgba(15,23,42,0.08)]">
-                        <div className="absolute inset-[2px] rounded-full border border-slate-100/90" />
-                        <span className="relative pl-[0.08em] font-medium tracking-[0.08em] text-slate-600" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '0.62rem' }}>
-                          DM
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <BrandedQRCode
+                    value={qrData}
+                    size={144}
+                    level={COMANDA_QR_SVG_LEVEL}
+                    includeMargin={true}
+                    data-testid="qr-code"
+                  />
                 </div>
                 <p className="font-bold text-[#1E73BE]" style={{ fontSize: '1.3rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {comanda.numero}

@@ -456,8 +456,8 @@ export function Comandas() {
   };
 
   // Handler para escanear QR
-  const handleScanQR = (rawData: DatosQR, _action: string) => {
-    console.log('QR escaneado:', rawData);
+  const handleScanQR = (rawData: DatosQR, action: string) => {
+    console.log('QR escaneado:', rawData, 'Acción:', action);
 
     const data = normalizeScannedComandaQR(rawData);
     const numeroComanda = data?.comanda;
@@ -479,6 +479,7 @@ export function Comandas() {
         targetPage: 'inventario',
         qrType: 'producto',
         rawData,
+        action,
       });
       toast.success('Produit détecté, redirection vers Inventaire');
       navigateToQrPage('inventario');
