@@ -320,7 +320,6 @@ export function Inventario() {
     return [...productosLS, ...mockProductosFiltrados];
   }, [productosCreados, refreshKey]);
 
-  const categorias = Array.from(new Set(todosLosProductos.map(p => p.categoria)));
   const organismosActivos = mockOrganismos.filter(o => o.activo);
 
   const ubicacionesEscaneables = React.useMemo(() => {
@@ -365,6 +364,48 @@ export function Inventario() {
     const subcategoria = producto.subcategoria?.trim();
     return subcategoria && subcategoria.length > 0 ? subcategoria : getCategoriaLabel(producto.categoria);
   };
+
+  const normalizeInventoryNameToken = (value?: string) =>
+    typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').toLowerCase() : '';
+
+  const getInventoryProductName = (producto: Pick<ProductoCreado, 'nombre' | 'categoria' | 'subcategoria' | 'varianteNombre'>) => {
+    const rawName = producto.nombre?.trim() || '';
+    const categoria = producto.categoria?.trim() || '';
+    const subcategoria = producto.subcategoria?.trim() || '';
+    const variante = producto.varianteNombre?.trim() || '';
+    const hasDistinctVariant = Boolean(variante) && normalizeInventoryNameToken(variante) !== normalizeInventoryNameToken(subcategoria);
+    const cleanName = hasDistinctVariant
+      ? `${subcategoria} - ${variante}`
+      : subcategoria || variante || rawName;
+
+    const legacyCandidates = [
+      categoria && subcategoria ? `${categoria} - ${subcategoria}` : '',
+      categoria && subcategoria ? `${categoria} - ${subcategoria} - ${subcategoria}` : '',
+      categoria && subcategoria && variante ? `${categoria} - ${subcategoria} - ${variante}` : '',
+    ]
+      .map(normalizeInventoryNameToken)
+      .filter(Boolean);
+
+    if (!rawName) {
+      return cleanName;
+    }
+
+    return legacyCandidates.includes(normalizeInventoryNameToken(rawName)) ? cleanName : rawName;
+  };
+
+  const subcategoriasInventario = React.useMemo(() => {
+    const subcategoriasMap = new Map<string, string>();
+
+    todosLosProductos.forEach(producto => {
+      const label = getInventorySubcategoriaLabel(producto);
+
+      if (!subcategoriasMap.has(label)) {
+        subcategoriasMap.set(label, producto.icono || categoriasInfo[producto.categoria]?.icono || '📦');
+      }
+    });
+
+    return Array.from(subcategoriasMap, ([label, icon]) => ({ label, icon }));
+  }, [todosLosProductos]);
 
   const normalizeQrMatch = (value?: string | null) =>
     typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -445,7 +486,7 @@ export function Inventario() {
     setActiveTab('productos');
     setSelectedCategories([]);
     setShowFilters(false);
-    setSearchTerm(producto.nombre);
+    setSearchTerm(getInventoryProductName(producto));
     setSearchLote(producto.lote || '');
   };
 
@@ -457,7 +498,7 @@ export function Inventario() {
         seleccionado: item.id === producto.id,
       }))
     );
-    setNombreLista(`Liste ${producto.nombre}`);
+    setNombreLista(`Liste ${getInventoryProductName(producto)}`);
     setVistaPreviewLista(false);
     setListaGenerada(null);
     setOrganismosSeleccionados([]);
@@ -487,7 +528,7 @@ export function Inventario() {
     const labelData: ProductLabelData = {
       id: producto.id,
       codigo: producto.codigo,
-      nombreProducto: producto.nombre,
+      nombreProducto: getInventoryProductName(producto),
       productoIcono: obtenerIconoProducto(producto),
       categoria: producto.categoria,
       subcategoria: producto.subcategoria,
@@ -525,17 +566,17 @@ export function Inventario() {
         setEscanerQROpen(false);
         void printProductLabelFromQr(producto)
           .then(() => {
-            toast.success(`Étiquette imprimée pour ${producto.nombre}`);
+            toast.success(`Étiquette imprimée pour ${getInventoryProductName(producto)}`);
           })
           .catch((error) => {
             console.error('Erreur impression étiquette QR:', error);
-            toast.error(`Erreur lors de l'impression de l'étiquette de ${producto.nombre}`);
+            toast.error(`Erreur lors de l'impression de l'étiquette de ${getInventoryProductName(producto)}`);
           });
         return;
       case 'ver_estadisticas':
         setEscanerQROpen(false);
         setActiveTab('prediccion');
-        setSearchTerm(producto.nombre);
+        setSearchTerm(getInventoryProductName(producto));
         setSearchLote(producto.lote || '');
         toast.info('Module d\'analyse ouvert pour ce produit');
         return;
@@ -565,7 +606,7 @@ export function Inventario() {
       case 'ver_detalles':
       default:
         focusProductFromQr(producto);
-        toast.success(`${producto.nombre} prêt à consulter dans Inventaire`);
+        toast.success(`${getInventoryProductName(producto)} prêt à consulter dans Inventaire`);
     }
   };
 
@@ -671,7 +712,7 @@ export function Inventario() {
 
       const matchCategory =
         selectedCategories.length === 0 ||
-        selectedCategories.includes(p.categoria);
+        selectedCategories.includes(getInventorySubcategoriaLabel(p));
 
       // Solo mostrar productos con stock mayor a cero
       const tieneStock = p.stockActual > 0;
@@ -685,7 +726,7 @@ export function Inventario() {
         case 'stock':
           return b.stockActual - a.stockActual;
         case 'categoria':
-          return getCategoriaLabel(a.categoria).localeCompare(getCategoriaLabel(b.categoria), 'fr-CA');
+          return getInventorySubcategoriaLabel(a).localeCompare(getInventorySubcategoriaLabel(b), 'fr-CA');
         case 'valor':
           const valorA = categoriasInfo[a.categoria]?.valorMonetario || 0;
           const valorB = categoriasInfo[b.categoria]?.valorMonetario || 0;
@@ -946,7 +987,7 @@ export function Inventario() {
     contenido += '─'.repeat(80) + '\n\n';
 
     productosLista.forEach((producto, index) => {
-      contenido += `${index + 1}. ${producto.nombre}\n`;
+      contenido += `${index + 1}. ${getInventoryProductName(producto)}\n`;
       contenido += `   Código: ${producto.codigo}\n`;
       contenido += `   Sous-catégorie: ${getInventorySubcategoriaLabel(producto)}\n`;
       contenido += `   Unidad Original: ${producto.unidad}\n`;
@@ -1075,7 +1116,7 @@ export function Inventario() {
       return false;
     }
 
-    toast.success(`${producto.nombre} localisé à: ${ubicacion}`);
+    toast.success(`${getInventoryProductName(producto)} localisé à: ${ubicacion}`);
     return true;
   };
 
@@ -1083,12 +1124,12 @@ export function Inventario() {
     const ubicacionActual = normalizeQrMatch(producto.ubicacion);
 
     if (ubicacionEsperada && ubicacionActual !== normalizeQrMatch(ubicacionEsperada)) {
-      toast.error(`${producto.nombre} n'est pas localisé à ${ubicacionEsperada}`);
+      toast.error(`${getInventoryProductName(producto)} n'est pas localisé à ${ubicacionEsperada}`);
       return false;
     }
 
     if (!producto.ubicacion) {
-      toast.info(`${producto.nombre} n'a pas d'emplacement assigné`);
+      toast.info(`${getInventoryProductName(producto)} n'a pas d'emplacement assigné`);
       return false;
     }
 
@@ -1098,7 +1139,7 @@ export function Inventario() {
       return false;
     }
 
-    toast.success(`${producto.nombre} délocalisé avec succès`);
+    toast.success(`${getInventoryProductName(producto)} délocalisé avec succès`);
     return true;
   };
 
@@ -1761,8 +1802,8 @@ export function Inventario() {
             <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.categories')}</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>{categorias.length}</p>
+                  <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Sous-catégories</p>
+                  <p className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>{subcategoriasInventario.length}</p>
                 </div>
                 <div 
                   className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
@@ -1859,7 +1900,7 @@ export function Inventario() {
                 <SelectContent>
                   <SelectItem value="nombre">{t('inventory.productName')}</SelectItem>
                   <SelectItem value="stock">{t('inventory.stock')}</SelectItem>
-                  <SelectItem value="categoria">{t('inventory.category')}</SelectItem>
+                  <SelectItem value="categoria">Sous-catégorie</SelectItem>
                   <SelectItem value="valor">{t('inventory.monetaryValue')}</SelectItem>
                 </SelectContent>
               </Select>
@@ -1927,17 +1968,17 @@ export function Inventario() {
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="mb-2">{t('inventory.category')}</Label>
+                    <Label className="mb-2">Sous-catégorie</Label>
                     <div className="flex flex-wrap gap-2">
-                      {categorias.map(categoria => (
+                      {subcategoriasInventario.map(subcategoria => (
                         <Button
-                          key={categoria}
-                          variant={selectedCategories.includes(categoria) ? 'default' : 'outline'}
+                          key={subcategoria.label}
+                          variant={selectedCategories.includes(subcategoria.label) ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => toggleCategoria(categoria)}
-                          className={selectedCategories.includes(categoria) ? 'bg-[#1a4d7a]' : ''}
+                          onClick={() => toggleCategoria(subcategoria.label)}
+                          className={selectedCategories.includes(subcategoria.label) ? 'bg-[#1a4d7a]' : ''}
                         >
-                          <span className="emoji-icon">{categoriasInfo[categoria]?.icono}</span> {getCategoriaLabel(categoria)}
+                          <span className="emoji-icon">{subcategoria.icon}</span> {subcategoria.label}
                         </Button>
                       ))}
                     </div>
@@ -1968,17 +2009,21 @@ export function Inventario() {
                   </button>
                 </Badge>
               )}
-              {selectedCategories.map(cat => (
-                <Badge key={cat} variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
-                  {categoriasInfo[cat]?.icono} {cat}
-                  <button
-                    onClick={() => toggleCategoria(cat)}
-                    className="ml-2 hover:text-[#c23934]"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              ))}
+              {selectedCategories.map(cat => {
+                const subcategoria = subcategoriasInventario.find(item => item.label === cat);
+
+                return (
+                  <Badge key={cat} variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
+                    {subcategoria?.icon || '📦'} {cat}
+                    <button
+                      onClick={() => toggleCategoria(cat)}
+                      className="ml-2 hover:text-[#c23934]"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                );
+              })}
             </div>
           )}
 
@@ -2034,7 +2079,7 @@ export function Inventario() {
                             <TableCell className="py-1 px-2">
                               <div className="flex flex-col">
                                 <span className="font-semibold text-[#333333] text-xs leading-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                  {producto.nombre}
+                                  {getInventoryProductName(producto)}
                                 </span>
                               </div>
                             </TableCell>
@@ -2273,8 +2318,8 @@ export function Inventario() {
                         <div className="p-4 space-y-3">
                           {/* Nombre y código */}
                           <div>
-                            <h3 className="font-semibold text-lg text-[#333333] truncate" title={producto.nombre}>
-                              {producto.nombre}
+                            <h3 className="font-semibold text-lg text-[#333333] truncate" title={getInventoryProductName(producto)}>
+                              {getInventoryProductName(producto)}
                             </h3>
                             <p className="text-xs text-[#666666] font-mono">{producto.codigo}</p>
                             {producto.lote && (
@@ -2840,7 +2885,7 @@ export function Inventario() {
                                 <span className="text-lg emoji-icon">{obtenerIconoProducto(producto)}</span>
                               </div>
                               <div className="flex-1">
-                                <p className="font-medium text-sm">{producto.nombre}</p>
+                                <p className="font-medium text-sm">{getInventoryProductName(producto)}</p>
                                 <p className="text-xs text-[#666666]">
                                   {producto.codigo} • {getInventorySubcategoriaLabel(producto)}
                                   {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (
@@ -2933,7 +2978,7 @@ export function Inventario() {
                             <span className="text-lg emoji-icon">{obtenerIconoProducto(producto)}</span>
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-sm">{producto.nombre}</p>
+                            <p className="font-medium text-sm">{getInventoryProductName(producto)}</p>
                             <p className="text-xs text-[#666666]">
                               {producto.codigo} • {producto.unidad}
                               {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (

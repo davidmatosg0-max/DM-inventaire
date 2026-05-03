@@ -39,6 +39,40 @@ export type ProductoCreado = {
 
 const STORAGE_KEY = 'banco_alimentos_productos';
 
+function normalizeProductNameToken(value?: string): string {
+  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').toLowerCase() : '';
+}
+
+function getNormalizedProductName(producto: Pick<ProductoCreado, 'nombre' | 'categoria' | 'subcategoria' | 'varianteNombre'>): string {
+  const rawName = producto.nombre?.trim() || '';
+  const categoria = producto.categoria?.trim() || '';
+  const subcategoria = producto.subcategoria?.trim() || '';
+  const variante = producto.varianteNombre?.trim() || '';
+  const hasDistinctVariant = Boolean(variante) && normalizeProductNameToken(variante) !== normalizeProductNameToken(subcategoria);
+  const cleanName = hasDistinctVariant
+    ? `${subcategoria} - ${variante}`
+    : subcategoria || variante || rawName;
+
+  const legacyCandidates = [
+    categoria && subcategoria ? `${categoria} - ${subcategoria}` : '',
+    categoria && subcategoria ? `${categoria} - ${subcategoria} - ${subcategoria}` : '',
+    categoria && subcategoria && variante ? `${categoria} - ${subcategoria} - ${variante}` : '',
+  ]
+    .map(normalizeProductNameToken)
+    .filter(Boolean);
+
+  if (!rawName) {
+    return cleanName;
+  }
+
+  return legacyCandidates.includes(normalizeProductNameToken(rawName)) ? cleanName : rawName;
+}
+
+function normalizeStoredProduct<T extends Pick<ProductoCreado, 'nombre' | 'categoria' | 'subcategoria' | 'varianteNombre'>>(producto: T): T {
+  const nombreNormalizado = getNormalizedProductName(producto);
+  return nombreNormalizado !== producto.nombre ? { ...producto, nombre: nombreNormalizado } : producto;
+}
+
 /**
  * Obtener todos los productos guardados
  */
@@ -58,7 +92,7 @@ export function obtenerProductos(): ProductoCreado[] {
     }, []);
     
     const productosNormalizados = productosUnicos.map((producto: ProductoCreado) =>
-      aplicarTemperaturaProducto(producto)
+      aplicarTemperaturaProducto(normalizeStoredProduct(producto))
     );
 
     // Si se encontraron duplicados o faltaban campos de temperatura, guardar la versión limpia
@@ -88,7 +122,7 @@ export function guardarProducto(producto: ProductoCreado | Omit<ProductoCreado, 
     const productoConId: ProductoCreado = 'id' in producto 
       ? producto as ProductoCreado
       : { ...producto, id: Date.now().toString() } as ProductoCreado;
-    const productoNormalizado = aplicarTemperaturaProducto(productoConId);
+    const productoNormalizado = aplicarTemperaturaProducto(normalizeStoredProduct(productoConId));
     
     // Verificar si el producto ya existe para evitar duplicados
     const existeProducto = productos.find(p => p.id === productoNormalizado.id);
@@ -127,7 +161,7 @@ export function actualizarProducto(id: string, productoActualizado: Partial<Prod
     const index = productos.findIndex(p => p.id === id);
     if (index !== -1) {
       const productoAnterior = { ...productos[index] };
-      productos[index] = aplicarTemperaturaProducto({ ...productos[index], ...productoActualizado });
+      productos[index] = aplicarTemperaturaProducto(normalizeStoredProduct({ ...productos[index], ...productoActualizado }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
       
       // Registrar actividad solo si hay cambios significativos

@@ -22,6 +22,9 @@ export function PWAInstaller() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(iOS);
 
+    const isSecureContext = window.isSecureContext;
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
     // Verificar si ya está instalado
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -30,11 +33,25 @@ export function PWAInstaller() {
 
     // Registrar Service Worker
     if ('serviceWorker' in navigator) {
-      // Verificar si estamos en un entorno seguro (HTTPS o localhost)
-      const isSecureContext = window.isSecureContext;
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      
-      if (isSecureContext || isLocalhost) {
+      if (isLocalhost) {
+        navigator.serviceWorker.getRegistrations()
+          .then((registrations) => {
+            return Promise.all(registrations.map((registration) => registration.unregister()));
+          })
+          .then(() => {
+            if ('caches' in window) {
+              return caches.keys().then((cacheKeys) => Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey))));
+            }
+
+            return Promise.resolve();
+          })
+          .then(() => {
+            console.log('[PWA] Service Worker desactivado en localhost para evitar vistas obsoletas');
+          })
+          .catch((error) => {
+            console.log('[PWA] No se pudo limpiar el Service Worker local:', error.message);
+          });
+      } else if (isSecureContext) {
         // Verificar que el archivo sw.js existe antes de registrar
         fetch('/sw.js', { method: 'HEAD' })
           .then((response) => {

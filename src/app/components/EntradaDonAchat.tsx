@@ -697,7 +697,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       subcategoria: subcategoria.nombre, // Legacy
       varianteId: '',
       varianteNombre: '',
-      nombreProducto: `${formData.categoriaNombre} - ${subcategoria.nombre}`,
+      nombreProducto: subcategoria.nombre,
       productoIcono: subcategoria.icono || prev.productoIcono,
       unidad: subcategoria.unidad || '',
       pesoUnitario: pesoUnitarioSubcat,
@@ -714,6 +714,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     const variante = subcategoria?.variantes?.find(v => v.id === varianteId);
     if (!variante) return;
 
+    const nombreVariante = formData.subcategoriaNombre.trim() &&
+      formData.subcategoriaNombre.trim().toLowerCase() !== variante.nombre.trim().toLowerCase()
+        ? `${formData.subcategoriaNombre} - ${variante.nombre}`
+        : variante.nombre;
+
     // Obtener peso unitario de la variante
     const pesoUnitarioVariante = variante.pesoUnitario || 0;
 
@@ -721,7 +726,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       ...prev,
       varianteId: variante.id,
       varianteNombre: variante.nombre,
-      nombreProducto: `${formData.categoriaNombre} - ${formData.subcategoriaNombre} - ${variante.nombre}`,
+      nombreProducto: nombreVariante,
       productoIcono: variante.icono || prev.productoIcono,
       unidad: variante.unidad || prev.unidad,
       pesoUnitario: pesoUnitarioVariante,
@@ -852,12 +857,17 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
         setCategoriasDB(categoriasActualizadas);
         
         // Seleccionar automáticamente la variante recién creada
+        const nombreVariante = formData.subcategoriaNombre.trim() &&
+          formData.subcategoriaNombre.trim().toLowerCase() !== varianteCreada.nombre.trim().toLowerCase()
+            ? `${formData.subcategoriaNombre} - ${varianteCreada.nombre}`
+            : varianteCreada.nombre;
+
         setFormData(prev => ({
           ...prev,
           varianteId: varianteCreada.id,
           varianteNombre: varianteCreada.nombre,
           productoIcono: varianteCreada.icono || prev.productoIcono,
-          nombreProducto: `${formData.categoriaNombre} - ${formData.subcategoriaNombre} - ${varianteCreada.nombre}`,
+          nombreProducto: nombreVariante,
         }));
         
         // Limpiar formulario y cerrar diálogo
@@ -922,7 +932,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           varianteId: '',
           varianteNombre: '',
           productoIcono: subcategoriaCreada.icono || prev.productoIcono,
-          nombreProducto: `${formData.categoriaNombre} - ${subcategoriaCreada.nombre}`,
+          nombreProducto: subcategoriaCreada.nombre,
         }));
         
         // Limpiar formulario y cerrar diálogo
