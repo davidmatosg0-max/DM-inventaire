@@ -2285,8 +2285,8 @@ export function Inventario() {
             </Card>
           ) : (
             /* Vista Grid */
-            <div className="max-h-[600px] overflow-y-auto border rounded-lg p-4 bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="max-h-[600px] overflow-y-auto border rounded-lg p-3 bg-white">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
                 {productosFiltrados.map(producto => {
                   const stockStatus = getStockStatus(producto);
                   const itemEnCarrito = carrito.find(item => item.productoId === producto.id);
@@ -2296,77 +2296,84 @@ export function Inventario() {
                   };
 
                   return (
-                    <Card key={producto.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <Card key={producto.id} className="overflow-hidden border border-[#E0E0E0] shadow-sm hover:shadow-md transition-shadow">
                       <CardContent className="p-0">
                         {/* Icono de la subcategoría del producto */}
-                        <div className="bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] h-32 flex items-center justify-center">
-                          <span className="text-6xl emoji-icon">{obtenerIconoProducto(producto)}</span>
+                        <div className="bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] h-20 flex items-center justify-center">
+                          <span className="text-4xl emoji-icon">{obtenerIconoProducto(producto)}</span>
                         </div>
                         
                         {/* Información del producto */}
-                        <div className="p-4 space-y-3">
+                        <div className="p-3 space-y-2.5">
                           {/* Nombre y código */}
-                          <div>
-                            <h3 className="font-semibold text-lg text-[#333333] truncate" title={getInventoryProductName(producto)}>
+                          <div className="space-y-1.5">
+                            <h3 className="font-semibold text-sm text-[#333333] leading-tight h-9 overflow-hidden" title={getInventoryProductName(producto)}>
                               {getInventoryProductName(producto)}
                             </h3>
-                            <p className="text-xs text-[#666666] font-mono">{producto.codigo}</p>
-                            {producto.lote && (
-                              <div className="mt-1">
-                                <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a] font-mono text-xs">
-                                  📦 Lot: {producto.lote}
-                                </Badge>
-                              </div>
-                            )}
+                            <p
+                              className="text-[10px] text-[#666666] font-mono truncate"
+                              title={producto.lote ? `${producto.codigo} • L:${producto.lote}` : producto.codigo}
+                            >
+                              {producto.codigo}
+                              {producto.lote ? ` • L:${producto.lote}` : ''}
+                            </p>
                           </div>
 
                           {/* Stock y estado */}
-                          <div className="flex items-center justify-between">
-                            <div className="text-center flex-1">
-                              <p className="text-xs text-[#666666]">Reservable</p>
-                              <p className="text-lg font-bold text-[#1a4d7a]">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-md bg-[#F4F7FA] px-2 py-1.5">
+                              <p className="text-[10px] uppercase tracking-wide text-[#666666]">Reservable</p>
+                              <p className="text-base font-bold leading-none text-[#1a4d7a] mt-1">
                                 {reserva.disponibleParaReservar}
                               </p>
-                              <Badge variant="secondary" className="text-xs mt-1">
-                                {producto.unidad}
-                              </Badge>
-                              <p className="text-[10px] text-[#666666] mt-1">Reservado: {reserva.totalReservado}</p>
-                              <p className="text-[10px] text-[#999999]">Físico: {producto.stockActual}</p>
+                              <p className="text-[10px] text-[#999999] mt-1">Físico: {producto.stockActual} {producto.unidad}</p>
                             </div>
-                            <div className="text-center flex-1">
-                              <p className="text-xs text-[#666666]">{t('inventory.minimumStock')}</p>
-                              <p className="text-sm text-[#666666]">
-                                {producto.stockMinimo}
+                            <div className="rounded-md bg-[#F4F7FA] px-2 py-1.5 text-right">
+                              <p className="text-[10px] uppercase tracking-wide text-[#666666]">Min.</p>
+                              <p className="text-sm font-semibold leading-none text-[#333333] mt-1">
+                                {producto.stockMinimo} {producto.unidad}
                               </p>
+                              <p className="text-[10px] text-[#999999] mt-1">Res.: {reserva.totalReservado}</p>
                             </div>
                           </div>
 
-                          {/* Peso unitario */}
-                          {((producto.pesoUnitario && producto.pesoUnitario > 0) || (producto.peso && producto.peso > 0)) && (
-                            <div className="text-center bg-[#F4F4F4] rounded py-2">
-                              <p className="text-xs text-[#666666]">{t('common.unitWeight')}</p>
-                              <p className="text-sm font-medium text-[#1a4d7a]">
-                                {(producto.pesoUnitario && producto.pesoUnitario > 0) 
-                                  ? Math.round(producto.pesoUnitario) 
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              {producto.unidad}
+                            </Badge>
+                            {((producto.pesoUnitario && producto.pesoUnitario > 0) || (producto.peso && producto.peso > 0)) && (
+                              <Badge variant="outline" className="bg-white text-[#1a4d7a] border-[#1a4d7a] text-[10px] px-1.5 py-0">
+                                ⚖️ {((producto.pesoUnitario && producto.pesoUnitario > 0)
+                                  ? Math.round(producto.pesoUnitario)
                                   : (producto.peso && producto.stockActual > 0)
                                     ? Math.round(producto.peso / producto.stockActual)
-                                    : Math.round(producto.peso)
-                                } kg
-                              </p>
-                              <p className="text-xs text-[#999999]">por {producto.unidad}</p>
-                            </div>
-                          )}
+                                    : Math.round(producto.peso))} kg/{producto.unidad}
+                              </Badge>
+                            )}
+                            <Badge className={`${stockStatus.color} text-white text-[10px] px-1.5 py-0`}>
+                              {stockStatus.label}
+                            </Badge>
+                            {producto.ubicacion ? (
+                              <Badge className="bg-green-50 text-[#2d9561] border border-[#2d9561] text-[10px] px-1.5 py-0 max-w-full">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                <span className="truncate">{producto.ubicacion}</span>
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] text-[#999999] px-1.5 py-0">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                Non localisé
+                              </Badge>
+                            )}
+                          </div>
 
                           {/* Valor Monetario */}
                           {(() => {
                             // 🎯 PRIORIDAD 1: Usar valorTotal o valorUnitario si están disponibles
                             if (producto.valorTotal && producto.valorTotal > 0) {
                               return (
-                                <div className="text-center bg-green-50 rounded py-2 border border-green-200">
-                                  <p className="text-xs text-[#666666]">💰 Valor Total</p>
-                                  <p className="text-sm font-bold text-[#2d9561]">
-                                    CAD$ {formatMoney(producto.valorTotal)}
-                                  </p>
+                                <div className="flex items-center justify-between rounded-md bg-green-50 px-2 py-1.5 border border-green-200">
+                                  <p className="text-[10px] text-[#666666]">💰 Valor</p>
+                                  <p className="text-sm font-bold text-[#2d9561]">CAD$ {formatMoney(producto.valorTotal)}</p>
                                 </div>
                               );
                             }
@@ -2374,14 +2381,12 @@ export function Inventario() {
                             if (producto.valorUnitario && producto.valorUnitario > 0) {
                               const valorTotal = producto.valorUnitario * producto.stockActual;
                               return (
-                                <div className="text-center bg-green-50 rounded py-2 border border-green-200">
-                                  <p className="text-xs text-[#666666]">💰 Valor Total</p>
-                                  <p className="text-sm font-bold text-[#2d9561]">
-                                    CAD$ {formatMoney(valorTotal)}
-                                  </p>
-                                  <p className="text-xs text-gray-600">
-                                    ${formatMoney(producto.valorUnitario)}/u
-                                  </p>
+                                <div className="rounded-md bg-green-50 px-2 py-1.5 border border-green-200">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[10px] text-[#666666]">💰 Valor</p>
+                                    <p className="text-sm font-bold text-[#2d9561]">CAD$ {formatMoney(valorTotal)}</p>
+                                  </div>
+                                  <p className="text-[10px] text-gray-600 mt-1 text-right">${formatMoney(producto.valorUnitario)}/u</p>
                                 </div>
                               );
                             }
@@ -2399,11 +2404,9 @@ export function Inventario() {
                             
                             if (valorCalculado !== undefined && valorCalculado > 0) {
                               return (
-                                <div className="text-center bg-green-50 rounded py-2 border border-green-200">
-                                  <p className="text-xs text-[#666666]">💰 Valor Total</p>
-                                  <p className="text-sm font-bold text-[#2d9561]">
-                                    CAD$ {formatMoney(valorCalculado)}
-                                  </p>
+                                <div className="flex items-center justify-between rounded-md bg-green-50 px-2 py-1.5 border border-green-200">
+                                  <p className="text-[10px] text-[#666666]">💰 Valor</p>
+                                  <p className="text-sm font-bold text-[#2d9561]">CAD$ {formatMoney(valorCalculado)}</p>
                                 </div>
                               );
                             }
@@ -2411,30 +2414,8 @@ export function Inventario() {
                             return null;
                           })()}
 
-                          {/* Estado */}
-                          <div className="flex justify-center">
-                            <Badge className={`${stockStatus.color} text-white`}>
-                              {stockStatus.label}
-                            </Badge>
-                          </div>
-
-                          {/* Ubicación */}
-                          <div className="text-center">
-                            {producto.ubicacion ? (
-                              <Badge className="bg-[#2d9561] text-white text-xs">
-                                <MapPin className="h-3 w-3 mr-1" />
-                                {producto.ubicacion}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs text-[#999999]">
-                                <MapPin className="h-3 w-3 mr-1" />
-                                Non localisé
-                              </Badge>
-                            )}
-                          </div>
-
                           {/* Acciones */}
-                          <div className="flex gap-2 pt-2">
+                          <div className="grid grid-cols-4 gap-1 pt-1">
                             <Button
                               size="sm"
                               variant="outline"
@@ -2443,7 +2424,7 @@ export function Inventario() {
                                 setDialogLocalizacionOpen(true);
                               }}
                               title="Localiser le produit"
-                              className="flex-1 hover:bg-green-50 hover:border-[#2d9561]"
+                              className="h-8 p-0 hover:bg-green-50 hover:border-[#2d9561]"
                             >
                               <MapPin className="h-4 w-4 text-[#2d9561]" />
                             </Button>
@@ -2452,7 +2433,7 @@ export function Inventario() {
                               variant="outline"
                               onClick={() => abrirConversionUnidades(producto)}
                               title={t('inventory.convertUnits')}
-                              className="flex-1 hover:bg-blue-50 hover:border-[#1a4d7a]"
+                              className="h-8 p-0 hover:bg-blue-50 hover:border-[#1a4d7a]"
                             >
                               <ArrowLeftRight className="h-4 w-4 text-[#1a4d7a]" />
                             </Button>
@@ -2464,7 +2445,7 @@ export function Inventario() {
                                 setHistorialProductoDialogOpen(true);
                               }}
                               title={t('inventory.viewHistory')}
-                              className="flex-1 hover:bg-purple-50 hover:border-[#9C27B0]"
+                              className="h-8 p-0 hover:bg-purple-50 hover:border-[#9C27B0]"
                             >
                               <History className="h-4 w-4 text-[#9C27B0]" />
                             </Button>
@@ -2472,7 +2453,7 @@ export function Inventario() {
                               size="sm"
                               variant="outline"
                               onClick={() => agregarAlCarrito(producto.id, 1)}
-                              className={`flex-1 ${itemEnCarrito ? 'bg-[#2d9561] text-white hover:bg-[#267a4f]' : ''}`}
+                              className={`h-8 p-0 ${itemEnCarrito ? 'bg-[#2d9561] text-white hover:bg-[#267a4f]' : ''}`}
                             >
                               <ShoppingCart className="h-4 w-4" />
                             </Button>
