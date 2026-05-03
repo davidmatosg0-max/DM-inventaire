@@ -216,6 +216,22 @@ function normalizeLocationCandidate(value?: string): string {
   return typeof value === 'string' ? value.trim().toUpperCase() : '';
 }
 
+function resolveKnownLocationMatch(
+  candidates: string[],
+  knownLocations: string[]
+): string | undefined {
+  const normalizedCandidates = candidates
+    .map(normalizeLocationCandidate)
+    .filter(Boolean);
+
+  return knownLocations.find((location) => {
+    const normalizedLocation = normalizeLocationCandidate(location);
+    const generatedCode = normalizeLocationCandidate(generarCodigoUbicacion(location));
+
+    return normalizedCandidates.includes(normalizedLocation) || normalizedCandidates.includes(generatedCode);
+  });
+}
+
 export function normalizeScannedLocationQR(
   value: unknown,
   knownLocations: string[] = []
@@ -225,9 +241,7 @@ export function normalizeScannedLocationQR(
   if (!record) {
     const text = getString(value);
     const normalizedText = normalizeLocationCandidate(text);
-    const matchedLocation = knownLocations.find(
-      location => normalizeLocationCandidate(location) === normalizedText
-    );
+    const matchedLocation = resolveKnownLocationMatch([normalizedText], knownLocations);
 
     if (!text || !matchedLocation) {
       return null;
@@ -257,9 +271,7 @@ export function normalizeScannedLocationQR(
     .map(normalizeLocationCandidate)
     .filter(Boolean);
 
-  const matchedLocation = knownLocations.find(location =>
-    candidates.includes(normalizeLocationCandidate(location))
-  );
+  const matchedLocation = resolveKnownLocationMatch(candidates, knownLocations);
 
   if (!matchedLocation) {
     if (explicitType !== 'ubicacion' || candidates.length === 0) {
