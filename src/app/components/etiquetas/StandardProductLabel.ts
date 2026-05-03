@@ -20,7 +20,6 @@
 
 import QRCode from 'qrcode';
 import { formatQuantity } from '../../utils/formatUtils';
-import { generarDatosQR } from '../../utils/barcode';
 
 export interface ProductLabelData {
   // Identificación
@@ -105,22 +104,20 @@ export async function generateStandardProductLabel(
   };
 
   // Generar QR Code (reducido para optimizar espacio)
-  const qrData = generarDatosQR({
+  const qrData = JSON.stringify({
+    tipo: 'producto',
     id: data.id,
     codigo: data.codigo || data.id,
     nombre: data.nombreProducto,
-    lote: data.lote,
-    fechaVencimiento: data.fechaCaducidad,
-    ubicacion: data.ubicacion,
   });
   let qrImageBase64 = '';
   try {
     qrImageBase64 = await QRCode.toDataURL(qrData, {
-      width: 140,
-      margin: 1,
+      width: 180,
+      margin: 2,
       errorCorrectionLevel: 'H',
       color: {
-        dark: '#1E73BE',
+        dark: '#000000',
         light: '#FFFFFF'
       }
     });

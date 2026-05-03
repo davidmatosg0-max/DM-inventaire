@@ -192,6 +192,14 @@ export interface ProductQRPayload {
   ubicacion?: string;
 }
 
+export interface LocationQRPayload {
+  tipo: 'ubicacion';
+  id: string;
+  codigo: string;
+  ubicacion: string;
+  text?: string;
+}
+
 function getRecord(value: unknown): QRRecord | undefined {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as QRRecord;
@@ -202,6 +210,78 @@ function getRecord(value: unknown): QRRecord | undefined {
 
 function getString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
+}
+
+function normalizeLocationCandidate(value?: string): string {
+  return typeof value === 'string' ? value.trim().toUpperCase() : '';
+}
+
+export function normalizeScannedLocationQR(
+  value: unknown,
+  knownLocations: string[] = []
+): LocationQRPayload | null {
+  const record = getRecord(value);
+
+  if (!record) {
+    const text = getString(value);
+    const normalizedText = normalizeLocationCandidate(text);
+    const matchedLocation = knownLocations.find(
+      location => normalizeLocationCandidate(location) === normalizedText
+    );
+
+    if (!text || !matchedLocation) {
+      return null;
+    }
+
+    return {
+      tipo: 'ubicacion',
+      id: matchedLocation,
+      codigo: normalizedText,
+      ubicacion: matchedLocation,
+      text,
+    };
+  }
+
+  const nested = getRecord(record.datos);
+  const explicitType = getString(record.tipo) || getString(nested?.tipo);
+
+  if (explicitType && explicitType !== 'ubicacion') {
+    return null;
+  }
+
+  const text = getString(record.text) || getString(nested?.text);
+  const codigo = getString(record.codigo) || getString(nested?.codigo) || text;
+  const explicitLocation = getString(record.ubicacion) || getString(nested?.ubicacion);
+  const id = getString(record.id) || getString(nested?.id) || codigo || explicitLocation;
+  const candidates = [explicitLocation, codigo, text, id]
+    .map(normalizeLocationCandidate)
+    .filter(Boolean);
+
+  const matchedLocation = knownLocations.find(location =>
+    candidates.includes(normalizeLocationCandidate(location))
+  );
+
+  if (!matchedLocation) {
+    if (explicitType !== 'ubicacion' || candidates.length === 0) {
+      return null;
+    }
+
+    return {
+      tipo: 'ubicacion',
+      id: id || candidates[0],
+      codigo: normalizeLocationCandidate(codigo || explicitLocation || id || candidates[0]),
+      ubicacion: explicitLocation || codigo || id || candidates[0],
+      text,
+    };
+  }
+
+  return {
+    tipo: 'ubicacion',
+    id: matchedLocation,
+    codigo: normalizeLocationCandidate(codigo || matchedLocation),
+    ubicacion: matchedLocation,
+    text,
+  };
 }
 
 export function normalizeScannedProductQR(value: unknown): ProductQRPayload | null {

@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, ShoppingCart, Package, Edit, MapPin, Printer, Eye, Truck, XCircle } from 'lucide-react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
-import { normalizeScannedProductQR } from '../../utils/barcode';
+import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 
 const GuiaPermisoCamara = lazy(async () => {
   const module = await import('../comandas/GuiaPermisoCamara');
@@ -15,9 +15,20 @@ interface EscanerQRInventarioProps {
   onScanSuccess: (data: any, action: string) => void;
   onClose: () => void;
   autoStartCamera?: boolean;
+  knownLocationCodes?: string[];
+  pendingLocationAction?: {
+    ubicacion: string;
+    action: 'localizar_productos' | 'delocalizar_productos';
+  } | null;
 }
 
-export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = false }: EscanerQRInventarioProps) {
+export function EscanerQRInventario({
+  onScanSuccess,
+  onClose,
+  autoStartCamera = false,
+  knownLocationCodes = [],
+  pendingLocationAction = null,
+}: EscanerQRInventarioProps) {
   const [modoEscaneo, setModoEscaneo] = useState<'camara' | 'archivo' | 'preparandoCamara' | null>(autoStartCamera ? 'camara' : null);
   const [escaneando, setEscaneando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +39,12 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoStartRef = useRef(false);
   const explicitTipo = typeof resultado?.tipo === 'string' ? resultado.tipo : '';
+  const detectedLocation = normalizeScannedLocationQR(resultado, knownLocationCodes);
   const detectedProduct = normalizeScannedProductQR(resultado);
   const detectedComanda = normalizeScannedComandaQR(resultado);
-  const showingComandaActions = explicitTipo === 'comanda' || (!detectedProduct && Boolean(resultado?.comanda || resultado?.numeroComanda || detectedComanda?.comanda));
+  const showingLocationActions = explicitTipo === 'ubicacion' || Boolean(detectedLocation?.ubicacion);
+  const showingComandaActions = explicitTipo === 'comanda' || (!showingLocationActions && !detectedProduct && Boolean(resultado?.comanda || resultado?.numeroComanda || detectedComanda?.comanda));
+  const showingPendingLocationConfirmation = Boolean(pendingLocationAction && detectedProduct && !showingComandaActions && !showingLocationActions);
 
   useEffect(() => {
     return () => {
@@ -439,6 +453,7 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
               onChange={handleFileSelect}
               className="hidden"
             />
+            <div id="qr-reader-file-inventario" className="hidden"></div>
 
             {resultado ? (
               // Success state - Menú de acciones para inventario
@@ -447,7 +462,13 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
                   <CheckCircle className="w-16 h-16 text-[#4CAF50] mx-auto mb-4" />
                   <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
                   <p className="text-gray-600 text-sm">
-                    {showingComandaActions ? 'Choisissez l\'action à effectuer pour cette commande.' : 'Que souhaitez-vous faire avec ce produit?'}
+                    {showingComandaActions
+                      ? 'Choisissez l\'action à effectuer pour cette commande.'
+                      : showingLocationActions
+                        ? 'Choisissez l\'action à effectuer pour cet emplacement.'
+                        : showingPendingLocationConfirmation
+                          ? `Confirmez l'action pour ${pendingLocationAction?.ubicacion}.`
+                          : 'Que souhaitez-vous faire avec ce produit?'}
                   </p>
                 </div>
                 
@@ -603,6 +624,66 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
                         </div>
                       </button>
                     </>
+                  ) : showingLocationActions ? (
+                    <>
+                      <button
+                        onClick={() => handleAction('localizar_productos')}
+                        className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
+                      >
+                        <MapPin className="w-7 h-7 text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-white transition-colors text-lg">Localiser des produits</h4>
+                          <p className="text-sm text-white/90 transition-colors">
+                            Scanner ensuite le produit à assigner à {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('delocalizar_productos')}
+                        className="w-full group border-2 border-[#DC3545] hover:bg-[#DC3545] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <XCircle className="w-6 h-6 text-[#DC3545] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Délocaliser un produit</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Scanner ensuite le produit à retirer de {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
+                          </p>
+                        </div>
+                      </button>
+                    </>
+                  ) : showingPendingLocationConfirmation ? (
+                    <>
+                      <button
+                        onClick={() => handleAction(pendingLocationAction?.action || 'localizar_productos')}
+                        className="w-full group border-2 border-[#1E73BE] bg-[#1E73BE] hover:bg-[#1764a6] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
+                      >
+                        <MapPin className="w-7 h-7 text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-white transition-colors text-lg">
+                            {pendingLocationAction?.action === 'delocalizar_productos'
+                              ? `Délocaliser depuis ${pendingLocationAction?.ubicacion}`
+                              : `Localiser à ${pendingLocationAction?.ubicacion}`}
+                          </h4>
+                          <p className="text-sm text-white/90 transition-colors">
+                            Appliquer cette action au produit scanné
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('annuler_accion_ubicacion')}
+                        className="w-full group border-2 border-gray-300 hover:bg-gray-100 rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <X className="w-6 h-6 text-gray-500 transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] transition-colors">Annuler l'action d'emplacement</h4>
+                          <p className="text-sm text-gray-600 transition-colors">
+                            Revenir au scan normal des produits
+                          </p>
+                        </div>
+                      </button>
+                    </>
                   ) : (
                     <>
 
@@ -672,7 +753,7 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
                     className="px-6 py-2 border-2 border-[#1E73BE] text-[#1E73BE] rounded-lg hover:bg-[#1E73BE] hover:text-white transition-colors font-medium flex items-center gap-2"
                   >
                     <QrCode className="w-4 h-4" />
-                    Scanner un autre produit
+                    {showingLocationActions ? 'Scanner un autre emplacement' : 'Scanner un autre produit'}
                   </button>
                   <button
                     onClick={handleCerrar}
@@ -856,8 +937,6 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
             ) : (
               // File mode
               <div className="text-center py-8">
-                <div id="qr-reader-file-inventario" className="hidden"></div>
-                
                 {!error ? (
                   <>
                     <Upload className="w-16 h-16 text-[#4CAF50] mx-auto mb-4 animate-pulse" />

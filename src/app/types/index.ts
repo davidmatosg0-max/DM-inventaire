@@ -492,7 +492,7 @@ export interface Alerta {
 // ============================================================================
 
 export interface DatosQR {
-  tipo: 'producto' | 'comanda' | 'organismo';
+  tipo: 'producto' | 'comanda' | 'organismo' | 'ubicacion';
   id: string;
   datos?: any; // Depende del tipo
   codigo?: string;

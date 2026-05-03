@@ -70,7 +70,7 @@ import {
   recalcularValoresTotales,
   obtenerEstadisticasValoresMonetarios
 } from '../../utils/migrarValoresMonetarios';
-import { normalizeScannedProductQR } from '../../utils/barcode';
+import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
 import { printStandardLabel, type ProductLabelData } from '../etiquetas/StandardProductLabel';
 import {
@@ -101,6 +101,21 @@ type ListaProductos = {
   incluirKg: boolean; // Nueva opción para mostrar en kg
   compartidaCon: string[];
 };
+
+type AccionUbicacionEscaneada = 'localizar_productos' | 'delocalizar_productos';
+
+type UbicacionEscaneadaPendiente = {
+  ubicacion: string;
+  action: AccionUbicacionEscaneada;
+};
+
+const DEFAULT_LOCATION_ZONES = [
+  { zona: 'A', cantidad: 10 },
+  { zona: 'B', cantidad: 10 },
+  { zona: 'C', cantidad: 5 },
+  { zona: 'D', cantidad: 8 },
+  { zona: 'E', cantidad: 4 },
+];
 
 const categoriasInfo: Record<string, { icono: string; valorMonetario: number; color: string; label: string }> = {
   'Alimentos Secos': { icono: '🍚', valorMonetario: 2.50, color: '#e8a419', label: 'Aliments secs' },
@@ -202,6 +217,7 @@ export function Inventario() {
   const [escanerQROpen, setEscanerQROpen] = useState(false);
   const [productoEscaneado, setProductoEscaneado] = useState<ProductoCreado | null>(null);
   const [dialogLocalizacionOpen, setDialogLocalizacionOpen] = useState(false);
+  const [ubicacionEscaneadaPendiente, setUbicacionEscaneadaPendiente] = useState<UbicacionEscaneadaPendiente | null>(null);
   
   // Estados para nuevos componentes
   const [validacionEntradasOpen, setValidacionEntradasOpen] = useState(false);
@@ -307,6 +323,42 @@ export function Inventario() {
   const categorias = Array.from(new Set(todosLosProductos.map(p => p.categoria)));
   const organismosActivos = mockOrganismos.filter(o => o.activo);
 
+  const ubicacionesEscaneables = React.useMemo(() => {
+    let zonas = DEFAULT_LOCATION_ZONES;
+
+    try {
+      const zonasGuardadas = localStorage.getItem('zonasAlmacen');
+      if (zonasGuardadas) {
+        const parsed = JSON.parse(zonasGuardadas);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const zonasValidas = parsed
+            .filter(
+              (item): item is { zona: string; cantidad: number } =>
+                Boolean(item) && typeof item.zona === 'string' && typeof item.cantidad === 'number'
+            )
+            .map(item => ({ zona: item.zona.trim().toUpperCase(), cantidad: item.cantidad }));
+
+          if (zonasValidas.length > 0) {
+            zonas = zonasValidas;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lecture zones entrepôt:', error);
+    }
+
+    const ubicacionesGeneradas = zonas.flatMap(({ zona, cantidad }) =>
+      Array.from({ length: Math.max(0, cantidad) }, (_, index) => `${zona}${index + 1}`)
+    );
+
+    const ubicacionesActuales = todosLosProductos
+      .map(producto => producto.ubicacion)
+      .filter((ubicacion): ubicacion is string => typeof ubicacion === 'string' && ubicacion.trim() !== '')
+      .map(ubicacion => ubicacion.trim());
+
+    return Array.from(new Set([...ubicacionesGeneradas, ...ubicacionesActuales]));
+  }, [todosLosProductos, refreshKey]);
+
   const getCategoriaLabel = (categoria: string) => categoriasInfo[categoria]?.label || categoria;
 
   const normalizeQrMatch = (value?: string | null) =>
@@ -370,6 +422,11 @@ export function Inventario() {
       .sort((left, right) => right.score - left.score);
 
     return scoredMatches[0]?.producto || null;
+  };
+
+  const findUbicacionByScannedData = (rawData: unknown) => {
+    const locationData = normalizeScannedLocationQR(rawData, ubicacionesEscaneables);
+    return locationData?.ubicacion || null;
   };
 
   const openScannedProduct = (producto: ProductoCreado) => {
@@ -992,13 +1049,102 @@ export function Inventario() {
     setConversionDialogOpen(true);
   };
 
+  const actualizarUbicacionProducto = (producto: ProductoCreado, ubicacion: string) => {
+    const productosLocalStorage = obtenerProductos();
+    const productoEnStorage = productosLocalStorage.find(p => p.id === producto.id);
+
+    if (!productoEnStorage) {
+      toast.error('Produit introuvable dans le stockage local');
+      return false;
+    }
+
+    actualizarProducto(producto.id, { ubicacion });
+    setRefreshKey(prev => prev + 1);
+    return true;
+  };
+
+  const localizarProductoEscaneado = (producto: ProductoCreado, ubicacion: string) => {
+    const actualizado = actualizarUbicacionProducto(producto, ubicacion);
+
+    if (!actualizado) {
+      return false;
+    }
+
+    toast.success(`${producto.nombre} localisé à: ${ubicacion}`);
+    return true;
+  };
+
+  const deslocalizarProductoEscaneado = (producto: ProductoCreado, ubicacionEsperada?: string) => {
+    const ubicacionActual = normalizeQrMatch(producto.ubicacion);
+
+    if (ubicacionEsperada && ubicacionActual !== normalizeQrMatch(ubicacionEsperada)) {
+      toast.error(`${producto.nombre} n'est pas localisé à ${ubicacionEsperada}`);
+      return false;
+    }
+
+    if (!producto.ubicacion) {
+      toast.info(`${producto.nombre} n'a pas d'emplacement assigné`);
+      return false;
+    }
+
+    const actualizado = actualizarUbicacionProducto(producto, '');
+
+    if (!actualizado) {
+      return false;
+    }
+
+    toast.success(`${producto.nombre} délocalisé avec succès`);
+    return true;
+  };
+
   const handleScanQR = (data: DatosQR, action: string) => {
     console.log('QR escaneado:', data, 'Acción:', action);
 
+    if (action === 'annuler_accion_ubicacion') {
+      setUbicacionEscaneadaPendiente(null);
+      setEscanerQROpen(false);
+      toast.info('Action d\'emplacement annulée');
+      return;
+    }
+
     const producto = findProductoByScannedData(data);
+
+    if (ubicacionEscaneadaPendiente) {
+      if (!producto) {
+        toast.error('Scannez un produit valide pour terminer cette action');
+        setEscanerQROpen(false);
+        return;
+      }
+
+      const accionAplicada = ubicacionEscaneadaPendiente.action === 'delocalizar_productos'
+        ? deslocalizarProductoEscaneado(producto, ubicacionEscaneadaPendiente.ubicacion)
+        : localizarProductoEscaneado(producto, ubicacionEscaneadaPendiente.ubicacion);
+
+      setUbicacionEscaneadaPendiente(null);
+
+      if (accionAplicada) {
+        setEscanerQROpen(false);
+      }
+
+      return;
+    }
 
     if (producto) {
       handleScannedProductAction(producto, action);
+      return;
+    }
+
+    const ubicacion = findUbicacionByScannedData(data);
+
+    if (ubicacion && (action === 'localizar_productos' || action === 'delocalizar_productos')) {
+      setUbicacionEscaneadaPendiente({ ubicacion, action });
+      setEscanerQROpen(false);
+      toast.info(
+        action === 'delocalizar_productos'
+          ? `Emplacement ${ubicacion} détecté. Scannez maintenant le produit à délocaliser.`
+          : `Emplacement ${ubicacion} détecté. Scannez maintenant le produit à localiser.`
+      );
+      window.setTimeout(() => setEscanerQROpen(true), 50);
       return;
     }
 
@@ -1027,63 +1173,27 @@ export function Inventario() {
   const handleLocalizarProducto = (ubicacion: string) => {
     if (!productoEscaneado) return;
 
-    // Actualizar la ubicación del producto
-    const productosActualizados = todosLosProductos.map(p => {
-      if (p.id === productoEscaneado.id) {
-        return { ...p, ubicacion };
-      }
-      return p;
-    });
+    const actualizado = localizarProductoEscaneado(productoEscaneado, ubicacion);
 
-    // Guardar en localStorage
-    const productosLocalStorage = obtenerProductos();
-    const productoEnStorage = productosLocalStorage.find(p => p.id === productoEscaneado.id);
-    
-    if (productoEnStorage) {
-      const productosActualizadosStorage = productosLocalStorage.map(p => {
-        if (p.id === productoEscaneado.id) {
-          return { ...p, ubicacion };
-        }
-        return p;
-      });
-      localStorage.setItem('productos', JSON.stringify(productosActualizadosStorage));
+    if (!actualizado) {
+      return;
     }
 
-    toast.success(`${productoEscaneado.nombre} localisé à: ${ubicacion}`);
     setDialogLocalizacionOpen(false);
     setProductoEscaneado(null);
-    setRefreshKey(prev => prev + 1);
   };
 
   const handleDeslocalizarProducto = () => {
     if (!productoEscaneado) return;
 
-    // Eliminar la ubicación del producto
-    const productosActualizados = todosLosProductos.map(p => {
-      if (p.id === productoEscaneado.id) {
-        return { ...p, ubicacion: '' };
-      }
-      return p;
-    });
+    const actualizado = deslocalizarProductoEscaneado(productoEscaneado);
 
-    // Guardar en localStorage
-    const productosLocalStorage = obtenerProductos();
-    const productoEnStorage = productosLocalStorage.find(p => p.id === productoEscaneado.id);
-    
-    if (productoEnStorage) {
-      const productosActualizadosStorage = productosLocalStorage.map(p => {
-        if (p.id === productoEscaneado.id) {
-          return { ...p, ubicacion: '' };
-        }
-        return p;
-      });
-      localStorage.setItem('productos', JSON.stringify(productosActualizadosStorage));
+    if (!actualizado) {
+      return;
     }
 
-    toast.success(`${productoEscaneado.nombre} délocalisé avec succès`);
     setDialogLocalizacionOpen(false);
     setProductoEscaneado(null);
-    setRefreshKey(prev => prev + 1);
   };
 
   const handleConversionUnidades = (
@@ -3276,6 +3386,8 @@ export function Inventario() {
             autoStartCamera
             onScanSuccess={handleScanQR}
             onClose={() => setEscanerQROpen(false)}
+            knownLocationCodes={ubicacionesEscaneables}
+            pendingLocationAction={ubicacionEscaneadaPendiente}
           />
         </DeferredPanel>
       )}
