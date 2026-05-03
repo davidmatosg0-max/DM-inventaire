@@ -145,7 +145,6 @@ const AnalisisPredictivoStock = lazyNamed(() => import('../inventario/AnalisisPr
 const ExportacionAvanzada = lazyNamed(() => import('../inventario/ExportacionAvanzada'), 'ExportacionAvanzada');
 const ConversionUnidadesDialog = lazyNamed(() => import('../inventario/ConversionUnidadesDialog'), 'ConversionUnidadesDialog');
 const MovimientosInventario = lazyNamed(() => import('../inventario/MovimientosInventario'), 'MovimientosInventario');
-const ReportsModule = lazyNamed(() => import('../reports/ReportsModule'), 'ReportsModule');
 const ConversionDialog = lazyNamed(() => import('../conversion/ConversionDialog'), 'ConversionDialog');
 const HistorialConversiones = lazyNamed(() => import('../conversion/HistorialConversiones'), 'HistorialConversiones');
 const PlantillasConversion = lazyNamed(() => import('../conversion/PlantillasConversion'), 'PlantillasConversion');
@@ -1730,6 +1729,16 @@ export function Inventario() {
 
   const totalSeleccionados = productosSeleccionados.filter(p => p.seleccionado).length;
 
+  const navigateToModule = (page: string) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    window.location.href = url.toString();
+  };
+
   return (
     <div className="relative h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] flex flex-col overflow-hidden -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6">
       {/* Fondo degradado fijo con glassmorphism */}
@@ -1757,7 +1766,7 @@ export function Inventario() {
 
       <Card className="border-none shadow-none flex-1 flex flex-col overflow-hidden rounded-none w-full relative z-10">
         <CardHeader className="border-b backdrop-blur-xl bg-white/90 flex-shrink-0 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div 
                 className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
@@ -1777,6 +1786,16 @@ export function Inventario() {
                 </CardDescription>
               </div>
             </div>
+            <Button
+              variant="outline"
+              onClick={() => navigateToModule('reportes')}
+              className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 shrink-0"
+              title="Ouvrir le module Rapports"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Module Rapports</span>
+              <span className="sm:hidden">Rapports</span>
+            </Button>
           </div>
         </CardHeader>
 
@@ -1848,12 +1867,11 @@ export function Inventario() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-7 flex-shrink-0">
+        <TabsList className="grid w-full grid-cols-6 flex-shrink-0">
           <TabsTrigger value="productos">{t('inventory.products')}</TabsTrigger>
           <TabsTrigger value="movimientos">{t('inventory.movements')}</TabsTrigger>
           <TabsTrigger value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
           <TabsTrigger value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
-          <TabsTrigger value="rapports">📊 Rapports</TabsTrigger>
           <TabsTrigger value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
           <TabsTrigger value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
         </TabsList>
@@ -2668,15 +2686,6 @@ export function Inventario() {
           {activeTab === 'entradas' && (
             <DeferredPanel>
               <HistorialEntradasCompacto onAgregarAlCarrito={agregarEntradaAlCarrito} />
-            </DeferredPanel>
-          )}
-        </TabsContent>
-
-        {/* Rapports Tab */}
-        <TabsContent value="rapports" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
-          {activeTab === 'rapports' && (
-            <DeferredPanel>
-              <ReportsModule />
             </DeferredPanel>
           )}
         </TabsContent>

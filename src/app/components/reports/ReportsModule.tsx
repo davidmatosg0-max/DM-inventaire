@@ -39,6 +39,11 @@ type QuickStatCard = {
   growth: number | null;
 };
 
+interface ReportsModuleProps {
+  embedded?: boolean;
+  hideHeader?: boolean;
+}
+
 function getCurrentMonthRange(): { start: Date; end: Date } {
   const now = new Date();
   return {
@@ -82,7 +87,7 @@ function getSafeMoneyValue(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
-export function ReportsModule() {
+export function ReportsModule({ embedded = false, hideHeader = false }: ReportsModuleProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ReportType>('entries');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -150,52 +155,53 @@ export function ReportsModule() {
   }, [refreshKey]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Fondo decorativo */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
-      </div>
+    <div className={embedded ? 'space-y-6' : 'min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50'}>
+      {!embedded && (
+        <div className="fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
+        </div>
+      )}
 
-      {/* Contenedor principal */}
-      <div className="container mx-auto px-4 py-8 relative">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="backdrop-blur-xl bg-white/90 rounded-2xl p-6 border border-white/20 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl text-white shadow-lg">
-                    <FileText className="w-8 h-8" />
-                  </div>
-                  {t('reports.title', 'Rapports')}
-                </h1>
-                <p className="text-gray-600">
-                  {t('reports.subtitle', 'Système complet de rapports et d\'analyse')}
-                </p>
-              </div>
+      <div className={embedded ? 'space-y-6' : 'container mx-auto px-4 py-8 relative'}>
+        {!hideHeader && (
+          <div className="mb-8">
+            <div className="backdrop-blur-xl bg-white/90 rounded-2xl p-6 border border-white/20 shadow-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                    <div className="p-3 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl text-white shadow-lg">
+                      <FileText className="w-8 h-8" />
+                    </div>
+                    {t('reports.title', 'Rapports')}
+                  </h1>
+                  <p className="text-gray-600">
+                    {t('reports.subtitle', 'Système complet de rapports et d\'analyse')}
+                  </p>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="outline">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {t('reports.period', 'Période')}
-                </Button>
-                <Button variant="outline">
-                  <Filter className="w-4 h-4 mr-2" />
-                  {t('reports.filters', 'Filtres')}
-                </Button>
-                <Button className="bg-[#2d9561] hover:bg-[#257a4f]">
-                  <Download className="w-4 h-4 mr-2" />
-                  {t('reports.export', 'Exporter')}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    {t('reports.period', 'Période')}
+                  </Button>
+                  <Button variant="outline">
+                    <Filter className="w-4 h-4 mr-2" />
+                    {t('reports.filters', 'Filtres')}
+                  </Button>
+                  <Button className="bg-[#2d9561] hover:bg-[#257a4f]">
+                    <Download className="w-4 h-4 mr-2" />
+                    {t('reports.export', 'Exporter')}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Estadísticas rápidas */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 mb-6">
           {/* Entradas */}
           <Card>
             <CardContent className="p-4">

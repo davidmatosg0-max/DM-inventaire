@@ -67,6 +67,12 @@ interface MenuItem {
   soloDesarrollador?: boolean;
 }
 
+interface MenuSection {
+  id: string;
+  label: string;
+  itemIds: string[];
+}
+
 export function Layout({ children, currentPage, onNavigate, onLogout, hideSidebar = false }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [expandedMenus, setExpandedMenus] = React.useState<string[]>([]);
@@ -260,15 +266,19 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     );
   };
 
+  const isMenuItemActive = React.useCallback((item: MenuItem) => {
+    return item.id === currentPage || item.children?.some(child => child.id === currentPage);
+  }, [currentPage]);
+
   const menuItems: MenuItem[] = [
     { 
       id: 'dashboard', 
       label: t('nav.mainDashboard'), 
       icon: <LayoutDashboard className="w-5 h-5" />,
       children: [
-        { id: 'dashboard', label: 'Tableau de bord standard', icon: <LayoutDashboard className="w-4 h-4" /> },
-        { id: 'dashboard-metricas', label: 'Métriques en Temps Réel', icon: <Activity className="w-4 h-4" /> },
-        { id: 'dashboard-predictivo', label: '🚀 Tableau de bord prédictif IA', icon: <Brain className="w-4 h-4" /> },
+        { id: 'dashboard', label: 'Vue exécutive', icon: <LayoutDashboard className="w-4 h-4" /> },
+        { id: 'dashboard-metricas', label: 'Suivi en temps réel', icon: <Activity className="w-4 h-4" /> },
+        { id: 'dashboard-predictivo', label: 'Prévisions & IA', icon: <Brain className="w-4 h-4" /> },
       ]
     },
     { 
@@ -277,25 +287,33 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       icon: <Warehouse className="w-5 h-5" />,
       children: [
         { id: 'inventario', label: t('nav.inventory'), icon: <Package className="w-4 h-4" /> },
-        { id: 'etiquetas', label: t('nav.labels'), icon: <Tag className="w-4 h-4" /> },
         { id: 'comandas', label: t('nav.orders'), icon: <ClipboardList className="w-4 h-4" /> },
+        { id: 'etiquetas', label: t('nav.labels'), icon: <Tag className="w-4 h-4" /> },
+        { id: 'reportes', label: t('nav.reports'), icon: <FileText className="w-4 h-4" /> },
         { id: 'organismos', label: t('nav.organisms'), icon: <Building className="w-4 h-4" /> },
         { id: 'ofertas-organismo', label: t('nav.offers'), icon: <Tags className="w-4 h-4" /> },
         { id: 'transporte', label: t('nav.transport'), icon: <Truck className="w-4 h-4" /> },
-        { id: 'reportes', label: t('nav.reports'), icon: <FileText className="w-4 h-4" /> },
-        { id: 'donateurs-fournisseurs', label: 'Donateurs & Fournisseurs', icon: <Building className="w-4 h-4" /> },
-        { id: 'contactos-almacen', label: 'Contacts Entrepôt', icon: <Users className="w-4 h-4" /> },
+        { id: 'donateurs-fournisseurs', label: 'Partenaires & fournisseurs', icon: <Building className="w-4 h-4" /> },
+        { id: 'contactos-almacen', label: 'Annuaire Entrepôt', icon: <Users className="w-4 h-4" /> },
       ]
     },
     { id: 'cuisine', label: t('common.cuisine'), icon: <ChefHat className="w-5 h-5" /> },
+    { id: 'id-digital', label: t('nav.digitalID'), icon: <Scale className="w-5 h-5" /> },
     { id: 'email-organismos', label: t('nav.liaison'), icon: <Users className="w-5 h-5" /> },
     { id: 'communication', label: 'Messagerie', icon: <MessageSquare className="w-5 h-5" /> },
     { id: 'recrutement', label: t('nav.recruitment'), icon: <UserPlus className="w-5 h-5" /> },
     { id: 'usuarios', label: t('nav.users'), icon: <Users className="w-5 h-5" /> },
-    { id: 'id-digital', label: t('nav.digitalID'), icon: <Scale className="w-5 h-5" /> },
-    { id: 'api-keys', label: '🚀 API Keys PRO', icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
-    { id: 'panel-marca', label: t('nav.branding'), icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
-    { id: 'configuracion', label: t('nav.configuration'), icon: <Settings className="w-5 h-5" /> }
+    { id: 'configuracion', label: t('nav.configuration'), icon: <Settings className="w-5 h-5" /> },
+    { id: 'panel-marca', label: 'Identité visuelle', icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
+    { id: 'api-keys', label: 'API & intégrations', icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
+  ];
+
+  const menuSections: MenuSection[] = [
+    { id: 'overview', label: 'Vue d’ensemble', itemIds: ['dashboard'] },
+    { id: 'operations', label: 'Opérations', itemIds: ['entrepot', 'cuisine', 'id-digital'] },
+    { id: 'coordination', label: 'Coordination', itemIds: ['email-organismos', 'communication', 'recrutement'] },
+    { id: 'administration', label: 'Administration', itemIds: ['usuarios', 'configuracion'] },
+    { id: 'advanced', label: 'Outils avancés', itemIds: ['panel-marca', 'api-keys'] },
   ];
 
   // Filtrar menú según permisos
@@ -327,6 +345,86 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     
     return item;
   }).filter((item): item is MenuItem => item !== null);
+
+  const menuSectionsFiltradas = menuSections
+    .map(section => ({
+      ...section,
+      items: section.itemIds
+        .map(itemId => menuItemsFiltrado.find(item => item.id === itemId))
+        .filter((item): item is MenuItem => Boolean(item)),
+    }))
+    .filter(section => section.items.length > 0);
+
+  const renderMenuItem = (item: MenuItem, nested = false) => {
+    const itemActivo = isMenuItemActive(item);
+    const itemExpandido = Boolean(item.children) && (expandedMenus.includes(item.id) || item.children?.some(child => child.id === currentPage));
+    const baseClasses = nested
+      ? `w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-sm group ${
+          itemActivo
+            ? 'bg-white/95 shadow-md backdrop-blur-sm'
+            : 'hover:bg-white/10 text-white/90'
+        }`
+      : `w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all text-sm sm:text-base group ${
+          itemActivo
+            ? 'bg-white/95 shadow-lg backdrop-blur-sm'
+            : 'hover:bg-white/10 text-white'
+        }`;
+
+    if (item.children) {
+      return (
+        <div key={item.id}>
+          <button
+            onClick={() => toggleMenu(item.id)}
+            className={baseClasses}
+            style={{
+              fontFamily: 'Montserrat, sans-serif',
+              fontWeight: nested ? 500 : 600,
+              color: itemActivo ? branding.primaryColor : undefined,
+            }}
+          >
+            <div className={`transition-transform group-hover:scale-110 ${itemActivo ? 'scale-110' : ''}`}>
+              {item.icon}
+            </div>
+            <span className="truncate">{item.label}</span>
+            {itemExpandido ? <ChevronDown className="w-4 h-4 ml-auto" /> : <ChevronRight className="w-4 h-4 ml-auto" />}
+          </button>
+          <AnimatePresence>
+            {itemExpandido && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="ml-4 mt-1.5 pl-3 border-l border-white/15 space-y-1"
+              >
+                {item.children.map(child => renderMenuItem(child, true))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    }
+
+    return (
+      <button
+        key={item.id}
+        onClick={() => {
+          onNavigate(item.id);
+          setSidebarOpen(false);
+        }}
+        className={baseClasses}
+        style={{
+          fontFamily: 'Montserrat, sans-serif',
+          fontWeight: nested ? 500 : 600,
+          color: itemActivo ? branding.primaryColor : undefined,
+        }}
+      >
+        <div className={`transition-transform group-hover:scale-110 ${itemActivo ? 'scale-110' : ''}`}>
+          {item.icon}
+        </div>
+        <span className="truncate">{item.label}</span>
+      </button>
+    );
+  };
 
   return (
     <div 
@@ -457,90 +555,25 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             borderColor: `${branding.primaryColor}30`
           }}
         >
-          <nav className="p-3 sm:p-4 space-y-1.5 sm:space-y-2">
-            {menuItemsFiltrado.map((item) => (
-              <div key={item.id}>
-                {item.children ? (
-                  <div>
-                    <button
-                      onClick={() => toggleMenu(item.id)}
-                      className={`w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all text-sm sm:text-base group ${
-                        currentPage === item.id
-                          ? 'bg-white/95 shadow-lg backdrop-blur-sm'
-                          : 'hover:bg-white/10 text-white'
-                      }`}
-                      style={{ 
-                        fontFamily: 'Montserrat, sans-serif', 
-                        fontWeight: 500,
-                        color: currentPage === item.id ? branding.primaryColor : undefined
-                      }}
-                    >
-                      <div className={`transition-transform group-hover:scale-110 ${currentPage === item.id ? 'scale-110' : ''}`}>
-                        {item.icon}
-                      </div>
-                      <span className="truncate">{item.label}</span>
-                      {expandedMenus.includes(item.id) ? <ChevronDown className="w-4 h-4 ml-auto" /> : <ChevronRight className="w-4 h-4 ml-auto" />}
-                    </button>
-                    <AnimatePresence>
-                      {expandedMenus.includes(item.id) && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="pl-5 mt-1"
-                        >
-                          {item.children.map((child) => (
-                            <button
-                              key={child.id}
-                              onClick={() => {
-                                onNavigate(child.id);
-                                setSidebarOpen(false);
-                              }}
-                              className={`w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all text-sm sm:text-base group ${
-                                currentPage === child.id
-                                  ? 'bg-white/95 shadow-lg backdrop-blur-sm'
-                                  : 'hover:bg-white/10 text-white'
-                              }`}
-                              style={{ 
-                                fontFamily: 'Montserrat, sans-serif', 
-                                fontWeight: 500,
-                                color: currentPage === child.id ? branding.primaryColor : undefined
-                              }}
-                            >
-                              <div className={`transition-transform group-hover:scale-110 ${currentPage === child.id ? 'scale-110' : ''}`}>
-                                {child.icon}
-                              </div>
-                              <span className="truncate">{child.label}</span>
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      onNavigate(item.id);
-                      setSidebarOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all text-sm sm:text-base group ${
-                      currentPage === item.id
-                        ? 'bg-white/95 shadow-lg backdrop-blur-sm'
-                        : 'hover:bg-white/10 text-white'
-                    }`}
-                    style={{ 
-                      fontFamily: 'Montserrat, sans-serif', 
-                      fontWeight: 500,
-                      color: currentPage === item.id ? branding.primaryColor : undefined
-                    }}
-                  >
-                    <div className={`transition-transform group-hover:scale-110 ${currentPage === item.id ? 'scale-110' : ''}`}>
-                      {item.icon}
-                    </div>
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                )}
-              </div>
+          <nav className="p-3 sm:p-4 space-y-4">
+            <div className="px-3 sm:px-4 pb-1">
+              <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-white/70" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                Navigation principale
+              </p>
+              <p className="text-xs text-white/60 mt-1">Accès structuré par fonction métier</p>
+            </div>
+            {menuSectionsFiltradas.map((section) => (
+              <section key={section.id} className="space-y-1.5">
+                <div className="px-3 sm:px-4">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/55" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                    {section.label}
+                  </p>
+                  <div className="h-px bg-white/10 mt-2" />
+                </div>
+                <div className="space-y-1">
+                  {section.items.map(item => renderMenuItem(item))}
+                </div>
+              </section>
             ))}
           </nav>
         </aside>

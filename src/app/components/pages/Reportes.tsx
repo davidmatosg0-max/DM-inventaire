@@ -29,6 +29,7 @@ import {
 } from '../../utils/exportarExcel';
 import { useBranding } from '../../../hooks/useBranding';
 import { AuditLogViewer } from '../auditoria/AuditLogViewer';
+import { ReportsModule } from '../reports/ReportsModule';
 import { registrarActividad } from '../../utils/actividadLogger';
 import type { Comanda } from '../../types';
 
@@ -132,6 +133,7 @@ export function Reportes() {
   const { t } = useTranslation();
   const branding = useBranding();
   const initialRange = getDatePresetRange('month');
+  const [activeReportTab, setActiveReportTab] = useState('operaciones');
   const [tipoReporte, setTipoReporte] = useState('general');
   const [fechaInicio, setFechaInicio] = useState(initialRange.start);
   const [fechaFin, setFechaFin] = useState(initialRange.end);
@@ -497,10 +499,14 @@ export function Reportes() {
 
       {/* Tabs de Reportes con glassmorphism */}
       <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
-        <Tabs defaultValue="general" className="space-y-4">
+        <Tabs value={activeReportTab} onValueChange={setActiveReportTab} className="space-y-4">
           <TabsList className="w-full bg-transparent border-b rounded-none flex flex-wrap">
             <TabsTrigger value="general" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('reports.general')}
+            </TabsTrigger>
+            <TabsTrigger value="operaciones" className="flex-1 min-w-[140px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <BarChart3 className="w-4 h-4" />
+              Opérations
             </TabsTrigger>
             <TabsTrigger value="inventario" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('nav.inventory')}
@@ -595,6 +601,26 @@ export function Reportes() {
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="operaciones" className="space-y-4 p-4 sm:p-6 pt-0">
+            <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-[#1a4d7a]/10 p-3 text-[#1a4d7a]">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                    Rapports opérationnels
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Approvisionnement, distribution y comparatifs consolidés ahora viven dentro del módulo Rapports.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <ReportsModule embedded hideHeader />
           </TabsContent>
 
           <TabsContent value="inventario" className="space-y-4 p-4 sm:p-6 pt-0">
