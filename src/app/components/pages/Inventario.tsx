@@ -70,6 +70,14 @@ import {
   recalcularValoresTotales,
   obtenerEstadisticasValoresMonetarios
 } from '../../utils/migrarValoresMonetarios';
+import { normalizeScannedProductQR } from '../../utils/barcode';
+import { normalizeScannedComandaQR } from '../../utils/comandaQr';
+import {
+  clearPendingQrNavigation,
+  navigateToQrPage,
+  readPendingQrNavigation,
+  savePendingQrNavigation,
+} from '../../utils/pendingQrNavigation';
 
 type CarritoItem = {
   productoId: string;
@@ -300,6 +308,38 @@ export function Inventario() {
 
   const getCategoriaLabel = (categoria: string) => categoriasInfo[categoria]?.label || categoria;
 
+  const normalizeQrMatch = (value?: string | null) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : '';
+
+  const findProductoByScannedData = (rawData: unknown) => {
+    const productData = normalizeScannedProductQR(rawData);
+    if (!productData) {
+      return null;
+    }
+
+    const candidates = [productData.id, productData.codigo, productData.producto, productData.nombre]
+      .map(normalizeQrMatch)
+      .filter(Boolean);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    return todosLosProductos.find(producto => {
+      const productKeys = [producto.id, producto.codigo, producto.nombre]
+        .map(normalizeQrMatch)
+        .filter(Boolean);
+
+      return productKeys.some(key => candidates.includes(key));
+    }) || null;
+  };
+
+  const openScannedProduct = (producto: ProductoCreado) => {
+    setProductoEscaneado(producto);
+    setEscanerQROpen(false);
+    setDialogLocalizacionOpen(true);
+  };
+
   // Función helper para obtener el icono del producto (variante o subcategoría)
   const obtenerIconoProducto = (producto: ProductoCreado): string => {
     // El icono ya fue asignado en el useMemo, solo devolverlo
@@ -317,6 +357,26 @@ export function Inventario() {
         }))
     );
   }, [todosLosProductos]); // Agregada dependencia todosLosProductos
+
+  useEffect(() => {
+    const pendingNavigation = readPendingQrNavigation();
+
+    if (!pendingNavigation || pendingNavigation.targetPage !== 'inventario' || pendingNavigation.qrType !== 'producto') {
+      return;
+    }
+
+    clearPendingQrNavigation();
+
+    const producto = findProductoByScannedData(pendingNavigation.rawData);
+
+    if (!producto) {
+      toast.error('Produit non trouvé');
+      return;
+    }
+
+    openScannedProduct(producto);
+    toast.success('Produit détecté dans le module Inventaire');
+  }, [todosLosProductos]);
 
   // Cargar conversiones y plantillas al montar el componente
   useEffect(() => {
@@ -768,13 +828,27 @@ export function Inventario() {
 
   const handleScanQR = (data: DatosQR, action: string) => {
     console.log('QR escaneado:', data, 'Acción:', action);
-    
-    // Buscar el producto por código o ID
-    let producto = null;
-    if (data.codigo) {
-      producto = todosLosProductos.find(p => p.codigo === data.codigo);
-    } else if (data.producto) {
-      producto = todosLosProductos.find(p => p.nombre === data.producto);
+
+    const producto = findProductoByScannedData(data);
+
+    if (producto) {
+      openScannedProduct(producto);
+      return;
+    }
+
+    const comandaData = normalizeScannedComandaQR(data);
+
+    if (comandaData?.comanda) {
+      setEscanerQROpen(false);
+      savePendingQrNavigation({
+        targetPage: 'comandas',
+        qrType: 'comanda',
+        rawData: data,
+        action,
+      });
+      toast.success('Commande détectée, redirection vers Commandes');
+      navigateToQrPage('comandas');
+      return;
     }
 
     if (!producto) {
@@ -782,11 +856,6 @@ export function Inventario() {
       setEscanerQROpen(false);
       return;
     }
-
-    // Mostrar diálogo de localización/deslocalización
-    setProductoEscaneado(producto);
-    setEscanerQROpen(false);
-    setDialogLocalizacionOpen(true);
   };
 
   const handleLocalizarProducto = (ubicacion: string) => {

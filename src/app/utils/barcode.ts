@@ -179,6 +179,89 @@ export function generarDatosQR(producto: {
   });
 }
 
+type QRRecord = Record<string, unknown>;
+
+export interface ProductQRPayload {
+  tipo: 'producto';
+  id: string;
+  codigo?: string;
+  producto?: string;
+  nombre?: string;
+  lote?: string;
+  fecha_vencimiento?: string;
+  ubicacion?: string;
+}
+
+function getRecord(value: unknown): QRRecord | undefined {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as QRRecord;
+  }
+
+  return undefined;
+}
+
+function getString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
+}
+
+export function normalizeScannedProductQR(value: unknown): ProductQRPayload | null {
+  const record = getRecord(value);
+
+  if (!record) {
+    const text = getString(value);
+    if (!text) {
+      return null;
+    }
+
+    return {
+      tipo: 'producto',
+      id: text,
+      codigo: text,
+      producto: text,
+      nombre: text,
+    };
+  }
+
+  const nested = getRecord(record.datos);
+  const explicitType = getString(record.tipo) || getString(nested?.tipo);
+
+  if (explicitType && explicitType !== 'producto') {
+    return null;
+  }
+
+  const text = getString(record.text) || getString(nested?.text);
+  const codigo = getString(record.codigo) || getString(nested?.codigo) || text;
+  const nombre =
+    getString(record.producto) ||
+    getString(record.nombre) ||
+    getString(nested?.producto) ||
+    getString(nested?.nombre);
+  const id =
+    getString(record.id) ||
+    getString(nested?.id) ||
+    codigo ||
+    nombre;
+
+  if (!id) {
+    return null;
+  }
+
+  return {
+    tipo: 'producto',
+    id,
+    codigo,
+    producto: nombre,
+    nombre,
+    lote: getString(record.lote) || getString(nested?.lote),
+    fecha_vencimiento:
+      getString(record.fecha_vencimiento) ||
+      getString(record.fechaVencimiento) ||
+      getString(nested?.fecha_vencimiento) ||
+      getString(nested?.fechaVencimiento),
+    ubicacion: getString(record.ubicacion) || getString(nested?.ubicacion),
+  };
+}
+
 /**
  * Formatos de código de barras soportados
  */

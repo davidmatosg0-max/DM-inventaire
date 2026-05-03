@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, ShoppingCart, Eye, Package, Edit, History, MapPin, TrendingUp, BarChart3, Share2, Tag, Building } from 'lucide-react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
+import { normalizeScannedComandaQR } from '../../utils/comandaQr';
 
 const GuiaPermisoCamara = lazy(async () => {
   const module = await import('../comandas/GuiaPermisoCamara');
@@ -25,6 +26,9 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoStartRef = useRef(false);
+  const explicitTipo = typeof resultado?.tipo === 'string' ? resultado.tipo : '';
+  const detectedComanda = normalizeScannedComandaQR(resultado);
+  const showingComandaActions = explicitTipo === 'comanda' || Boolean(resultado?.comanda || resultado?.numeroComanda || detectedComanda?.comanda);
 
   useEffect(() => {
     return () => {
@@ -440,56 +444,111 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
                 <div className="text-center mb-6">
                   <CheckCircle className="w-16 h-16 text-[#4CAF50] mx-auto mb-4" />
                   <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
-                  <p className="text-gray-600 text-sm">Que souhaitez-vous faire avec ce produit?</p>
+                  <p className="text-gray-600 text-sm">
+                    {showingComandaActions ? 'Cette commande sera ouverte dans le module Commandes.' : 'Que souhaitez-vous faire avec ce produit?'}
+                  </p>
                 </div>
                 
                 {/* Información escaneada */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                  {resultado.producto && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Produit: </span>
-                      <span className="text-[#1E73BE] font-bold text-lg">{resultado.producto}</span>
-                    </div>
-                  )}
-                  {resultado.categoria && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Catégorie: </span>
-                      <span className="text-[#333]">{resultado.categoria}</span>
-                    </div>
-                  )}
-                  {resultado.codigo && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Code: </span>
-                      <span className="text-[#333] font-mono">{resultado.codigo}</span>
-                    </div>
-                  )}
-                  {resultado.stock !== undefined && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Stock actuel: </span>
-                      <span className={`font-bold ${resultado.stock > 0 ? 'text-[#4CAF50]' : 'text-[#DC3545]'}`}>
-                        {resultado.stock} {resultado.unidad || 'unités'}
-                      </span>
-                    </div>
-                  )}
-                  {resultado.ubicacion && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Emplacement: </span>
-                      <span className="text-[#333]">{resultado.ubicacion}</span>
-                    </div>
-                  )}
-                  {resultado.text && !resultado.producto && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Données: </span>
-                      <span className="text-[#333] text-sm break-all">{resultado.text}</span>
-                    </div>
+                  {showingComandaActions ? (
+                    <>
+                      {detectedComanda?.comanda && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">N° Commande: </span>
+                          <span className="text-[#1E73BE] font-bold text-lg">{detectedComanda.comanda}</span>
+                        </div>
+                      )}
+                      {detectedComanda?.organismo && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Organisme: </span>
+                          <span className="text-[#333]">{detectedComanda.organismo}</span>
+                        </div>
+                      )}
+                      {detectedComanda?.fecha && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Date: </span>
+                          <span className="text-[#333]">{detectedComanda.fecha}</span>
+                        </div>
+                      )}
+                      {detectedComanda?.items !== undefined && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Articles: </span>
+                          <span className="text-[#4CAF50] font-bold">{detectedComanda.items}</span>
+                        </div>
+                      )}
+                      {resultado.text && !detectedComanda?.comanda && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Données: </span>
+                          <span className="text-[#333] text-sm break-all">{resultado.text}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {resultado.producto && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Produit: </span>
+                          <span className="text-[#1E73BE] font-bold text-lg">{resultado.producto}</span>
+                        </div>
+                      )}
+                      {resultado.categoria && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Catégorie: </span>
+                          <span className="text-[#333]">{resultado.categoria}</span>
+                        </div>
+                      )}
+                      {resultado.codigo && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Code: </span>
+                          <span className="text-[#333] font-mono">{resultado.codigo}</span>
+                        </div>
+                      )}
+                      {resultado.stock !== undefined && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Stock actuel: </span>
+                          <span className={`font-bold ${resultado.stock > 0 ? 'text-[#4CAF50]' : 'text-[#DC3545]'}`}>
+                            {resultado.stock} {resultado.unidad || 'unités'}
+                          </span>
+                        </div>
+                      )}
+                      {resultado.ubicacion && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Emplacement: </span>
+                          <span className="text-[#333]">{resultado.ubicacion}</span>
+                        </div>
+                      )}
+                      {resultado.text && !resultado.producto && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Données: </span>
+                          <span className="text-[#333] text-sm break-all">{resultado.text}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
                 {/* Menú de acciones para inventario */}
                 <div className="max-w-md mx-auto space-y-3 mb-6">
                   <h3 className="font-bold text-[#333] text-center mb-4" style={{ fontFamily: 'Montserrat' }}>
-                    Actions disponibles
+                    {showingComandaActions ? 'Actions disponibles pour cette commande' : 'Actions disponibles'}
                   </h3>
+
+                  {showingComandaActions ? (
+                    <button
+                      onClick={() => handleAction('ver_detalles')}
+                      className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    >
+                      <Package className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                      <div className="flex-1 text-left">
+                        <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Ouvrir dans Commandes</h4>
+                        <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                          Basculer vers le suivi complet de cette commande
+                        </p>
+                      </div>
+                    </button>
+                  ) : (
+                    <>
 
                   {/* Agregar al carrito - ACCIÓN PRINCIPAL */}
                   <button
@@ -630,6 +689,8 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
                       </p>
                     </div>
                   </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Botones secundarios */}

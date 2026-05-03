@@ -76,13 +76,21 @@ export function normalizeScannedComandaQR(value: unknown): ComandaQRPayload | nu
   }
 
   const nested = getRecord(record.datos);
+  const explicitType = getString(record.tipo) || getString(nested?.tipo);
+
+  if (explicitType && explicitType !== 'comanda') {
+    return null;
+  }
+
   const numeroComanda =
     getString(record.comanda) ||
     getString(record.numeroComanda) ||
     getString(record.id) ||
+    getString(record.text) ||
     getString(nested?.comanda) ||
     getString(nested?.numeroComanda) ||
-    getString(nested?.id);
+    getString(nested?.id) ||
+    getString(nested?.text);
 
   if (!numeroComanda) {
     return null;

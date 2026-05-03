@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, Package, Eye, Truck, XCircle, Edit } from 'lucide-react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
+import { normalizeScannedProductQR } from '../../utils/barcode';
 
 const GuiaPermisoCamara = lazy(async () => {
   const module = await import('./GuiaPermisoCamara');
@@ -25,6 +26,9 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoStartRef = useRef(false);
+  const explicitTipo = typeof resultado?.tipo === 'string' ? resultado.tipo : '';
+  const detectedProduct = normalizeScannedProductQR(resultado);
+  const showingProductActions = explicitTipo === 'producto' || Boolean(resultado?.codigo || resultado?.producto || resultado?.nombre || detectedProduct);
 
   useEffect(() => {
     return () => {
@@ -454,48 +458,97 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                 <div className="text-center mb-6">
                   <CheckCircle className="w-16 h-16 text-[#4CAF50] mx-auto mb-4" />
                   <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
-                  <p className="text-gray-600 text-sm">Choisissez l'action à effectuer</p>
+                  <p className="text-gray-600 text-sm">
+                    {showingProductActions ? 'Ce produit sera ouvert dans le module Inventaire.' : 'Choisissez l\'action à effectuer'}
+                  </p>
                 </div>
                 
                 {/* Información escaneada */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                  {resultado.comanda && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">N° Commande: </span>
-                      <span className="text-[#1E73BE] font-black text-lg">{resultado.comanda}</span>
-                    </div>
-                  )}
-                  {resultado.organismo && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Organisme: </span>
-                      <span className="text-[#333]">{resultado.organismo}</span>
-                    </div>
-                  )}
-                  {resultado.fecha && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Date: </span>
-                      <span className="text-[#333]">{resultado.fecha}</span>
-                    </div>
-                  )}
-                  {resultado.items !== undefined && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Articles: </span>
-                      <span className="text-[#4CAF50] font-bold">{resultado.items}</span>
-                    </div>
-                  )}
-                  {resultado.text && !resultado.comanda && (
-                    <div className="mb-2">
-                      <span className="font-bold text-[#666]">Données: </span>
-                      <span className="text-[#333] text-sm break-all">{resultado.text}</span>
-                    </div>
+                  {showingProductActions ? (
+                    <>
+                      {(detectedProduct?.producto || detectedProduct?.nombre) && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Produit: </span>
+                          <span className="text-[#1E73BE] font-black text-lg">{detectedProduct?.producto || detectedProduct?.nombre}</span>
+                        </div>
+                      )}
+                      {detectedProduct?.codigo && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Code: </span>
+                          <span className="text-[#333] font-mono">{detectedProduct.codigo}</span>
+                        </div>
+                      )}
+                      {detectedProduct?.ubicacion && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Emplacement: </span>
+                          <span className="text-[#333]">{detectedProduct.ubicacion}</span>
+                        </div>
+                      )}
+                      {resultado.text && !detectedProduct?.producto && !detectedProduct?.nombre && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Données: </span>
+                          <span className="text-[#333] text-sm break-all">{resultado.text}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {resultado.comanda && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">N° Commande: </span>
+                          <span className="text-[#1E73BE] font-black text-lg">{resultado.comanda}</span>
+                        </div>
+                      )}
+                      {resultado.organismo && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Organisme: </span>
+                          <span className="text-[#333]">{resultado.organismo}</span>
+                        </div>
+                      )}
+                      {resultado.fecha && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Date: </span>
+                          <span className="text-[#333]">{resultado.fecha}</span>
+                        </div>
+                      )}
+                      {resultado.items !== undefined && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Articles: </span>
+                          <span className="text-[#4CAF50] font-bold">{resultado.items}</span>
+                        </div>
+                      )}
+                      {resultado.text && !resultado.comanda && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Données: </span>
+                          <span className="text-[#333] text-sm break-all">{resultado.text}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
                 {/* Menú de acciones */}
                 <div className="max-w-md mx-auto space-y-3 mb-6">
                   <h3 className="font-bold text-[#333] text-center mb-4" style={{ fontFamily: 'Montserrat' }}>
-                    Que souhaitez-vous faire?
+                    {showingProductActions ? 'Actions disponibles pour ce produit' : 'Que souhaitez-vous faire?'}
                   </h3>
+
+                  {showingProductActions ? (
+                    <button
+                      onClick={() => handleAction('ver_detalles')}
+                      className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    >
+                      <Package className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                      <div className="flex-1 text-left">
+                        <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Ouvrir dans Inventaire</h4>
+                        <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                          Basculer vers la fiche du produit scanné
+                        </p>
+                      </div>
+                    </button>
+                  ) : (
+                    <>
 
                   {/* Ver detalles */}
                   <button
@@ -566,6 +619,8 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                       </p>
                     </div>
                   </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Botones secundarios */}

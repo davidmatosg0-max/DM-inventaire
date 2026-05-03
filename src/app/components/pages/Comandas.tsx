@@ -41,6 +41,13 @@ import type { Comanda, ItemComanda, Organismo, ProductoOferta, Oferta as OfertaT
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerOrganismos as obtenerOrganismosReales } from '../../utils/organismosStorage';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
+import { normalizeScannedProductQR } from '../../utils/barcode';
+import {
+  clearPendingQrNavigation,
+  navigateToQrPage,
+  readPendingQrNavigation,
+  savePendingQrNavigation,
+} from '../../utils/pendingQrNavigation';
 import { formatNumberSimple } from '../../utils/formatUtils';
 import { sortByTemperature } from '../../utils/temperatureSort';
 
@@ -101,6 +108,10 @@ export function Comandas() {
       ...mockProductos.filter(mockProducto => !productosReales.some(producto => producto.id === mockProducto.id))
     ].map(producto => [producto.id, producto])
   );
+  const productosCatalogo = Array.from(productosCatalogoMap.values());
+
+  const normalizeQrMatch = (value?: string | null) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : '';
 
   const obtenerNombreOrganismoComanda = (comanda: Comanda | null | undefined) => {
     if (!comanda) {
@@ -136,6 +147,94 @@ export function Comandas() {
   useEffect(() => {
     cargarComandas();
   }, []);
+
+  const findComandaByScannedData = (rawData: unknown) => {
+    const data = normalizeScannedComandaQR(rawData);
+    const numeroComanda = data?.comanda;
+
+    if (!numeroComanda) {
+      return null;
+    }
+
+    return comandas.find(c =>
+      (c.numero && c.numero === numeroComanda) ||
+      (c.numeroComanda && c.numeroComanda === numeroComanda) ||
+      c.id === numeroComanda
+    ) || null;
+  };
+
+  const findProductByScannedData = (rawData: unknown) => {
+    const productData = normalizeScannedProductQR(rawData);
+    if (!productData) {
+      return null;
+    }
+
+    const candidates = [productData.id, productData.codigo, productData.producto, productData.nombre]
+      .map(normalizeQrMatch)
+      .filter(Boolean);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    return productosCatalogo.find(producto => {
+      const productKeys = [producto.id, producto.codigo, producto.nombre]
+        .map(normalizeQrMatch)
+        .filter(Boolean);
+
+      return productKeys.some(key => candidates.includes(key));
+    }) || null;
+  };
+
+  const openScannedComanda = (comanda: Comanda, numeroComanda: string) => {
+    setComandaSeleccionada(comanda);
+    setMostrarModeloComanda(true);
+    setEscanerQROpen(false);
+
+    toast.success(
+      <div>
+        <span className="font-semibold">{t('orders.qrFound')}</span>
+        <p className="text-sm text-[#666666]">N° {numeroComanda}</p>
+      </div>,
+      { duration: 3000 }
+    );
+  };
+
+  useEffect(() => {
+    const pendingNavigation = readPendingQrNavigation();
+
+    if (!pendingNavigation || pendingNavigation.targetPage !== 'comandas' || pendingNavigation.qrType !== 'comanda') {
+      return;
+    }
+    const data = normalizeScannedComandaQR(pendingNavigation.rawData);
+    const numeroComanda = data?.comanda;
+    const comandasDisponibles = comandas.length > 0 ? comandas : obtenerComandas();
+
+    if (comandasDisponibles.length === 0) {
+      return;
+    }
+
+    const comandaEncontrada = comandasDisponibles.find(comanda =>
+      (comanda.numero && comanda.numero === numeroComanda) ||
+      (comanda.numeroComanda && comanda.numeroComanda === numeroComanda) ||
+      comanda.id === numeroComanda
+    ) || null;
+
+    if (!numeroComanda || !comandaEncontrada) {
+      clearPendingQrNavigation();
+      toast.error(
+        <div>
+          <span className="font-semibold">{t('orders.qrNotFound')}</span>
+          <p className="text-sm text-[#666666]">{numeroComanda ? `N° ${numeroComanda}` : t('common.error')}</p>
+        </div>,
+        { duration: 3000 }
+      );
+      return;
+    }
+
+    clearPendingQrNavigation();
+    openScannedComanda(comandaEncontrada, numeroComanda);
+  }, [comandas, t]);
 
   // useEffect para leer el tab guardado desde CuisinePage
   useEffect(() => {
@@ -363,6 +462,29 @@ export function Comandas() {
     const data = normalizeScannedComandaQR(rawData);
     const numeroComanda = data?.comanda;
 
+    if (numeroComanda) {
+      const comandaEncontrada = findComandaByScannedData(rawData);
+
+      if (comandaEncontrada) {
+        openScannedComanda(comandaEncontrada, numeroComanda);
+        return;
+      }
+    }
+
+    const producto = findProductByScannedData(rawData);
+
+    if (producto) {
+      setEscanerQROpen(false);
+      savePendingQrNavigation({
+        targetPage: 'inventario',
+        qrType: 'producto',
+        rawData,
+      });
+      toast.success('Produit détecté, redirection vers Inventaire');
+      navigateToQrPage('inventario');
+      return;
+    }
+
     if (!numeroComanda) {
       setEscanerQROpen(false);
       toast.error(
@@ -375,34 +497,14 @@ export function Comandas() {
       return;
     }
 
-    const comandaEncontrada = comandas.find(c =>
-      (c.numero && c.numero === numeroComanda) ||
-      (c.numeroComanda && c.numeroComanda === numeroComanda) ||
-      c.id === numeroComanda
+    setEscanerQROpen(false);
+    toast.error(
+      <div>
+        <span className="font-semibold">{t('orders.qrNotFound')}</span>
+        <p className="text-sm text-[#666666]">N° {numeroComanda}</p>
+      </div>,
+      { duration: 3000 }
     );
-
-    if (comandaEncontrada) {
-      setComandaSeleccionada(comandaEncontrada);
-      setMostrarModeloComanda(true);
-      setEscanerQROpen(false);
-      
-      toast.success(
-        <div>
-          <span className="font-semibold">{t('orders.qrFound')}</span>
-          <p className="text-sm text-[#666666]">N° {numeroComanda}</p>
-        </div>,
-        { duration: 3000 }
-      );
-    } else {
-      setEscanerQROpen(false);
-      toast.error(
-        <div>
-          <span className="font-semibold">{t('orders.qrNotFound')}</span>
-          <p className="text-sm text-[#666666]">N° {numeroComanda}</p>
-        </div>,
-        { duration: 3000 }
-      );
-    }
   };
 
   // Handlers para gestión de solicitudes de ofertas
