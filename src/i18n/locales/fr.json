@@ -1462,6 +1462,7 @@
     "allCategories": "Toutes les catégories",
     "status": "État",
     "allStatuses": "Tous les états",
+    "activeStatuses": "États actifs",
     "activeOnly": "Actifs",
     "inactiveOnly": "Annulés",
     "organism": "Organisme",

@@ -28,6 +28,7 @@ import { EntryReportView } from './EntryReportView';
 import { ExitReportView } from './ExitReportView';
 import { DonorReportView } from './DonorReportView';
 import { ProgramReportView } from './ProgramReportView';
+import { isActiveReportComanda } from './reportComandaStatus';
 import { obtenerComandasReporte } from './reportComandas';
 import { formatMoney } from '../../utils/formatUtils';
 import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
@@ -116,7 +117,7 @@ export function ReportsModule({ embedded = false, hideHeader = false }: ReportsM
     const currentEntryValue = currentEntries.reduce((sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)), 0);
     const previousEntryValue = previousEntries.reduce((sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)), 0);
 
-    const activeCommandes = commandes.filter((comanda) => comanda.estado !== 'anulada');
+    const activeCommandes = commandes.filter(isActiveReportComanda);
     const currentCommandes = activeCommandes.filter((comanda) => isWithinRange(comanda.fecha, currentMonth));
     const previousCommandes = activeCommandes.filter((comanda) => isWithinRange(comanda.fecha, previousMonth));
     const currentCommandeValue = currentCommandes.reduce((sum, comanda) => sum + getSafeMoneyValue(comanda.totalValorMonetario), 0);

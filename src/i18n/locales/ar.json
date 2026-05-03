@@ -1484,6 +1484,7 @@
     "allCategories": "كل الفئات",
     "status": "الحالة",
     "allStatuses": "كل الحالات",
+    "activeStatuses": "الحالات النشطة",
     "activeOnly": "النشطة",
     "inactiveOnly": "الملغاة",
     "organism": "المؤسسة",

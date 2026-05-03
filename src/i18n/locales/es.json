@@ -1454,6 +1454,7 @@
     "allCategories": "Todas las categorías",
     "status": "Estado",
     "allStatuses": "Todos los estados",
+    "activeStatuses": "Estados activos",
     "activeOnly": "Activos",
     "inactiveOnly": "Anulados",
     "organism": "Organismo",

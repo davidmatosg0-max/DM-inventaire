@@ -1466,6 +1466,7 @@
     "allCategories": "All categories",
     "status": "Status",
     "allStatuses": "All statuses",
+    "activeStatuses": "Active statuses",
     "activeOnly": "Active",
     "inactiveOnly": "Cancelled",
     "organism": "Organization",

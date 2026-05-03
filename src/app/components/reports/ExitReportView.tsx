@@ -34,6 +34,7 @@ import {
 import { exportData, generateFilename, type TableColumn } from '../../utils/exportUtils';
 import { formatMoney } from '../../utils/formatUtils';
 import { obtenerComandasReporte, type ReportComanda } from './reportComandas';
+import { matchesReportComandaStatusFilter, type ReportComandaStatusFilter } from './reportComandaStatus';
 import type { ReportPeriod } from '../../../types/reports';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -41,8 +42,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-
-type ComandaStatusFilter = 'all' | ReportComanda['estado'];
 
 function normalizeText(value?: string): string {
   return value?.trim().toLowerCase() || '';
@@ -245,7 +244,7 @@ export function ExitReportView() {
     const normalizedSearch = normalizeText(searchTerm);
 
     return comandas
-      .filter((comanda) => statusFilter === 'all' || comanda.estado === statusFilter)
+      .filter((comanda) => matchesReportComandaStatusFilter(comanda, statusFilter))
       .filter((comanda) => selectedOrganism === 'all' || comanda.organismoNombre === selectedOrganism)
       .filter((comanda) => selectedFrequency === 'all' || (comanda.organismoFrecuencia || '') === selectedFrequency)
       .filter((comanda) => {
@@ -513,7 +512,7 @@ export function ExitReportView() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('reports.allStatuses', 'Tous les états')}</SelectItem>
+                  <SelectItem value="all">{t('reports.activeStatuses', 'États actifs')}</SelectItem>
                   <SelectItem value="pendiente">Pendiente</SelectItem>
                   <SelectItem value="en_preparacion">En préparation</SelectItem>
                   <SelectItem value="completada">Prête</SelectItem>

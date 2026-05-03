@@ -12,6 +12,7 @@
     "dev": "vite",
     "dev:recrutement": "vite --host 127.0.0.1 --port 4173 --strictPort",
     "preview": "vite preview",
+    "test:reportes:distribution": "node tmp/reportes-distribution-status-regression.cjs",
     "test:entrepot": "node tmp/contactos-entrepot-functional.cjs",
     "test:entrepot:edicion": "node tmp/entrepot-edicion-anulacion-regression.cjs",
     "test:entrepot:icons": "node tmp/entrepot-ui-icons-regression.cjs",
