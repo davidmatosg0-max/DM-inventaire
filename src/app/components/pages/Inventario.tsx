@@ -989,7 +989,6 @@ export function Inventario() {
     productosLista.forEach((producto, index) => {
       contenido += `${index + 1}. ${getInventoryProductName(producto)}\n`;
       contenido += `   Código: ${producto.codigo}\n`;
-      contenido += `   Sous-catégorie: ${getInventorySubcategoriaLabel(producto)}\n`;
       contenido += `   Unidad Original: ${producto.unidad}\n`;
       
       if (listaGenerada.incluirStock) {
@@ -2038,7 +2037,6 @@ export function Inventario() {
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.photo')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.code')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.productName')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>Sous-catégorie</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>📦 {t('inventory.lotNumberShort')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unit')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unitWeight')}</TableHead>
@@ -2082,15 +2080,6 @@ export function Inventario() {
                                   {getInventoryProductName(producto)}
                                 </span>
                               </div>
-                            </TableCell>
-                            <TableCell className="py-1 px-2">
-                              <Badge 
-                                variant="outline" 
-                                className="gap-0.5 bg-gradient-to-r from-white to-[#F8F9FA] border-[#1a4d7a] text-[10px] px-1.5 py-0"
-                              >
-                                <span className="emoji-icon text-xs">{obtenerIconoProducto(producto)}</span>
-                                <span className="font-medium">{getInventorySubcategoriaLabel(producto)}</span>
-                              </Badge>
                             </TableCell>
                             <TableCell className="py-1 px-2">
                               {producto.lote ? (
@@ -2330,12 +2319,6 @@ export function Inventario() {
                               </div>
                             )}
                           </div>
-
-                          {/* Subcategoría */}
-                          <Badge variant="outline" className="gap-1 w-full justify-center">
-                            <span className="emoji-icon">{obtenerIconoProducto(producto)}</span>
-                            <span className="truncate">{getInventorySubcategoriaLabel(producto)}</span>
-                          </Badge>
 
                           {/* Stock y estado */}
                           <div className="flex items-center justify-between">
@@ -2887,7 +2870,7 @@ export function Inventario() {
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{getInventoryProductName(producto)}</p>
                                 <p className="text-xs text-[#666666]">
-                                  {producto.codigo} • {getInventorySubcategoriaLabel(producto)}
+                                  {producto.codigo}
                                   {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (
                                     <> • {Math.round(producto.pesoUnitario)} kg/{producto.unidad}</>
                                   ) : (producto.peso && producto.peso > 0 && producto.stockActual > 0) && (

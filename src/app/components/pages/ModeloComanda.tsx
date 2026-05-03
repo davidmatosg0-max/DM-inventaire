@@ -666,7 +666,7 @@ export function ModeloComanda({
                           )}
                           <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Icône</TableHead>
                           <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Code</TableHead>
-                          <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Sous-catégorie</TableHead>
+                          <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Produit</TableHead>
                           <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Lot</TableHead>
                           <TableHead className="font-bold text-center text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Quantité</TableHead>
                           <TableHead className="font-bold text-center text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Unité</TableHead>

@@ -55,8 +55,6 @@ export function ReportTemplates({ onSelectTemplate }: ReportTemplatesProps) {
       columns: [
         { header: 'Code', key: 'code', width: 80, align: 'center' },
         { header: 'Produit', key: 'name', width: 150 },
-        { header: 'Catégorie', key: 'category', width: 100 },
-        { header: 'Sous-catégorie', key: 'subcategory', width: 100 },
         { header: 'Stock', key: 'stock', width: 60, align: 'right' },
         { header: 'Unité', key: 'unit', width: 60, align: 'center' },
         { header: 'Peso (kg)', key: 'weight', width: 80, align: 'right' },
@@ -77,7 +75,6 @@ export function ReportTemplates({ onSelectTemplate }: ReportTemplatesProps) {
       columns: [
         { header: 'Code', key: 'code', width: 80, align: 'center' },
         { header: 'Produit', key: 'name', width: 150 },
-        { header: 'Catégorie', key: 'category', width: 100 },
         { header: 'Stock actuel', key: 'currentStock', width: 80, align: 'right' },
         { header: 'Stock minimum', key: 'minStock', width: 80, align: 'right' },
         { header: 'Écart', key: 'difference', width: 80, align: 'right' },

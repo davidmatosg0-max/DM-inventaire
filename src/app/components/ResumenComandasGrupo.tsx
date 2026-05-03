@@ -253,12 +253,6 @@ export function ResumenComandasGrupo({
                     <div className="flex-1">
                       <p className="font-medium text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>{producto.nombre}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {producto.categoria && (
-                          <Badge variant="outline" className="text-xs">
-                            {producto.categoria}
-                            {(producto as any).subcategoria && ` › ${(producto as any).subcategoria}`}
-                          </Badge>
-                        )}
                         {producto.codigo && (
                           <span className="text-xs text-[#666666]">
                             Código: {producto.codigo}

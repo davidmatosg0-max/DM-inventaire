@@ -385,7 +385,6 @@ export function InventarioCocina() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Produit</TableHead>
-                    <TableHead>Catégorie</TableHead>
                     <TableHead>Stock</TableHead>
                     <TableHead>Zone</TableHead>
                     <TableHead>Origine</TableHead>
@@ -407,14 +406,6 @@ export function InventarioCocina() {
                             <p className="text-xs text-gray-600">{producto.productoCodigo}</p>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{producto.categoria}</Badge>
-                        {producto.subcategoria && (
-                          <Badge variant="outline" className="ml-1 text-xs">
-                            {producto.subcategoria}
-                          </Badge>
-                        )}
                       </TableCell>
                       <TableCell>
                         <div>

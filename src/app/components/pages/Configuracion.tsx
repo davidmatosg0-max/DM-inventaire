@@ -3041,12 +3041,6 @@ export function Configuracion() {
 
                               {/* Badges de información */}
                               <div className="flex flex-wrap gap-2 mb-3">
-                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                                  📁 {producto.categoria}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                  🏷️ {producto.subcategoria}
-                                </Badge>
                                 {producto.varianteNombre && (
                                   <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
                                     ✨ {producto.varianteNombre}

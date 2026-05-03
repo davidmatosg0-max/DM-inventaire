@@ -3037,10 +3037,6 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                     <p className="font-bold text-lg" style={{ color: branding.primaryColor, fontFamily: 'Montserrat, sans-serif' }}>
                       {productosPRS.find(p => p.id === formEntrada.productoId)?.nombre}
                     </p>
-                    <p className="text-sm text-[#666666] flex items-center gap-2 mt-1">
-                      <Tag className="w-3 h-3" />
-                      {productosPRS.find(p => p.id === formEntrada.productoId)?.categoria} › {productosPRS.find(p => p.id === formEntrada.productoId)?.subcategoria}
-                    </p>
                   </div>
                 </div>
               </div>

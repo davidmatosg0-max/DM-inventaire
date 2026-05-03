@@ -527,7 +527,7 @@ export async function generateStandardProductLabel(
     <div class="producto-section">
       ${data.productoIcono ? `<div class="producto-icono">${data.productoIcono}</div>` : ''}
       <div class="producto-nombre">
-        ${data.subcategoria || data.nombreProducto}
+        ${data.nombreProducto}
       </div>
     </div>
     

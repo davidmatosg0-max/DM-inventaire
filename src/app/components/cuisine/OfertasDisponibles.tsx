@@ -402,10 +402,6 @@ export function OfertasDisponibles({ onOfertaAceptada }: OfertasDisponiblesProps
                           <span className="text-3xl">{producto.icono}</span>
                           <div className="flex-1">
                             <p className="font-semibold text-sm">{producto.productoNombre}</p>
-                            <p className="text-xs text-gray-600">
-                              {producto.categoria}
-                              {producto.subcategoria && ` › ${producto.subcategoria}`}
-                            </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <Input

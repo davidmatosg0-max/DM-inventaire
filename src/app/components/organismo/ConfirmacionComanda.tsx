@@ -348,7 +348,7 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12"></TableHead>
-                        <TableHead>Sous-catégorie</TableHead>
+                        <TableHead>Produit</TableHead>
                         <TableHead>Code</TableHead>
                         <TableHead className="text-right">Quantité</TableHead>
                         <TableHead>Unité</TableHead>

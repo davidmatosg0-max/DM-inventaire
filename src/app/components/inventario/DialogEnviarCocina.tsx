@@ -281,10 +281,6 @@ export function DialogEnviarCocina({
                         <span className="text-2xl">{producto.icono}</span>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{producto.productoNombre}</p>
-                          <p className="text-xs text-gray-600">
-                            {producto.categoria}
-                            {producto.subcategoria && ` › ${producto.subcategoria}`}
-                          </p>
                         </div>
                       </div>
                       <Badge className="bg-[#1E73BE]">
