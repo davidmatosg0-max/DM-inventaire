@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, Download, BarChart3, Shield } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
@@ -40,6 +39,22 @@ type ComandaExportable = Comanda & {
 };
 
 type DatePreset = 'today' | 'last7days' | 'last30days' | 'month';
+type ReportTab = 'general' | 'operaciones' | 'inventario' | 'comandas' | 'prs' | 'auditoria';
+type ExportableReportType = 'general' | 'inventario' | 'comandas' | 'prs' | 'organismos';
+
+const REPORT_TYPE_TO_TAB: Partial<Record<ExportableReportType, ReportTab>> = {
+  general: 'general',
+  inventario: 'inventario',
+  comandas: 'comandas',
+  prs: 'prs',
+};
+
+const REPORT_TAB_TO_TYPE: Partial<Record<ReportTab, ExportableReportType>> = {
+  general: 'general',
+  inventario: 'inventario',
+  comandas: 'comandas',
+  prs: 'prs',
+};
 
 const DATE_PRESET_OPTIONS: Array<{ value: DatePreset; label: string }> = [
   { value: 'today', label: "Aujourd'hui" },
@@ -129,12 +144,57 @@ function getProductWeight(producto: ProductoCreado): number {
   return pesoUnitario > 0 ? pesoUnitario * producto.stockActual : producto.stockActual;
 }
 
+const LEGACY_PANEL_CLASSNAME = 'backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40';
+
+type ReportStatCardProps = {
+  label: string;
+  value: React.ReactNode;
+  accentColor: string;
+  valueColor: string;
+};
+
+function ReportStatCard({ label, value, accentColor, valueColor }: ReportStatCardProps) {
+  return (
+    <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4" style={{ borderLeftColor: accentColor }}>
+      <p className="text-xs sm:text-sm text-gray-600">{label}</p>
+      <div className="text-2xl sm:text-3xl font-bold mt-1" style={{ fontFamily: 'Montserrat, sans-serif', color: valueColor }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+type ReportChartCardProps = {
+  title: string;
+  titleColor: string;
+  hasData: boolean;
+  emptyHeight?: number;
+  children: React.ReactNode;
+};
+
+function ReportChartCard({ title, titleColor, hasData, emptyHeight = 300, children }: ReportChartCardProps) {
+  return (
+    <div className={LEGACY_PANEL_CLASSNAME}>
+      <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: titleColor }}>
+        {title}
+      </h3>
+      {hasData ? (
+        children
+      ) : (
+        <div className="flex items-center justify-center text-gray-400" style={{ height: `${emptyHeight}px` }}>
+          <p className="text-center">Aucune donnée disponible</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Reportes() {
   const { t } = useTranslation();
   const branding = useBranding();
   const initialRange = getDatePresetRange('month');
-  const [activeReportTab, setActiveReportTab] = useState('operaciones');
-  const [tipoReporte, setTipoReporte] = useState('general');
+  const [activeReportTab, setActiveReportTab] = useState<ReportTab>('operaciones');
+  const [tipoReporte, setTipoReporte] = useState<ExportableReportType>('general');
   const [fechaInicio, setFechaInicio] = useState(initialRange.start);
   const [fechaFin, setFechaFin] = useState(initialRange.end);
   const [productos, setProductos] = useState<ProductoCreado[]>([]);
@@ -248,6 +308,25 @@ export function Reportes() {
     const rango = getDatePresetRange(preset);
     setFechaInicio(rango.start);
     setFechaFin(rango.end);
+  };
+
+  const handleTipoReporteChange = (value: ExportableReportType) => {
+    setTipoReporte(value);
+
+    const targetTab = REPORT_TYPE_TO_TAB[value];
+    if (targetTab) {
+      setActiveReportTab(targetTab);
+    }
+  };
+
+  const handleReportTabChange = (value: string) => {
+    const nextTab = value as ReportTab;
+    setActiveReportTab(nextTab);
+
+    const nextReportType = REPORT_TAB_TO_TYPE[nextTab];
+    if (nextReportType) {
+      setTipoReporte(nextReportType);
+    }
   };
 
   const handleGenerarReporte = (formato: 'pdf' | 'excel') => {
@@ -372,6 +451,37 @@ export function Reportes() {
     }
   };
 
+  const generalOverviewCards = [
+    {
+      key: 'products',
+      label: t('reports.totalProducts'),
+      value: productos.length,
+      accentColor: branding.primaryColor,
+      valueColor: branding.primaryColor,
+    },
+    {
+      key: 'orders',
+      label: t('reports.ordersMonth'),
+      value: comandasFiltradas.length,
+      accentColor: '#4CAF50',
+      valueColor: '#4CAF50',
+    },
+    {
+      key: 'organisms',
+      label: t('reports.organisms'),
+      value: organismos.length,
+      accentColor: '#FFC107',
+      valueColor: '#FFC107',
+    },
+    {
+      key: 'beneficiaries',
+      label: t('reports.beneficiaries'),
+      value: organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0),
+      accentColor: '#DC3545',
+      valueColor: '#DC3545',
+    },
+  ];
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Fondo degradado con colores del branding */}
@@ -433,7 +543,7 @@ export function Reportes() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label>{t('reports.reportType')}</Label>
-            <Select value={tipoReporte} onValueChange={setTipoReporte}>
+            <Select value={tipoReporte} onValueChange={(value) => handleTipoReporteChange(value as ExportableReportType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -499,7 +609,7 @@ export function Reportes() {
 
       {/* Tabs de Reportes con glassmorphism */}
       <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
-        <Tabs value={activeReportTab} onValueChange={setActiveReportTab} className="space-y-4">
+        <Tabs value={activeReportTab} onValueChange={handleReportTabChange} className="space-y-4">
           <TabsList className="w-full bg-transparent border-b rounded-none flex flex-wrap">
             <TabsTrigger value="general" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('reports.general')}
@@ -524,44 +634,20 @@ export function Reportes() {
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 p-4 sm:p-6 pt-0">
-            {/* Estadísticas con glassmorphism */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
-                <p className="text-xs sm:text-sm text-gray-600">{t('reports.totalProducts')}</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                  {productos.length}
-                </p>
-              </div>
-
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#4CAF50]">
-                <p className="text-xs sm:text-sm text-gray-600">{t('reports.ordersMonth')}</p>
-                <p className="text-2xl sm:text-3xl font-bold text-[#4CAF50] mt-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {comandasFiltradas.length}
-                </p>
-              </div>
-
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#FFC107]">
-                <p className="text-xs sm:text-sm text-gray-600">{t('reports.organisms')}</p>
-                <p className="text-2xl sm:text-3xl font-bold text-[#FFC107] mt-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {organismos.length}
-                </p>
-              </div>
-
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#DC3545]">
-                <p className="text-xs sm:text-sm text-gray-600">{t('reports.beneficiaries')}</p>
-                <p className="text-2xl sm:text-3xl font-bold text-[#DC3545] mt-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0)}
-                </p>
-              </div>
+              {generalOverviewCards.map((card) => (
+                <ReportStatCard
+                  key={card.key}
+                  label={card.label}
+                  value={card.value}
+                  accentColor={card.accentColor}
+                  valueColor={card.valueColor}
+                />
+              ))}
             </div>
 
-            {/* Gráficos con glassmorphism */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
-                <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                  {t('reports.ordersMonth')}
-                </h3>
-                {datosComandasMes.length > 0 ? (
+              <ReportChartCard title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0}>
                   <ResponsiveContainer width="100%" height={300} key="linechart-comandas-mes">
                     <LineChart data={datosComandasMes}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -572,18 +658,9 @@ export function Reportes() {
                       <Line type="monotone" dataKey="comandas" stroke={branding.primaryColor} strokeWidth={2} name={t('nav.orders')} />
                     </LineChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-400">
-                    <p className="text-center">Aucune donnée disponible</p>
-                  </div>
-                )}
-              </div>
+              </ReportChartCard>
 
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
-                <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                  {t('reports.beneficiariesOrganism')}
-                </h3>
-                {datosOrganismos.length > 0 ? (
+              <ReportChartCard title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0}>
                   <ResponsiveContainer width="100%" height={300} key="barchart-organismos">
                     <BarChart data={datosOrganismos}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -594,17 +671,12 @@ export function Reportes() {
                       <Bar dataKey="beneficiarios" fill="#4CAF50" name={t('reports.beneficiaries')} />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-400">
-                    <p className="text-center">Aucune donnée disponible</p>
-                  </div>
-                )}
-              </div>
+              </ReportChartCard>
             </div>
           </TabsContent>
 
           <TabsContent value="operaciones" className="space-y-4 p-4 sm:p-6 pt-0">
-            <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
+            <div className={LEGACY_PANEL_CLASSNAME}>
               <div className="flex items-start gap-3">
                 <div className="rounded-xl bg-[#1a4d7a]/10 p-3 text-[#1a4d7a]">
                   <BarChart3 className="w-5 h-5" />
@@ -625,11 +697,7 @@ export function Reportes() {
 
           <TabsContent value="inventario" className="space-y-4 p-4 sm:p-6 pt-0">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
-                <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                  {t('reports.stockCategory')}
-                </h3>
-                {datosInventario.length > 0 ? (
+              <ReportChartCard title={t('reports.stockCategory')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
                   <ResponsiveContainer width="100%" height={300} key="barchart-inventario">
                     <BarChart data={datosInventario}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -639,18 +707,9 @@ export function Reportes() {
                       <Bar dataKey="stock" fill={branding.primaryColor} name={t('reports.stockKg')} />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-400">
-                    <p className="text-center">Aucune donnée disponible</p>
-                  </div>
-                )}
-              </div>
+              </ReportChartCard>
 
-              <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
-                <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                  {t('reports.inventoryDistribution')}
-                </h3>
-                {datosInventario.length > 0 ? (
+              <ReportChartCard title={t('reports.inventoryDistribution')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
                   <ResponsiveContainer width="100%" height={300} key="piechart-inventario">
                     <PieChart>
                       <Pie
@@ -670,21 +729,12 @@ export function Reportes() {
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-400">
-                    <p className="text-center">Aucune donnée disponible</p>
-                  </div>
-                )}
-              </div>
+              </ReportChartCard>
             </div>
           </TabsContent>
 
           <TabsContent value="comandas" className="space-y-4 p-4 sm:p-6 pt-0">
-            <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
-              <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                {t('reports.ordersEvolution')}
-              </h3>
-              {datosComandasMes.length > 0 ? (
+            <ReportChartCard title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={400}>
                 <ResponsiveContainer width="100%" height={400} key="barchart-comandas">
                   <BarChart data={datosComandasMes}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -695,20 +745,11 @@ export function Reportes() {
                     <Bar dataKey="comandas" fill="#4CAF50" name={t('reports.completedOrders')} />
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="h-[400px] flex items-center justify-center text-gray-400">
-                  <p className="text-center">Aucune donnée disponible</p>
-                </div>
-              )}
-            </div>
+            </ReportChartCard>
           </TabsContent>
 
           <TabsContent value="prs" className="space-y-4 p-4 sm:p-6 pt-0">
-            <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40">
-              <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                {t('reports.prsRescueMonth')}
-              </h3>
-              {datosPRS.length > 0 ? (
+            <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={400}>
                 <ResponsiveContainer width="100%" height={400} key="linechart-prs">
                   <LineChart data={datosPRS}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -719,12 +760,7 @@ export function Reportes() {
                     <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name={t('reports.rescuedKg')} />
                   </LineChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="h-[400px] flex items-center justify-center text-gray-400">
-                  <p className="text-center">Aucune donnée disponible</p>
-                </div>
-              )}
-            </div>
+            </ReportChartCard>
           </TabsContent>
 
           <TabsContent value="auditoria" className="space-y-4 p-4 sm:p-6 pt-0">

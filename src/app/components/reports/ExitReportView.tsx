@@ -33,7 +33,7 @@ import {
 } from 'recharts';
 import { exportData, generateFilename, type TableColumn } from '../../utils/exportUtils';
 import { formatMoney } from '../../utils/formatUtils';
-import { obtenerComandas, type Comanda } from '../../utils/comandasLogic';
+import { obtenerComandasReporte, type ReportComanda } from './reportComandas';
 import type { ReportPeriod } from '../../../types/reports';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -42,7 +42,7 @@ import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
-type ComandaStatusFilter = 'all' | Comanda['estado'];
+type ComandaStatusFilter = 'all' | ReportComanda['estado'];
 
 function normalizeText(value?: string): string {
   return value?.trim().toLowerCase() || '';
@@ -170,28 +170,30 @@ function formatCompactNumber(value: number): string {
   return value.toLocaleString();
 }
 
-function getStatusLabel(status: Comanda['estado']): string {
+function getStatusLabel(status: ReportComanda['estado']): string {
   switch (status) {
     case 'pendiente':
       return 'Pendiente';
-    case 'preparada':
-      return 'Preparada';
+    case 'en_preparacion':
+      return 'En préparation';
+    case 'completada':
+      return 'Prête';
     case 'entregada':
       return 'Entregada';
-    case 'cancelada':
-      return 'Cancelada';
+    case 'anulada':
+      return 'Annulée';
     default:
       return status;
   }
 }
 
-function getStatusBadgeClass(status: Comanda['estado']): string {
+function getStatusBadgeClass(status: ReportComanda['estado']): string {
   switch (status) {
     case 'entregada':
       return 'border-green-200 bg-green-50 text-green-700';
-    case 'preparada':
+    case 'completada':
       return 'border-blue-200 bg-blue-50 text-blue-700';
-    case 'cancelada':
+    case 'anulada':
       return 'border-red-200 bg-red-50 text-red-700';
     default:
       return 'border-yellow-200 bg-yellow-50 text-yellow-700';
@@ -222,7 +224,7 @@ export function ExitReportView() {
     };
   }, []);
 
-  const comandas = useMemo(() => obtenerComandas().slice().sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()), [refreshKey]);
+  const comandas = useMemo(() => obtenerComandasReporte().slice().sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()), [refreshKey]);
 
   const dateRange = useMemo(
     () => toDateRange(period, customStartDate, customEndDate),
@@ -267,7 +269,7 @@ export function ExitReportView() {
 
   const previousComandas = useMemo(() => {
     if (!previousRange) {
-      return [] as Comanda[];
+      return [] as ReportComanda[];
     }
 
     return baseFilteredComandas.filter((comanda) => matchesRange(comanda.fecha, previousRange));
@@ -513,9 +515,10 @@ export function ExitReportView() {
                 <SelectContent>
                   <SelectItem value="all">{t('reports.allStatuses', 'Tous les états')}</SelectItem>
                   <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="preparada">Preparada</SelectItem>
+                  <SelectItem value="en_preparacion">En préparation</SelectItem>
+                  <SelectItem value="completada">Prête</SelectItem>
                   <SelectItem value="entregada">Entregada</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
+                  <SelectItem value="anulada">Annulée</SelectItem>
                 </SelectContent>
               </Select>
             </div>

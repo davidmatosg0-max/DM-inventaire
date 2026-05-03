@@ -28,9 +28,9 @@ import { EntryReportView } from './EntryReportView';
 import { ExitReportView } from './ExitReportView';
 import { DonorReportView } from './DonorReportView';
 import { ProgramReportView } from './ProgramReportView';
+import { obtenerComandasReporte } from './reportComandas';
 import { formatMoney } from '../../utils/formatUtils';
 import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
-import { obtenerComandas } from '../../utils/comandasLogic';
 import type { ReportType } from '../../../types/reports';
 
 type QuickStatCard = {
@@ -109,14 +109,14 @@ export function ReportsModule({ embedded = false, hideHeader = false }: ReportsM
     const previousMonth = getPreviousMonthRange();
 
     const entries = obtenerTodasLasEntradas();
-    const commandes = obtenerComandas();
+    const commandes = obtenerComandasReporte();
 
     const currentEntries = entries.filter((entry) => entry.activo && isWithinRange(entry.fecha, currentMonth));
     const previousEntries = entries.filter((entry) => entry.activo && isWithinRange(entry.fecha, previousMonth));
     const currentEntryValue = currentEntries.reduce((sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)), 0);
     const previousEntryValue = previousEntries.reduce((sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)), 0);
 
-    const activeCommandes = commandes.filter((comanda) => comanda.estado !== 'cancelada');
+    const activeCommandes = commandes.filter((comanda) => comanda.estado !== 'anulada');
     const currentCommandes = activeCommandes.filter((comanda) => isWithinRange(comanda.fecha, currentMonth));
     const previousCommandes = activeCommandes.filter((comanda) => isWithinRange(comanda.fecha, previousMonth));
     const currentCommandeValue = currentCommandes.reduce((sum, comanda) => sum + getSafeMoneyValue(comanda.totalValorMonetario), 0);
