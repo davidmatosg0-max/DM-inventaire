@@ -72,8 +72,8 @@ export const RESPONSIVE_MIGRATIONS = {
   },
 
   // ==================== FORMULARIO ENTRADA ====================
-  FormularioEntrada: {
-    file: '/src/app/components/FormularioEntrada.tsx',
+  EntradaDonAchat: {
+    file: '/src/app/components/EntradaDonAchat.tsx',
     changes: [
       {
         lineApprox: 437,

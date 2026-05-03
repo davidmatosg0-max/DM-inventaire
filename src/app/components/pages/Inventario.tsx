@@ -115,7 +115,7 @@ const CarritoMejorado = lazyNamed(() => import('../inventario/CarritoMejorado'),
 const HistorialEntradasCompacto = lazyNamed(() => import('../inventario/HistorialEntradasCompacto'), 'HistorialEntradasCompacto');
 const HistorialProductoDialog = lazyNamed(() => import('../inventario/HistorialProductoDialog'), 'HistorialProductoDialog');
 const TransformarProductoDialog = lazyNamed(() => import('../inventario/TransformarProductoDialog'), 'TransformarProductoDialog');
-const FormularioEntrada = lazyNamed(() => import('../FormularioEntrada'), 'FormularioEntrada');
+const EntradaDonAchat = lazyNamed(() => import('../EntradaDonAchat'), 'EntradaDonAchat');
 const ValidacionEntradasDialog = lazyNamed(() => import('../inventario/ValidacionEntradasDialog'), 'ValidacionEntradasDialog');
 const AnalisisPredictivoStock = lazyNamed(() => import('../inventario/AnalisisPredictivoStock'), 'AnalisisPredictivoStock');
 const ExportacionAvanzada = lazyNamed(() => import('../inventario/ExportacionAvanzada'), 'ExportacionAvanzada');
@@ -137,8 +137,18 @@ function DeferredPanel({ children }: { children: React.ReactNode }) {
 }
 
 export function Inventario() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const branding = useBranding();
+  const translatedNewEntry = t('newEntry');
+  const newEntryLabel = translatedNewEntry !== 'newEntry'
+    ? translatedNewEntry
+    : i18n.resolvedLanguage?.startsWith('es')
+      ? 'Nueva entrada'
+      : i18n.resolvedLanguage?.startsWith('en')
+        ? 'New entry'
+        : i18n.resolvedLanguage?.startsWith('ar')
+          ? 'إدخال جديد'
+          : 'Nouvelle entrée';
   const [activeTab, setActiveTab] = useState('productos');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLote, setSearchLote] = useState('');
@@ -177,7 +187,7 @@ export function Inventario() {
   const [historialEntradasOpen, setHistorialEntradasOpen] = useState(false);
   
   // Estado para formulario de entrada
-  const [formularioEntradaOpen, setFormularioEntradaOpen] = useState(false);
+  const [entradaDonAchatOpen, setEntradaDonAchatOpen] = useState(false);
   
   // Estado para escáner QR
   const [escanerQROpen, setEscanerQROpen] = useState(false);
@@ -2294,19 +2304,11 @@ export function Inventario() {
 
         {/* Entradas Tab */}
         <TabsContent value="entradas" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center">
             <div>
               <h2 className="text-xl font-bold text-[#333333]">{t('inventory.entryHistory')}</h2>
               <p className="text-sm text-[#666666]">Historial completo de entradas Don/Achat</p>
             </div>
-            <Button
-              size="icon"
-              onClick={() => setFormularioEntradaOpen(true)}
-              className="bg-[#1a4d7a] hover:bg-[#153d61]"
-              title="Nueva Entrada"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
 
           {activeTab === 'entradas' && (
@@ -2739,11 +2741,12 @@ export function Inventario() {
       )}
       
       {/* Formulario de Entrada */}
-      {formularioEntradaOpen && (
+      {entradaDonAchatOpen && (
         <DeferredPanel>
-          <FormularioEntrada
-            open={formularioEntradaOpen}
-            onOpenChange={setFormularioEntradaOpen}
+          <EntradaDonAchat
+            open={entradaDonAchatOpen}
+            onOpenChange={setEntradaDonAchatOpen}
+            hideTrigger
           />
         </DeferredPanel>
       )}
@@ -2998,6 +3001,22 @@ export function Inventario() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {!entradaDonAchatOpen && (
+        <Button
+          size="icon"
+          onClick={() => setEntradaDonAchatOpen(true)}
+          className="fixed bottom-20 right-6 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
+          style={{
+            background: 'linear-gradient(135deg, #1a4d7a 0%, #153d61 100%)',
+            boxShadow: '0 10px 25px rgba(26, 77, 122, 0.35)'
+          }}
+          title={newEntryLabel}
+          aria-label={newEntryLabel}
+        >
+          <Plus className="h-5 w-5" />
+        </Button>
+      )}
 
       {!escanerQROpen && (
         <Button

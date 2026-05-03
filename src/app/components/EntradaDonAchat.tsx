@@ -132,6 +132,12 @@ interface FormVariante {
   descripcion: string;
 }
 
+interface EntradaDonAchatProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}
+
 // ==================== DATOS INICIALES ====================
 const FORM_DATA_INICIAL: FormDataDonAchat = {
   tipoEntrada: '',
@@ -193,13 +199,15 @@ const FORM_VARIANTE_INICIAL: FormVariante = {
 };
 
 // ==================== COMPONENTE PRINCIPAL ====================
-export function EntradaDonAchat() {
+export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigger = false }: EntradaDonAchatProps = {}) {
   const { t } = useTranslation();
   const branding = useBranding();
   const printRef = useRef<HTMLDivElement>(null);
   
   // ========== Estados principales ==========
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const handleOpenChange = onOpenChange ?? setInternalOpen;
   const [formData, setFormData] = useState<FormDataDonAchat>(FORM_DATA_INICIAL);
   const [productosAgregados, setProductosAgregados] = useState<ProductoAgregado[]>([]);
   
@@ -1429,12 +1437,12 @@ export function EntradaDonAchat() {
       setProductosAgregados([]);
       
       // ✅ Cerrar la ventana inmediatamente después de finalizar
-      setOpen(false);
+      handleOpenChange(false);
     } catch (error) {
       console.error('Error finalizando entrada:', error);
       toast.error("Erreur lors de la finalisation de l'entrée");
     }
-  }, [productosAgregados, formData, contactosDisponibles, programaSeleccionado]);
+  }, [handleOpenChange, productosAgregados, formData, contactosDisponibles, programaSeleccionado]);
 
   const eliminarProductoAgregado = useCallback((index: number) => {
     setProductosAgregados(prev => prev.filter((_, i) => i !== index));
@@ -1462,16 +1470,18 @@ export function EntradaDonAchat() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          className="bg-[#2d9561] hover:bg-[#267d50] text-white shadow-md"
-          style={{ fontFamily: 'Montserrat, sans-serif' }}
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Nouvelle Entrée
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button 
+            className="bg-[#2d9561] hover:bg-[#267d50] text-white shadow-md"
+            style={{ fontFamily: 'Montserrat, sans-serif' }}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Nouvelle Entrée
+          </Button>
+        </DialogTrigger>
+      )}
       
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="entry-form-description">
         <DialogHeader>
@@ -2470,7 +2480,7 @@ export function EntradaDonAchat() {
                       onClick={() => {
                         setFormData(FORM_DATA_INICIAL);
                         setProductosAgregados([]);
-                        setOpen(false);
+                        handleOpenChange(false);
                       }}
                       size="lg"
                     >
@@ -2500,7 +2510,7 @@ export function EntradaDonAchat() {
               onClick={() => {
                 setFormData(FORM_DATA_INICIAL);
                 setProductosAgregados([]);
-                setOpen(false);
+                handleOpenChange(false);
               }}
               className="px-6"
             >

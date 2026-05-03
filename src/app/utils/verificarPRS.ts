@@ -2,7 +2,7 @@
  * 🔍 HERRAMIENTA DE VERIFICACIÓN DE PRODUCTOS PRS
  * 
  * Script de debugging para verificar la sincronización de productos PRS
- * entre Configuración y FormularioEntrada
+ * entre Configuración y EntradaDonAchat
  * 
  * USO:
  * - En consola del navegador, ejecutar: verificarSincronizacionPRS()
