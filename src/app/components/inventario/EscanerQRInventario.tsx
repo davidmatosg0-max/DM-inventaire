@@ -1,7 +1,8 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, ShoppingCart, Package, Edit, MapPin, Printer } from 'lucide-react';
+import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, ShoppingCart, Package, Edit, MapPin, Printer, Eye, Truck, XCircle } from 'lucide-react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
+import { normalizeScannedProductQR } from '../../utils/barcode';
 
 const GuiaPermisoCamara = lazy(async () => {
   const module = await import('../comandas/GuiaPermisoCamara');
@@ -27,8 +28,9 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoStartRef = useRef(false);
   const explicitTipo = typeof resultado?.tipo === 'string' ? resultado.tipo : '';
+  const detectedProduct = normalizeScannedProductQR(resultado);
   const detectedComanda = normalizeScannedComandaQR(resultado);
-  const showingComandaActions = explicitTipo === 'comanda' || Boolean(resultado?.comanda || resultado?.numeroComanda || detectedComanda?.comanda);
+  const showingComandaActions = explicitTipo === 'comanda' || (!detectedProduct && Boolean(resultado?.comanda || resultado?.numeroComanda || detectedComanda?.comanda));
 
   useEffect(() => {
     return () => {
@@ -445,7 +447,7 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
                   <CheckCircle className="w-16 h-16 text-[#4CAF50] mx-auto mb-4" />
                   <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
                   <p className="text-gray-600 text-sm">
-                    {showingComandaActions ? 'Cette commande sera ouverte dans le module Commandes.' : 'Que souhaitez-vous faire avec ce produit?'}
+                    {showingComandaActions ? 'Choisissez l\'action à effectuer pour cette commande.' : 'Que souhaitez-vous faire avec ce produit?'}
                   </p>
                 </div>
                 
@@ -535,18 +537,72 @@ export function EscanerQRInventario({ onScanSuccess, onClose, autoStartCamera = 
                   </h3>
 
                   {showingComandaActions ? (
-                    <button
-                      onClick={() => handleAction('ver_detalles')}
-                      className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
-                    >
-                      <Package className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
-                      <div className="flex-1 text-left">
-                        <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Ouvrir dans Commandes</h4>
-                        <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                          Basculer vers le suivi complet de cette commande
-                        </p>
-                      </div>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleAction('ver_detalles')}
+                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Eye className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Voir les détails</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Consulter toutes les informations de la commande
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('marcar_entregado')}
+                        className="w-full group border-2 border-[#4CAF50] hover:bg-[#4CAF50] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Package className="w-6 h-6 text-[#4CAF50] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Marquer comme livré</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Confirmer la livraison de cette commande
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('gestionar_transporte')}
+                        className="w-full group border-2 border-[#FFC107] hover:bg-[#FFC107] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Truck className="w-6 h-6 text-[#FFC107] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Gérer le transport</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Assigner ou modifier les informations de transport
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('modificar')}
+                        className="w-full group border-2 border-[#666] hover:bg-[#666] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Edit className="w-6 h-6 text-[#666] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier la commande</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Éditer les détails ou articles de la commande
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('cancelar')}
+                        className="w-full group border-2 border-[#DC3545] hover:bg-[#DC3545] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <XCircle className="w-6 h-6 text-[#DC3545] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Annuler la commande</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Annuler ou supprimer cette commande
+                          </p>
+                        </div>
+                      </button>
+                    </>
                   ) : (
                     <>
 

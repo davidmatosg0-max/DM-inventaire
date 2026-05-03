@@ -45,6 +45,22 @@ function getNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function hasProductShape(record?: QRRecord): boolean {
+  if (!record) {
+    return false;
+  }
+
+  return Boolean(
+    getString(record.codigo) ||
+    getString(record.producto) ||
+    getString(record.nombre) ||
+    getString(record.lote) ||
+    getString(record.ubicacion) ||
+    getString(record.fecha_vencimiento) ||
+    getString(record.fechaVencimiento)
+  );
+}
+
 export function buildComandaQRPayload(input: BuildComandaQRInput): ComandaQRPayload {
   const numeroComanda = input.numeroComanda.trim();
   const fecha = input.fecha || input.fechaEntrega;
@@ -79,6 +95,10 @@ export function normalizeScannedComandaQR(value: unknown): ComandaQRPayload | nu
   const explicitType = getString(record.tipo) || getString(nested?.tipo);
 
   if (explicitType && explicitType !== 'comanda') {
+    return null;
+  }
+
+  if (!explicitType && (hasProductShape(record) || hasProductShape(nested))) {
     return null;
   }
 

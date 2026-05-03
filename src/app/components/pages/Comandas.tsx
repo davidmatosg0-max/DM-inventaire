@@ -177,13 +177,50 @@ export function Comandas() {
       return null;
     }
 
-    return productosCatalogo.find(producto => {
+    const exactMatch = productosCatalogo.find(producto => {
       const productKeys = [producto.id, producto.codigo, producto.nombre]
         .map(normalizeQrMatch)
         .filter(Boolean);
 
       return productKeys.some(key => candidates.includes(key));
-    }) || null;
+    });
+
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    const legacyCandidate = candidates.find(candidate => candidate.includes('banco-alimentos-'));
+
+    if (!legacyCandidate) {
+      return null;
+    }
+
+    const scoredMatches = productosCatalogo
+      .map(producto => {
+        const normalizedId = normalizeQrMatch(producto.id);
+        const normalizedCode = normalizeQrMatch(producto.codigo);
+        const normalizedName = normalizeQrMatch(producto.nombre);
+
+        let score = 0;
+
+        if (normalizedId && legacyCandidate.includes(normalizedId)) {
+          score += 4;
+        }
+
+        if (normalizedCode.length >= 5 && legacyCandidate.includes(normalizedCode)) {
+          score += 3;
+        }
+
+        if (normalizedName.length >= 6 && legacyCandidate.includes(normalizedName)) {
+          score += 2;
+        }
+
+        return { producto, score };
+      })
+      .filter(match => match.score > 0)
+      .sort((left, right) => right.score - left.score);
+
+    return scoredMatches[0]?.producto || null;
   };
 
   const openScannedComanda = (comanda: Comanda, numeroComanda: string) => {
@@ -198,6 +235,68 @@ export function Comandas() {
       </div>,
       { duration: 3000 }
     );
+  };
+
+  const getComandaNumero = (comanda: Comanda) => comanda.numero || comanda.numeroComanda || comanda.id;
+
+  const actualizarEstadoComandaDesdeQr = (comanda: Comanda, nuevoEstado: string) => {
+    const comandaActualizada = { ...comanda, estado: nuevoEstado };
+    actualizarComanda(comandaActualizada);
+
+    const comandasActualizadas = cargarComandas();
+    return comandasActualizadas.find(item => item.id === comandaActualizada.id) || comandaActualizada;
+  };
+
+  const handleScannedComandaAction = (
+    comanda: Comanda,
+    action = 'ver_detalles',
+    numeroComanda = getComandaNumero(comanda)
+  ) => {
+    switch (action) {
+      case 'marcar_entregado': {
+        setEscanerQROpen(false);
+
+        try {
+          const comandaActualizada = actualizarEstadoComandaDesdeQr(comanda, 'entregada');
+          setComandaSeleccionada(comandaActualizada);
+          setMostrarModeloComanda(true);
+          toast.success(`${t('orders.statusChangedTo')} ${t('orders.delivered')}`);
+        } catch (error) {
+          console.error('Error al marcar comanda entregada desde QR:', error);
+        }
+
+        return;
+      }
+      case 'gestionar_transporte':
+        setEscanerQROpen(false);
+        setComandaParaAccion(comanda);
+        setDialogProponerFechaOpen(true);
+        toast.info('Gestion de livraison ouverte pour cette commande');
+        return;
+      case 'modificar':
+        setEscanerQROpen(false);
+        setComandaSeleccionada(comanda);
+        setMostrarModeloComanda(true);
+        toast.info(`Commande N° ${numeroComanda} ouverte pour modification`);
+        return;
+      case 'cancelar': {
+        setEscanerQROpen(false);
+
+        try {
+          const comandaActualizada = actualizarEstadoComandaDesdeQr(comanda, 'anulada');
+          setComandaSeleccionada(comandaActualizada);
+          setMostrarModeloComanda(true);
+          toast.success(t('orders.orderCancelled'));
+        } catch (error) {
+          console.error('Error al anular comanda desde QR:', error);
+        }
+
+        return;
+      }
+      case 'ver_detalles':
+      default:
+        openScannedComanda(comanda, numeroComanda);
+    }
   };
 
   useEffect(() => {
@@ -233,7 +332,7 @@ export function Comandas() {
     }
 
     clearPendingQrNavigation();
-    openScannedComanda(comandaEncontrada, numeroComanda);
+    handleScannedComandaAction(comandaEncontrada, pendingNavigation.action, numeroComanda);
   }, [comandas, t]);
 
   // useEffect para leer el tab guardado desde CuisinePage
@@ -466,7 +565,7 @@ export function Comandas() {
       const comandaEncontrada = findComandaByScannedData(rawData);
 
       if (comandaEncontrada) {
-        openScannedComanda(comandaEncontrada, numeroComanda);
+        handleScannedComandaAction(comandaEncontrada, action, numeroComanda);
         return;
       }
     }

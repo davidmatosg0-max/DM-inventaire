@@ -326,13 +326,50 @@ export function Inventario() {
       return null;
     }
 
-    return todosLosProductos.find(producto => {
+    const exactMatch = todosLosProductos.find(producto => {
       const productKeys = [producto.id, producto.codigo, producto.nombre]
         .map(normalizeQrMatch)
         .filter(Boolean);
 
       return productKeys.some(key => candidates.includes(key));
-    }) || null;
+    });
+
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    const legacyCandidate = candidates.find(candidate => candidate.includes('banco-alimentos-'));
+
+    if (!legacyCandidate) {
+      return null;
+    }
+
+    const scoredMatches = todosLosProductos
+      .map(producto => {
+        const normalizedId = normalizeQrMatch(producto.id);
+        const normalizedCode = normalizeQrMatch(producto.codigo);
+        const normalizedName = normalizeQrMatch(producto.nombre);
+
+        let score = 0;
+
+        if (normalizedId && legacyCandidate.includes(normalizedId)) {
+          score += 4;
+        }
+
+        if (normalizedCode.length >= 5 && legacyCandidate.includes(normalizedCode)) {
+          score += 3;
+        }
+
+        if (normalizedName.length >= 6 && legacyCandidate.includes(normalizedName)) {
+          score += 2;
+        }
+
+        return { producto, score };
+      })
+      .filter(match => match.score > 0)
+      .sort((left, right) => right.score - left.score);
+
+    return scoredMatches[0]?.producto || null;
   };
 
   const openScannedProduct = (producto: ProductoCreado) => {
