@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, Download, BarChart3, Shield } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Label } from '../ui/label';
 import { Input } from '../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
@@ -41,13 +39,6 @@ type ComandaExportable = Comanda & {
 type DatePreset = 'today' | 'last7days' | 'last30days' | 'month';
 type ReportTab = 'general' | 'operaciones' | 'inventario' | 'comandas' | 'prs' | 'auditoria';
 type ExportableReportType = 'general' | 'inventario' | 'comandas' | 'prs' | 'organismos';
-
-const REPORT_TYPE_TO_TAB: Partial<Record<ExportableReportType, ReportTab>> = {
-  general: 'general',
-  inventario: 'inventario',
-  comandas: 'comandas',
-  prs: 'prs',
-};
 
 const REPORT_TAB_TO_TYPE: Partial<Record<ReportTab, ExportableReportType>> = {
   general: 'general',
@@ -194,7 +185,6 @@ export function Reportes() {
   const branding = useBranding();
   const initialRange = getDatePresetRange('month');
   const [activeReportTab, setActiveReportTab] = useState<ReportTab>('operaciones');
-  const [tipoReporte, setTipoReporte] = useState<ExportableReportType>('general');
   const [fechaInicio, setFechaInicio] = useState(initialRange.start);
   const [fechaFin, setFechaFin] = useState(initialRange.end);
   const [productos, setProductos] = useState<ProductoCreado[]>([]);
@@ -227,6 +217,7 @@ export function Reportes() {
     const rango = getDatePresetRange(preset.value);
     return rango.start === fechaInicio && rango.end === fechaFin;
   })?.value;
+  const exportableReportType = REPORT_TAB_TO_TYPE[activeReportTab];
   const comandasFiltradas = rangoValido
     ? comandas.filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha, rangoInicio, rangoFin))
     : [];
@@ -310,33 +301,23 @@ export function Reportes() {
     setFechaFin(rango.end);
   };
 
-  const handleTipoReporteChange = (value: ExportableReportType) => {
-    setTipoReporte(value);
-
-    const targetTab = REPORT_TYPE_TO_TAB[value];
-    if (targetTab) {
-      setActiveReportTab(targetTab);
-    }
-  };
-
   const handleReportTabChange = (value: string) => {
-    const nextTab = value as ReportTab;
-    setActiveReportTab(nextTab);
-
-    const nextReportType = REPORT_TAB_TO_TYPE[nextTab];
-    if (nextReportType) {
-      setTipoReporte(nextReportType);
-    }
+    setActiveReportTab(value as ReportTab);
   };
 
   const handleGenerarReporte = (formato: 'pdf' | 'excel') => {
+    if (!exportableReportType) {
+      toast.info('Cette vue utilise ses propres filtres et exportations.');
+      return;
+    }
+
     if (!rangoValido) {
       toast.error('Définissez une plage de dates valide avant de générer un rapport.');
       return;
     }
     
     try {
-      switch (tipoReporte) {
+      switch (exportableReportType) {
         case 'inventario':
           if (formato === 'pdf') {
             exportarInventarioPDF(productos);
@@ -440,8 +421,8 @@ export function Reportes() {
       registrarActividad(
         'Rapports',
         'crear',
-        `Rapport généré: ${tipoReporte} (${formato.toUpperCase()}) pour la période ${fechaInicio} - ${fechaFin}`,
-        { tipoReporte, formato, fechaInicio, fechaFin }
+        `Rapport généré: ${exportableReportType} (${formato.toUpperCase()}) pour la période ${fechaInicio} - ${fechaFin}`,
+        { tipoReporte: exportableReportType, formato, fechaInicio, fechaFin }
       );
       
       toast.success(`✅ Rapport ${formato.toUpperCase()} généré avec succès`);
@@ -535,81 +516,78 @@ export function Reportes() {
           <p className="text-gray-700">{t('reports.subtitle')}</p>
         </div>
 
-      {/* Generador de Reportes con glassmorphism */}
-      <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-        <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-          {t('reports.generate')}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <Label>{t('reports.reportType')}</Label>
-            <Select value={tipoReporte} onValueChange={(value) => handleTipoReporteChange(value as ExportableReportType)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="general">{t('reports.general')}</SelectItem>
-                <SelectItem value="inventario">{t('nav.inventory')}</SelectItem>
-                <SelectItem value="comandas">{t('nav.orders')}</SelectItem>
-                <SelectItem value="prs">PRS</SelectItem>
-                <SelectItem value="organismos">{t('nav.organisms')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t('reports.startDate')}</Label>
-            <Input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('reports.endDate')}</Label>
-            <Input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('common.export')}</Label>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => handleGenerarReporte('pdf')}
-                className="flex-1 bg-[#DC3545] hover:bg-[#c82333]"
-              >
-                <FileText className="w-4 h-4 mr-1" />
-                PDF
-              </Button>
-              <Button
-                onClick={() => handleGenerarReporte('excel')}
-                className="flex-1 bg-[#4CAF50] hover:bg-[#45a049]"
-              >
-                <Download className="w-4 h-4 mr-1" />
-                Excel
-              </Button>
-            </div>
-          </div>
-        </div>
-
-          <div className="mt-4 flex flex-col gap-2 rounded-xl border border-white/50 bg-white/70 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium text-gray-700">Raccourcis de période</p>
-              <span className="text-xs text-gray-500">Appliquer une plage courante</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {DATE_PRESET_OPTIONS.map((preset) => (
-                <Button
-                  key={preset.value}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleApplyDatePreset(preset.value)}
-                  className={presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-      </div>
-
       {/* Tabs de Reportes con glassmorphism */}
       <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
         <Tabs value={activeReportTab} onValueChange={handleReportTabChange} className="space-y-4">
+          {exportableReportType && (
+            <div className="border-b border-white/60 px-4 pt-4 sm:px-6 sm:pt-6 pb-4">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                      Période de la vue
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Les graphiques et exports de cette vue utilisent cette plage de dates.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-gray-700">{t('reports.startDate')}</span>
+                      <Input
+                        type="date"
+                        value={fechaInicio}
+                        onChange={(e) => setFechaInicio(e.target.value)}
+                        className="w-full sm:w-[170px] bg-white/85"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-gray-700">{t('reports.endDate')}</span>
+                      <Input
+                        type="date"
+                        value={fechaFin}
+                        onChange={(e) => setFechaFin(e.target.value)}
+                        className="w-full sm:w-[170px] bg-white/85"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {DATE_PRESET_OPTIONS.map((preset) => (
+                      <Button
+                        key={preset.value}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleApplyDatePreset(preset.value)}
+                        className={presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 xl:pb-0.5">
+                  <Button
+                    onClick={() => handleGenerarReporte('pdf')}
+                    variant="outline"
+                    className="border-[#DC3545] text-[#DC3545] hover:bg-red-50"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    PDF
+                  </Button>
+                  <Button
+                    onClick={() => handleGenerarReporte('excel')}
+                    className="bg-[#4CAF50] hover:bg-[#45a049]"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Excel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <TabsList className="w-full bg-transparent border-b rounded-none flex flex-wrap">
             <TabsTrigger value="general" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('reports.general')}
