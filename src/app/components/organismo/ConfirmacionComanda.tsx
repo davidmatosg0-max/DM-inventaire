@@ -33,8 +33,8 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
   const defaultLocale = 'fr-CA';
   type NotificacionOrganismo = ReturnType<typeof obtenerNotificacionesPorOrganismo>[number];
 
-  const obtenerEtiquetaProducto = (producto: any) => {
-    return producto?.subcategoria || producto?.nombre || 'Produit introuvable';
+  const obtenerEtiquetaProducto = (producto: any, nombreProducto?: string) => {
+    return nombreProducto || producto?.nombre || producto?.subcategoria || 'Produit introuvable';
   };
 
   const obtenerPoidsUnitaire = (producto: any) => {
@@ -376,7 +376,7 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className="font-medium">{obtenerEtiquetaProducto(producto)}</span>
+                                <span className="font-medium">{obtenerEtiquetaProducto(producto, item.nombreProducto)}</span>
                                 {obtenerPoidsUnitaire(producto) && (
                                   <span className="text-xs text-gray-500 mt-0.5">
                                     {obtenerPoidsUnitaire(producto)}

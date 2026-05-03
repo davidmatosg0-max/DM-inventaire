@@ -1239,7 +1239,6 @@ export function Comandas() {
                                     <span className="text-2xl">{producto.icono}</span>
                                     <div className="flex-1">
                                       <p className="font-medium text-sm text-[#333333]">{producto.productoNombre}</p>
-                                      <p className="text-xs text-[#666666]">{producto.categoria}</p>
                                     </div>
                                   </div>
                                   <div className="space-y-1">
@@ -1658,7 +1657,6 @@ export function Comandas() {
                             <span className="text-2xl">{producto?.icono}</span>
                             <div>
                               <p className="font-semibold text-[#333333]">{producto?.productoNombre}</p>
-                              <p className="text-xs text-[#666666]">{producto?.categoria}</p>
                             </div>
                           </div>
                           <span className="text-lg font-bold text-[#1E73BE]">

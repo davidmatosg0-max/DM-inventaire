@@ -47,7 +47,7 @@ export function ModeloComanda({
   const comandaRef = useRef<HTMLDivElement>(null);
 
   const obtenerEtiquetaProducto = (producto: any, nombreProducto?: string) => {
-    return producto?.subcategoria || nombreProducto || producto?.nombre || 'Produit introuvable';
+    return nombreProducto || producto?.nombre || producto?.subcategoria || 'Produit introuvable';
   };
 
   const obtenerPoidsUnitaire = (producto: any) => {
