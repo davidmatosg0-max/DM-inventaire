@@ -10,6 +10,8 @@ import { obtenerProductos, type ProductoCreado } from '../../utils/productStorag
 import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
 import { obtenerTransformaciones, type Transformacion } from '../../utils/recetaStorage';
+import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
+import { obtenerLogs } from '../../utils/auditStorage';
 import { 
   exportarInventarioPDF, 
   exportarComandasPDF, 
@@ -24,9 +26,12 @@ import {
   exportarEstadisticasExcel,
   exportarDatosPersonalizados,
 } from '../../utils/exportarExcel';
+import { exportData, generateFilename, type TableColumn } from '../../utils/exportUtils';
 import { useBranding } from '../../../hooks/useBranding';
 import { AuditLogViewer } from '../auditoria/AuditLogViewer';
 import { ReportsModule } from '../reports/ReportsModule';
+import { obtenerComandasReporte } from '../reports/reportComandas';
+import { isActiveReportComanda } from '../reports/reportComandaStatus';
 import { registrarActividad } from '../../utils/actividadLogger';
 import type { Comanda } from '../../types';
 
@@ -38,14 +43,19 @@ type ComandaExportable = Comanda & {
 
 type DatePreset = 'today' | 'last7days' | 'last30days' | 'month';
 type ReportTab = 'general' | 'operaciones' | 'inventario' | 'comandas' | 'prs' | 'auditoria';
-type ExportableReportType = 'general' | 'inventario' | 'comandas' | 'prs' | 'organismos';
+type ExportableReportType = 'general' | 'operaciones' | 'inventario' | 'comandas' | 'prs' | 'auditoria' | 'organismos';
+type ReportExportFormat = 'pdf' | 'excel' | 'csv' | 'json';
 
 const REPORT_TAB_TO_TYPE: Partial<Record<ReportTab, ExportableReportType>> = {
   general: 'general',
+  operaciones: 'operaciones',
   inventario: 'inventario',
   comandas: 'comandas',
   prs: 'prs',
+  auditoria: 'auditoria',
 };
+
+const PAGE_RANGE_REPORT_TYPES: ExportableReportType[] = ['general', 'inventario', 'comandas', 'prs'];
 
 const DATE_PRESET_OPTIONS: Array<{ value: DatePreset; label: string }> = [
   { value: 'today', label: "Aujourd'hui" },
@@ -135,6 +145,47 @@ function getProductWeight(producto: ProductoCreado): number {
   return pesoUnitario > 0 ? pesoUnitario * producto.stockActual : producto.stockActual;
 }
 
+function getSafeNumericValue(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function getCurrentMonthReportRange() {
+  const currentMonthRange = getDatePresetRange('month');
+
+  return {
+    label: `${currentMonthRange.start} - ${currentMonthRange.end}`,
+    start: parseDateValue(currentMonthRange.start),
+    end: parseDateValue(currentMonthRange.end, true),
+  };
+}
+
+function buildExportColumns(rows: Array<Record<string, unknown>>): TableColumn[] {
+  const keys = Array.from(
+    rows.reduce((columnSet, row) => {
+      Object.keys(row).forEach((key) => columnSet.add(key));
+      return columnSet;
+    }, new Set<string>())
+  );
+
+  return keys.map((key) => ({ header: key, key }));
+}
+
+async function exportStructuredRows(
+  format: 'csv' | 'json',
+  prefix: string,
+  title: string,
+  subtitle: string,
+  rows: Array<Record<string, unknown>>,
+) {
+  const exportRows = rows.length > 0 ? rows : [{ Note: 'Aucune donnée disponible.' }];
+
+  await exportData(format, exportRows, buildExportColumns(exportRows), {
+    filename: generateFilename(prefix, format),
+    title,
+    subtitle,
+  });
+}
+
 const LEGACY_PANEL_CLASSNAME = 'backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40';
 
 type ReportStatCardProps = {
@@ -218,6 +269,12 @@ export function Reportes() {
     return rango.start === fechaInicio && rango.end === fechaFin;
   })?.value;
   const exportableReportType = REPORT_TAB_TO_TYPE[activeReportTab];
+  const usesPageDateRange = exportableReportType ? PAGE_RANGE_REPORT_TYPES.includes(exportableReportType) : false;
+  const exportContextDescription = exportableReportType === 'operaciones'
+    ? 'Télécharge un résumé consolidé du mois en cours pour les rapports opérationnels.'
+    : exportableReportType === 'auditoria'
+      ? 'Télécharge l\'état actuel du registre d\'audit.'
+      : 'Les graphiques et exports de cette vue utilisent cette plage de dates.';
   const comandasFiltradas = rangoValido
     ? comandas.filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha, rangoInicio, rangoFin))
     : [];
@@ -305,32 +362,179 @@ export function Reportes() {
     setActiveReportTab(value as ReportTab);
   };
 
-  const handleGenerarReporte = (formato: 'pdf' | 'excel') => {
+  const handleGenerarReporte = async (formato: ReportExportFormat) => {
     if (!exportableReportType) {
       toast.info('Cette vue utilise ses propres filtres et exportations.');
       return;
     }
 
-    if (!rangoValido) {
+    if (usesPageDateRange && !rangoValido) {
       toast.error('Définissez une plage de dates valide avant de générer un rapport.');
       return;
     }
     
     try {
       switch (exportableReportType) {
+        case 'operaciones': {
+          const currentMonthRange = getCurrentMonthReportRange();
+          const operationalEntries = obtenerTodasLasEntradas().filter((entry) => entry.activo && isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end));
+          const operationalDistributions = obtenerComandasReporte()
+            .filter(isActiveReportComanda)
+            .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end));
+
+          const procurementValue = operationalEntries.reduce(
+            (sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)),
+            0,
+          );
+          const distributionValue = operationalDistributions.reduce(
+            (sum, comanda) => sum + getSafeNumericValue(comanda.totalValorMonetario),
+            0,
+          );
+          const activeDonors = new Set(
+            operationalEntries.map((entry) => entry.donadorNombre).filter(Boolean)
+          ).size;
+          const activePrograms = new Set(
+            operationalEntries.map((entry) => entry.programaCodigo || entry.programaNombre).filter(Boolean)
+          ).size;
+          const operationalSummary = [
+            { Indicateur: 'Période', Valeur: currentMonthRange.label },
+            { Indicateur: 'Approvisionnements', Valeur: operationalEntries.length },
+            { Indicateur: 'Valeur approvisionnement', Valeur: `CAD$ ${procurementValue.toFixed(2)}` },
+            { Indicateur: 'Distributions', Valeur: operationalDistributions.length },
+            { Indicateur: 'Valeur distribution', Valeur: `CAD$ ${distributionValue.toFixed(2)}` },
+            { Indicateur: 'Donateurs actifs', Valeur: activeDonors },
+            { Indicateur: 'Programmes actifs', Valeur: activePrograms },
+          ];
+
+          if (formato === 'pdf') {
+            exportarReportePersonalizado(
+              'Rapports opérationnels',
+              `Résumé consolidé du mois en cours (${currentMonthRange.label})`,
+              [
+                {
+                  titulo: 'Résumé opérationnel',
+                  columnas: ['Indicateur', 'Valeur'],
+                  datos: operationalSummary.map((row) => [row.Indicateur, String(row.Valeur)]),
+                },
+              ],
+              'rapport-operaciones'
+            );
+          } else if (formato === 'excel') {
+            exportarDatosPersonalizados('rapport-operaciones', [
+              { nombre: 'Résumé opérationnel', datos: operationalSummary },
+              {
+                nombre: 'Approvisionnement',
+                datos: operationalEntries.length > 0
+                  ? operationalEntries.map((entry) => ({
+                      Date: entry.fecha,
+                      Produit: entry.nombreProducto,
+                      Acteur: entry.donadorNombre || 'N/A',
+                      Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
+                      Quantité: entry.cantidad,
+                      Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
+                    }))
+                  : [{ Note: 'Aucune donnée disponible.' }],
+              },
+              {
+                nombre: 'Distribution',
+                datos: operationalDistributions.length > 0
+                  ? operationalDistributions.map((comanda) => ({
+                      Comanda: comanda.numero,
+                      Date: comanda.fecha,
+                      Organisme: comanda.organismoNombre,
+                      État: comanda.estado,
+                      Quantité: getSafeNumericValue(comanda.totalPeso),
+                      Valeur: getSafeNumericValue(comanda.totalValorMonetario),
+                    }))
+                  : [{ Note: 'Aucune donnée disponible.' }],
+              },
+            ]);
+          } else {
+            await exportStructuredRows(
+              formato,
+              'rapport_operaciones',
+              'Rapports opérationnels',
+              `Résumé consolidé du mois en cours (${currentMonthRange.label})`,
+              [
+                ...operationalSummary.map((row) => ({ Section: 'Résumé opérationnel', ...row })),
+                ...(operationalEntries.length > 0
+                  ? operationalEntries.map((entry) => ({
+                      Section: 'Approvisionnement',
+                      Date: entry.fecha,
+                      Produit: entry.nombreProducto,
+                      Acteur: entry.donadorNombre || 'N/A',
+                      Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
+                      Quantité: entry.cantidad,
+                      Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
+                    }))
+                  : [{ Section: 'Approvisionnement', Note: 'Aucune donnée disponible.' }]),
+                ...(operationalDistributions.length > 0
+                  ? operationalDistributions.map((comanda) => ({
+                      Section: 'Distribution',
+                      Comanda: comanda.numero,
+                      Date: comanda.fecha,
+                      Organisme: comanda.organismoNombre,
+                      État: comanda.estado,
+                      Quantité: getSafeNumericValue(comanda.totalPeso),
+                      Valeur: getSafeNumericValue(comanda.totalValorMonetario),
+                    }))
+                  : [{ Section: 'Distribution', Note: 'Aucune donnée disponible.' }]),
+              ],
+            );
+          }
+          break;
+        }
+
         case 'inventario':
           if (formato === 'pdf') {
             exportarInventarioPDF(productos);
-          } else {
+          } else if (formato === 'excel') {
             exportarInventarioExcel(productos);
+          } else {
+            await exportStructuredRows(
+              formato,
+              'rapport_inventaire',
+              'Rapport d\'inventaire',
+              `Vue exportée le ${new Date().toLocaleDateString('fr-CA')}`,
+              productos.length > 0
+                ? productos.map((producto) => ({
+                    Code: producto.codigo || 'N/A',
+                    Produit: producto.nombre,
+                    Catégorie: producto.categoria || 'N/A',
+                    SousCatégorie: producto.subcategoria || 'N/A',
+                    Stock: producto.stockActual,
+                    Unité: producto.unidad,
+                    PoidsKg: Number(getProductWeight(producto).toFixed(2)),
+                    État: producto.estado || 'Disponible',
+                  }))
+                : [{ Note: 'Aucune donnée disponible.' }],
+            );
           }
           break;
         
         case 'comandas':
           if (formato === 'pdf') {
             exportarComandasPDF(comandasExportables);
-          } else {
+          } else if (formato === 'excel') {
             exportarComandasExcel(comandasExportables);
+          } else {
+            await exportStructuredRows(
+              formato,
+              'rapport_commandes',
+              'Rapport de commandas',
+              `Période: ${fechaInicio} - ${fechaFin}`,
+              comandasExportables.length > 0
+                ? comandasExportables.map((comanda) => ({
+                    Comanda: comanda.numero,
+                    Organisme: comanda.organismo?.nombre || 'N/A',
+                    Date: comanda.fecha,
+                    Livraison: comanda.fechaEntrega || 'N/A',
+                    État: comanda.estado,
+                    Produits: comanda.productos?.length || 0,
+                    Valeur: comanda.valorTotal || 0,
+                  }))
+                : [{ Note: 'Aucune donnée disponible.' }],
+            );
           }
           break;
         
@@ -355,7 +559,7 @@ export function Reportes() {
                 ],
               },
             ]);
-          } else {
+          } else if (formato === 'excel') {
             exportarDatosPersonalizados('rapport-prs-simple', [
               {
                 nombre: 'Résumé PRS',
@@ -373,8 +577,118 @@ export function Reportes() {
                 datos: datosPRS.length > 0 ? datosPRS.map((entry) => ({ Mois: entry.mes, 'Production (kg)': entry.kg })) : [{ Note: 'Aucune donnée disponible.' }],
               },
             ]);
+          } else {
+            await exportStructuredRows(
+              formato,
+              'rapport_prs',
+              'Rapport PRS',
+              `Période: ${fechaInicio} - ${fechaFin}`,
+              [
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Période',
+                  Valeur: `${fechaInicio} - ${fechaFin}`,
+                },
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Transformations terminées',
+                  Valeur: transformacionesTerminadas.length,
+                },
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Production totale (kg)',
+                  Valeur: Number(transformacionesTerminadas.reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0).toFixed(1)),
+                },
+                ...(datosPRS.length > 0
+                  ? datosPRS.map((entry) => ({
+                      Section: 'Production mensuelle',
+                      Mois: entry.mes,
+                      ProductionKg: entry.kg,
+                    }))
+                  : [{ Section: 'Production mensuelle', Note: 'Aucune donnée disponible.' }]),
+              ],
+            );
           }
           break;
+
+        case 'auditoria': {
+          const auditLogs = obtenerLogs();
+          const successfulLogs = auditLogs.filter((log) => log.exito).length;
+          const errorLogs = auditLogs.filter((log) => !log.exito).length;
+          const criticalLogs = auditLogs.filter((log) => log.severidad === 'critical').length;
+          const auditSummary = [
+            { Indicateur: 'Logs totaux', Valeur: auditLogs.length },
+            { Indicateur: 'Logs réussis', Valeur: successfulLogs },
+            { Indicateur: 'Logs en erreur', Valeur: errorLogs },
+            { Indicateur: 'Logs critiques', Valeur: criticalLogs },
+          ];
+
+          if (formato === 'pdf') {
+            exportarReportePersonalizado(
+              'Rapport d\'audit',
+              `Export du registre courant (${auditLogs.length} événements)`,
+              [
+                {
+                  titulo: 'Résumé d\'audit',
+                  columnas: ['Indicateur', 'Valeur'],
+                  datos: auditSummary.map((row) => [row.Indicateur, String(row.Valeur)]),
+                },
+                {
+                  titulo: 'Derniers événements',
+                  columnas: ['Date', 'Utilisateur', 'Module', 'Action', 'Succès'],
+                  datos: (auditLogs.length > 0 ? auditLogs.slice(0, 100) : [{ fecha: 'N/A', usuario: 'N/A', modulo: 'N/A', accion: 'N/A', exito: false }])
+                    .map((log) => [
+                      log.fecha,
+                      log.usuario,
+                      log.modulo,
+                      log.accion,
+                      log.exito ? 'Oui' : 'Non',
+                    ]),
+                },
+              ],
+              'rapport-audit'
+            );
+          } else if (formato === 'excel') {
+            exportarDatosPersonalizados('rapport-audit', [
+              { nombre: 'Résumé audit', datos: auditSummary },
+              {
+                nombre: 'Logs',
+                datos: auditLogs.length > 0
+                  ? auditLogs.map((log) => ({
+                      Date: log.fecha,
+                      Utilisateur: log.usuario,
+                      Module: log.modulo,
+                      Action: log.accion,
+                      Sévérité: log.severidad || 'info',
+                      Succès: log.exito ? 'Oui' : 'Non',
+                    }))
+                  : [{ Note: 'Aucune donnée disponible.' }],
+              },
+            ]);
+          } else {
+            await exportStructuredRows(
+              formato,
+              'rapport_audit',
+              'Rapport d\'audit',
+              `Export du registre courant (${auditLogs.length} événements)`,
+              [
+                ...auditSummary.map((row) => ({ Section: 'Résumé audit', ...row })),
+                ...(auditLogs.length > 0
+                  ? auditLogs.map((log) => ({
+                      Section: 'Logs',
+                      Date: log.fecha,
+                      Utilisateur: log.usuario,
+                      Module: log.modulo,
+                      Action: log.accion,
+                      Sévérité: log.severidad || 'info',
+                      Succès: log.exito ? 'Oui' : 'Non',
+                    }))
+                  : [{ Section: 'Logs', Note: 'Aucune donnée disponible.' }]),
+              ],
+            );
+          }
+          break;
+        }
         
         case 'general':
         default:
@@ -389,7 +703,7 @@ export function Reportes() {
           
           if (formato === 'pdf') {
             exportarEstadisticasPDF(estadisticas);
-          } else {
+          } else if (formato === 'excel') {
             exportarEstadisticasExcel({
               resumen: estadisticas,
               inventario: productos.map((producto) => ({
@@ -413,6 +727,48 @@ export function Reportes() {
               })),
               periodo: `${fechaInicio} - ${fechaFin}`,
             });
+          } else {
+            await exportStructuredRows(
+              formato,
+              'rapport_general',
+              'Rapport général',
+              `Période: ${fechaInicio} - ${fechaFin}`,
+              [
+                { Section: 'Résumé général', Indicateur: 'Total produits', Valeur: productos.length },
+                { Section: 'Résumé général', Indicateur: 'Stock total', Valeur: productos.reduce((sum, producto) => sum + producto.stockActual, 0) },
+                { Section: 'Résumé général', Indicateur: 'Commandes filtrées', Valeur: comandasFiltradas.length },
+                { Section: 'Résumé général', Indicateur: 'Organismes actifs', Valeur: organismos.filter((organismo) => organismo.activo).length },
+                { Section: 'Résumé général', Indicateur: 'Valeur totale', Valeur: Number(valorTotalCalculado.toFixed(2)) },
+                ...(productos.length > 0
+                  ? productos.map((producto) => ({
+                      Section: 'Inventaire',
+                      Code: producto.codigo || 'N/A',
+                      Produit: producto.nombre,
+                      Catégorie: producto.categoria || 'N/A',
+                      Stock: producto.stockActual,
+                      Unité: producto.unidad,
+                    }))
+                  : [{ Section: 'Inventaire', Note: 'Aucune donnée disponible.' }]),
+                ...(comandasExportables.length > 0
+                  ? comandasExportables.map((comanda) => ({
+                      Section: 'Commandes',
+                      Comanda: comanda.numero,
+                      Organisme: comanda.organismo?.nombre || 'N/A',
+                      Date: comanda.fecha,
+                      État: comanda.estado,
+                    }))
+                  : [{ Section: 'Commandes', Note: 'Aucune donnée disponible.' }]),
+                ...(organismos.length > 0
+                  ? organismos.map((organismo) => ({
+                      Section: 'Organismes',
+                      Nom: organismo.nombre,
+                      Type: organismo.tipo || 'N/A',
+                      Bénéficiaires: organismo.beneficiarios || 0,
+                      État: organismo.activo ? 'Actif' : 'Inactif',
+                    }))
+                  : [{ Section: 'Organismes', Note: 'Aucune donnée disponible.' }]),
+              ],
+            );
           }
           break;
       }
@@ -525,49 +881,53 @@ export function Reportes() {
                 <div className="flex flex-col gap-3">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
-                      Période de la vue
+                      {usesPageDateRange ? 'Période de la vue' : 'Export de la vue'}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Les graphiques et exports de cette vue utilisent cette plage de dates.
+                      {exportContextDescription}
                     </p>
                   </div>
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-gray-700">{t('reports.startDate')}</span>
-                      <Input
-                        type="date"
-                        value={fechaInicio}
-                        onChange={(e) => setFechaInicio(e.target.value)}
-                        className="w-full sm:w-[170px] bg-white/85"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-gray-700">{t('reports.endDate')}</span>
-                      <Input
-                        type="date"
-                        value={fechaFin}
-                        onChange={(e) => setFechaFin(e.target.value)}
-                        className="w-full sm:w-[170px] bg-white/85"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {DATE_PRESET_OPTIONS.map((preset) => (
-                      <Button
-                        key={preset.value}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleApplyDatePreset(preset.value)}
-                        className={presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}
-                      >
-                        {preset.label}
-                      </Button>
-                    ))}
-                  </div>
+                  {usesPageDateRange && (
+                    <>
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-gray-700">{t('reports.startDate')}</span>
+                          <Input
+                            type="date"
+                            value={fechaInicio}
+                            onChange={(e) => setFechaInicio(e.target.value)}
+                            className="w-full sm:w-[170px] bg-white/85"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-gray-700">{t('reports.endDate')}</span>
+                          <Input
+                            type="date"
+                            value={fechaFin}
+                            onChange={(e) => setFechaFin(e.target.value)}
+                            className="w-full sm:w-[170px] bg-white/85"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {DATE_PRESET_OPTIONS.map((preset) => (
+                          <Button
+                            key={preset.value}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApplyDatePreset(preset.value)}
+                            className={presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}
+                          >
+                            {preset.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                <div className="flex gap-2 xl:pb-0.5">
+                <div className="flex flex-wrap gap-2 xl:pb-0.5 xl:justify-end">
                   <Button
                     onClick={() => handleGenerarReporte('pdf')}
                     variant="outline"
@@ -582,6 +942,22 @@ export function Reportes() {
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Excel
+                  </Button>
+                  <Button
+                    onClick={() => handleGenerarReporte('csv')}
+                    variant="outline"
+                    className="border-[#2d9561] text-[#2d9561] hover:bg-green-50"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    CSV
+                  </Button>
+                  <Button
+                    onClick={() => handleGenerarReporte('json')}
+                    variant="outline"
+                    className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    JSON
                   </Button>
                 </div>
               </div>
