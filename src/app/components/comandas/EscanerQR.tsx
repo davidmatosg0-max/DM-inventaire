@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, Package, Eye, Truck, XCircle, Edit } from 'lucide-react';
+import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, Package, Eye, Truck, XCircle, Edit, ShoppingCart, MapPin, Printer } from 'lucide-react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
 import { normalizeScannedProductQR } from '../../utils/barcode';
 
@@ -459,7 +459,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   <CheckCircle className="w-16 h-16 text-[#4CAF50] mx-auto mb-4" />
                   <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
                   <p className="text-gray-600 text-sm">
-                    {showingProductActions ? 'Ce produit sera ouvert dans le module Inventaire.' : 'Choisissez l\'action à effectuer'}
+                    {showingProductActions ? 'Choisissez l\'action à effectuer pour ce produit.' : 'Choisissez l\'action à effectuer'}
                   </p>
                 </div>
                 
@@ -535,18 +535,59 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   </h3>
 
                   {showingProductActions ? (
-                    <button
-                      onClick={() => handleAction('ver_detalles')}
-                      className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
-                    >
-                      <Package className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
-                      <div className="flex-1 text-left">
-                        <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Ouvrir dans Inventaire</h4>
-                        <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                          Basculer vers la fiche du produit scanné
-                        </p>
-                      </div>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleAction('agregar_carrito')}
+                        className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
+                      >
+                        <ShoppingCart className="w-7 h-7 text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-white transition-colors text-lg">Ajouter au panier</h4>
+                          <p className="text-sm text-white/90 transition-colors">
+                            Ajouter ce produit au panier pour distribution
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('ver_ubicacion')}
+                        className="w-full group border-2 border-[#9C27B0] hover:bg-[#9C27B0] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <MapPin className="w-6 h-6 text-[#9C27B0] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier ou ajouter l'emplacement</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Ouvrir la gestion d'emplacement du produit scanné
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('modificar_producto')}
+                        className="w-full group border-2 border-gray-400 hover:bg-gray-400 rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Edit className="w-6 h-6 text-gray-500 group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier le produit</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Ouvrir le produit dans Inventaire pour modification
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('imprimir_etiqueta')}
+                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Printer className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Imprimer l'étiquette</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Générer et imprimer l'étiquette standard du produit
+                          </p>
+                        </div>
+                      </button>
+                    </>
                   ) : (
                     <>
 
