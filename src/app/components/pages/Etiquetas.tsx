@@ -418,6 +418,7 @@ export function Etiquetas() {
         if (producto) {
           const labelData: ProductLabelData = {
             id: producto.id,
+            codigo: producto.codigo,
             nombreProducto: producto.nombre,
             productoIcono: producto.icono,
             categoria: producto.categoria,
@@ -427,6 +428,7 @@ export function Etiquetas() {
             pesoTotal: (producto.pesoUnitario || producto.peso || 0) * (producto.stockActual || 1),
             pesoUnidad: producto.pesoUnitario || producto.peso,
             temperatura: 'ambiente',
+            ubicacion: producto.ubicacion,
             lote: producto.lote,
             fechaCaducidad: producto.fechaVencimiento,
             fechaEntrada: new Date().toISOString(),

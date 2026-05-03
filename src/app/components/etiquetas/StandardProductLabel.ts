@@ -20,10 +20,12 @@
 
 import QRCode from 'qrcode';
 import { formatQuantity } from '../../utils/formatUtils';
+import { generarDatosQR } from '../../utils/barcode';
 
 export interface ProductLabelData {
   // Identificación
   id: string;
+  codigo?: string;
   
   // Producto
   nombreProducto: string;
@@ -39,6 +41,7 @@ export interface ProductLabelData {
   
   // Almacenamiento
   temperatura: 'ambiente' | 'refrigerado' | 'congelado';
+  ubicacion?: string;
   lote?: string;
   fechaCaducidad?: string;
   detallesEmpaque?: string; // Ejemplo: "45x900ml", "24x500g"
@@ -102,8 +105,14 @@ export async function generateStandardProductLabel(
   };
 
   // Generar QR Code (reducido para optimizar espacio)
-  const pesoTotal = data.pesoTotal || 0;
-  const qrData = `BANCO-ALIMENTOS-${data.id}-${data.nombreProducto}-${formatQuantity(pesoTotal)}kg`;
+  const qrData = generarDatosQR({
+    id: data.id,
+    codigo: data.codigo || data.id,
+    nombre: data.nombreProducto,
+    lote: data.lote,
+    fechaVencimiento: data.fechaCaducidad,
+    ubicacion: data.ubicacion,
+  });
   let qrImageBase64 = '';
   try {
     qrImageBase64 = await QRCode.toDataURL(qrData, {

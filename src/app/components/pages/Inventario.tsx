@@ -424,6 +424,7 @@ export function Inventario() {
 
     const labelData: ProductLabelData = {
       id: producto.id,
+      codigo: producto.codigo,
       nombreProducto: producto.nombre,
       productoIcono: obtenerIconoProducto(producto),
       categoria: producto.categoria,
@@ -433,6 +434,7 @@ export function Inventario() {
       pesoTotal: totalWeight,
       pesoUnidad: unitWeight > 0 ? unitWeight : undefined,
       temperatura: mapProductTemperatureForLabel(producto),
+      ubicacion: producto.ubicacion,
       lote: producto.lote,
       fechaCaducidad: producto.fechaVencimiento,
       fechaEntrada: new Date().toISOString(),
