@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script de deploy con verificación completa
-# Para GitHub Pages - GestionDeBancoAlimentariosDm
+# Para GitHub Pages - Gestion-d-inventaire-DM
 
 echo "🚀 Iniciando proceso de deploy a GitHub Pages..."
 echo ""
@@ -104,7 +104,7 @@ echo ""
 echo "📋 PASOS FINALES:"
 echo ""
 echo "1. Ve a GitHub Settings → Pages:"
-echo -e "   ${YELLOW}https://github.com/davidmatosg0-max/GestionDeBancoAlimentariosDm/settings/pages${NC}"
+echo -e "   ${YELLOW}https://github.com/davidmatosg0-max/Gestion-d-inventaire-DM/settings/pages${NC}"
 echo ""
 echo "2. Asegúrate que la configuración sea:"
 echo -e "   Source: ${GREEN}Deploy from a branch${NC}"
@@ -116,10 +116,10 @@ echo ""
 echo "4. Espera 2-3 minutos"
 echo ""
 echo "5. Abre tu aplicación:"
-echo -e "   ${GREEN}https://davidmatosg0-max.github.io/GestionDeBancoAlimentariosDm/${NC}"
+echo -e "   ${GREEN}https://davidmatosg0-max.github.io/Gestion-d-inventaire-DM/${NC}"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "💡 Tip: Puedes ver el estado del deploy en:"
-echo -e "   ${YELLOW}https://github.com/davidmatosg0-max/GestionDeBancoAlimentariosDm/deployments${NC}"
+echo -e "   ${YELLOW}https://github.com/davidmatosg0-max/Gestion-d-inventaire-DM/deployments${NC}"
 echo ""

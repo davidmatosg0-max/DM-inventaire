@@ -1,12 +1,12 @@
 # 🎯 Configuración Final - Lista para Desplegar
 
-## ✅ Todo Configurado para: GestionDeBancoAlimentariosDm
+## ✅ Todo Configurado para: Gestion-d-inventaire-DM
 
 ### Archivos Configurados:
 
 1. **`/vite.config.ts`** ✅
    ```typescript
-   base: '/GestionDeBancoAlimentariosDm/'
+   base: './'
    ```
 
 2. **`/package.json`** ✅
@@ -47,7 +47,7 @@ Esto automáticamente:
 
 ## ⚙️ Configurar GitHub Pages (Solo la Primera Vez)
 
-1. Ve a tu repositorio: `https://github.com/tu-usuario/GestionDeBancoAlimentariosDm`
+1. Ve a tu repositorio: `https://github.com/tu-usuario/Gestion-d-inventaire-DM`
 2. Click en **Settings** (⚙️)
 3. En el menú lateral izquierdo, busca **Pages**
 4. En **Source**, selecciona:
@@ -61,12 +61,12 @@ Esto automáticamente:
 ## 🌐 Tu Aplicación Estará Disponible En:
 
 ```
-https://tu-usuario.github.io/GestionDeBancoAlimentariosDm/
+https://tu-usuario.github.io/Gestion-d-inventaire-DM/
 ```
 
 **Ejemplo:** Si tu usuario de GitHub es `maria123`:
 ```
-https://maria123.github.io/GestionDeBancoAlimentariosDm/
+https://maria123.github.io/Gestion-d-inventaire-DM/
 ```
 
 ---
@@ -89,7 +89,7 @@ npm run deploy
 
 Verifica que tengas todo:
 
-- [x] ✅ `base: '/GestionDeBancoAlimentariosDm/'` en vite.config.ts
+- [x] ✅ `base: './'` en vite.config.ts
 - [x] ✅ Scripts de deploy en package.json
 - [x] ✅ Archivos de redirección configurados
 - [ ] 🔲 Instalaste gh-pages: `npm install --save-dev gh-pages`
@@ -132,7 +132,7 @@ npm run build
 npx vite preview
 ```
 
-Abre: `http://localhost:4173/GestionDeBancoAlimentariosDm/`
+Abre: `http://localhost:4173/`
 
 ---
 
@@ -149,7 +149,7 @@ Y tu aplicación estará en línea en GitHub Pages.
 
 ---
 
-**Repositorio:** GestionDeBancoAlimentariosDm  
-**Base URL:** /GestionDeBancoAlimentariosDm/  
+**Repositorio:** Gestion-d-inventaire-DM  
+**Base URL:** ./  
 **Estado:** ✅ CONFIGURADO - Listo para desplegar  
 **Fecha:** 14 Febrero 2026
