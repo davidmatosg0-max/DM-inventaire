@@ -35,6 +35,57 @@ const CLAVES_CRITICAS = [
   'backup_',
 ];
 
+const PREFIJOS_RESPALDO_EXCLUIDOS = ['backup_', 'alerta_'];
+const MAX_BACKUPS_EMERGENCIA = 3;
+
+function esClaveExcluidaDeRespaldo(clave: string): boolean {
+  return PREFIJOS_RESPALDO_EXCLUIDOS.some(prefijo => clave.startsWith(prefijo));
+}
+
+function listarClavesPorPrefijo(prefijo: string): string[] {
+  return Object.keys(localStorage)
+    .filter(clave => clave.startsWith(prefijo))
+    .sort();
+}
+
+function purgarClavesAntiguas(prefijo: string, maxClaves: number) {
+  const claves = listarClavesPorPrefijo(prefijo);
+  const clavesAEliminar = Math.max(0, claves.length - maxClaves);
+
+  if (clavesAEliminar === 0) {
+    return;
+  }
+
+  const modoAnterior = modoMantenimiento;
+  modoMantenimiento = true;
+
+  try {
+    for (let indice = 0; indice < clavesAEliminar; indice += 1) {
+      Storage.prototype.removeItem.call(localStorage, claves[indice]);
+    }
+  } finally {
+    modoMantenimiento = modoAnterior;
+  }
+}
+
+function guardarRespaldoSeguro(clave: string, valor: string): boolean {
+  try {
+    localStorage.setItem(clave, valor);
+    return true;
+  } catch (error) {
+    purgarClavesAntiguas('backup_emergencia_', Math.max(0, MAX_BACKUPS_EMERGENCIA - 1));
+    purgarClavesAntiguas('alerta_', 5);
+
+    try {
+      localStorage.setItem(clave, valor);
+      return true;
+    } catch (retryError) {
+      logger.warn('⚠️ No se pudo guardar el respaldo por falta de espacio en localStorage', retryError);
+      return false;
+    }
+  }
+}
+
 /**
  * Verifica si una clave es crítica
  */
@@ -160,6 +211,8 @@ function protegerCierrePestana() {
   window.addEventListener('beforeunload', (event) => {
     // Crear respaldo de emergencia
     try {
+      purgarClavesAntiguas('backup_emergencia_', MAX_BACKUPS_EMERGENCIA - 1);
+
       const timestamp = new Date().toISOString();
       const backup = {
         timestamp,
@@ -169,14 +222,15 @@ function protegerCierrePestana() {
       // Respaldar todas las claves críticas
       CLAVES_CRITICAS.forEach(prefijo => {
         Object.keys(localStorage).forEach(clave => {
-          if (clave.startsWith(prefijo)) {
+          if (clave.startsWith(prefijo) && !esClaveExcluidaDeRespaldo(clave)) {
             backup.datos[clave] = localStorage.getItem(clave) || '';
           }
         });
       });
-      
-      localStorage.setItem(`backup_emergencia_${timestamp}`, JSON.stringify(backup));
-      logger.info('💾 Respaldo de emergencia creado antes de cerrar pestaña');
+
+      if (guardarRespaldoSeguro(`backup_emergencia_${timestamp}`, JSON.stringify(backup))) {
+        logger.info('💾 Respaldo de emergencia creado antes de cerrar pestaña');
+      }
     } catch (error) {
       logger.error('❌ Error al crear respaldo de emergencia:', error);
     }
@@ -338,7 +392,7 @@ function monitorearCambios() {
         conteoAnterior: ultimoConteo,
         conteoActual: conteoActual,
       };
-      localStorage.setItem(`alerta_${timestamp}`, JSON.stringify(backup));
+      guardarRespaldoSeguro(`alerta_${timestamp}`, JSON.stringify(backup));
     }
     
     ultimoConteo = conteoActual;
@@ -373,7 +427,7 @@ export function inicializarProteccionDatos() {
       razon: 'Backup inicial al cargar sistema',
       totalClaves: Object.keys(localStorage).length,
     };
-    localStorage.setItem(`backup_inicial_${timestamp.split('T')[0]}`, JSON.stringify(backupInicial));
+    guardarRespaldoSeguro(`backup_inicial_${timestamp.split('T')[0]}`, JSON.stringify(backupInicial));
     
     return true;
   } catch (error) {
