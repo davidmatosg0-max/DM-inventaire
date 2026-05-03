@@ -361,6 +361,11 @@ export function Inventario() {
 
   const getCategoriaLabel = (categoria: string) => categoriasInfo[categoria]?.label || categoria;
 
+  const getInventorySubcategoriaLabel = (producto: Pick<ProductoCreado, 'categoria' | 'subcategoria'>) => {
+    const subcategoria = producto.subcategoria?.trim();
+    return subcategoria && subcategoria.length > 0 ? subcategoria : getCategoriaLabel(producto.categoria);
+  };
+
   const normalizeQrMatch = (value?: string | null) =>
     typeof value === 'string' ? value.trim().toLowerCase() : '';
 
@@ -943,7 +948,7 @@ export function Inventario() {
     productosLista.forEach((producto, index) => {
       contenido += `${index + 1}. ${producto.nombre}\n`;
       contenido += `   Código: ${producto.codigo}\n`;
-      contenido += `   Categorie: ${getCategoriaLabel(producto.categoria)}\n`;
+      contenido += `   Sous-catégorie: ${getInventorySubcategoriaLabel(producto)}\n`;
       contenido += `   Unidad Original: ${producto.unidad}\n`;
       
       if (listaGenerada.incluirStock) {
@@ -1988,7 +1993,7 @@ export function Inventario() {
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.photo')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.code')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.productName')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.category')}</TableHead>
+                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>Sous-catégorie</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>📦 {t('inventory.lotNumberShort')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unit')}</TableHead>
                         <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unitWeight')}</TableHead>
@@ -2031,11 +2036,6 @@ export function Inventario() {
                                 <span className="font-semibold text-[#333333] text-xs leading-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                                   {producto.nombre}
                                 </span>
-                                {producto.subcategoria && (
-                                  <span className="text-[10px] text-[#666666] leading-tight">
-                                    {producto.subcategoria}
-                                  </span>
-                                )}
                               </div>
                             </TableCell>
                             <TableCell className="py-1 px-2">
@@ -2043,8 +2043,8 @@ export function Inventario() {
                                 variant="outline" 
                                 className="gap-0.5 bg-gradient-to-r from-white to-[#F8F9FA] border-[#1a4d7a] text-[10px] px-1.5 py-0"
                               >
-                                <span className="emoji-icon text-xs">{categoriasInfo[producto.categoria]?.icono}</span>
-                                <span className="font-medium">{getCategoriaLabel(producto.categoria)}</span>
+                                <span className="emoji-icon text-xs">{obtenerIconoProducto(producto)}</span>
+                                <span className="font-medium">{getInventorySubcategoriaLabel(producto)}</span>
                               </Badge>
                             </TableCell>
                             <TableCell className="py-1 px-2">
@@ -2286,10 +2286,10 @@ export function Inventario() {
                             )}
                           </div>
 
-                          {/* Categoría */}
+                          {/* Subcategoría */}
                           <Badge variant="outline" className="gap-1 w-full justify-center">
-                            <span className="emoji-icon">{categoriasInfo[producto.categoria]?.icono}</span>
-                            <span className="truncate">{getCategoriaLabel(producto.categoria)}</span>
+                            <span className="emoji-icon">{obtenerIconoProducto(producto)}</span>
+                            <span className="truncate">{getInventorySubcategoriaLabel(producto)}</span>
                           </Badge>
 
                           {/* Stock y estado */}
@@ -2842,7 +2842,7 @@ export function Inventario() {
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{producto.nombre}</p>
                                 <p className="text-xs text-[#666666]">
-                                  {producto.codigo} • {getCategoriaLabel(producto.categoria)}
+                                  {producto.codigo} • {getInventorySubcategoriaLabel(producto)}
                                   {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (
                                     <> • {Math.round(producto.pesoUnitario)} kg/{producto.unidad}</>
                                   ) : (producto.peso && producto.peso > 0 && producto.stockActual > 0) && (
@@ -3213,13 +3213,8 @@ export function Inventario() {
                         {productoBase.codigo}
                       </Badge>
                       <Badge className="text-xs bg-[#1a4d7a] text-white border-[#1a4d7a]">
-                        📁 {getCategoriaLabel(productoBase.categoria)}
+                        📂 {getInventorySubcategoriaLabel(productoBase)}
                       </Badge>
-                      {productoBase.subcategoria && (
-                        <Badge variant="outline" className="text-xs text-[#1a4d7a] border-[#1a4d7a]">
-                          📂 {productoBase.subcategoria}
-                        </Badge>
-                      )}
                       <Badge variant="outline" className="text-xs bg-[#2d9561] text-white border-[#2d9561]">
                         📏 {productoBase.unidad}
                       </Badge>
@@ -3228,8 +3223,7 @@ export function Inventario() {
                 </div>
                 <div className="mt-3 pt-3 border-t border-blue-200">
                   <p className="text-xs text-[#1a4d7a] font-medium">
-                    ℹ️ La variante se creara automatiquement dans : <span className="font-bold">{getCategoriaLabel(productoBase.categoria)}</span>
-                    {productoBase.subcategoria && <> → <span className="font-bold">{productoBase.subcategoria}</span></>}
+                    ℹ️ La variante se creara automatiquement dans : <span className="font-bold">{getInventorySubcategoriaLabel(productoBase)}</span>
                   </p>
                 </div>
               </div>
