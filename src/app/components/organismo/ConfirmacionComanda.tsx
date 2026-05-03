@@ -138,6 +138,8 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
   };
 
   const actualizarCantidad = (productoId: string, nuevaCantidad: number, cantidadOriginal: number) => {
+    nuevaCantidad = Math.round(nuevaCantidad);
+    cantidadOriginal = Math.round(cantidadOriginal);
     // Solo permitir disminuir la cantidad
     if (nuevaCantidad > cantidadOriginal) {
       toast.error('Vous pouvez seulement réduire les quantités');
@@ -209,7 +211,7 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
                           mockProductos.find(p => p.id === item.productoId);
           const cantidadNueva = cantidadesEditadas[item.productoId];
           if (cantidadNueva !== undefined && cantidadNueva !== item.cantidad) {
-            return `${producto?.nombre || item.productoId}: ${item.cantidad} → ${cantidadNueva}`;
+            return `${producto?.nombre || item.productoId}: ${formatQuantity(item.cantidad)} → ${formatQuantity(cantidadNueva)}`;
           }
           return null;
         })
@@ -361,8 +363,8 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
                         const producto = todosLosProductos.find(p => p.id === item.productoId) || 
                                         mockProductos.find(p => p.id === item.productoId);
                         const cantidadMostrada = esEdicion 
-                          ? (cantidadesEditadas[item.productoId] ?? item.cantidad)
-                          : item.cantidad;
+                          ? (cantidadesEditadas[item.productoId] ?? Math.round(item.cantidad))
+                          : Math.round(item.cantidad);
                         const cantidadModificada = esEdicion && cantidadesEditadas[item.productoId] !== undefined && cantidadesEditadas[item.productoId] !== item.cantidad;
 
                         return (
@@ -398,17 +400,17 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
                                   </Button>
                                   <Input
                                     type="number"
-                                    value={cantidadMostrada}
-                                    onChange={(e) => actualizarCantidad(item.productoId, parseFloat(e.target.value) || 0, item.cantidad)}
+                                    value={formatQuantity(cantidadMostrada)}
+                                    onChange={(e) => actualizarCantidad(item.productoId, parseInt(e.target.value, 10) || 0, item.cantidad)}
                                     className={`w-20 h-7 text-center ${cantidadModificada ? 'border-[#4CAF50] border-2 font-bold' : ''}`}
                                     min="0"
-                                    max={item.cantidad}
-                                    step="0.01"
+                                    max={Math.round(item.cantidad)}
+                                    step="1"
                                   />
-                                  <span className="text-xs text-gray-500 w-16">(Max : {item.cantidad})</span>
+                                  <span className="text-xs text-gray-500 w-16">(Max : {formatQuantity(item.cantidad)})</span>
                                 </div>
                               ) : (
-                                <span className="font-bold">{cantidadMostrada}</span>
+                                <span className="font-bold">{formatQuantity(cantidadMostrada)}</span>
                               )}
                             </TableCell>
                             <TableCell>{producto?.unidad || '-'}</TableCell>

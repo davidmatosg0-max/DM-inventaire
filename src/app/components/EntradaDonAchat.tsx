@@ -2142,14 +2142,14 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Input
                     type="number"
                     min="0"
-                    step="0.001"
+                    step="1"
                     value={formData.pesoUnitario || ''}
-                    onChange={(e) => handleFieldChange('pesoUnitario', parseFloat(e.target.value) || 0)}
-                    placeholder="0.000"
+                    onChange={(e) => handleFieldChange('pesoUnitario', Math.round(parseFloat(e.target.value) || 0))}
+                    placeholder="0"
                   />
                   {formData.pesoUnitario > 0 && formData.cantidad > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Poids estimé: {(formData.pesoUnitario * formData.cantidad).toFixed(3)} kg
+                      Poids estimé: {formatQuantity(formData.pesoUnitario * formData.cantidad)} kg
                     </p>
                   )}
                 </div>
@@ -2165,10 +2165,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Input
                     type="number"
                     min="0"
-                    step="0.001"
-                    value={formData.peso || ''}
+                    step="1"
+                    value={formData.peso ? formatQuantity(formData.peso) : ''}
                     onChange={(e) => handleFieldChange('peso', parseFloat(e.target.value) || 0)}
-                    placeholder="0.000"
+                    placeholder="0"
                     className="bg-gray-50"
                     readOnly
                   />
@@ -2198,19 +2198,19 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                           <div className="space-y-1 text-xs">
                             <div className="flex justify-between items-center py-1">
                               <span className="text-gray-700">📦 Poids brut (avec {formData.unidad}):</span>
-                              <span className="font-semibold text-gray-900">{pesoBruto.toFixed(3)} kg</span>
+                              <span className="font-semibold text-gray-900">{formatQuantity(pesoBruto)} kg</span>
                             </div>
                             <div className="flex justify-between items-center py-1 border-t border-blue-200">
                               <span className="text-gray-700">⚖️ Poids de l'unité (tare):</span>
-                              <span className="font-semibold text-red-600">- {pesoTaraTotal.toFixed(3)} kg{cantidad > 1 ? ` (${pesoTara.toFixed(2)} × ${cantidad})` : ''}</span>
+                              <span className="font-semibold text-red-600">- {formatQuantity(pesoTaraTotal)} kg{cantidad > 1 ? ` (${formatQuantity(pesoTara)} × ${formatQuantity(cantidad)})` : ''}</span>
                             </div>
                             <div className="flex justify-between items-center py-1.5 border-t-2 border-blue-300 bg-green-50 -mx-3 px-3 rounded">
                               <span className="text-green-800 font-semibold">✓ Poids net (imprimé):</span>
-                              <span className="font-bold text-green-700 text-sm">{pesoNeto.toFixed(3)} kg</span>
+                              <span className="font-bold text-green-700 text-sm">{formatQuantity(pesoNeto)} kg</span>
                             </div>
                           </div>
                           <p className="text-xs text-blue-700 mt-2 italic">
-                            💡 L'étiquette imprimée affichera le poids net ({pesoNeto.toFixed(3)} kg)
+                            💡 L'étiquette imprimée affichera le poids net ({formatQuantity(pesoNeto)} kg)
                           </p>
                         </div>
                       );
@@ -2613,11 +2613,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 <Label>Poids Unitaire (kg) (optionnel)</Label>
                 <Input
                   type="number"
-                  step="0.001"
+                  step="1"
                   min="0"
                   value={formVariante.pesoUnitario}
                   onChange={(e) => setFormVariante(prev => ({ ...prev, pesoUnitario: e.target.value }))}
-                  placeholder="0.000"
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -2627,11 +2627,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               <Label>Valeur par Kg (CAD$) (optionnel)</Label>
               <Input
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={formVariante.valorPorKg}
                 onChange={(e) => setFormVariante(prev => ({ ...prev, valorPorKg: e.target.value }))}
-                placeholder="0.00"
+                placeholder="0"
               />
             </div>
 
@@ -2748,11 +2748,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               <Input
                 id="peso-unitario-input"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 value={formSubcategoria.pesoUnitario || ''}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.000"
+                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
+                placeholder="0"
                 className="border-2 border-blue-300 focus:border-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -2768,66 +2768,66 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs">Palette (PLT)</Label>
                   <Input
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     value={formSubcategoria.pesoPLT || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoPLT: parseFloat(e.target.value) || 0 }))}
-                    placeholder="0.000"
+                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoPLT: Math.round(parseFloat(e.target.value) || 0) }))}
+                    placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Boîte (CJA)</Label>
                   <Input
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     value={formSubcategoria.pesoCJA || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoCJA: parseFloat(e.target.value) || 0 }))}
-                    placeholder="0.000"
+                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoCJA: Math.round(parseFloat(e.target.value) || 0) }))}
+                    placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Unité (UND)</Label>
                   <Input
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     value={formSubcategoria.pesoUND || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUND: parseFloat(e.target.value) || 0 }))}
-                    placeholder="0.000"
+                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUND: Math.round(parseFloat(e.target.value) || 0) }))}
+                    placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Sac (SAC)</Label>
                   <Input
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     value={formSubcategoria.pesoSAC || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoSAC: parseFloat(e.target.value) || 0 }))}
-                    placeholder="0.000"
+                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoSAC: Math.round(parseFloat(e.target.value) || 0) }))}
+                    placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Bac Noir (BN)</Label>
                   <Input
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     value={formSubcategoria.pesoBN || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoBN: parseFloat(e.target.value) || 0 }))}
-                    placeholder="0.000"
+                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoBN: Math.round(parseFloat(e.target.value) || 0) }))}
+                    placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Kilogramme (kg)</Label>
                   <Input
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     value={formSubcategoria.pesoKg || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoKg: parseFloat(e.target.value) || 0 }))}
-                    placeholder="1.000"
+                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoKg: Math.round(parseFloat(e.target.value) || 0) }))}
+                    placeholder="1"
                   />
                 </div>
               </div>
@@ -2838,11 +2838,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               <Label>Poids Unitaire Héritage (kg) (optionnel)</Label>
               <Input
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 value={formSubcategoria.pesoUnitario || ''}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.000"
+                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
+                placeholder="0"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Maintenu pour compatibilité. Utilisez les poids par unité ci-dessus.

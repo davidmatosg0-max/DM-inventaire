@@ -394,8 +394,8 @@ export function ConversionUnidadesDialog({
               <Input
                 id="factorConversion"
                 type="number"
-                step="0.01"
-                min="0.01"
+                step="1"
+                min="1"
                 value={factorConversion}
                 onChange={(e) => setFactorConversion(e.target.value)}
                 placeholder="0"

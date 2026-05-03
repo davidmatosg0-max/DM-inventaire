@@ -727,8 +727,8 @@ export function ModeloComanda({
                                   <Input
                                     type="number"
                                     min="0"
-                                    max={item.cantidad}
-                                    value={cantidadesEditadas[itemKey] || item.cantidad}
+                                    max={Math.round(item.cantidad)}
+                                    value={formatQuantity(cantidadesEditadas[itemKey] || item.cantidad)}
                                     onChange={(e) => handleCambioCantidad(itemKey, parseInt(e.target.value) || 0, item.cantidad)}
                                     onBlur={() => setCampoEditando(null)}
                                     onKeyDown={(e) => {
@@ -759,11 +759,11 @@ export function ModeloComanda({
                                   >
                                     {cantidadesEditadas[itemKey] !== undefined && cantidadesEditadas[itemKey] !== item.cantidad ? (
                                       <span className="flex items-center justify-center gap-1">
-                                        <span className="line-through text-gray-400 text-sm">{item.cantidad}</span>
-                                        <span className="text-[#FFC107]">{cantidadesEditadas[itemKey]}</span>
+                                        <span className="line-through text-gray-400 text-sm">{formatQuantity(item.cantidad)}</span>
+                                        <span className="text-[#FFC107]">{formatQuantity(cantidadesEditadas[itemKey])}</span>
                                       </span>
                                     ) : (
-                                      item.cantidad
+                                      formatQuantity(item.cantidad)
                                     )}
                                   </span>
                                 )}
@@ -774,7 +774,7 @@ export function ModeloComanda({
                               {comanda.estado === 'completada' && (
                                 <TableCell className="text-center">
                                   <Badge className="bg-[#4CAF50]" style={{ fontSize: '1rem', padding: '0.4rem 0.8rem' }}>
-                                    {item.cantidadEntregada || item.cantidad}
+                                    {formatQuantity(item.cantidadEntregada || item.cantidad)}
                                   </Badge>
                                 </TableCell>
                               )}

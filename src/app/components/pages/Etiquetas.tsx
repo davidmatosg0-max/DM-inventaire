@@ -1,1491 +1,1513 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useBranding } from '../../../hooks/useBranding';
-import { 
-  Printer, 
-  Tag, 
-  MapPin, 
-  Package, 
-  Plus, 
-  Eye, 
-  Download,
-  Grid3x3,
-  Trash2,
+import {
   Copy,
-  Check,
+  Edit,
+  Eye,
   Filter,
   LayoutGrid,
+  List,
+  MapPin,
+  Package,
+  Printer,
+  Search,
   Settings,
-  Home,
-  Sparkles,
-  Edit,
-  List
+  Tag,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
 import { toast } from 'sonner';
-import { EtiquetaImprimible, DatosEtiqueta, VistaImpresion } from '../etiquetas/EtiquetaImprimible';
+import { DatosEtiqueta, VistaImpresion } from '../etiquetas/EtiquetaImprimible';
 import { printStandardLabel, type ProductLabelData } from '../etiquetas/StandardProductLabel';
-import { generarCodigoBarrasEAN13, generarCodigoLote, generarCodigoUbicacion } from '../../utils/barcode';
+import { generarCodigoBarrasEAN13, generarCodigoUbicacion, generarDatosQRUbicacion } from '../../utils/barcode';
 import { mockProductos } from '../../data/mockData';
 import { obtenerProductos } from '../../utils/productStorage';
 import { obtenerCategorias } from '../../utils/categoriaStorage';
+import { formatQuantity } from '../../utils/formatUtils';
+import {
+  buildLocationCodesForZone,
+  buildLocationOptions,
+  buildLocationSections,
+  buildLocationRangeLabel,
+  findLocationConflicts,
+  loadLocationZones,
+  saveLocationZones,
+  type LocationZone,
+} from '../../utils/locationZones';
+import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 
-// Funciones de almacenamiento de zonas
-const obtenerZonas = (): Array<{ zona: string; tipo: string; cantidad: number }> => {
-  const zonasGuardadas = localStorage.getItem('zonasAlmacen');
-  if (zonasGuardadas) {
-    try {
-      return JSON.parse(zonasGuardadas);
-    } catch (error) {
-      console.error('Error al cargar zonas:', error);
-    }
-  }
-  // Datos de ubicaciones predefinidas por defecto
-  return [
-    { zona: 'A', tipo: 'Estantería', cantidad: 10 },
-    { zona: 'B', tipo: 'Estantería', cantidad: 10 },
-    { zona: 'C', tipo: 'Cámara Fría', cantidad: 5 },
-    { zona: 'D', tipo: 'Almacén Seco', cantidad: 8 },
-    { zona: 'E', tipo: 'Congelador', cantidad: 4 },
-  ];
+type LabelSize = 'pequena' | 'mediana' | 'grande';
+type CodeFormat = 'EAN13' | 'CODE128' | 'CODE39';
+type QueueFilter = 'todas' | 'ubicacion' | 'producto';
+
+type ProductoEtiqueta = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  subcategoria: string;
+  unidad: string;
+  stockActual: number;
+  stockMinimo: number;
+  ubicacion: string;
+  lote: string;
+  fechaVencimiento: string;
+  esPRS?: boolean;
+  foto?: string;
+  icono?: string;
+  peso?: number;
+  pesoRegistrado?: number;
+  pesoUnitario?: number;
+  varianteId?: string;
+  varianteNombre?: string;
+  temperatura?: 'ambiente' | 'refrigerado' | 'congelado';
 };
 
-const guardarZonas = (zonas: Array<{ zona: string; tipo: string; cantidad: number }>) => {
-  localStorage.setItem('zonasAlmacen', JSON.stringify(zonas));
+type ZoneFormState = {
+  zona: string;
+  tipo: string;
+  cantidad: number;
 };
 
-// Mapeo de categorías con sus iconos
+type LocationMeta = {
+  codigoZona: string;
+  tipoZona: string;
+  configurada: boolean;
+};
+
+const ALL_LOCATIONS_VALUE = '__ALL_LOCATIONS__';
+const WITHOUT_LOCATION_VALUE = '__WITHOUT_LOCATION__';
+const ALL_ZONES_VALUE = '__ALL_ZONES__';
+
+const LOCATION_TYPE_OPTIONS = [
+  'Estantería',
+  'Cámara Fría',
+  'Congelador',
+  'Almacén Seco',
+  'Zona de Carga',
+  'Área de Clasificación',
+];
+
 const categoriasInfo: Record<string, { icono: string; color: string; label: string }> = {
-  'Alimentos Secos': { icono: '🍚', color: '#FFC107', label: 'Aliments secs' },
-  'Conservas': { icono: '🥫', color: '#4CAF50', label: 'Conserves' },
-  'Lácteos': { icono: '🥛', color: '#1E73BE', label: 'Produits laitiers' },
-  'Frutas y Verduras': { icono: '🥬', color: '#4CAF50', label: 'Fruits et legumes' },
-  'Proteínas': { icono: '🥩', color: '#DC3545', label: 'Proteines' },
-  'Panadería': { icono: '🍞', color: '#FFA726', label: 'Boulangerie' },
-  'Bebidas': { icono: '🧃', color: '#29B6F6', label: 'Boissons' },
-  'Aceites y Condimentos': { icono: '🫒', color: '#66BB6A', label: 'Huiles et condiments' },
+  'Alimentos Secos': { icono: '🍚', color: '#FFC107', label: 'Alimentos secos' },
+  'Conservas': { icono: '🥫', color: '#4CAF50', label: 'Conservas' },
+  'Lácteos': { icono: '🥛', color: '#1E73BE', label: 'Lácteos' },
+  'Frutas y Verduras': { icono: '🥬', color: '#4CAF50', label: 'Frutas y verduras' },
+  'Proteínas': { icono: '🥩', color: '#DC3545', label: 'Proteínas' },
+  'Panadería': { icono: '🍞', color: '#FFA726', label: 'Panadería' },
+  'Bebidas': { icono: '🧃', color: '#29B6F6', label: 'Bebidas' },
+  'Aceites y Condimentos': { icono: '🫒', color: '#66BB6A', label: 'Aceites y condimentos' },
 };
+
+function sortAlphaNumeric(values: string[]) {
+  return [...values].sort((left, right) => left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' }));
+}
+
+function normalizeLocationCode(value?: string | null) {
+  return typeof value === 'string' ? value.trim().toUpperCase() : '';
+}
+
+function buildDefaultZoneForm(): ZoneFormState {
+  return {
+    zona: '',
+    tipo: LOCATION_TYPE_OPTIONS[0],
+    cantidad: 10,
+  };
+}
+
+function MetricCard({
+  title,
+  value,
+  icon,
+  accent,
+  subtitle,
+}: {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  accent: string;
+  subtitle?: string;
+}) {
+  return (
+    <Card className="border-0 shadow-lg">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-sm text-[#666666]">{title}</p>
+            <p className="text-3xl font-bold" style={{ color: accent }}>
+              {value}
+            </p>
+            {subtitle ? <p className="text-xs text-[#999999]">{subtitle}</p> : null}
+          </div>
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-md"
+            style={{ backgroundColor: accent }}
+          >
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function Etiquetas() {
-  const { t } = useTranslation();
   const branding = useBranding();
-  const [etiquetasCreadas, setEtiquetasCreadas] = useState<DatosEtiqueta[]>([]);
-  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<number[]>([]);
-  const [vistaPrevia, setVistaPrevia] = useState(false);
-  const [dialogNuevaEtiqueta, setDialogNuevaEtiqueta] = useState(false);
-  const [dialogUbicacionesMasivas, setDialogUbicacionesMasivas] = useState(false);
-  
-  // Estados para nueva etiqueta
-  const [tipoEtiqueta, setTipoEtiqueta] = useState<'ubicacion' | 'producto' | 'lote'>('ubicacion');
-  const [tamanoEtiqueta, setTamanoEtiqueta] = useState<'pequena' | 'mediana' | 'grande'>('mediana');
-  const [formatoCodigo, setFormatoCodigo] = useState<'EAN13' | 'CODE128' | 'CODE39'>('CODE128');
-  const [columnasImpresion, setColumnasImpresion] = useState(2);
 
-  // Estados para etiqueta de ubicación
-  const [zonaSeleccionada, setZonaSeleccionada] = useState('');
-  const [numeroUbicacion, setNumeroUbicacion] = useState('');
-  const [descripcionUbicacion, setDescripcionUbicacion] = useState('');
-
-  // Estados para etiqueta de producto
-  const [productoSeleccionado, setProductoSeleccionado] = useState('');
-
-  // Estados para generación masiva
-  const [zonaMasiva, setZonaMasiva] = useState('');
-  const [cantidadMasiva, setCantidadMasiva] = useState(1);
-
-  // Estados para creación de zona
-  const [dialogNuevaZona, setDialogNuevaZona] = useState(false);
-  const [dialogGestionarZonas, setDialogGestionarZonas] = useState(false);
-  const [zonaEditando, setZonaEditando] = useState<string | null>(null);
-  const [nuevaZona, setNuevaZona] = useState({
-    zona: '',
-    tipo: 'Estantería',
-    cantidad: 10
-  });
-  const [ubicacionesPredefinidas, setUbicacionesPredefinidas] = useState<Array<{ zona: string; tipo: string; cantidad: number }>>(obtenerZonas());
-
-  // Estado para forzar actualizaciones
   const [refreshKey, setRefreshKey] = useState(0);
+  const [zonas, setZonas] = useState<LocationZone[]>(() => loadLocationZones());
+  const [tamanoEtiqueta, setTamanoEtiqueta] = useState<LabelSize>('mediana');
+  const [formatoCodigo, setFormatoCodigo] = useState<CodeFormat>('CODE128');
+  const [columnasImpresion, setColumnasImpresion] = useState(2);
+  const [vistaPrevia, setVistaPrevia] = useState(false);
+  const [colaEtiquetas, setColaEtiquetas] = useState<DatosEtiqueta[]>([]);
+  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<number[]>([]);
+  const [filtroCola, setFiltroCola] = useState<QueueFilter>('todas');
+  const [busquedaProducto, setBusquedaProducto] = useState('');
+  const [filtroUbicacionProducto, setFiltroUbicacionProducto] = useState(ALL_LOCATIONS_VALUE);
+  const [filtroZonaUbicaciones, setFiltroZonaUbicaciones] = useState(ALL_ZONES_VALUE);
+  const [zoneForm, setZoneForm] = useState<ZoneFormState>(() => buildDefaultZoneForm());
+  const [editingZoneCode, setEditingZoneCode] = useState<string | null>(null);
 
-  // Sincronizar productos con localStorage usando useMemo (similar a Inventario.tsx)
+  useEffect(() => {
+    const handleRefresh = () => {
+      setRefreshKey((current) => current + 1);
+      setZonas(loadLocationZones());
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key || event.key === 'banco_alimentos_productos' || event.key === 'zonasAlmacen') {
+        handleRefresh();
+      }
+    };
+
+    window.addEventListener('productos-actualizados', handleRefresh);
+    window.addEventListener('categorias-actualizadas', handleRefresh);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('productos-actualizados', handleRefresh);
+      window.removeEventListener('categorias-actualizadas', handleRefresh);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   const productosCreados = useMemo(() => obtenerProductos(), [refreshKey]);
-  
-  const todosLosProductos = useMemo(() => {
+
+  const todosLosProductos = useMemo<ProductoEtiqueta[]>(() => {
     const categoriasDB = obtenerCategorias();
-    
-    // Mapear productos de localStorage
-    const productosLS = productosCreados.map(p => {
+
+    const productosLS: ProductoEtiqueta[] = productosCreados.map((producto) => {
       let iconoFinal = '📦';
-      
-      const categoriaObj = categoriasDB.find(c => c.nombre === p.categoria);
-      const subcategoriaObj = categoriaObj?.subcategorias?.find(s => s.nombre === p.subcategoria);
-      
+
+      const categoriaObj = categoriasDB.find((categoria) => categoria.nombre === producto.categoria);
+      const subcategoriaObj = categoriaObj?.subcategorias?.find((subcategoria) => subcategoria.nombre === producto.subcategoria);
+
       if (subcategoriaObj?.icono && subcategoriaObj.icono.trim() !== '') {
         iconoFinal = subcategoriaObj.icono;
       } else if (categoriaObj?.icono && categoriaObj.icono.trim() !== '') {
         iconoFinal = categoriaObj.icono;
-      } else if (categoriasInfo[p.categoria]?.icono) {
-        iconoFinal = categoriasInfo[p.categoria].icono;
+      } else if (categoriasInfo[producto.categoria]?.icono) {
+        iconoFinal = categoriasInfo[producto.categoria].icono;
       }
-      
+
       return {
-        id: p.id,
-        codigo: p.codigo,
-        nombre: p.nombre,
-        categoria: p.categoria,
-        subcategoria: p.subcategoria,
-        unidad: p.unidad,
-        stockActual: p.stockActual,
-        stockMinimo: p.stockMinimo,
-        ubicacion: p.ubicacion,
-        lote: p.lote || '',
-        fechaVencimiento: p.fechaVencimiento || '',
-        esPRS: p.esPRS,
+        id: producto.id,
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        categoria: producto.categoria,
+        subcategoria: producto.subcategoria,
+        unidad: producto.unidad,
+        stockActual: producto.stockActual,
+        stockMinimo: producto.stockMinimo,
+        ubicacion: normalizeLocationCode(producto.ubicacion),
+        lote: producto.lote || '',
+        fechaVencimiento: producto.fechaVencimiento || '',
+        esPRS: producto.esPRS,
         foto: '',
         icono: iconoFinal,
-        peso: p.peso,
-        pesoRegistrado: p.pesoRegistrado,
-        pesoUnitario: p.pesoUnitario || p.peso,
-        varianteId: p.varianteId
+        peso: producto.peso,
+        pesoRegistrado: producto.pesoRegistrado,
+        pesoUnitario: producto.pesoUnitario || producto.peso,
+        varianteId: producto.varianteId,
+        varianteNombre: producto.varianteNombre,
+        temperatura: producto.temperatura,
       };
     });
-    
-    // Agregar mockProductos que NO estén en localStorage
-    const mockProductosFiltrados = mockProductos.filter(
-      mp => !productosLS.some(p => p.id === mp.id)
-    );
-    
-    return [...productosLS, ...mockProductosFiltrados];
+
+    const productosMock: ProductoEtiqueta[] = mockProductos
+      .filter((producto) => !productosLS.some((existente) => existente.id === producto.id))
+      .map((producto) => ({
+        id: producto.id,
+        codigo: producto.codigo || producto.id,
+        nombre: producto.nombre,
+        categoria: producto.categoria,
+        subcategoria: producto.subcategoria || '',
+        unidad: producto.unidad || 'UND',
+        stockActual: Number(producto.stockActual) || 0,
+        stockMinimo: Number(producto.stockMinimo) || 0,
+        ubicacion: normalizeLocationCode(producto.ubicacion),
+        lote: typeof producto.lote === 'string' ? producto.lote : '',
+        fechaVencimiento: typeof producto.fechaVencimiento === 'string' ? producto.fechaVencimiento : '',
+        esPRS: Boolean(producto.esPRS),
+        foto: typeof producto.foto === 'string' ? producto.foto : '',
+        icono: typeof producto.icono === 'string' && producto.icono.trim() !== ''
+          ? producto.icono
+          : categoriasInfo[producto.categoria]?.icono || '📦',
+        peso: Number(producto.peso) || 0,
+        pesoRegistrado: Number(producto.pesoRegistrado) || 0,
+        pesoUnitario: Number(producto.pesoUnitario || producto.peso) || 0,
+        varianteId: typeof producto.varianteId === 'string' ? producto.varianteId : undefined,
+        varianteNombre: typeof producto.varianteNombre === 'string' ? producto.varianteNombre : undefined,
+      }));
+
+    return [...productosLS, ...productosMock];
   }, [productosCreados, refreshKey]);
 
+  const productById = useMemo(() => new Map(todosLosProductos.map((producto) => [producto.id, producto])), [todosLosProductos]);
+
+  const ubicacionesActualesProducto = useMemo(
+    () => sortAlphaNumeric(
+      todosLosProductos
+        .map((producto) => normalizeLocationCode(producto.ubicacion))
+        .filter(Boolean)
+    ),
+    [todosLosProductos]
+  );
+
+  const ubicacionesDisponibles = useMemo(
+    () => buildLocationOptions(zonas, ubicacionesActualesProducto),
+    [zonas, ubicacionesActualesProducto]
+  );
+
+  const seccionesUbicacion = useMemo(
+    () => buildLocationSections(zonas, ubicacionesDisponibles),
+    [zonas, ubicacionesDisponibles]
+  );
+
+  const metaUbicacion = useMemo(() => {
+    const map = new Map<string, LocationMeta>();
+
+    seccionesUbicacion.forEach((seccion) => {
+      seccion.ubicaciones.forEach((ubicacion) => {
+        map.set(ubicacion, {
+          codigoZona: seccion.codigoZona,
+          tipoZona: seccion.tipoZona,
+          configurada: seccion.codigoZona !== 'AUTRES',
+        });
+      });
+    });
+
+    return map;
+  }, [seccionesUbicacion]);
+
+  const productosPorUbicacion = useMemo(() => {
+    const map = new Map<string, ProductoEtiqueta[]>();
+
+    todosLosProductos.forEach((producto) => {
+      const ubicacion = normalizeLocationCode(producto.ubicacion);
+      if (!ubicacion) {
+        return;
+      }
+
+      const current = map.get(ubicacion) || [];
+      current.push(producto);
+      map.set(ubicacion, current);
+    });
+
+    return map;
+  }, [todosLosProductos]);
+
+  const ubicacionesOcupadas = useMemo(
+    () => new Set(Array.from(productosPorUbicacion.entries()).filter(([, productos]) => productos.length > 0).map(([ubicacion]) => ubicacion)),
+    [productosPorUbicacion]
+  );
+
+  const ubicacionesEtiquetadasEnCola = useMemo(
+    () => new Set(
+      colaEtiquetas
+        .filter((etiqueta) => etiqueta.tipo === 'ubicacion')
+        .map((etiqueta) => normalizeLocationCode(etiqueta.subtitulo || etiqueta.codigo))
+        .filter(Boolean)
+    ),
+    [colaEtiquetas]
+  );
+
+  const productosEtiquetadosEnCola = useMemo(
+    () => new Set(
+      colaEtiquetas
+        .filter((etiqueta) => etiqueta.tipo === 'producto' && etiqueta.productoId)
+        .map((etiqueta) => etiqueta.productoId as string)
+    ),
+    [colaEtiquetas]
+  );
+
+  const resumenZonas = useMemo(
+    () => zonas.map((zona) => {
+      const codigos = buildLocationCodesForZone(zona);
+      const ocupadas = codigos.filter((codigo) => ubicacionesOcupadas.has(codigo)).length;
+      const etiquetadas = codigos.filter((codigo) => ubicacionesEtiquetadasEnCola.has(codigo)).length;
+      const productos = codigos.reduce((total, codigo) => total + (productosPorUbicacion.get(codigo)?.length || 0), 0);
+
+      return {
+        ...zona,
+        ocupadas,
+        etiquetadas,
+        libres: Math.max(codigos.length - ocupadas, 0),
+        productos,
+      };
+    }),
+    [zonas, ubicacionesOcupadas, ubicacionesEtiquetadasEnCola, productosPorUbicacion]
+  );
+
+  const productosSinUbicacion = useMemo(
+    () => todosLosProductos.filter((producto) => !normalizeLocationCode(producto.ubicacion)),
+    [todosLosProductos]
+  );
+
+  const productosFiltrados = useMemo(() => {
+    const query = busquedaProducto.trim().toLowerCase();
+
+    return todosLosProductos
+      .filter((producto) => {
+        const ubicacion = normalizeLocationCode(producto.ubicacion);
+
+        if (filtroUbicacionProducto === WITHOUT_LOCATION_VALUE && ubicacion) {
+          return false;
+        }
+
+        if (filtroUbicacionProducto !== ALL_LOCATIONS_VALUE && filtroUbicacionProducto !== WITHOUT_LOCATION_VALUE && ubicacion !== filtroUbicacionProducto) {
+          return false;
+        }
+
+        if (!query) {
+          return true;
+        }
+
+        return [producto.nombre, producto.codigo, producto.categoria, producto.subcategoria, ubicacion]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(query));
+      })
+      .sort((left, right) => {
+        const locationOrder = normalizeLocationCode(left.ubicacion).localeCompare(normalizeLocationCode(right.ubicacion), undefined, { numeric: true, sensitivity: 'base' });
+        if (locationOrder !== 0) {
+          return locationOrder;
+        }
+
+        return left.nombre.localeCompare(right.nombre, undefined, { sensitivity: 'base' });
+      });
+  }, [todosLosProductos, busquedaProducto, filtroUbicacionProducto]);
+
+  const seccionesFiltradas = useMemo(() => {
+    if (filtroZonaUbicaciones === ALL_ZONES_VALUE) {
+      return seccionesUbicacion;
+    }
+
+    return seccionesUbicacion.filter((seccion) => seccion.codigoZona === filtroZonaUbicaciones);
+  }, [seccionesUbicacion, filtroZonaUbicaciones]);
+
+  const colaVisible = useMemo(() => {
+    return colaEtiquetas
+      .map((etiqueta, index) => ({ etiqueta, index }))
+      .filter(({ etiqueta }) => filtroCola === 'todas' || etiqueta.tipo === filtroCola);
+  }, [colaEtiquetas, filtroCola]);
+
+  const etiquetasParaAccion = useMemo(() => {
+    if (etiquetasSeleccionadas.length > 0) {
+      return etiquetasSeleccionadas
+        .map((index) => colaEtiquetas[index])
+        .filter((etiqueta): etiqueta is DatosEtiqueta => Boolean(etiqueta));
+    }
+
+    return colaVisible.map(({ etiqueta }) => etiqueta);
+  }, [etiquetasSeleccionadas, colaEtiquetas, colaVisible]);
+
   const getCategoriaLabel = (categoria?: string) => {
-    if (!categoria) return '';
+    if (!categoria) {
+      return 'Sin categoría';
+    }
+
     return categoriasInfo[categoria]?.label || categoria;
   };
 
-  // 🔄 Escuchar evento de actualización de categorías
-  useEffect(() => {
-    const handleCategoriasActualizadas = () => {
-      console.log('🔄 Categorías actualizadas - Recargando etiquetas...');
-      setRefreshKey(prev => prev + 1);
+  const getSectionTypeLabel = (metadata?: LocationMeta | null) => {
+    if (!metadata) {
+      return 'Ubicación de inventario';
+    }
+
+    if (!metadata.configurada) {
+      return 'Ubicación fuera de la configuración actual';
+    }
+
+    return metadata.tipoZona;
+  };
+
+  const persistZones = (nextZones: LocationZone[]) => {
+    const sortedZones = [...nextZones].sort((left, right) => left.zona.localeCompare(right.zona, undefined, { numeric: true, sensitivity: 'base' }));
+    setZonas(sortedZones);
+    saveLocationZones(sortedZones);
+  };
+
+  const resetZoneForm = () => {
+    setZoneForm(buildDefaultZoneForm());
+    setEditingZoneCode(null);
+  };
+
+  const getLocationUsageForZone = (zone: LocationZone) => {
+    const codigos = buildLocationCodesForZone(zone);
+    return codigos.filter((codigo) => ubicacionesOcupadas.has(codigo) || ubicacionesEtiquetadasEnCola.has(codigo));
+  };
+
+  const handleSaveZone = () => {
+    const codigoZona = zoneForm.zona.trim().toUpperCase();
+    const cantidadNormalizada = Math.max(1, Math.round(zoneForm.cantidad));
+
+    if (!codigoZona) {
+      toast.error('El código de zona es obligatorio.');
+      return;
+    }
+
+    if (!/^[A-Z0-9]{1,3}$/.test(codigoZona)) {
+      toast.error('Usa entre 1 y 3 caracteres alfanuméricos para la zona.');
+      return;
+    }
+
+    if (editingZoneCode && codigoZona !== editingZoneCode && zonas.some((zona) => zona.zona === codigoZona)) {
+      toast.error(`La zona ${codigoZona} ya existe.`);
+      return;
+    }
+
+    if (!editingZoneCode && zonas.some((zona) => zona.zona === codigoZona)) {
+      toast.error(`La zona ${codigoZona} ya existe.`);
+      return;
+    }
+
+    const updatedZone: LocationZone = {
+      zona: codigoZona,
+      tipo: zoneForm.tipo,
+      cantidad: cantidadNormalizada,
     };
 
-    window.addEventListener('categorias-actualizadas', handleCategoriasActualizadas);
+    const nextZones = editingZoneCode
+      ? zonas.map((zona) => (zona.zona === editingZoneCode ? updatedZone : zona))
+      : [...zonas, updatedZone];
 
-    return () => {
-      window.removeEventListener('categorias-actualizadas', handleCategoriasActualizadas);
-    };
-  }, []);
-
-  const handleCrearEtiquetaUbicacion = () => {
-    if (!zonaSeleccionada || !numeroUbicacion) {
-      toast.error(t('labels.completeAllFields'));
+    const conflicts = findLocationConflicts(nextZones);
+    if (conflicts.length > 0) {
+      const example = conflicts[0];
+      toast.error(`Conflicto detectado: ${example.ubicacion} sería generada por ${example.zonas.join(', ')}.`);
       return;
     }
 
-    const ubicacionCompleta = `${zonaSeleccionada}${numeroUbicacion}`;
-    const codigo = generarCodigoUbicacion(ubicacionCompleta);
-    const ubicacionInfo = ubicacionesPredefinidas.find(u => u.zona === zonaSeleccionada);
+    if (editingZoneCode) {
+      const previousZone = zonas.find((zona) => zona.zona === editingZoneCode);
+      if (previousZone) {
+        const usedCodes = getLocationUsageForZone(previousZone);
+        const nextCodes = new Set(buildLocationCodesForZone(updatedZone));
+        const invalidated = usedCodes.filter((codigo) => !nextCodes.has(codigo));
 
-    const nuevaEtiqueta: DatosEtiqueta = {
-      tipo: 'ubicacion',
-      titulo: 'UBICACIÓN',
-      codigo: codigo,
-      subtitulo: ubicacionCompleta,
-      descripcion: descripcionUbicacion || `${ubicacionInfo?.tipo} - Zona ${zonaSeleccionada}`,
-      icono: '📍'
-    };
-
-    setEtiquetasCreadas([...etiquetasCreadas, nuevaEtiqueta]);
-    toast.success(t('labels.locationLabelCreated'));
-    limpiarFormulario();
-  };
-
-  const handleCrearEtiquetaProducto = () => {
-    if (!productoSeleccionado) {
-      toast.error(t('inventory.selectProduct'));
-      return;
-    }
-
-    const producto = todosLosProductos.find(p => p.id === productoSeleccionado);
-    if (!producto) return;
-
-    const codigo = generarCodigoBarrasEAN13(producto.id);
-    const categoriaInfo = categoriasInfo[producto.categoria];
-
-    const nuevaEtiqueta: DatosEtiqueta = {
-      tipo: 'producto',
-      titulo: producto.nombre,
-      codigo: codigo,
-      subtitulo: `${t('labels.code')}: ${producto.codigo}`,
-      categoria: producto.categoria,
-      lote: producto.lote,
-      fechaVencimiento: producto.fechaVencimiento,
-      icono: producto.icono || categoriaInfo?.icono || '📦'
-    };
-
-    setEtiquetasCreadas([...etiquetasCreadas, nuevaEtiqueta]);
-    toast.success(t('labels.productLabelCreated'));
-    limpiarFormulario();
-  };
-
-  const handleGenerarUbicacionesMasivas = () => {
-    if (!zonaMasiva || cantidadMasiva < 1) {
-      toast.error(t('labels.completeAllFields'));
-      return;
-    }
-
-    const ubicacionInfo = ubicacionesPredefinidas.find(u => u.zona === zonaMasiva);
-    const nuevasEtiquetas: DatosEtiqueta[] = [];
-
-    for (let i = 1; i <= cantidadMasiva; i++) {
-      const ubicacionCompleta = `${zonaMasiva}${i}`;
-      const codigo = generarCodigoUbicacion(ubicacionCompleta);
-
-      nuevasEtiquetas.push({
-        tipo: 'ubicacion',
-        titulo: 'UBICACIÓN',
-        codigo: codigo,
-        subtitulo: ubicacionCompleta,
-        descripcion: `${ubicacionInfo?.tipo} - Zona ${zonaMasiva}`,
-        icono: '📍'
-      });
-    }
-
-    setEtiquetasCreadas([...etiquetasCreadas, ...nuevasEtiquetas]);
-    toast.success(`${cantidadMasiva} ${t('labels.labelsCreated')}`);
-    setDialogUbicacionesMasivas(false);
-    setZonaMasiva('');
-    setCantidadMasiva(1);
-  };
-
-  const handleCrearZona = () => {
-    if (!nuevaZona.zona.trim()) {
-      toast.error('El código de zona es requerido');
-      return;
-    }
-
-    // Verificar si ya existe una zona con ese código
-    if (ubicacionesPredefinidas.some(z => z.zona.toUpperCase() === nuevaZona.zona.toUpperCase())) {
-      toast.error('Ya existe una zona con ese código');
-      return;
-    }
-
-    const zonasActualizadas = [...ubicacionesPredefinidas, {
-      zona: nuevaZona.zona.toUpperCase(),
-      tipo: nuevaZona.tipo,
-      cantidad: nuevaZona.cantidad
-    }];
-
-    // Ordenar alfabéticamente por zona
-    zonasActualizadas.sort((a, b) => a.zona.localeCompare(b.zona));
-
-    setUbicacionesPredefinidas(zonasActualizadas);
-    guardarZonas(zonasActualizadas);
-    
-    toast.success(`Zone ${nuevaZona.zona.toUpperCase()} créée avec succès`);
-    setDialogNuevaZona(false);
-    setNuevaZona({
-      zona: '',
-      tipo: 'Estantería',
-      cantidad: 10
-    });
-  };
-
-  const handleEditarZona = (zonaCode: string) => {
-    const zona = ubicacionesPredefinidas.find(z => z.zona === zonaCode);
-    if (zona) {
-      setNuevaZona({
-        zona: zona.zona,
-        tipo: zona.tipo,
-        cantidad: zona.cantidad
-      });
-      setZonaEditando(zonaCode);
-      setDialogGestionarZonas(false);
-      setDialogNuevaZona(true);
-    }
-  };
-
-  const handleGuardarEdicion = () => {
-    if (!nuevaZona.zona.trim()) {
-      toast.error('El código de zona es requerido');
-      return;
-    }
-
-    // Si cambió el código, verificar que no exista
-    if (zonaEditando && nuevaZona.zona.toUpperCase() !== zonaEditando) {
-      if (ubicacionesPredefinidas.some(z => z.zona.toUpperCase() === nuevaZona.zona.toUpperCase())) {
-        toast.error('Ya existe una zona con ese código');
-        return;
+        if (invalidated.length > 0) {
+          toast.error(`No se puede guardar. Estas ubicaciones ya están en uso: ${invalidated.join(', ')}.`);
+          return;
+        }
       }
     }
 
-    const zonasActualizadas = ubicacionesPredefinidas.map(z => 
-      z.zona === zonaEditando 
-        ? { zona: nuevaZona.zona.toUpperCase(), tipo: nuevaZona.tipo, cantidad: nuevaZona.cantidad }
-        : z
-    );
-
-    // Ordenar alfabéticamente por zona
-    zonasActualizadas.sort((a, b) => a.zona.localeCompare(b.zona));
-
-    setUbicacionesPredefinidas(zonasActualizadas);
-    guardarZonas(zonasActualizadas);
-    
-    toast.success(`Zone ${nuevaZona.zona.toUpperCase()} modifiée avec succès`);
-    setDialogNuevaZona(false);
-    setZonaEditando(null);
-    setNuevaZona({
-      zona: '',
-      tipo: 'Estantería',
-      cantidad: 10
-    });
+    persistZones(nextZones);
+    toast.success(editingZoneCode ? `Zona ${codigoZona} actualizada.` : `Zona ${codigoZona} creada.`);
+    resetZoneForm();
   };
 
-  const handleEliminarZona = (zonaCode: string) => {
-    if (confirm(`¿Está seguro que desea eliminar la zona ${zonaCode}? Esta acción no se puede deshacer.`)) {
-      const zonasActualizadas = ubicacionesPredefinidas.filter(z => z.zona !== zonaCode);
-      setUbicacionesPredefinidas(zonasActualizadas);
-      guardarZonas(zonasActualizadas);
-      toast.success(`Zone ${zonaCode} supprimée avec succès`);
-    }
-  };
-
-  const limpiarFormulario = () => {
-    setZonaSeleccionada('');
-    setNumeroUbicacion('');
-    setDescripcionUbicacion('');
-    setProductoSeleccionado('');
-    setDialogNuevaEtiqueta(false);
-  };
-
-  const toggleSeleccion = (index: number) => {
-    setEtiquetasSeleccionadas(prev =>
-      prev.includes(index)
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
-
-  const toggleTodas = () => {
-    if (etiquetasSeleccionadas.length === etiquetasCreadas.length) {
-      setEtiquetasSeleccionadas([]);
-    } else {
-      setEtiquetasSeleccionadas(etiquetasCreadas.map((_, i) => i));
-    }
-  };
-
-  const eliminarSeleccionadas = () => {
-    setEtiquetasCreadas(prev => prev.filter((_, i) => !etiquetasSeleccionadas.includes(i)));
-    setEtiquetasSeleccionadas([]);
-    toast.success(t('labels.labelsDeleted'));
-  };
-
-  const duplicarSeleccionadas = () => {
-    const duplicadas = etiquetasSeleccionadas.map(i => ({ ...etiquetasCreadas[i] }));
-    setEtiquetasCreadas([...etiquetasCreadas, ...duplicadas]);
-    setEtiquetasSeleccionadas([]);
-    toast.success(`${duplicadas.length} ${t('labels.labelsDuplicated')}`);
-  };
-
-  const imprimirEtiquetas = async () => {
-    const etiquetasAImprimir = etiquetasSeleccionadas.length > 0
-      ? etiquetasSeleccionadas.map(i => etiquetasCreadas[i])
-      : etiquetasCreadas;
-
-    if (etiquetasAImprimir.length === 0) {
-      toast.error(t('labels.noLabelsToPrint'));
+  const handleEditZone = (zoneCode: string) => {
+    const zone = zonas.find((item) => item.zona === zoneCode);
+    if (!zone) {
       return;
     }
 
-    // Separar etiquetas de producto del resto
-    const etiquetasProducto = etiquetasAImprimir.filter(e => e.tipo === 'producto');
-    const etiquetasOtras = etiquetasAImprimir.filter(e => e.tipo !== 'producto');
+    setEditingZoneCode(zone.zona);
+    setZoneForm({
+      zona: zone.zona,
+      tipo: zone.tipo,
+      cantidad: zone.cantidad,
+    });
+  };
 
-    // Imprimir etiquetas de producto con el sistema estandarizado
+  const handleDeleteZone = (zoneCode: string) => {
+    const zone = zonas.find((item) => item.zona === zoneCode);
+    if (!zone) {
+      return;
+    }
+
+    const usedCodes = getLocationUsageForZone(zone);
+    if (usedCodes.length > 0) {
+      toast.error(`No se puede eliminar la zona ${zoneCode}. Ubicaciones en uso: ${usedCodes.join(', ')}.`);
+      return;
+    }
+
+    if (!window.confirm(`¿Eliminar la zona ${zoneCode}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    persistZones(zonas.filter((item) => item.zona !== zoneCode));
+    toast.success(`Zona ${zoneCode} eliminada.`);
+    if (editingZoneCode === zoneCode) {
+      resetZoneForm();
+    }
+  };
+
+  const buildLocationLabel = (locationCode: string): DatosEtiqueta | null => {
+    const normalizedLocation = normalizeLocationCode(locationCode);
+    if (!normalizedLocation) {
+      return null;
+    }
+
+    const metadata = metaUbicacion.get(normalizedLocation);
+    const descripcion = metadata
+      ? metadata.configurada
+        ? `${metadata.tipoZona} · Zona ${metadata.codigoZona}`
+        : 'Ubicación heredada · Fuera de la configuración actual'
+      : 'Ubicación de inventario';
+
+    return {
+      tipo: 'ubicacion',
+      titulo: 'UBICACIÓN',
+      codigo: generarCodigoUbicacion(normalizedLocation),
+      subtitulo: normalizedLocation,
+      descripcion,
+      icono: '📍',
+      mostrarQR: true,
+    };
+  };
+
+  const addLocationLabels = (locationCodes: string[]) => {
+    const nextReserved = new Set(ubicacionesEtiquetadasEnCola);
+    const newLabels: DatosEtiqueta[] = [];
+
+    sortAlphaNumeric(Array.from(new Set(locationCodes.map((code) => normalizeLocationCode(code)).filter(Boolean)))).forEach((locationCode) => {
+      if (nextReserved.has(locationCode)) {
+        return;
+      }
+
+      const label = buildLocationLabel(locationCode);
+      if (!label) {
+        return;
+      }
+
+      nextReserved.add(locationCode);
+      newLabels.push(label);
+    });
+
+    if (newLabels.length === 0) {
+      toast.error('No hay nuevas etiquetas de ubicación para agregar.');
+      return 0;
+    }
+
+    setColaEtiquetas((current) => [...current, ...newLabels]);
+    toast.success(`${formatQuantity(newLabels.length)} etiquetas de ubicación agregadas a la cola.`);
+    return newLabels.length;
+  };
+
+  const buildProductLabel = (producto: ProductoEtiqueta): DatosEtiqueta => {
+    const ubicacion = normalizeLocationCode(producto.ubicacion);
+
+    return {
+      tipo: 'producto',
+      productoId: producto.id,
+      titulo: producto.nombre,
+      codigo: generarCodigoBarrasEAN13(producto.id),
+      subtitulo: ubicacion ? `${producto.codigo} · ${ubicacion}` : producto.codigo,
+      descripcion: `${getCategoriaLabel(producto.categoria)}${ubicacion ? ` · Ubicación ${ubicacion}` : ' · Sin ubicación'}`,
+      categoria: producto.categoria,
+      lote: producto.lote,
+      fechaVencimiento: producto.fechaVencimiento,
+      icono: producto.icono || categoriasInfo[producto.categoria]?.icono || '📦',
+    };
+  };
+
+  const addProductLabels = (productIds: string[]) => {
+    const nextReserved = new Set(productosEtiquetadosEnCola);
+    const newLabels: DatosEtiqueta[] = [];
+
+    productIds.forEach((productId) => {
+      if (nextReserved.has(productId)) {
+        return;
+      }
+
+      const producto = productById.get(productId);
+      if (!producto) {
+        return;
+      }
+
+      nextReserved.add(productId);
+      newLabels.push(buildProductLabel(producto));
+    });
+
+    if (newLabels.length === 0) {
+      toast.error('No hay nuevas etiquetas de producto para agregar.');
+      return 0;
+    }
+
+    setColaEtiquetas((current) => [...current, ...newLabels]);
+    toast.success(`${formatQuantity(newLabels.length)} etiquetas de producto agregadas a la cola.`);
+    return newLabels.length;
+  };
+
+  const handleAddZoneLocationLabels = (zoneCode: string, onlyOccupied: boolean) => {
+    const zone = zonas.find((item) => item.zona === zoneCode);
+    if (!zone) {
+      return;
+    }
+
+    const codes = buildLocationCodesForZone(zone).filter((codigo) => !onlyOccupied || ubicacionesOcupadas.has(codigo));
+    if (codes.length === 0) {
+      toast.error(`La zona ${zoneCode} no tiene ubicaciones para esa acción.`);
+      return;
+    }
+
+    addLocationLabels(codes);
+  };
+
+  const handleAddLocationProductLabels = (locationCode: string) => {
+    const productos = productosPorUbicacion.get(locationCode) || [];
+    if (productos.length === 0) {
+      toast.error(`La ubicación ${locationCode} no tiene productos asociados.`);
+      return;
+    }
+
+    addProductLabels(productos.map((producto) => producto.id));
+  };
+
+  const toggleSeleccion = (index: number) => {
+    setEtiquetasSeleccionadas((current) =>
+      current.includes(index) ? current.filter((value) => value !== index) : [...current, index]
+    );
+  };
+
+  const toggleSeleccionVisible = () => {
+    const visibleIndices = colaVisible.map(({ index }) => index);
+    const allVisibleSelected = visibleIndices.length > 0 && visibleIndices.every((index) => etiquetasSeleccionadas.includes(index));
+
+    if (allVisibleSelected) {
+      setEtiquetasSeleccionadas((current) => current.filter((index) => !visibleIndices.includes(index)));
+      return;
+    }
+
+    setEtiquetasSeleccionadas((current) => Array.from(new Set([...current, ...visibleIndices])));
+  };
+
+  const eliminarSeleccionadas = () => {
+    if (etiquetasSeleccionadas.length === 0) {
+      toast.error('Selecciona al menos una etiqueta.');
+      return;
+    }
+
+    const selectedSet = new Set(etiquetasSeleccionadas);
+    setColaEtiquetas((current) => current.filter((_, index) => !selectedSet.has(index)));
+    setEtiquetasSeleccionadas([]);
+    toast.success('Etiquetas eliminadas de la cola.');
+  };
+
+  const duplicarSeleccionadas = () => {
+    if (etiquetasSeleccionadas.length === 0) {
+      toast.error('Selecciona al menos una etiqueta.');
+      return;
+    }
+
+    const duplicates = etiquetasSeleccionadas
+      .map((index) => colaEtiquetas[index])
+      .filter((etiqueta): etiqueta is DatosEtiqueta => Boolean(etiqueta))
+      .map((etiqueta) => ({ ...etiqueta }));
+
+    setColaEtiquetas((current) => [...current, ...duplicates]);
+    setEtiquetasSeleccionadas([]);
+    toast.success(`${formatQuantity(duplicates.length)} etiquetas duplicadas.`);
+  };
+
+  const imprimirEtiquetas = async () => {
+    if (etiquetasParaAccion.length === 0) {
+      toast.error('No hay etiquetas para imprimir.');
+      return;
+    }
+
+    const etiquetasProducto = etiquetasParaAccion.filter((etiqueta) => etiqueta.tipo === 'producto');
+    const etiquetasUbicacion = etiquetasParaAccion.filter((etiqueta) => etiqueta.tipo === 'ubicacion');
+
     if (etiquetasProducto.length > 0) {
-      // Imprimir todas las etiquetas sin esperar - cada una se abre instantáneamente
+      let preparadas = 0;
+      let omitidas = 0;
+
       etiquetasProducto.forEach((etiqueta) => {
-        const producto = todosLosProductos.find(p => p.nombre === etiqueta.titulo);
-        if (producto) {
-          const labelData: ProductLabelData = {
-            id: producto.id,
-            codigo: producto.codigo,
-            nombreProducto: producto.nombre,
-            productoIcono: producto.icono,
-            categoria: producto.categoria,
-            subcategoria: producto.subcategoria,
-            cantidad: producto.stockActual || 1,
-            unidad: producto.unidad,
-            pesoTotal: (producto.pesoUnitario || producto.peso || 0) * (producto.stockActual || 1),
-            pesoUnidad: producto.pesoUnitario || producto.peso,
-            temperatura: 'ambiente',
-            ubicacion: producto.ubicacion,
-            lote: producto.lote,
-            fechaCaducidad: producto.fechaVencimiento,
-            fechaEntrada: new Date().toISOString(),
-            translations: {
-              foodBank: t('labels.foodBank') || 'BANQUE ALIMENTAIRE',
-              productLabel: t('labels.productLabel') || 'Étiquette du Produit',
-              quantity: t('labels.quantity') || 'QUANTITÉ',
-              temperature: t('labels.temperature') || 'TEMPÉRATURE',
-              lot: t('labels.lot') || 'LOT',
-              expiryDate: t('labels.expiryDate') || "DATE D'EXPIRATION",
-              weight: t('labels.weight') || 'POIDS',
-              program: t('labels.program') || 'PROGRAMME',
-              donor: t('labels.donor') || 'DONATEUR',
-              entryDate: t('labels.entryDate') || "DATE D'ENTRÉE",
-              systemFooter: t('labels.systemFooter') || 'Système de Gestion des Stocks',
-              ambient: t('labels.ambient') || 'Ambiant',
-              refrigerated: t('labels.refrigerated') || 'Réfrigéré',
-              frozen: t('labels.frozen') || 'Congelé',
-            }
-          };
-
-          // No usar await - lanzar todas las impresiones simultáneamente
-          printStandardLabel(labelData).catch(err => {
-            console.error('Error al imprimir etiqueta:', err);
-            toast.error(`Error al imprimir ${producto.nombre}`);
-          });
+        if (!etiqueta.productoId) {
+          omitidas += 1;
+          return;
         }
+
+        const producto = productById.get(etiqueta.productoId);
+        if (!producto) {
+          omitidas += 1;
+          return;
+        }
+
+        preparadas += 1;
+        const cantidad = Math.max(1, Math.round(producto.stockActual || 1));
+        const pesoUnidad = Math.round(producto.pesoUnitario || producto.peso || 0);
+
+        const labelData: ProductLabelData = {
+          id: producto.id,
+          codigo: producto.codigo,
+          nombreProducto: producto.nombre,
+          productoIcono: producto.icono,
+          categoria: producto.categoria,
+          subcategoria: producto.subcategoria,
+          cantidad,
+          unidad: producto.unidad,
+          pesoTotal: pesoUnidad * cantidad,
+          pesoUnidad,
+          temperatura: producto.temperatura || 'ambiente',
+          ubicacion: normalizeLocationCode(producto.ubicacion),
+          lote: producto.lote,
+          fechaCaducidad: producto.fechaVencimiento,
+          fechaEntrada: new Date().toISOString(),
+          translations: {
+            foodBank: 'BANCO DE ALIMENTOS',
+            productLabel: 'Etiqueta del producto',
+            quantity: 'CANTIDAD',
+            temperature: 'TEMPERATURA',
+            lot: 'LOTE',
+            expiryDate: 'CADUCIDAD',
+            weight: 'PESO',
+            program: 'PROGRAMA',
+            donor: 'DONANTE',
+            entryDate: 'FECHA DE ENTRADA',
+            systemFooter: 'Sistema de gestión de inventario',
+            ambient: 'Ambiente',
+            refrigerated: 'Refrigerado',
+            frozen: 'Congelado',
+            packagingDetails: 'Detalles del empaque',
+          },
+        };
+
+        printStandardLabel(labelData).catch((error) => {
+          console.error('Error al imprimir etiqueta de producto:', error);
+          toast.error(`No se pudo imprimir ${producto.nombre}.`);
+        });
       });
-      
-      toast.success(`${etiquetasProducto.length} ${t('labels.productLabels')} ${t('labels.printed')}`);
+
+      if (preparadas > 0) {
+        toast.success(`${formatQuantity(preparadas)} etiquetas de producto enviadas a impresión.`);
+      }
+
+      if (omitidas > 0) {
+        toast.error(`${formatQuantity(omitidas)} etiquetas de producto se omitieron porque el producto ya no existe.`);
+      }
     }
 
-    // Si hay etiquetas de ubicación u otras, usar el sistema antiguo
-    if (etiquetasOtras.length === 0) {
-      return; // Ya imprimimos todas las de producto
+    if (etiquetasUbicacion.length === 0) {
+      return;
     }
 
-    // Crear ventana de impresión para el resto
-    const ventanaImpresion = window.open('', '', 'width=800,height=600');
-    if (!ventanaImpresion) {
-      toast.error(t('labels.couldNotOpenPrintWindow'));
+    const ventana = window.open('', '', 'width=1100,height=800');
+    if (!ventana) {
+      toast.error('No se pudo abrir la ventana de impresión.');
       return;
     }
 
     const dimensiones = {
       pequena: { width: '6cm', height: '4cm' },
       mediana: { width: '10cm', height: '6cm' },
-      grande: { width: '14cm', height: '8cm' }
+      grande: { width: '14cm', height: '8cm' },
     };
+
+    const etiquetasRenderizadas = await Promise.all(
+      etiquetasUbicacion.map(async (etiqueta) => {
+        const ubicacion = etiqueta.subtitulo || etiqueta.codigo;
+
+        try {
+          const qrImage = await generateBrandedQrDataUrl(generarDatosQRUbicacion(ubicacion, etiqueta.codigo), {
+            width: tamanoEtiqueta === 'pequena' ? 140 : tamanoEtiqueta === 'mediana' ? 180 : 220,
+            margin: 1,
+            errorCorrectionLevel: 'H',
+          });
+
+          return { ...etiqueta, qrImage };
+        } catch (error) {
+          console.error('Error al generar QR de ubicación:', error);
+          return { ...etiqueta, qrImage: null };
+        }
+      })
+    );
 
     const dim = dimensiones[tamanoEtiqueta];
 
-    ventanaImpresion.document.write(`
+    ventana.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="es">
         <head>
-          <title>Impression d'Étiquettes - Banque Alimentaire</title>
+          <meta charset="UTF-8" />
+          <title>Impresión de ubicaciones</title>
           <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            
-            @page {
-              size: A4;
-              margin: 1cm;
-            }
-            
-            body {
-              font-family: Arial, sans-serif;
-              background: white;
-            }
-            
-            .grid-etiquetas {
-              display: grid;
-              grid-template-columns: repeat(${columnasImpresion}, 1fr);
-              gap: 0.5cm;
-              padding: 0.5cm;
-            }
-            
-            .etiqueta {
-              width: ${dim.width};
-              height: ${dim.height};
-              border: 2px solid #000;
-              padding: 8px;
-              display: flex;
-              flex-direction: column;
-              justify-content: space-between;
-              page-break-inside: avoid;
-              background: white;
-            }
-            
-            .etiqueta-header {
-              text-align: center;
-              border-bottom: 2px solid #ccc;
-              padding-bottom: 4px;
-              margin-bottom: 4px;
-            }
-            
-            .etiqueta-titulo {
-              font-weight: bold;
-              font-size: ${tamanoEtiqueta === 'pequena' ? '12px' : tamanoEtiqueta === 'mediana' ? '14px' : '16px'};
-              text-transform: uppercase;
-              letter-spacing: 1px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 4px;
-            }
-            
-            .etiqueta-subtitulo {
-              font-size: ${tamanoEtiqueta === 'pequena' ? '9px' : tamanoEtiqueta === 'mediana' ? '10px' : '12px'};
-              color: #666;
-              font-weight: 500;
-            }
-            
-            .etiqueta-barcode {
-              flex: 1;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 4px 0;
-            }
-            
-            .etiqueta-footer {
-              border-top: 2px solid #ccc;
-              padding-top: 4px;
-              font-size: ${tamanoEtiqueta === 'pequena' ? '8px' : tamanoEtiqueta === 'mediana' ? '9px' : '10px'};
-            }
-            
-            .etiqueta-info {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 4px;
-            }
-            
-            .etiqueta-info-item {
-              font-size: ${tamanoEtiqueta === 'pequena' ? '8px' : tamanoEtiqueta === 'mediana' ? '9px' : '10px'};
-            }
-            
-            .etiqueta-info-label {
-              font-weight: bold;
-            }
-            
-            .etiqueta-vencimiento {
-              color: #dc3545;
-              font-weight: bold;
-            }
-            
-            .etiqueta-pie {
-              text-align: center;
-              margin-top: 4px;
-              padding-top: 4px;
-              border-top: 1px solid #e0e0e0;
-              font-size: 7px;
-              color: #999;
-            }
-            
-            @media print {
-              body {
-                background: white;
-              }
-              
-              .grid-etiquetas {
-                page-break-after: avoid;
-              }
-              
-              .etiqueta {
-                page-break-inside: avoid;
-              }
-            }
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Arial, sans-serif; background: white; }
+            @page { size: A4; margin: 1cm; }
+            .grid { display: grid; grid-template-columns: repeat(${columnasImpresion}, 1fr); gap: 0.5cm; padding: 0.5cm; }
+            .label { width: ${dim.width}; height: ${dim.height}; border: 2px solid #111827; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; page-break-inside: avoid; }
+            .header { border-bottom: 2px solid #d1d5db; padding-bottom: 6px; text-align: center; }
+            .title { font-size: 16px; font-weight: 700; letter-spacing: 0.08em; }
+            .subtitle { font-size: 11px; color: #6b7280; margin-top: 4px; }
+            .qr { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+            .qr img { width: ${tamanoEtiqueta === 'pequena' ? '90px' : tamanoEtiqueta === 'mediana' ? '120px' : '150px'}; height: ${tamanoEtiqueta === 'pequena' ? '90px' : tamanoEtiqueta === 'mediana' ? '120px' : '150px'}; object-fit: contain; }
+            .qr-code { font-size: ${tamanoEtiqueta === 'pequena' ? '10px' : tamanoEtiqueta === 'mediana' ? '12px' : '14px'}; font-weight: 700; }
+            .footer { border-top: 2px solid #d1d5db; padding-top: 6px; font-size: 10px; color: #4b5563; }
+            .system { margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 8px; color: #9ca3af; }
           </style>
         </head>
         <body>
-          <div class="grid-etiquetas">
-            ${etiquetasOtras.map(etq => `
-              <div class="etiqueta">
-                <div class="etiqueta-header">
-                  <div class="etiqueta-titulo">
-                    ${etq.icono ? `<span>${etq.icono}</span>` : ''}
-                    <span>${etq.titulo}</span>
-                  </div>
-                  ${etq.subtitulo ? `<div class="etiqueta-subtitulo">${etq.subtitulo}</div>` : ''}
+          <div class="grid">
+            ${etiquetasRenderizadas.map((etiqueta) => `
+              <div class="label">
+                <div class="header">
+                  <div class="title">${etiqueta.titulo}</div>
+                  <div class="subtitle">${etiqueta.subtitulo || ''}</div>
                 </div>
-                
-                <div class="etiqueta-barcode">
-                  <svg id="barcode-${etq.codigo}"></svg>
+                <div class="qr">
+                  ${etiqueta.qrImage ? `<img src="${etiqueta.qrImage}" alt="QR ${etiqueta.subtitulo || etiqueta.codigo}" />` : ''}
+                  <div class="qr-code">${etiqueta.subtitulo || etiqueta.codigo}</div>
                 </div>
-                
-                <div class="etiqueta-footer">
-                  <div class="etiqueta-info">
-                    ${etq.categoria ? `
-                      <div class="etiqueta-info-item">
-                        <span class="etiqueta-info-label">Categorie:</span>
-                        <div>${getCategoriaLabel(etq.categoria)}</div>
-                      </div>
-                    ` : ''}
-                    ${etq.lote ? `
-                      <div class="etiqueta-info-item">
-                        <span class="etiqueta-info-label">Lote:</span>
-                        <div>${etq.lote}</div>
-                      </div>
-                    ` : ''}
-                    ${etq.fechaVencimiento ? `
-                      <div class="etiqueta-info-item" style="grid-column: span 2;">
-                        <span class="etiqueta-info-label">Vencimiento:</span>
-                        <div class="etiqueta-vencimiento">${etq.fechaVencimiento}</div>
-                      </div>
-                    ` : ''}
-                    ${etq.descripcion ? `
-                      <div class="etiqueta-info-item" style="grid-column: span 2; font-size: 8px; color: #666;">
-                        ${etq.descripcion}
-                      </div>
-                    ` : ''}
-                  </div>
-                  <div class="etiqueta-pie">
-                    Banque Alimentaire - Système d'Inventaire
-                  </div>
+                <div class="footer">
+                  ${etiqueta.descripcion || ''}
+                  <div class="system">Banco de Alimentos · Sistema de inventario</div>
                 </div>
               </div>
             `).join('')}
           </div>
-          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
           <script>
-            window.onload = function() {
-              ${etiquetasOtras.map(etq => `
-                JsBarcode("#barcode-${etq.codigo}", "${etq.codigo}", {
-                  format: "${formatoCodigo}",
-                  width: ${tamanoEtiqueta === 'pequena' ? 1.2 : tamanoEtiqueta === 'mediana' ? 1.8 : 2.5},
-                  height: ${tamanoEtiqueta === 'pequena' ? 30 : tamanoEtiqueta === 'mediana' ? 45 : 60},
-                  displayValue: true,
-                  fontSize: ${tamanoEtiqueta === 'pequena' ? 12 : tamanoEtiqueta === 'mediana' ? 14 : 16},
-                  margin: 0
-                });
-              `).join('')}
-              
-              setTimeout(function() {
+            window.onload = function () {
+              setTimeout(function () {
                 window.print();
-                window.onafterprint = function() {
+                window.onafterprint = function () {
                   window.close();
                 };
-              }, 500);
+              }, 300);
             };
           </script>
         </body>
       </html>
     `);
-    
-    ventanaImpresion.document.close();
-    toast.success(`Imprimiendo ${etiquetasOtras.length} etiquetas`);
+
+    ventana.document.close();
+    toast.success(`${formatQuantity(etiquetasUbicacion.length)} etiquetas de ubicación enviadas a impresión.`);
   };
 
+  const totalUbicacionesConfiguradas = zonas.reduce((total, zona) => total + zona.cantidad, 0);
+
   return (
-    <div 
-      className="min-h-screen p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 relative overflow-hidden"
-      style={{ 
-        fontFamily: 'Roboto, sans-serif',
-        background: 'linear-gradient(135deg, #1a4d7a15 0%, #2d956110 100%)',
+    <div
+      className="min-h-screen space-y-6 p-4 sm:p-6"
+      style={{
+        background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`,
       }}
     >
-      {/* Formas decorativas de fondo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
-          style={{ backgroundColor: branding.primaryColor }}
-        />
-        <div 
-          className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
-          style={{ backgroundColor: branding.secondaryColor }}
-        />
-        <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-10 blur-3xl"
-          style={{ backgroundColor: branding.primaryColor }}
-        />
-      </div>
-
-      {/* Contenido con z-index superior */}
-      <div className="relative z-10 space-y-4 sm:space-y-6">
-        {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3">
-              {branding.logo ? (
-                <div 
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center overflow-hidden shadow-lg border-2"
-                  style={{ borderColor: branding.primaryColor }}
+      <div className="space-y-6">
+        <Card className="border-0 shadow-xl">
+          <CardContent className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg"
+                  style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
                 >
-                  <img 
-                    src={branding.logo} 
-                    alt="Logo" 
-                    className="h-full w-full"
-                    style={{ objectFit: 'cover', objectPosition: 'center' }}
-                  />
+                  <Tag className="h-7 w-7" />
                 </div>
-              ) : (
-                <div 
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center text-white shadow-lg"
-                  style={{ backgroundColor: branding.primaryColor }}
-                >
-                  <Tag className="w-6 h-6 sm:w-7 sm:h-7" />
-                </div>
-              )}
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 
-                    className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight"
-                    style={{ 
-                      fontFamily: 'Montserrat, sans-serif',
-                      color: branding.primaryColor 
-                    }}
-                  >
-                    {t('labels.title')}
+                <div>
+                  <h1 className="text-3xl font-bold" style={{ color: branding.primaryColor }}>
+                    Etiquetas coherentes con inventario
                   </h1>
-                  <Sparkles 
-                    className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" 
-                    style={{ color: branding.secondaryColor }}
-                  />
+                  <p className="text-sm text-[#666666]">
+                    Las ubicaciones salen de la misma configuración que usan los productos y el inventario. Aquí gestionas zonas, generas etiquetas por ubicación y preparas la impresión desde una cola única.
+                  </p>
                 </div>
-                <p className="text-xs sm:text-sm text-[#666666] mt-1">{t('labels.subtitle')}</p>
               </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Dialog open={dialogUbicacionesMasivas} onOpenChange={setDialogUbicacionesMasivas}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 sm:flex-none bg-white hover:shadow-lg transition-all duration-300" 
-                    style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
-                  >
-                    <Grid3x3 className="w-4 h-4 mr-2" />
-                    {t('labels.massGeneration')}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent aria-describedby="mass-generation-description">
-                  <DialogHeader>
-                    <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                      {t('labels.generateMassLocations')}
-                    </DialogTitle>
-                    <DialogDescription id="mass-generation-description">
-                      {t('labels.massGenerationDescription')}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
+
+            <div className="flex flex-wrap gap-2">
+              <Badge className="rounded-full px-3 py-1 text-sm" style={{ backgroundColor: branding.primaryColor }}>
+                {formatQuantity(zonas.length)} zonas activas
+              </Badge>
+              <Badge className="rounded-full px-3 py-1 text-sm" style={{ backgroundColor: branding.secondaryColor }}>
+                {formatQuantity(colaEtiquetas.length)} etiquetas en cola
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            title="Zonas configuradas"
+            value={formatQuantity(zonas.length)}
+            subtitle="Fuente maestra de ubicaciones"
+            icon={<Settings className="h-5 w-5" />}
+            accent={branding.primaryColor}
+          />
+          <MetricCard
+            title="Ubicaciones estándar"
+            value={formatQuantity(totalUbicacionesConfiguradas)}
+            subtitle="Capacidad definida en Etiquetas"
+            icon={<LayoutGrid className="h-5 w-5" />}
+            accent={branding.secondaryColor}
+          />
+          <MetricCard
+            title="Ubicaciones ocupadas"
+            value={formatQuantity(ubicacionesOcupadas.size)}
+            subtitle="Con productos reales asignados"
+            icon={<MapPin className="h-5 w-5" />}
+            accent="#f59e0b"
+          />
+          <MetricCard
+            title="Productos sin ubicación"
+            value={formatQuantity(productosSinUbicacion.length)}
+            subtitle="Pendientes de ubicación coherente"
+            icon={<Package className="h-5 w-5" />}
+            accent="#dc2626"
+          />
+        </div>
+
+        <Tabs defaultValue="ubicaciones" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-white shadow-md">
+            <TabsTrigger value="ubicaciones">
+              <MapPin className="mr-2 h-4 w-4" />
+              Ubicaciones
+            </TabsTrigger>
+            <TabsTrigger value="productos">
+              <Package className="mr-2 h-4 w-4" />
+              Productos
+            </TabsTrigger>
+            <TabsTrigger value="cola">
+              <Printer className="mr-2 h-4 w-4" />
+              Cola de impresión
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ubicaciones" className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+              <div className="space-y-6">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Settings className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                      {editingZoneCode ? `Editar zona ${editingZoneCode}` : 'Configurar zona'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label>{t('labels.zone')}</Label>
-                      <Select value={zonaMasiva} onValueChange={setZonaMasiva}>
+                      <Label>Código</Label>
+                      <Input
+                        placeholder="A, B, C..."
+                        maxLength={3}
+                        value={zoneForm.zona}
+                        onChange={(event) => setZoneForm((current) => ({ ...current, zona: event.target.value.toUpperCase() }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Tipo</Label>
+                      <Select value={zoneForm.tipo} onValueChange={(value) => setZoneForm((current) => ({ ...current, tipo: value }))}>
                         <SelectTrigger>
-                          <SelectValue placeholder={t('labels.selectZoneMessage')} />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ubicacionesPredefinidas.map(ub => (
-                            <SelectItem key={ub.zona} value={ub.zona}>
-                              {t('labels.zone')} {ub.zona} - {ub.tipo} ({t('labels.max')}. {ub.cantidad})
+                          {LOCATION_TYPE_OPTIONS.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div className="space-y-2">
-                      <Label>{t('labels.labelQuantity')}</Label>
+                      <Label>Capacidad</Label>
                       <Input
                         type="number"
                         min="1"
-                        max={ubicacionesPredefinidas.find(u => u.zona === zonaMasiva)?.cantidad || 10}
-                        value={cantidadMasiva}
-                        onChange={(e) => setCantidadMasiva(parseInt(e.target.value) || 1)}
+                        step="1"
+                        value={zoneForm.cantidad}
+                        onChange={(event) => setZoneForm((current) => ({ ...current, cantidad: Math.max(1, parseInt(event.target.value, 10) || 1) }))}
                       />
-                      <p className="text-xs text-[#666666]">
-                        {t('labels.willGenerate')} {zonaMasiva}1 {t('labels.until')} {zonaMasiva}{cantidadMasiva}
-                      </p>
                     </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button variant="outline" onClick={() => setDialogUbicacionesMasivas(false)}>
-                        {t('common.cancel')}
-                      </Button>
-                      <Button 
-                        onClick={handleGenerarUbicacionesMasivas}
-                        className="text-white"
-                        style={{ 
-                          background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                          boxShadow: `0 4px 15px ${branding.secondaryColor}40`
-                        }}
+
+                    {zoneForm.zona ? (
+                      <div className="rounded-2xl border p-4" style={{ backgroundColor: `${branding.primaryColor}08`, borderColor: `${branding.primaryColor}30` }}>
+                        <p className="text-xs uppercase tracking-wide text-[#666666]">Vista previa</p>
+                        <p className="mt-1 text-lg font-semibold" style={{ color: branding.primaryColor }}>
+                          Zona {zoneForm.zona.trim().toUpperCase()} · {zoneForm.tipo}
+                        </p>
+                        <p className="text-sm text-[#666666]">
+                          {buildLocationRangeLabel({ zona: zoneForm.zona.trim().toUpperCase(), tipo: zoneForm.tipo, cantidad: Math.max(1, Math.round(zoneForm.cantidad)) })}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    <div className="flex gap-2">
+                      {editingZoneCode ? (
+                        <Button variant="outline" className="flex-1" onClick={resetZoneForm}>
+                          Cancelar edición
+                        </Button>
+                      ) : null}
+                      <Button
+                        className="flex-1 text-white"
+                        style={{ backgroundColor: branding.primaryColor }}
+                        onClick={handleSaveZone}
                       >
-                        {t('labels.generate')} {cantidadMasiva} {t('labels.labels')}
+                        {editingZoneCode ? 'Guardar zona' : 'Crear zona'}
                       </Button>
                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <List className="h-5 w-5" style={{ color: branding.secondaryColor }} />
+                      Resumen por zona
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {resumenZonas.map((zona) => (
+                      <div key={zona.zona} className="rounded-2xl border p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-base font-semibold text-[#1f2937]">Zona {zona.zona}</p>
+                            <p className="text-sm text-[#666666]">{zona.tipo}</p>
+                            <p className="text-xs text-[#999999]">{buildLocationRangeLabel(zona)}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => handleEditZone(zona.zona)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteZone(zona.zona)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#666666]">
+                          <div className="rounded-xl bg-gray-50 px-3 py-2">{formatQuantity(zona.cantidad)} ubicaciones</div>
+                          <div className="rounded-xl bg-gray-50 px-3 py-2">{formatQuantity(zona.ocupadas)} ocupadas</div>
+                          <div className="rounded-xl bg-gray-50 px-3 py-2">{formatQuantity(zona.etiquetadas)} ya en cola</div>
+                          <div className="rounded-xl bg-gray-50 px-3 py-2">{formatQuantity(zona.productos)} productos</div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <MapPin className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                      Mapa de ubicaciones
+                    </CardTitle>
+                    <p className="text-sm text-[#666666]">
+                      Cada ubicación muestra sus productos reales y permite generar etiquetas de ubicación o de producto sin salir de esta vista.
+                    </p>
                   </div>
-                </DialogContent>
-              </Dialog>
 
-              <Dialog open={dialogNuevaEtiqueta} onOpenChange={setDialogNuevaEtiqueta}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="flex-1 sm:flex-none text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-                    style={{ 
-                      fontFamily: 'Montserrat, sans-serif', 
-                      fontWeight: 500,
-                      background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
-                      boxShadow: `0 4px 15px ${branding.primaryColor}40`
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t('labels.newLabel')}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="new-label-description">
-                  <DialogHeader>
-                    <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                      {t('labels.createNewLabel')}
-                    </DialogTitle>
-                    <DialogDescription id="new-label-description">
-                      {t('labels.selectLabelType')}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Tabs value={tipoEtiqueta} onValueChange={(v) => setTipoEtiqueta(v as any)}>
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="ubicacion">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        {t('labels.location')}
-                      </TabsTrigger>
-                      <TabsTrigger value="producto">
-                        <Package className="w-4 h-4 mr-2" />
-                        {t('labels.product')}
-                      </TabsTrigger>
-                    </TabsList>
+                  <div className="w-full lg:max-w-xs">
+                    <Label className="mb-2 block text-xs uppercase tracking-wide text-[#666666]">Filtrar zona</Label>
+                    <Select value={filtroZonaUbicaciones} onValueChange={setFiltroZonaUbicaciones}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL_ZONES_VALUE}>Todas las zonas</SelectItem>
+                        {seccionesUbicacion.map((seccion) => (
+                          <SelectItem key={seccion.codigoZona} value={seccion.codigoZona}>
+                            {seccion.codigoZona === 'AUTRES' ? 'Ubicaciones heredadas' : `Zona ${seccion.codigoZona}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  {seccionesFiltradas.map((seccion) => {
+                    const zoneSummary = resumenZonas.find((item) => item.zona === seccion.codigoZona);
+                    const isConfiguredZone = seccion.codigoZona !== 'AUTRES';
 
-                    <TabsContent value="ubicacion" className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <Label>{t('labels.zone')}</Label>
-                            <div className="flex gap-1">
-                              <Dialog open={dialogNuevaZona} onOpenChange={(open) => {
-                                setDialogNuevaZona(open);
-                                if (!open) {
-                                  setZonaEditando(null);
-                                  setNuevaZona({ zona: '', tipo: 'Estantería', cantidad: 10 });
-                                }
-                              }}>
-                                <DialogTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="h-7 px-2"
-                                    style={{ color: branding.secondaryColor }}
-                                  >
-                                    <Plus className="w-3 h-3 mr-1" />
-                                    Nouvelle zone
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent aria-describedby="zone-form-description">
-                                  <DialogHeader>
-                                    <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                                      {zonaEditando ? 'Modifier la zone' : 'Créer une nouvelle zone'}
-                                    </DialogTitle>
-                                    <DialogDescription id="zone-form-description">
-                                      {zonaEditando ? 'Modifier les détails de la zone' : 'Ajouter une nouvelle zone d\'entreposage'}
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="space-y-4 py-4">
-                                    <div className="space-y-2">
-                                      <Label>Code de la zone</Label>
-                                      <Input
-                                        placeholder="Ex: F, G, H..."
-                                        value={nuevaZona.zona}
-                                        onChange={(e) => setNuevaZona({ ...nuevaZona, zona: e.target.value.toUpperCase() })}
-                                        maxLength={2}
-                                      />
-                                      <p className="text-xs text-[#666666]">Utiliser 1-2 caractères (A-Z)</p>
+                    return (
+                      <div key={seccion.codigoZona} className="rounded-3xl border p-4 sm:p-5">
+                        <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-center lg:justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-semibold text-[#1f2937]">
+                                {isConfiguredZone ? `Zona ${seccion.codigoZona}` : 'Ubicaciones heredadas'}
+                              </h3>
+                              <Badge variant="outline">
+                                {isConfiguredZone ? seccion.tipoZona : 'Fuera de configuración'}
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-sm text-[#666666]">
+                              {isConfiguredZone && zoneSummary
+                                ? `${formatQuantity(zoneSummary.cantidad)} ubicaciones · ${formatQuantity(zoneSummary.ocupadas)} ocupadas · ${formatQuantity(zoneSummary.productos)} productos`
+                                : `${formatQuantity(seccion.ubicaciones.length)} ubicaciones provenientes de productos fuera de la configuración actual`}
+                            </p>
+                          </div>
+
+                          {isConfiguredZone ? (
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="outline" onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, true)}>
+                                Etiquetar ocupadas
+                              </Button>
+                              <Button className="text-white" style={{ backgroundColor: branding.secondaryColor }} onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, false)}>
+                                Etiquetar zona completa
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                          {seccion.ubicaciones.map((ubicacion) => {
+                            const productos = productosPorUbicacion.get(ubicacion) || [];
+                            const queued = ubicacionesEtiquetadasEnCola.has(ubicacion);
+
+                            return (
+                              <div key={ubicacion} className="rounded-2xl border bg-white p-4 shadow-sm">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-lg font-semibold text-[#111827]">{ubicacion}</p>
+                                      {queued ? <Badge style={{ backgroundColor: branding.primaryColor }}>En cola</Badge> : null}
+                                      {productos.length > 0 ? <Badge variant="outline">{formatQuantity(productos.length)} productos</Badge> : <Badge variant="secondary">Vacía</Badge>}
                                     </div>
-                                    <div className="space-y-2">
-                                      <Label>Type d'emplacement</Label>
-                                      <Select value={nuevaZona.tipo} onValueChange={(v) => setNuevaZona({ ...nuevaZona, tipo: v })}>
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="Estantería">Étagère</SelectItem>
-                                          <SelectItem value="Cámara Fría">Chambre froide</SelectItem>
-                                          <SelectItem value="Congelador">Congélateur</SelectItem>
-                                          <SelectItem value="Almacén Seco">Entrepôt sec</SelectItem>
-                                          <SelectItem value="Zona de Carga">Zone de chargement</SelectItem>
-                                          <SelectItem value="Área de Clasificación">Zone de tri</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label>Capacité maximum d'emplacements</Label>
-                                      <Input
-                                        type="number"
-                                        min="1"
-                                        max="999"
-                                        value={nuevaZona.cantidad}
-                                        onChange={(e) => setNuevaZona({ ...nuevaZona, cantidad: parseInt(e.target.value) || 1 })}
-                                      />
-                                      <p className="text-xs text-[#666666]">Nombre maximum d'emplacements dans cette zone</p>
-                                    </div>
-                                    {nuevaZona.zona && (
-                                      <div 
-                                        className="p-4 rounded-lg border-2"
-                                        style={{ 
-                                          backgroundColor: `${branding.secondaryColor}10`,
-                                          borderColor: `${branding.secondaryColor}30`
-                                        }}
-                                      >
-                                        <p className="text-sm text-[#666666] mb-2">Aperçu:</p>
-                                        <p 
-                                          className="font-bold text-lg"
-                                          style={{ color: branding.secondaryColor }}
-                                        >
-                                          Zone {nuevaZona.zona} - {nuevaZona.tipo}
-                                        </p>
-                                        <p className="text-xs text-[#666666]">
-                                          Emplacements: {nuevaZona.zona}1 à {nuevaZona.zona}{nuevaZona.cantidad}
-                                        </p>
-                                      </div>
-                                    )}
-                                    <div className="flex justify-end gap-2 pt-4">
-                                      <Button variant="outline" onClick={() => {
-                                        setDialogNuevaZona(false);
-                                        setZonaEditando(null);
-                                        setNuevaZona({ zona: '', tipo: 'Estantería', cantidad: 10 });
-                                      }}>
-                                        {t('common.cancel')}
-                                      </Button>
-                                      <Button 
-                                        onClick={zonaEditando ? handleGuardarEdicion : handleCrearZona}
-                                        className="text-white"
-                                        style={{ 
-                                          background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                                          boxShadow: `0 4px 15px ${branding.secondaryColor}40`
-                                        }}
-                                      >
-                                        {zonaEditando ? 'Enregistrer' : 'Créer la zone'}
-                                      </Button>
-                                    </div>
+                                    <p className="text-sm text-[#666666]">{getSectionTypeLabel(metaUbicacion.get(ubicacion))}</p>
                                   </div>
-                                </DialogContent>
-                              </Dialog>
-
-                              <Dialog open={dialogGestionarZonas} onOpenChange={setDialogGestionarZonas}>
-                                <DialogTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="h-7 px-2"
-                                    style={{ color: branding.primaryColor }}
-                                  >
-                                    <List className="w-3 h-3 mr-1" />
-                                    Gérer
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-2xl" aria-describedby="manage-zones-description">
-                                  <DialogHeader>
-                                    <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                                      Gérer les zones d'entreposage
-                                    </DialogTitle>
-                                    <DialogDescription id="manage-zones-description">
-                                      {ubicacionesPredefinidas.length} zone{ubicacionesPredefinidas.length !== 1 ? 's' : ''} disponible{ubicacionesPredefinidas.length !== 1 ? 's' : ''}
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="space-y-2 py-4 max-h-[500px] overflow-y-auto">
-                                    {ubicacionesPredefinidas.length === 0 ? (
-                                      <div className="text-center py-8 text-[#999999]">
-                                        <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                        <p>Aucune zone créée</p>
-                                        <p className="text-sm">Cliquez sur "Nouvelle zone" pour commencer</p>
-                                      </div>
-                                    ) : (
-                                      ubicacionesPredefinidas.map((zona) => (
-                                        <div 
-                                          key={zona.zona}
-                                          className="flex items-center justify-between p-4 rounded-lg border hover:shadow-md transition-shadow"
-                                          style={{ borderColor: '#e9ecef' }}
-                                        >
-                                          <div className="flex-1">
-                                            <div className="flex items-center gap-3">
-                                              <div 
-                                                className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-xl"
-                                                style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
-                                              >
-                                                {zona.zona}
-                                              </div>
-                                              <div>
-                                                <p className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                                  Zone {zona.zona}
-                                                </p>
-                                                <p className="text-sm text-[#666666]">
-                                                  {zona.tipo}
-                                                </p>
-                                                <p className="text-xs text-[#999999]">
-                                                  {zona.cantidad} emplacement{zona.cantidad !== 1 ? 's' : ''} ({zona.zona}1 à {zona.zona}{zona.cantidad})
-                                                </p>
-                                              </div>
-                                            </div>
-                                          </div>
-                                          <div className="flex gap-2">
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => handleEditarZona(zona.zona)}
-                                              style={{ color: branding.secondaryColor }}
-                                            >
-                                              <Edit className="w-4 h-4 mr-1" />
-                                              Modifier
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => handleEliminarZona(zona.zona)}
-                                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            >
-                                              <Trash2 className="w-4 h-4 mr-1" />
-                                              Supprimer
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      ))
-                                    )}
-                                  </div>
-                                  <div className="flex justify-end pt-4 border-t">
-                                    <Button variant="outline" onClick={() => setDialogGestionarZonas(false)}>
-                                      Fermer
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" disabled={queued} onClick={() => addLocationLabels([ubicacion])}>
+                                      <MapPin className="mr-1 h-4 w-4" />
+                                      Ubicación
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="text-white"
+                                      style={{ backgroundColor: branding.secondaryColor }}
+                                      disabled={productos.length === 0}
+                                      onClick={() => handleAddLocationProductLabels(ubicacion)}
+                                    >
+                                      <Package className="mr-1 h-4 w-4" />
+                                      Productos
                                     </Button>
                                   </div>
-                                </DialogContent>
-                              </Dialog>
-                            </div>
-                          </div>
-                          <Select value={zonaSeleccionada} onValueChange={setZonaSeleccionada}>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('labels.selectZone')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ubicacionesPredefinidas.map(ub => (
-                                <SelectItem key={ub.zona} value={ub.zona}>
-                                  {t('labels.zone')} {ub.zona} - {ub.tipo}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{t('labels.number')}</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="1"
-                            value={numeroUbicacion}
-                            onChange={(e) => setNumeroUbicacion(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t('labels.descriptionOptional')}</Label>
-                        <Input
-                          placeholder={t('labels.descriptionPlaceholder')}
-                          value={descripcionUbicacion}
-                          onChange={(e) => setDescripcionUbicacion(e.target.value)}
-                        />
-                      </div>
-                      {zonaSeleccionada && numeroUbicacion && (
-                        <div 
-                          className="p-4 rounded-lg border-2"
-                          style={{ 
-                            backgroundColor: `${branding.primaryColor}10`,
-                            borderColor: `${branding.primaryColor}30`
-                          }}
-                        >
-                          <p className="text-sm text-[#666666] mb-2">{t('labels.preview')}:</p>
-                          <p 
-                            className="font-bold text-lg"
-                            style={{ color: branding.primaryColor }}
-                          >
-                            {zonaSeleccionada}{numeroUbicacion}
-                          </p>
-                          <p className="text-xs text-[#666666]">
-                            {t('labels.code')}: {generarCodigoUbicacion(`${zonaSeleccionada}${numeroUbicacion}`)}
-                          </p>
-                        </div>
-                      )}
-                      <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" onClick={limpiarFormulario}>
-                          {t('common.cancel')}
-                        </Button>
-                        <Button 
-                          onClick={handleCrearEtiquetaUbicacion}
-                          className="text-white"
-                          style={{ 
-                            background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                            boxShadow: `0 4px 15px ${branding.secondaryColor}40`
-                          }}
-                        >
-                          {t('labels.createLabel')}
-                        </Button>
-                      </div>
-                    </TabsContent>
+                                </div>
 
-                    <TabsContent value="producto" className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>{t('labels.product')}</Label>
-                        <Select value={productoSeleccionado} onValueChange={setProductoSeleccionado}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('labels.selectProduct')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {todosLosProductos.map(prod => (
-                              <SelectItem key={prod.id} value={prod.id}>
-                                {prod.nombre} ({prod.codigo})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                                <div className="mt-3 space-y-2">
+                                  {productos.length === 0 ? (
+                                    <p className="text-sm text-[#999999]">Sin productos asignados.</p>
+                                  ) : (
+                                    productos.slice(0, 3).map((producto) => (
+                                      <div key={producto.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm">
+                                        <div className="min-w-0">
+                                          <p className="truncate font-medium text-[#1f2937]">{producto.nombre}</p>
+                                          <p className="truncate text-xs text-[#666666]">{producto.codigo} · {getCategoriaLabel(producto.categoria)}</p>
+                                        </div>
+                                        <Badge variant="outline">
+                                          {formatQuantity(producto.stockActual)} {producto.unidad}
+                                        </Badge>
+                                      </div>
+                                    ))
+                                  )}
+                                  {productos.length > 3 ? (
+                                    <p className="text-xs text-[#999999]">+ {formatQuantity(productos.length - 3)} productos más</p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      {productoSeleccionado && (() => {
-                        const prod = todosLosProductos.find(p => p.id === productoSeleccionado);
-                        return prod ? (
-                          <div 
-                            className="p-4 rounded-lg space-y-2 border-2"
-                            style={{ 
-                              backgroundColor: `${branding.primaryColor}10`,
-                              borderColor: `${branding.primaryColor}30`
-                            }}
-                          >
-                            <p className="text-sm text-[#666666]">{t('labels.preview')}:</p>
-                            <div className="flex items-center gap-3">
-                              <span className="text-3xl">{prod.icono || categoriasInfo[prod.categoria]?.icono || '📦'}</span>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="productos" className="space-y-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="gap-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Filter className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                  Filtrar productos para etiquetas
+                </CardTitle>
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px_auto]">
+                  <div className="space-y-2">
+                    <Label>Buscar</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999999]" />
+                      <Input className="pl-9" placeholder="Nombre, código, categoría o ubicación" value={busquedaProducto} onChange={(event) => setBusquedaProducto(event.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Ubicación</Label>
+                    <Select value={filtroUbicacionProducto} onValueChange={setFiltroUbicacionProducto}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL_LOCATIONS_VALUE}>Todas las ubicaciones</SelectItem>
+                        <SelectItem value={WITHOUT_LOCATION_VALUE}>Sin ubicación</SelectItem>
+                        {ubicacionesDisponibles.map((ubicacion) => (
+                          <SelectItem key={ubicacion} value={ubicacion}>
+                            {ubicacion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button className="w-full text-white lg:w-auto" style={{ backgroundColor: branding.secondaryColor }} onClick={() => addProductLabels(productosFiltrados.map((producto) => producto.id))}>
+                      Etiquetar filtrados
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {productosFiltrados.map((producto) => {
+                const ubicacion = normalizeLocationCode(producto.ubicacion);
+                const queued = productosEtiquetadosEnCola.has(producto.id);
+
+                return (
+                  <Card key={producto.id} className="border-0 shadow-lg">
+                    <CardContent className="space-y-4 p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-2xl">
+                            {producto.icono || categoriasInfo[producto.categoria]?.icono || '📦'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-base font-semibold text-[#111827]">{producto.nombre}</p>
+                            <p className="truncate text-sm text-[#666666]">{producto.codigo}</p>
+                          </div>
+                        </div>
+                        {queued ? <Badge style={{ backgroundColor: branding.primaryColor }}>En cola</Badge> : null}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-[#999999]">Categoría</p>
+                          <p className="truncate font-medium text-[#1f2937]">{getCategoriaLabel(producto.categoria)}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-[#999999]">Ubicación</p>
+                          <p className="truncate font-medium text-[#1f2937]">{ubicacion || 'Sin ubicación'}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-[#999999]">Stock</p>
+                          <p className="font-medium text-[#1f2937]">{formatQuantity(producto.stockActual)} {producto.unidad}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                          <p className="text-xs uppercase tracking-wide text-[#999999]">Lote</p>
+                          <p className="truncate font-medium text-[#1f2937]">{producto.lote || 'Sin lote'}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button className="flex-1 text-white" style={{ backgroundColor: branding.primaryColor }} disabled={queued} onClick={() => addProductLabels([producto.id])}>
+                          Crear etiqueta
+                        </Button>
+                        {ubicacion ? (
+                          <Button variant="outline" onClick={() => addLocationLabels([ubicacion])} disabled={ubicacionesEtiquetadasEnCola.has(ubicacion)}>
+                            <MapPin className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
+              {productosFiltrados.length === 0 ? (
+                <Card className="col-span-full border-0 shadow-lg">
+                  <CardContent className="py-12 text-center text-[#666666]">
+                    <Package className="mx-auto mb-3 h-12 w-12 text-[#cbd5e1]" />
+                    <p>No hay productos para el filtro actual.</p>
+                  </CardContent>
+                </Card>
+              ) : null}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="cola" className="space-y-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="gap-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Printer className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                  Preparar impresión
+                </CardTitle>
+
+                <div className="grid gap-4 xl:grid-cols-[220px_220px_220px_140px_minmax(0,1fr)]">
+                  <div className="space-y-2">
+                    <Label>Filtro de cola</Label>
+                    <Select value={filtroCola} onValueChange={(value) => setFiltroCola(value as QueueFilter)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todas">Todas</SelectItem>
+                        <SelectItem value="ubicacion">Ubicaciones</SelectItem>
+                        <SelectItem value="producto">Productos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tamaño</Label>
+                    <Select value={tamanoEtiqueta} onValueChange={(value) => setTamanoEtiqueta(value as LabelSize)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pequena">Pequeña</SelectItem>
+                        <SelectItem value="mediana">Mediana</SelectItem>
+                        <SelectItem value="grande">Grande</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Formato</Label>
+                    <Select value={formatoCodigo} onValueChange={(value) => setFormatoCodigo(value as CodeFormat)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CODE128">CODE128</SelectItem>
+                        <SelectItem value="EAN13">EAN13</SelectItem>
+                        <SelectItem value="CODE39">CODE39</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Columnas</Label>
+                    <Select value={columnasImpresion.toString()} onValueChange={(value) => setColumnasImpresion(parseInt(value, 10))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="4">4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-wrap items-end gap-2">
+                    <Button variant="outline" onClick={() => setVistaPrevia((current) => !current)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      {vistaPrevia ? 'Ocultar vista previa' : 'Ver vista previa'}
+                    </Button>
+                    <Button className="text-white" style={{ backgroundColor: branding.secondaryColor }} onClick={imprimirEtiquetas}>
+                      Imprimir
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-gray-50 px-4 py-3">
+                  <Checkbox
+                    checked={colaVisible.length > 0 && colaVisible.every(({ index }) => etiquetasSeleccionadas.includes(index))}
+                    onCheckedChange={toggleSeleccionVisible}
+                  />
+                  <span className="text-sm text-[#374151]">Seleccionar visibles ({formatQuantity(colaVisible.length)})</span>
+                  <div className="h-6 w-px bg-gray-300" />
+                  <Badge variant="outline">{formatQuantity(etiquetasSeleccionadas.length)} seleccionadas</Badge>
+                  <Button variant="outline" size="sm" disabled={etiquetasSeleccionadas.length === 0} onClick={duplicarSeleccionadas}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Duplicar
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={etiquetasSeleccionadas.length === 0} className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={eliminarSeleccionadas}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {vistaPrevia && etiquetasParaAccion.length > 0 ? (
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Eye className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                    Vista previa de impresión
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <VistaImpresion etiquetas={etiquetasParaAccion} tamano={tamanoEtiqueta} formato={formatoCodigo} columnas={columnasImpresion} />
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {colaVisible.map(({ etiqueta, index }) => (
+                <Card
+                  key={`${etiqueta.tipo}-${index}`}
+                  className={`border-0 shadow-lg transition-all ${etiquetasSeleccionadas.includes(index) ? 'ring-2 ring-offset-2' : ''}`}
+                  style={etiquetasSeleccionadas.includes(index) ? { borderColor: branding.primaryColor } : undefined}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <Checkbox checked={etiquetasSeleccionadas.includes(index)} onCheckedChange={() => toggleSeleccion(index)} />
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{etiqueta.icono || '🏷️'}</span>
                               <div>
-                                <p className="font-bold text-lg">{prod.nombre}</p>
-                                <p className="text-sm text-[#666666]">{t('labels.code')}: {prod.codigo}</p>
-                                <p className="text-xs text-[#666666]">{t('labels.category')}: {getCategoriaLabel(prod.categoria)}</p>
-                                {prod.lote && <p className="text-xs text-[#666666]">{t('labels.lot')}: {prod.lote}</p>}
+                                <p className="truncate text-base font-semibold text-[#111827]">{etiqueta.titulo}</p>
+                                <p className="truncate text-sm text-[#666666]">{etiqueta.subtitulo || etiqueta.codigo}</p>
                               </div>
                             </div>
                           </div>
-                        ) : null;
-                      })()}
-                      <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" onClick={limpiarFormulario}>
-                          {t('common.cancel')}
-                        </Button>
-                        <Button 
-                          onClick={handleCrearEtiquetaProducto}
-                          className="text-white"
-                          style={{ 
-                            background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                            boxShadow: `0 4px 15px ${branding.secondaryColor}40`
-                          }}
-                        >
-                          {t('labels.createLabel')}
-                        </Button>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </div>
+                          <Badge variant={etiqueta.tipo === 'ubicacion' ? 'outline' : 'secondary'}>
+                            {etiqueta.tipo === 'ubicacion' ? 'Ubicación' : 'Producto'}
+                          </Badge>
+                        </div>
 
-        {/* Estadísticas con glassmorphism */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div 
-            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-            style={{ 
-              borderLeftColor: branding.primaryColor,
-              boxShadow: `0 4px 15px ${branding.primaryColor}20`
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#666666]">{t('labels.totalLabels')}</p>
-                <p 
-                  className="font-bold text-2xl"
-                  style={{ color: branding.primaryColor }}
-                >
-                  {etiquetasCreadas.length}
-                </p>
-              </div>
-              <Tag 
-                className="w-10 h-10 opacity-20" 
-                style={{ color: branding.primaryColor }}
-              />
-            </div>
-          </div>
-
-          <div 
-            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-            style={{ 
-              borderLeftColor: branding.secondaryColor,
-              boxShadow: `0 4px 15px ${branding.secondaryColor}20`
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#666666]">{t('labels.locations')}</p>
-                <p 
-                  className="font-bold text-2xl"
-                  style={{ color: branding.secondaryColor }}
-                >
-                  {etiquetasCreadas.filter(e => e.tipo === 'ubicacion').length}
-                </p>
-              </div>
-              <MapPin 
-                className="w-10 h-10 opacity-20" 
-                style={{ color: branding.secondaryColor }}
-              />
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#FFC107] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#666666]">{t('labels.products')}</p>
-                <p className="font-bold text-2xl text-[#FFC107]">
-                  {etiquetasCreadas.filter(e => e.tipo === 'producto').length}
-                </p>
-              </div>
-              <Package className="w-10 h-10 text-[#FFC107] opacity-20" />
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#DC3545] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#666666]">{t('labels.selected')}</p>
-                <p className="font-bold text-2xl text-[#DC3545]">
-                  {etiquetasSeleccionadas.length}
-                </p>
-              </div>
-              <Check className="w-10 h-10 text-[#DC3545] opacity-20" />
-            </div>
-          </div>
-        </div>
-
-        {/* Configuración de impresión con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-          <h2 
-            className="text-lg sm:text-xl font-bold mb-4"
-            style={{ 
-              fontFamily: 'Montserrat, sans-serif',
-              color: branding.primaryColor 
-            }}
-          >
-            {t('labels.printConfiguration')}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>{t('labels.labelSize')}</Label>
-              <Select value={tamanoEtiqueta} onValueChange={(v) => setTamanoEtiqueta(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pequena">{t('labels.small')} (6x4 cm)</SelectItem>
-                  <SelectItem value="mediana">{t('labels.medium')} (10x6 cm)</SelectItem>
-                  <SelectItem value="grande">{t('labels.large')} (14x8 cm)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('labels.codeFormat')}</Label>
-              <Select value={formatoCodigo} onValueChange={(v) => setFormatoCodigo(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CODE128">CODE128</SelectItem>
-                  <SelectItem value="EAN13">EAN-13</SelectItem>
-                  <SelectItem value="CODE39">CODE39</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('labels.printColumns')}</Label>
-              <Select value={columnasImpresion.toString()} onValueChange={(v) => setColumnasImpresion(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 {t('labels.column')}</SelectItem>
-                  <SelectItem value="2">2 {t('labels.columns')}</SelectItem>
-                  <SelectItem value="3">3 {t('labels.columns')}</SelectItem>
-                  <SelectItem value="4">4 {t('labels.columns')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>&nbsp;</Label>
-              <Button 
-                onClick={() => setVistaPrevia(!vistaPrevia)} 
-                variant="outline"
-                className="w-full"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                {vistaPrevia ? t('labels.hide') : t('labels.viewPreview')}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Acciones masivas con glassmorphism */}
-        {etiquetasCreadas.length > 0 && (
-          <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-            <div className="flex flex-wrap items-center gap-3">
-              <Checkbox
-                id="select-all"
-                checked={etiquetasSeleccionadas.length === etiquetasCreadas.length}
-                onCheckedChange={toggleTodas}
-              />
-              <Label htmlFor="select-all" className="cursor-pointer font-medium">
-                {t('labels.selectAll')} ({etiquetasCreadas.length})
-              </Label>
-              
-              {etiquetasSeleccionadas.length > 0 && (
-                <>
-                  <div className="h-6 w-px bg-gray-300 mx-2" />
-                  <Badge 
-                    className="text-white"
-                    style={{ backgroundColor: branding.primaryColor }}
-                  >
-                    {etiquetasSeleccionadas.length} {t('labels.selected')}
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={duplicarSeleccionadas}
-                  >
-                    <Copy className="w-4 h-4 mr-1" />
-                    {t('labels.duplicate')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={eliminarSeleccionadas}
-                    className="text-[#DC3545] border-[#DC3545] hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    {t('labels.delete')}
-                  </Button>
-                </>
-              )}
-              
-              <div className="flex-1" />
-              
-              <Button
-                onClick={imprimirEtiquetas}
-                className="text-white"
-                style={{ 
-                  fontFamily: 'Montserrat, sans-serif', 
-                  fontWeight: 500,
-                  background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                  boxShadow: `0 4px 15px ${branding.secondaryColor}40`
-                }}
-              >
-                <Printer className="w-4 h-4 mr-2" />
-                {t('labels.print')} {etiquetasSeleccionadas.length > 0 ? `${etiquetasSeleccionadas.length} ` : t('labels.printAll')}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Vista Previa con glassmorphism */}
-        {vistaPrevia && etiquetasCreadas.length > 0 && (
-          <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-            <h2 
-              className="text-lg sm:text-xl font-bold mb-4"
-              style={{ 
-                fontFamily: 'Montserrat, sans-serif',
-                color: branding.primaryColor 
-              }}
-            >
-              {t('labels.previewLabels')}
-            </h2>
-            <VistaImpresion
-              etiquetas={etiquetasSeleccionadas.length > 0 
-                ? etiquetasSeleccionadas.map(i => etiquetasCreadas[i])
-                : etiquetasCreadas
-              }
-              tamano={tamanoEtiqueta}
-              formato={formatoCodigo}
-              columnas={columnasImpresion}
-            />
-          </div>
-        )}
-
-        {/* Lista de Etiquetas con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-          <h2 
-            className="text-lg sm:text-xl font-bold mb-4"
-            style={{ 
-              fontFamily: 'Montserrat, sans-serif',
-              color: branding.primaryColor 
-            }}
-          >
-            {t('labels.createdLabels')} ({etiquetasCreadas.length})
-          </h2>
-          {etiquetasCreadas.length === 0 ? (
-            <div className="text-center py-12">
-              <Tag className="w-16 h-16 text-[#CCCCCC] mx-auto mb-4" />
-              <p className="text-[#666666] mb-2">{t('labels.noLabelsCreated')}</p>
-              <p className="text-sm text-[#999999]">{t('labels.createFirstLabel')}</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {etiquetasCreadas.map((etiqueta, index) => (
-                <div
-                  key={index}
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg ${
-                    etiquetasSeleccionadas.includes(index)
-                      ? 'bg-blue-50'
-                      : ''
-                  }`}
-                  style={{
-                    borderColor: etiquetasSeleccionadas.includes(index) 
-                      ? branding.primaryColor 
-                      : '#e5e7eb'
-                  }}
-                  onClick={() => toggleSeleccion(index)}
-                >
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={etiquetasSeleccionadas.includes(index)}
-                      onCheckedChange={() => toggleSeleccion(index)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-2xl">{etiqueta.icono}</span>
-                        <div>
-                          <h4 className="font-bold text-sm">{etiqueta.titulo}</h4>
-                          {etiqueta.subtitulo && (
-                            <p className="text-xs text-[#666666]">{etiqueta.subtitulo}</p>
-                          )}
+                        <div className="space-y-2 rounded-2xl bg-gray-50 p-3 text-sm">
+                          <p className="font-mono text-xs text-[#4b5563] break-all">{etiqueta.codigo}</p>
+                          {etiqueta.descripcion ? <p className="text-[#666666]">{etiqueta.descripcion}</p> : null}
+                          {etiqueta.categoria ? <p className="text-[#666666]">Categoría: {getCategoriaLabel(etiqueta.categoria)}</p> : null}
+                          {etiqueta.lote ? <p className="text-[#666666]">Lote: {etiqueta.lote}</p> : null}
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <Badge variant="outline" className="text-xs">
-                          {etiqueta.tipo === 'ubicacion' ? '📍 Ubicación' : '📦 Producto'}
-                        </Badge>
-                        <p className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                          {etiqueta.codigo}
-                        </p>
-                        {etiqueta.descripcion && (
-                          <p className="text-xs text-[#666666] line-clamp-2">
-                            {etiqueta.descripcion}
-                          </p>
-                        )}
-                      </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
+
+              {colaVisible.length === 0 ? (
+                <Card className="col-span-full border-0 shadow-lg">
+                  <CardContent className="py-12 text-center text-[#666666]">
+                    <Tag className="mx-auto mb-3 h-12 w-12 text-[#cbd5e1]" />
+                    <p>No hay etiquetas en la cola para este filtro.</p>
+                  </CardContent>
+                </Card>
+              ) : null}
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

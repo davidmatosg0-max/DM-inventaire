@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { formatMoney } from '../../utils/formatUtils';
+import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { 
   Package, 
   TrendingUp, 
@@ -453,11 +453,11 @@ export function HistorialProductoDialog({
                                     <div className="flex flex-col">
                                       <span className={`font-bold ${getTipoColor(mov.tipo)}`}>
                                         {mov.tipo === 'entrada' ? '+' : (mov.tipo === 'salida' || mov.tipo === 'distribucion' || mov.tipo === 'distribucion_completada') ? '-' : ''}
-                                        {mov.cantidad} {producto.unidad}
+                                        {formatQuantity(mov.cantidad)} {producto.unidad}
                                       </span>
                                       {(mov.cantidadAnterior !== undefined && mov.cantidadActual !== undefined) && (
                                         <span className="text-xs text-[#999999]">
-                                          {mov.cantidadAnterior} → {mov.cantidadActual}
+                                          {formatQuantity(mov.cantidadAnterior)} → {formatQuantity(mov.cantidadActual)}
                                         </span>
                                       )}
                                     </div>
@@ -466,7 +466,7 @@ export function HistorialProductoDialog({
                                     {mov.pesoUnitario ? (
                                       <div className="flex flex-col">
                                         <span className="font-medium text-[#1E73BE]">
-                                          {mov.pesoUnitario.toFixed(3)} kg
+                                          {formatQuantity(mov.pesoUnitario)} kg
                                         </span>
                                         <span className="text-xs text-[#999999]">
                                           por unidad

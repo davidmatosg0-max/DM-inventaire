@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Barcode from 'react-barcode';
+import { generarDatosQRUbicacion } from '../../utils/barcode';
+import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 
 export interface DatosEtiqueta {
   tipo: 'ubicacion' | 'producto' | 'lote';
+  productoId?: string;
   titulo: string;
   codigo: string;
   subtitulo?: string;
@@ -25,6 +28,7 @@ export function EtiquetaImprimible({
   tamano = 'mediana',
   formato = 'CODE128'
 }: EtiquetaImprimibleProps) {
+  const [qrImage, setQrImage] = useState<string | null>(null);
   const dimensiones = {
     pequena: { width: '6cm', height: '4cm', barcodeWidth: 1.2, barcodeHeight: 30 },
     mediana: { width: '10cm', height: '6cm', barcodeWidth: 1.8, barcodeHeight: 45 },
@@ -32,6 +36,40 @@ export function EtiquetaImprimible({
   };
 
   const dim = dimensiones[tamano];
+
+  useEffect(() => {
+    let disposed = false;
+
+    if (datos.tipo !== 'ubicacion') {
+      setQrImage(null);
+      return () => {
+        disposed = true;
+      };
+    }
+
+    const ubicacion = datos.subtitulo || datos.codigo;
+
+    generateBrandedQrDataUrl(generarDatosQRUbicacion(ubicacion, datos.codigo), {
+      width: tamano === 'pequena' ? 140 : tamano === 'mediana' ? 180 : 220,
+      margin: 1,
+      errorCorrectionLevel: 'H',
+    })
+      .then((image) => {
+        if (!disposed) {
+          setQrImage(image);
+        }
+      })
+      .catch((error) => {
+        console.error('Error al generar QR de ubicación para vista previa:', error);
+        if (!disposed) {
+          setQrImage(null);
+        }
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, [datos.codigo, datos.subtitulo, datos.tipo, tamano]);
 
   return (
     <div 
@@ -63,17 +101,34 @@ export function EtiquetaImprimible({
 
       {/* Código de Barras */}
       <div className="flex-1 flex items-center justify-center w-full py-2">
-        <Barcode
-          value={datos.codigo}
-          format={formato}
-          width={dim.barcodeWidth}
-          height={dim.barcodeHeight}
-          displayValue={true}
-          fontSize={tamano === 'pequena' ? 12 : tamano === 'mediana' ? 14 : 16}
-          margin={0}
-          background="#ffffff"
-          lineColor="#000000"
-        />
+        {datos.tipo === 'ubicacion' && qrImage ? (
+          <div className="flex flex-col items-center gap-2">
+            <img
+              src={qrImage}
+              alt={`QR ${datos.subtitulo || datos.codigo}`}
+              style={{
+                width: tamano === 'pequena' ? '90px' : tamano === 'mediana' ? '120px' : '150px',
+                height: tamano === 'pequena' ? '90px' : tamano === 'mediana' ? '120px' : '150px',
+                objectFit: 'contain',
+              }}
+            />
+            <p className="font-bold" style={{ fontSize: tamano === 'pequena' ? '10px' : tamano === 'mediana' ? '12px' : '14px' }}>
+              {datos.subtitulo || datos.codigo}
+            </p>
+          </div>
+        ) : (
+          <Barcode
+            value={datos.codigo}
+            format={formato}
+            width={dim.barcodeWidth}
+            height={dim.barcodeHeight}
+            displayValue={true}
+            fontSize={tamano === 'pequena' ? 12 : tamano === 'mediana' ? 14 : 16}
+            margin={0}
+            background="#ffffff"
+            lineColor="#000000"
+          />
+        )}
       </div>
 
       {/* Footer con información adicional */}
@@ -108,7 +163,7 @@ export function EtiquetaImprimible({
       {/* Footer fijo */}
       <div className="w-full text-center mt-2 pt-2 border-t border-gray-200">
         <p className="text-[8px] text-gray-400">
-          Banque Alimentaire - Système de Gestion
+          Banco de Alimentos - Sistema de gestión
         </p>
       </div>
     </div>

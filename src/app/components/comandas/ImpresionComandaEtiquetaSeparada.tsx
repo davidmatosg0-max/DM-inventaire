@@ -4,8 +4,8 @@
  * Imprime la comanda detallada y la etiqueta en hojas separadas usando un iframe oculto
  */
 
-import QRCode from 'qrcode';
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
+import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 
 interface ComandaParaImprimir {
   numero?: string;
@@ -56,7 +56,7 @@ async function generatePrintHTML(
 
   let qrImageComanda = '';
   try {
-    qrImageComanda = await QRCode.toDataURL(qrDataComanda, {
+    qrImageComanda = await generateBrandedQrDataUrl(qrDataComanda, {
       width: 280,
       ...COMANDA_QR_DATA_URL_OPTIONS,
     });
@@ -75,7 +75,7 @@ async function generatePrintHTML(
 
   let qrImageEtiqueta = '';
   try {
-    qrImageEtiqueta = await QRCode.toDataURL(qrDataEtiqueta, {
+    qrImageEtiqueta = await generateBrandedQrDataUrl(qrDataEtiqueta, {
       width: 180,
       ...COMANDA_QR_DATA_URL_OPTIONS,
     });

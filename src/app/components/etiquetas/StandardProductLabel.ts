@@ -18,8 +18,9 @@
  * - Roboto Regular para cuerpo de texto
  */
 
-import QRCode from 'qrcode';
+import { generarDatosQR } from '../../utils/barcode';
 import { formatQuantity } from '../../utils/formatUtils';
+import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 
 export interface ProductLabelData {
   // Identificación
@@ -84,43 +85,45 @@ export interface ProductLabelData {
 export async function generateStandardProductLabel(
   data: ProductLabelData
 ): Promise<string> {
-  // Traducciones por defecto (francés)
+  // Traducciones por defecto (español)
   const t = {
-    foodBank: data.translations?.foodBank || 'BANQUE ALIMENTAIRE',
-    productLabel: data.translations?.productLabel || 'Étiquette du Produit',
-    quantity: data.translations?.quantity || 'QUANTITÉ',
-    temperature: data.translations?.temperature || 'TEMPÉRATURE',
+    foodBank: data.translations?.foodBank || 'BANCO DE ALIMENTOS',
+    productLabel: data.translations?.productLabel || 'Etiqueta del producto',
+    quantity: data.translations?.quantity || 'CANTIDAD',
+    temperature: data.translations?.temperature || 'TEMPERATURA',
     lot: data.translations?.lot || 'LOT',
-    expiryDate: data.translations?.expiryDate || "DATE D'EXPIRATION",
-    weight: data.translations?.weight || 'POIDS',
-    program: data.translations?.program || 'PROGRAMME',
-    donor: data.translations?.donor || 'DONATEUR',
-    entryDate: data.translations?.entryDate || "DATE D'ENTRÉE",
-    systemFooter: data.translations?.systemFooter || 'Système de Gestion des Stocks',
-    ambient: data.translations?.ambient || 'Ambiant',
-    refrigerated: data.translations?.refrigerated || 'Réfrigéré',
-    frozen: data.translations?.frozen || 'Congelé',
-    packagingDetails: data.translations?.packagingDetails || 'Détails de l\'empaquetage'
+    expiryDate: data.translations?.expiryDate || 'FECHA DE VENCIMIENTO',
+    weight: data.translations?.weight || 'PESO',
+    program: data.translations?.program || 'PROGRAMA',
+    donor: data.translations?.donor || 'DONANTE',
+    entryDate: data.translations?.entryDate || 'FECHA DE ENTRADA',
+    systemFooter: data.translations?.systemFooter || 'Sistema de gestión de inventario',
+    ambient: data.translations?.ambient || 'Ambiente',
+    refrigerated: data.translations?.refrigerated || 'Refrigerado',
+    frozen: data.translations?.frozen || 'Congelado',
+    packagingDetails: data.translations?.packagingDetails || 'Detalles del empaque'
   };
 
   // Generar QR Code (reducido para optimizar espacio)
-  const qrData = JSON.stringify({
-    tipo: 'producto',
+  const qrData = generarDatosQR({
     id: data.id,
     codigo: data.codigo || data.id,
     nombre: data.nombreProducto,
+    lote: data.lote,
+    fechaVencimiento: data.fechaCaducidad,
+    ubicacion: data.ubicacion,
   });
   let qrImageBase64 = '';
   try {
-    qrImageBase64 = await QRCode.toDataURL(qrData, {
-      width: 180,
-      margin: 2,
+    qrImageBase64 = await generateBrandedQrDataUrl(qrData, {
+      width: 260,
+      margin: 3,
       errorCorrectionLevel: 'H',
       color: {
         dark: '#000000',
         light: '#FFFFFF'
       }
-    });
+    }, undefined, 0.14);
   } catch (err) {
     console.error('Error generando QR:', err);
   }
@@ -137,7 +140,7 @@ export async function generateStandardProductLabel(
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR', {
+    return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -147,7 +150,7 @@ export async function generateStandardProductLabel(
   const formatDateTime = (dateStr?: string) => {
     if (!dateStr) {
       const now = new Date();
-      return now.toLocaleDateString('fr-FR', {
+      return now.toLocaleDateString('es-ES', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -156,7 +159,7 @@ export async function generateStandardProductLabel(
       });
     }
     const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR', {
+    return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -167,7 +170,7 @@ export async function generateStandardProductLabel(
 
   return `
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -240,7 +243,7 @@ export async function generateStandardProductLabel(
     /* QR SECTION */
     .qr-section {
       background: white;
-      padding: 10px 16px;
+      padding: 12px 16px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -261,8 +264,9 @@ export async function generateStandardProductLabel(
     
     .qr-code-wrapper img {
       display: block;
-      width: 110px;
-      height: 110px;
+      width: 150px;
+      height: 150px;
+      image-rendering: pixelated;
     }
 
     .qr-brand-badge {
@@ -570,25 +574,25 @@ export async function generateStandardProductLabel(
       ` : ''}
       ${data.fechaCaducidad ? `
         <div class="info-field">
-          <span class="info-field-label">DATE D'EXPIRATION</span>
+          <span class="info-field-label">FECHA DE VENCIMIENTO</span>
           <div class="info-field-value">${formatDate(data.fechaCaducidad)}</div>
         </div>
       ` : ''}
       ${data.detallesEmpaque ? `
         <div class="info-field">
-          <span class="info-field-label">DÉTAILS DE L'EMBALLAGE</span>
+          <span class="info-field-label">DETALLES DEL EMPAQUE</span>
           <div class="info-field-value">${data.detallesEmpaque}</div>
         </div>
       ` : ''}
       ${data.programa ? `
         <div class="info-field">
-          <span class="info-field-label">PROGRAMME</span>
+          <span class="info-field-label">PROGRAMA</span>
           <div class="info-field-value">${data.programa}</div>
         </div>
       ` : ''}
       ${data.fechaEntrada ? `
         <div class="info-field">
-          <span class="info-field-label">DATE D'ENTRÉE</span>
+          <span class="info-field-label">FECHA DE ENTRADA</span>
           <div class="info-field-value">${formatDateTime(data.fechaEntrada)}</div>
         </div>
       ` : ''}
@@ -598,10 +602,10 @@ export async function generateStandardProductLabel(
   <!-- PRINT BUTTONS -->
   <div class="print-buttons">
     <button class="btn btn-print" onclick="handlePrint()">
-      🖨️ Imprimer l'étiquette
+      🖨️ Imprimir etiqueta
     </button>
     <button class="btn btn-close" onclick="window.close()">
-      ✖ Fermer
+      ✖ Cerrar
     </button>
   </div>
   

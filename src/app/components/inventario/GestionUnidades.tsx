@@ -277,10 +277,10 @@ export function GestionUnidades() {
               <Label>⚖️ Poids de l'unité vide (Tare) en kg</Label>
               <Input
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={formData.pesoUnidad}
-                onChange={(e) => setFormData({ ...formData, pesoUnidad: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, pesoUnidad: Math.round(parseFloat(e.target.value) || 0) })}
                 placeholder="Ex: 30 (pour une palette de 30 kg)"
               />
               <p className="text-xs text-[#666666]">

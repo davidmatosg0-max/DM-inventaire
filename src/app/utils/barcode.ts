@@ -172,10 +172,19 @@ export function generarDatosQR(producto: {
     id: producto.id,
     codigo: producto.codigo,
     nombre: producto.nombre,
-    lote: producto.lote,
-    fecha_vencimiento: producto.fechaVencimiento,
-    ubicacion: producto.ubicacion,
-    generado: new Date().toISOString()
+  });
+}
+
+export function generarDatosQRUbicacion(ubicacion: string, codigo?: string) {
+  const ubicacionNormalizada = ubicacion.trim();
+  const codigoNormalizado = (codigo || generarCodigoUbicacion(ubicacionNormalizada)).trim().toUpperCase();
+
+  return JSON.stringify({
+    tipo: 'ubicacion',
+    id: ubicacionNormalizada,
+    codigo: codigoNormalizado,
+    ubicacion: ubicacionNormalizada,
+    generado: new Date().toISOString(),
   });
 }
 
@@ -216,6 +225,49 @@ function normalizeLocationCandidate(value?: string): string {
   return typeof value === 'string' ? value.trim().toUpperCase() : '';
 }
 
+function looksLikeLocationIdentifier(value?: string): boolean {
+  const normalizedValue = normalizeLocationCandidate(value);
+  return /^[A-Z]{1,4}-?\d{1,3}$/.test(normalizedValue);
+}
+
+function extractLocationInfoFromRawText(text: string) {
+  const candidates = new Set<string>();
+  const normalizedText = text.trim();
+  const explicitLocationType = /"tipo"\s*:\s*"ubicacion"/i.test(normalizedText);
+  const explicitProductType = /"tipo"\s*:\s*"producto"/i.test(normalizedText);
+  const productMarkers = /"nombre"\s*:|"producto"\s*:|"lote"\s*:|"fecha_vencimiento"\s*:|"fechaVencimiento"\s*:/i.test(normalizedText);
+  const directFieldPattern = /"(?:ubicacion|codigo|id)"\s*:\s*"([^"]+)"/gi;
+
+  for (const match of normalizedText.matchAll(directFieldPattern)) {
+    const candidate = normalizeLocationCandidate(match[1]);
+    if (looksLikeLocationIdentifier(candidate)) {
+      candidates.add(candidate);
+    }
+  }
+
+  const objectStart = normalizedText.indexOf('{');
+  const objectEnd = normalizedText.lastIndexOf('}');
+  if (objectStart !== -1 && objectEnd > objectStart) {
+    const objectCandidate = normalizedText.slice(objectStart, objectEnd + 1);
+    try {
+      const parsed = JSON.parse(objectCandidate) as QRRecord;
+      [parsed.ubicacion, parsed.codigo, parsed.id].forEach((value) => {
+        const candidate = normalizeLocationCandidate(getString(value));
+        if (looksLikeLocationIdentifier(candidate)) {
+          candidates.add(candidate);
+        }
+      });
+    } catch {
+      // Ignorar JSON parcial o corrupto; se intentan extraer campos por regex.
+    }
+  }
+
+  return {
+    candidates: Array.from(candidates),
+    likelyLocationPayload: explicitLocationType || (!explicitProductType && !productMarkers && candidates.size > 0),
+  };
+}
+
 function resolveKnownLocationMatch(
   candidates: string[],
   knownLocations: string[]
@@ -240,18 +292,28 @@ export function normalizeScannedLocationQR(
 
   if (!record) {
     const text = getString(value);
-    const normalizedText = normalizeLocationCandidate(text);
-    const matchedLocation = resolveKnownLocationMatch([normalizedText], knownLocations);
 
-    if (!text || !matchedLocation) {
+    if (!text) {
+      return null;
+    }
+
+    const normalizedText = normalizeLocationCandidate(text);
+    const extractedLocationInfo = extractLocationInfoFromRawText(text);
+    const matchedLocation = resolveKnownLocationMatch(
+      [normalizedText, ...extractedLocationInfo.candidates],
+      knownLocations
+    );
+    const fallbackCandidate = extractedLocationInfo.candidates[0] || normalizedText;
+
+    if (!matchedLocation && !extractedLocationInfo.likelyLocationPayload && !looksLikeLocationIdentifier(normalizedText)) {
       return null;
     }
 
     return {
       tipo: 'ubicacion',
-      id: matchedLocation,
-      codigo: normalizedText,
-      ubicacion: matchedLocation,
+      id: matchedLocation || fallbackCandidate,
+      codigo: matchedLocation || fallbackCandidate,
+      ubicacion: matchedLocation || fallbackCandidate,
       text,
     };
   }
@@ -274,15 +336,17 @@ export function normalizeScannedLocationQR(
   const matchedLocation = resolveKnownLocationMatch(candidates, knownLocations);
 
   if (!matchedLocation) {
-    if (explicitType !== 'ubicacion' || candidates.length === 0) {
+    const fallbackCandidate = explicitLocation || codigo || id || candidates[0];
+
+    if ((explicitType !== 'ubicacion' && !candidates.some(looksLikeLocationIdentifier)) || !fallbackCandidate) {
       return null;
     }
 
     return {
       tipo: 'ubicacion',
-      id: id || candidates[0],
-      codigo: normalizeLocationCandidate(codigo || explicitLocation || id || candidates[0]),
-      ubicacion: explicitLocation || codigo || id || candidates[0],
+      id: id || normalizeLocationCandidate(fallbackCandidate),
+      codigo: normalizeLocationCandidate(codigo || explicitLocation || id || fallbackCandidate),
+      ubicacion: explicitLocation || codigo || id || normalizeLocationCandidate(fallbackCandidate),
       text,
     };
   }
@@ -302,6 +366,10 @@ export function normalizeScannedProductQR(value: unknown): ProductQRPayload | nu
   if (!record) {
     const text = getString(value);
     if (!text) {
+      return null;
+    }
+
+    if (extractLocationInfoFromRawText(text).likelyLocationPayload) {
       return null;
     }
 

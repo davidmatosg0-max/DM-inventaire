@@ -19,6 +19,7 @@
     "test:entrepot:valor": "node tmp/distribution-value-regression.cjs",
     "test:entrepot:ui": "node tmp/entrepot-ui-edicion-anulacion-functional.cjs",
     "test:entrepot:variantes": "node tmp/entrepot-variantes-regression.cjs",
+    "test:etiquetas:ubicaciones": "node tmp/etiquetas-ubicaciones-regression.cjs",
     "test:recrutement": "node tmp/recrutement-functional.cjs",
     "test:transporte": "node tmp/transporte-functional.cjs",
     "test:transporte:choferes": "node tmp/transporte-choferes-functional.cjs",

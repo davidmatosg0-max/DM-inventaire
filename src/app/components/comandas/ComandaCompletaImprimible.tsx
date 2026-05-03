@@ -1,9 +1,9 @@
 import React from 'react';
-import QRCode from 'qrcode';
 import { useTranslation } from 'react-i18next';
 import { Calendar, Mail, MapPin, Package, Phone, Printer, User, X } from 'lucide-react';
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
 
 interface ComandaCompletaImprimibleProps {
@@ -119,7 +119,7 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
   let qrImage = '';
 
   try {
-    qrImage = await QRCode.toDataURL(payload.qrData, {
+    qrImage = await generateBrandedQrDataUrl(payload.qrData, {
       width: 220,
       ...COMANDA_QR_DATA_URL_OPTIONS,
     });

@@ -72,6 +72,7 @@ import {
 } from '../../utils/migrarValoresMonetarios';
 import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
+import { buildLocationOptions, buildLocationSections, loadLocationZones, resolveStandardLocation, type LocationZone } from '../../utils/locationZones';
 import { printStandardLabel, type ProductLabelData } from '../etiquetas/StandardProductLabel';
 import {
   clearPendingQrNavigation,
@@ -108,14 +109,6 @@ type UbicacionEscaneadaPendiente = {
   ubicacion: string;
   action: AccionUbicacionEscaneada;
 };
-
-const DEFAULT_LOCATION_ZONES = [
-  { zona: 'A', cantidad: 10 },
-  { zona: 'B', cantidad: 10 },
-  { zona: 'C', cantidad: 5 },
-  { zona: 'D', cantidad: 8 },
-  { zona: 'E', cantidad: 4 },
-];
 
 const categoriasInfo: Record<string, { icono: string; valorMonetario: number; color: string; label: string }> = {
   'Alimentos Secos': { icono: '🍚', valorMonetario: 2.50, color: '#e8a419', label: 'Aliments secs' },
@@ -175,6 +168,7 @@ export function Inventario() {
   const [activeTab, setActiveTab] = useState('productos');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLote, setSearchLote] = useState('');
+  const [searchUbicacion, setSearchUbicacion] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [vistaMode, setVistaMode] = useState<'grid' | 'list'>('list');
   const [showFilters, setShowFilters] = useState(false);
@@ -214,9 +208,13 @@ export function Inventario() {
   
   // Estado para escáner QR
   const [escanerQROpen, setEscanerQROpen] = useState(false);
+  const [scannerDefaultProductAction, setScannerDefaultProductAction] = useState<string | null>(null);
   const [productoEscaneado, setProductoEscaneado] = useState<ProductoCreado | null>(null);
   const [dialogLocalizacionOpen, setDialogLocalizacionOpen] = useState(false);
   const [ubicacionEscaneadaPendiente, setUbicacionEscaneadaPendiente] = useState<UbicacionEscaneadaPendiente | null>(null);
+  const [quickCartQuantityDialogOpen, setQuickCartQuantityDialogOpen] = useState(false);
+  const [quickCartProduct, setQuickCartProduct] = useState<ProductoCreado | null>(null);
+  const [quickCartQuantity, setQuickCartQuantity] = useState('');
   
   // Estados para nuevos componentes
   const [validacionEntradasOpen, setValidacionEntradasOpen] = useState(false);
@@ -321,41 +319,20 @@ export function Inventario() {
 
   const organismosActivos = mockOrganismos.filter(o => o.activo);
 
+  const zonasUbicacionConfiguradas = React.useMemo<LocationZone[]>(() => loadLocationZones(), [refreshKey, dialogLocalizacionOpen, escanerQROpen]);
+
   const ubicacionesEscaneables = React.useMemo(() => {
-    let zonas = DEFAULT_LOCATION_ZONES;
-
-    try {
-      const zonasGuardadas = localStorage.getItem('zonasAlmacen');
-      if (zonasGuardadas) {
-        const parsed = JSON.parse(zonasGuardadas);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const zonasValidas = parsed
-            .filter(
-              (item): item is { zona: string; cantidad: number } =>
-                Boolean(item) && typeof item.zona === 'string' && typeof item.cantidad === 'number'
-            )
-            .map(item => ({ zona: item.zona.trim().toUpperCase(), cantidad: item.cantidad }));
-
-          if (zonasValidas.length > 0) {
-            zonas = zonasValidas;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Erreur lecture zones entrepôt:', error);
-    }
-
-    const ubicacionesGeneradas = zonas.flatMap(({ zona, cantidad }) =>
-      Array.from({ length: Math.max(0, cantidad) }, (_, index) => `${zona}${index + 1}`)
-    );
-
     const ubicacionesActuales = todosLosProductos
       .map(producto => producto.ubicacion)
       .filter((ubicacion): ubicacion is string => typeof ubicacion === 'string' && ubicacion.trim() !== '')
       .map(ubicacion => ubicacion.trim());
 
-    return Array.from(new Set([...ubicacionesGeneradas, ...ubicacionesActuales]));
-  }, [todosLosProductos, refreshKey]);
+    return buildLocationOptions(zonasUbicacionConfiguradas, ubicacionesActuales);
+  }, [todosLosProductos, zonasUbicacionConfiguradas]);
+
+  const seccionesUbicacionDisponibles = React.useMemo(() => {
+    return buildLocationSections(zonasUbicacionConfiguradas, ubicacionesEscaneables);
+  }, [zonasUbicacionConfiguradas, ubicacionesEscaneables]);
 
   const getCategoriaLabel = (categoria: string) => categoriasInfo[categoria]?.label || categoria;
 
@@ -477,7 +454,18 @@ export function Inventario() {
   const openScannedProduct = (producto: ProductoCreado) => {
     setProductoEscaneado(producto);
     setEscanerQROpen(false);
+    setScannerDefaultProductAction(null);
     setDialogLocalizacionOpen(true);
+  };
+
+  const openInventoryScanner = (defaultAction: string | null = null) => {
+    setScannerDefaultProductAction(defaultAction);
+    setEscanerQROpen(true);
+  };
+
+  const closeInventoryScanner = () => {
+    setEscanerQROpen(false);
+    setScannerDefaultProductAction(null);
   };
 
   const focusProductFromQr = (producto: ProductoCreado) => {
@@ -485,8 +473,44 @@ export function Inventario() {
     setActiveTab('productos');
     setSelectedCategories([]);
     setShowFilters(false);
+    setSearchUbicacion('');
     setSearchTerm(getInventoryProductName(producto));
     setSearchLote(producto.lote || '');
+  };
+
+  const applyLocationContextFromQr = (ubicacion: string, options?: { clearPending?: boolean; closeScanner?: boolean }) => {
+    const normalizedLocation = ubicacion.trim();
+
+    if (options?.closeScanner !== false) {
+      setEscanerQROpen(false);
+    }
+
+    if (options?.clearPending !== false) {
+      setUbicacionEscaneadaPendiente(null);
+    }
+
+    setActiveTab('productos');
+    setSelectedCategories([]);
+    setShowFilters(false);
+    setSearchTerm('');
+    setSearchLote('');
+    setSearchUbicacion(normalizedLocation);
+
+    return normalizedLocation;
+  };
+
+  const focusLocationProductsFromQr = (ubicacion: string) => {
+    const normalizedLocation = applyLocationContextFromQr(ubicacion);
+    const productosEnUbicacion = todosLosProductos.filter(producto =>
+      normalizeQrMatch(producto.ubicacion) === normalizeQrMatch(normalizedLocation) && producto.stockActual > 0
+    );
+
+    if (productosEnUbicacion.length > 0) {
+      toast.info(`${formatQuantity(productosEnUbicacion.length)} produits filtrés pour l'emplacement ${normalizedLocation}`);
+      return;
+    }
+
+    toast.info(`Aucun produit avec stock n'est localisé à ${normalizedLocation}`);
   };
 
   const openShareDialogForProduct = (producto: ProductoCreado) => {
@@ -551,11 +575,20 @@ export function Inventario() {
     switch (action) {
       case 'agregar_carrito':
         setEscanerQROpen(false);
+        setScannerDefaultProductAction(null);
         agregarAlCarrito(producto.id, 1);
         setCarritoOpen(true);
         return;
+      case 'agregar_carrito_rapido':
+        setEscanerQROpen(false);
+        setScannerDefaultProductAction(null);
+        setQuickCartProduct(producto);
+        setQuickCartQuantity('');
+        setQuickCartQuantityDialogOpen(true);
+        return;
       case 'ver_historial':
         setEscanerQROpen(false);
+        setScannerDefaultProductAction(null);
         abrirHistorialProducto(producto);
         return;
       case 'ver_ubicacion':
@@ -563,6 +596,7 @@ export function Inventario() {
         return;
       case 'imprimir_etiqueta':
         setEscanerQROpen(false);
+        setScannerDefaultProductAction(null);
         void printProductLabelFromQr(producto)
           .then(() => {
             toast.success(`Étiquette imprimée pour ${getInventoryProductName(producto)}`);
@@ -574,6 +608,7 @@ export function Inventario() {
         return;
       case 'ver_estadisticas':
         setEscanerQROpen(false);
+        setScannerDefaultProductAction(null);
         setActiveTab('prediccion');
         setSearchTerm(getInventoryProductName(producto));
         setSearchLote(producto.lote || '');
@@ -584,12 +619,14 @@ export function Inventario() {
         return;
       case 'crear_oferta':
         setEscanerQROpen(false);
+        setScannerDefaultProductAction(null);
         agregarAlCarrito(producto.id, 1);
         setCarritoOpen(true);
         toast.info('Produit ajouté au panier. Créez ensuite une offre depuis le panier');
         return;
       case 'enviar_departamento':
         setEscanerQROpen(false);
+        setScannerDefaultProductAction(null);
         agregarAlCarrito(producto.id, 1);
         setCarritoOpen(true);
         toast.info('Produit ajouté au panier. Continuez la distribution depuis le panier');
@@ -630,11 +667,49 @@ export function Inventario() {
   useEffect(() => {
     const pendingNavigation = readPendingQrNavigation();
 
-    if (!pendingNavigation || pendingNavigation.targetPage !== 'inventario' || pendingNavigation.qrType !== 'producto') {
+    if (!pendingNavigation || pendingNavigation.targetPage !== 'inventario') {
       return;
     }
 
     clearPendingQrNavigation();
+
+    if (pendingNavigation.qrType === 'ubicacion') {
+      const ubicacion = findUbicacionByScannedData(pendingNavigation.rawData);
+      const pendingAction = pendingNavigation.action === 'agregar_o_modificar_ubicacion_producto'
+        ? 'localizar_productos'
+        : pendingNavigation.action;
+
+      if (!ubicacion) {
+        toast.error('Emplacement non trouvé');
+        return;
+      }
+
+      if (pendingAction === 'modificar_productos_ubicacion') {
+        focusLocationProductsFromQr(ubicacion);
+        return;
+      }
+
+      if (pendingAction === 'localizar_productos') {
+        setUbicacionEscaneadaPendiente({ ubicacion, action: pendingAction });
+        applyLocationContextFromQr(ubicacion, { clearPending: false, closeScanner: false });
+        setEscanerQROpen(true);
+        toast.info(`Emplacement ${ubicacion} sélectionné. Inventaire filtré sur cet emplacement. Scannez maintenant le produit à y ajouter.`);
+        return;
+      }
+
+      if (pendingAction === 'delocalizar_productos') {
+        setUbicacionEscaneadaPendiente({ ubicacion, action: pendingAction });
+        setEscanerQROpen(true);
+        toast.info(
+          `Emplacement ${ubicacion} détecté. Scannez maintenant le produit à délocaliser.`
+        );
+        return;
+      }
+    }
+
+    if (pendingNavigation.qrType !== 'producto') {
+      return;
+    }
 
     const producto = findProductoByScannedData(pendingNavigation.rawData);
 
@@ -644,7 +719,7 @@ export function Inventario() {
     }
 
     handleScannedProductAction(producto, pendingNavigation.action);
-  }, [todosLosProductos]);
+  }, [todosLosProductos, ubicacionesEscaneables]);
 
   // Cargar conversiones y plantillas al montar el componente
   useEffect(() => {
@@ -698,6 +773,7 @@ export function Inventario() {
     setSelectedCategories([]);
     setSearchTerm('');
     setSearchLote('');
+    setSearchUbicacion('');
   };
 
   const productosFiltrados = todosLosProductos
@@ -708,6 +784,7 @@ export function Inventario() {
       );
 
       const matchLote = !searchLote || (p.lote && p.lote.toLowerCase().includes(searchLote.toLowerCase()));
+      const matchUbicacion = !searchUbicacion || normalizeQrMatch(p.ubicacion) === normalizeQrMatch(searchUbicacion);
 
       const matchCategory =
         selectedCategories.length === 0 ||
@@ -716,7 +793,7 @@ export function Inventario() {
       // Solo mostrar productos con stock mayor a cero
       const tieneStock = p.stockActual > 0;
 
-      return matchSearch && matchLote && matchCategory && tieneStock;
+      return matchSearch && matchLote && matchUbicacion && matchCategory && tieneStock;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -794,6 +871,42 @@ export function Inventario() {
       setCarrito([...carrito, { productoId, cantidad }]);
       toast.success(t('inventory.productAdded'));
     }
+  };
+
+  const getQuickCartAvailableQuantity = (producto: ProductoCreado) => {
+    const disponibleParaReservar = reservasInventario[producto.id]?.disponibleParaReservar ?? producto.stockActual;
+    const cantidadEnCarrito = carrito.find(item => item.productoId === producto.id)?.cantidad ?? 0;
+
+    return Math.max(0, disponibleParaReservar - cantidadEnCarrito);
+  };
+
+  const cerrarQuickCartQuantityDialog = () => {
+    setQuickCartQuantityDialogOpen(false);
+    setQuickCartProduct(null);
+    setQuickCartQuantity('');
+  };
+
+  const confirmarQuickCartQuantity = () => {
+    if (!quickCartProduct) {
+      return;
+    }
+
+    const cantidad = Number.parseInt(quickCartQuantity, 10);
+    const cantidadDisponible = getQuickCartAvailableQuantity(quickCartProduct);
+
+    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+      toast.error('Saisissez une quantité valide');
+      return;
+    }
+
+    if (cantidad > cantidadDisponible) {
+      toast.error(`La quantité dépasse le stock disponible (${formatQuantity(cantidadDisponible)} ${quickCartProduct.unidad})`);
+      return;
+    }
+
+    agregarAlCarrito(quickCartProduct.id, cantidad);
+    cerrarQuickCartQuantityDialog();
+    openInventoryScanner('agregar_carrito_rapido');
   };
 
   const actualizarCantidad = (productoId: string, cantidad: number) => {
@@ -1114,7 +1227,7 @@ export function Inventario() {
       return false;
     }
 
-    toast.success(`${getInventoryProductName(producto)} localisé à: ${ubicacion}`);
+    toast.success(`${getInventoryProductName(producto)} ajouté ou déplacé vers: ${ubicacion}`);
     return true;
   };
 
@@ -1146,7 +1259,7 @@ export function Inventario() {
 
     if (action === 'annuler_accion_ubicacion') {
       setUbicacionEscaneadaPendiente(null);
-      setEscanerQROpen(false);
+      closeInventoryScanner();
       toast.info('Action d\'emplacement annulée');
       return;
     }
@@ -1156,7 +1269,6 @@ export function Inventario() {
     if (ubicacionEscaneadaPendiente) {
       if (!producto) {
         toast.error('Scannez un produit valide pour terminer cette action');
-        setEscanerQROpen(false);
         return;
       }
 
@@ -1167,7 +1279,7 @@ export function Inventario() {
       setUbicacionEscaneadaPendiente(null);
 
       if (accionAplicada) {
-        setEscanerQROpen(false);
+        closeInventoryScanner();
       }
 
       return;
@@ -1180,15 +1292,23 @@ export function Inventario() {
 
     const ubicacion = findUbicacionByScannedData(data);
 
-    if (ubicacion && (action === 'localizar_productos' || action === 'delocalizar_productos')) {
+    if (ubicacion && action === 'modificar_productos_ubicacion') {
+      focusLocationProductsFromQr(ubicacion);
+      return;
+    }
+
+    if (ubicacion && action === 'localizar_productos') {
       setUbicacionEscaneadaPendiente({ ubicacion, action });
-      setEscanerQROpen(false);
+      applyLocationContextFromQr(ubicacion, { clearPending: false, closeScanner: false });
+      toast.info(`Emplacement ${ubicacion} sélectionné. Inventaire filtré sur cet emplacement. Scannez maintenant le produit à y ajouter.`);
+      return;
+    }
+
+    if (ubicacion && action === 'delocalizar_productos') {
+      setUbicacionEscaneadaPendiente({ ubicacion, action });
       toast.info(
-        action === 'delocalizar_productos'
-          ? `Emplacement ${ubicacion} détecté. Scannez maintenant le produit à délocaliser.`
-          : `Emplacement ${ubicacion} détecté. Scannez maintenant le produit à localiser.`
+        `Emplacement ${ubicacion} détecté. Scannez maintenant le produit à délocaliser.`
       );
-      window.setTimeout(() => setEscanerQROpen(true), 50);
       return;
     }
 
@@ -1196,6 +1316,7 @@ export function Inventario() {
 
     if (comandaData?.comanda) {
       setEscanerQROpen(false);
+      setScannerDefaultProductAction(null);
       savePendingQrNavigation({
         targetPage: 'comandas',
         qrType: 'comanda',
@@ -1217,7 +1338,14 @@ export function Inventario() {
   const handleLocalizarProducto = (ubicacion: string) => {
     if (!productoEscaneado) return;
 
-    const actualizado = localizarProductoEscaneado(productoEscaneado, ubicacion);
+    const ubicacionEstandar = resolveStandardLocation(ubicacion, ubicacionesEscaneables);
+
+    if (!ubicacionEstandar) {
+      toast.error('Choisissez un emplacement standard configuré dans le module Étiquettes');
+      return;
+    }
+
+    const actualizado = localizarProductoEscaneado(productoEscaneado, ubicacionEstandar);
 
     if (!actualizado) {
       return;
@@ -1729,6 +1857,13 @@ export function Inventario() {
 
   const totalSeleccionados = productosSeleccionados.filter(p => p.seleccionado).length;
 
+  const quickCartAvailableQuantity = quickCartProduct ? getQuickCartAvailableQuantity(quickCartProduct) : 0;
+  const quickCartRequestedQuantity = Number.parseInt(quickCartQuantity, 10);
+  const quickCartHasTypedQuantity = quickCartQuantity.trim().length > 0;
+  const quickCartQuantityInvalid = quickCartHasTypedQuantity && (!Number.isFinite(quickCartRequestedQuantity) || quickCartRequestedQuantity <= 0);
+  const quickCartQuantityExceedsAvailable = Number.isFinite(quickCartRequestedQuantity) && quickCartRequestedQuantity > quickCartAvailableQuantity;
+  const quickCartConfirmDisabled = !quickCartHasTypedQuantity || quickCartQuantityInvalid || quickCartQuantityExceedsAvailable;
+
   const navigateToModule = (page: string) => {
     if (typeof window === 'undefined') {
       return;
@@ -1954,12 +2089,22 @@ export function Inventario() {
 
               <Button
                 size="icon"
-                onClick={() => setEscanerQROpen(true)}
+                onClick={() => openInventoryScanner()}
                 variant="outline"
                 className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50"
                 title={t('inventory.scanQrTitle')}
               >
                 <QrCode className="h-4 w-4" />
+              </Button>
+
+              <Button
+                size="icon"
+                onClick={() => openInventoryScanner('agregar_carrito_rapido')}
+                variant="outline"
+                className="border-[#2d9561] text-[#2d9561] hover:bg-green-50"
+                title="Scanner QR et ajouter directement au panier"
+              >
+                <ShoppingCart className="h-4 w-4" />
               </Button>
 
               <Button
@@ -2012,9 +2157,20 @@ export function Inventario() {
           )}
 
           {/* Indicador de Filtros Activos */}
-          {(searchLote || selectedCategories.length > 0) && (
+          {(searchLote || searchUbicacion || selectedCategories.length > 0) && (
             <div className="flex flex-wrap gap-2 items-center flex-shrink-0">
               <span className="text-sm text-[#666666]">{t('inventory.activeFilters')}</span>
+              {searchUbicacion && (
+                <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
+                  📍 Emplacement: {searchUbicacion}
+                  <button
+                    onClick={() => setSearchUbicacion('')}
+                    className="ml-2 hover:text-[#c23934]"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
               {searchLote && (
                 <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
                   📦 Lot: {searchLote}
@@ -2207,10 +2363,15 @@ export function Inventario() {
                             </TableCell>
                             <TableCell className="py-1 px-2">
                               {producto.ubicacion ? (
-                                <div className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded border border-[#2d9561]">
+                                <button
+                                  type="button"
+                                  onClick={() => focusLocationProductsFromQr(producto.ubicacion)}
+                                  title={`Modifier tous les produits de ${producto.ubicacion}`}
+                                  className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded border border-[#2d9561] hover:bg-green-100 transition-colors"
+                                >
                                   <MapPin className="h-3 w-3 text-[#2d9561]" />
                                   <span className="text-[10px] font-medium text-[#333333]">{producto.ubicacion}</span>
-                                </div>
+                                </button>
                               ) : (
                                 <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">
                                   <MapPin className="h-3 w-3 text-[#999999]" />
@@ -2372,10 +2533,15 @@ export function Inventario() {
                               {stockStatus.label}
                             </Badge>
                             {producto.ubicacion ? (
-                              <Badge className="bg-green-50 text-[#2d9561] border border-[#2d9561] text-[10px] px-1.5 py-0 max-w-full">
+                              <button
+                                type="button"
+                                onClick={() => focusLocationProductsFromQr(producto.ubicacion)}
+                                title={`Modifier tous les produits de ${producto.ubicacion}`}
+                                className="inline-flex max-w-full items-center rounded-md border border-[#2d9561] bg-green-50 px-1.5 py-0 text-[10px] text-[#2d9561] hover:bg-green-100 transition-colors"
+                              >
                                 <MapPin className="h-3 w-3 mr-1" />
                                 <span className="truncate">{producto.ubicacion}</span>
-                              </Badge>
+                              </button>
                             ) : (
                               <Badge variant="outline" className="text-[10px] text-[#999999] px-1.5 py-0">
                                 <MapPin className="h-3 w-3 mr-1" />
@@ -2618,7 +2784,7 @@ export function Inventario() {
                             <div className="text-sm text-[#666666] space-y-1 ml-6">
                               <p>
                                 → {conversion.productosDestino.map(d => 
-                                  `${d.cantidad.toFixed(2)} ${d.unidad} de "${d.productoNombre}"`
+                                  `${formatQuantity(d.cantidad)} ${d.unidad} de "${d.productoNombre}"`
                                 ).join(', ')}
                               </p>
                               {conversion.merma > 0 && (
@@ -3314,10 +3480,10 @@ export function Inventario() {
                     <Input
                       id="variantePesoUnitario"
                       type="number"
-                      step="0.001"
+                      step="1"
                       value={formVariante.pesoUnitario}
-                      onChange={(e) => setFormVariante({ ...formVariante, pesoUnitario: parseFloat(e.target.value) || 0 })}
-                      placeholder="0.000"
+                      onChange={(e) => setFormVariante({ ...formVariante, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) })}
+                      placeholder="0"
                       style={{ fontFamily: 'Roboto, sans-serif' }}
                       className={formVariante.pesoUnitario !== productoBase?.pesoUnitario ? 'border-[#e8a419] border-2' : ''}
                     />
@@ -3378,7 +3544,7 @@ export function Inventario() {
       {!escanerQROpen && (
         <Button
           size="icon"
-          onClick={() => setEscanerQROpen(true)}
+          onClick={() => openInventoryScanner()}
           className="fixed bottom-6 right-6 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
           style={{
             background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
@@ -3396,8 +3562,9 @@ export function Inventario() {
         <DeferredPanel>
           <EscanerQRInventario
             autoStartCamera
+            defaultProductAction={scannerDefaultProductAction}
             onScanSuccess={handleScanQR}
-            onClose={() => setEscanerQROpen(false)}
+            onClose={closeInventoryScanner}
             knownLocationCodes={ubicacionesEscaneables}
             pendingLocationAction={ubicacionEscaneadaPendiente}
           />
@@ -3447,32 +3614,51 @@ export function Inventario() {
               {/* Opciones de Ubicación Rápida */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  Emplacements Rapides
+                  Zones et emplacements du module Étiquettes
                 </Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Entrepôt A', 'Entrepôt B', 'Zone Froide', 'Zone Sèche', 'Réception', 'Expédition'].map((ubicacion) => (
-                    <Button
-                      key={ubicacion}
-                      variant="outline"
-                      onClick={() => handleLocalizarProducto(ubicacion)}
-                      className="justify-start gap-2 hover:bg-blue-50 hover:border-[#1a4d7a]"
-                    >
-                      <MapPin className="h-4 w-4 text-[#1a4d7a]" />
-                      <span className="text-sm">{ubicacion}</span>
-                    </Button>
-                  ))}
-                </div>
+                <ScrollArea className="h-72 rounded-md border border-[#d8e1ea] bg-[#fafcfe] p-3">
+                  <div className="space-y-4">
+                    {seccionesUbicacionDisponibles.map((seccion) => (
+                      <div key={seccion.codigoZona} className="space-y-2">
+                        <div>
+                          <p className="text-sm font-semibold text-[#1a4d7a]">
+                            {seccion.codigoZona === 'AUTRES' ? 'Autres emplacements' : `Zona ${seccion.codigoZona}`}
+                          </p>
+                          <p className="text-xs text-[#666666]">{seccion.tipoZona}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {seccion.ubicaciones.map((ubicacion) => (
+                            <Button
+                              key={`${seccion.codigoZona}-${ubicacion}`}
+                              variant="outline"
+                              onClick={() => handleLocalizarProducto(ubicacion)}
+                              className="justify-start gap-2 hover:bg-blue-50 hover:border-[#1a4d7a]"
+                            >
+                              <MapPin className="h-4 w-4 text-[#1a4d7a]" />
+                              <span className="text-sm">{ubicacion}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+                {ubicacionesEscaneables.length === 0 && (
+                  <p className="text-sm text-[#666666]">
+                    Aucune zone enregistrée. Créez d'abord des emplacements dans le module Étiquettes.
+                  </p>
+                )}
               </div>
 
-              {/* Ubicación Personalizada */}
+              {/* Búsqueda de ubicación estándar */}
               <div className="space-y-2">
                 <Label htmlFor="ubicacion-custom" className="text-sm font-medium text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  Emplacement Personnalisé
+                  Recherche rapide d'un emplacement standard
                 </Label>
                 <div className="flex gap-2">
                   <Input
                     id="ubicacion-custom"
-                    placeholder="Ex: Allée 3, Étagère B"
+                    placeholder="Ex: A1, A11, B3"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                         handleLocalizarProducto(e.currentTarget.value.trim());
@@ -3516,6 +3702,84 @@ export function Inventario() {
               }}
             >
               Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={quickCartQuantityDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            cerrarQuickCartQuantityDialog();
+          }
+        }}
+      >
+        <DialogContent className="max-w-md" aria-describedby="quick-cart-quantity-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#1a4d7a]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+              <ShoppingCart className="h-5 w-5" />
+              Ajouter au panier
+            </DialogTitle>
+            <DialogDescription id="quick-cart-quantity-description">
+              Choisissez la quantité à ajouter pour le produit scanné.
+            </DialogDescription>
+          </DialogHeader>
+
+          {quickCartProduct && (
+            <div className="space-y-4">
+              <Card className="border-[#1a4d7a]/20 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-[#1a4d7a] bg-white">
+                      <span className="text-2xl">{obtenerIconoProducto(quickCartProduct)}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-[#1a4d7a] truncate">{getInventoryProductName(quickCartProduct)}</p>
+                      <p className="text-sm text-[#666666]">Code: {quickCartProduct.codigo}</p>
+                      <p className={`text-sm ${quickCartQuantityExceedsAvailable ? 'font-semibold text-[#c23934]' : 'text-[#666666]'}`}>
+                        Disponible: {formatQuantity(quickCartAvailableQuantity)} {quickCartProduct.unidad}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-2">
+                <Label htmlFor="quick-cart-quantity">Quantité</Label>
+                <Input
+                  id="quick-cart-quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Entrez la quantité"
+                  value={quickCartQuantity}
+                  onChange={(event) => setQuickCartQuantity(event.target.value)}
+                  className={quickCartQuantityExceedsAvailable ? 'border-[#c23934] text-[#c23934] focus-visible:ring-[#c23934]/30' : ''}
+                  aria-invalid={quickCartQuantityExceedsAvailable}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      confirmarQuickCartQuantity();
+                    }
+                  }}
+                  autoFocus
+                />
+                {quickCartQuantityExceedsAvailable && (
+                  <p className="text-sm font-medium text-[#c23934]">
+                    La quantité saisie dépasse le stock disponible.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={cerrarQuickCartQuantityDialog}>
+              Annuler
+            </Button>
+            <Button onClick={confirmarQuickCartQuantity} disabled={quickCartConfirmDisabled} className="bg-[#1a4d7a] hover:bg-[#153d61] disabled:bg-[#cbd5e1] disabled:text-[#64748b]">
+              Ajouter et continuer
             </Button>
           </DialogFooter>
         </DialogContent>

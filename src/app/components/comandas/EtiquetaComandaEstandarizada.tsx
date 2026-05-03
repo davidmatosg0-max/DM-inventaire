@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import QRCode from 'qrcode';
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
+import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 
 interface EtiquetaComandaData {
   // Comanda
@@ -109,7 +109,7 @@ export async function generateStandardOrderLabel(
   
   let qrImageBase64 = '';
   try {
-    qrImageBase64 = await QRCode.toDataURL(qrData, {
+    qrImageBase64 = await generateBrandedQrDataUrl(qrData, {
       width: 180,
       ...COMANDA_QR_DATA_URL_OPTIONS,
     });

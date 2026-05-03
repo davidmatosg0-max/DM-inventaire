@@ -389,10 +389,10 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                 <Label>Peso Unitario (kg)</Label>
                 <Input
                   type="number"
-                  step="0.01"
+                  step="1"
                   value={formData.pesoUnitario}
                   onChange={(e) => setFormData({ ...formData, pesoUnitario: e.target.value })}
-                  placeholder="0.00"
+                  placeholder="0"
                 />
                 <p className="text-xs text-[#666666]">
                   Deja vacío para usar el peso de la subcategoría
@@ -404,10 +404,10 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                 <Label>Valor por Kg ($)</Label>
                 <Input
                   type="number"
-                  step="0.01"
+                  step="1"
                   value={formData.valorPorKg}
                   onChange={(e) => setFormData({ ...formData, valorPorKg: e.target.value })}
-                  placeholder="0.00"
+                  placeholder="0"
                 />
                 <p className="text-xs text-[#666666]">
                   Deja vacío para usar el valor de la categoría

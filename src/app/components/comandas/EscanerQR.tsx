@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, Package, Eye, Truck, XCircle, Edit, ShoppingCart, MapPin, Printer } from 'lucide-react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
-import { normalizeScannedProductQR } from '../../utils/barcode';
+import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 
 const GuiaPermisoCamara = lazy(async () => {
   const module = await import('./GuiaPermisoCamara');
@@ -27,7 +27,9 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoStartRef = useRef(false);
   const explicitTipo = typeof resultado?.tipo === 'string' ? resultado.tipo : '';
+  const detectedLocation = normalizeScannedLocationQR(resultado);
   const detectedProduct = normalizeScannedProductQR(resultado);
+  const showingLocationActions = explicitTipo === 'ubicacion' || Boolean(detectedLocation?.ubicacion);
   const showingProductActions = explicitTipo === 'producto' || Boolean(resultado?.codigo || resultado?.producto || resultado?.nombre || detectedProduct);
 
   useEffect(() => {
@@ -89,7 +91,6 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
         
         if (permError.name === 'NotAllowedError' || permError.message?.includes('Permission denied')) {
           setError('permission_denied');
-          setTimeout(() => setMostrarGuia(true), 500);
         } else if (permError.name === 'NotFoundError') {
           setError('camera_not_found');
         } else if (permError.name === 'NotReadableError') {
@@ -188,7 +189,11 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
 
   const handleAction = (action: string) => {
     if (resultado) {
-      onScanSuccess(resultado, action);
+      const normalizedAction = action === 'agregar_o_modificar_ubicacion_producto'
+        ? 'localizar_productos'
+        : action;
+
+      onScanSuccess(resultado, normalizedAction);
     }
   };
 
@@ -459,13 +464,32 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   <CheckCircle className="w-16 h-16 text-[#4CAF50] mx-auto mb-4" />
                   <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
                   <p className="text-gray-600 text-sm">
-                    {showingProductActions ? 'Choisissez l\'action à effectuer pour ce produit.' : 'Choisissez l\'action à effectuer'}
+                    {showingLocationActions
+                      ? 'Choisissez l\'action à effectuer pour cet emplacement.'
+                      : showingProductActions
+                        ? 'Choisissez l\'action à effectuer pour ce produit.'
+                        : 'Choisissez l\'action à effectuer'}
                   </p>
                 </div>
                 
                 {/* Información escaneada */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                  {showingProductActions ? (
+                  {showingLocationActions ? (
+                    <>
+                      {(detectedLocation?.codigo || resultado?.codigo) && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Code: </span>
+                          <span className="text-[#333] font-mono">{detectedLocation?.codigo || resultado?.codigo}</span>
+                        </div>
+                      )}
+                      {(detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text) && (
+                        <div className="mb-2">
+                          <span className="font-bold text-[#666]">Emplacement: </span>
+                          <span className="text-[#1E73BE] font-black text-lg">{detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : showingProductActions ? (
                     <>
                       {(detectedProduct?.producto || detectedProduct?.nombre) && (
                         <div className="mb-2">
@@ -531,10 +555,55 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                 {/* Menú de acciones */}
                 <div className="max-w-md mx-auto space-y-3 mb-6">
                   <h3 className="font-bold text-[#333] text-center mb-4" style={{ fontFamily: 'Montserrat' }}>
-                    {showingProductActions ? 'Actions disponibles pour ce produit' : 'Que souhaitez-vous faire?'}
+                    {showingLocationActions
+                      ? 'Actions disponibles pour cet emplacement'
+                      : showingProductActions
+                        ? 'Actions disponibles pour ce produit'
+                        : 'Que souhaitez-vous faire?'}
                   </h3>
 
-                  {showingProductActions ? (
+                  {showingLocationActions ? (
+                    <>
+                      <button
+                        onClick={() => handleAction('agregar_o_modificar_ubicacion_producto')}
+                        className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
+                      >
+                        <MapPin className="w-7 h-7 text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-white transition-colors text-lg">Ajouter ou modifier l'emplacement d'un produit</h4>
+                          <p className="text-sm text-white/90 transition-colors">
+                            Continuer dans Inventaire pour scanner le produit vers {detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text || resultado?.codigo}
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('delocalizar_productos')}
+                        className="w-full group border-2 border-[#DC3545] hover:bg-[#DC3545] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <XCircle className="w-6 h-6 text-[#DC3545] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Délocaliser un produit</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Continuer dans Inventaire pour retirer un produit de cet emplacement
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('modificar_productos_ubicacion')}
+                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Edit className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier les produits de cet emplacement</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Ouvrir Inventaire filtré sur {detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text || resultado?.codigo}
+                          </p>
+                        </div>
+                      </button>
+                    </>
+                  ) : showingProductActions ? (
                     <>
                       <button
                         onClick={() => handleAction('agregar_carrito')}

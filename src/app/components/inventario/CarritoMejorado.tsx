@@ -470,12 +470,12 @@ export function CarritoMejorado({
                             <div className="flex items-center gap-1 px-3 py-1 bg-[#F4F4F4] rounded-md min-w-[80px] justify-center">
                               <Input
                                 type="number"
-                                value={item.cantidad}
+                                value={formatQuantity(item.cantidad)}
                                 onChange={(e) => {
-                                  const nuevaCantidad = parseFloat(e.target.value) || 0;
+                                  const nuevaCantidad = Math.round(parseFloat(e.target.value) || 0);
                                   if (nuevaCantidad > reserva.disponibleParaReservar) {
                                     toast.error(
-                                      `Cantidad máxima reservable: ${reserva.disponibleParaReservar} ${producto?.unidad}`,
+                                      `Cantidad máxima reservable: ${formatQuantity(reserva.disponibleParaReservar)} ${producto?.unidad}`,
                                       { duration: 3000 }
                                     );
                                     actualizarCantidad(item.productoId, reserva.disponibleParaReservar || 0);
@@ -484,8 +484,8 @@ export function CarritoMejorado({
                                   }
                                 }}
                                 className="w-14 h-7 text-center font-bold border-none bg-transparent p-0"
-                                min="0.01"
-                                step="0.01"
+                                min="1"
+                                step="1"
                                 max={reserva.disponibleParaReservar}
                               />
                               <span className="text-sm font-medium text-[#666666]">{producto?.unidad}</span>
@@ -503,10 +503,10 @@ export function CarritoMejorado({
                           <div className="text-xs text-[#666666] text-right">
                             <p>Reservable:</p>
                             <p className={`font-semibold ${item.cantidad > (producto?.stockActual || 0) ? 'text-[#DC3545]' : 'text-[#333333]'}`}>
-                              {reserva.disponibleParaReservar} {producto?.unidad}
+                              {formatQuantity(reserva.disponibleParaReservar)} {producto?.unidad}
                             </p>
-                            <p className="text-[#666666]">Reservado: {reserva.totalReservado} {producto?.unidad}</p>
-                            <p className="text-[#999999]">Físico: {reserva.stockActual} {producto?.unidad}</p>
+                            <p className="text-[#666666]">Reservado: {formatQuantity(reserva.totalReservado)} {producto?.unidad}</p>
+                            <p className="text-[#999999]">Físico: {formatQuantity(reserva.stockActual)} {producto?.unidad}</p>
                           </div>
                         </div>
                       </div>

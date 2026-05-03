@@ -15,6 +15,7 @@ interface EscanerQRInventarioProps {
   onScanSuccess: (data: any, action: string) => void;
   onClose: () => void;
   autoStartCamera?: boolean;
+  defaultProductAction?: string | null;
   knownLocationCodes?: string[];
   pendingLocationAction?: {
     ubicacion: string;
@@ -26,6 +27,7 @@ export function EscanerQRInventario({
   onScanSuccess,
   onClose,
   autoStartCamera = false,
+  defaultProductAction = null,
   knownLocationCodes = [],
   pendingLocationAction = null,
 }: EscanerQRInventarioProps) {
@@ -101,7 +103,6 @@ export function EscanerQRInventario({
         
         if (permError.name === 'NotAllowedError' || permError.message?.includes('Permission denied')) {
           setError('permission_denied');
-          setTimeout(() => setMostrarGuia(true), 500);
         } else if (permError.name === 'NotFoundError') {
           setError('camera_not_found');
         } else if (permError.name === 'NotReadableError') {
@@ -182,15 +183,92 @@ export function EscanerQRInventario({
 
     try {
       const data = JSON.parse(decodedText);
+
+      if (defaultProductAction && !pendingLocationAction) {
+        const scannedLocation = normalizeScannedLocationQR(data, knownLocationCodes);
+        const scannedProduct = normalizeScannedProductQR(data);
+        const scannedComanda = normalizeScannedComandaQR(data);
+
+        if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
+          onScanSuccess(data, defaultProductAction);
+          setResultado(null);
+          setError(null);
+
+          if (modoEscaneo === 'camara') {
+            await iniciarEscaneoCamara();
+          }
+
+          return;
+        }
+      }
+
+      if (pendingLocationAction) {
+        const scannedLocation = normalizeScannedLocationQR(data, knownLocationCodes);
+        const scannedProduct = normalizeScannedProductQR(data);
+        const scannedComanda = normalizeScannedComandaQR(data);
+
+        if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
+          onScanSuccess(data, pendingLocationAction.action);
+          setResultado(null);
+          setError(null);
+          return;
+        }
+      }
+
       setResultado(data);
     } catch (e) {
-      setResultado({ text: decodedText });
+      const fallbackData = { text: decodedText };
+
+      if (defaultProductAction && !pendingLocationAction) {
+        const scannedLocation = normalizeScannedLocationQR(fallbackData, knownLocationCodes);
+        const scannedProduct = normalizeScannedProductQR(fallbackData);
+        const scannedComanda = normalizeScannedComandaQR(fallbackData);
+
+        if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
+          onScanSuccess(fallbackData, defaultProductAction);
+          setResultado(null);
+          setError(null);
+
+          if (modoEscaneo === 'camara') {
+            await iniciarEscaneoCamara();
+          }
+
+          return;
+        }
+      }
+
+      if (pendingLocationAction) {
+        const scannedLocation = normalizeScannedLocationQR(fallbackData, knownLocationCodes);
+        const scannedProduct = normalizeScannedProductQR(fallbackData);
+        const scannedComanda = normalizeScannedComandaQR(fallbackData);
+
+        if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
+          onScanSuccess(fallbackData, pendingLocationAction.action);
+          setResultado(null);
+          setError(null);
+          return;
+        }
+      }
+
+      setResultado(fallbackData);
     }
   };
 
-  const handleAction = (action: string) => {
-    if (resultado) {
-      onScanSuccess(resultado, action);
+  const handleAction = async (action: string) => {
+    if (!resultado) {
+      return;
+    }
+
+    const normalizedAction = action === 'agregar_o_modificar_ubicacion_producto'
+      ? 'localizar_productos'
+      : action;
+
+    onScanSuccess(resultado, normalizedAction);
+
+    if (normalizedAction === 'localizar_productos' || normalizedAction === 'delocalizar_productos') {
+      setResultado(null);
+      setError(null);
+      await iniciarEscaneoCamara();
     }
   };
 
@@ -627,14 +705,14 @@ export function EscanerQRInventario({
                   ) : showingLocationActions ? (
                     <>
                       <button
-                        onClick={() => handleAction('localizar_productos')}
+                        onClick={() => handleAction('agregar_o_modificar_ubicacion_producto')}
                         className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
                       >
                         <MapPin className="w-7 h-7 text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-white transition-colors text-lg">Localiser des produits</h4>
+                          <h4 className="font-bold text-white transition-colors text-lg">Ajouter ou modifier l'emplacement d'un produit</h4>
                           <p className="text-sm text-white/90 transition-colors">
-                            Scanner ensuite le produit à assigner à {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
+                            Scanner ensuite le produit à ajouter ou à déplacer vers {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
                           </p>
                         </div>
                       </button>
@@ -651,6 +729,19 @@ export function EscanerQRInventario({
                           </p>
                         </div>
                       </button>
+
+                      <button
+                        onClick={() => handleAction('modificar_productos_ubicacion')}
+                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                      >
+                        <Edit className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier les produits de cet emplacement</h4>
+                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
+                            Filtrer Inventaire pour modifier tous les produits situés à {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
+                          </p>
+                        </div>
+                      </button>
                     </>
                   ) : showingPendingLocationConfirmation ? (
                     <>
@@ -663,7 +754,7 @@ export function EscanerQRInventario({
                           <h4 className="font-bold text-white transition-colors text-lg">
                             {pendingLocationAction?.action === 'delocalizar_productos'
                               ? `Délocaliser depuis ${pendingLocationAction?.ubicacion}`
-                              : `Localiser à ${pendingLocationAction?.ubicacion}`}
+                              : `Ajouter ou modifier vers ${pendingLocationAction?.ubicacion}`}
                           </h4>
                           <p className="text-sm text-white/90 transition-colors">
                             Appliquer cette action au produit scanné
@@ -769,10 +860,12 @@ export function EscanerQRInventario({
                 <div className="text-center mb-6">
                   <Package className="w-16 h-16 text-[#1E73BE] mx-auto mb-3" />
                   <h3 className="text-lg font-bold text-[#333] mb-2" style={{ fontFamily: 'Montserrat' }}>
-                    Scanner un produit
+                    {defaultProductAction === 'agregar_carrito_rapido' ? 'Scanner et ajouter au panier' : 'Scanner un produit'}
                   </h3>
                   <p className="text-gray-600 text-sm">
-                    Choisissez comment scanner le code QR du produit
+                    {defaultProductAction === 'agregar_carrito_rapido'
+                      ? 'Chaque produit scanné sera ajouté directement au panier'
+                      : 'Choisissez comment scanner le code QR du produit'}
                   </p>
                 </div>
 

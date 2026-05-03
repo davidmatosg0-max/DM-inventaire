@@ -478,10 +478,10 @@ export function FormularioEntradaProductoCompacto({
                         <Input
                           id="peso"
                           type="number"
-                          step="0.01"
+                          step="1"
                           value={formulario.peso}
-                          onChange={(e) => setFormulario({ ...formulario, peso: parseFloat(e.target.value) || 0 })}
-                          placeholder="25.50"
+                          onChange={(e) => setFormulario({ ...formulario, peso: Math.round(parseFloat(e.target.value) || 0) })}
+                          placeholder="26"
                           className="h-9"
                         />
                       </div>
@@ -496,11 +496,11 @@ export function FormularioEntradaProductoCompacto({
                         <Input
                           id="valorUnitario"
                           type="number"
-                          step="0.01"
+                          step="1"
                           min="0"
                           value={formulario.valorUnitario || ''}
                           onChange={(e) => {
-                            const valorUnitario = parseFloat(e.target.value) || 0;
+                            const valorUnitario = Math.round(parseFloat(e.target.value) || 0);
                             const cantidad = formulario.cantidad || 0;
                             setFormulario({ 
                               ...formulario, 
@@ -624,9 +624,9 @@ export function FormularioEntradaProductoCompacto({
                               if (tieneTara) {
                                 const pesoTaraTotal = unidadSeleccionada!.pesoUnidad! * formulario.cantidad;
                                 const pesoNeto = Math.max(0, formulario.peso - pesoTaraTotal);
-                                return pesoNeto.toFixed(2);
+                                return formatQuantity(pesoNeto);
                               }
-                              return formulario.peso.toFixed(2);
+                              return formatQuantity(formulario.peso);
                             })()}</strong> kg {(() => {
                               const unidadSeleccionada = unidades.find(u => u.id === formulario.unidadId);
                               const tieneTara = unidadSeleccionada?.pesoUnidad && unidadSeleccionada.pesoUnidad > 0;

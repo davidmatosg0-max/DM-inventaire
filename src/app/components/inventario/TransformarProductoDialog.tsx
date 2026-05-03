@@ -12,6 +12,7 @@ import { Card, CardContent } from '../ui/card';
 import { toast } from 'sonner';
 import { mockProductos, mockUsuariosInternos } from '../../data/mockData';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
+import { formatQuantity } from '../../utils/formatUtils';
 
 interface TransformarProductoDialogProps {
   open: boolean;
@@ -90,22 +91,22 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
     }
 
     if (productoOrigen && cantidadOrigen > productoOrigen.stockActual) {
-      toast.error(`Stock insuficiente. Disponible: ${productoOrigen.stockActual} ${productoOrigen.unidad}`);
+      toast.error(`Stock insuficiente. Disponible: ${formatQuantity(productoOrigen.stockActual)} ${productoOrigen.unidad}`);
       return;
     }
 
     const ratio = cantidadDestino / cantidadOrigen;
-    const eficiencia = (ratio * 100).toFixed(1);
+    const eficiencia = formatQuantity(ratio * 100);
 
     toast.success(
       <div className="flex flex-col gap-1">
         <span className="font-semibold">✅ Transformación completada</span>
         <div className="text-sm text-[#666666] space-y-1">
           <div>
-            <strong>Origen:</strong> -{cantidadOrigen} {productoOrigen?.unidad} de {productoOrigen?.nombre}
+            <strong>Origen:</strong> -{formatQuantity(cantidadOrigen)} {productoOrigen?.unidad} de {productoOrigen?.nombre}
           </div>
           <div>
-            <strong>Destino:</strong> +{cantidadDestino} {productoDestino?.unidad} de {productoDestino?.nombre}
+            <strong>Destino:</strong> +{formatQuantity(cantidadDestino)} {productoDestino?.unidad} de {productoDestino?.nombre}
           </div>
           <div>
             <strong>Eficiencia:</strong> {eficiencia}%
@@ -133,14 +134,14 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
 
   const aplicarTransformacionComun = (ratio: number) => {
     if (cantidadOrigen > 0) {
-      setCantidadDestino(parseFloat((cantidadOrigen * ratio).toFixed(2)));
+      setCantidadDestino(Math.round(cantidadOrigen * ratio));
       setRatioPersonalizado(false);
     }
   };
 
   const calcularRatio = () => {
     if (cantidadOrigen > 0 && cantidadDestino > 0) {
-      return (cantidadDestino / cantidadOrigen).toFixed(3);
+      return formatQuantity(cantidadDestino / cantidadOrigen);
     }
     return '0';
   };
@@ -318,7 +319,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                           <div>
                             <span className="text-[#666666]">Stock Actual:</span>
                             <p className="font-bold text-[#1E73BE]">
-                              {productoOrigen.stockActual} {productoOrigen.unidad}
+                              {formatQuantity(productoOrigen.stockActual)} {productoOrigen.unidad}
                             </p>
                           </div>
                           <div>
@@ -335,14 +336,14 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                             type="number"
                             min="0"
                             max={productoOrigen.stockActual}
-                            step="0.1"
+                            step="1"
                             value={cantidadOrigen || ''}
                             onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
+                              const val = Math.round(parseFloat(e.target.value) || 0);
                               setCantidadOrigen(val);
                               if (!ratioPersonalizado && cantidadDestino > 0) {
                                 const ratio = cantidadDestino / cantidadOrigen;
-                                setCantidadDestino(parseFloat((val * ratio).toFixed(2)));
+                                setCantidadDestino(Math.round(val * ratio));
                               }
                             }}
                             className="flex-1"
@@ -353,7 +354,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                         </div>
                         {cantidadOrigen > productoOrigen.stockActual && (
                           <p className="text-xs text-[#DC3545]">
-                            ⚠️ Stock insuficiente (máx: {productoOrigen.stockActual})
+                            ⚠️ Stock insuficiente (máx: {formatQuantity(productoOrigen.stockActual)})
                           </p>
                         )}
                       </div>
@@ -474,10 +475,10 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                           <Input
                             type="number"
                             min="0"
-                            step="0.1"
+                            step="1"
                             value={cantidadDestino || ''}
                             onChange={(e) => {
-                              setCantidadDestino(parseFloat(e.target.value) || 0);
+                              setCantidadDestino(Math.round(parseFloat(e.target.value) || 0));
                               setRatioPersonalizado(true);
                             }}
                             className="flex-1"
@@ -497,7 +498,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                         <div className="bg-[#E8F5E9] border border-[#4CAF50] rounded-lg p-3">
                           <p className="text-xs text-[#666666] mb-1">Stock después de transformar:</p>
                           <p className="text-lg font-bold text-[#4CAF50]">
-                            {(productoDestino.stockActual + cantidadDestino).toFixed(2)} {productoDestino.unidad}
+                            {formatQuantity(productoDestino.stockActual + cantidadDestino)} {productoDestino.unidad}
                           </p>
                         </div>
                       )}
@@ -595,21 +596,21 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                   <div>
                     <p className="text-sm text-[#666666] mb-1">Se retirará:</p>
                     <p className="font-bold text-[#DC3545]">
-                      {cantidadOrigen} {productoOrigen.unidad}
+                      {formatQuantity(cantidadOrigen)} {productoOrigen.unidad}
                     </p>
                     <p className="text-sm">{productoOrigen.nombre}</p>
                   </div>
                   <div>
                     <p className="text-sm text-[#666666] mb-1">Se agregará:</p>
                     <p className="font-bold text-[#4CAF50]">
-                      {cantidadDestino} {productoDestino.unidad}
+                      {formatQuantity(cantidadDestino)} {productoDestino.unidad}
                     </p>
                     <p className="text-sm">{productoDestino.nombre}</p>
                   </div>
                   <div>
                     <p className="text-sm text-[#666666] mb-1">Eficiencia:</p>
                     <p className="font-bold text-[#1E73BE]">
-                      {((cantidadDestino / cantidadOrigen) * 100).toFixed(1)}%
+                      {formatQuantity((cantidadDestino / cantidadOrigen) * 100)}%
                     </p>
                     <p className="text-xs text-[#666666]">
                       {cantidadDestino > cantidadOrigen ? '⬆️ Incremento' : cantidadDestino < cantidadOrigen ? '⬇️ Reducción' : '➡️ Equivalente'}

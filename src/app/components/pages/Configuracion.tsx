@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../../hooks/useBranding';
 import { Settings, Plus, Edit, Trash2, DollarSign, Package, FolderTree, Save, Inbox, PackageSearch, Copy, Eye, ChevronDown, ChevronRight, EyeOff, Grid3x3, X, Download, Upload, RotateCcw, Database, Clock, TrendingDown, Percent, Calculator, BookmarkPlus, AlertTriangle, Mail, CheckCircle, AlertCircle, Send, Scale, MapPin, Map, LifeBuoy, HelpCircle, Info, Sparkles, Ruler, Activity } from 'lucide-react';
@@ -11,7 +11,7 @@ import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/select';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
@@ -39,6 +39,7 @@ import { migrarValoresMonetariosProductos } from '../../utils/migrarValorMonetar
 import { GestionVariantes } from '../inventario/GestionVariantes';
 import { GestionUnidades } from '../inventario/GestionUnidades';
 import { obtenerUnidades, type Unidad as UnidadDinamica } from '../../utils/unidadStorage';
+import { buildLocationOptions, buildLocationSections, loadLocationZones, resolveStandardLocation } from '../../utils/locationZones';
 import { ConfigurationBalance } from '../ConfigurationBalance';
 import { GestionAdressesQuartiers } from '../GestionAdressesQuartiers';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
@@ -520,6 +521,28 @@ export function Configuracion() {
     ubicacion: ''
   });
 
+  const zonasUbicacionConfiguradas = useMemo(
+    () => loadLocationZones(),
+    [productoDialogOpen, productoPRSDialogOpen, productos.length]
+  );
+
+  const ubicacionesProductoDisponibles = useMemo(() => {
+    const ubicacionesActuales = productos
+      .map((producto) => producto.ubicacion)
+      .filter((ubicacion): ubicacion is string => typeof ubicacion === 'string' && ubicacion.trim() !== '');
+
+    return buildLocationOptions(zonasUbicacionConfiguradas, [
+      ...ubicacionesActuales,
+      formProducto.ubicacion,
+      formProductoPRS.ubicacion,
+    ]);
+  }, [zonasUbicacionConfiguradas, productos, formProducto.ubicacion, formProductoPRS.ubicacion]);
+
+  const seccionesUbicacionProducto = useMemo(
+    () => buildLocationSections(zonasUbicacionConfiguradas, ubicacionesProductoDisponibles),
+    [zonasUbicacionConfiguradas, ubicacionesProductoDisponibles]
+  );
+
   // Funciones para Unidades
   const handleGuardarUnidad = () => {
     if (!formUnidad.nombre || !formUnidad.abreviatura) {
@@ -917,6 +940,15 @@ export function Configuracion() {
       return;
     }
 
+    const ubicacionNormalizada = formProductoPRS.ubicacion
+      ? resolveStandardLocation(formProductoPRS.ubicacion, ubicacionesProductoDisponibles)
+      : null;
+
+    if (formProductoPRS.ubicacion && !ubicacionNormalizada) {
+      toast.error('Seleccione un emplacement standard configuré dans le module Étiquettes');
+      return;
+    }
+
     // 💰 Calcular valor monetario basado en la categoría
     const categoriaSeleccionada = categorias.find(c => c.nombre === formProductoPRS.categoria);
     const valorMonetarioBase = categoriaSeleccionada?.valorMonetario || 0;
@@ -945,7 +977,7 @@ export function Configuracion() {
         icono: formProductoPRS.icono,
         peso: formProductoPRS.peso,
         pesoUnitario: formProductoPRS.pesoUnitario > 0 ? formProductoPRS.pesoUnitario : undefined,
-        ubicacion: formProductoPRS.ubicacion || undefined,
+        ubicacion: ubicacionNormalizada || undefined,
         esPRS: true,
         valorUnitario: valorUnitario,
         valorTotal: valorTotal
@@ -973,7 +1005,7 @@ export function Configuracion() {
         icono: formProductoPRS.icono,
         peso: formProductoPRS.peso,
         pesoUnitario: formProductoPRS.pesoUnitario > 0 ? formProductoPRS.pesoUnitario : undefined,
-        ubicacion: formProductoPRS.ubicacion || undefined,
+        ubicacion: ubicacionNormalizada || undefined,
         esPRS: true,
         activo: true,
         fechaCreacion: new Date().toISOString(),
@@ -1114,6 +1146,14 @@ export function Configuracion() {
     const subcategoriaObj = categoriaObj?.subcategorias?.find(s => s.nombre === formProducto.subcategoria);
     const codigoFinal = formProducto.codigo || `${formProducto.categoria.substring(0, 3).toUpperCase()}-${formProducto.subcategoria.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
     const nombreFinal = formProducto.nombre.trim();
+    const ubicacionNormalizada = formProducto.ubicacion
+      ? resolveStandardLocation(formProducto.ubicacion, ubicacionesProductoDisponibles)
+      : null;
+
+    if (formProducto.ubicacion && !ubicacionNormalizada) {
+      toast.error('Seleccione un emplacement standard configuré dans le module Étiquettes');
+      return;
+    }
     
     // Generar icono automáticamente si no hay uno definido
     const iconoAutomatico = generarIconoProducto(nombreFinal, formProducto.categoria, formProducto.subcategoria);
@@ -1133,7 +1173,7 @@ export function Configuracion() {
         pesoUnitario: formProducto.peso, // Peso unitario es el peso del producto
         stockActual: formProducto.stockActual,
         stockMinimo: formProducto.stockMinimo,
-        ubicacion: formProducto.ubicacion,
+        ubicacion: ubicacionNormalizada || '',
         lote: formProducto.lote,
         fechaVencimiento: formProducto.fechaVencimiento,
         esPRS: formProducto.tipoProducto === 'prs'
@@ -1165,7 +1205,7 @@ export function Configuracion() {
         pesoUnitario: formProducto.peso, // Peso unitario es el peso del producto
         stockActual: formProducto.stockActual,
         stockMinimo: formProducto.stockMinimo,
-        ubicacion: formProducto.ubicacion,
+        ubicacion: ubicacionNormalizada || '',
         lote: formProducto.lote,
         fechaVencimiento: formProducto.fechaVencimiento,
         esPRS: formProducto.tipoProducto === 'prs',
@@ -1218,7 +1258,7 @@ export function Configuracion() {
       pesoUnitario: formProducto.peso, // Peso unitario es el peso del producto
       stockActual: formProducto.stockActual,
       stockMinimo: formProducto.stockMinimo,
-      ubicacion: formProducto.ubicacion,
+      ubicacion: ubicacionNormalizada || '',
       lote: formProducto.lote,
       fechaVencimiento: formProducto.fechaVencimiento,
       esPRS: formProducto.tipoProducto === 'prs',
@@ -3439,12 +3479,29 @@ export function Configuracion() {
                 {/* Ubicación */}
                 <div className="space-y-2">
                   <Label>{t('configuration.prsLocationLabel')}</Label>
-                  <Input
-                    placeholder={t('configuration.prsLocationPlaceholder')}
-                    value={formProductoPRS.ubicacion}
-                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, ubicacion: e.target.value })}
-                    style={{ fontFamily: 'Roboto, sans-serif' }}
-                  />
+                  <Select
+                    value={formProductoPRS.ubicacion || '__none__'}
+                    onValueChange={(value) => setFormProductoPRS({ ...formProductoPRS, ubicacion: value === '__none__' ? '' : value })}
+                  >
+                    <SelectTrigger style={{ fontFamily: 'Roboto, sans-serif' }}>
+                      <SelectValue placeholder={t('configuration.prsLocationPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sin ubicación</SelectItem>
+                      {seccionesUbicacionProducto.map((seccion) => (
+                        <SelectGroup key={`prs-${seccion.codigoZona}`}>
+                          <SelectLabel>
+                            {seccion.codigoZona === 'AUTRES' ? 'Autres emplacements' : `Zona ${seccion.codigoZona} - ${seccion.tipoZona}`}
+                          </SelectLabel>
+                          {seccion.ubicaciones.map((ubicacion) => (
+                            <SelectItem key={`prs-${seccion.codigoZona}-${ubicacion}`} value={ubicacion}>
+                              {ubicacion}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-[#666666]">
                     {t('configuration.prsLocationHelp')}
                   </p>
@@ -3955,12 +4012,29 @@ export function Configuracion() {
                 <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                   {t('common.location')}
                 </Label>
-                <Input
-                  value={formProducto.ubicacion}
-                  onChange={(e) => setFormProducto({ ...formProducto, ubicacion: e.target.value })}
-                  placeholder={t('configuration.locationPlaceholder')}
-                  style={{ fontFamily: 'Roboto, sans-serif' }}
-                />
+                <Select
+                  value={formProducto.ubicacion || '__none__'}
+                  onValueChange={(value) => setFormProducto({ ...formProducto, ubicacion: value === '__none__' ? '' : value })}
+                >
+                  <SelectTrigger style={{ fontFamily: 'Roboto, sans-serif' }}>
+                    <SelectValue placeholder={t('configuration.locationPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sin ubicación</SelectItem>
+                    {seccionesUbicacionProducto.map((seccion) => (
+                      <SelectGroup key={`producto-${seccion.codigoZona}`}>
+                        <SelectLabel>
+                          {seccion.codigoZona === 'AUTRES' ? 'Autres emplacements' : `Zona ${seccion.codigoZona} - ${seccion.tipoZona}`}
+                        </SelectLabel>
+                        {seccion.ubicaciones.map((ubicacion) => (
+                          <SelectItem key={`producto-${seccion.codigoZona}-${ubicacion}`} value={ubicacion}>
+                            {ubicacion}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

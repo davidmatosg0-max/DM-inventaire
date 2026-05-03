@@ -1,6 +1,7 @@
 // Sistema de almacenamiento de productos creados en Configuración
 
 import { registrarActividad } from './actividadLogger';
+import { buildLocationOptions, loadLocationZones, resolveLegacyLocation } from './locationZones';
 import {
   aplicarTemperaturaProducto,
   type TemperaturaProductoCanonica,
@@ -68,9 +69,39 @@ function getNormalizedProductName(producto: Pick<ProductoCreado, 'nombre' | 'cat
   return legacyCandidates.includes(normalizeProductNameToken(rawName)) ? cleanName : rawName;
 }
 
-function normalizeStoredProduct<T extends Pick<ProductoCreado, 'nombre' | 'categoria' | 'subcategoria' | 'varianteNombre'>>(producto: T): T {
+function getCurrentStandardLocations(): string[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  return buildLocationOptions(loadLocationZones());
+}
+
+function normalizeStoredLocation(value: string | undefined, allowedLocations: string[]): string {
+  const normalizedValue = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  if (!normalizedValue) {
+    return '';
+  }
+
+  return resolveLegacyLocation(normalizedValue, allowedLocations) || normalizedValue;
+}
+
+function normalizeStoredProduct<T extends Pick<ProductoCreado, 'nombre' | 'categoria' | 'subcategoria' | 'varianteNombre' | 'ubicacion'>>(
+  producto: T,
+  allowedLocations: string[] = []
+): T {
   const nombreNormalizado = getNormalizedProductName(producto);
-  return nombreNormalizado !== producto.nombre ? { ...producto, nombre: nombreNormalizado } : producto;
+  const ubicacionNormalizada = normalizeStoredLocation(producto.ubicacion, allowedLocations);
+
+  if (nombreNormalizado === producto.nombre && ubicacionNormalizada === producto.ubicacion) {
+    return producto;
+  }
+
+  return {
+    ...producto,
+    nombre: nombreNormalizado,
+    ubicacion: ubicacionNormalizada,
+  };
 }
 
 /**
@@ -81,6 +112,7 @@ export function obtenerProductos(): ProductoCreado[] {
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) return [];
     const productos = JSON.parse(data);
+    const standardLocations = getCurrentStandardLocations();
     
     // Eliminar duplicados basándonos en el ID
     const productosUnicos = productos.reduce((acc: ProductoCreado[], producto: ProductoCreado) => {
@@ -92,7 +124,7 @@ export function obtenerProductos(): ProductoCreado[] {
     }, []);
     
     const productosNormalizados = productosUnicos.map((producto: ProductoCreado) =>
-      aplicarTemperaturaProducto(normalizeStoredProduct(producto))
+      aplicarTemperaturaProducto(normalizeStoredProduct(producto, standardLocations))
     );
 
     // Si se encontraron duplicados o faltaban campos de temperatura, guardar la versión limpia
@@ -117,12 +149,13 @@ export function obtenerProductos(): ProductoCreado[] {
 export function guardarProducto(producto: ProductoCreado | Omit<ProductoCreado, 'id'>): ProductoCreado {
   try {
     const productos = obtenerProductos();
+    const standardLocations = getCurrentStandardLocations();
     
     // Generar ID si no existe
     const productoConId: ProductoCreado = 'id' in producto 
       ? producto as ProductoCreado
       : { ...producto, id: Date.now().toString() } as ProductoCreado;
-    const productoNormalizado = aplicarTemperaturaProducto(normalizeStoredProduct(productoConId));
+    const productoNormalizado = aplicarTemperaturaProducto(normalizeStoredProduct(productoConId, standardLocations));
     
     // Verificar si el producto ya existe para evitar duplicados
     const existeProducto = productos.find(p => p.id === productoNormalizado.id);
@@ -158,10 +191,11 @@ export function guardarProducto(producto: ProductoCreado | Omit<ProductoCreado, 
 export function actualizarProducto(id: string, productoActualizado: Partial<ProductoCreado>): void {
   try {
     const productos = obtenerProductos();
+    const standardLocations = getCurrentStandardLocations();
     const index = productos.findIndex(p => p.id === id);
     if (index !== -1) {
       const productoAnterior = { ...productos[index] };
-      productos[index] = aplicarTemperaturaProducto(normalizeStoredProduct({ ...productos[index], ...productoActualizado }));
+      productos[index] = aplicarTemperaturaProducto(normalizeStoredProduct({ ...productos[index], ...productoActualizado }, standardLocations));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
       
       // Registrar actividad solo si hay cambios significativos

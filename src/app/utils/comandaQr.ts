@@ -29,6 +29,12 @@ interface BuildComandaQRInput {
   fechaEntrega?: string;
 }
 
+const COMANDA_TEXT_PATTERNS = [
+  /^CMD-[A-Z0-9-]+$/i,
+  /^SOL-[A-Z0-9-]+$/i,
+  /^QA-DEMO-CMD-[A-Z0-9-]+$/i,
+];
+
 function getRecord(value: unknown): QRRecord | undefined {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as QRRecord;
@@ -43,6 +49,14 @@ function getString(value: unknown): string | undefined {
 
 function getNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function looksLikeComandaIdentifier(value?: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return COMANDA_TEXT_PATTERNS.some((pattern) => pattern.test(value.trim()));
 }
 
 function hasProductShape(record?: QRRecord): boolean {
@@ -84,7 +98,7 @@ export function normalizeScannedComandaQR(value: unknown): ComandaQRPayload | nu
   const record = getRecord(value);
   if (!record) {
     const text = getString(value);
-    if (!text) {
+    if (!text || !looksLikeComandaIdentifier(text)) {
       return null;
     }
 
@@ -106,11 +120,13 @@ export function normalizeScannedComandaQR(value: unknown): ComandaQRPayload | nu
     getString(record.comanda) ||
     getString(record.numeroComanda) ||
     getString(record.id) ||
-    getString(record.text) ||
     getString(nested?.comanda) ||
     getString(nested?.numeroComanda) ||
     getString(nested?.id) ||
-    getString(nested?.text);
+    (() => {
+      const textCandidate = getString(record.text) || getString(nested?.text);
+      return looksLikeComandaIdentifier(textCandidate) ? textCandidate : undefined;
+    })();
 
   if (!numeroComanda) {
     return null;

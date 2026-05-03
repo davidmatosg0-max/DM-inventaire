@@ -41,7 +41,7 @@ import type { Comanda, ItemComanda, Organismo, ProductoOferta, Oferta as OfertaT
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerOrganismos as obtenerOrganismosReales } from '../../utils/organismosStorage';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
-import { normalizeScannedProductQR } from '../../utils/barcode';
+import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 import {
   clearPendingQrNavigation,
   navigateToQrPage,
@@ -558,6 +558,21 @@ export function Comandas() {
   const handleScanQR = (rawData: DatosQR, action: string) => {
     console.log('QR escaneado:', rawData, 'Acción:', action);
 
+    const ubicacion = normalizeScannedLocationQR(rawData)?.ubicacion;
+
+    if (ubicacion) {
+      setEscanerQROpen(false);
+      savePendingQrNavigation({
+        targetPage: 'inventario',
+        qrType: 'ubicacion',
+        rawData,
+        action,
+      });
+      toast.success(`Emplacement ${ubicacion} détecté, redirection vers Inventaire`);
+      navigateToQrPage('inventario');
+      return;
+    }
+
     const data = normalizeScannedComandaQR(rawData);
     const numeroComanda = data?.comanda;
 
@@ -586,7 +601,6 @@ export function Comandas() {
     }
 
     if (!numeroComanda) {
-      setEscanerQROpen(false);
       toast.error(
         <div>
           <span className="font-semibold">{t('orders.qrNotFound')}</span>
@@ -597,7 +611,6 @@ export function Comandas() {
       return;
     }
 
-    setEscanerQROpen(false);
     toast.error(
       <div>
         <span className="font-semibold">{t('orders.qrNotFound')}</span>

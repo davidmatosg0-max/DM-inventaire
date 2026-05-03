@@ -1,5 +1,6 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { QR_BRAND_LABEL } from '../../utils/brandedQr';
 
 type BrandedQRCodeProps = React.ComponentProps<typeof QRCodeSVG> & {
   badgeLabel?: string;
@@ -7,7 +8,7 @@ type BrandedQRCodeProps = React.ComponentProps<typeof QRCodeSVG> & {
 };
 
 export function BrandedQRCode({
-  badgeLabel = 'DM',
+  badgeLabel = QR_BRAND_LABEL,
   containerClassName,
   size = 128,
   ...qrProps

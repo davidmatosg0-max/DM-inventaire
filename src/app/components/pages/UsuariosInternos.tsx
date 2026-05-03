@@ -19,6 +19,7 @@ import { mockUsuariosInternos } from '../../data/mockData';
 import type { UsuarioInterno, IdiomaUsuarioInterno } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../utils/formatUtils';
+import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 import { obtenerDepartamentos } from '../../utils/departamentosStorage';
@@ -364,9 +365,12 @@ export function UsuariosInternos() {
     }
   };
 
-  const generarQRCode = (texto: string) => {
-    // En producción usar librería QR real
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(texto)}`;
+  const generarQRCode = async (texto: string) => {
+    return generateBrandedQrDataUrl(texto, {
+      width: 200,
+      margin: 2,
+      errorCorrectionLevel: 'H',
+    });
   };
 
   const descargarIDDigital = (usuario: UsuarioInterno) => {

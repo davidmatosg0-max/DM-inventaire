@@ -1,5 +1,5 @@
 export type PendingQrNavigationTarget = 'inventario' | 'comandas';
-export type PendingQrNavigationType = 'producto' | 'comanda';
+export type PendingQrNavigationType = 'producto' | 'comanda' | 'ubicacion';
 
 export interface PendingQrNavigation {
   targetPage: PendingQrNavigationTarget;
