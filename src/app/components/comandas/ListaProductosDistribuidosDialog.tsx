@@ -51,6 +51,7 @@ type ProductoDistribucionDetalle = {
 
 type DistribucionResumen = {
   comandaId: string;
+  comandaIds: string[];
   numeroDistribucion: string;
   organismo: string;
   fecha: string;
@@ -66,6 +67,15 @@ type GrupoTemperatura = {
   label: string;
   badgeClassName: string;
   productos: ProductoDistribucionDetalle[];
+};
+
+type ResumenDistribuciones = {
+  productos: ProductoDistribuidoResumen[];
+  totalComandas: number;
+  totalProductos: number;
+  totalCantidad: number;
+  totalPeso: number;
+  totalValor: number;
 };
 
 const TEMPERATURE_GROUP_CONFIG: Record<GrupoTemperatura['key'], Omit<GrupoTemperatura, 'productos'>> = {
@@ -176,6 +186,83 @@ function construirProductosDistribucion(
   );
 }
 
+function construirResumenDistribuciones(
+  comandasResumen: Comanda[],
+  productosCatalogo: Array<ReturnType<typeof obtenerProductos>[number] | typeof mockProductos[number]>
+): ResumenDistribuciones {
+  const productosMap = new Map(productosCatalogo.map(producto => [producto.id, producto]));
+  const acumulado = new Map<string, ProductoDistribuidoResumen>();
+
+  comandasResumen.forEach(comanda => {
+    (comanda.items || []).forEach(item => {
+      const cantidad = Number(item.cantidadAceptada || item.cantidadPreparada || item.cantidad || 0);
+      if (cantidad <= 0) {
+        return;
+      }
+
+      const productoCatalogo = productosMap.get(item.productoId);
+      const calculoDistribucion = calcularValorDistribucionProducto(productoCatalogo, cantidad);
+      const nombreProducto = item.nombreProducto || item.productoNombre || productoCatalogo?.nombre || item.productoId;
+      const unidad = item.unidad || productoCatalogo?.unidad || 'unidad';
+      const icono = item.icono || productoCatalogo?.icono || '📦';
+      const temperatura =
+        (item as { temperaturaAlmacenamiento?: string; temperatura?: string }).temperaturaAlmacenamiento ||
+        (item as { temperatura?: string }).temperatura ||
+        productoCatalogo?.temperaturaAlmacenamiento ||
+        (productoCatalogo as { temperatura?: string } | undefined)?.temperatura;
+      const numeroComanda = comanda.numero || comanda.numeroComanda || comanda.id;
+      const organismo = comanda.nombreOrganismo || 'Sin organismo';
+      const fechaBase = comanda.fechaEntrega || comanda.fecha;
+
+      const existente = acumulado.get(item.productoId);
+      if (existente) {
+        existente.cantidadTotal += cantidad;
+        existente.pesoTotal += calculoDistribucion.pesoTotal;
+        existente.valorTotal += calculoDistribucion.valorTotal;
+        if (!existente.organismos.includes(organismo)) {
+          existente.organismos.push(organismo);
+        }
+        if (!existente.comandas.includes(numeroComanda)) {
+          existente.comandas.push(numeroComanda);
+        }
+        if (new Date(fechaBase) > new Date(existente.ultimaFecha)) {
+          existente.ultimaFecha = fechaBase;
+        }
+        return;
+      }
+
+      acumulado.set(item.productoId, {
+        productoId: item.productoId,
+        nombreProducto,
+        unidad,
+        icono,
+        cantidadTotal: cantidad,
+        pesoTotal: calculoDistribucion.pesoTotal,
+        valorTotal: calculoDistribucion.valorTotal,
+        organismos: [organismo],
+        comandas: [numeroComanda],
+        ultimaFecha: fechaBase,
+        temperatura,
+      });
+    });
+  });
+
+  const productos = sortByTemperature(
+    Array.from(acumulado.values()),
+    producto => producto.temperatura,
+    (a, b) => b.cantidadTotal - a.cantidadTotal,
+  );
+
+  return {
+    productos,
+    totalComandas: comandasResumen.length,
+    totalProductos: productos.length,
+    totalCantidad: productos.reduce((sum, producto) => sum + producto.cantidadTotal, 0),
+    totalPeso: productos.reduce((sum, producto) => sum + producto.pesoTotal, 0),
+    totalValor: productos.reduce((sum, producto) => sum + producto.valorTotal, 0)
+  };
+}
+
 function generarNumeroDistribucionUnico(comandas: Comanda[]): string {
   const base = comandas
     .map(comanda => `${comanda.id}|${comanda.numero || comanda.numeroComanda || ''}|${comanda.fechaEntrega || comanda.fecha || ''}`)
@@ -217,77 +304,7 @@ export function ListaProductosDistribuidosDialog({
       ...mockProductos.filter(mockProducto => !productosReales.some(producto => producto.id === mockProducto.id))
     ];
 
-    const productosMap = new Map(productosCatalogo.map(producto => [producto.id, producto]));
-    const acumulado = new Map<string, ProductoDistribuidoResumen>();
-
-    comandas.forEach(comanda => {
-      (comanda.items || []).forEach(item => {
-        const cantidad = Number(item.cantidadAceptada || item.cantidadPreparada || item.cantidad || 0);
-        if (cantidad <= 0) {
-          return;
-        }
-
-        const productoCatalogo = productosMap.get(item.productoId);
-        const calculoDistribucion = calcularValorDistribucionProducto(productoCatalogo, cantidad);
-        const nombreProducto = item.nombreProducto || item.productoNombre || productoCatalogo?.nombre || item.productoId;
-        const unidad = item.unidad || productoCatalogo?.unidad || 'unidad';
-        const icono = item.icono || productoCatalogo?.icono || '📦';
-        const temperatura =
-          (item as { temperaturaAlmacenamiento?: string; temperatura?: string }).temperaturaAlmacenamiento ||
-          (item as { temperatura?: string }).temperatura ||
-          productoCatalogo?.temperaturaAlmacenamiento ||
-          (productoCatalogo as { temperatura?: string } | undefined)?.temperatura;
-        const numeroComanda = comanda.numero || comanda.numeroComanda || comanda.id;
-        const organismo = comanda.nombreOrganismo || 'Sin organismo';
-        const fechaBase = comanda.fechaEntrega || comanda.fecha;
-
-        const existente = acumulado.get(item.productoId);
-        if (existente) {
-          existente.cantidadTotal += cantidad;
-          existente.pesoTotal += calculoDistribucion.pesoTotal;
-          existente.valorTotal += calculoDistribucion.valorTotal;
-          if (!existente.organismos.includes(organismo)) {
-            existente.organismos.push(organismo);
-          }
-          if (!existente.comandas.includes(numeroComanda)) {
-            existente.comandas.push(numeroComanda);
-          }
-          if (new Date(fechaBase) > new Date(existente.ultimaFecha)) {
-            existente.ultimaFecha = fechaBase;
-          }
-          return;
-        }
-
-        acumulado.set(item.productoId, {
-          productoId: item.productoId,
-          nombreProducto,
-          unidad,
-          icono,
-          cantidadTotal: cantidad,
-          pesoTotal: calculoDistribucion.pesoTotal,
-          valorTotal: calculoDistribucion.valorTotal,
-          organismos: [organismo],
-          comandas: [numeroComanda],
-          ultimaFecha: fechaBase,
-          temperatura
-        });
-      });
-    });
-
-    const productos = sortByTemperature(
-      Array.from(acumulado.values()),
-      producto => producto.temperatura,
-      (a, b) => b.cantidadTotal - a.cantidadTotal,
-    );
-
-    return {
-      productos,
-      totalComandas: comandas.length,
-      totalProductos: productos.length,
-      totalCantidad: productos.reduce((sum, producto) => sum + producto.cantidadTotal, 0),
-      totalPeso: productos.reduce((sum, producto) => sum + producto.pesoTotal, 0),
-      totalValor: productos.reduce((sum, producto) => sum + producto.valorTotal, 0)
-    };
+    return construirResumenDistribuciones(comandas, productosCatalogo);
   }, [comandas]);
 
   const distribuciones = useMemo(() => {
@@ -327,6 +344,7 @@ export function ListaProductosDistribuidosDialog({
 
         return {
           comandaId: numeroDistribucion,
+          comandaIds: comandasAgrupadas.map(comanda => comanda.id),
           numeroDistribucion,
           organismo: organismos.length === 1 ? organismos[0] : `${organismos.length} organismes regroupés`,
           fecha,
@@ -366,6 +384,22 @@ export function ListaProductosDistribuidosDialog({
     [distribucionSeleccionadaId, distribucionesFiltradas]
   );
 
+  const resumenVisible = useMemo(() => {
+    if (distribucionesFiltradas.length === distribuciones.length) {
+      return resumen;
+    }
+
+    const comandaIdsFiltradas = new Set(distribucionesFiltradas.flatMap(distribucion => distribucion.comandaIds));
+    const comandasVisibles = comandas.filter(comanda => comandaIdsFiltradas.has(comanda.id));
+    const productosReales = obtenerProductos();
+    const productosCatalogo = [
+      ...productosReales,
+      ...mockProductos.filter(mockProducto => !productosReales.some(producto => producto.id === mockProducto.id))
+    ];
+
+    return construirResumenDistribuciones(comandasVisibles, productosCatalogo);
+  }, [comandas, distribuciones.length, distribucionesFiltradas, resumen]);
+
   const gruposTemperaturaDistribucion = useMemo(() => {
     if (!distribucionSeleccionadaFiltrada) {
       return [] as GrupoTemperatura[];
@@ -398,12 +432,12 @@ export function ListaProductosDistribuidosDialog({
   }, [open, distribucionesFiltradas]);
 
   const imprimirLista = () => {
-    if (resumen.productos.length === 0) {
+    if (resumenVisible.productos.length === 0) {
       toast.error('Aucun produit distribué à imprimer');
       return;
     }
 
-    const gruposImpresion = agruparProductosPorTemperatura(resumen.productos);
+    const gruposImpresion = agruparProductosPorTemperatura(resumenVisible.productos);
 
     const filas = gruposImpresion.map(grupo => {
       const filasGrupo = grupo.productos.map(producto => `
@@ -449,12 +483,12 @@ export function ListaProductosDistribuidosDialog({
           </head>
           <body>
             <h1>Liste des produits distribués</h1>
-            <p>Comandes incluses: ${resumen.totalComandas} | Produits: ${resumen.totalProductos} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}</p>
+            <p>Comandes incluses: ${resumenVisible.totalComandas} | Produits: ${resumenVisible.totalProductos} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}</p>
             <div class="resume">
-              <div class="card"><div class="label">Quantité totale</div><div class="value">${formatQuantity(resumen.totalCantidad)}</div></div>
-              <div class="card"><div class="label">Poids total</div><div class="value">${formatQuantity(resumen.totalPeso)} kg</div></div>
-              <div class="card"><div class="label">Valeur totale</div><div class="value">CAD$ ${formatMoney(resumen.totalValor)}</div></div>
-              <div class="card"><div class="label">Produits distincts</div><div class="value">${resumen.totalProductos}</div></div>
+              <div class="card"><div class="label">Quantité totale</div><div class="value">${formatQuantity(resumenVisible.totalCantidad)}</div></div>
+              <div class="card"><div class="label">Poids total</div><div class="value">${formatQuantity(resumenVisible.totalPeso)} kg</div></div>
+              <div class="card"><div class="label">Valeur totale</div><div class="value">CAD$ ${formatMoney(resumenVisible.totalValor)}</div></div>
+              <div class="card"><div class="label">Produits distincts</div><div class="value">${resumenVisible.totalProductos}</div></div>
             </div>
             <table>
               <thead>
@@ -487,8 +521,8 @@ export function ListaProductosDistribuidosDialog({
     doc.setFontSize(18);
     doc.text('Liste des produits distribués', 14, 18);
     doc.setFontSize(10);
-    doc.text(`Distributions incluses: ${distribucionesFiltradas.length} | Comandes incluses: ${resumen.totalComandas} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`, 14, 26);
-    doc.text(`Quantité: ${formatQuantity(resumen.totalCantidad)} | Poids: ${formatQuantity(resumen.totalPeso)} kg | Valeur: CAD$ ${formatMoney(resumen.totalValor)}`, 14, 32);
+    doc.text(`Distributions incluses: ${distribucionesFiltradas.length} | Comandes incluses: ${resumenVisible.totalComandas} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`, 14, 26);
+    doc.text(`Quantité: ${formatQuantity(resumenVisible.totalCantidad)} | Poids: ${formatQuantity(resumenVisible.totalPeso)} kg | Valeur: CAD$ ${formatMoney(resumenVisible.totalValor)}`, 14, 32);
 
     let currentY = 40;
 
@@ -579,21 +613,21 @@ export function ListaProductosDistribuidosDialog({
 
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2 justify-end">
-            <Button variant="outline" onClick={imprimirLista} disabled={resumen.productos.length === 0}>
+            <Button variant="outline" onClick={imprimirLista} disabled={resumenVisible.productos.length === 0}>
               <Printer className="w-4 h-4 mr-2" />
               Imprimer
             </Button>
-            <Button onClick={exportarPDF} disabled={resumen.productos.length === 0} className="bg-[#1E73BE] hover:bg-[#175a95]">
+            <Button onClick={exportarPDF} disabled={resumenVisible.productos.length === 0} className="bg-[#1E73BE] hover:bg-[#175a95]">
               <Download className="w-4 h-4 mr-2" />
               PDF
             </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Comandes incluses</p><p className="text-2xl font-bold text-[#1E73BE]">{resumen.totalComandas}</p></CardContent></Card>
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Produits distincts</p><p className="text-2xl font-bold text-[#2E7D32]">{resumen.totalProductos}</p></CardContent></Card>
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Quantité totale</p><p className="text-2xl font-bold text-[#F57C00]">{formatQuantity(resumen.totalCantidad)}</p></CardContent></Card>
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Valeur totale</p><p className="text-2xl font-bold text-[#FFC107]">CAD$ {formatMoney(resumen.totalValor)}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Comandes incluses</p><p className="text-2xl font-bold text-[#1E73BE]">{resumenVisible.totalComandas}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Produits distincts</p><p className="text-2xl font-bold text-[#2E7D32]">{resumenVisible.totalProductos}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Quantité totale</p><p className="text-2xl font-bold text-[#F57C00]">{formatQuantity(resumenVisible.totalCantidad)}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Valeur totale</p><p className="text-2xl font-bold text-[#FFC107]">CAD$ {formatMoney(resumenVisible.totalValor)}</p></CardContent></Card>
           </div>
 
           {distribuciones.length > 0 && (
@@ -611,7 +645,7 @@ export function ListaProductosDistribuidosDialog({
                 <Input
                   value={filtroDistribucion}
                   onChange={(event) => setFiltroDistribucion(event.target.value)}
-                  placeholder="Filtrer par n° distribution, organisme ou produit"
+                  placeholder="Filtrer par date, n° distribution, organisme ou produit"
                   className="max-w-xl"
                 />
 
@@ -725,7 +759,7 @@ export function ListaProductosDistribuidosDialog({
             </Card>
           )}
 
-          {resumen.productos.length === 0 ? (
+          {resumenVisible.productos.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-[#666666]">
               <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
               Aucune commande avec produits distribués dans le filtre actuel.
@@ -745,7 +779,7 @@ export function ListaProductosDistribuidosDialog({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {resumen.productos.map(producto => (
+                  {resumenVisible.productos.map(producto => (
                     <TableRow key={producto.productoId}>
                       <TableCell>
                         <div className="flex items-center gap-2">
