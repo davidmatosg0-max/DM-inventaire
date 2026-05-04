@@ -75,7 +75,6 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
   const birthDateRef = useRef<HTMLInputElement | null>(null);
   const phoneRef = useRef<HTMLInputElement | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
-  const notesRef = useRef<HTMLTextAreaElement | null>(null);
   
   const [isEditing, setIsEditing] = useState(beneficiaireId === 'new');
   const [infoExpanded, setInfoExpanded] = useState(true);
@@ -91,6 +90,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [gender, setGender] = useState(beneficiaire?.sexe || 'no_respuesta');
   const [priority, setPriority] = useState<ComptoirBeneficiary['priorite']>(beneficiaire?.priorite || 'normale');
+  const [notesInternes, setNotesInternes] = useState(beneficiaire?.notes || '');
   
   // Estados para los campos de dirección
   const [adresse, setAdresse] = useState(beneficiaire?.adresse || '');
@@ -269,7 +269,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
       statut: beneficiaire?.statut || 'actif',
       priorite: priority,
       derniereAide: beneficiaire?.derniereAide || 'Aucune',
-      notes: notesRef.current?.value || '',
+      notes: notesInternes,
       nombrePersonnes,
       revenuMensuel: revenuMensuel ? Number.parseFloat(revenuMensuel) : undefined,
       revenus: niveauRevenu || beneficiaire?.revenus || '',
@@ -1040,9 +1040,9 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
 
               <div>
                 <Label>{t('comptoir.internalNotes')}</Label>
-                <Textarea 
-                  ref={notesRef}
-                  defaultValue={beneficiaire?.notes}
+                <Textarea
+                  value={notesInternes}
+                  onChange={(event) => setNotesInternes(event.target.value)}
                   disabled={!isEditing}
                   className={`min-h-[100px] ${!isEditing ? 'bg-[#F4F4F4]' : ''}`}
                   placeholder={t('comptoir.notesPlaceholder')}
