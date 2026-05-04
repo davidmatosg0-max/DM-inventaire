@@ -296,6 +296,8 @@ export function ListaProductosDistribuidosDialog({
 }: ListaProductosDistribuidosDialogProps) {
   const [distribucionSeleccionadaId, setDistribucionSeleccionadaId] = useState<string | null>(null);
   const [filtroDistribucion, setFiltroDistribucion] = useState('');
+  const [filtroProductos, setFiltroProductos] = useState('');
+  const [filtroDetalleDistribucion, setFiltroDetalleDistribucion] = useState('');
 
   const resumen = useMemo(() => {
     const productosReales = obtenerProductos();
@@ -405,13 +407,46 @@ export function ListaProductosDistribuidosDialog({
       return [] as GrupoTemperatura[];
     }
 
-    return agruparProductosPorTemperatura(distribucionSeleccionadaFiltrada.productos);
-  }, [distribucionSeleccionadaFiltrada]);
+    const termino = filtroDetalleDistribucion.trim().toLowerCase();
+    const productos = !termino
+      ? distribucionSeleccionadaFiltrada.productos
+      : distribucionSeleccionadaFiltrada.productos.filter((producto) => {
+          const coincideNombre = producto.nombreProducto.toLowerCase().includes(termino);
+          const coincideCodigo = producto.productoId.toLowerCase().includes(termino);
+          const coincideUnidad = producto.unidad.toLowerCase().includes(termino);
+          const coincideTemperatura = normalizeTemperatureValue(producto.temperatura).toLowerCase().includes(termino);
+
+          return coincideNombre || coincideCodigo || coincideUnidad || coincideTemperatura;
+        });
+
+    return agruparProductosPorTemperatura(productos);
+  }, [distribucionSeleccionadaFiltrada, filtroDetalleDistribucion]);
+
+  const productosResumenFiltrados = useMemo(() => {
+    const termino = filtroProductos.trim().toLowerCase();
+    if (!termino) {
+      return resumenVisible.productos;
+    }
+
+    return resumenVisible.productos.filter((producto) => {
+      const coincideNombre = producto.nombreProducto.toLowerCase().includes(termino);
+      const coincideCodigo = producto.productoId.toLowerCase().includes(termino);
+      const coincideOrganismo = producto.organismos.some((organismo) => organismo.toLowerCase().includes(termino));
+      const coincideComanda = producto.comandas.some((comanda) => comanda.toLowerCase().includes(termino));
+      const fechaVisible = formatearFecha(producto.ultimaFecha, currentLocale).toLowerCase();
+      const fechaNormalizada = normalizarClaveFechaDistribucion(producto.ultimaFecha).toLowerCase();
+      const coincideFecha = fechaVisible.includes(termino) || fechaNormalizada.includes(termino);
+
+      return coincideNombre || coincideCodigo || coincideOrganismo || coincideComanda || coincideFecha;
+    });
+  }, [currentLocale, filtroProductos, resumenVisible.productos]);
 
   useEffect(() => {
     if (!open) {
       setDistribucionSeleccionadaId(null);
       setFiltroDistribucion('');
+      setFiltroProductos('');
+      setFiltroDetalleDistribucion('');
       return;
     }
 
@@ -430,6 +465,10 @@ export function ListaProductosDistribuidosDialog({
         : null;
     });
   }, [open, distribucionesFiltradas]);
+
+  useEffect(() => {
+    setFiltroDetalleDistribucion('');
+  }, [distribucionSeleccionadaId]);
 
   const imprimirLista = () => {
     if (resumenVisible.productos.length === 0) {
@@ -714,6 +753,13 @@ export function ListaProductosDistribuidosDialog({
                   <Badge className="w-fit bg-[#1E73BE] hover:bg-[#1E73BE]">{distribucionSeleccionadaFiltrada.totalProductos} produit(s)</Badge>
                 </div>
 
+                <Input
+                  value={filtroDetalleDistribucion}
+                  onChange={(event) => setFiltroDetalleDistribucion(event.target.value)}
+                  placeholder="Filtrer les produits de cette distribution"
+                  className="max-w-xl"
+                />
+
                 <div className="space-y-4">
                   {gruposTemperaturaDistribucion.map((grupo) => (
                     <div key={grupo.key} className="rounded-xl border bg-white overflow-hidden">
@@ -754,6 +800,11 @@ export function ListaProductosDistribuidosDialog({
                       </Table>
                     </div>
                   ))}
+                  {gruposTemperaturaDistribucion.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-[#666666]">
+                      Aucun produit de cette distribution ne correspond au filtre actuel.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -765,53 +816,80 @@ export function ListaProductosDistribuidosDialog({
               Aucune commande avec produits distribués dans le filtre actuel.
             </div>
           ) : (
-            <div className="rounded-xl border bg-white">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Produit</TableHead>
-                    <TableHead className="text-center">Quantité</TableHead>
-                    <TableHead className="text-center">Poids</TableHead>
-                    <TableHead className="text-right">Valeur</TableHead>
-                    <TableHead>Organismes</TableHead>
-                    <TableHead className="text-center">Comandes</TableHead>
-                    <TableHead className="text-center">Dernière date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {resumenVisible.productos.map(producto => (
-                    <TableRow key={producto.productoId}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{producto.icono}</span>
-                          <div>
-                            <p className="font-medium text-[#333333]">{producto.nombreProducto}</p>
-                            <p className="text-xs text-[#666666]">{producto.productoId}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center font-semibold">{formatQuantity(producto.cantidadTotal)} {producto.unidad}</TableCell>
-                      <TableCell className="text-center">{formatQuantity(producto.pesoTotal)} kg</TableCell>
-                      <TableCell className="text-right font-semibold text-[#2E7D32]">CAD$ {formatMoney(producto.valorTotal)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {producto.organismos.slice(0, 2).map(organismo => (
-                            <Badge key={`${producto.productoId}-${organismo}`} variant="outline" className="text-xs">
-                              {organismo}
-                            </Badge>
-                          ))}
-                          {producto.organismos.length > 2 && (
-                            <Badge variant="secondary" className="text-xs">+{producto.organismos.length - 2}</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">{producto.comandas.length}</TableCell>
-                      <TableCell className="text-center">{formatearFecha(producto.ultimaFecha, currentLocale)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Produits distribués
+                  </h3>
+                  <p className="text-sm text-[#666666]">
+                    Filtrez la liste consolidée par produit, code, organisme, comanda ou date.
+                  </p>
+                </div>
+
+                <Input
+                  value={filtroProductos}
+                  onChange={(event) => setFiltroProductos(event.target.value)}
+                  placeholder="Filtrer la liste de produits distribués"
+                  className="max-w-xl"
+                />
+
+                <div className="rounded-xl border bg-white overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Produit</TableHead>
+                        <TableHead className="text-center">Quantité</TableHead>
+                        <TableHead className="text-center">Poids</TableHead>
+                        <TableHead className="text-right">Valeur</TableHead>
+                        <TableHead>Organismes</TableHead>
+                        <TableHead className="text-center">Comandes</TableHead>
+                        <TableHead className="text-center">Dernière date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {productosResumenFiltrados.map(producto => (
+                        <TableRow key={producto.productoId}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{producto.icono}</span>
+                              <div>
+                                <p className="font-medium text-[#333333]">{producto.nombreProducto}</p>
+                                <p className="text-xs text-[#666666]">{producto.productoId}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">{formatQuantity(producto.cantidadTotal)} {producto.unidad}</TableCell>
+                          <TableCell className="text-center">{formatQuantity(producto.pesoTotal)} kg</TableCell>
+                          <TableCell className="text-right font-semibold text-[#2E7D32]">CAD$ {formatMoney(producto.valorTotal)}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {producto.organismos.slice(0, 2).map(organismo => (
+                                <Badge key={`${producto.productoId}-${organismo}`} variant="outline" className="text-xs">
+                                  {organismo}
+                                </Badge>
+                              ))}
+                              {producto.organismos.length > 2 && (
+                                <Badge variant="secondary" className="text-xs">+{producto.organismos.length - 2}</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">{producto.comandas.length}</TableCell>
+                          <TableCell className="text-center">{formatearFecha(producto.ultimaFecha, currentLocale)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {productosResumenFiltrados.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="py-8 text-center text-[#666666]">
+                            Aucun produit distribué ne correspond au filtre actuel.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </DialogContent>
