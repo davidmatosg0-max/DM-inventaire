@@ -86,6 +86,25 @@ const TEMPERATURE_GROUP_CONFIG: Record<GrupoTemperatura['key'], Omit<GrupoTemper
   },
 };
 
+function agruparProductosPorTemperatura<T extends { temperatura?: string }>(productos: T[]) {
+  const grupos = productos.reduce((accumulator, producto) => {
+    const temperatura = normalizeTemperatureValue(producto.temperatura);
+    accumulator[temperatura].push(producto);
+    return accumulator;
+  }, {
+    ambiente: [] as T[],
+    refrigerado: [] as T[],
+    congelado: [] as T[],
+  });
+
+  return (Object.keys(TEMPERATURE_GROUP_CONFIG) as Array<GrupoTemperatura['key']>)
+    .filter((key) => grupos[key].length > 0)
+    .map((key) => ({
+      ...TEMPERATURE_GROUP_CONFIG[key],
+      productos: grupos[key],
+    }));
+}
+
 function formatearFecha(fecha: string, locale: string) {
   return new Date(fecha).toLocaleDateString(locale || 'fr', {
     year: 'numeric',
@@ -352,22 +371,7 @@ export function ListaProductosDistribuidosDialog({
       return [] as GrupoTemperatura[];
     }
 
-    const grupos = distribucionSeleccionadaFiltrada.productos.reduce((accumulator, producto) => {
-      const temperatura = normalizeTemperatureValue(producto.temperatura);
-      accumulator[temperatura].push(producto);
-      return accumulator;
-    }, {
-      ambiente: [] as ProductoDistribucionDetalle[],
-      refrigerado: [] as ProductoDistribucionDetalle[],
-      congelado: [] as ProductoDistribucionDetalle[],
-    });
-
-    return (Object.keys(TEMPERATURE_GROUP_CONFIG) as Array<GrupoTemperatura['key']>)
-      .filter((key) => grupos[key].length > 0)
-      .map((key) => ({
-        ...TEMPERATURE_GROUP_CONFIG[key],
-        productos: grupos[key],
-      }));
+    return agruparProductosPorTemperatura(distribucionSeleccionadaFiltrada.productos);
   }, [distribucionSeleccionadaFiltrada]);
 
   useEffect(() => {
@@ -399,12 +403,7 @@ export function ListaProductosDistribuidosDialog({
       return;
     }
 
-    const gruposImpresion = (Object.keys(TEMPERATURE_GROUP_CONFIG) as Array<GrupoTemperatura['key']>)
-      .map((key) => ({
-        ...TEMPERATURE_GROUP_CONFIG[key],
-        productos: resumen.productos.filter(producto => normalizeTemperatureValue(producto.temperatura) === key),
-      }))
-      .filter((grupo) => grupo.productos.length > 0);
+    const gruposImpresion = agruparProductosPorTemperatura(resumen.productos);
 
     const filas = gruposImpresion.map(grupo => {
       const filasGrupo = grupo.productos.map(producto => `
@@ -479,7 +478,7 @@ export function ListaProductosDistribuidosDialog({
   };
 
   const exportarPDF = () => {
-    if (resumen.productos.length === 0) {
+    if (distribucionesFiltradas.length === 0) {
       toast.error('Aucun produit distribué à exporter');
       return;
     }
@@ -488,40 +487,77 @@ export function ListaProductosDistribuidosDialog({
     doc.setFontSize(18);
     doc.text('Liste des produits distribués', 14, 18);
     doc.setFontSize(10);
-    doc.text(`Comandes incluses: ${resumen.totalComandas} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`, 14, 26);
+    doc.text(`Distributions incluses: ${distribucionesFiltradas.length} | Comandes incluses: ${resumen.totalComandas} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`, 14, 26);
     doc.text(`Quantité: ${formatQuantity(resumen.totalCantidad)} | Poids: ${formatQuantity(resumen.totalPeso)} kg | Valeur: CAD$ ${formatMoney(resumen.totalValor)}`, 14, 32);
 
-    autoTable(doc, {
-      startY: 38,
-      head: [['Produit', 'Quantité', 'Poids', 'Valeur', 'Organismes', 'Comandes', 'Dernière date']],
-      body: resumen.productos.map(producto => [
-        `${producto.icono} ${producto.nombreProducto}`,
-        `${formatQuantity(producto.cantidadTotal)} ${producto.unidad}`,
-        `${formatQuantity(producto.pesoTotal)} kg`,
-        `CAD$ ${formatMoney(producto.valorTotal)}`,
-        producto.organismos.join(', '),
-        String(producto.comandas.length),
-        formatearFecha(producto.ultimaFecha, currentLocale)
-      ]),
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        valign: 'middle'
-      },
-      headStyles: {
-        fillColor: [30, 115, 190],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { cellWidth: 52 },
-        1: { cellWidth: 26, halign: 'center' },
-        2: { cellWidth: 24, halign: 'center' },
-        3: { cellWidth: 26, halign: 'right' },
-        4: { cellWidth: 72 },
-        5: { cellWidth: 20, halign: 'center' },
-        6: { cellWidth: 24, halign: 'center' }
+    let currentY = 40;
+
+    distribucionesFiltradas.forEach((distribucion, distribucionIndex) => {
+      const gruposDistribucion = agruparProductosPorTemperatura(distribucion.productos);
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      if (currentY > pageHeight - 40) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      doc.setFontSize(13);
+      doc.text(`${distribucion.numeroDistribucion} - ${formatearFecha(distribucion.fecha, currentLocale)}`, 14, currentY);
+      currentY += 6;
+
+      doc.setFontSize(9);
+      doc.text(
+        `Organisme: ${distribucion.organismo} | Produits: ${distribucion.totalProductos} | Quantité: ${formatQuantity(distribucion.totalCantidad)} | Poids: ${formatQuantity(distribucion.totalPeso)} kg | Valeur: CAD$ ${formatMoney(distribucion.totalValor)}`,
+        14,
+        currentY,
+      );
+      currentY += 6;
+
+      gruposDistribucion.forEach((grupo) => {
+        if (currentY > pageHeight - 30) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        doc.setFontSize(10);
+        doc.text(grupo.label, 14, currentY);
+        currentY += 2;
+
+        autoTable(doc, {
+          startY: currentY,
+          head: [['Produit', 'Quantité', 'Poids', 'Valeur']],
+          body: grupo.productos.map(producto => [
+            `${producto.icono} ${producto.nombreProducto}`,
+            `${formatQuantity(producto.cantidad)} ${producto.unidad}`,
+            `${formatQuantity(producto.pesoTotal)} kg`,
+            `CAD$ ${formatMoney(producto.valorTotal)}`,
+          ]),
+          theme: 'grid',
+          styles: {
+            fontSize: 8,
+            cellPadding: 3,
+            valign: 'middle'
+          },
+          headStyles: {
+            fillColor: [30, 115, 190],
+            textColor: 255,
+            fontStyle: 'bold'
+          },
+          columnStyles: {
+            0: { cellWidth: 120 },
+            1: { cellWidth: 40, halign: 'center' },
+            2: { cellWidth: 36, halign: 'center' },
+            3: { cellWidth: 42, halign: 'right' },
+          }
+        });
+
+        currentY = (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY
+          ? ((doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || currentY) + 8
+          : currentY + 24;
+      });
+
+      if (distribucionIndex < distribucionesFiltradas.length - 1) {
+        currentY += 4;
       }
     });
 
