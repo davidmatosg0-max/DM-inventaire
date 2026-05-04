@@ -13,7 +13,7 @@ import { obtenerProductos } from '../../utils/productStorage';
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { openAutoPrintPopup } from '../../utils/printPopup';
-import { sortByTemperature } from '../../utils/temperatureSort';
+import { normalizeTemperatureValue, sortByTemperature } from '../../utils/temperatureSort';
 import { mockProductos } from '../../data/mockData';
 import type { Comanda } from '../../types';
 
@@ -61,12 +61,125 @@ type DistribucionResumen = {
   productos: ProductoDistribucionDetalle[];
 };
 
+type GrupoTemperatura = {
+  key: 'ambiente' | 'refrigerado' | 'congelado';
+  label: string;
+  badgeClassName: string;
+  productos: ProductoDistribucionDetalle[];
+};
+
+const TEMPERATURE_GROUP_CONFIG: Record<GrupoTemperatura['key'], Omit<GrupoTemperatura, 'productos'>> = {
+  ambiente: {
+    key: 'ambiente',
+    label: 'Température ambiante',
+    badgeClassName: 'bg-amber-100 text-amber-800 hover:bg-amber-100',
+  },
+  refrigerado: {
+    key: 'refrigerado',
+    label: 'Réfrigéré',
+    badgeClassName: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+  },
+  congelado: {
+    key: 'congelado',
+    label: 'Congelé',
+    badgeClassName: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-100',
+  },
+};
+
 function formatearFecha(fecha: string, locale: string) {
   return new Date(fecha).toLocaleDateString(locale || 'fr', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
   });
+}
+
+function normalizarClaveFechaDistribucion(fecha?: string): string {
+  if (!fecha) {
+    return '';
+  }
+
+  const fechaNormalizada = new Date(fecha);
+  if (Number.isNaN(fechaNormalizada.getTime())) {
+    return fecha;
+  }
+
+  return fechaNormalizada.toISOString().slice(0, 10);
+}
+
+function construirProductosDistribucion(
+  comandasAgrupadas: Comanda[],
+  productosCatalogo: Array<ReturnType<typeof obtenerProductos>[number] | typeof mockProductos[number]>
+): ProductoDistribucionDetalle[] {
+  const productosMap = new Map(productosCatalogo.map(producto => [producto.id, producto]));
+  const acumulado = new Map<string, ProductoDistribucionDetalle>();
+
+  comandasAgrupadas.forEach(comanda => {
+    (comanda.items || []).forEach(item => {
+      const cantidad = Number(item.cantidadAceptada || item.cantidadPreparada || item.cantidad || 0);
+      if (cantidad <= 0) {
+        return;
+      }
+
+      const productoCatalogo = productosMap.get(item.productoId);
+      const calculoDistribucion = calcularValorDistribucionProducto(productoCatalogo, cantidad);
+      const temperatura =
+        (item as { temperaturaAlmacenamiento?: string; temperatura?: string }).temperaturaAlmacenamiento ||
+        item.temperatura ||
+        productoCatalogo?.temperaturaAlmacenamiento ||
+        (productoCatalogo as { temperatura?: string } | undefined)?.temperatura;
+      const existente = acumulado.get(item.productoId);
+
+      if (existente) {
+        existente.cantidad += cantidad;
+        existente.pesoTotal += calculoDistribucion.pesoTotal;
+        existente.valorTotal += calculoDistribucion.valorTotal;
+        return;
+      }
+
+      acumulado.set(item.productoId, {
+        productoId: item.productoId,
+        nombreProducto: item.nombreProducto || item.productoNombre || productoCatalogo?.nombre || item.productoId,
+        unidad: item.unidad || productoCatalogo?.unidad || 'unidad',
+        icono: item.icono || productoCatalogo?.icono || '📦',
+        cantidad,
+        pesoTotal: calculoDistribucion.pesoTotal,
+        valorTotal: calculoDistribucion.valorTotal,
+        temperatura,
+      });
+    });
+  });
+
+  return sortByTemperature(
+    Array.from(acumulado.values()),
+    producto => producto.temperatura,
+    (left, right) => right.cantidad - left.cantidad,
+  );
+}
+
+function generarNumeroDistribucionUnico(comandas: Comanda[]): string {
+  const base = comandas
+    .map(comanda => `${comanda.id}|${comanda.numero || comanda.numeroComanda || ''}|${comanda.fechaEntrega || comanda.fecha || ''}`)
+    .sort()
+    .join('||');
+
+  let hash = 0;
+  for (let index = 0; index < base.length; index += 1) {
+    hash = ((hash << 5) - hash) + base.charCodeAt(index);
+    hash |= 0;
+  }
+
+  const fechaReferencia = comandas
+    .map(comanda => comanda.fechaEntrega || comanda.fecha)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
+  const fechaToken = fechaReferencia
+    ? new Date(fechaReferencia).toISOString().slice(0, 10).replace(/-/g, '')
+    : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+  return `DIST-${fechaToken}-${String(Math.abs(hash)).padStart(6, '0').slice(0, 6)}`;
 }
 
 export function ListaProductosDistribuidosDialog({
@@ -159,75 +272,55 @@ export function ListaProductosDistribuidosDialog({
   }, [comandas]);
 
   const distribuciones = useMemo(() => {
+    if (comandas.length === 0) {
+      return [];
+    }
+
     const productosReales = obtenerProductos();
     const productosCatalogo = [
       ...productosReales,
       ...mockProductos.filter(mockProducto => !productosReales.some(producto => producto.id === mockProducto.id))
     ];
+    const comandasPorFecha = new Map<string, Comanda[]>();
 
-    const productosMap = new Map(productosCatalogo.map(producto => [producto.id, producto]));
+    comandas.forEach((comanda) => {
+      const fechaBase = comanda.fechaEntrega || comanda.fecha;
+      const fechaKey = normalizarClaveFechaDistribucion(fechaBase) || 'sin-fecha';
+      const grupo = comandasPorFecha.get(fechaKey) || [];
+      grupo.push(comanda);
+      comandasPorFecha.set(fechaKey, grupo);
+    });
 
-    return comandas
-      .map((comanda): DistribucionResumen | null => {
-        const productos = (comanda.items || [])
-          .map((item): ProductoDistribucionDetalle | null => {
-            const cantidad = Number(item.cantidadAceptada || item.cantidadPreparada || item.cantidad || 0);
-            if (cantidad <= 0) {
-              return null;
-            }
-
-            const productoCatalogo = productosMap.get(item.productoId);
-            const calculoDistribucion = calcularValorDistribucionProducto(productoCatalogo, cantidad);
-
-            return {
-              productoId: item.productoId,
-              nombreProducto: item.nombreProducto || item.productoNombre || productoCatalogo?.nombre || item.productoId,
-              unidad: item.unidad || productoCatalogo?.unidad || 'unidad',
-              icono: item.icono || productoCatalogo?.icono || '📦',
-              cantidad,
-              pesoTotal: calculoDistribucion.pesoTotal,
-              valorTotal: calculoDistribucion.valorTotal,
-              temperatura:
-                (item as { temperaturaAlmacenamiento?: string; temperatura?: string }).temperaturaAlmacenamiento ||
-                item.temperatura ||
-                productoCatalogo?.temperaturaAlmacenamiento ||
-                (productoCatalogo as { temperatura?: string } | undefined)?.temperatura,
-            };
-          })
-          .filter((item): item is ProductoDistribucionDetalle => item !== null);
-
+    return Array.from(comandasPorFecha.entries())
+      .map(([fechaKey, comandasAgrupadas]) => {
+        const productos = construirProductosDistribucion(comandasAgrupadas, productosCatalogo);
         if (productos.length === 0) {
           return null;
         }
 
-        const productosOrdenados = sortByTemperature(
-          productos,
-          producto => producto.temperatura,
-          (left, right) => right.cantidad - left.cantidad,
-        );
-        const numeroDistribucion = comanda.numero || comanda.numeroComanda || comanda.id;
-        const fecha = comanda.fechaEntrega || comanda.fecha;
+        const organismos = Array.from(new Set(comandasAgrupadas.map(comanda => comanda.nombreOrganismo || 'Sin organismo')));
+        const fecha = comandasAgrupadas
+          .map(comanda => comanda.fechaEntrega || comanda.fecha)
+          .filter(Boolean)
+          .sort()
+          .at(-1) || fechaKey || new Date().toISOString();
+        const numeroDistribucion = generarNumeroDistribucionUnico(comandasAgrupadas);
 
         return {
-          comandaId: comanda.id,
+          comandaId: numeroDistribucion,
           numeroDistribucion,
-          organismo: comanda.nombreOrganismo || 'Sin organismo',
+          organismo: organismos.length === 1 ? organismos[0] : `${organismos.length} organismes regroupés`,
           fecha,
-          totalProductos: productosOrdenados.length,
-          totalCantidad: productosOrdenados.reduce((sum, producto) => sum + producto.cantidad, 0),
-          totalPeso: productosOrdenados.reduce((sum, producto) => sum + producto.pesoTotal, 0),
-          totalValor: productosOrdenados.reduce((sum, producto) => sum + producto.valorTotal, 0),
-          productos: productosOrdenados,
-        };
+          totalProductos: productos.length,
+          totalCantidad: productos.reduce((sum, producto) => sum + producto.cantidad, 0),
+          totalPeso: productos.reduce((sum, producto) => sum + producto.pesoTotal, 0),
+          totalValor: productos.reduce((sum, producto) => sum + producto.valorTotal, 0),
+          productos,
+        } satisfies DistribucionResumen;
       })
       .filter((distribucion): distribucion is DistribucionResumen => distribucion !== null)
       .sort((left, right) => new Date(right.fecha).getTime() - new Date(left.fecha).getTime());
   }, [comandas]);
-
-  const distribucionSeleccionada = useMemo(
-    () => distribuciones.find(distribucion => distribucion.comandaId === distribucionSeleccionadaId) || null,
-    [distribucionSeleccionadaId, distribuciones]
-  );
 
   const distribucionesFiltradas = useMemo(() => {
     const termino = filtroDistribucion.trim().toLowerCase();
@@ -238,18 +331,44 @@ export function ListaProductosDistribuidosDialog({
     return distribuciones.filter(distribucion => {
       const coincideNumero = distribucion.numeroDistribucion.toLowerCase().includes(termino);
       const coincideOrganismo = distribucion.organismo.toLowerCase().includes(termino);
+      const fechaVisible = formatearFecha(distribucion.fecha, currentLocale).toLowerCase();
+      const fechaNormalizada = normalizarClaveFechaDistribucion(distribucion.fecha).toLowerCase();
+      const coincideFecha = fechaVisible.includes(termino) || fechaNormalizada.includes(termino);
       const coincideProducto = distribucion.productos.some(producto =>
         producto.nombreProducto.toLowerCase().includes(termino)
       );
 
-      return coincideNumero || coincideOrganismo || coincideProducto;
+      return coincideNumero || coincideOrganismo || coincideFecha || coincideProducto;
     });
-  }, [distribuciones, filtroDistribucion]);
+  }, [currentLocale, distribuciones, filtroDistribucion]);
 
   const distribucionSeleccionadaFiltrada = useMemo(
     () => distribucionesFiltradas.find(distribucion => distribucion.comandaId === distribucionSeleccionadaId) || null,
     [distribucionSeleccionadaId, distribucionesFiltradas]
   );
+
+  const gruposTemperaturaDistribucion = useMemo(() => {
+    if (!distribucionSeleccionadaFiltrada) {
+      return [] as GrupoTemperatura[];
+    }
+
+    const grupos = distribucionSeleccionadaFiltrada.productos.reduce((accumulator, producto) => {
+      const temperatura = normalizeTemperatureValue(producto.temperatura);
+      accumulator[temperatura].push(producto);
+      return accumulator;
+    }, {
+      ambiente: [] as ProductoDistribucionDetalle[],
+      refrigerado: [] as ProductoDistribucionDetalle[],
+      congelado: [] as ProductoDistribucionDetalle[],
+    });
+
+    return (Object.keys(TEMPERATURE_GROUP_CONFIG) as Array<GrupoTemperatura['key']>)
+      .filter((key) => grupos[key].length > 0)
+      .map((key) => ({
+        ...TEMPERATURE_GROUP_CONFIG[key],
+        productos: grupos[key],
+      }));
+  }, [distribucionSeleccionadaFiltrada]);
 
   useEffect(() => {
     if (!open) {
@@ -264,11 +383,13 @@ export function ListaProductosDistribuidosDialog({
     }
 
     setDistribucionSeleccionadaId(currentId => {
-      if (currentId && distribucionesFiltradas.some(distribucion => distribucion.comandaId === currentId)) {
-        return currentId;
+      if (!currentId) {
+        return null;
       }
 
-      return distribucionesFiltradas[0].comandaId;
+      return distribucionesFiltradas.some(distribucion => distribucion.comandaId === currentId)
+        ? currentId
+        : null;
     });
   }, [open, distribucionesFiltradas]);
 
@@ -278,17 +399,32 @@ export function ListaProductosDistribuidosDialog({
       return;
     }
 
-    const filas = resumen.productos.map(producto => `
-      <tr>
-        <td>${producto.icono} ${producto.nombreProducto}</td>
-        <td style="text-align:center;">${formatQuantity(producto.cantidadTotal)} ${producto.unidad}</td>
-        <td style="text-align:center;">${formatQuantity(producto.pesoTotal)} kg</td>
-        <td style="text-align:right;">CAD$ ${formatMoney(producto.valorTotal)}</td>
-        <td>${producto.organismos.join(', ')}</td>
-        <td style="text-align:center;">${producto.comandas.length}</td>
-        <td style="text-align:center;">${formatearFecha(producto.ultimaFecha, currentLocale)}</td>
-      </tr>
-    `).join('');
+    const gruposImpresion = (Object.keys(TEMPERATURE_GROUP_CONFIG) as Array<GrupoTemperatura['key']>)
+      .map((key) => ({
+        ...TEMPERATURE_GROUP_CONFIG[key],
+        productos: resumen.productos.filter(producto => normalizeTemperatureValue(producto.temperatura) === key),
+      }))
+      .filter((grupo) => grupo.productos.length > 0);
+
+    const filas = gruposImpresion.map(grupo => {
+      const filasGrupo = grupo.productos.map(producto => `
+        <tr>
+          <td>${producto.icono} ${producto.nombreProducto}</td>
+          <td style="text-align:center;">${formatQuantity(producto.cantidadTotal)} ${producto.unidad}</td>
+          <td style="text-align:center;">${formatQuantity(producto.pesoTotal)} kg</td>
+          <td style="text-align:right;">CAD$ ${formatMoney(producto.valorTotal)}</td>
+          <td style="text-align:center;">${producto.comandas.length}</td>
+          <td style="text-align:center;">${formatearFecha(producto.ultimaFecha, currentLocale)}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <tr class="temperature-row">
+          <td colspan="6">${grupo.label}</td>
+        </tr>
+        ${filasGrupo}
+      `;
+    }).join('');
 
     try {
       openAutoPrintPopup(`
@@ -306,6 +442,7 @@ export function ListaProductosDistribuidosDialog({
               table { width: 100%; border-collapse: collapse; }
               th, td { border: 1px solid #dbe3ea; padding: 10px; font-size: 12px; vertical-align: top; }
               th { background: #1E73BE; color: white; text-align: left; }
+              .temperature-row td { background: #eef4fb; color: #1E73BE; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
               @media print {
                 body { padding: 0; }
               }
@@ -327,7 +464,6 @@ export function ListaProductosDistribuidosDialog({
                   <th>Quantité</th>
                   <th>Poids</th>
                   <th>Valeur</th>
-                  <th>Organismes</th>
                   <th>Comandes</th>
                   <th>Dernière date</th>
                 </tr>
@@ -508,35 +644,46 @@ export function ListaProductosDistribuidosDialog({
                   <Badge className="w-fit bg-[#1E73BE] hover:bg-[#1E73BE]">{distribucionSeleccionadaFiltrada.totalProductos} produit(s)</Badge>
                 </div>
 
-                <div className="rounded-xl border bg-white overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Produit</TableHead>
-                        <TableHead className="text-center">Quantité</TableHead>
-                        <TableHead className="text-center">Poids</TableHead>
-                        <TableHead className="text-right">Valeur</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {distribucionSeleccionadaFiltrada.productos.map(producto => (
-                        <TableRow key={`${distribucionSeleccionadaFiltrada.comandaId}-${producto.productoId}`}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl">{producto.icono}</span>
-                              <div>
-                                <p className="font-medium text-[#333333]">{producto.nombreProducto}</p>
-                                <p className="text-xs text-[#666666]">{producto.productoId}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center font-semibold">{formatQuantity(producto.cantidad)} {producto.unidad}</TableCell>
-                          <TableCell className="text-center">{formatQuantity(producto.pesoTotal)} kg</TableCell>
-                          <TableCell className="text-right font-semibold text-[#2E7D32]">CAD$ {formatMoney(producto.valorTotal)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="space-y-4">
+                  {gruposTemperaturaDistribucion.map((grupo) => (
+                    <div key={grupo.key} className="rounded-xl border bg-white overflow-hidden">
+                      <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
+                        <Badge className={grupo.badgeClassName}>{grupo.label}</Badge>
+                        <span className="text-sm font-medium text-[#666666]">
+                          {grupo.productos.length} produit(s)
+                        </span>
+                      </div>
+
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Produit</TableHead>
+                            <TableHead className="text-center">Quantité</TableHead>
+                            <TableHead className="text-center">Poids</TableHead>
+                            <TableHead className="text-right">Valeur</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {grupo.productos.map(producto => (
+                            <TableRow key={`${distribucionSeleccionadaFiltrada.comandaId}-${grupo.key}-${producto.productoId}`}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xl">{producto.icono}</span>
+                                  <div>
+                                    <p className="font-medium text-[#333333]">{producto.nombreProducto}</p>
+                                    <p className="text-xs text-[#666666]">{producto.productoId}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center font-semibold">{formatQuantity(producto.cantidad)} {producto.unidad}</TableCell>
+                              <TableCell className="text-center">{formatQuantity(producto.pesoTotal)} kg</TableCell>
+                              <TableCell className="text-right font-semibold text-[#2E7D32]">CAD$ {formatMoney(producto.valorTotal)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
