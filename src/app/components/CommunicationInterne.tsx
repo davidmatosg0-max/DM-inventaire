@@ -602,9 +602,9 @@ export function CommunicationInterne() {
       </div>
 
       {/* Tabs para Messagerie y Correction de Texte */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="backdrop-blur-xl bg-white/80 border-b border-white/20">
-          <TabsList className="bg-transparent p-0 h-auto border-0 w-full justify-start">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col">
+        <div className="relative z-10 backdrop-blur-xl bg-white/80 border-b border-white/20">
+          <TabsList className="relative z-10 bg-transparent p-0 h-auto border-0 w-full justify-start">
             <TabsTrigger 
               value="messagerie" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white px-8 py-4 rounded-none border-b-2 data-[state=active]:border-[#2d9561] data-[state=inactive]:border-transparent transition-all duration-300"
@@ -625,7 +625,7 @@ export function CommunicationInterne() {
         </div>
 
         {/* Tab Content: Messagerie */}
-        <TabsContent value="messagerie" className="flex-1 flex flex-col m-0 overflow-hidden">
+        <TabsContent value="messagerie" className="relative z-0 flex-1 min-h-0 flex flex-col m-0 overflow-hidden">
 
       {/* Guide Complet de tous les Modules */}
       {afficherGuide && (
@@ -1608,7 +1608,7 @@ export function CommunicationInterne() {
         </TabsContent>
 
         {/* Tab Content: Correction de Texte */}
-        <TabsContent value="correction" className="flex-1 overflow-auto m-0">
+        <TabsContent value="correction" className="relative z-0 flex-1 min-h-0 overflow-auto m-0">
           <div className="p-6 max-w-6xl mx-auto">
             <TextCorrector />
           </div>
