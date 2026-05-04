@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { Download, Smartphone, Check } from 'lucide-react';
+import { Download, Smartphone, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PWAIOSInstructions } from './PWAIOSInstructions';
@@ -17,6 +17,25 @@ interface PWAInstallButtonProps {
   onShowIOSInstructions?: () => void;
 }
 
+const HIDE_INSTALL_PROMOTION_KEY = 'hideInstallPromotion';
+const LEGACY_HIDE_INSTALL_BANNER_KEY = 'hideInstallBanner';
+const INSTALL_VISIBILITY_EVENT = 'pwa-install-visibility-changed';
+
+function shouldHideInstallPromotion(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return localStorage.getItem(HIDE_INSTALL_PROMOTION_KEY) === 'true'
+    || localStorage.getItem(LEGACY_HIDE_INSTALL_BANNER_KEY) === 'true';
+}
+
+function persistHideInstallPromotion(): void {
+  localStorage.setItem(HIDE_INSTALL_PROMOTION_KEY, 'true');
+  localStorage.setItem(LEGACY_HIDE_INSTALL_BANNER_KEY, 'true');
+  window.dispatchEvent(new CustomEvent(INSTALL_VISIBILITY_EVENT));
+}
+
 export function PWAInstallButton({ 
   variant = 'ghost', 
   size = 'icon',
@@ -28,8 +47,11 @@ export function PWAInstallButton({
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = React.useState(false);
   const [canInstall, setCanInstall] = React.useState(false);
+  const [isHidden, setIsHidden] = React.useState(() => shouldHideInstallPromotion());
 
   useEffect(() => {
+    setIsHidden(shouldHideInstallPromotion());
+
     // Detectar si es iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(iOS);
@@ -49,6 +71,12 @@ export function PWAInstallButton({
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    const handleVisibilityChanged = () => {
+      setIsHidden(shouldHideInstallPromotion());
+    };
+
+    window.addEventListener(INSTALL_VISIBILITY_EVENT, handleVisibilityChanged);
+
     // Si es iOS, siempre permitir mostrar instrucciones
     if (iOS) {
       setCanInstall(true);
@@ -63,6 +91,7 @@ export function PWAInstallButton({
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(INSTALL_VISIBILITY_EVENT, handleVisibilityChanged);
     };
   }, [t, isIOS]);
 
@@ -112,6 +141,10 @@ export function PWAInstallButton({
     ) : null;
   }
 
+  if (isHidden) {
+    return null;
+  }
+
   // No mostrar si no se puede instalar (excepto en iOS)
   if (!canInstall && !isIOS) {
     return null;
@@ -149,8 +182,11 @@ export function PWAFloatingButton() {
   const [isInstalled, setIsInstalled] = React.useState(false);
   const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = React.useState(false);
+  const [isHidden, setIsHidden] = React.useState(() => shouldHideInstallPromotion());
 
   React.useEffect(() => {
+    setIsHidden(shouldHideInstallPromotion());
+
     // Detectar si es iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(iOS);
@@ -168,6 +204,12 @@ export function PWAFloatingButton() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    const handleVisibilityChanged = () => {
+      setIsHidden(shouldHideInstallPromotion());
+    };
+
+    window.addEventListener(INSTALL_VISIBILITY_EVENT, handleVisibilityChanged);
+
     window.addEventListener('appinstalled', () => {
       setIsInstalled(true);
       toast.success(t('pwa.installed'));
@@ -175,8 +217,16 @@ export function PWAFloatingButton() {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(INSTALL_VISIBILITY_EVENT, handleVisibilityChanged);
     };
   }, [t]);
+
+  const handleHideClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    persistHideInstallPromotion();
+    setIsHidden(true);
+  };
 
   const handleInstallClick = async () => {
     if (isIOS) {
@@ -212,16 +262,31 @@ export function PWAFloatingButton() {
     return null;
   }
 
+  if (isHidden) {
+    return null;
+  }
+
   return (
     <>
       <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40">
         <div className="relative group">
           {/* Efecto de brillo animado */}
           <div className="absolute -inset-2 bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] rounded-2xl blur-lg opacity-60 group-hover:opacity-80 animate-pulse transition-opacity" />
+
+          <button
+            onClick={handleHideClick}
+            className="absolute -top-2 -left-2 z-10 rounded-full bg-slate-900/80 p-1 text-white shadow-lg transition-all hover:scale-105 hover:bg-slate-900"
+            aria-label="Masquer le bouton d'installation"
+            title="Masquer"
+            type="button"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
           
           {/* Botón principal */}
           <button
             onClick={handleInstallClick}
+            type="button"
             className="relative bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-2xl hover:scale-105 transition-all flex items-center gap-2 sm:gap-3 font-semibold"
             style={{ fontFamily: 'Montserrat, sans-serif' }}
           >

@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
@@ -37,6 +38,29 @@ type ProductoDistribuidoResumen = {
   temperatura?: string;
 };
 
+type ProductoDistribucionDetalle = {
+  productoId: string;
+  nombreProducto: string;
+  unidad: string;
+  icono: string;
+  cantidad: number;
+  pesoTotal: number;
+  valorTotal: number;
+  temperatura?: string;
+};
+
+type DistribucionResumen = {
+  comandaId: string;
+  numeroDistribucion: string;
+  organismo: string;
+  fecha: string;
+  totalProductos: number;
+  totalCantidad: number;
+  totalPeso: number;
+  totalValor: number;
+  productos: ProductoDistribucionDetalle[];
+};
+
 function formatearFecha(fecha: string, locale: string) {
   return new Date(fecha).toLocaleDateString(locale || 'fr', {
     year: 'numeric',
@@ -51,6 +75,9 @@ export function ListaProductosDistribuidosDialog({
   comandas,
   currentLocale
 }: ListaProductosDistribuidosDialogProps) {
+  const [distribucionSeleccionadaId, setDistribucionSeleccionadaId] = useState<string | null>(null);
+  const [filtroDistribucion, setFiltroDistribucion] = useState('');
+
   const resumen = useMemo(() => {
     const productosReales = obtenerProductos();
     const productosCatalogo = [
@@ -130,6 +157,120 @@ export function ListaProductosDistribuidosDialog({
       totalValor: productos.reduce((sum, producto) => sum + producto.valorTotal, 0)
     };
   }, [comandas]);
+
+  const distribuciones = useMemo(() => {
+    const productosReales = obtenerProductos();
+    const productosCatalogo = [
+      ...productosReales,
+      ...mockProductos.filter(mockProducto => !productosReales.some(producto => producto.id === mockProducto.id))
+    ];
+
+    const productosMap = new Map(productosCatalogo.map(producto => [producto.id, producto]));
+
+    return comandas
+      .map((comanda): DistribucionResumen | null => {
+        const productos = (comanda.items || [])
+          .map((item): ProductoDistribucionDetalle | null => {
+            const cantidad = Number(item.cantidadAceptada || item.cantidadPreparada || item.cantidad || 0);
+            if (cantidad <= 0) {
+              return null;
+            }
+
+            const productoCatalogo = productosMap.get(item.productoId);
+            const calculoDistribucion = calcularValorDistribucionProducto(productoCatalogo, cantidad);
+
+            return {
+              productoId: item.productoId,
+              nombreProducto: item.nombreProducto || item.productoNombre || productoCatalogo?.nombre || item.productoId,
+              unidad: item.unidad || productoCatalogo?.unidad || 'unidad',
+              icono: item.icono || productoCatalogo?.icono || '📦',
+              cantidad,
+              pesoTotal: calculoDistribucion.pesoTotal,
+              valorTotal: calculoDistribucion.valorTotal,
+              temperatura:
+                (item as { temperaturaAlmacenamiento?: string; temperatura?: string }).temperaturaAlmacenamiento ||
+                item.temperatura ||
+                productoCatalogo?.temperaturaAlmacenamiento ||
+                (productoCatalogo as { temperatura?: string } | undefined)?.temperatura,
+            };
+          })
+          .filter((item): item is ProductoDistribucionDetalle => item !== null);
+
+        if (productos.length === 0) {
+          return null;
+        }
+
+        const productosOrdenados = sortByTemperature(
+          productos,
+          producto => producto.temperatura,
+          (left, right) => right.cantidad - left.cantidad,
+        );
+        const numeroDistribucion = comanda.numero || comanda.numeroComanda || comanda.id;
+        const fecha = comanda.fechaEntrega || comanda.fecha;
+
+        return {
+          comandaId: comanda.id,
+          numeroDistribucion,
+          organismo: comanda.nombreOrganismo || 'Sin organismo',
+          fecha,
+          totalProductos: productosOrdenados.length,
+          totalCantidad: productosOrdenados.reduce((sum, producto) => sum + producto.cantidad, 0),
+          totalPeso: productosOrdenados.reduce((sum, producto) => sum + producto.pesoTotal, 0),
+          totalValor: productosOrdenados.reduce((sum, producto) => sum + producto.valorTotal, 0),
+          productos: productosOrdenados,
+        };
+      })
+      .filter((distribucion): distribucion is DistribucionResumen => distribucion !== null)
+      .sort((left, right) => new Date(right.fecha).getTime() - new Date(left.fecha).getTime());
+  }, [comandas]);
+
+  const distribucionSeleccionada = useMemo(
+    () => distribuciones.find(distribucion => distribucion.comandaId === distribucionSeleccionadaId) || null,
+    [distribucionSeleccionadaId, distribuciones]
+  );
+
+  const distribucionesFiltradas = useMemo(() => {
+    const termino = filtroDistribucion.trim().toLowerCase();
+    if (!termino) {
+      return distribuciones;
+    }
+
+    return distribuciones.filter(distribucion => {
+      const coincideNumero = distribucion.numeroDistribucion.toLowerCase().includes(termino);
+      const coincideOrganismo = distribucion.organismo.toLowerCase().includes(termino);
+      const coincideProducto = distribucion.productos.some(producto =>
+        producto.nombreProducto.toLowerCase().includes(termino)
+      );
+
+      return coincideNumero || coincideOrganismo || coincideProducto;
+    });
+  }, [distribuciones, filtroDistribucion]);
+
+  const distribucionSeleccionadaFiltrada = useMemo(
+    () => distribucionesFiltradas.find(distribucion => distribucion.comandaId === distribucionSeleccionadaId) || null,
+    [distribucionSeleccionadaId, distribucionesFiltradas]
+  );
+
+  useEffect(() => {
+    if (!open) {
+      setDistribucionSeleccionadaId(null);
+      setFiltroDistribucion('');
+      return;
+    }
+
+    if (!distribucionesFiltradas.length) {
+      setDistribucionSeleccionadaId(null);
+      return;
+    }
+
+    setDistribucionSeleccionadaId(currentId => {
+      if (currentId && distribucionesFiltradas.some(distribucion => distribucion.comandaId === currentId)) {
+        return currentId;
+      }
+
+      return distribucionesFiltradas[0].comandaId;
+    });
+  }, [open, distribucionesFiltradas]);
 
   const imprimirLista = () => {
     if (resumen.productos.length === 0) {
@@ -282,6 +423,124 @@ export function ListaProductosDistribuidosDialog({
             <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Quantité totale</p><p className="text-2xl font-bold text-[#F57C00]">{formatQuantity(resumen.totalCantidad)}</p></CardContent></Card>
             <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Valeur totale</p><p className="text-2xl font-bold text-[#FFC107]">CAD$ {formatMoney(resumen.totalValor)}</p></CardContent></Card>
           </div>
+
+          {distribuciones.length > 0 && (
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Distributions
+                  </h3>
+                  <p className="text-sm text-[#666666]">
+                    Cliquez sur un numéro de distribution pour ouvrir sa liste de produits.
+                  </p>
+                </div>
+
+                <Input
+                  value={filtroDistribucion}
+                  onChange={(event) => setFiltroDistribucion(event.target.value)}
+                  placeholder="Filtrer par n° distribution, organisme ou produit"
+                  className="max-w-xl"
+                />
+
+                <div className="rounded-xl border bg-white overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>N° distribution</TableHead>
+                        <TableHead>Organisme</TableHead>
+                        <TableHead className="text-center">Date</TableHead>
+                        <TableHead className="text-center">Produits</TableHead>
+                        <TableHead className="text-center">Quantité</TableHead>
+                        <TableHead className="text-right">Valeur</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {distribucionesFiltradas.map(distribucion => {
+                        const isActive = distribucion.comandaId === distribucionSeleccionadaId;
+
+                        return (
+                          <TableRow key={distribucion.comandaId} className={isActive ? 'bg-blue-50/70' : undefined}>
+                            <TableCell>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setDistribucionSeleccionadaId(distribucion.comandaId)}
+                                className="h-auto px-0 font-semibold text-[#1E73BE] hover:bg-transparent hover:text-[#175a95]"
+                              >
+                                {distribucion.numeroDistribucion}
+                              </Button>
+                            </TableCell>
+                            <TableCell>{distribucion.organismo}</TableCell>
+                            <TableCell className="text-center">{formatearFecha(distribucion.fecha, currentLocale)}</TableCell>
+                            <TableCell className="text-center">{distribucion.totalProductos}</TableCell>
+                            <TableCell className="text-center">{formatQuantity(distribucion.totalCantidad)}</TableCell>
+                            <TableCell className="text-right font-semibold text-[#2E7D32]">CAD$ {formatMoney(distribucion.totalValor)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {distribucionesFiltradas.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="py-8 text-center text-[#666666]">
+                            Aucune distribution ne correspond au filtre actuel.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {distribucionSeleccionadaFiltrada && (
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      Produits de la distribution {distribucionSeleccionadaFiltrada.numeroDistribucion}
+                    </h3>
+                    <p className="text-sm text-[#666666]">
+                      {distribucionSeleccionadaFiltrada.organismo} | {formatearFecha(distribucionSeleccionadaFiltrada.fecha, currentLocale)}
+                    </p>
+                  </div>
+                  <Badge className="w-fit bg-[#1E73BE] hover:bg-[#1E73BE]">{distribucionSeleccionadaFiltrada.totalProductos} produit(s)</Badge>
+                </div>
+
+                <div className="rounded-xl border bg-white overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Produit</TableHead>
+                        <TableHead className="text-center">Quantité</TableHead>
+                        <TableHead className="text-center">Poids</TableHead>
+                        <TableHead className="text-right">Valeur</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {distribucionSeleccionadaFiltrada.productos.map(producto => (
+                        <TableRow key={`${distribucionSeleccionadaFiltrada.comandaId}-${producto.productoId}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{producto.icono}</span>
+                              <div>
+                                <p className="font-medium text-[#333333]">{producto.nombreProducto}</p>
+                                <p className="text-xs text-[#666666]">{producto.productoId}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">{formatQuantity(producto.cantidad)} {producto.unidad}</TableCell>
+                          <TableCell className="text-center">{formatQuantity(producto.pesoTotal)} kg</TableCell>
+                          <TableCell className="text-right font-semibold text-[#2E7D32]">CAD$ {formatMoney(producto.valorTotal)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {resumen.productos.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-[#666666]">

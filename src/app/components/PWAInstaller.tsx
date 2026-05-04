@@ -4,6 +4,24 @@ import { Download, X, RefreshCw, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+const HIDE_INSTALL_PROMOTION_KEY = 'hideInstallPromotion';
+const LEGACY_HIDE_INSTALL_BANNER_KEY = 'hideInstallBanner';
+
+function shouldHideInstallPromotion(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return localStorage.getItem(HIDE_INSTALL_PROMOTION_KEY) === 'true'
+    || localStorage.getItem(LEGACY_HIDE_INSTALL_BANNER_KEY) === 'true';
+}
+
+function persistHideInstallPromotion(): void {
+  localStorage.setItem(HIDE_INSTALL_PROMOTION_KEY, 'true');
+  localStorage.setItem(LEGACY_HIDE_INSTALL_BANNER_KEY, 'true');
+  window.dispatchEvent(new CustomEvent('pwa-install-visibility-changed'));
+}
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -103,8 +121,7 @@ export function PWAInstaller() {
       
       // Mostrar banner después de 3 segundos si no está instalado
       setTimeout(() => {
-        const hideInstallBanner = localStorage.getItem('hideInstallBanner');
-        if (!hideInstallBanner) {
+        if (!shouldHideInstallPromotion()) {
           setShowInstallBanner(true);
         }
       }, 3000);
@@ -152,7 +169,7 @@ export function PWAInstaller() {
 
   const handleDismiss = () => {
     setShowInstallBanner(false);
-    localStorage.setItem('hideInstallBanner', 'true');
+    persistHideInstallPromotion();
   };
 
   if (isInstalled) {
