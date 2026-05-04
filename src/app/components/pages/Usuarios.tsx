@@ -381,14 +381,14 @@ export function Usuarios() {
 
         {/* Tabs */}
         <Tabs defaultValue="usuarios" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="usuarios" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+          <TabsList className="app-compact-tabs-grid w-full max-w-2xl">
+            <TabsTrigger value="usuarios" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
               👥 {t('common.users')}
             </TabsTrigger>
-            <TabsTrigger value="roles" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+            <TabsTrigger value="roles" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
               🛡️ {t('users.roles')}
             </TabsTrigger>
-            <TabsTrigger value="departamentos" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+            <TabsTrigger value="departamentos" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
               🏢 {t('users.departments')}
             </TabsTrigger>
           </TabsList>
@@ -444,7 +444,7 @@ export function Usuarios() {
                             {usuario.descripcion || '-'}
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
@@ -487,7 +487,7 @@ export function Usuarios() {
 
         {/* Dialog Crear/Editar Usuario */}
         <Dialog open={usuarioDialogOpen} onOpenChange={setUsuarioDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="usuario-dialog-description">
+          <DialogContent className="app-dialog-comfort max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="usuario-dialog-description">
             <DialogHeader>
               <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
                 {modoEdicion ? 'Éditer Utilisateur' : 'Nouvel Utilisateur'}
@@ -497,7 +497,7 @@ export function Usuarios() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nom d'utilisateur *</Label>
                   <Input 
@@ -552,7 +552,7 @@ export function Usuarios() {
                 
                 {/* Sección de contraseñas con botones de utilidad */}
                 <div className="col-span-2 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <Label className="text-base font-medium" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       🔐 Gestion du Mot de Passe
                     </Label>
@@ -570,7 +570,7 @@ export function Usuarios() {
                     </Button>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2 relative">
                       <Label>Mot de passe {!modoEdicion && '*'}</Label>
                       <div className="relative">
@@ -665,7 +665,7 @@ export function Usuarios() {
                 </ul>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="app-compact-actions justify-end pt-4">
                 <Button variant="outline" onClick={() => setUsuarioDialogOpen(false)}>
                   Annuler
                 </Button>

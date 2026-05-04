@@ -719,7 +719,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
       {/* Main content */}
       <main className={`pt-[56px] sm:pt-[64px] ${!hideSidebar ? 'lg:pl-64 xl:pl-72' : ''} min-h-screen relative z-10`}>
-        <div className="p-3 sm:p-4 lg:p-6">
+        <div data-app-shell className="px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5">
           {children}
         </div>
       </main>
@@ -731,7 +731,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Botón flotante para acceso de organismos - Modernizado */}
       <button
         onClick={() => onNavigate('acceso-organismo')}
-        className={`fixed bottom-4 sm:bottom-6 left-4 sm:left-6 ${!hideSidebar ? 'lg:left-[calc(256px+1.5rem)] xl:left-[calc(288px+1.5rem)]' : ''} text-white rounded-full p-3 sm:p-4 shadow-2xl transition-all hover:scale-110 z-40 flex items-center gap-2 backdrop-blur-xl border-2 border-white/30 group`}
+        className={`app-floating-organism-access fixed bottom-4 sm:bottom-6 left-4 sm:left-6 ${!hideSidebar ? 'lg:left-[calc(256px+1.5rem)] xl:left-[calc(288px+1.5rem)]' : ''} text-white rounded-full p-3 sm:p-4 shadow-2xl transition-all hover:scale-110 z-40 flex items-center gap-2 backdrop-blur-xl border-2 border-white/30 group`}
         style={{ 
           background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`
         }}
@@ -748,7 +748,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
           ref={entrepotQuickActionsRef}
           onMouseDown={handleEntrepotQuickActionsMouseDown}
           onTouchStart={handleEntrepotQuickActionsTouchStart}
-          className={`fixed z-[60] flex flex-col items-end gap-3 ${entrepotQuickActionsDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`app-floating-quick-actions fixed z-[60] flex flex-col items-end gap-3 ${entrepotQuickActionsDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{
             bottom: 'auto',
             right: entrepotQuickActionsPosition.x === 0 ? 'max(env(safe-area-inset-right), 1rem)' : 'auto',
@@ -808,7 +808,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             setShowGuideComplete(true);
           }
         }}
-        className={`text-white rounded-full shadow-2xl z-50 flex items-center justify-center backdrop-blur-xl border-2 border-white/30 group w-12 h-12 sm:w-14 sm:h-14 transition-all ${
+        className={`app-floating-guide text-white rounded-full shadow-2xl z-50 flex items-center justify-center backdrop-blur-xl border-2 border-white/30 group w-12 h-12 sm:w-14 sm:h-14 transition-all ${
           isDragging ? 'cursor-grabbing scale-110 shadow-[0_0_30px_rgba(26,77,122,0.5)]' : 'cursor-grab hover:scale-110'
         }`}
         style={{ 

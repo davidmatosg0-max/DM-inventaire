@@ -17,6 +17,7 @@ interface ComandaCompletaImprimibleProps {
 
 const STATUS_LABELS: Record<string, string> = {
   pendiente: 'En attente',
+  confirmada: 'Acceptée',
   en_preparacion: 'En préparation',
   completada: 'Prête',
   entregada: 'Livrée',

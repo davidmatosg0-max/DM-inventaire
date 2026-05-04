@@ -48,6 +48,7 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
   const getEstadoLabel = () => {
     const estados: Record<string, string> = {
       pendiente: 'EN ATTENTE',
+      confirmada: 'ACCEPTÉE',
       en_preparacion: 'EN PRÉPARATION',
       completada: 'PRÊTE',
       entregada: 'LIVRÉE',
@@ -175,6 +176,7 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
                 <p className="text-xs text-[#666666] uppercase mb-2 font-semibold">Statut</p>
                 <span className={`inline-block px-4 py-2 rounded-lg font-bold text-white text-base shadow-sm ${
                   comanda.estado === 'pendiente' ? 'bg-[#FFC107]' :
+                  comanda.estado === 'confirmada' ? 'bg-[#7E57C2]' :
                   comanda.estado === 'en_preparacion' ? 'bg-[#1E73BE]' :
                   comanda.estado === 'completada' ? 'bg-[#4CAF50]' :
                   comanda.estado === 'entregada' ? 'bg-[#4CAF50]' :

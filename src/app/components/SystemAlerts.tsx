@@ -270,7 +270,7 @@ export function AlertsSummary() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="fixed top-20 right-4 z-50 max-w-sm"
+        className="app-floating-alert-summary fixed top-20 right-4 z-50 max-w-sm"
       >
         <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-lg shadow-2xl backdrop-blur-xl border border-red-400/30">
           <div className="flex items-start justify-between gap-3">

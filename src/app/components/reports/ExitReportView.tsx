@@ -173,6 +173,8 @@ function getStatusLabel(status: ReportComanda['estado']): string {
   switch (status) {
     case 'pendiente':
       return 'Pendiente';
+    case 'confirmada':
+      return 'Acceptée';
     case 'en_preparacion':
       return 'En préparation';
     case 'completada':
@@ -190,6 +192,8 @@ function getStatusBadgeClass(status: ReportComanda['estado']): string {
   switch (status) {
     case 'entregada':
       return 'border-green-200 bg-green-50 text-green-700';
+    case 'confirmada':
+      return 'border-purple-200 bg-purple-50 text-purple-700';
     case 'completada':
       return 'border-blue-200 bg-blue-50 text-blue-700';
     case 'anulada':
@@ -514,6 +518,7 @@ export function ExitReportView() {
                 <SelectContent>
                   <SelectItem value="all">{t('reports.activeStatuses', 'États actifs')}</SelectItem>
                   <SelectItem value="pendiente">Pendiente</SelectItem>
+                  <SelectItem value="confirmada">Acceptée</SelectItem>
                   <SelectItem value="en_preparacion">En préparation</SelectItem>
                   <SelectItem value="completada">Prête</SelectItem>
                   <SelectItem value="entregada">Entregada</SelectItem>

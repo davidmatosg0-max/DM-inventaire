@@ -71,7 +71,7 @@ function normalizarEstadoComanda(estado?: string): EstadoComanda {
     return ESTADOS_COMANDA_LEGACY[estado as EstadoComandaLegacy];
   }
 
-  const estadosValidos = new Set<EstadoComanda>(['pendiente', 'en_preparacion', 'completada', 'entregada', 'anulada']);
+  const estadosValidos = new Set<EstadoComanda>(['pendiente', 'confirmada', 'en_preparacion', 'completada', 'entregada', 'anulada']);
   return estadosValidos.has(estado as EstadoComanda) ? (estado as EstadoComanda) : 'pendiente';
 }
 
@@ -274,6 +274,7 @@ export function obtenerEstadisticasComandas() {
   return {
     total: comandas.length,
     pendientes: comandas.filter(c => c.estado === 'pendiente').length,
+    confirmadas: comandas.filter(c => c.estado === 'confirmada').length,
     enPreparacion: comandas.filter(c => c.estado === 'en_preparacion').length,
     completadas: comandas.filter(c => c.estado === 'completada').length,
     entregadas: comandas.filter(c => c.estado === 'entregada').length,

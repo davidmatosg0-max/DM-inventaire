@@ -833,8 +833,8 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   });
 
   const renderTimesheetEntries = (timesheets: FeuilleTiempoCandidato[]) => (
-    <div className="overflow-x-auto">
-      <table className="w-full">
+    <div className="app-dense-table-wrap overflow-x-auto">
+      <table className="app-dense-table w-full">
         <thead>
           <tr
             className="border-b-2"
@@ -2012,10 +2012,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
           <Tabs value={mainView} onValueChange={(value) => setMainView(value as RecruitmentMainView)} className="mb-6 gap-4">
             {!isPublicAccess && (
-              <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-white border border-gray-200 shadow-sm">
+              <TabsList className="app-compact-tabs-grid w-full bg-white border border-gray-200 shadow-sm p-1">
                 <TabsTrigger
                   value="candidatures"
-                  className="py-3"
+                  className="app-compact-tab-trigger py-3"
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   <Users className="w-4 h-4" />
@@ -2023,7 +2023,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 </TabsTrigger>
                 <TabsTrigger
                   value="timesheets"
-                  className="py-3"
+                  className="app-compact-tab-trigger py-3"
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   <Clock className="w-4 h-4" />
@@ -2920,7 +2920,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
         setDialogAssignerOpen(true);
       }}>
-        <DialogContent className="max-w-2xl" aria-describedby="assigner-departement-description">
+        <DialogContent className="app-dialog-comfort max-w-2xl" aria-describedby="assigner-departement-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Link className="w-6 h-6" style={{ color: branding.primaryColor }} />
@@ -3016,7 +3016,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   {assignationMode === 'modify' ? 'Nouveau département' : 'Sélectionner le Département'}
                 </Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {departamentosDisponibles.map((dept) => {
                     const yaAsignado = verificarCandidatoAsignado(candidatoParaAssignar, dept.id);
                     const esDepartamentoOrigen = assignationMode === 'modify' && departamentoOrigenSeleccionado === dept.id;
@@ -3098,7 +3098,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               </div>
 
               {/* Botones de acción */}
-              <div className="flex gap-3 justify-end pt-4 border-t">
+              <div className="app-compact-actions justify-end pt-4 border-t">
                 <Button
                   variant="outline"
                   onClick={resetAssignationDialog}
@@ -3126,7 +3126,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
       {/* Dialog: Profil Détaillé du Candidat */}
       <Dialog open={dialogPerfilOpen} onOpenChange={setDialogPerfilOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="perfil-candidato-description">
+        <DialogContent className="app-dialog-comfort max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="perfil-candidato-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Users className="w-6 h-6" style={{ color: branding.primaryColor }} />
@@ -3150,7 +3150,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`
                   }}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
                     <div 
                       className="w-20 h-20 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
                       style={{ 

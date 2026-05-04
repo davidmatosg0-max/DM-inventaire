@@ -1551,7 +1551,7 @@ export function Configuracion() {
 
   return (
     <div 
-      className="min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 relative overflow-hidden" 
+      className="app-compact-page min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 relative overflow-hidden" 
       style={{ 
         fontFamily: 'Roboto, sans-serif',
         background: `linear-gradient(135deg, #f8fafc 0%, #e0f2fe 50%, #f1f5f9 100%)`,
@@ -1574,9 +1574,9 @@ export function Configuracion() {
       </div>
 
       {/* Contenedor principal con glassmorphism */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto">
+      <div className="app-compact-page__content relative z-10 w-full max-w-7xl mx-auto">
         <div 
-          className="backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
+          className="app-compact-panel backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
           style={{
             boxShadow: '0 8px 32px 0 rgba(26, 77, 122, 0.2), 0 0 80px rgba(45, 149, 97, 0.1)'
           }}
@@ -1619,8 +1619,8 @@ export function Configuracion() {
           </div>
 
           {/* Título con diseño elegante */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-3">
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity"></div>
                 <Settings 
@@ -1648,10 +1648,10 @@ export function Configuracion() {
 
       {/* Tabs con diseño moderno y elegante */}
       <Tabs defaultValue="categorias" className="space-y-6">
-        <TabsList className="inline-flex backdrop-blur-xl bg-white/70 border-2 border-white/60 shadow-2xl rounded-2xl flex-wrap h-auto gap-2 p-2">
+        <TabsList className="app-compact-tabs-grid inline-flex backdrop-blur-xl bg-white/70 border-2 border-white/60 shadow-2xl rounded-2xl flex-wrap h-auto gap-2 p-2">
           <TabsTrigger 
             value="categorias" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ 
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 600
@@ -1663,7 +1663,7 @@ export function Configuracion() {
           </TabsTrigger>
           <TabsTrigger 
             value="programas" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
           >
             <Inbox className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -1672,7 +1672,7 @@ export function Configuracion() {
           </TabsTrigger>
           <TabsTrigger 
             value="productos-prs" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
           >
             <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -1681,7 +1681,7 @@ export function Configuracion() {
           </TabsTrigger>
           <TabsTrigger 
             value="sauvegardes" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
           >
             <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -1689,7 +1689,7 @@ export function Configuracion() {
           </TabsTrigger>
           <TabsTrigger 
             value="unidades" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
           >
             <Ruler className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -1697,7 +1697,7 @@ export function Configuracion() {
           </TabsTrigger>
           <TabsTrigger 
             value="balance" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
           >
             <Scale className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -1705,7 +1705,7 @@ export function Configuracion() {
           </TabsTrigger>
           <TabsTrigger 
             value="versions" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
           >
             <Info className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -1715,7 +1715,7 @@ export function Configuracion() {
           {esDesarrollador && (
             <TabsTrigger 
               value="demos"
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
               style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -1726,7 +1726,7 @@ export function Configuracion() {
           {esDesarrollador && (
             <TabsTrigger 
               value="adresses" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
               style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
             >
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />

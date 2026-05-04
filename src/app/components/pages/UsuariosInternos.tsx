@@ -391,7 +391,7 @@ export function UsuariosInternos() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '2rem' }}>
             {t('contacts.title')}
@@ -414,7 +414,7 @@ export function UsuariosInternos() {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
@@ -543,7 +543,7 @@ export function UsuariosInternos() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-wrap justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -586,7 +586,7 @@ export function UsuariosInternos() {
 
       {/* Dialog Perfil Donador/Vendedor con Historial */}
       <Dialog open={perfilDialogOpen} onOpenChange={setPerfilDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="perfil-dialog-description">
+        <DialogContent className="app-dialog-comfort max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="perfil-dialog-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
               {usuarioSeleccionado && (
@@ -612,7 +612,7 @@ export function UsuariosInternos() {
                   <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Información General</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-[#999999]">ID</p>
                       <p className="font-medium text-[#333333]">{usuarioSeleccionado.numeroID}</p>
@@ -667,7 +667,7 @@ export function UsuariosInternos() {
               {/* Historial de Transacciones */}
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {usuarioSeleccionado.categoria === 'donador' ? (
                         <><Gift className="w-5 h-5 inline mr-2" />Historial de Donaciones Recibidas</>
@@ -740,7 +740,7 @@ export function UsuariosInternos() {
 
       {/* Dialog Nueva Transacción */}
       <Dialog open={historialDialogOpen} onOpenChange={setHistorialDialogOpen}>
-        <DialogContent className="max-w-lg" aria-describedby="transaccion-dialog-description">
+        <DialogContent className="app-dialog-comfort max-w-lg" aria-describedby="transaccion-dialog-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
               Nouvelle transaction
@@ -769,7 +769,7 @@ export function UsuariosInternos() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Quantite</Label>
                 <Input
@@ -826,7 +826,7 @@ export function UsuariosInternos() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="app-compact-actions justify-end pt-4 border-t">
             <Button variant="outline" onClick={() => setHistorialDialogOpen(false)}>
               Annuler
             </Button>
@@ -873,7 +873,7 @@ export function UsuariosInternos() {
 
       {/* Dialog Gestión de Departamentos */}
       <Dialog open={departamentosDialogOpen} onOpenChange={setDepartamentosDialogOpen}>
-        <DialogContent className="max-w-2xl" aria-describedby="departamentos-dialog-description">
+        <DialogContent className="app-dialog-comfort max-w-2xl" aria-describedby="departamentos-dialog-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
               <Building2 className="w-5 h-5 inline mr-2" />
@@ -923,7 +923,7 @@ export function UsuariosInternos() {
                 <CardTitle className="text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('contacts.addDepartment')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
+                <div className="app-compact-actions">
                   <Input
                     placeholder={t('contacts.departmentName')}
                     value={nuevoDepartamento}
@@ -967,7 +967,7 @@ export function UsuariosInternos() {
             </Card>
           </div>
 
-          <div className="flex justify-end pt-4 border-t">
+          <div className="app-compact-actions justify-end pt-4 border-t">
             <Button
               className="bg-[#1E73BE] hover:bg-[#1557A0]"
               onClick={() => setDepartamentosDialogOpen(false)}
@@ -980,7 +980,7 @@ export function UsuariosInternos() {
 
       {/* Dialog Confirmación de Eliminación */}
       <Dialog open={eliminarDialogOpen} onOpenChange={setEliminarDialogOpen}>
-        <DialogContent className="max-w-md" aria-describedby="eliminar-dialog-description">
+        <DialogContent className="app-dialog-comfort max-w-md" aria-describedby="eliminar-dialog-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
               <Trash2 className="w-5 h-5 inline mr-2 text-[#DC3545]" />
@@ -1033,7 +1033,7 @@ export function UsuariosInternos() {
               ⚠️ {t('contacts.deleteWarning')}
             </p>
           </div>
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="app-compact-actions justify-end gap-2 pt-4 border-t">
             <Button 
               variant="outline" 
               onClick={() => {

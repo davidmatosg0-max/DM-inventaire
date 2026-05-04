@@ -16,7 +16,7 @@ interface EtiquetaComandaData {
   // Comanda
   numeroComanda: string;
   fechaEntrega: string;
-  estado: 'pendiente' | 'en_preparacion' | 'completada' | 'entregada' | 'anulada';
+  estado: 'pendiente' | 'confirmada' | 'en_preparacion' | 'completada' | 'entregada' | 'anulada';
   observaciones?: string;
   
   // Productos
@@ -59,6 +59,7 @@ interface EtiquetaComandaData {
     systemFooter?: string;
     // Estados
     pending?: string;
+    confirmed?: string;
     inPreparation?: string;
     ready?: string;
     delivered?: string;
@@ -94,6 +95,7 @@ export async function generateStandardOrderLabel(
     printedOn: data.translations?.printedOn || 'Imprimé le',
     systemFooter: data.translations?.systemFooter || 'Système de Gestion des Commandes',
     pending: data.translations?.pending || 'EN ATTENTE',
+    confirmed: data.translations?.confirmed || 'ACCEPTÉE',
     inPreparation: data.translations?.inPreparation || 'EN PRÉPARATION',
     ready: data.translations?.ready || 'PRÊTE',
     delivered: data.translations?.delivered || 'LIVRÉE',
@@ -121,6 +123,7 @@ export async function generateStandardOrderLabel(
   // Estados con colores
   const estadoConfig = {
     pendiente: { label: t.pending, color: '#FFC107' },
+    confirmada: { label: t.confirmed, color: '#7E57C2' },
     en_preparacion: { label: t.inPreparation, color: '#1E73BE' },
     completada: { label: t.ready, color: '#4CAF50' },
     entregada: { label: t.delivered, color: '#4CAF50' },

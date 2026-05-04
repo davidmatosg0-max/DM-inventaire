@@ -120,6 +120,7 @@ export interface Comanda {
 
 export type EstadoComanda =
   | 'pendiente'
+  | 'confirmada'
   | 'en_preparacion'
   | 'completada'
   | 'entregada'

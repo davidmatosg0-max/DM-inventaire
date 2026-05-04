@@ -114,6 +114,7 @@ export function Dashboard() {
     totalStock: 0,
     stockBajo: 0,
     comandasPendientes: 0,
+    comandasAceptadas: 0,
     comandasMes: 0,
     valorTotalInventario: 0,
     personasAtendidas: 0,
@@ -139,6 +140,7 @@ export function Dashboard() {
     const totalStock = productos.reduce((sum, p) => sum + p.stockActual, 0);
     const stockBajo = productos.filter(p => p.stockActual <= p.stockMinimo);
     const comandasPendientes = comandas.filter(c => c.estado === 'pendiente' || c.estado === 'en_preparacion').length;
+    const comandasAceptadas = comandas.filter(c => c.estado === 'confirmada').length;
     
     // Calcular valor total del inventario
     const valorTotal = productos.reduce((sum, p) => {
@@ -161,6 +163,7 @@ export function Dashboard() {
       totalStock: Math.round(totalStock),
       stockBajo: stockBajo.length,
       comandasPendientes,
+      comandasAceptadas,
       comandasMes: comandas.length,
       valorTotalInventario: Math.round(valorTotal),
       personasAtendidas: organismos.reduce((sum, o) => sum + (o.beneficiarios || 0), 0),
@@ -181,6 +184,7 @@ export function Dashboard() {
   const totalProductos = stats.totalProductos;
   const stockTotal = stats.totalStock;
   const comandasPendientes = stats.comandasPendientes;
+  const comandasAceptadas = stats.comandasAceptadas;
   const organismosActivos = stats.organismosActivos;
 
   return (
@@ -228,7 +232,7 @@ export function Dashboard() {
         </div>
 
         {/* Stats Cards - Modernizadas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {/* Card 1: Inventario */}
           <div className="card-glass rounded-xl sm:rounded-2xl p-4 sm:p-5 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: '#1a4d7a' }}>
             <div className="flex items-center justify-between mb-3">
@@ -295,6 +299,27 @@ export function Dashboard() {
             </div>
           </div>
 
+          <div className="card-glass rounded-2xl p-5 hover-lift cursor-pointer border-l-4 border-l-[#7E57C2]">
+            <div className="flex items-center justify-between mb-3">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+                style={{ background: 'linear-gradient(135deg, #7E57C2 0%, #6A4BB8 100%)' }}
+              >
+                <ClipboardList className="w-6 h-6 text-white" />
+              </div>
+              <Clock className="w-5 h-5 text-[#7E57C2]" />
+            </div>
+            <p className="text-sm text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+              Commandes acceptées
+            </p>
+            <div className="font-bold mb-1" style={{ fontSize: '2rem', color: '#7E57C2', fontFamily: 'Montserrat, sans-serif' }}>
+              {comandasAceptadas}
+            </div>
+            <div className="text-xs font-medium text-[#7E57C2] bg-purple-50 rounded-full px-3 py-1 inline-flex">
+              En attente de préparation
+            </div>
+          </div>
+
           {/* Card 4: Stock Bajo */}
           <div className="card-glass rounded-2xl p-5 hover-lift cursor-pointer border-l-4 border-l-[#DC3545]">
             <div className="flex items-center justify-between mb-3">
@@ -355,6 +380,14 @@ export function Dashboard() {
                     <span className="text-sm font-medium">{t('dashboard.pendingOrders')}</span>
                   </div>
                   <span className="text-xl font-bold text-[#FFC107]">{stats.comandasPendientes}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="h-5 w-5 text-[#7E57C2]" />
+                    <span className="text-sm font-medium">Commandes acceptées</span>
+                  </div>
+                  <span className="text-xl font-bold text-[#7E57C2]">{stats.comandasAceptadas}</span>
                 </div>
                 
                 <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
@@ -459,6 +492,7 @@ export function Dashboard() {
                   const organismo = organismosDisponibles.find(o => o.id === comanda.organismoId);
                   const estadoColor = {
                     pendiente: '#FFC107',
+                    confirmada: '#7E57C2',
                     en_preparacion: '#1E73BE',
                     completada: '#4CAF50',
                     anulada: '#DC3545'
@@ -485,6 +519,7 @@ export function Dashboard() {
                         }}
                       >
                         {comanda.estado === 'pendiente' ? t('orders.pending') :
+                         comanda.estado === 'confirmada' ? 'Acceptée' :
                          comanda.estado === 'en_preparacion' ? t('orders.inPreparation') :
                          comanda.estado === 'completada' ? t('orders.completed') :
                          comanda.estado === 'anulada' ? t('orders.cancelled') :

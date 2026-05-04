@@ -291,6 +291,7 @@ export function ReportesAvanzado() {
 
   const organismosPorId = new Map(organismos.map((organismo) => [organismo.id, organismo]));
   const totalBeneficiariosSistema = organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0);
+  const comandasAceptadas = comandasFiltradas.filter((comanda) => comanda.estado === 'confirmada').length;
   const comandasCompletadas = comandasFiltradas.filter((comanda) => ['completada', 'entregada'].includes(comanda.estado)).length;
   const comandasCompletadasComparacion = comandasComparacion.filter((comanda) => ['completada', 'entregada'].includes(comanda.estado)).length;
   const tasaCumplimiento = calculatePercent(comandasCompletadas, comandasFiltradas.length);
@@ -763,7 +764,7 @@ export function ReportesAvanzado() {
             </div>
             <div className="space-y-2">
               <Label>{t('common.export')}</Label>
-              <div className="flex gap-2">
+              <div className="app-compact-actions">
                 <Button onClick={() => handleGenerarReporte('pdf')} className="flex-1 bg-[#DC3545] hover:bg-[#c82333]" size="sm" disabled={!rangoValido}>
                   <FileText className="w-4 h-4 mr-1" />
                   PDF
@@ -883,28 +884,28 @@ export function ReportesAvanzado() {
       </div>
 
       <Tabs value={tipoReporte} onValueChange={(value) => setTipoReporte(value as TipoReporte)} className="space-y-4">
-        <TabsList className="bg-white border flex h-auto flex-wrap">
-          <TabsTrigger value="general" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+        <TabsList className="app-compact-tabs-grid bg-white border h-auto">
+          <TabsTrigger value="general" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <BarChart3 className="w-4 h-4 mr-2" />
             Général
           </TabsTrigger>
-          <TabsTrigger value="inventario" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <TabsTrigger value="inventario" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <Package className="w-4 h-4 mr-2" />
             Inventaire
           </TabsTrigger>
-          <TabsTrigger value="comandas" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <TabsTrigger value="comandas" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <FileText className="w-4 h-4 mr-2" />
             Commandes
           </TabsTrigger>
-          <TabsTrigger value="prs" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <TabsTrigger value="prs" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <TrendingUp className="w-4 h-4 mr-2" />
             PRS
           </TabsTrigger>
-          <TabsTrigger value="organismos" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <TabsTrigger value="organismos" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <Users className="w-4 h-4 mr-2" />
             Organismes
           </TabsTrigger>
-          <TabsTrigger value="transporte" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <TabsTrigger value="transporte" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <Truck className="w-4 h-4 mr-2" />
             Transport
           </TabsTrigger>
@@ -1056,7 +1057,7 @@ export function ReportesAvanzado() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <Card className="border-l-4 border-l-[#4CAF50]">
               <CardContent className="pt-6">
                 <p className="text-sm text-[#666666]">Taux de réussite</p>
@@ -1073,6 +1074,12 @@ export function ReportesAvanzado() {
               <CardContent className="pt-6">
                 <p className="text-sm text-[#666666]">Commandes en attente</p>
                 <p className="font-bold" style={{ fontSize: '1.5rem', color: '#FFC107' }}>{comandasFiltradas.filter((comanda) => comanda.estado === 'pendiente').length}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-[#7E57C2]">
+              <CardContent className="pt-6">
+                <p className="text-sm text-[#666666]">Commandes acceptées</p>
+                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#7E57C2' }}>{comandasAceptadas}</p>
               </CardContent>
             </Card>
           </div>

@@ -434,10 +434,10 @@ export function FormularioNouveauBenevole({
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="!max-w-none !w-[95vw] !max-h-[95vh] !h-[95vh] overflow-hidden p-0 m-0 rounded-xl"
+        className="app-dialog-comfort app-form-compact app-form-benevole !max-w-none !w-[95vw] !max-h-[95vh] !h-[95vh] overflow-hidden p-0 m-0 rounded-xl"
         aria-describedby="nouveau-benevole-description"
       >
-        <div className="h-full flex flex-col">
+        <div className="app-form-shell h-full flex flex-col">
           <DialogHeader className="sticky top-0 z-10 bg-white border-b-2 border-[#E0E0E0] px-6 py-3 shadow-sm">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, fontSize: '1.25rem' }}>
               {isEditMode ? (
@@ -460,9 +460,9 @@ export function FormularioNouveauBenevole({
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-hidden flex">
+          <div className="app-form-shell__body flex-1 overflow-hidden flex">
             {/* Sidebar izquierda: Foto y Tipo */}
-            <div className="w-64 border-r-2 border-[#E0E0E0] bg-[#F9FAFB] p-4 overflow-y-auto scrollbar-thin">
+            <div className="app-form-sidebar w-64 border-r-2 border-[#E0E0E0] bg-[#F9FAFB] p-4 overflow-y-auto scrollbar-thin">
               {/* Photo de Profil */}
               <div className="mb-6">
                 <h4 className="text-sm font-semibold text-[#666666] mb-3 uppercase tracking-wide">Photo</h4>
@@ -568,29 +568,29 @@ export function FormularioNouveauBenevole({
             </div>
 
             {/* Contenido principal con Tabs */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="app-form-main flex-1 flex flex-col overflow-hidden">
               <Tabs defaultValue="base" className="flex-1 flex flex-col">
-                <TabsList className="w-full justify-start rounded-none border-b bg-[#F9FAFB] px-6 py-0 h-12">
-                  <TabsTrigger value="base" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
+                <TabsList className="app-form-tabs w-full justify-start rounded-none border-b bg-[#F9FAFB] px-6 py-0 h-12">
+                  <TabsTrigger value="base" className="app-form-tab-trigger data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
                     <User className="w-4 h-4 mr-2" />
                     Base
                   </TabsTrigger>
-                  <TabsTrigger value="contact" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
+                  <TabsTrigger value="contact" className="app-form-tab-trigger data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
                     <Phone className="w-4 h-4 mr-2" />
                     Contact
                   </TabsTrigger>
-                  <TabsTrigger value="pro" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
+                  <TabsTrigger value="pro" className="app-form-tab-trigger data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
                     <Briefcase className="w-4 h-4 mr-2" />
                     Professionnel
                   </TabsTrigger>
-                  <TabsTrigger value="autres" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
+                  <TabsTrigger value="autres" className="app-form-tab-trigger data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
                     <SettingsIcon className="w-4 h-4 mr-2" />
                     Autres
                   </TabsTrigger>
                 </TabsList>
 
                 {/* Tab: Base */}
-                <TabsContent value="base" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
+                <TabsContent value="base" className="app-form-pane flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
                   <div className="max-w-4xl space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -729,7 +729,7 @@ export function FormularioNouveauBenevole({
                 </TabsContent>
 
                 {/* Tab: Contact */}
-                <TabsContent value="contact" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
+                <TabsContent value="contact" className="app-form-pane flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
                   <div className="max-w-4xl space-y-6">
                     {/* Información General de Contacto */}
                     <div className="space-y-4">
@@ -900,7 +900,7 @@ export function FormularioNouveauBenevole({
                 </TabsContent>
 
                 {/* Tab: Professionnel */}
-                <TabsContent value="pro" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
+                <TabsContent value="pro" className="app-form-pane flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
                   <div className="max-w-4xl space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -992,7 +992,7 @@ export function FormularioNouveauBenevole({
                 </TabsContent>
 
                 {/* Tab: Autres */}
-                <TabsContent value="autres" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
+                <TabsContent value="autres" className="app-form-pane flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
                   <div className="max-w-4xl space-y-4">
                     {/* Notes */}
                     <div>

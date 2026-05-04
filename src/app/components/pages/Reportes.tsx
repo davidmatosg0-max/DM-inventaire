@@ -927,7 +927,7 @@ export function Reportes() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-2 xl:pb-0.5 xl:justify-end">
+                <div className="app-compact-actions xl:justify-end xl:pb-0.5">
                   <Button
                     onClick={() => handleGenerarReporte('pdf')}
                     variant="outline"
@@ -964,24 +964,24 @@ export function Reportes() {
             </div>
           )}
 
-          <TabsList className="w-full bg-transparent border-b rounded-none flex flex-wrap">
-            <TabsTrigger value="general" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <TabsList className="app-compact-tabs-grid w-full bg-transparent border-b rounded-none">
+            <TabsTrigger value="general" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('reports.general')}
             </TabsTrigger>
-            <TabsTrigger value="operaciones" className="flex-1 min-w-[140px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="operaciones" className="app-compact-tab-trigger flex-1 min-w-[140px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <BarChart3 className="w-4 h-4" />
               Opérations
             </TabsTrigger>
-            <TabsTrigger value="inventario" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="inventario" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('nav.inventory')}
             </TabsTrigger>
-            <TabsTrigger value="comandas" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="comandas" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('nav.orders')}
             </TabsTrigger>
-            <TabsTrigger value="prs" className="flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="prs" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               PRS
             </TabsTrigger>
-            <TabsTrigger value="auditoria" className="flex-1 min-w-[120px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="auditoria" className="app-compact-tab-trigger flex-1 min-w-[120px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Shield className="w-4 h-4" />
               Audit
             </TabsTrigger>

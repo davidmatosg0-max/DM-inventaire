@@ -268,14 +268,14 @@ export function PWAFloatingButton() {
 
   return (
     <>
-      <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40">
+      <div className="app-floating-pwa fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40">
         <div className="relative group">
           {/* Efecto de brillo animado */}
-          <div className="absolute -inset-2 bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] rounded-2xl blur-lg opacity-60 group-hover:opacity-80 animate-pulse transition-opacity" />
+          <div className="app-floating-pwa__glow absolute -inset-2 bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] rounded-2xl blur-lg opacity-60 group-hover:opacity-80 animate-pulse transition-opacity" />
 
           <button
             onClick={handleHideClick}
-            className="absolute -top-2 -left-2 z-10 rounded-full bg-slate-900/80 p-1 text-white shadow-lg transition-all hover:scale-105 hover:bg-slate-900"
+            className="app-floating-pwa__hide absolute -top-2 -left-2 z-10 rounded-full bg-slate-900/80 p-1 text-white shadow-lg transition-all hover:scale-105 hover:bg-slate-900"
             aria-label="Masquer le bouton d'installation"
             title="Masquer"
             type="button"
@@ -287,7 +287,7 @@ export function PWAFloatingButton() {
           <button
             onClick={handleInstallClick}
             type="button"
-            className="relative bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-2xl hover:scale-105 transition-all flex items-center gap-2 sm:gap-3 font-semibold"
+            className="app-floating-pwa__button relative bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-2xl hover:scale-105 transition-all flex items-center gap-2 sm:gap-3 font-semibold"
             style={{ fontFamily: 'Montserrat, sans-serif' }}
           >
             {isIOS ? (
@@ -295,10 +295,10 @@ export function PWAFloatingButton() {
             ) : (
               <Download className="h-5 w-5 sm:h-6 sm:w-6" />
             )}
-            <span className="text-sm sm:text-base">{t('pwa.install')}</span>
+            <span className="app-floating-pwa__label text-sm sm:text-base">{t('pwa.install')}</span>
             
             {/* Badge de novedad */}
-            <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full animate-bounce">
+            <span className="app-floating-pwa__badge absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full animate-bounce">
               Nouveau!
             </span>
           </button>

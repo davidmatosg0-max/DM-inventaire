@@ -72,6 +72,67 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     return 0;
   };
 
+  const productosCatalogo = obtenerProductos();
+
+  const resolverProductoComanda = (item: any) =>
+    productosCatalogo.find(producto => producto.id === item?.productoId)
+    || mockProductos.find(producto => producto.id === item?.productoId)
+    || null;
+
+  const obtenerColorEstadoComanda = (estado?: string) => {
+    switch (estado) {
+      case 'confirmada':
+        return '#7E57C2';
+      case 'en_preparacion':
+        return '#e8a419';
+      case 'completada':
+        return branding.primaryColor;
+      case 'entregada':
+        return branding.secondaryColor;
+      case 'pendiente':
+        return branding.primaryColor;
+      default:
+        return '#c23934';
+    }
+  };
+
+  const obtenerEtiquetaEstadoComanda = (estado?: string) => {
+    switch (estado) {
+      case 'confirmada':
+        return 'Acceptée';
+      case 'en_preparacion':
+        return t('orders.inPreparation');
+      case 'completada':
+        return t('orders.completed');
+      case 'entregada':
+        return 'Livrée';
+      case 'pendiente':
+        return t('orders.pending');
+      default:
+        return t('orders.cancelled');
+    }
+  };
+
+  const formatearFechaRegistroOrganismo = () => {
+    const fechaRegistro = organismo?.fechaRegistro || organismo?.fechaCreacion || organismo?.fechaModificacion;
+
+    if (!fechaRegistro) {
+      return '--';
+    }
+
+    const fecha = new Date(fechaRegistro);
+
+    if (Number.isNaN(fecha.getTime())) {
+      return '--';
+    }
+
+    return fecha.toLocaleDateString(i18n.language, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   // Estado para refrescar ofertas (DEBE estar antes de useMemo)
   const [refreshOfertas, setRefreshOfertas] = useState(0);
   const [refreshComandas, setRefreshComandas] = useState(0);
@@ -131,28 +192,44 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     };
   };
 
+  const esComandaHistorica = (estado?: string) => estado === 'completada' || estado === 'entregada';
+
+  const filtrarComandasHistoricasPorFecha = () => {
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+
+    return comandasOrganismo.filter(c => {
+      if (!esComandaHistorica(c.estado)) return false;
+      const fechaComanda = new Date(c.fecha);
+      return fechaComanda >= inicio && fechaComanda <= fin;
+    });
+  };
+
   // Calcular estadísticas
   const totalComandas = comandasOrganismo.length;
-  const comandasCompletadas = comandasOrganismo.filter(c => c.estado === 'completada').length;
+  const comandasCompletadas = comandasOrganismo.filter(c => esComandaHistorica(c.estado)).length;
 
   // Calcular datos para el gráfico de categorías
   const calcularDatosCategorias = () => {
     const categorias: { [key: string]: { cantidad: number, icono: string } } = {};
     
-    // Procesar comandas completadas
+    // Procesar comandas historicas disponibles para el organismo
     comandasOrganismo
-      .filter(c => c.estado === 'completada')
+      .filter(c => esComandaHistorica(c.estado))
       .forEach(comanda => {
         comanda.items.forEach(item => {
-          const producto = mockProductos.find(p => p.id === item.productoId);
-          if (producto) {
-            if (!categorias[producto.categoria]) {
+          const producto = resolverProductoComanda(item);
+          const categoria = producto?.categoria || item?.categoria || 'Autres';
+          const icono = producto?.icono || item?.icono || '📦';
+
+          if (categoria) {
+            if (!categorias[categoria]) {
               categorias[producto.categoria] = { 
                 cantidad: 0, 
-                icono: producto.icono || '📦' 
+                icono
               };
             }
-            categorias[producto.categoria].cantidad += item.cantidad;
+            categorias[categoria].cantidad += item.cantidad;
           }
         });
       });
@@ -501,7 +578,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     try {
       const comandaActualizada = {
         ...comandaObjetivo,
-        estado: 'completada',
+        estado: 'confirmada',
         items: reconstruirItemsAceptados(comandaObjetivo.items || [], itemsAceptados),
         confirmadaPorOrganismo: true,
         fechaConfirmacion: new Date().toISOString(),
@@ -737,14 +814,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       return;
     }
 
-    // Filtrar comandas completadas en el rango de fechas
-    const comandasFiltradas = comandasOrganismo.filter(c => {
-      if (c.estado !== 'completada') return false;
-      const fechaComanda = new Date(c.fecha);
-      const inicio = new Date(fechaInicio);
-      const fin = new Date(fechaFin);
-      return fechaComanda >= inicio && fechaComanda <= fin;
-    });
+    // Filtrar comandas historicas en el rango de fechas
+    const comandasFiltradas = filtrarComandasHistoricasPorFecha();
 
     if (comandasFiltradas.length === 0) {
       toast.warning(t('organismPortal.noDataForReport'), {
@@ -769,14 +840,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       return;
     }
 
-    // Filtrar comandas completadas en el rango de fechas
-    const comandasFiltradas = comandasOrganismo.filter(c => {
-      if (c.estado !== 'completada') return false;
-      const fechaComanda = new Date(c.fecha);
-      const inicio = new Date(fechaInicio);
-      const fin = new Date(fechaFin);
-      return fechaComanda >= inicio && fechaComanda <= fin;
-    });
+    // Filtrar comandas historicas en el rango de fechas
+    const comandasFiltradas = filtrarComandasHistoricasPorFecha();
 
     if (comandasFiltradas.length === 0) {
       toast.warning(t('organismPortal.noDataForReport'), {
@@ -861,25 +926,25 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
           boxShadow: `0 8px 32px 0 ${branding.primaryColor}40`
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3 sm:gap-4 min-w-0">
               <div className="relative">
                 {/* Glow effect detrás del icono */}
                 <div 
                   className="absolute inset-0 rounded-full blur-xl opacity-50"
                   style={{ backgroundColor: 'white' }}
                 />
-                <div className="relative w-16 h-16 bg-white rounded-full flex items-center justify-center text-4xl shadow-lg border-2 border-white/50">
+                <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-full flex items-center justify-center text-2xl sm:text-4xl shadow-lg border-2 border-white/50">
                   {/* Icono del tipo de organismo */}
                   {organismo.tipo === 'Comedor' ? '🍽️' :
                    organismo.tipo === 'Fundación' ? '🏛️' :
                    organismo.tipo === 'Hogar' ? '🏠' : '🏘️'}
                 </div>
               </div>
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '1.75rem' }}>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                  <h1 className="break-words text-xl sm:text-[1.75rem] leading-tight" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                     {organismo.nombre}
                   </h1>
                   {organismo.participaPRS && (
@@ -889,14 +954,11 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   )}
                 </div>
                 <p className="text-white/90" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                  {organismo.tipo} • {t('organismPortal.registeredSince')} {new Date(organismo.fechaRegistro).toLocaleDateString(i18n.language, { 
-                    year: 'numeric', 
-                    month: 'long' 
-                  })}
+                  {organismo.tipo} • {t('organismPortal.registeredSince')} {formatearFechaRegistroOrganismo()}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-stretch gap-2 sm:gap-3">
               <LanguageSelector />
               {organismo.participaPRS && (
                 <div className="relative">
@@ -907,12 +969,12 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   />
                   <Button
                     onClick={() => setDialogNuevaEntradaOpen(true)}
-                    className="relative text-white border-2 border-white/40 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl animate-pulse h-12 px-6"
+                    className="relative text-white border-2 border-white/40 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl animate-pulse h-11 sm:h-12 px-4 sm:px-6"
                     style={{ 
                       background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
                       fontFamily: 'Montserrat, sans-serif',
                       fontWeight: 700,
-                      fontSize: '1rem'
+                      fontSize: '0.95rem'
                     }}
                   >
                     {/* Efecto de brillo */}
@@ -962,7 +1024,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       </header>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
         {/* Comandas Pendientes de Confirmación */}
         <ConfirmacionComanda organismoId={organismo.id} organismo={organismo} />
 
@@ -1446,11 +1508,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 <div>
                   <p className="text-sm text-[#666666]">{t('organismPortal.registrationDate')}</p>
                   <p className="font-medium text-[#333333]">
-                    {new Date(organismo.fechaRegistro).toLocaleDateString(i18n.language, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    {formatearFechaRegistroOrganismo()}
                   </p>
                 </div>
               </div>
@@ -1483,9 +1541,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   {comandasOrganismo.map(comanda => {
                     // Calcular totales de la comanda
                     const pesoTotal = comanda.items.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0);
-                    const productosDisponibles = obtenerProductos();
-                    const valorTotal = comanda.valorTotal || comanda.items.reduce((sum: number, item: any) => {
-                      const producto = productosDisponibles.find(p => p.id === item.productoId) || mockProductos.find(p => p.id === item.productoId);
+                    const valorTotal = comanda.valorTotal || comanda.totalValorMonetario || comanda.items.reduce((sum: number, item: any) => {
+                      const producto = resolverProductoComanda(item);
                       return sum + ((item.cantidad || 0) * obtenerValorUnitario(item, producto));
                     }, 0);
                     
@@ -1494,17 +1551,9 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium text-[#333333]">{comanda.numero}</p>
                         <Badge 
-                          style={{
-                            backgroundColor: 
-                              comanda.estado === 'completada' ? branding.secondaryColor :
-                              comanda.estado === 'en_preparacion' ? '#e8a419' :
-                              comanda.estado === 'pendiente' ? branding.primaryColor :
-                              '#c23934'
-                          }}
+                          style={{ backgroundColor: obtenerColorEstadoComanda(comanda.estado) }}
                         >
-                          {comanda.estado === 'completada' ? t('orders.completed') :
-                           comanda.estado === 'en_preparacion' ? t('orders.inPreparation') :
-                           comanda.estado === 'pendiente' ? t('orders.pending') : t('orders.cancelled')}
+                          {obtenerEtiquetaEstadoComanda(comanda.estado)}
                         </Badge>
                       </div>
                       <div className="text-sm text-[#666666] space-y-1">
@@ -1898,7 +1947,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                             <div className="flex items-center gap-2 mb-2">
                               <Badge className="bg-[#1E73BE] text-white">
                                 <CheckCircle className="w-3 h-3 mr-1" />
-                                Confirmada
+                                Acceptée
                               </Badge>
                               <Badge variant="outline" className="bg-white">
                                 {oferta.numeroOferta}

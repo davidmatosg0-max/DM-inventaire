@@ -770,7 +770,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <div className="flex-1 bg-green-50 p-4 rounded-lg border border-green-200">
                         <p className="font-bold mb-2">Complétée</p>
                         <p className="text-sm text-gray-600">
-                          Commande reçue et confirmée par l'organisme
+                          Commande acceptée par l'organisme et prête pour la suite du flux
                         </p>
                         <div className="mt-2 flex items-center gap-2 text-xs">
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded">Statut: Livrée</span>
@@ -1015,7 +1015,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
                         <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
                         <p className="font-bold">Livrée</p>
-                        <p className="text-xs text-gray-600">Reçue et confirmée</p>
+                        <p className="text-xs text-gray-600">Acceptée puis livrée</p>
                       </div>
                     </div>
                   </div>
@@ -1691,7 +1691,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <h5 className="font-bold text-blue-900 mb-2">🛒 Commandes</h5>
                       <p className="text-sm text-gray-700">
-                        Gestion des commandes pour organismes avec différents états (brouillon, confirmée, préparée, livrée).
+                        Gestion des commandes pour organismes avec différents états (brouillon, acceptée, préparée, livrée).
                       </p>
                     </div>
 
@@ -1788,7 +1788,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
                       <h5 className="font-bold text-pink-900 mb-2">🔄 États des Offres</h5>
                       <p className="text-sm text-gray-700">
-                        Les offres passent par différents états: <strong>Active</strong> (visible aux organismes), <strong>En attente</strong> (demandes reçues), <strong>Acceptée</strong> (confirmée pour livraison), <strong>Expirée</strong> (date dépassée).
+                        Les offres passent par différents états: <strong>Active</strong> (visible aux organismes), <strong>En attente</strong> (demandes reçues), <strong>Acceptée</strong> (validée pour livraison), <strong>Expirée</strong> (date dépassée).
                       </p>
                     </div>
                   </div>

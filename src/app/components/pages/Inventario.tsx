@@ -2033,7 +2033,7 @@ export function Inventario() {
   };
 
   return (
-    <div className="relative h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] flex flex-col overflow-hidden -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6">
+    <div className="app-compact-page relative h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] flex flex-col overflow-hidden -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6">
       {/* Fondo degradado fijo con glassmorphism */}
       <div 
         className="fixed inset-0 -z-10"
@@ -2058,18 +2058,18 @@ export function Inventario() {
       </div>
 
       <Card className="border-none shadow-none flex-1 flex flex-col overflow-hidden rounded-none w-full relative z-10">
-        <CardHeader className="border-b backdrop-blur-xl bg-white/90 flex-shrink-0 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+        <CardHeader className="border-b backdrop-blur-xl bg-white/90 flex-shrink-0 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div 
                 className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
                 style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
               >
                 <Package className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: branding.primaryColor }}>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CardTitle className="text-lg sm:text-xl break-words" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: branding.primaryColor }}>
                     {t('inventory.title')}
                   </CardTitle>
                   <Sparkles className="w-5 h-5 animate-pulse" style={{ color: branding.secondaryColor }} />
@@ -2082,7 +2082,7 @@ export function Inventario() {
             <Button
               variant="outline"
               onClick={() => navigateToModule('reportes')}
-              className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 shrink-0"
+              className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 shrink-0 w-full sm:w-auto"
               title="Ouvrir le module Rapports"
             >
               <FileText className="h-4 w-4 mr-2" />
@@ -2092,9 +2092,9 @@ export function Inventario() {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-4 flex-1 flex flex-col overflow-hidden space-y-3">
+        <CardContent className="pt-3 sm:pt-4 flex-1 flex flex-col overflow-hidden space-y-3">
           {/* Stats Cards */}
-          <div className="grid gap-3 md:grid-cols-4 flex-shrink-0">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 flex-shrink-0">
             <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
               <div className="flex items-center justify-between">
                 <div>
@@ -2160,13 +2160,13 @@ export function Inventario() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-6 flex-shrink-0">
-          <TabsTrigger value="productos">{t('inventory.products')}</TabsTrigger>
-          <TabsTrigger value="movimientos">{t('inventory.movements')}</TabsTrigger>
-          <TabsTrigger value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
-          <TabsTrigger value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
-          <TabsTrigger value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
-          <TabsTrigger value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
+        <TabsList className="app-compact-tabs-grid flex-shrink-0">
+          <TabsTrigger className="app-compact-tab-trigger" value="productos">{t('inventory.products')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger" value="movimientos">{t('inventory.movements')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger" value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger" value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger" value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger" value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
         </TabsList>
 
         {/* Productos Tab */}
@@ -3686,7 +3686,7 @@ export function Inventario() {
         ref={floatingButtonsRef}
         onMouseDown={handleFloatingButtonsMouseDown}
         onTouchStart={handleFloatingButtonsTouchStart}
-        className={`fixed z-[60] flex flex-col items-end gap-3 ${floatingButtonsDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`app-floating-inventory-actions fixed z-[60] flex flex-col items-end gap-3 ${floatingButtonsDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         style={{
           bottom: 'auto',
           right: floatingButtonsPosition.x === 0 ? 'max(env(safe-area-inset-right), 1rem)' : 'auto',

@@ -3183,11 +3183,11 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
     const stats = statsGenerales;
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 sm:space-y-5">
         {/* Statistiques */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
           <div 
-            className="p-4 sm:p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
+            className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
               boxShadow: `0 4px 15px ${branding.primaryColor}40`
@@ -3198,18 +3198,18 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">Total Bénévoles</p>
               <div className="flex items-center justify-between">
                 <p 
-                  className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
+                  className="text-xl sm:text-2xl md:text-3xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   {stats.total}
                 </p>
-                <Users className="w-8 h-8 sm:w-10 sm:h-10 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
+                <Users className="w-7 h-7 sm:w-9 sm:h-9 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
           </div>
 
           <div 
-            className="p-4 sm:p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
+            className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
               boxShadow: `0 4px 15px ${branding.secondaryColor}40`
@@ -3220,12 +3220,12 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">Actifs</p>
               <div className="flex items-center justify-between">
                 <p 
-                  className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
+                  className="text-xl sm:text-2xl md:text-3xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   {stats.actifs}
                 </p>
-                <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
+                <TrendingUp className="w-7 h-7 sm:w-9 sm:h-9 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
           </div>
@@ -3235,7 +3235,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               setSelectedBenevoleForHistorique(null);
               setCurrentView('historique');
             }}
-            className="p-4 sm:p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
+            className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
               boxShadow: '0 4px 15px rgba(156, 39, 176, 0.4)'
@@ -3246,12 +3246,12 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">Heures Totales</p>
               <div className="flex items-center justify-between">
                 <p 
-                  className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
+                  className="text-xl sm:text-2xl md:text-3xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   {formaterHeures(stats.heuresTotal)}
                 </p>
-                <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
+                <Clock className="w-7 h-7 sm:w-9 sm:h-9 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
           </div>
@@ -3261,7 +3261,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               setSelectedBenevoleForHistorique(null);
               setCurrentView('historique');
             }}
-            className="p-4 sm:p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
+            className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group relative overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #FFC107 0%, #FFB300 100%)',
               boxShadow: '0 4px 15px rgba(255, 193, 7, 0.4)'
@@ -3272,12 +3272,12 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">Heures Mois</p>
               <div className="flex items-center justify-between">
                 <p 
-                  className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
+                  className="text-xl sm:text-2xl md:text-3xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   {formaterHeures(stats.heuresMois)}
                 </p>
-                <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
+                <Calendar className="w-7 h-7 sm:w-9 sm:h-9 text-white/40 group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
           </div>
@@ -5311,7 +5311,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
   if (isPublicAccess) {
     return (
       <div 
-        className="min-h-screen p-3 sm:p-4 md:p-6 relative overflow-hidden" 
+        className="app-compact-page min-h-screen p-3 sm:p-4 md:p-6 relative overflow-hidden" 
         style={{ 
           fontFamily: 'Roboto, sans-serif',
           background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`,
@@ -5330,9 +5330,9 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
         </div>
 
         {/* Contenedor principal */}
-        <div className="relative z-10 w-full max-w-6xl mx-auto">
+        <div className="app-compact-page__content relative z-10 w-full max-w-6xl mx-auto">
           <div 
-            className="backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
+            className="app-compact-panel backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
             style={{
               boxShadow: '0 8px 32px 0 rgba(26, 77, 122, 0.2)'
             }}
@@ -5476,10 +5476,10 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
       </div>
 
       {/* Contenedor principal */}
-      <div className="relative z-10 p-3 sm:p-4 md:p-6" style={{ fontFamily: 'Roboto, sans-serif' }}>
-        <div className="w-full max-w-7xl mx-auto">
+      <div className="app-compact-page relative z-10 p-3 sm:p-4 md:p-6" style={{ fontFamily: 'Roboto, sans-serif' }}>
+        <div className="app-compact-page__content w-full max-w-7xl mx-auto">
           <div 
-            className="backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
+            className="app-compact-panel backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
             style={{
               boxShadow: '0 8px 32px 0 rgba(26, 77, 122, 0.2), 0 0 80px rgba(45, 149, 97, 0.1)'
             }}
@@ -5788,7 +5788,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
 
       {/* Dialog Asignar Bénévole a Departamentos */}
       <Dialog open={dialogAsignarDepartamentos} onOpenChange={setDialogAsignarDepartamentos}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="asignar-departamentos-description">
+        <DialogContent className="app-dialog-comfort max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="asignar-departamentos-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Link className="w-6 h-6" style={{ color: branding.primaryColor }} />
@@ -5800,9 +5800,9 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
           </DialogHeader>
 
           {benevoleSeleccionadoAsignar && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Info du bénévole */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-2" style={{ borderColor: branding.primaryColor }}>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-4 border-2" style={{ borderColor: branding.primaryColor }}>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full overflow-hidden border-2" style={{ borderColor: branding.primaryColor }}>
                     {benevoleSeleccionadoAsignar.photo ? (
@@ -5859,9 +5859,10 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               </div>
 
               {/* Botones */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 sm:pt-4 border-t">
                 <Button 
                   variant="outline" 
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setDialogAsignarDepartamentos(false);
                     setBenevoleSeleccionadoAsignar(null);
@@ -5872,7 +5873,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                 </Button>
                 <Button
                   onClick={handleGuardarAsignacionDepartamentos}
-                  className="text-white"
+                  className="w-full sm:w-auto text-white"
                   style={{ backgroundColor: branding.primaryColor }}
                 >
                   <Link className="w-4 h-4 mr-2" />
@@ -5902,7 +5903,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
 
       {/* Dialog: Profil Détaillé du Bénévole */}
       <Dialog open={profileModalOpen} onOpenChange={setProfileModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="benevole-profile-description">
+        <DialogContent className="app-dialog-comfort max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="benevole-profile-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Users className="w-6 h-6" style={{ color: branding.primaryColor }} />
@@ -5924,17 +5925,17 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               : [profileBenevole.departement];
             
             return (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* En-tête du profil avec avatar et badge */}
                 <div 
-                  className="p-6 rounded-xl relative overflow-hidden"
+                  className="p-4 sm:p-6 rounded-xl relative overflow-hidden"
                   style={{
                     background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`
                   }}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                     <div 
-                      className="w-20 h-20 rounded-2xl flex items-center justify-center text-white flex-shrink-0 relative"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center text-white flex-shrink-0 relative"
                       style={{ 
                         background: `linear-gradient(135deg, ${cardColor} 0%, ${cardColor}dd 100%)`,
                         boxShadow: `0 4px 12px ${cardColor}30`
@@ -5944,10 +5945,10 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                         <img 
                           src={profileBenevole.photo} 
                           alt={profileBenevole.prenom}
-                          className="w-full h-full rounded-2xl object-cover"
+                          className="w-full h-full rounded-xl sm:rounded-2xl object-cover"
                         />
                       ) : (
-                        <Users className="w-10 h-10" />
+                        <Users className="w-8 h-8 sm:w-10 sm:h-10" />
                       )}
                       {profileBenevole.statut === 'actif' && (
                         <div 
@@ -5958,11 +5959,11 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div className="min-w-0">
                           <h3 
-                            className="text-2xl font-bold mb-1"
+                            className="text-xl sm:text-2xl font-bold mb-1 break-words"
                             style={{ 
                               fontFamily: 'Montserrat, sans-serif',
                               color: branding.primaryColor
@@ -5971,13 +5972,13 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                             {profileBenevole.prenom} {profileBenevole.nom}
                           </h3>
                           {profileBenevole.poste && (
-                            <p className="text-lg mb-2" style={{ color: branding.secondaryColor }}>
+                            <p className="text-sm sm:text-lg mb-2" style={{ color: branding.secondaryColor }}>
                               {profileBenevole.poste}
                             </p>
                           )}
                         </div>
                         <Badge
-                          className="text-xs px-3 py-1"
+                          className="text-xs px-3 py-1 self-start"
                           style={{
                             backgroundColor: profileBenevole.statut === 'actif' 
                               ? branding.secondaryColor 
@@ -6008,9 +6009,9 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                 </div>
 
                 {/* Statistiques du bénévole */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                   <div 
-                    className="p-4 rounded-xl border-l-4"
+                    className="p-3 sm:p-4 rounded-xl border-l-4"
                     style={{ 
                       backgroundColor: `${branding.primaryColor}10`,
                       borderLeftColor: branding.primaryColor
@@ -6031,7 +6032,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                     </p>
                   </div>
                   <div 
-                    className="p-4 rounded-xl border-l-4"
+                    className="p-3 sm:p-4 rounded-xl border-l-4"
                     style={{ 
                       backgroundColor: `${branding.secondaryColor}10`,
                       borderLeftColor: branding.secondaryColor
@@ -6052,7 +6053,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                     </p>
                   </div>
                   <div 
-                    className="p-4 rounded-xl border-l-4"
+                    className="p-3 sm:p-4 rounded-xl border-l-4"
                     style={{ 
                       backgroundColor: `${branding.primaryColor}10`,
                       borderLeftColor: branding.primaryColor

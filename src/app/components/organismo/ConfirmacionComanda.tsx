@@ -188,7 +188,7 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
     
     const comandaActualizada: Comanda = {
       ...comandaPersistida,
-      estado: 'completada',
+      estado: 'confirmada',
       confirmadaPorOrganismo: true,
       fechaConfirmacion: new Date().toISOString(),
       fechaModificacion: new Date().toISOString()

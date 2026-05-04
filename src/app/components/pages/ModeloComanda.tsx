@@ -261,6 +261,7 @@ export function ModeloComanda({
   // Estados disponibles
   const estadosDisponibles = [
     { valor: 'pendiente', label: 'En attente', color: 'bg-[#1E73BE]' },
+    { valor: 'confirmada', label: 'Acceptée', color: 'bg-[#7E57C2]' },
     { valor: 'en_preparacion', label: 'En préparation', color: 'bg-[#FFC107]' },
     { valor: 'completada', label: 'Complétée', color: 'bg-[#4CAF50]' },
     { valor: 'entregada', label: 'Livrée', color: 'bg-[#2E7D32]' },
@@ -452,7 +453,7 @@ export function ModeloComanda({
         )}
 
         {/* Acciones del Organismo (no se imprime) */}
-        {modoOrganismo && comanda.estado !== 'anulada' && comanda.estado !== 'completada' && comanda.estado !== 'entregada' && (
+        {modoOrganismo && comanda.estado !== 'anulada' && comanda.estado !== 'confirmada' && comanda.estado !== 'completada' && comanda.estado !== 'entregada' && (
           <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-[#1E73BE] print:hidden">
             <div className="flex items-center justify-between mb-4">
               <div>

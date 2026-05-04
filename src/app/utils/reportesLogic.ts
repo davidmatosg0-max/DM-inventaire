@@ -5,7 +5,7 @@
 
 import { obtenerProductos } from './productStorage';
 import { obtenerCategorias } from './categoriaStorage';
-import { obtenerComandas } from './comandasLogic';
+import { obtenerComandas } from './comandaStorage';
 import { obtenerOrganismos, obtenerEstadisticasOrganismos } from './organismosLogic';
 import { obtenerRutas, obtenerVehiculos, obtenerEstadisticasTransporte } from './transporteLogic';
 import { obtenerEntradas } from './entradaInventarioStorage';
@@ -35,6 +35,9 @@ export interface ReporteInventario {
 export interface ReporteComandas {
   totalComandas: number;
   comandasPendientes: number;
+  comandasConfirmadas: number;
+  comandasEnPreparacion: number;
+  comandasCompletadas: number;
   comandasPreparadas: number;
   comandasEntregadas: number;
   comandasCanceladas: number;
@@ -89,6 +92,75 @@ export interface ReporteGeneral {
     fin: string;
   };
   generadoEn: string;
+}
+
+function esComandaAnulada(estado?: string): boolean {
+  return estado === 'anulada' || estado === 'cancelada';
+}
+
+function esComandaEnPreparacion(estado?: string): boolean {
+  return estado === 'confirmada' || estado === 'en_preparacion' || estado === 'preparada';
+}
+
+function obtenerValorTotalComanda(comanda: any): number {
+  if (typeof comanda?.totalValorMonetario === 'number') {
+    return comanda.totalValorMonetario;
+  }
+
+  if (typeof comanda?.valorTotal === 'number') {
+    return comanda.valorTotal;
+  }
+
+  if (Array.isArray(comanda?.items)) {
+    return comanda.items.reduce((sum: number, item: any) => {
+      const cantidad = Number(item?.cantidad || 0);
+      const valorUnitario = Number(item?.valorUnitario || 0);
+      return sum + (cantidad * valorUnitario);
+    }, 0);
+  }
+
+  if (Array.isArray(comanda?.productos)) {
+    return comanda.productos.reduce((sum: number, item: any) => {
+      const valorLinea = typeof item?.valorMonetario === 'number'
+        ? item.valorMonetario
+        : Number(item?.cantidad || 0) * Number(item?.valorUnitario || 0);
+      return sum + valorLinea;
+    }, 0);
+  }
+
+  return 0;
+}
+
+function obtenerPesoTotalComanda(comanda: any): number {
+  if (typeof comanda?.totalPeso === 'number') {
+    return comanda.totalPeso;
+  }
+
+  if (typeof comanda?.pesoTotal === 'number') {
+    return comanda.pesoTotal;
+  }
+
+  if (Array.isArray(comanda?.items)) {
+    return comanda.items.reduce((sum: number, item: any) => {
+      const cantidad = Number(item?.cantidad || 0);
+      const peso = Number(item?.peso || 0);
+      return sum + (cantidad * peso);
+    }, 0);
+  }
+
+  if (Array.isArray(comanda?.productos)) {
+    return comanda.productos.reduce((sum: number, item: any) => {
+      const cantidad = Number(item?.cantidad || 0);
+      const peso = Number(item?.peso || 0);
+      return sum + (cantidad * peso);
+    }, 0);
+  }
+
+  return 0;
+}
+
+function obtenerNombreOrganismoComanda(comanda: any): string {
+  return comanda?.nombreOrganismo || comanda?.organismoNombre || 'Sin organismo';
 }
 
 // ==================== GENERADORES DE REPORTES ====================
@@ -196,17 +268,20 @@ export function generarReporteComandas(
   // Calcular totales
   const totalComandas = comandas.length;
   const comandasPendientes = comandas.filter(c => c.estado === 'pendiente').length;
-  const comandasPreparadas = comandas.filter(c => c.estado === 'preparada').length;
+  const comandasConfirmadas = comandas.filter(c => c.estado === 'confirmada').length;
+  const comandasEnPreparacion = comandas.filter(c => c.estado === 'en_preparacion' || c.estado === 'preparada').length;
+  const comandasCompletadas = comandas.filter(c => c.estado === 'completada').length;
+  const comandasPreparadas = comandas.filter(c => esComandaEnPreparacion(c.estado) || c.estado === 'completada').length;
   const comandasEntregadas = comandas.filter(c => c.estado === 'entregada').length;
-  const comandasCanceladas = comandas.filter(c => c.estado === 'cancelada').length;
+  const comandasCanceladas = comandas.filter(c => esComandaAnulada(c.estado)).length;
 
   const valorTotalDistribuido = comandas
-    .filter(c => c.estado !== 'cancelada')
-    .reduce((sum, c) => sum + c.totalValorMonetario, 0);
+    .filter(c => !esComandaAnulada(c.estado))
+    .reduce((sum, c) => sum + obtenerValorTotalComanda(c), 0);
 
   const pesoTotalDistribuido = comandas
-    .filter(c => c.estado !== 'cancelada')
-    .reduce((sum, c) => sum + c.totalPeso, 0);
+    .filter(c => !esComandaAnulada(c.estado))
+    .reduce((sum, c) => sum + obtenerPesoTotalComanda(c), 0);
 
   const organismosUnicos = new Set(comandas.map(c => c.organismoId));
   const organismosAtendidos = organismosUnicos.size;
@@ -221,8 +296,8 @@ export function generarReporteComandas(
       comandasPorMesMap[mes] = { cantidad: 0, valor: 0 };
     }
     comandasPorMesMap[mes].cantidad++;
-    if (c.estado !== 'cancelada') {
-      comandasPorMesMap[mes].valor += c.totalValorMonetario;
+    if (!esComandaAnulada(c.estado)) {
+      comandasPorMesMap[mes].valor += obtenerValorTotalComanda(c);
     }
   });
 
@@ -234,12 +309,14 @@ export function generarReporteComandas(
   // Comandas por organismo
   const comandasPorOrganismoMap: Record<string, { cantidad: number; valor: number }> = {};
   comandas.forEach(c => {
-    if (!comandasPorOrganismoMap[c.organismoNombre]) {
-      comandasPorOrganismoMap[c.organismoNombre] = { cantidad: 0, valor: 0 };
+    const nombreOrganismo = obtenerNombreOrganismoComanda(c);
+
+    if (!comandasPorOrganismoMap[nombreOrganismo]) {
+      comandasPorOrganismoMap[nombreOrganismo] = { cantidad: 0, valor: 0 };
     }
-    comandasPorOrganismoMap[c.organismoNombre].cantidad++;
-    if (c.estado !== 'cancelada') {
-      comandasPorOrganismoMap[c.organismoNombre].valor += c.totalValorMonetario;
+    comandasPorOrganismoMap[nombreOrganismo].cantidad++;
+    if (!esComandaAnulada(c.estado)) {
+      comandasPorOrganismoMap[nombreOrganismo].valor += obtenerValorTotalComanda(c);
     }
   });
 
@@ -254,6 +331,9 @@ export function generarReporteComandas(
   return {
     totalComandas,
     comandasPendientes,
+    comandasConfirmadas,
+    comandasEnPreparacion,
+    comandasCompletadas,
     comandasPreparadas,
     comandasEntregadas,
     comandasCanceladas,
@@ -387,9 +467,11 @@ export function exportarReporteCSV(reporte: ReporteGeneral): string {
   lineas.push('=== COMANDAS ===');
   lineas.push(`Total Comandas,${reporte.comandas.totalComandas}`);
   lineas.push(`Pendientes,${reporte.comandas.comandasPendientes}`);
-  lineas.push(`Preparadas,${reporte.comandas.comandasPreparadas}`);
+  lineas.push(`Confirmadas,${reporte.comandas.comandasConfirmadas}`);
+  lineas.push(`En preparacion,${reporte.comandas.comandasEnPreparacion}`);
+  lineas.push(`Completadas,${reporte.comandas.comandasCompletadas}`);
   lineas.push(`Entregadas,${reporte.comandas.comandasEntregadas}`);
-  lineas.push(`Canceladas,${reporte.comandas.comandasCanceladas}`);
+  lineas.push(`Anuladas,${reporte.comandas.comandasCanceladas}`);
   lineas.push(`Valor Total Distribuido,${reporte.comandas.valorTotalDistribuido}`);
   lineas.push('');
 

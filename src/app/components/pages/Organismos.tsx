@@ -542,7 +542,7 @@ export function Organismos() {
 
   return (
     <div 
-      className="min-h-screen p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 relative overflow-hidden"
+      className="app-compact-page min-h-screen p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 relative overflow-hidden"
       style={{ 
         fontFamily: 'Roboto, sans-serif',
         background: 'linear-gradient(135deg, #1a4d7a15 0%, #2d956110 100%)',
@@ -565,11 +565,11 @@ export function Organismos() {
       </div>
 
       {/* Contenido con z-index superior */}
-      <div className="relative z-10 space-y-4 sm:space-y-6">
+      <div className="app-compact-page__content relative z-10 space-y-4 sm:space-y-6">
         {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3">
+        <div className="app-compact-panel backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               {branding.logo ? (
                 <div 
                   className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center overflow-hidden shadow-lg border-2"
@@ -590,10 +590,10 @@ export function Organismos() {
                   <Users className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h1 
-                    className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight"
+                    className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight break-words"
                     style={{ 
                       fontFamily: 'Montserrat, sans-serif',
                       color: branding.primaryColor 
@@ -611,10 +611,10 @@ export function Organismos() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
               <Button 
                 onClick={handleAbrirEmailGrupal}
-                className="flex-1 sm:flex-none text-white transition-all duration-300 hover:scale-105"
+                className="flex-1 lg:flex-none text-white transition-all duration-300 hover:scale-105"
                 style={{ 
                   fontFamily: 'Montserrat, sans-serif', 
                   fontWeight: 500, 
@@ -628,7 +628,7 @@ export function Organismos() {
               <Dialog open={organismoDialogOpen} onOpenChange={setOrganismoDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
-                    className={puedeGestionarOrganismos ? "flex-1 sm:flex-none text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl" : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"} 
+                    className={puedeGestionarOrganismos ? "flex-1 lg:flex-none text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl" : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"} 
                     style={puedeGestionarOrganismos ? { 
                       fontFamily: 'Montserrat, sans-serif', 
                       fontWeight: 500, 
@@ -654,15 +654,15 @@ export function Organismos() {
             className="!max-w-none !w-screen !h-screen !top-0 !left-0 !translate-x-0 !translate-y-0 !rounded-none p-0 m-0"
             aria-describedby="new-organism-description"
           >
-            <DialogHeader className="sticky top-0 z-10 text-white px-6 py-6 shadow-2xl" style={{ background: `linear-gradient(90deg, ${branding.dangerColor}, ${branding.primaryColor}, ${branding.secondaryColor})`, borderBottom: `4px solid ${branding.warningColor}` }}>
-              <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '2rem', color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
+            <DialogHeader className="sticky top-0 z-10 text-white px-4 py-4 sm:px-6 sm:py-5 shadow-2xl" style={{ background: `linear-gradient(90deg, ${branding.dangerColor}, ${branding.primaryColor}, ${branding.secondaryColor})`, borderBottom: `4px solid ${branding.warningColor}` }}>
+              <DialogTitle className="text-2xl sm:text-[2rem]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
                 🎨 {t('organisms.version.form.title')}
               </DialogTitle>
-              <DialogDescription id="new-organism-description" className="text-white text-lg font-semibold">
+              <DialogDescription id="new-organism-description" className="text-white text-sm sm:text-lg font-semibold">
                 ✅ {t('organisms.version.form.description')}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-6 py-6 px-8 max-w-7xl mx-auto overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin">{/* Contenedor con max-width para mejor lectura */}
+            <div className="app-form-compact app-form-organismo app-compact-dialog-body space-y-4 sm:space-y-6 py-4 sm:py-6 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-y-auto max-h-[calc(100vh-144px)] sm:max-h-[calc(100vh-180px)] scrollbar-thin">{/* Contenedor con max-width para mejor lectura */}
               {/* Información Básica */}
               <div className="space-y-4">
                 <h3 className="font-medium text-[#333333] pb-2 border-b" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -670,14 +670,14 @@ export function Organismos() {
                 </h3>
                 <div className="grid grid-cols-6 gap-4">
                   {/* 🎨 CAMPO LOGO DEL ORGANISMO */}
-                  <div className="col-span-6 space-y-3" style={{
+                  <div className="app-form-callout col-span-6 space-y-3" style={{
                     backgroundColor: '#FFF0F0',
                     padding: '20px',
                     borderRadius: '12px',
                     border: `3px solid ${branding.dangerColor}`,
                     marginBottom: '12px'
                   }}>
-                    <Label className="font-bold text-2xl flex items-center gap-3" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.dangerColor }}>
+                    <Label className="app-form-callout-title font-bold text-2xl flex items-center gap-3" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.dangerColor }}>
                       🎨 {t('organisms.version.form.logoField.title')}
                       <Badge className="text-white text-sm px-3 py-1" style={{ backgroundColor: branding.dangerColor }}>
                         {t('organisms.version.form.logoField.badge')}
@@ -788,7 +788,7 @@ export function Organismos() {
                   </div>
 
                   {/* ⭐ CAMPO QUARTIER - ULTRA VISIBLE ⭐ */}
-                  <div className="col-span-6 space-y-3" style={{ 
+                  <div className="app-form-callout col-span-6 space-y-3" style={{ 
                     backgroundColor: '#FFF9E6', 
                     padding: '20px', 
                     borderRadius: '12px', 
@@ -796,7 +796,7 @@ export function Organismos() {
                     boxShadow: `0 4px 20px ${branding.warningColor}40`,
                     marginBottom: '8px'
                   }}>
-                    <Label className="text-[#333333] font-bold text-xl flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <Label className="app-form-callout-title text-[#333333] font-bold text-xl flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       🏘️ Quartier de Laval *
                       <Badge className="text-black" style={{ backgroundColor: branding.warningColor }}>REQUIS</Badge>
                     </Label>
@@ -832,7 +832,7 @@ export function Organismos() {
                   {/* Estado Activo/Inactivo */}
                   <div className="space-y-2 col-span-2">
                     <Label>{t('organisms.organismState')}</Label>
-                    <div className="flex items-center gap-3 p-4 border border-gray-300 rounded-lg bg-white">
+                    <div className="app-form-status-row flex items-center gap-3 p-4 border border-gray-300 rounded-lg bg-white">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-[#333333]">
                           {t('organisms.state')}: {formOrganismo.activo ? t('organisms.active') : t('organisms.inactive')}
@@ -1632,17 +1632,17 @@ export function Organismos() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="card-glass rounded-xl sm:rounded-2xl p-3.5 sm:p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('organisms.totalOrganisms')}</p>
-              <p className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+              <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
                 {organismos.length}
               </p>
             </div>
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg"
               style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
             >
               <Users className="h-5 w-5 text-white" />
@@ -1650,16 +1650,16 @@ export function Organismos() {
           </div>
         </div>
 
-        <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
+        <div className="card-glass rounded-xl sm:rounded-2xl p-3.5 sm:p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('organisms.activeOrganisms')}</p>
-              <p className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>
+              <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>
                 {organismosActivos}
               </p>
             </div>
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg"
               style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
             >
               <Check className="h-5 w-5 text-white" />
@@ -1667,16 +1667,16 @@ export function Organismos() {
           </div>
         </div>
 
-        <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4 border-l-[#FFC107]">
+        <div className="card-glass rounded-xl sm:rounded-2xl p-3.5 sm:p-4 hover-lift cursor-pointer border-l-4 border-l-[#FFC107]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('organisms.totalBeneficiaries')}</p>
-              <p className="text-2xl font-bold text-[#FFC107]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <p className="text-xl sm:text-2xl font-bold text-[#FFC107]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 {totalBeneficiarios}
               </p>
             </div>
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg"
               style={{ background: 'linear-gradient(135deg, #FFC107 0%, #FFB300 100%)' }}
             >
               <Users className="h-5 w-5 text-white" />
@@ -1686,7 +1686,7 @@ export function Organismos() {
       </div>
 
         {/* Search con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
+        <div className="app-compact-panel backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
           <Input
             placeholder={t('organisms.searchOrganism')}
             value={searchTerm}
@@ -1695,17 +1695,17 @@ export function Organismos() {
         </div>
 
         {/* Organismos Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
         {organismosFiltrados.map(organismo => {
           const comandasOrganismo = obtenerComandas().filter(c => c.organismoId === organismo.id);
 
           return (
-            <Card key={organismo.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
+            <Card key={organismo.id} className="hover:shadow-lg transition-shadow border-white/70 shadow-sm overflow-hidden">
+              <CardHeader className="pb-2 sm:pb-3">
                 <div className="flex items-start justify-between gap-3">
                   {/* Logo del organismo */}
                   {organismo.logo && (
-                    <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 border border-gray-200 rounded-lg overflow-hidden bg-white">
                       <img 
                         src={organismo.logo} 
                         alt={`Logo ${organismo.nombre}`}
@@ -1714,8 +1714,8 @@ export function Organismos() {
                     </div>
                   )}
                   
-                  <div className="flex-1">
-                    <CardTitle className="mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.25rem' }}>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="mb-1.5 text-lg sm:text-xl leading-tight break-words" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {organismo.nombre}
                     </CardTitle>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1736,8 +1736,8 @@ export function Organismos() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2 text-sm">
+              <CardContent className="space-y-2.5">
+                <div className="space-y-1.5 text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-[#666666] flex-shrink-0" />
                     <MapLink 
@@ -1760,32 +1760,32 @@ export function Organismos() {
                   </div>
                 </div>
 
-                <div className="pt-3 border-t grid grid-cols-2 gap-4 text-center">
+                <div className="pt-2.5 border-t grid grid-cols-2 gap-3 text-center">
                   <div>
-                    <p className="text-sm text-[#666666]">{t('organisms.orders')}</p>
+                    <p className="text-xs sm:text-sm text-[#666666]">{t('organisms.orders')}</p>
                     <p className="font-medium" style={{ color: '#1E73BE' }}>{comandasOrganismo.length}</p>
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-3">
+                <div className="flex flex-col sm:flex-row gap-2 pt-2.5">
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleAbrirEmailIndividual(organismo)}
-                    className="text-white"
+                    className="w-full sm:w-auto text-white"
                     style={{ backgroundColor: branding.secondaryColor, borderColor: branding.secondaryColor }}
                   >
                     <Send className="w-4 h-4 mr-1" />
                     Email
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleVerPerfil(organismo)}>
+                  <Button variant="outline" size="sm" className="w-full sm:flex-1" onClick={() => handleVerPerfil(organismo)}>
                     <Eye className="w-4 h-4 mr-1" />
                     {t('organisms.viewProfile')}
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1" 
+                    className="w-full sm:flex-1" 
                     onClick={() => {
                       if (!puedeGestionarOrganismos) {
                         toast.error(t('organisms.accessDeniedTitle'), {
@@ -1828,7 +1828,7 @@ export function Organismos() {
 
       {/* Dialog de Envío de Email */}
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="email-dialog-description">
+        <DialogContent className="app-dialog-comfort max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="email-dialog-description">
           <DialogHeader>
             <DialogTitle className="text-xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
               <div className="flex items-center gap-2">
@@ -1845,10 +1845,10 @@ export function Organismos() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-4 sm:space-y-6 py-3 sm:py-4">
             {tipoEmail === 'grupo' && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <Label className="text-base font-medium">{t('organisms.email.selectOrganisms')}</Label>
                   <Button
                     variant="outline"
@@ -1862,7 +1862,7 @@ export function Organismos() {
                   </Button>
                 </div>
 
-                <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
+                <div className="border rounded-lg p-2.5 sm:p-3 max-h-52 sm:max-h-60 overflow-y-auto space-y-2">
                   {organismosFiltrados.map(organismo => (
                     <label
                       key={organismo.id}

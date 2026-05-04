@@ -754,12 +754,13 @@ async function generatePrintHTML(
             <p class="text-xs text-[#666666]">Statut:</p>
             <span class="inline-block px-2 py-1 rounded text-xs font-bold text-white ${
               comanda.estado === 'pendiente' ? 'bg-[#FFC107]' :
+              comanda.estado === 'confirmada' ? 'bg-[#7E57C2]' :
               comanda.estado === 'en_preparacion' ? 'bg-[#1E73BE]' :
               comanda.estado === 'completada' ? 'bg-[#4CAF50]' :
               comanda.estado === 'entregada' ? 'bg-[#2E7D32]' :
               'bg-[#DC3545]'
             }">
-              ${comanda.estado.toUpperCase().replace('_', ' ')}
+              ${comanda.estado === 'confirmada' ? 'ACCEPTÉE' : comanda.estado.toUpperCase().replace('_', ' ')}
             </span>
           </div>
         </div>

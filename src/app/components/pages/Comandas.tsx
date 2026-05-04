@@ -8,7 +8,6 @@ import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { mockOrganismos, mockProductos } from '../../data/mockData';
 import { toast } from 'sonner';
@@ -349,6 +348,7 @@ export function Comandas() {
   const getEstadoBadge = (estado: string) => {
     const config = {
       pendiente: { bg: 'bg-[#FFC107]', text: t('orders.pending') },
+      confirmada: { bg: 'bg-[#7E57C2]', text: 'Acceptée' },
       en_preparacion: { bg: 'bg-[#1E73BE]', text: t('orders.inPreparation') },
       completada: { bg: 'bg-[#4CAF50]', text: t('orders.completed') },
       entregada: { bg: 'bg-[#2E7D32]', text: t('orders.delivered') },
@@ -360,6 +360,96 @@ export function Comandas() {
         {config.text}
       </Badge>
     );
+  };
+
+  const estadoVisualConfig: Array<{
+    key: string;
+    label: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+    accent: string;
+    soft: string;
+    border: string;
+  }> = [
+    {
+      key: 'pendiente',
+      label: t('orders.pending'),
+      description: 'Commandes en attente de validation ou de réponse.',
+      icon: Clock,
+      accent: '#FFC107',
+      soft: 'linear-gradient(135deg, rgba(255, 193, 7, 0.18) 0%, rgba(255, 243, 205, 0.85) 100%)',
+      border: 'rgba(255, 193, 7, 0.35)'
+    },
+    {
+      key: 'confirmada',
+      label: 'Acceptée',
+      description: 'Commandes confirmées par les organismes et prêtes pour le suivi.',
+      icon: Check,
+      accent: '#7E57C2',
+      soft: 'linear-gradient(135deg, rgba(126, 87, 194, 0.16) 0%, rgba(245, 240, 255, 0.95) 100%)',
+      border: 'rgba(126, 87, 194, 0.28)'
+    },
+    {
+      key: 'en_preparacion',
+      label: t('orders.inPreparation'),
+      description: 'Commandes en cours de préparation logistique.',
+      icon: Package,
+      accent: '#1E73BE',
+      soft: 'linear-gradient(135deg, rgba(30, 115, 190, 0.14) 0%, rgba(233, 245, 255, 0.95) 100%)',
+      border: 'rgba(30, 115, 190, 0.22)'
+    },
+    {
+      key: 'completada',
+      label: t('orders.completed'),
+      description: 'Commandes préparées et clôturées côté opération.',
+      icon: FileCheck,
+      accent: '#4CAF50',
+      soft: 'linear-gradient(135deg, rgba(76, 175, 80, 0.16) 0%, rgba(237, 247, 237, 0.95) 100%)',
+      border: 'rgba(76, 175, 80, 0.24)'
+    },
+    {
+      key: 'entregada',
+      label: t('orders.delivered'),
+      description: 'Commandes livrées et visibles dans l’historique final.',
+      icon: FileCheck,
+      accent: '#2E7D32',
+      soft: 'linear-gradient(135deg, rgba(46, 125, 50, 0.16) 0%, rgba(232, 245, 233, 0.98) 100%)',
+      border: 'rgba(46, 125, 50, 0.25)'
+    },
+    {
+      key: 'anulada',
+      label: t('orders.cancelled'),
+      description: 'Commandes annulées, conservées pour traçabilité.',
+      icon: Ban,
+      accent: '#DC3545',
+      soft: 'linear-gradient(135deg, rgba(220, 53, 69, 0.14) 0%, rgba(253, 237, 239, 0.98) 100%)',
+      border: 'rgba(220, 53, 69, 0.22)'
+    }
+  ];
+
+  const calcularMetricasEstado = (comandasEstado: Comanda[]) => {
+    const totalProduits = comandasEstado.reduce((sum, comanda) => sum + (comanda.items?.length || 0), 0);
+    const totalArticles = comandasEstado.reduce(
+      (sum, comanda) => sum + (comanda.items || []).reduce((itemsSum, item) => itemsSum + Number(item.cantidad || 0), 0),
+      0
+    );
+    const organismes = new Set(
+      comandasEstado
+        .map(comanda => resolverOrganismoComanda(comanda)?.nombre || obtenerNombreOrganismoComanda(comanda))
+        .filter(Boolean)
+    ).size;
+    const prochaineLivraison = comandasEstado
+      .map(comanda => comanda.fechaEntrega)
+      .filter((fecha): fecha is string => Boolean(fecha))
+      .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())[0] || null;
+
+    return {
+      totalCommandes: comandasEstado.length,
+      totalProduits,
+      totalArticles,
+      organismes,
+      prochaineLivraison,
+    };
   };
 
   const handleCrearComandasGrupo = () => {
@@ -456,6 +546,7 @@ export function Comandas() {
     // Obtener el texto traducido del estado
     const estadosMap: Record<string, string> = {
       'pendiente': t('orders.pending'),
+      'confirmada': 'Acceptée',
       'en_preparacion': t('orders.inPreparation'),
       'completada': t('orders.completed'),
       'entregada': t('orders.delivered'),
@@ -517,7 +608,7 @@ export function Comandas() {
     setMostrarModeloComanda(false);
   };
 
-  const comandasPendientes = comandas.filter(c => c.estado === 'pendiente' || c.estado === 'completada');
+  const comandasPendientes = comandas.filter(c => c.estado === 'pendiente');
   
   const toggleComandaSeleccionada = (comandaId: string) => {
     setComandasSeleccionadas(prev => 
@@ -739,6 +830,7 @@ export function Comandas() {
         printedOn: t('common.printedOn') || 'Imprimé le',
         systemFooter: t('commands.systemFooter') || 'Système de Gestion des Commandes',
         pending: t('commands.pending') || 'EN ATTENTE',
+        confirmed: 'ACCEPTÉE',
         inPreparation: t('commands.inPreparation') || 'EN PRÉPARATION',
         ready: t('commands.ready') || 'PRÊTE',
         delivered: t('commands.delivered') || 'LIVRÉE',
@@ -840,9 +932,20 @@ export function Comandas() {
 
   const totalComandas = comandas.length;
   const comandasDistribuidasFiltradas = comandasFiltradas.filter(comanda => comanda.estado !== 'anulada');
-  const comandasActivas = comandas.filter(c => c.estado !== 'anulada' && c.estado !== 'entregada').length;
+  const comandasActivas = comandas.filter(c => c.estado !== 'anulada' && c.estado !== 'entregada' && c.estado !== 'confirmada').length;
   const comandasPendientesCount = comandas.filter(c => c.estado === 'pendiente').length;
+  const comandasAceptadasCount = comandas.filter(c => c.estado === 'confirmada').length;
   const comandasCompletadas = comandas.filter(c => c.estado === 'entregada').length;
+  const comandasAgrupadasPorEstado = estadoVisualConfig
+    .filter(estado => estadoFiltro === 'todos' || estado.key === estadoFiltro)
+    .map(estado => ({
+      ...estado,
+      comandas: comandasFiltradas.filter(comanda => comanda.estado === estado.key)
+    }))
+    .map(grupo => ({
+      ...grupo,
+      metricas: calcularMetricasEstado(grupo.comandas)
+    }));
 
   if (mostrarImpresionCompacta && comandaSeleccionada) {
     const organismo = resolverOrganismoComanda(comandaSeleccionada);
@@ -976,7 +1079,7 @@ export function Comandas() {
         </div>
 
         {/* Stats con glassmorphism */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div 
             className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             style={{ 
@@ -1035,6 +1138,16 @@ export function Comandas() {
             </div>
           </div>
 
+          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#7E57C2] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#666666]">Commandes acceptées</p>
+                <p className="font-bold text-2xl text-[#7E57C2]">{comandasAceptadasCount}</p>
+              </div>
+              <Check className="w-10 h-10 sm:w-12 sm:h-12 text-[#7E57C2] opacity-20" />
+            </div>
+          </div>
+
           <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#2E7D32] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
@@ -1050,16 +1163,16 @@ export function Comandas() {
         <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
           <Tabs value={tabActual} onValueChange={setTabActual}>
             <div className="p-4 sm:p-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="comandas" className="flex items-center gap-2">
+              <TabsList className="app-compact-tabs-grid w-full">
+                <TabsTrigger value="comandas" className="app-compact-tab-trigger flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   {t('orders.title')}
                 </TabsTrigger>
-                <TabsTrigger value="ofertas" className="flex items-center gap-2">
+                <TabsTrigger value="ofertas" className="app-compact-tab-trigger flex items-center gap-2">
                   <Tag className="w-4 h-4" />
                   {t('orders.offersRequestsTab')}
                 </TabsTrigger>
-                <TabsTrigger value="ofertas-cocina" className="flex items-center gap-2">
+                <TabsTrigger value="ofertas-cocina" className="app-compact-tab-trigger flex items-center gap-2">
                   <Utensils className="w-4 h-4" />
                   {t('orders.kitchenOffersTab')}
                 </TabsTrigger>
@@ -1067,8 +1180,9 @@ export function Comandas() {
             </div>
 
           {/* TAB: COMANDAS */}
-          <TabsContent value="comandas" className="p-4 sm:p-6 pt-0 space-y-4">\n            {/* Búsqueda y filtros */}
-          <div className="flex gap-4 items-center">
+          <TabsContent value="comandas" className="p-4 sm:p-6 pt-0 space-y-4">
+            {/* Búsqueda y filtros */}
+          <div className="app-compact-filters">
             <div className="flex-1">
               <Input
                 placeholder={searchByNumberPlaceholder}
@@ -1084,6 +1198,7 @@ export function Comandas() {
               <SelectContent>
                 <SelectItem value="todos">{t('orders.allStatuses')}</SelectItem>
                 <SelectItem value="pendiente">{t('orders.pending')}</SelectItem>
+                <SelectItem value="confirmada">Acceptée</SelectItem>
                 <SelectItem value="en_preparacion">{t('orders.inPreparation')}</SelectItem>
                 <SelectItem value="completada">{t('orders.completed')}</SelectItem>
                 <SelectItem value="entregada">{t('orders.delivered')}</SelectItem>
@@ -1101,71 +1216,210 @@ export function Comandas() {
             </Button>
           </div>
 
-          {/* Tabla de comandas */}
-          <Card>
-            <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('orders.orderNumber')}</TableHead>
-                    <TableHead>{t('orders.organism')}</TableHead>
-                    <TableHead>{t('orders.deliveryDate')}</TableHead>
-                    <TableHead>{t('orders.products')}</TableHead>
-                    <TableHead>{t('orders.status')}</TableHead>
-                    <TableHead>{t('common.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {comandasFiltradas.map((comanda) => {
-                    const organismo = resolverOrganismoComanda(comanda);
+          <Card className="border-white/60 bg-white/75 shadow-lg backdrop-blur-xl">
+            <CardContent className="pt-5 space-y-4">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <h2
+                    className="text-base sm:text-lg font-semibold"
+                    style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                  >
+                    Vue compacte par état des commandes
+                  </h2>
+                  <p className="text-xs sm:text-sm text-[#666666]">
+                    Tous les états visibles dans une lecture plus dense, sans perdre les détails opérationnels.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {comandasAgrupadasPorEstado.map((grupo) => (
+                    <div
+                      key={`resume-${grupo.key}`}
+                      className="rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm"
+                      style={{
+                        color: grupo.accent,
+                        background: grupo.soft,
+                        border: `1px solid ${grupo.border}`
+                      }}
+                    >
+                      {grupo.label}: {grupo.comandas.length}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {comandasFiltradas.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#d0d7de] bg-[#f8fafc] p-10 text-center">
+                  <Package className="mx-auto mb-3 h-10 w-10 text-[#9aa4b2]" />
+                  <p className="text-base font-medium text-[#334155]">Aucune commande ne correspond aux filtres actuels.</p>
+                  <p className="mt-1 text-sm text-[#64748b]">Essayez une autre recherche ou changez le statut sélectionné.</p>
+                </div>
+              ) : (
+                <div
+                  className="grid gap-3 lg:gap-4"
+                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}
+                >
+                  {comandasAgrupadasPorEstado.map((grupo) => {
+                    const EstadoIcon = grupo.icon;
+
                     return (
-                      <TableRow key={comanda.id}>
-                        <TableCell className="font-medium">{comanda.numero || comanda.id}</TableCell>
-                        <TableCell>{organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism')}</TableCell>
-                        <TableCell>{formatLocalizedDate(comanda.fechaEntrega)}</TableCell>
-                        <TableCell>{comanda.items?.length || 0} {t('inventory.products')}</TableCell>
-                        <TableCell>{getEstadoBadge(comanda.estado)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setComandaSeleccionada(comanda);
-                                setMostrarModeloComanda(true);
+                      <div
+                        key={grupo.key}
+                        className="overflow-hidden rounded-2xl border shadow-lg backdrop-blur-xl"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.92)',
+                          borderColor: grupo.border,
+                          boxShadow: `0 12px 30px ${grupo.accent}10`
+                        }}
+                      >
+                        <div
+                          className="border-b px-3.5 py-3"
+                          style={{
+                            background: grupo.soft,
+                            borderColor: grupo.border
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2.5">
+                              <div
+                                className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm"
+                                style={{ backgroundColor: grupo.accent }}
+                              >
+                                <EstadoIcon className="h-4 w-4 text-white" />
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold text-[#1f2937]">{grupo.label}</h3>
+                                <p className="mt-0.5 text-[11px] leading-4 text-[#5b6472]">{grupo.description}</p>
+                              </div>
+                            </div>
+                            <div
+                              className="rounded-full px-2.5 py-1 text-xs font-semibold"
+                              style={{
+                                color: grupo.accent,
+                                backgroundColor: 'rgba(255, 255, 255, 0.8)'
                               }}
-                              title={t('orders.viewOrder')}
                             >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleAbrirImpresionCompacta(comanda)}
-                              title={t('orders.printOrder')}
-                              className="text-[#2E7D32] hover:text-[#2E7D32]"
-                            >
-                              <Printer className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const organismo = resolverOrganismoComanda(comanda);
-                                handleImprimirEtiquetaEstandarizada(comanda, organismo);
-                              }}
-                              title={t('orders.printLabelTitle')}
-                              className="text-[#1E73BE] hover:text-[#1E73BE]"
-                            >
-                              <Tag className="w-4 h-4" />
-                            </Button>
+                              {grupo.metricas.totalCommandes}
+                            </div>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                          <div className="mt-3 grid grid-cols-2 gap-1.5">
+                            <div className="rounded-lg bg-white/70 px-2.5 py-2">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-[#6b7280]">Articles</p>
+                              <p className="mt-0.5 text-xs font-semibold text-[#111827]">{formatNumberSimple(grupo.metricas.totalArticles)}</p>
+                            </div>
+                            <div className="rounded-lg bg-white/70 px-2.5 py-2">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-[#6b7280]">Organismes</p>
+                              <p className="mt-0.5 text-xs font-semibold text-[#111827]">{formatNumberSimple(grupo.metricas.organismes)}</p>
+                            </div>
+                            <div className="rounded-lg bg-white/70 px-2.5 py-2">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-[#6b7280]">Produits</p>
+                              <p className="mt-0.5 text-xs font-semibold text-[#111827]">{formatNumberSimple(grupo.metricas.totalProduits)}</p>
+                            </div>
+                            <div className="rounded-lg bg-white/70 px-2.5 py-2">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-[#6b7280]">Prochaine</p>
+                              <p className="mt-0.5 text-xs font-semibold text-[#111827]">
+                                {grupo.metricas.prochaineLivraison ? formatLocalizedDate(grupo.metricas.prochaineLivraison) : '--'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="max-h-[60vh] space-y-2 overflow-y-auto p-3">
+                          {grupo.comandas.length === 0 ? (
+                            <div className="rounded-xl border border-dashed p-4 text-center text-xs text-[#7b8794]">
+                              Aucun élément dans cet état.
+                            </div>
+                          ) : (
+                            grupo.comandas.map((comanda) => {
+                              const organismo = resolverOrganismoComanda(comanda);
+                              const fechaRendezVous = comanda.fechaEntrega ? formatLocalizedDate(comanda.fechaEntrega) : '';
+                              const horaRendezVous = organismo?.horaCita || '';
+                              const rendezVousTexte = fechaRendezVous && horaRendezVous
+                                ? `${fechaRendezVous} • ${horaRendezVous}`
+                                : fechaRendezVous || horaRendezVous || '--';
+
+                              return (
+                                <div
+                                  key={comanda.id}
+                                  className="rounded-xl border border-white/70 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                                  style={{ boxShadow: '0 6px 18px rgba(15, 23, 42, 0.05)' }}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 space-y-0.5">
+                                      <p className="whitespace-normal break-words text-sm font-bold leading-5 text-[#0f172a]">
+                                        {organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism')}
+                                      </p>
+                                      <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+                                        <span className="rounded-full bg-[#f1f5f9] px-2 py-0.5 font-semibold tracking-wide text-[#475569]">
+                                          {comanda.numero || comanda.id}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {getEstadoBadge(comanda.estado)}
+                                  </div>
+
+                                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                    <div className="rounded-lg bg-[#f8fafc] px-2.5 py-2">
+                                      <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Rendez-vous</p>
+                                      <p className="mt-0.5 font-medium text-[#1e293b]">
+                                        {rendezVousTexte}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-lg bg-[#f8fafc] px-2.5 py-2">
+                                      <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Produits</p>
+                                      <p className="mt-0.5 font-medium text-[#1e293b]">
+                                        {comanda.items?.length || 0} {t('inventory.products')}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-3 flex flex-wrap gap-1.5">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setComandaSeleccionada(comanda);
+                                        setMostrarModeloComanda(true);
+                                      }}
+                                      title={t('orders.viewOrder')}
+                                      className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] hover:bg-[#f8fafc]"
+                                    >
+                                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                                      Ouvrir
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleAbrirImpresionCompacta(comanda)}
+                                      title={t('orders.printOrder')}
+                                      className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#2E7D32] hover:bg-[#eef8ef] hover:text-[#2E7D32]"
+                                    >
+                                      <Printer className="mr-1.5 h-3.5 w-3.5" />
+                                      Imprimer
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const organismo = resolverOrganismoComanda(comanda);
+                                        handleImprimirEtiquetaEstandarizada(comanda, organismo);
+                                      }}
+                                      title={t('orders.printLabelTitle')}
+                                      className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#1E73BE] hover:bg-[#edf5ff] hover:text-[#1E73BE]"
+                                    >
+                                      <Tag className="mr-1.5 h-3.5 w-3.5" />
+                                      Étiquette
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
-                </TableBody>
-              </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1173,7 +1427,7 @@ export function Comandas() {
         {/* TAB: OFERTAS */}
         <TabsContent value="ofertas" className="p-4 sm:p-6 pt-0 space-y-4">
           {/* Filtro de ofertas por estado */}
-          <div className="flex gap-4">
+          <div className="app-compact-filters">
             <Select value={estadoFiltroOferta} onValueChange={setEstadoFiltroOferta}>
               <SelectTrigger className="w-[250px]">
                 <SelectValue placeholder={t('orders.offerStatusFilter')} />
@@ -1344,7 +1598,7 @@ export function Comandas() {
 
                                     {/* Botones de Acción */}
                                     {solicitud.estado === 'pendiente' && (
-                                      <div className="flex gap-2 mb-3">
+                                      <div className="flex flex-col sm:flex-row gap-2 mb-3">
                                         <Button
                                           size="sm"
                                           className="flex-1 bg-[#4CAF50] hover:bg-[#45A049]"
@@ -1371,7 +1625,7 @@ export function Comandas() {
                                     )}
 
                                     {solicitud.estado === 'aceptada' && (
-                                      <div className="flex gap-2 mb-3">
+                                      <div className="flex flex-col sm:flex-row gap-2 mb-3">
                                         <Button
                                           size="sm"
                                           variant="outline"
@@ -1423,7 +1677,7 @@ export function Comandas() {
                                     )}
 
                                     {solicitud.estado === 'aceptada' && (
-                                      <div className="flex gap-2 mb-3">
+                                      <div className="flex flex-col sm:flex-row gap-2 mb-3">
                                         <Button
                                           size="sm"
                                           variant="outline"
@@ -1472,7 +1726,7 @@ export function Comandas() {
                                     </div>
 
                                     {/* Totales */}
-                                    <div className="grid grid-cols-3 gap-2 mb-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
                                       <div className="bg-white rounded p-2 text-center">
                                         <p className="text-xs text-[#666666]">{t('orders.products')}</p>
                                         <p className="font-bold text-[#1E73BE]">{solicitud.productosAceptados.length}</p>
@@ -1549,7 +1803,7 @@ export function Comandas() {
 
       {/* Dialog de notificaciones */}
       <Dialog open={dialogNotificacionOpen} onOpenChange={setDialogNotificacionOpen}>
-        <DialogContent className="max-w-2xl" aria-describedby="notificacion-dialog-description">
+        <DialogContent className="app-dialog-comfort max-w-2xl" aria-describedby="notificacion-dialog-description">
           <DialogHeader>
             <DialogTitle>{t('orders.notifyPendingOrders')}</DialogTitle>
             <DialogDescription id="notificacion-dialog-description">
@@ -1586,7 +1840,7 @@ export function Comandas() {
               })}
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="app-compact-actions justify-end">
               <Button variant="outline" onClick={() => setDialogNotificacionOpen(false)}>
                 {t('common.cancel')}
               </Button>
@@ -1619,7 +1873,7 @@ export function Comandas() {
 
       {/* Dialog para ver detalles de solicitud */}
       <Dialog open={dialogVerSolicitudOpen} onOpenChange={setDialogVerSolicitudOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="ver-solicitud-description">
+        <DialogContent className="app-dialog-comfort max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="ver-solicitud-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>
               {t('orders.requestDialogTitle')}
@@ -1775,7 +2029,7 @@ export function Comandas() {
         <Button
           size="icon"
           onClick={() => setEscanerQROpen(true)}
-          className="fixed right-6 top-24 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
+          className="app-floating-qr fixed right-6 top-24 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
           style={{
             background: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)',
             boxShadow: '0 10px 25px rgba(147, 51, 234, 0.35)'
