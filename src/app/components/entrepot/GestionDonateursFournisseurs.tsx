@@ -747,7 +747,7 @@ export function GestionDonateursFournisseurs() {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-4 flex-1 flex flex-col overflow-hidden space-y-4">
+        <CardContent className="pt-4 flex-1 min-h-0 overflow-y-auto space-y-4">
           {/* Estadísticas */}
           <div className="grid gap-3 md:grid-cols-3 flex-shrink-0">
             <div 
@@ -841,8 +841,8 @@ export function GestionDonateursFournisseurs() {
           </div>
 
           {/* Tabs y contenido */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'donateurs' | 'fournisseurs')} className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between gap-3 flex-shrink-0">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'donateurs' | 'fournisseurs')} className="relative z-10 flex flex-col">
+            <div className="relative z-10 flex items-center justify-between gap-3 flex-shrink-0">
               <TabsList className="grid w-full max-w-md grid-cols-2">
                 <TabsTrigger value="donateurs">
                   <Building2 className="w-4 h-4 mr-2" />
@@ -865,7 +865,7 @@ export function GestionDonateursFournisseurs() {
             </div>
 
             {/* Barra de búsqueda y filtro PRS */}
-            <div className="flex gap-3 flex-shrink-0 mt-3">
+            <div className="relative z-10 flex gap-3 flex-shrink-0 mt-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
                 <Input
@@ -887,7 +887,7 @@ export function GestionDonateursFournisseurs() {
             </div>
 
             {/* Contenido de tabs */}
-            <TabsContent value="donateurs" className="flex-1 overflow-hidden mt-3">
+            <TabsContent value="donateurs" className="relative z-10 flex-1 overflow-hidden mt-3">
               <div className="h-full overflow-auto">
                 <Table>
                   <TableHeader>
@@ -1015,7 +1015,7 @@ export function GestionDonateursFournisseurs() {
               </div>
             </TabsContent>
 
-            <TabsContent value="fournisseurs" className="flex-1 overflow-hidden mt-3">
+            <TabsContent value="fournisseurs" className="relative z-10 flex-1 overflow-hidden mt-3">
               <div className="h-full overflow-auto">
                 <Table>
                   <TableHeader>
