@@ -323,6 +323,32 @@ export function Recrutement() {
     { id: '8', nombre: 'Bénévoles', icono: '👥', color: '#4CAF50', codigo: 'BENEVOLES' },
   ];
 
+  const resolveDepartmentForCandidate = (candidate: Candidate) => {
+    const positionLower = candidate.position.toLowerCase();
+
+    if (positionLower.includes('entrepôt') || positionLower.includes('entrepo') || positionLower.includes('warehouse')) {
+      return departamentosDisponibles.find(departamento => departamento.id === '1') || departamentosDisponibles[0];
+    }
+
+    if (positionLower.includes('chauffeur') || positionLower.includes('driver') || positionLower.includes('transport')) {
+      return departamentosDisponibles.find(departamento => departamento.id === '7') || departamentosDisponibles[0];
+    }
+
+    if (positionLower.includes('comptoir') || positionLower.includes('counter')) {
+      return departamentosDisponibles.find(departamento => departamento.id === '2') || departamentosDisponibles[0];
+    }
+
+    if (positionLower.includes('cuisine') || positionLower.includes('kitchen')) {
+      return departamentosDisponibles.find(departamento => departamento.id === '3') || departamentosDisponibles[0];
+    }
+
+    if (positionLower.includes('liaison')) {
+      return departamentosDisponibles.find(departamento => departamento.id === '4') || departamentosDisponibles[0];
+    }
+
+    return departamentosDisponibles.find(departamento => departamento.id === '8') || departamentosDisponibles[0];
+  };
+
   // ✅ Candidatos desde localStorage (ya no mock estáticos)
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   
@@ -899,118 +925,20 @@ export function Recrutement() {
     
     console.log('✅ Statut mis à jour:', { id: candidateId, newStatus });
     
-    // ✅ Si se acepta el candidat, crear automáticamente en el département correspondiente
+    // ✅ Si se acepta el candidat, sincronizar automatiquement avec le département correspondant
     if (newStatus === 'accepted' && candidate) {
       try {
-        // 🎯 Detectar département selon la position du candidat - USANDO IDs NUMÉRICOS CORRECTOS
-        let departamentoId = '8'; // Par défaut: Bénévoles
-        let departamentoNombre = 'Bénévoles';
-        const positionLower = candidate.position.toLowerCase();
-        
-        if (positionLower.includes('entrepôt') || positionLower.includes('entrepo') || positionLower.includes('warehouse')) {
-          departamentoId = '1'; // Entrepôt
-          departamentoNombre = 'Entrepôt';
-        } else if (positionLower.includes('chauffeur') || positionLower.includes('driver') || positionLower.includes('transport')) {
-          departamentoId = '7'; // Transport
-          departamentoNombre = 'Transport';
-        } else if (positionLower.includes('comptoir') || positionLower.includes('counter')) {
-          departamentoId = '2'; // Comptoir
-          departamentoNombre = 'Comptoir';
-        } else if (positionLower.includes('cuisine') || positionLower.includes('kitchen')) {
-          departamentoId = '3'; // Cuisine
-          departamentoNombre = 'Cuisine';
-        } else if (positionLower.includes('liaison')) {
-          departamentoId = '4'; // Liaison
-          departamentoNombre = 'Liaison';
-        }
-        
-        console.log(`🎯 Detectado département: ${departamentoNombre} (ID: ${departamentoId}) pour position: ${candidate.position}`);
-        
-        // Séparer nom complet en prénom (nombre) et nom de famille (apellido)
-        // Format: "Prénom Nom" -> nombre="Prénom", apellido="Nom"
-        const nombreParts = candidate.name.trim().split(' ');
-        const nombre = nombreParts[0] || ''; // Premier mot = Prénom
-        const apellido = nombreParts.slice(1).join(' ') || ''; // Reste = Nom de famille
-        
-        // Parser disponibilité en jours de la semaine
-        const disponibilidades = diasSemana.map(jour => ({
-          jour,
-          am: candidate.availability.toLowerCase().includes(jour.toLowerCase()) || 
-              candidate.availability.toLowerCase().includes('temps plein') ||
-              candidate.availability.toLowerCase().includes('flexible'),
-          pm: candidate.availability.toLowerCase().includes(jour.toLowerCase()) ||
-              candidate.availability.toLowerCase().includes('temps plein') ||
-              candidate.availability.toLowerCase().includes('flexible')
-        }));
-        
-        // Créer événement de création
-        const eventoCreacion = {
-          id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: 'creation' as const,
-          titre: 'Bénévole ajouté depuis Recrutement',
-          description: `Candidat accepté et ajouté automatiquement au département ${departamentoNombre}`,
-          date: new Date().toISOString(),
-          utilisateur: 'Système',
-          couleur: '#4CAF50'
-        };
-        
-        // Créer contact dans le département correspondant
-        const nuevoContacto = {
-          departamentoId,
-          departamentoIds: [departamentoId],
-          tipo: 'benevole' as const,
-          nombre,
-          apellido,
-          email: candidate.email,
-          telefono: candidate.phone,
-          activo: true,
-          fechaIngreso: new Date().toISOString().split('T')[0],
-          disponibilidades,
-          notas: `${candidate.experience}\n\nCandidature du: ${new Date(candidate.applicationDate).toLocaleDateString('fr-FR')}`,
-          evenements: [eventoCreacion],
-          // Champs optionnels
-          direccion: candidate.adresse || '',
-          apartamento: candidate.appartement || '',
-          ciudad: candidate.ville || '',
-          codigoPostal: candidate.codePostal || '',
-          quartier: candidate.quartier || '', // ✅ CRÍTICO: Incluir quartier
-          cargo: candidate.position,
-          idiomas: [],
-          documents: []
-        };
-        
-        console.log('✅ Créant contact depuis Recrutement:', {
-          département: `${departamentoNombre} (${departamentoId})`,
-          contact: nuevoContacto
-        });
-        
-        const contactoGuardado = guardarContacto(nuevoContacto);
-        
-        console.log('✅ Contacto sauvegardé avec succès:', contactoGuardado);
-        
-        const departamentosActualizados = Array.from(new Set([
-          ...(candidate.departamentoIds || []),
-          departamentoId
-        ]));
+        const resultado = sincronizarCandidatoAceptado(candidate, { notify: true });
 
-        persistCandidateChanges(candidateId, {
-          contactoId: contactoGuardado.id,
-          departamentoIds: departamentosActualizados,
-          numeroArchivo: contactoGuardado.numeroArchivo || candidate.numeroArchivo
-        });
-        
-        // 🔥 Déclencher événement personnalisé pour synchroniser départements
-        window.dispatchEvent(new CustomEvent('contactos-actualizados', {
-          detail: { departamentoId, contactoId: contactoGuardado.id }
-        }));
-        
-        toast.success(
-          `${candidate.name} accepté et ajouté au département ${departamentoNombre}!`,
-          {
-            description: `Le contact est maintenant disponible dans la section ${departamentoNombre}. ID: ${contactoGuardado.id}`,
-            duration: 5000
-          }
-        );
+        if (!resultado.creado) {
+          toast.success(
+            `${candidate.name} accepté et déjà synchronisé avec ${resultado.departamentoNombre}`,
+            {
+              description: 'Le contact existant a été réutilisé sans créer de doublon.',
+              duration: 5000
+            }
+          );
+        }
       } catch (error) {
         console.error('❌ Erreur lors de la création du contact depuis Recrutement:', error);
         toast.error('Le statut a été mis à jour mais il y a eu une erreur lors de l\'ajout au département.');
@@ -1134,6 +1062,134 @@ export function Recrutement() {
     return obtenerContactosCandidato(candidate)
       .find(contacto => contacto.departamentoId === departamentoId) || null;
   };
+
+  const sincronizarCandidatoAceptado = (candidate: Candidate, options?: { notify?: boolean }) => {
+    const departamento = resolveDepartmentForCandidate(candidate);
+    const contactosExistentes = obtenerContactosCandidato(candidate);
+
+    if (contactosExistentes.length > 0) {
+      const contactoPrincipal = contactosExistentes.find(contacto => contacto.departamentoId === departamento.id) || contactosExistentes[0];
+      const departamentosActualizados = Array.from(new Set([
+        ...(candidate.departamentoIds || []),
+        ...contactosExistentes.map(contacto => contacto.departamentoId)
+      ]));
+
+      const requiereActualizacion =
+        candidate.contactoId !== contactoPrincipal.id ||
+        departamentosActualizados.length !== (candidate.departamentoIds || []).length ||
+        departamentosActualizados.some(id => !(candidate.departamentoIds || []).includes(id)) ||
+        (contactoPrincipal.contacto.numeroArchivo || candidate.numeroArchivo) !== candidate.numeroArchivo;
+
+      if (requiereActualizacion) {
+        persistCandidateChanges(candidate.id, {
+          contactoId: contactoPrincipal.id,
+          departamentoIds: departamentosActualizados,
+          numeroArchivo: contactoPrincipal.contacto.numeroArchivo || candidate.numeroArchivo
+        });
+      }
+
+      return {
+        creado: false,
+        departamentoNombre: departamento.nombre,
+        contactoId: contactoPrincipal.id
+      };
+    }
+
+    const { nombre, apellido } = splitCandidateName(candidate.name);
+    const eventoCreacion = {
+      id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'creation' as const,
+      titre: 'Bénévole ajouté depuis Recrutement',
+      description: `Candidat accepté et ajouté automatiquement au département ${departamento.nombre}`,
+      date: new Date().toISOString(),
+      utilisateur: 'Système',
+      couleur: '#4CAF50'
+    };
+
+    const nuevoContacto = {
+      departamentoId: departamento.id,
+      departamentoIds: [departamento.id],
+      tipo: 'benevole' as const,
+      nombre,
+      apellido,
+      email: candidate.email,
+      telefono: candidate.phone,
+      activo: true,
+      fechaIngreso: new Date().toISOString().split('T')[0],
+      disponibilidades: buildDisponibilidadesFromAvailability(candidate.availability, candidate.disponibilidades),
+      notas: `${candidate.experience}\n\nCandidature du: ${new Date(candidate.applicationDate).toLocaleDateString('fr-FR')}`,
+      evenements: [eventoCreacion],
+      direccion: candidate.adresse || '',
+      apartamento: candidate.appartement || '',
+      ciudad: candidate.ville || '',
+      codigoPostal: candidate.codePostal || '',
+      quartier: candidate.quartier || '',
+      cargo: candidate.position,
+      idiomas: candidate.idiomas || [],
+      documents: candidate.documents || []
+    };
+
+    const contactoGuardado = guardarContacto(nuevoContacto);
+    const departamentosActualizados = Array.from(new Set([
+      ...(candidate.departamentoIds || []),
+      departamento.id
+    ]));
+
+    persistCandidateChanges(candidate.id, {
+      contactoId: contactoGuardado.id,
+      departamentoIds: departamentosActualizados,
+      numeroArchivo: contactoGuardado.numeroArchivo || candidate.numeroArchivo
+    });
+
+    window.dispatchEvent(new CustomEvent('contactos-actualizados', {
+      detail: { departamentoId: departamento.id, contactoId: contactoGuardado.id }
+    }));
+
+    if (options?.notify) {
+      toast.success(
+        `${candidate.name} accepté et ajouté au département ${departamento.nombre}!`,
+        {
+          description: `Le contact est maintenant disponible dans la section ${departamento.nombre}. ID: ${contactoGuardado.id}`,
+          duration: 5000
+        }
+      );
+    }
+
+    return {
+      creado: true,
+      departamentoNombre: departamento.nombre,
+      contactoId: contactoGuardado.id
+    };
+  };
+
+  useEffect(() => {
+    const candidatsAceptadosDesincronizados = candidates.filter(candidate => {
+      if (candidate.status !== 'accepted') {
+        return false;
+      }
+
+      const contactosExistentes = obtenerContactosCandidato(candidate);
+
+      if (contactosExistentes.length === 0) {
+        return !candidate.contactoId || (candidate.departamentoIds || []).length === 0;
+      }
+
+      return (
+        !candidate.contactoId ||
+        (candidate.departamentoIds || []).length === 0 ||
+        !contactosExistentes.some(contacto => contacto.id === candidate.contactoId) ||
+        contactosExistentes.some(contacto => !(candidate.departamentoIds || []).includes(contacto.departamentoId))
+      );
+    });
+
+    if (candidatsAceptadosDesincronizados.length === 0) {
+      return;
+    }
+
+    candidatsAceptadosDesincronizados.forEach(candidate => {
+      sincronizarCandidatoAceptado(candidate);
+    });
+  }, [candidates]);
 
   // 🎯 Fonction pour assigner candidat à un département spécifique
   const handleAssignerCandidat = () => {
