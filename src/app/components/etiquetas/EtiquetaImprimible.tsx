@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Barcode from 'react-barcode';
 import { generarDatosQRUbicacion } from '../../utils/barcode';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
@@ -28,6 +29,7 @@ export function EtiquetaImprimible({
   tamano = 'mediana',
   formato = 'CODE128'
 }: EtiquetaImprimibleProps) {
+  const { t } = useTranslation();
   const [qrImage, setQrImage] = useState<string | null>(null);
   const dimensiones = {
     pequena: { width: '6cm', height: '4cm', barcodeWidth: 1.2, barcodeHeight: 30 },
@@ -105,7 +107,7 @@ export function EtiquetaImprimible({
           <div className="flex flex-col items-center gap-2">
             <img
               src={qrImage}
-              alt={`QR ${datos.subtitulo || datos.codigo}`}
+              alt={t('labels.qrAlt', { code: datos.subtitulo || datos.codigo })}
               style={{
                 width: tamano === 'pequena' ? '90px' : tamano === 'mediana' ? '120px' : '150px',
                 height: tamano === 'pequena' ? '90px' : tamano === 'mediana' ? '120px' : '150px',
@@ -136,19 +138,19 @@ export function EtiquetaImprimible({
         <div className="grid grid-cols-2 gap-2 text-xs">
           {datos.categoria && (
             <div>
-              <span className="font-semibold">Categoría:</span>
+              <span className="font-semibold">{t('labels.category')}:</span>
               <p className="truncate">{datos.categoria}</p>
             </div>
           )}
           {datos.lote && (
             <div>
-              <span className="font-semibold">Lote:</span>
+              <span className="font-semibold">{t('labels.lot')}:</span>
               <p className="truncate">{datos.lote}</p>
             </div>
           )}
           {datos.fechaVencimiento && (
             <div className="col-span-2">
-              <span className="font-semibold">Vencimiento:</span>
+              <span className="font-semibold">{t('labels.expiration')}:</span>
               <p className="font-bold text-red-600">{datos.fechaVencimiento}</p>
             </div>
           )}
@@ -163,7 +165,7 @@ export function EtiquetaImprimible({
       {/* Footer fijo */}
       <div className="w-full text-center mt-2 pt-2 border-t border-gray-200">
         <p className="text-[8px] text-gray-400">
-          Banco de Alimentos - Sistema de gestión
+          {t('labels.systemFooter')}
         </p>
       </div>
     </div>

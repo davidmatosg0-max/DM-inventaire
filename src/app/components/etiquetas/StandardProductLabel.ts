@@ -60,6 +60,7 @@ export interface ProductLabelData {
   // Branding
   systemName?: string;
   systemLogo?: string | null;
+  locale?: string;
   
   // Traducciones
   translations?: {
@@ -78,6 +79,8 @@ export interface ProductLabelData {
     refrigerated?: string;
     frozen?: string;
     packagingDetails?: string;
+    printButton?: string;
+    closeButton?: string;
   };
 }
 
@@ -87,6 +90,9 @@ export interface ProductLabelData {
 export async function generateStandardProductLabel(
   data: ProductLabelData
 ): Promise<string> {
+  const dateLocale = data.locale || 'fr-CA';
+  const htmlLang = dateLocale.split('-')[0] || 'fr';
+
   // Traducciones por defecto (español)
   const t = {
     foodBank: data.translations?.foodBank || 'BANCO DE ALIMENTOS',
@@ -103,7 +109,9 @@ export async function generateStandardProductLabel(
     ambient: data.translations?.ambient || 'Ambiente',
     refrigerated: data.translations?.refrigerated || 'Refrigerado',
     frozen: data.translations?.frozen || 'Congelado',
-    packagingDetails: data.translations?.packagingDetails || 'Detalles del empaque'
+    packagingDetails: data.translations?.packagingDetails || 'Detalles del empaque',
+    printButton: data.translations?.printButton || 'Imprimir etiqueta',
+    closeButton: data.translations?.closeButton || 'Cerrar'
   };
 
   // Generar QR Code (reducido para optimizar espacio)
@@ -142,7 +150,7 @@ export async function generateStandardProductLabel(
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(dateLocale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -152,7 +160,7 @@ export async function generateStandardProductLabel(
   const formatDateTime = (dateStr?: string) => {
     if (!dateStr) {
       const now = new Date();
-      return now.toLocaleDateString('es-ES', {
+      return now.toLocaleDateString(dateLocale, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -161,7 +169,7 @@ export async function generateStandardProductLabel(
       });
     }
     const date = new Date(dateStr);
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(dateLocale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -172,7 +180,7 @@ export async function generateStandardProductLabel(
 
   return `
 <!DOCTYPE html>
-<html lang="es">
+<html lang="${htmlLang}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -570,31 +578,31 @@ export async function generateStandardProductLabel(
     <div class="info-fields">
       ${data.lote ? `
         <div class="info-field">
-          <span class="info-field-label">LOT</span>
+          <span class="info-field-label">${t.lot}</span>
           <div class="info-field-value">${data.lote}</div>
         </div>
       ` : ''}
       ${data.fechaCaducidad ? `
         <div class="info-field">
-          <span class="info-field-label">FECHA DE VENCIMIENTO</span>
+          <span class="info-field-label">${t.expiryDate}</span>
           <div class="info-field-value">${formatDate(data.fechaCaducidad)}</div>
         </div>
       ` : ''}
       ${data.detallesEmpaque ? `
         <div class="info-field">
-          <span class="info-field-label">DETALLES DEL EMPAQUE</span>
+          <span class="info-field-label">${t.packagingDetails}</span>
           <div class="info-field-value">${data.detallesEmpaque}</div>
         </div>
       ` : ''}
       ${data.programa ? `
         <div class="info-field">
-          <span class="info-field-label">PROGRAMA</span>
+          <span class="info-field-label">${t.program}</span>
           <div class="info-field-value">${data.programa}</div>
         </div>
       ` : ''}
       ${data.fechaEntrada ? `
         <div class="info-field">
-          <span class="info-field-label">FECHA DE ENTRADA</span>
+          <span class="info-field-label">${t.entryDate}</span>
           <div class="info-field-value">${formatDateTime(data.fechaEntrada)}</div>
         </div>
       ` : ''}
@@ -604,10 +612,10 @@ export async function generateStandardProductLabel(
   <!-- PRINT BUTTONS -->
   <div class="print-buttons">
     <button class="btn btn-print" onclick="handlePrint()">
-      🖨️ Imprimir etiqueta
+      🖨️ ${t.printButton}
     </button>
     <button class="btn btn-close" onclick="window.close()">
-      ✖ Cerrar
+      ✖ ${t.closeButton}
     </button>
   </div>
   
