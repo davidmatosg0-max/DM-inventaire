@@ -33,6 +33,10 @@ export function GestionAutenticacion() {
   const [statsJWT, setStatsJWT] = useState(obtenerEstadisticasJWT());
   const [statsAPI, setStatsAPI] = useState(obtenerEstadisticasAPI());
   const [activeTab, setActiveTab] = useState('overview');
+  const tiempoRestanteSeguro = Number.isFinite(statsJWT.tiempoRestante)
+    ? Math.max(0, statsJWT.tiempoRestante)
+    : 0;
+  const tiempoRestanteMinutos = Math.floor(tiempoRestanteSeguro / 60);
 
   useEffect(() => {
     // Actualizar estadísticas cada 30 segundos
@@ -121,10 +125,10 @@ export function GestionAutenticacion() {
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-gray-800">
-                      {Math.floor(statsJWT.tiempoRestante / 60)}m
+                      {tiempoRestanteMinutos}m
                     </div>
                     <div className="text-sm text-gray-600">
-                      {statsJWT.tiempoRestante}s au total
+                      {tiempoRestanteSeguro}s au total
                     </div>
                   </div>
                 </div>

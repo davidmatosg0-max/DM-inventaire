@@ -2177,7 +2177,7 @@ export function Inventario() {
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
                 <Input
-                  placeholder={t('inventory.searchPlaceholder')}
+                  placeholder={t('inventory.searchPlaceholder', { defaultValue: t('inventory.searchByNameOrCode') })}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"

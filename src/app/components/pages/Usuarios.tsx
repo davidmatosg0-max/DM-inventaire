@@ -274,11 +274,17 @@ export function Usuarios() {
   };
 
   const getRolBadge = (rol: string) => {
-    const config = {
-      administrador: { bg: 'bg-[#DC3545]', text: 'Administrateur' },
-      coordinador: { bg: 'bg-[#1E73BE]', text: 'Coordinateur' },
-      usuario: { bg: 'bg-[#4CAF50]', text: 'Utilisateur' }
-    }[rol] || { bg: 'bg-gray-500', text: rol };
+    const predefinedRole = rolesPredeterminados.find((item) => item.id === rol);
+    const fallbackConfig: Record<string, { bg: string; text: string }> = {
+      desarrollador: { bg: 'bg-black', text: 'Développeur' },
+      administrador: { bg: 'bg-[#DC3545]', text: t('users.administrator') },
+      coordinador: { bg: 'bg-[#1E73BE]', text: t('users.coordinator') },
+      usuario: { bg: 'bg-[#4CAF50]', text: t('users.user') },
+    };
+
+    const config = predefinedRole
+      ? { bg: predefinedRole.color, text: predefinedRole.nombre }
+      : fallbackConfig[rol] || { bg: 'bg-gray-500', text: rol };
 
     return (
       <Badge className={`${config.bg} hover:${config.bg}`}>
