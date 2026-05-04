@@ -72,7 +72,9 @@ export const GestionDemandes: React.FC = () => {
   };
 
   const envoyerReponse = () => {
-    if (!demandeSelectionnee || !nouvelleReponse.trim()) {
+    const message = nouvelleReponse.trim();
+
+    if (!demandeSelectionnee || !message) {
       toast.error('Veuillez saisir un message');
       return;
     }
@@ -82,7 +84,7 @@ export const GestionDemandes: React.FC = () => {
       utilisateurLiaison.id,
       utilisateurLiaison.nom,
       'liaison',
-      nouvelleReponse
+      message
     );
 
     toast.success('✅ Réponse envoyée à l\'organisme!');
@@ -149,6 +151,7 @@ export const GestionDemandes: React.FC = () => {
   });
 
   const stats = obtenirStatistiquesDemandes();
+  const reponseVide = nouvelleReponse.trim().length === 0;
 
   const getStatutBadge = (statut: Demande['statut']) => {
     const configs = {
@@ -385,6 +388,7 @@ export const GestionDemandes: React.FC = () => {
                   </p>
                   <Button
                     onClick={envoyerReponse}
+                    disabled={reponseVide}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <Send className="w-4 h-4 mr-2" />
