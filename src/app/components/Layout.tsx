@@ -808,7 +808,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             setShowGuideComplete(true);
           }
         }}
-        className={`text-white rounded-full shadow-2xl z-40 flex items-center justify-center backdrop-blur-xl border-2 border-white/30 group w-12 h-12 sm:w-14 sm:h-14 transition-all ${
+        className={`text-white rounded-full shadow-2xl z-50 flex items-center justify-center backdrop-blur-xl border-2 border-white/30 group w-12 h-12 sm:w-14 sm:h-14 transition-all ${
           isDragging ? 'cursor-grabbing scale-110 shadow-[0_0_30px_rgba(26,77,122,0.5)]' : 'cursor-grab hover:scale-110'
         }`}
         style={{ 
