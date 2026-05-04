@@ -1684,6 +1684,17 @@
       "send": "إرسال بريد إلكتروني",
       "sendTo": "إرسال بريد إلكتروني إلى",
       "groupEmail": "إرسال بريد جماعي",
+        "emailModalIndividualDescription": "إرسال رسالة مخصصة لهذه المؤسسة",
+        "emailModalGroupDescription": "إرسال رسالة إلى عدة مؤسسات في وقت واحد",
+        "selectOrganisms": "تحديد المؤسسات",
+        "selectAll": "تحديد الكل",
+        "deselectAll": "إلغاء تحديد الكل",
+        "organismsSelected": "مؤسسة محددة",
+        "subject": "الموضوع *",
+        "subjectPlaceholder": "أدخل موضوع البريد الإلكتروني",
+        "message": "الرسالة *",
+        "messagePlaceholder": "اكتب رسالتك هنا...",
+        "demoSystemWarning": "⚠️ نظام تجريبي. في الإنتاج، سيتم إرسال رسائل البريد الإلكتروني عبر خدمة بريد حقيقية.",
       "cancel": "إلغاء"
     }
   },

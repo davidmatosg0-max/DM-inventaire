@@ -1671,6 +1671,17 @@
       "send": "Send Email",
       "sendTo": "Send Email to",
       "groupEmail": "Send Group Email",
+        "emailModalIndividualDescription": "Send a personalized message to this organization",
+        "emailModalGroupDescription": "Send a message to multiple organizations at once",
+        "selectOrganisms": "Select Organizations",
+        "selectAll": "Select All",
+        "deselectAll": "Deselect All",
+        "organismsSelected": "organization(s) selected",
+        "subject": "Subject *",
+        "subjectPlaceholder": "Enter email subject",
+        "message": "Message *",
+        "messagePlaceholder": "Write your message here...",
+        "demoSystemWarning": "⚠️ Demo system. In production, emails would be sent through a real mail service.",
       "cancel": "Cancel"
     }
   },

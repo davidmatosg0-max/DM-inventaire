@@ -1810,7 +1810,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <p className="text-xs text-[#666666]">
-                ⚠️ {t('liaison.demoSystemWarning')}
+                  {t('liaison.demoSystemWarning')}
               </p>
             </div>
           </div>

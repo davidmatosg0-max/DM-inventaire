@@ -1554,6 +1554,17 @@
       "send": "Enviar Email",
       "sendTo": "Enviar Email a",
       "groupEmail": "Enviar Email Grupal",
+        "emailModalIndividualDescription": "Envíe un mensaje personalizado a este organismo",
+        "emailModalGroupDescription": "Envíe un mensaje a múltiples organismos a la vez",
+        "selectOrganisms": "Seleccionar Organismos",
+        "selectAll": "Seleccionar Todos",
+        "deselectAll": "Deseleccionar Todos",
+        "organismsSelected": "organismo(s) seleccionado(s)",
+        "subject": "Asunto *",
+        "subjectPlaceholder": "Ingrese el asunto del email",
+        "message": "Mensaje *",
+        "messagePlaceholder": "Escriba su mensaje aquí...",
+        "demoSystemWarning": "⚠️ Sistema de demostración. En producción, los emails se enviarían a través de un servicio de correo real.",
       "cancel": "Cancelar"
     }
   },
