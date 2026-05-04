@@ -402,6 +402,21 @@ export function ListaProductosDistribuidosDialog({
     return construirResumenDistribuciones(comandasVisibles, productosCatalogo);
   }, [comandas, distribuciones.length, distribucionesFiltradas, resumen]);
 
+  const resumenCabecera = useMemo(() => {
+    if (!distribucionSeleccionadaFiltrada) {
+      return resumenVisible;
+    }
+
+    return {
+      productos: distribucionSeleccionadaFiltrada.productos,
+      totalComandas: distribucionSeleccionadaFiltrada.comandaIds.length,
+      totalProductos: distribucionSeleccionadaFiltrada.totalProductos,
+      totalCantidad: distribucionSeleccionadaFiltrada.totalCantidad,
+      totalPeso: distribucionSeleccionadaFiltrada.totalPeso,
+      totalValor: distribucionSeleccionadaFiltrada.totalValor,
+    } satisfies ResumenDistribuciones;
+  }, [distribucionSeleccionadaFiltrada, resumenVisible]);
+
   const gruposTemperaturaDistribucion = useMemo(() => {
     if (!distribucionSeleccionadaFiltrada) {
       return [] as GrupoTemperatura[];
@@ -441,6 +456,32 @@ export function ListaProductosDistribuidosDialog({
     });
   }, [currentLocale, filtroProductos, resumenVisible.productos]);
 
+  const resumenImpresionDetalle = useMemo(() => {
+    if (!distribucionSeleccionadaFiltrada) {
+      return null;
+    }
+
+    const productos = gruposTemperaturaDistribucion.flatMap((grupo) => grupo.productos);
+
+    return {
+      productos,
+      totalComandas: distribucionSeleccionadaFiltrada.comandaIds.length,
+      totalProductos: productos.length,
+      totalCantidad: productos.reduce((sum, producto) => sum + producto.cantidad, 0),
+      totalPeso: productos.reduce((sum, producto) => sum + producto.pesoTotal, 0),
+      totalValor: productos.reduce((sum, producto) => sum + producto.valorTotal, 0),
+    };
+  }, [distribucionSeleccionadaFiltrada, gruposTemperaturaDistribucion]);
+
+  const resumenImpresionConsolidado = useMemo(() => ({
+    productos: productosResumenFiltrados,
+    totalComandas: resumenVisible.totalComandas,
+    totalProductos: productosResumenFiltrados.length,
+    totalCantidad: productosResumenFiltrados.reduce((sum, producto) => sum + producto.cantidadTotal, 0),
+    totalPeso: productosResumenFiltrados.reduce((sum, producto) => sum + producto.pesoTotal, 0),
+    totalValor: productosResumenFiltrados.reduce((sum, producto) => sum + producto.valorTotal, 0),
+  }), [productosResumenFiltrados, resumenVisible.totalComandas]);
+
   useEffect(() => {
     if (!open) {
       setDistribucionSeleccionadaId(null);
@@ -471,32 +512,85 @@ export function ListaProductosDistribuidosDialog({
   }, [distribucionSeleccionadaId]);
 
   const imprimirLista = () => {
-    if (resumenVisible.productos.length === 0) {
+    const imprimirDetalle = Boolean(distribucionSeleccionadaFiltrada);
+
+    if (imprimirDetalle && (!resumenImpresionDetalle || resumenImpresionDetalle.productos.length === 0)) {
       toast.error('Aucun produit distribué à imprimer');
       return;
     }
 
-    const gruposImpresion = agruparProductosPorTemperatura(resumenVisible.productos);
+    if (!imprimirDetalle && resumenImpresionConsolidado.productos.length === 0) {
+      toast.error('Aucun produit distribué à imprimer');
+      return;
+    }
 
-    const filas = gruposImpresion.map(grupo => {
-      const filasGrupo = grupo.productos.map(producto => `
+    const titre = imprimirDetalle
+      ? `Produits de la distribution ${distribucionSeleccionadaFiltrada?.numeroDistribucion || ''}`
+      : 'Liste des produits distribués';
+
+    const resume = imprimirDetalle ? resumenImpresionDetalle : resumenImpresionConsolidado;
+
+    const filas = imprimirDetalle
+      ? gruposTemperaturaDistribucion.map(grupo => {
+          const filasGrupo = grupo.productos.map(producto => `
+            <tr>
+              <td>${producto.icono} ${producto.nombreProducto}</td>
+              <td style="text-align:center;">${formatQuantity(producto.cantidad)} ${producto.unidad}</td>
+              <td style="text-align:center;">${formatQuantity(producto.pesoTotal)} kg</td>
+              <td style="text-align:right;">CAD$ ${formatMoney(producto.valorTotal)}</td>
+            </tr>
+          `).join('');
+
+          return `
+            <tr class="temperature-row">
+              <td colspan="4">${grupo.label}</td>
+            </tr>
+            ${filasGrupo}
+          `;
+        }).join('')
+      : agruparProductosPorTemperatura(productosResumenFiltrados).map(grupo => {
+          const filasGrupo = grupo.productos.map(producto => `
+            <tr>
+              <td>${producto.icono} ${producto.nombreProducto}</td>
+              <td style="text-align:center;">${formatQuantity(producto.cantidadTotal)} ${producto.unidad}</td>
+              <td style="text-align:center;">${formatQuantity(producto.pesoTotal)} kg</td>
+              <td style="text-align:right;">CAD$ ${formatMoney(producto.valorTotal)}</td>
+              <td style="text-align:center;">${producto.comandas.length}</td>
+              <td style="text-align:center;">${formatearFecha(producto.ultimaFecha, currentLocale)}</td>
+            </tr>
+          `).join('');
+
+          return `
+            <tr class="temperature-row">
+              <td colspan="6">${grupo.label}</td>
+            </tr>
+            ${filasGrupo}
+          `;
+        }).join('');
+
+    const tableHeader = imprimirDetalle
+      ? `
         <tr>
-          <td>${producto.icono} ${producto.nombreProducto}</td>
-          <td style="text-align:center;">${formatQuantity(producto.cantidadTotal)} ${producto.unidad}</td>
-          <td style="text-align:center;">${formatQuantity(producto.pesoTotal)} kg</td>
-          <td style="text-align:right;">CAD$ ${formatMoney(producto.valorTotal)}</td>
-          <td style="text-align:center;">${producto.comandas.length}</td>
-          <td style="text-align:center;">${formatearFecha(producto.ultimaFecha, currentLocale)}</td>
+          <th>Produit</th>
+          <th>Quantité</th>
+          <th>Poids</th>
+          <th>Valeur</th>
         </tr>
-      `).join('');
-
-      return `
-        <tr class="temperature-row">
-          <td colspan="6">${grupo.label}</td>
+      `
+      : `
+        <tr>
+          <th>Produit</th>
+          <th>Quantité</th>
+          <th>Poids</th>
+          <th>Valeur</th>
+          <th>Comandes</th>
+          <th>Dernière date</th>
         </tr>
-        ${filasGrupo}
       `;
-    }).join('');
+
+    const sousTitre = imprimirDetalle && distribucionSeleccionadaFiltrada
+      ? `${distribucionSeleccionadaFiltrada.organismo} | ${formatearFecha(distribucionSeleccionadaFiltrada.fecha, currentLocale)} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`
+      : `Comandes incluses: ${resume.totalComandas} | Produits: ${resume.totalProductos} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`;
 
     try {
       openAutoPrintPopup(`
@@ -521,24 +615,17 @@ export function ListaProductosDistribuidosDialog({
             </style>
           </head>
           <body>
-            <h1>Liste des produits distribués</h1>
-            <p>Comandes incluses: ${resumenVisible.totalComandas} | Produits: ${resumenVisible.totalProductos} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}</p>
+            <h1>${titre}</h1>
+            <p>${sousTitre}</p>
             <div class="resume">
-              <div class="card"><div class="label">Quantité totale</div><div class="value">${formatQuantity(resumenVisible.totalCantidad)}</div></div>
-              <div class="card"><div class="label">Poids total</div><div class="value">${formatQuantity(resumenVisible.totalPeso)} kg</div></div>
-              <div class="card"><div class="label">Valeur totale</div><div class="value">CAD$ ${formatMoney(resumenVisible.totalValor)}</div></div>
-              <div class="card"><div class="label">Produits distincts</div><div class="value">${resumenVisible.totalProductos}</div></div>
+              <div class="card"><div class="label">Quantité totale</div><div class="value">${formatQuantity(resume.totalCantidad)}</div></div>
+              <div class="card"><div class="label">Poids total</div><div class="value">${formatQuantity(resume.totalPeso)} kg</div></div>
+              <div class="card"><div class="label">Valeur totale</div><div class="value">CAD$ ${formatMoney(resume.totalValor)}</div></div>
+              <div class="card"><div class="label">Produits distincts</div><div class="value">${resume.totalProductos}</div></div>
             </div>
             <table>
               <thead>
-                <tr>
-                  <th>Produit</th>
-                  <th>Quantité</th>
-                  <th>Poids</th>
-                  <th>Valeur</th>
-                  <th>Comandes</th>
-                  <th>Dernière date</th>
-                </tr>
+                ${tableHeader}
               </thead>
               <tbody>${filas}</tbody>
             </table>
@@ -551,87 +638,107 @@ export function ListaProductosDistribuidosDialog({
   };
 
   const exportarPDF = () => {
-    if (distribucionesFiltradas.length === 0) {
+    const exportarDetalle = Boolean(distribucionSeleccionadaFiltrada);
+
+    if (exportarDetalle && (!resumenImpresionDetalle || resumenImpresionDetalle.productos.length === 0)) {
       toast.error('Aucun produit distribué à exporter');
       return;
     }
 
+    if (!exportarDetalle && resumenImpresionConsolidado.productos.length === 0) {
+      toast.error('Aucun produit distribué à exporter');
+      return;
+    }
+
+    const resumePDF = exportarDetalle ? resumenImpresionDetalle : resumenImpresionConsolidado;
+    const titre = exportarDetalle
+      ? `Produits de la distribution ${distribucionSeleccionadaFiltrada?.numeroDistribucion || ''}`
+      : 'Liste des produits distribués';
+
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(18);
-    doc.text('Liste des produits distribués', 14, 18);
+    doc.text(titre, 14, 18);
     doc.setFontSize(10);
-    doc.text(`Distributions incluses: ${distribucionesFiltradas.length} | Comandes incluses: ${resumenVisible.totalComandas} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`, 14, 26);
-    doc.text(`Quantité: ${formatQuantity(resumenVisible.totalCantidad)} | Poids: ${formatQuantity(resumenVisible.totalPeso)} kg | Valeur: CAD$ ${formatMoney(resumenVisible.totalValor)}`, 14, 32);
+    if (exportarDetalle && distribucionSeleccionadaFiltrada) {
+      doc.text(
+        `${distribucionSeleccionadaFiltrada.organismo} | ${formatearFecha(distribucionSeleccionadaFiltrada.fecha, currentLocale)} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`,
+        14,
+        26,
+      );
+    } else {
+      doc.text(`Comandes incluses: ${resumePDF.totalComandas} | Produits: ${resumePDF.totalProductos} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}`, 14, 26);
+    }
+
+    doc.text(`Quantité: ${formatQuantity(resumePDF.totalCantidad)} | Poids: ${formatQuantity(resumePDF.totalPeso)} kg | Valeur: CAD$ ${formatMoney(resumePDF.totalValor)}`, 14, 32);
 
     let currentY = 40;
+    const groupesExport = exportarDetalle
+      ? gruposTemperaturaDistribucion
+      : agruparProductosPorTemperatura(productosResumenFiltrados);
 
-    distribucionesFiltradas.forEach((distribucion, distribucionIndex) => {
-      const gruposDistribucion = agruparProductosPorTemperatura(distribucion.productos);
+    groupesExport.forEach((groupe) => {
       const pageHeight = doc.internal.pageSize.getHeight();
 
-      if (currentY > pageHeight - 40) {
+      if (currentY > pageHeight - 30) {
         doc.addPage();
         currentY = 20;
       }
 
-      doc.setFontSize(13);
-      doc.text(`${distribucion.numeroDistribucion} - ${formatearFecha(distribucion.fecha, currentLocale)}`, 14, currentY);
-      currentY += 6;
+      doc.setFontSize(10);
+      doc.text(groupe.label, 14, currentY);
+      currentY += 2;
 
-      doc.setFontSize(9);
-      doc.text(
-        `Organisme: ${distribucion.organismo} | Produits: ${distribucion.totalProductos} | Quantité: ${formatQuantity(distribucion.totalCantidad)} | Poids: ${formatQuantity(distribucion.totalPeso)} kg | Valeur: CAD$ ${formatMoney(distribucion.totalValor)}`,
-        14,
-        currentY,
-      );
-      currentY += 6;
-
-      gruposDistribucion.forEach((grupo) => {
-        if (currentY > pageHeight - 30) {
-          doc.addPage();
-          currentY = 20;
-        }
-
-        doc.setFontSize(10);
-        doc.text(grupo.label, 14, currentY);
-        currentY += 2;
-
-        autoTable(doc, {
-          startY: currentY,
-          head: [['Produit', 'Quantité', 'Poids', 'Valeur']],
-          body: grupo.productos.map(producto => [
-            `${producto.icono} ${producto.nombreProducto}`,
-            `${formatQuantity(producto.cantidad)} ${producto.unidad}`,
-            `${formatQuantity(producto.pesoTotal)} kg`,
-            `CAD$ ${formatMoney(producto.valorTotal)}`,
-          ]),
-          theme: 'grid',
-          styles: {
-            fontSize: 8,
-            cellPadding: 3,
-            valign: 'middle'
-          },
-          headStyles: {
-            fillColor: [30, 115, 190],
-            textColor: 255,
-            fontStyle: 'bold'
-          },
-          columnStyles: {
-            0: { cellWidth: 120 },
-            1: { cellWidth: 40, halign: 'center' },
-            2: { cellWidth: 36, halign: 'center' },
-            3: { cellWidth: 42, halign: 'right' },
-          }
-        });
-
-        currentY = (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY
-          ? ((doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || currentY) + 8
-          : currentY + 24;
+      autoTable(doc, {
+        startY: currentY,
+        head: [exportarDetalle
+          ? ['Produit', 'Quantité', 'Poids', 'Valeur']
+          : ['Produit', 'Quantité', 'Poids', 'Valeur', 'Comandes', 'Dernière date']],
+        body: exportarDetalle
+          ? groupe.productos.map(producto => [
+              `${producto.icono} ${producto.nombreProducto}`,
+              `${formatQuantity(producto.cantidad)} ${producto.unidad}`,
+              `${formatQuantity(producto.pesoTotal)} kg`,
+              `CAD$ ${formatMoney(producto.valorTotal)}`,
+            ])
+          : groupe.productos.map(producto => [
+              `${producto.icono} ${producto.nombreProducto}`,
+              `${formatQuantity((producto as ProductoDistribuidoResumen).cantidadTotal)} ${(producto as ProductoDistribuidoResumen).unidad}`,
+              `${formatQuantity(producto.pesoTotal)} kg`,
+              `CAD$ ${formatMoney(producto.valorTotal)}`,
+              String((producto as ProductoDistribuidoResumen).comandas.length),
+              formatearFecha((producto as ProductoDistribuidoResumen).ultimaFecha, currentLocale),
+            ]),
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          valign: 'middle'
+        },
+        headStyles: {
+          fillColor: [30, 115, 190],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        columnStyles: exportarDetalle
+          ? {
+              0: { cellWidth: 120 },
+              1: { cellWidth: 40, halign: 'center' },
+              2: { cellWidth: 36, halign: 'center' },
+              3: { cellWidth: 42, halign: 'right' },
+            }
+          : {
+              0: { cellWidth: 92 },
+              1: { cellWidth: 34, halign: 'center' },
+              2: { cellWidth: 28, halign: 'center' },
+              3: { cellWidth: 34, halign: 'right' },
+              4: { cellWidth: 24, halign: 'center' },
+              5: { cellWidth: 34, halign: 'center' },
+            }
       });
 
-      if (distribucionIndex < distribucionesFiltradas.length - 1) {
-        currentY += 4;
-      }
+      currentY = (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY
+        ? ((doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY || currentY) + 8
+        : currentY + 24;
     });
 
     doc.save(`Liste_Produits_Distribues_${Date.now()}.pdf`);
@@ -663,10 +770,10 @@ export function ListaProductosDistribuidosDialog({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Comandes incluses</p><p className="text-2xl font-bold text-[#1E73BE]">{resumenVisible.totalComandas}</p></CardContent></Card>
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Produits distincts</p><p className="text-2xl font-bold text-[#2E7D32]">{resumenVisible.totalProductos}</p></CardContent></Card>
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Quantité totale</p><p className="text-2xl font-bold text-[#F57C00]">{formatQuantity(resumenVisible.totalCantidad)}</p></CardContent></Card>
-            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Valeur totale</p><p className="text-2xl font-bold text-[#FFC107]">CAD$ {formatMoney(resumenVisible.totalValor)}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Comandes incluses</p><p className="text-2xl font-bold text-[#1E73BE]">{resumenCabecera.totalComandas}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Produits distincts</p><p className="text-2xl font-bold text-[#2E7D32]">{resumenCabecera.totalProductos}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Quantité totale</p><p className="text-2xl font-bold text-[#F57C00]">{formatQuantity(resumenCabecera.totalCantidad)}</p></CardContent></Card>
+            <Card><CardContent className="pt-6"><p className="text-sm text-[#666666]">Valeur totale</p><p className="text-2xl font-bold text-[#FFC107]">CAD$ {formatMoney(resumenCabecera.totalValor)}</p></CardContent></Card>
           </div>
 
           {distribuciones.length > 0 && (
