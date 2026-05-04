@@ -1572,6 +1572,7 @@
     "title": "Ofertas Disponibles",
     "subtitle": "Visualiza y acepta ofertas de la Banque Alimentaire",
     "organism": "Organismo",
+    "organismNotConfigured": "Organismo no configurado",
     "availableOffers": "Ofertas Disponibles",
     "newNotifications": "¡Tienes {count} {notification}!",
     "notification": "nueva notificación",

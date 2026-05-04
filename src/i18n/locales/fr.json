@@ -1805,6 +1805,7 @@
     "title": "Offres Disponibles",
     "subtitle": "Visualisez et acceptez les offres de la Banque Alimentaire",
     "organism": "Organisme",
+    "organismNotConfigured": "Organisme non configuré",
     "availableOffers": "Offres Disponibles",
     "newNotifications": "Vous avez {count} {notification}!",
     "notification": "nouvelle notification",

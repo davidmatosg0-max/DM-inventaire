@@ -2245,6 +2245,7 @@
     "title": "Available Offers",
     "subtitle": "View and accept offers from the Food Bank",
     "organism": "Organization",
+    "organismNotConfigured": "Organization not configured",
     "availableOffers": "Available Offers",
     "newNotifications": "You have {count} {notification}!",
     "notification": "new notification",

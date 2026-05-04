@@ -2263,6 +2263,7 @@
     "title": "العروض المتاحة",
     "subtitle": "عرض وقبول عروض بنك الطعام",
     "organism": "المنظمة",
+    "organismNotConfigured": "المنظمة غير مهيأة",
     "availableOffers": "العروض المتاحة",
     "newNotifications": "لديك {count} {notification}!",
     "notification": "إشعار جديد",

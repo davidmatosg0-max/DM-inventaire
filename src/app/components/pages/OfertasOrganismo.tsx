@@ -204,7 +204,7 @@ export function OfertasOrganismo() {
                 🏷️ {t('offers.availableOffers')}
               </h1>
               <p className="text-gray-700 mt-1 text-sm sm:text-base">
-                {t('offers.organism')}: <span className="font-semibold">{organismoActual?.nombre || 'Organisme non configure'}</span>
+                {t('offers.organism')}: <span className="font-semibold">{organismoActual?.nombre || t('offers.organismNotConfigured')}</span>
               </p>
             </div>
           </div>
