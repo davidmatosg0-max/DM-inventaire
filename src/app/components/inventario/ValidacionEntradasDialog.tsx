@@ -11,8 +11,6 @@ import { Checkbox } from '../ui/checkbox';
 import { Alert, AlertDescription } from '../ui/alert';
 import { toast } from 'sonner';
 import { obtenerEntradas, actualizarEntrada, type EntradaInventario } from '../../utils/entradaInventarioStorage';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 type ValidacionEntradasDialogProps = {
   open: boolean;
@@ -25,7 +23,7 @@ type EntradaPendiente = EntradaInventario & {
 };
 
 export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntradasDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [entradasPendientes, setEntradasPendientes] = useState<EntradaPendiente[]>([]);
   const [entradasSeleccionadas, setEntradasSeleccionadas] = useState<string[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -33,6 +31,8 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
 
   useEffect(() => {
     if (open) {
+      setEntradasSeleccionadas([]);
+      setSearchLote('');
       cargarEntradasPendientes();
     }
   }, [open]);
@@ -84,16 +84,24 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
   };
 
   const toggleTodasEntradas = () => {
-    if (entradasSeleccionadas.length === entradasPendientes.length) {
-      setEntradasSeleccionadas([]);
+    const idsFiltrados = entradasFiltradas.map((entrada) => entrada.id);
+
+    if (idsFiltrados.length === 0) {
+      return;
+    }
+
+    const todasFiltradasSeleccionadas = idsFiltrados.every((id) => entradasSeleccionadas.includes(id));
+
+    if (todasFiltradasSeleccionadas) {
+      setEntradasSeleccionadas((prev) => prev.filter((id) => !idsFiltrados.includes(id)));
     } else {
-      setEntradasSeleccionadas(entradasPendientes.map(e => e.id));
+      setEntradasSeleccionadas((prev) => Array.from(new Set([...prev, ...idsFiltrados])));
     }
   };
 
   const validarEntradasSeleccionadas = () => {
     if (entradasSeleccionadas.length === 0) {
-      toast.error('Selecciona al menos una entrada para validar');
+      toast.error(t('inventory.entryValidationDialog.selectAtLeastOne'));
       return;
     }
 
@@ -109,7 +117,7 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
         }
       });
 
-      toast.success(`✅ ${entradasSeleccionadas.length} entrada(s) validada(s) correctamente`);
+      toast.success(t('inventory.entryValidationDialog.validationSuccess', { count: entradasSeleccionadas.length }));
       setEntradasSeleccionadas([]);
       cargarEntradasPendientes();
       setCargando(false);
@@ -135,26 +143,36 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
     return entrada.lote && entrada.lote.toLowerCase().includes(searchLote.toLowerCase());
   });
 
+  const entradasConAlerta = entradasPendientes.filter((entrada) => entrada.alerta).length;
+  const todasFiltradasSeleccionadas = entradasFiltradas.length > 0 && entradasFiltradas.every((entrada) => entradasSeleccionadas.includes(entrada.id));
+  const locale = i18n.resolvedLanguage || i18n.language || 'fr';
+
+  const formatearFechaEntrada = (fecha: string) => new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(fecha));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh]" aria-describedby="validacion-entradas-description">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1rem)] max-w-6xl flex-col overflow-hidden p-0 sm:w-full" aria-describedby="validacion-entradas-description">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <AlertTriangle className="h-6 w-6 text-[#FFC107]" />
-            Validación de Entradas Pendientes
+            {t('inventory.entryValidationDialog.title')}
           </DialogTitle>
           <DialogDescription id="validacion-entradas-description">
-            Revisa y valida las entradas de productos que esperan aprobación
+            {t('inventory.entryValidationDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 space-y-4 overflow-hidden px-4 pb-4 sm:px-6 sm:pb-6">
           {/* Estadísticas */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#666666]">Total Pendientes</p>
+                  <p className="text-sm text-[#666666]">{t('inventory.entryValidationDialog.pendingTotal')}</p>
                   <p className="text-2xl font-bold text-[#1E73BE]">{entradasPendientes.length}</p>
                 </div>
                 <Package className="h-8 w-8 text-[#1E73BE]" />
@@ -164,7 +182,7 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#666666]">Seleccionadas</p>
+                  <p className="text-sm text-[#666666]">{t('inventory.entryValidationDialog.selectedTotal')}</p>
                   <p className="text-2xl font-bold text-[#4CAF50]">{entradasSeleccionadas.length}</p>
                 </div>
                 <Check className="h-8 w-8 text-[#4CAF50]" />
@@ -174,10 +192,8 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
             <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#666666]">Con Alertas</p>
-                  <p className="text-2xl font-bold text-[#FFC107]">
-                    {entradasPendientes.filter(e => e.alerta).length}
-                  </p>
+                  <p className="text-sm text-[#666666]">{t('inventory.entryValidationDialog.withAlerts')}</p>
+                  <p className="text-2xl font-bold text-[#FFC107]">{entradasConAlerta}</p>
                 </div>
                 <AlertTriangle className="h-8 w-8 text-[#FFC107]" />
               </div>
@@ -198,7 +214,7 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
                 className="pl-10 border-[#1E73BE] focus:ring-2 focus:ring-[#1E73BE]"
               />
               {searchLote && entradasPendientes.length > 0 && (
-                <Badge variant="outline" className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-50 text-[#1E73BE] border-[#1E73BE] font-bold">
+                <Badge variant="outline" className="absolute right-2 top-1/2 hidden -translate-y-1/2 bg-blue-50 font-bold text-[#1E73BE] border-[#1E73BE] sm:inline-flex">
                   {entradasFiltradas.length} {t('common.results')}
                 </Badge>
               )}
@@ -210,37 +226,38 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
             <Alert className="bg-green-50 border-green-200">
               <Check className="h-4 w-4 text-[#4CAF50]" />
               <AlertDescription className="text-[#4CAF50]">
-                ✅ No hay entradas pendientes de validación en los últimos 7 días
+                {t('inventory.entryValidationDialog.emptyRecent')}
               </AlertDescription>
             </Alert>
           ) : (
             <Alert className="bg-blue-50 border-blue-200">
               <AlertTriangle className="h-4 w-4 text-[#1E73BE]" />
               <AlertDescription className="text-[#1E73BE]">
-                Revisa las entradas recientes y marca las que ya verificaste
+                {t('inventory.entryValidationDialog.reviewRecentInfo')}
               </AlertDescription>
             </Alert>
           )}
 
           {/* Tabla de entradas */}
-          <ScrollArea className="h-[400px] rounded-md border">
+          <ScrollArea className="h-[min(48vh,400px)] w-full rounded-md border">
+            <div className="min-w-[980px]">
             <Table>
               <TableHeader className="bg-[#F4F4F4] sticky top-0 z-10">
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={entradasSeleccionadas.length === entradasPendientes.length && entradasPendientes.length > 0}
+                      checked={todasFiltradasSeleccionadas}
                       onCheckedChange={toggleTodasEntradas}
                     />
                   </TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Producto</TableHead>
+                  <TableHead>{t('inventory.date')}</TableHead>
+                  <TableHead>{t('inventory.type')}</TableHead>
+                  <TableHead>{t('inventory.product')}</TableHead>
                   <TableHead>📦 {t('inventory.lotNumberShort')}</TableHead>
-                  <TableHead>Cantidad</TableHead>
-                  <TableHead>Donador</TableHead>
-                  <TableHead>Alertas</TableHead>
-                  <TableHead>Días</TableHead>
+                  <TableHead>{t('inventory.quantity')}</TableHead>
+                  <TableHead>{t('inventory.entryValidationDialog.donorColumn')}</TableHead>
+                  <TableHead>{t('inventory.entryValidationDialog.withAlerts')}</TableHead>
+                  <TableHead>{t('inventory.entryValidationDialog.daysColumn')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -248,7 +265,7 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
                   <TableRow>
                     <TableCell colSpan={9} className="text-center text-[#666666] py-8">
                       <Package className="h-12 w-12 mx-auto mb-2 text-[#666666]" />
-                      <p>{searchLote ? t('inventory.noResultsForLot') : 'No hay entradas pendientes'}</p>
+                      <p>{searchLote ? t('inventory.noResultsForLot') : t('inventory.entryValidationDialog.noPending')}</p>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -263,9 +280,7 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-[#666666]" />
-                          <span className="text-sm">
-                            {format(new Date(entrada.fecha), 'dd MMM yyyy', { locale: es })}
-                          </span>
+                          <span className="text-sm">{formatearFechaEntrada(entrada.fecha)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -302,7 +317,7 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
                           entrada.diasDesdeEntrada <= 5 ? 'bg-yellow-50 text-yellow-700' :
                           'bg-red-50 text-red-700'
                         }>
-                          {entrada.diasDesdeEntrada}d
+                          {entrada.diasDesdeEntrada}{t('inventory.entryValidationDialog.daysShort')}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -310,22 +325,23 @@ export function ValidacionEntradasDialog({ open, onOpenChange }: ValidacionEntra
                 )}
               </TableBody>
             </Table>
+            </div>
           </ScrollArea>
         </div>
 
-        <DialogFooter className="border-t pt-4">
-          <div className="flex justify-between w-full">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="border-t px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
+          <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
               <X className="h-4 w-4 mr-2" />
-              Cerrar
+              {t('inventory.close')}
             </Button>
             <Button
               onClick={validarEntradasSeleccionadas}
               disabled={entradasSeleccionadas.length === 0 || cargando}
-              className="bg-[#4CAF50] hover:bg-[#45a049]"
+              className="w-full bg-[#4CAF50] hover:bg-[#45a049] sm:w-auto"
             >
               <Check className="h-4 w-4 mr-2" />
-              {cargando ? 'Validando...' : `Validar (${entradasSeleccionadas.length})`}
+              {cargando ? t('inventory.entryValidationDialog.validating') : t('inventory.entryValidationDialog.validateButton', { count: entradasSeleccionadas.length })}
             </Button>
           </div>
         </DialogFooter>

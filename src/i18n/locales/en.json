@@ -314,6 +314,497 @@
     "title": "Inventory Management",
     "subtitle": "Complete control of products and movements",
     "entryHistory": "Entry History",
+    "entryHistoryCompact": {
+      "tabDescription": "Complete Don/Purchase entry history",
+      "emptyTitle": "No entries recorded",
+      "emptyDescription": "Recorded entries will appear here",
+      "registeredSingle": "{{count}} recorded entry",
+      "registeredMultiple": "{{count}} recorded entries",
+      "refresh": "Refresh",
+      "confirmVoid": "Are you sure you want to void the entry for \"{{product}}\"?\n\nThis action will deactivate the entry in the system.",
+      "voidSuccess": "Entry voided successfully",
+      "voidError": "Error while voiding the entry",
+      "voidButton": "Void",
+      "voidButtonTitle": "Void entry (soft delete)"
+    },
+    "movementsPanel": {
+      "totalMovements": "Total movements",
+      "entries": "Entries",
+      "exits": "Exits",
+      "losses": "Losses",
+      "totalValue": "Total value",
+      "title": "Movement history",
+      "description": "Manage and track all inventory movements",
+      "exportCsv": "Export CSV",
+      "searchPlaceholder": "Search by product, ID, user...",
+      "typePlaceholder": "Movement type",
+      "allTypes": "All types",
+      "adjustment": "Adjustment",
+      "transfer": "Transfer",
+      "loss": "Loss",
+      "donation": "Donation",
+      "periodPlaceholder": "Period",
+      "allDates": "All dates",
+      "thisWeek": "This week",
+      "thisMonth": "This month",
+      "dateColumn": "Date",
+      "stockBefore": "Stock before",
+      "stockAfter": "Stock after",
+      "userColumn": "User",
+      "detailsColumn": "Details",
+      "noResults": "No movements found",
+      "referencePrefix": "Ref:",
+      "exportSuccess": "Export completed",
+      "csvFilePrefix": "inventory_movements",
+      "systemUser": "System user",
+      "demoReasonAdjustment": "Inventory correction",
+      "demoReasonExpired": "Expired product",
+      "demoReasonDonation": "Donation to organization",
+      "demoDestinationSecondaryWarehouse": "Secondary warehouse",
+      "demoDestinationCommunityOrg": "Community organization"
+    },
+    "distributionDialog": {
+      "systemUser": "System user",
+      "selected": "Selected",
+      "new": "New",
+      "items": "Items",
+      "value": "Value",
+      "weight": "Weight",
+      "beneficiaryOrganization": "Beneficiary organization",
+      "selectOrganizationPlaceholder": "Select an organization",
+      "deliveryDate": "Delivery date",
+      "observationsOptional": "Notes (optional)",
+      "observationsPlaceholder": "Enter additional notes",
+      "observationsPlaceholderOptional": "Enter additional notes (optional)",
+      "summary": "Summary:",
+      "individualSimulation": "Organization reception simulation",
+      "back": "Back",
+      "cancel": "Cancel",
+      "next": "Next",
+      "createOrder": "Create order",
+      "createOrders": "Create orders ({{count}})",
+      "previewNotificationMessage": "New order {{number}} available for confirmation",
+      "groupObservation": "Group distribution ({{percentage}}% of total)",
+      "groupExampleFor": "Example for {{organization}}",
+      "stock": {
+        "reservable": "Reservable:",
+        "reserved": "Reserved:",
+        "physical": "Physical:"
+      },
+      "stepTitles": {
+        "selectType": "📦 Distribute products",
+        "editQuantities": "✏️ Edit quantities",
+        "selectOrganization": "🏢 Select organization",
+        "groupDistribution": "👥 Group distribution"
+      },
+      "stepDescriptions": {
+        "selectType": "Choose how you want to distribute the products",
+        "editQuantities": "Adjust product quantities before distributing",
+        "selectOrganization": "Complete the order details",
+        "groupDistribution": "The distribution splits 100% among active regular organizations"
+      },
+      "cards": {
+        "individual": {
+          "title": "Single organization",
+          "description": "Assign all products to a single organization"
+        },
+        "group": {
+          "title": "Group distribution",
+          "description": "Distribute products across several organizations using percentages"
+        },
+        "offer": {
+          "title": "Create offer",
+          "description": "Publish an offer so organizations can accept it"
+        }
+      },
+      "group": {
+        "autoDistributionTitle": "Automatic distribution for regular organizations",
+        "autoDistributionDescription": "Group distribution automatically loads all active regular organizations. The system splits the full 100% based on the configured distribution share in each organization profile.",
+        "currentCalculation": "Current calculation: 100% distributed according to configured share",
+        "equalWeightsInfo": "All eligible organizations have the same distribution share. Result: the full 100% is divided equally.",
+        "equalWeightsTwo": "With 2 equal organizations, the correct split is 50% and 50%.",
+        "excludedRegularOrganizations": "{{count}} regular organization(s) were excluded because their distribution share is 0 or not configured.",
+        "recalculateButton": "Recalculate automatic distribution",
+        "organizationsAndPercentages": "Organizations and percentages",
+        "eligibleDiagnosis": "Eligible organizations diagnosis",
+        "idPrefix": "ID:",
+        "sharePrefix": "Share: {{share}}%",
+        "noOrganizationsAvailable": "No organizations with an available distribution share",
+        "noOrganizationsAvailableDescription": "Configure a distribution share for regular organizations to enable automatic distribution",
+        "percentagePlaceholder": "Percentage",
+        "configuredShareBadge": "Configured distribution share: {{share}}%",
+        "totalShareBadge": "Of the full 100%: {{share}}%",
+        "formula": "Formula: ({{share}} / {{total}}) x 100 -> {{result}}% of total.",
+        "totalDistribution": "Total distribution:",
+        "totalDistributionDescription": "Calculation basis: only active regular organizations with a distribution share above 0. The distributed 100% follows the configured distribution shares. Sum of configured shares: {{total}}%.",
+        "deliveryDateHelp": "Distribution creation is enabled when a delivery date is set and the total distribution reaches 100%.",
+        "internalSimulation": "Internal simulation of the first beneficiary organization",
+        "internalSimulationDescription": "Preview based on the first order generated by the automatic distribution."
+      },
+      "toasts": {
+        "recalculatedTitle": "Distribution recalculated using each organization's configured share",
+        "configuredShare": "Configured distribution share: {{share}}%",
+        "orderCreated": "Order {{number}} created successfully",
+        "emailSent": "Automatic notification sent to {{count}} recipient(s)",
+        "ordersCreatedTitle": "Orders created successfully:",
+        "emailSummary": "✉️ Automatic notifications sent to {{organizations}} organization(s) ({{recipients}} recipient(s))."
+      },
+      "errors": {
+        "noRegularOrganizationsWithShare": "No regular organizations with a configured distribution share",
+        "completeAllFields": "Please complete all fields",
+        "createOrder": "Error while creating the order",
+        "totalPercentageMustBe100": "The total percentage must be 100% (current: {{current}}%)",
+        "completeAllFieldsCorrectly": "Please complete all fields correctly",
+        "selectDeliveryDate": "Please select a delivery date",
+        "atLeastOnePositiveProduct": "At least one product must have a quantity greater than 0 to create the group distribution",
+        "noAssignedProducts": "The distribution did not assign products to any organization",
+        "createOrders": "Error while creating the orders",
+        "atLeastOneProduct": "You must have at least one product"
+      },
+      "blocked": {
+        "selectDeliveryDate": "Select a delivery date to create the distribution.",
+        "noEligibleOrganizations": "There are no active regular organizations with a distribution share greater than 0.",
+        "totalNot100": "The distribution does not add up to 100% yet."
+      }
+    },
+    "offerDialog": {
+      "systemUser": "System user",
+      "title": "Create new offer",
+      "description": "Create a product offer that organizations can view and accept",
+      "basicInfoTitle": "Offer information",
+      "offerTitleLabel": "Offer title *",
+      "offerTitlePlaceholder": "Ex.: Fresh products offer - January 2024",
+      "offerDescriptionLabel": "Description",
+      "offerDescriptionPlaceholder": "Describe the offer details (optional)",
+      "expirationLabel": "Expiration date *",
+      "includedProductsTitle": "Included products",
+      "items": "Items",
+      "value": "Value",
+      "weight": "Weight",
+      "reservable": "Reservable:",
+      "reserved": "Reserved:",
+      "recipientsTitle": "Recipient organizations",
+      "allOrganizationsTitle": "All organizations",
+      "allOrganizationsDescription": "The offer will be visible to all active organizations",
+      "specificOrganizationsTitle": "Specific organizations",
+      "specificOrganizationsDescription": "Select the specific organizations that can view the offer",
+      "unclassified": "Unclassified",
+      "noFrequency": "Frequency not defined",
+      "filterByAssistanceType": "Filter by assistance type",
+      "aboutTitle": "ℹ️ About offers",
+      "aboutItem1": "Organizations will be able to view and accept the offer fully or partially",
+      "aboutItem2": "Quantities are reduced automatically as offers are accepted",
+      "aboutItem3": "The offer expires automatically on the specified date",
+      "aboutItem4": "You can deactivate the offer at any time from the offers panel",
+      "cancel": "Cancel",
+      "createButton": "Create offer",
+      "toasts": {
+        "createdTitle": "✅ Offer created successfully",
+        "visibleForAll": "Visible to all organizations",
+        "visibleForSpecific": "Visible to {{count}} organizations"
+      },
+      "errors": {
+        "titleRequired": "Title is required",
+        "expirationRequired": "Expiration date is required",
+        "expirationMustBeFuture": "Expiration date must be in the future",
+        "selectOrganization": "You must select at least one organization",
+        "selectAssistanceType": "You must select at least one assistance type",
+        "createOffer": "Error while creating the offer"
+      }
+    },
+    "conversionDialog": {
+      "title": "Unit conversion",
+      "description": "Convert the quantity and unit of the selected product",
+      "selectTargetUnit": "Select target unit",
+      "sourceUnitLabel": "Source unit",
+      "currentUnitWeight": "Current unit weight:",
+      "perEachUnit": "for each {{unit}}",
+      "targetUnitLabel": "Target unit *",
+      "selectUnitPlaceholder": "Select unit",
+      "noConversionsAvailable": "No conversions available for {{unit}}",
+      "availableOptions": "{{count}} available option(s)",
+      "amountToConvert": "Amount to convert *",
+      "maximum": "Maximum: {{amount}} {{unit}}",
+      "conversionFactor": "Conversion factor *",
+      "unitsPerEach": "{{targetUnit}} for each {{sourceUnit}}",
+      "resultTitle": "Conversion result:",
+      "resultingUnitWeight": "⚖️ Resulting unit weight:",
+      "eachUnitWillWeigh": "Each {{unit}} will weigh {{weight}} kilograms",
+      "weightCalculationTitle": "📊 Unit weight calculation:",
+      "step1": "Step 1:",
+      "step2": "Step 2:",
+      "weightOriginStep": "Source unit weight = {{weight}} kg/{{unit}}",
+      "conversionFactorStep": "Conversion factor = {{factor}} {{targetUnit}}/{{sourceUnit}}",
+      "formula": "Formula:",
+      "stockUpdateNotice": "Stock will be updated automatically after the conversion.",
+      "cancel": "Cancel",
+      "convert": "Convert",
+      "success": "Conversion successful: {{sourceAmount}} {{sourceUnit}} -> {{targetAmount}} {{targetUnit}}",
+      "successWithWeight": "✅ Conversion successful: {{sourceAmount}} {{sourceUnit}} -> {{targetAmount}} {{targetUnit}}\n⚖️ Unit weight: {{weight}} kg/{{targetUnit}}",
+      "errors": {
+        "invalidQuantity": "Please enter a valid quantity",
+        "invalidFactor": "Please enter a valid conversion factor",
+        "selectTargetUnit": "Please select a target unit",
+        "insufficientStock": "Insufficient stock. Available: {{stock}} {{unit}}"
+      }
+    },
+    "transformationDialog": {
+      "title": "Transform product",
+      "description": "Convert this product into one or more different products",
+      "infoTitle": "What is a transformation?",
+      "infoDescription": "Record when one product is converted into another (e.g. bulk rice -> individual bags, fresh fruit -> preserves). The source stock is reduced and the target stock increases.",
+      "hide": "Hide",
+      "view": "View",
+      "historyTitle": "Transformation history",
+      "sourceProduct": "Source product",
+      "productToTransform": "Product to transform",
+      "selectProduct": "Select product",
+      "currentStock": "Current stock:",
+      "quantityToTransform": "Quantity to transform",
+      "insufficientStockMax": "⚠️ Insufficient stock (max: {{max}})",
+      "conversionRatio": "Conversion ratio",
+      "ratioFormula": "1 {{sourceUnit}} -> {{ratio}} {{targetUnit}}",
+      "commonRatiosTitle": "Common ratios",
+      "ratioValue": "Ratio: {{ratio}}",
+      "targetProduct": "Target product",
+      "resultingProduct": "Resulting product",
+      "resultingQuantity": "Resulting quantity",
+      "customMode": "🔓 Custom",
+      "autoMode": "🔒 Auto",
+      "autoCalculated": "💡 Calculated automatically from the ratio",
+      "stockAfterTransform": "Stock after transformation:",
+      "reasonLabel": "Transformation reason",
+      "reasonPlaceholder": "Ex.: Portioning for family distribution, processing products close to expiry...",
+      "providerContactOptional": "Supplier / contact (optional)",
+      "selectProviderOrContact": "Select supplier or contact",
+      "none": "None",
+      "id": "ID",
+      "email": "Email",
+      "type": "Type",
+      "phone": "Phone",
+      "summaryTitle": "Transformation summary",
+      "willRemove": "Will remove:",
+      "willAdd": "Will add:",
+      "efficiencyLabel": "Efficiency:",
+      "efficiencyIncrease": "⬆️ Increase",
+      "efficiencyReduction": "⬇️ Reduction",
+      "efficiencyEquivalent": "➡️ Equivalent",
+      "cancel": "Cancel",
+      "systemUser": "System user",
+      "sourceLabel": "Source:",
+      "targetLabel": "Target:",
+      "ofProduct": "of {{product}}",
+      "toasts": {
+        "completed": "✅ Transformation completed"
+      },
+      "errors": {
+        "selectBothProducts": "Select both products",
+        "sourceQuantityPositive": "Source quantity must be greater than 0",
+        "targetQuantityPositive": "Target quantity must be greater than 0",
+        "insufficientStock": "Insufficient stock. Available: {{stock}} {{unit}}"
+      },
+      "providerCategories": {
+        "donor": "Donor",
+        "vendor": "Vendor",
+        "organization": "Organization"
+      },
+      "commonRatios": {
+        "bulkToIndividual": {
+          "name": "Bulk to individual portion",
+          "example": "25kg rice -> 1kg bags"
+        },
+        "individualToBulk": {
+          "name": "Portion to bulk",
+          "example": "1kg bags -> 25kg rice"
+        },
+        "freshToPreserve": {
+          "name": "Fresh product to preserve",
+          "example": "Fruit -> jam"
+        },
+        "processingLoss": {
+          "name": "Processing with loss",
+          "example": "With 30% waste"
+        }
+      },
+      "historyExamples": {
+        "riceOrigin": "White rice 25kg",
+        "riceTarget": "White rice 1kg",
+        "tomatoOrigin": "Fresh tomatoes",
+        "tomatoTarget": "Tomato sauce",
+        "milkOrigin": "Liquid milk 20L",
+        "milkTarget": "Milk 1L",
+        "reasonDistribution": "Portioning for distribution",
+        "reasonExpiring": "Processing products close to expiry",
+        "reasonFamilies": "Portioning for families"
+      }
+    },
+    "unitManagement": {
+      "title": "Units",
+      "description": "Manage measurement units for inventory",
+      "newUnit": "New unit",
+      "empty": "No units registered",
+      "createFirst": "Create the first unit",
+      "confirmDelete": "Are you sure you want to delete the unit \"{{name}}\"?",
+      "toasts": {
+        "created": "Unit created successfully",
+        "updated": "Unit updated successfully",
+        "deleted": "Unit deleted successfully"
+      },
+      "errors": {
+        "nameRequired": "Name is required",
+        "abbreviationRequired": "Abbreviation is required",
+        "saveFailed": "Error while saving the unit",
+        "deleteFailed": "Error while deleting the unit"
+      },
+      "dialog": {
+        "createTitle": "✨ New unit",
+        "editTitle": "✏️ Edit unit",
+        "createDescription": "Define a new measurement unit",
+        "editDescription": "Edit unit data"
+      },
+      "form": {
+        "name": "Name *",
+        "namePlaceholder": "Ex: Pallet, box, bag...",
+        "abbreviation": "Abbreviation *",
+        "abbreviationPlaceholder": "Ex: PLT, BOX, BAG...",
+        "abbreviationHelp": "Maximum 5 characters",
+        "tareWeight": "⚖️ Empty unit weight (tare) in kg",
+        "tareWeightPlaceholder": "Ex: 30 (for a 30 kg pallet)",
+        "tareWeightHelp": "💡 This weight will be deducted automatically when weighing on the scale",
+        "icon": "Icon",
+        "iconHelp": "{{count}} icons available - Scroll to see more"
+      },
+      "preview": {
+        "label": "Preview:",
+        "defaultName": "Unit name",
+        "defaultAbbreviation": "ABB"
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "save": "Save",
+        "create": "Create unit"
+      }
+    },
+    "variantManagement": {
+      "title": "Variants",
+      "count_one": "{{count}} variant",
+      "count_other": "{{count}} variants",
+      "newVariant": "New variant",
+      "empty": "No variants created",
+      "createFirst": "Create first variant",
+      "inactive": "Inactive",
+      "notDefined": "Not defined",
+      "confirmDelete": "Are you sure you want to delete the variant \"{{name}}\"?",
+      "toasts": {
+        "created": "Variant created successfully",
+        "updated": "Variant updated successfully",
+        "deleted": "Variant deleted successfully",
+        "activated": "Variant activated",
+        "deactivated": "Variant deactivated"
+      },
+      "errors": {
+        "nameRequired": "Variant name is required"
+      },
+      "dialog": {
+        "createTitle": "✨ New variant",
+        "editTitle": "✏️ Edit variant",
+        "createDescription": "Create a new variant for this product",
+        "editDescription": "Edit the existing variant information"
+      },
+      "form": {
+        "name": "Variant name *",
+        "namePlaceholder": "Ex: Large, 500ml, brand A, organic...",
+        "code": "Code (optional)",
+        "codePlaceholder": "Ex: VAR-001",
+        "unit": "Unit of measure",
+        "unitPlaceholder": "Use subcategory unit ({{unit}})",
+        "specificUnit": "Specific unit: {{unit}}",
+        "subcategoryUnit": "The subcategory unit will be used: {{unit}}",
+        "unitWeight": "Unit weight (kg)",
+        "unitWeightHelp": "Leave empty to use the subcategory weight",
+        "valuePerKg": "Value per kg ($)",
+        "valuePerKgHelp": "Leave empty to use the category value",
+        "icon": "Icon",
+        "description": "Description (optional)",
+        "descriptionPlaceholder": "Additional variant description..."
+      },
+      "preview": {
+        "label": "Preview:",
+        "defaultName": "Variant name"
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "create": "Create variant",
+        "saveChanges": "Save changes",
+        "activate": "Activate",
+        "deactivate": "Deactivate"
+      }
+    },
+    "productHistoryDialog": {
+      "title": "Product history",
+      "description": "Review all entries, outputs and movements for this product",
+      "productInfoTitle": "Product information",
+      "code": "Code",
+      "location": "Location",
+      "expiration": "Expiration",
+      "unitsPerPackage": "Units per package",
+      "batch": "Batch",
+      "stockState": "Stock status",
+      "currentStock": "Current stock",
+      "minimumStock": "Minimum stock",
+      "percentage": "Percentage",
+      "stockStatus": {
+        "low": "Low stock",
+        "medium": "Medium stock",
+        "optimal": "Optimal stock"
+      },
+      "totals": {
+        "entries": "Total entries",
+        "outputs": "Total outputs",
+        "transformations": "Transformations",
+        "corrections": "Corrections"
+      },
+      "tabs": {
+        "history_one": "Movement history ({{count}})",
+        "history_other": "Movement history ({{count}})",
+        "barcodes": "Barcodes"
+      },
+      "movementLogTitle": "Movement log",
+      "noMovements": "No movements recorded for this product",
+      "table": {
+        "date": "Date",
+        "type": "Type",
+        "quantity": "Quantity",
+        "unitWeight": "Unit weight",
+        "entryDate": "Entry date",
+        "reasonDestination": "Reason / destination",
+        "user": "User",
+        "document": "Document"
+      },
+      "perUnit": "per unit",
+      "barcodes": {
+        "productCode": "Product code (EAN-13)",
+        "batchCode": "Batch code",
+        "locationCode": "Location code",
+        "locationValue": "Location: {{location}}"
+      },
+      "quickActions": "Quick actions",
+      "actions": {
+        "downloadAllCodes": "Download all codes",
+        "printLabels": "Print labels",
+        "generateQr": "Generate QR code"
+      },
+      "types": {
+        "entry": "Entry",
+        "output": "Output",
+        "transformation": "Transformation",
+        "correction": "Correction",
+        "distribution": "Distribution",
+        "delivered": "Delivered",
+        "adjustment": "Adjustment",
+        "conversion": "Conversion"
+      }
+    },
     "recentVerifications": "Recent Verifications",
     "addProduct": "Add Product",
     "editProduct": "Edit Product",
@@ -471,6 +962,29 @@
     "movementsHistory": "Movements History",
     "conversionsTab": "Conversions",
     "validationTab": "Validation",
+    "entryValidationDialog": {
+      "title": "Pending entry validation",
+      "description": "Review and validate product entries waiting for approval",
+      "tabTitle": "Entry validation",
+      "tabDescription": "Review and validate recent inventory entries",
+      "pendingTotal": "Total pending",
+      "selectedTotal": "Selected",
+      "withAlerts": "With alerts",
+      "openPanelTitle": "Open validation panel",
+      "panelTitle": "Entry validation system",
+      "panelDescription": "Validate entries received in the last 7 days. Near-expiry alerts, high stock, and cases requiring manual review are detected automatically.",
+      "reviewRecentInfo": "Review recent entries and mark the ones you already checked",
+      "emptyRecent": "There are no pending entries to validate in the last 7 days",
+      "noPending": "There are no pending entries",
+      "selectAtLeastOne": "Select at least one entry to validate",
+      "validationSuccess": "✅ {{count}} entrie(s) validated successfully",
+      "startButton": "Start validation",
+      "validateButton": "Validate ({{count}})",
+      "validating": "Validating...",
+      "donorColumn": "Donor",
+      "daysColumn": "Days",
+      "daysShort": "d"
+    },
     "predictionTab": "Prediction",
     "viewList": "List view",
     "viewGrid": "Grid view",

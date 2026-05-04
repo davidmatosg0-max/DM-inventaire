@@ -5,6 +5,8 @@ import { Card, CardContent } from '../ui/card';
 import { Printer, Download, X, Calendar, Clock, Package, ChefHat, AlertCircle } from 'lucide-react';
 import { type Receta } from '../../utils/recetaStorage';
 import { Label } from '../ui/label';
+import { toast } from 'sonner';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 
 // Tipos de etiquetas soportadas
 type TipoEtiqueta = 'dymo-large' | 'dymo-medium' | 'brother-large' | 'brother-medium' | 'standard' | 'dymo-small' | 'full-info';
@@ -248,138 +250,130 @@ export function EtiquetaReceta({
     const contenidoEtiqueta = etiquetaRef.current;
     if (!contenidoEtiqueta) return;
 
-    const ventanaImpresion = window.open('', '_blank');
-    if (!ventanaImpresion) return;
-
-    ventanaImpresion.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Étiquette - ${receta.nombre}</title>
-          <style>
-            @page {
-              size: ${config.ancho} ${config.alto};
-              margin: 0;
-            }
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              font-size: 12pt;
-              line-height: 1.3;
-              color: #000;
-              background: white;
-            }
-            .etiqueta-horizontal {
-              width: ${config.ancho};
-              height: ${config.alto};
-              padding: ${config.padding};
-              display: flex;
-              flex-direction: row;
-              gap: 4px;
-              border: 3px solid #000;
-            }
-            .etiqueta-vertical {
-              width: ${config.ancho};
-              height: ${config.alto};
-              padding: ${config.padding};
-              display: flex;
-              flex-direction: column;
-              border: 3px solid #000;
-            }
-            .nombre-receta {
-              font-size: ${config.fontSize.titulo};
-              font-weight: bold;
-              text-align: center;
-              padding: ${esHorizontal ? '4px' : '12px'};
-              background: #4CAF50;
-              color: white;
-              border-radius: 6px;
-            }
-            .nombre-vertical {
-              writing-mode: vertical-rl;
-              transform: rotate(180deg);
-            }
-            .col-izquierda {
-              flex-shrink: 0;
-              width: 30%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .col-derecha {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              justify-content: space-between;
-            }
-            .info-item {
-              margin-bottom: ${esHorizontal ? '2px' : '12px'};
-              padding: ${esHorizontal ? '2px 4px' : '10px'};
-              background: #f8f9fa;
-              border-left: ${esHorizontal ? '2px' : '4px'} solid #1E73BE;
-            }
-            .info-label {
-              font-size: ${config.fontSize.label};
-              color: #666;
-              font-weight: 600;
-              margin-bottom: 2px;
-              line-height: 1.1;
-            }
-            .info-value {
-              font-size: ${config.fontSize.value};
-              font-weight: bold;
-              color: #000;
-              line-height: 1.1;
-            }
-            .ingredientes-section {
-              margin-top: 12px;
-              padding: 12px;
-              background: #fff8e1;
-              border: 2px solid #FFC107;
-              border-radius: 8px;
-              flex: 1;
-            }
-            .ingredientes-titulo {
-              font-size: ${config.fontSize.label};
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 8px;
-              text-align: center;
-              text-transform: uppercase;
-            }
-            .ingredientes-lista {
-              font-size: ${config.fontSize.ingredientes};
-              line-height: 1.4;
-            }
-            .ingrediente-item {
-              margin-bottom: 4px;
-            }
-            @media print {
-              body {
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
+    try {
+      openAutoPrintPopup(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Étiquette - ${receta.nombre}</title>
+            <style>
+              @page {
+                size: ${config.ancho} ${config.alto};
+                margin: 0;
               }
-            }
-          </style>
-        </head>
-        <body>
-          ${contenidoEtiqueta.innerHTML}
-        </body>
-      </html>
-    `);
-
-    ventanaImpresion.document.close();
-    
-    // Esperar a que se cargue el contenido y luego imprimir
-    setTimeout(() => {
-      ventanaImpresion.focus();
-      ventanaImpresion.print();
-      ventanaImpresion.close();
-    }, 250);
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                font-size: 12pt;
+                line-height: 1.3;
+                color: #000;
+                background: white;
+              }
+              .etiqueta-horizontal {
+                width: ${config.ancho};
+                height: ${config.alto};
+                padding: ${config.padding};
+                display: flex;
+                flex-direction: row;
+                gap: 4px;
+                border: 3px solid #000;
+              }
+              .etiqueta-vertical {
+                width: ${config.ancho};
+                height: ${config.alto};
+                padding: ${config.padding};
+                display: flex;
+                flex-direction: column;
+                border: 3px solid #000;
+              }
+              .nombre-receta {
+                font-size: ${config.fontSize.titulo};
+                font-weight: bold;
+                text-align: center;
+                padding: ${esHorizontal ? '4px' : '12px'};
+                background: #4CAF50;
+                color: white;
+                border-radius: 6px;
+              }
+              .nombre-vertical {
+                writing-mode: vertical-rl;
+                transform: rotate(180deg);
+              }
+              .col-izquierda {
+                flex-shrink: 0;
+                width: 30%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              .col-derecha {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+              }
+              .info-item {
+                margin-bottom: ${esHorizontal ? '2px' : '12px'};
+                padding: ${esHorizontal ? '2px 4px' : '10px'};
+                background: #f8f9fa;
+                border-left: ${esHorizontal ? '2px' : '4px'} solid #1E73BE;
+              }
+              .info-label {
+                font-size: ${config.fontSize.label};
+                color: #666;
+                font-weight: 600;
+                margin-bottom: 2px;
+                line-height: 1.1;
+              }
+              .info-value {
+                font-size: ${config.fontSize.value};
+                font-weight: bold;
+                color: #000;
+                line-height: 1.1;
+              }
+              .ingredientes-section {
+                margin-top: 12px;
+                padding: 12px;
+                background: #fff8e1;
+                border: 2px solid #FFC107;
+                border-radius: 8px;
+                flex: 1;
+              }
+              .ingredientes-titulo {
+                font-size: ${config.fontSize.label};
+                font-weight: bold;
+                color: #000;
+                margin-bottom: 8px;
+                text-align: center;
+                text-transform: uppercase;
+              }
+              .ingredientes-lista {
+                font-size: ${config.fontSize.ingredientes};
+                line-height: 1.4;
+              }
+              .ingrediente-item {
+                margin-bottom: 4px;
+              }
+              @media print {
+                body {
+                  print-color-adjust: exact;
+                  -webkit-print-color-adjust: exact;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${contenidoEtiqueta.innerHTML}
+          </body>
+        </html>
+      `, { width: 900, height: 700, printDelayMs: 250 });
+    } catch (error) {
+      toast.error('No se pudo abrir la ventana de impresión.');
+    }
   };
 
   const handleDescargarPDF = () => {

@@ -26,6 +26,7 @@ import { obtenerUsuarioSesion, tienePermiso } from '../../utils/sesionStorage';
 import { guardarContacto, type ContactoDepartamento, sincronizarDesdeBenevole, obtenerContactosDepartamento, eliminarContacto, actualizarContacto } from '../../utils/contactosDepartamentoStorage';
 import { sincronizarVoluntariosEntrepot } from '../../utils/sincronizarVoluntariosEntrepot';
 import { registrarActividad } from '../../utils/actividadLogger';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 import { BoutonRetourHeader } from '../shared/BoutonRetour';
 // 🔧 Importar utilidades de debugging
 import '../../utils/debugBenevoles';
@@ -2512,12 +2513,6 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
     const selectedBenevole = benevoles.find(b => b.id === selectedBenevoleId);
     if (!selectedBenevole) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Impossible d\'ouvrir la fenêtre d\'impression');
-      return;
-    }
-
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -2839,26 +2834,12 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-
-    // Attendre que le contenu soit chargé avant d'imprimer
-    printWindow.onload = () => {
-      printWindow.print();
-      
-      // Fermer la fenêtre après l'impression ou l'annulation
-      printWindow.onafterprint = () => {
-        printWindow.close();
-      };
-      
-      // Timeout de sécurité pour fermer après 30 secondes si l'utilisateur ne fait rien
-      setTimeout(() => {
-        if (printWindow && !printWindow.closed) {
-          printWindow.close();
-        }
-      }, 30000);
-    };
+    try {
+      openAutoPrintPopup(printContent, { width: 1024, height: 900, printDelayMs: 250 });
+    } catch (error) {
+      toast.error('Impossible d\'ouvrir la fenêtre d\'impression');
+      return;
+    }
 
     toast.success('Préparation de l\'impression...');
   };

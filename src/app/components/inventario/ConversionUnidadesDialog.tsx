@@ -222,22 +222,25 @@ export function ConversionUnidadesDialog({
 
     // Validaciones
     if (isNaN(cantidad) || cantidad <= 0) {
-      toast.error('Por favor ingresa una cantidad válida');
+      toast.error(t('inventory.conversionDialog.errors.invalidQuantity'));
       return;
     }
 
     if (isNaN(factor) || factor <= 0) {
-      toast.error('Por favor ingresa un factor de conversión válido');
+      toast.error(t('inventory.conversionDialog.errors.invalidFactor'));
       return;
     }
 
     if (!unidadDestino) {
-      toast.error('Por favor selecciona una unidad de destino');
+      toast.error(t('inventory.conversionDialog.errors.selectTargetUnit'));
       return;
     }
 
     if (cantidad > producto.stockActual) {
-      toast.error(`Stock insuficiente. Disponible: ${producto.stockActual} ${unidadOrigen}`);
+      toast.error(t('inventory.conversionDialog.errors.insufficientStock', {
+        stock: producto.stockActual,
+        unit: unidadOrigen,
+      }));
       return;
     }
 
@@ -247,11 +250,22 @@ export function ConversionUnidadesDialog({
     // Mensaje de éxito con peso unitario
     if (pesoUnitarioDestino !== null) {
       toast.success(
-        `✅ Conversión exitosa: ${formatQuantity(cantidad)} ${unidadOrigen} → ${formatQuantity(cantidadDestino)} ${unidadDestino}\n⚖️ Peso unitario: ${formatQuantity(pesoUnitarioDestino)} kg/${unidadDestino}`,
+        t('inventory.conversionDialog.successWithWeight', {
+          sourceAmount: formatQuantity(cantidad),
+          sourceUnit: unidadOrigen,
+          targetAmount: formatQuantity(cantidadDestino),
+          targetUnit: unidadDestino,
+          weight: formatQuantity(pesoUnitarioDestino),
+        }),
         { duration: 4000 }
       );
     } else {
-      toast.success(`Conversión exitosa: ${formatQuantity(cantidad)} ${unidadOrigen} → ${formatQuantity(cantidadDestino)} ${unidadDestino}`);
+      toast.success(t('inventory.conversionDialog.success', {
+        sourceAmount: formatQuantity(cantidad),
+        sourceUnit: unidadOrigen,
+        targetAmount: formatQuantity(cantidadDestino),
+        targetUnit: unidadDestino,
+      }));
     }
     onOpenChange(false);
   };
@@ -273,10 +287,10 @@ export function ConversionUnidadesDialog({
       <DialogContent className="max-w-2xl" aria-describedby="conversion-unidades-description">
         <DialogHeader>
           <DialogTitle className="text-xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-            Conversión de Unidades
+            {t('inventory.conversionDialog.title')}
           </DialogTitle>
           <DialogDescription id="conversion-unidades-description">
-            Convierte la cantidad y unidad del producto seleccionado
+            {t('inventory.conversionDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -306,7 +320,7 @@ export function ConversionUnidadesDialog({
                 ) : (
                   <>
                     <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <div className="text-sm text-gray-400">Selecciona unidad destino</div>
+                    <div className="text-sm text-gray-400">{t('inventory.conversionDialog.selectTargetUnit')}</div>
                   </>
                 )}
               </div>
@@ -316,7 +330,7 @@ export function ConversionUnidadesDialog({
           {/* Formulario de conversión */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="unidadOrigen">Unidad Origen</Label>
+              <Label htmlFor="unidadOrigen">{t('inventory.conversionDialog.sourceUnitLabel')}</Label>
               <Input
                 id="unidadOrigen"
                 value={unidadOrigen}
@@ -329,13 +343,11 @@ export function ConversionUnidadesDialog({
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">⚖️</span>
                     <div>
-                      <p className="text-xs text-blue-600 font-semibold">Peso Unitario Actual:</p>
+                      <p className="text-xs text-blue-600 font-semibold">{t('inventory.conversionDialog.currentUnitWeight')}</p>
                       <p className="text-base text-blue-900 font-bold mt-0.5">
                         {formatQuantity(pesoUnitarioOrigen)} kg
                       </p>
-                      <p className="text-xs text-blue-700 mt-0.5">
-                        por cada {unidadOrigen}
-                      </p>
+                      <p className="text-xs text-blue-700 mt-0.5">{t('inventory.conversionDialog.perEachUnit', { unit: unidadOrigen })}</p>
                     </div>
                   </div>
                 </div>
@@ -343,15 +355,15 @@ export function ConversionUnidadesDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unidadDestino">Unidad Destino *</Label>
+              <Label htmlFor="unidadDestino">{t('inventory.conversionDialog.targetUnitLabel')}</Label>
               <Select value={unidadDestino} onValueChange={setUnidadDestino}>
                 <SelectTrigger id="unidadDestino">
-                  <SelectValue placeholder="Seleccionar unidad" />
+                  <SelectValue placeholder={t('inventory.conversionDialog.selectUnitPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {unidadesDestino.length === 0 ? (
                     <div className="p-2 text-sm text-gray-500">
-                      No hay conversiones disponibles para {unidadOrigen}
+                      {t('inventory.conversionDialog.noConversionsAvailable', { unit: unidadOrigen })}
                     </div>
                   ) : (
                     unidadesDestino.map((unidad) => (
@@ -367,13 +379,13 @@ export function ConversionUnidadesDialog({
               </Select>
               {unidadesDestino.length > 0 && (
                 <p className="text-xs text-gray-500">
-                  {unidadesDestino.length} opción(es) disponible(s)
+                  {t('inventory.conversionDialog.availableOptions', { count: unidadesDestino.length })}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cantidadOrigen">Cantidad a Convertir *</Label>
+              <Label htmlFor="cantidadOrigen">{t('inventory.conversionDialog.amountToConvert')}</Label>
               <Input
                 id="cantidadOrigen"
                 type="number"
@@ -385,12 +397,12 @@ export function ConversionUnidadesDialog({
                 placeholder="0"
               />
               <p className="text-xs text-gray-500">
-                Máximo: {producto?.stockActual || 0} {unidadOrigen}
+                {t('inventory.conversionDialog.maximum', { amount: producto?.stockActual || 0, unit: unidadOrigen })}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="factorConversion">Factor de Conversión *</Label>
+              <Label htmlFor="factorConversion">{t('inventory.conversionDialog.conversionFactor')}</Label>
               <Input
                 id="factorConversion"
                 type="number"
@@ -401,7 +413,10 @@ export function ConversionUnidadesDialog({
                 placeholder="0"
               />
               <p className="text-xs text-gray-500">
-                {unidadDestino && `${unidadDestino} por cada ${unidadOrigen}`}
+                {unidadDestino && t('inventory.conversionDialog.unitsPerEach', {
+                  targetUnit: unidadDestino,
+                  sourceUnit: unidadOrigen,
+                })}
               </p>
             </div>
           </div>
@@ -412,7 +427,7 @@ export function ConversionUnidadesDialog({
               <div className="flex items-start gap-2">
                 <Package className="h-5 w-5 text-blue-600 mt-0.5" />
                 <div className="flex-1 text-sm">
-                  <p className="font-medium text-blue-900">Resultado de la conversión:</p>
+                  <p className="font-medium text-blue-900">{t('inventory.conversionDialog.resultTitle')}</p>
                   <p className="text-blue-700 mt-1">
                     {formatQuantity(parseFloat(cantidadOrigen) || 0)} {unidadOrigen} × {factorConversion} = <strong>{formatQuantity(cantidadDestino)} {unidadDestino}</strong>
                   </p>
@@ -421,13 +436,16 @@ export function ConversionUnidadesDialog({
                   {pesoUnitarioDestino !== null && (
                     <div className="mt-3 bg-gradient-to-r from-blue-100 to-blue-50 px-3 py-3 rounded-lg border-2 border-blue-300">
                       <p className="text-blue-900 font-bold text-base mb-2">
-                        ⚖️ Peso Unitario Resultante:
+                        {t('inventory.conversionDialog.resultingUnitWeight')}
                       </p>
                       <p className="text-blue-800 font-mono text-lg font-bold">
                         {formatQuantity(pesoUnitarioDestino)} kg/{unidadDestino}
                       </p>
                       <p className="text-blue-600 text-xs mt-2">
-                        Cada {unidadDestino} pesará {formatQuantity(pesoUnitarioDestino)} kilogramos
+                        {t('inventory.conversionDialog.eachUnitWillWeigh', {
+                          unit: unidadDestino,
+                          weight: formatQuantity(pesoUnitarioDestino),
+                        })}
                       </p>
                     </div>
                   )}
@@ -435,22 +453,29 @@ export function ConversionUnidadesDialog({
                   {pesoUnitarioDestino !== null && producto && pesoUnitarioOrigen !== null && (
                     <>
                       <p className="text-blue-700 mt-3 font-medium">
-                        📊 Cálculo de peso unitario:
+                        {t('inventory.conversionDialog.weightCalculationTitle')}
                       </p>
                       <p className="text-blue-600 text-xs mt-1 bg-white px-2 py-1 rounded border border-blue-200">
-                        <strong>Paso 1:</strong> Peso unitario origen = {formatQuantity(pesoUnitarioOrigen)} kg/{unidadOrigen}
+                        <strong>{t('inventory.conversionDialog.step1')}</strong> {t('inventory.conversionDialog.weightOriginStep', {
+                          weight: formatQuantity(pesoUnitarioOrigen),
+                          unit: unidadOrigen,
+                        })}
                       </p>
                       <p className="text-blue-600 text-xs mt-1 bg-white px-2 py-1 rounded border border-blue-200">
-                        <strong>Paso 2:</strong> Factor de conversión = {factorConversion} {unidadDestino}/{unidadOrigen}
+                        <strong>{t('inventory.conversionDialog.step2')}</strong> {t('inventory.conversionDialog.conversionFactorStep', {
+                          factor: factorConversion,
+                          targetUnit: unidadDestino,
+                          sourceUnit: unidadOrigen,
+                        })}
                       </p>
                       <p className="text-blue-600 text-xs mt-1 font-mono bg-blue-100 px-2 py-2 rounded border-2 border-blue-300">
-                        <strong>Fórmula:</strong><br/>
+                        <strong>{t('inventory.conversionDialog.formula')}</strong><br/>
                         {formatQuantity(pesoUnitarioOrigen)} kg ÷ {factorConversion} = <strong className="text-blue-800 text-base">{formatQuantity(pesoUnitarioDestino)} kg/{unidadDestino}</strong>
                       </p>
                     </>
                   )}
                   <p className="text-blue-600 text-xs mt-2">
-                    El stock se actualizará automáticamente después de la conversión.
+                    {t('inventory.conversionDialog.stockUpdateNotice')}
                   </p>
                 </div>
               </div>
@@ -460,14 +485,14 @@ export function ConversionUnidadesDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('inventory.conversionDialog.cancel')}
           </Button>
           <Button
             onClick={handleConvertir}
             className="bg-[#1E73BE] hover:bg-[#1557A0]"
             disabled={!unidadDestino || !cantidadOrigen || !factorConversion || cantidadDestino <= 0}
           >
-            Convertir
+            {t('inventory.conversionDialog.convert')}
           </Button>
         </DialogFooter>
       </DialogContent>

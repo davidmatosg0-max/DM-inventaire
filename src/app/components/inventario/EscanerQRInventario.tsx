@@ -787,7 +787,7 @@ export function EscanerQRInventario({
                     <div className="flex-1 text-left">
                       <h4 className="font-bold text-white transition-colors text-lg">Ajouter au panier</h4>
                       <p className="text-sm text-white/90 transition-colors">
-                        Ajouter ce produit au panier pour distribution
+                        Choisir la quantité à ajouter au panier pour distribution
                       </p>
                     </div>
                   </button>

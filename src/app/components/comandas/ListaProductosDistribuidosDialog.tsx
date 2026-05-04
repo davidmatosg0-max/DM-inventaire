@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { obtenerProductos } from '../../utils/productStorage';
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 import { sortByTemperature } from '../../utils/temperatureSort';
 import { mockProductos } from '../../data/mockData';
 import type { Comanda } from '../../types';
@@ -136,12 +137,6 @@ export function ListaProductosDistribuidosDialog({
       return;
     }
 
-    const ventana = window.open('', '_blank', 'width=1200,height=800');
-    if (!ventana) {
-      toast.error('Impossible d’ouvrir la fenêtre d’impression');
-      return;
-    }
-
     const filas = resumen.productos.map(producto => `
       <tr>
         <td>${producto.icono} ${producto.nombreProducto}</td>
@@ -154,56 +149,56 @@ export function ListaProductosDistribuidosDialog({
       </tr>
     `).join('');
 
-    ventana.document.write(`
-      <html>
-        <head>
-          <title>Liste Produits Distribués</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #1f2937; }
-            h1 { margin: 0 0 8px; color: #1E73BE; }
-            p { margin: 0 0 16px; }
-            .resume { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-            .card { border: 1px solid #dbe3ea; border-radius: 12px; padding: 12px; background: #f8fbff; }
-            .label { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
-            .value { font-size: 20px; font-weight: 700; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #dbe3ea; padding: 10px; font-size: 12px; vertical-align: top; }
-            th { background: #1E73BE; color: white; text-align: left; }
-            @media print {
-              body { padding: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Liste des produits distribués</h1>
-          <p>Comandes incluses: ${resumen.totalComandas} | Produits: ${resumen.totalProductos} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}</p>
-          <div class="resume">
-            <div class="card"><div class="label">Quantité totale</div><div class="value">${formatQuantity(resumen.totalCantidad)}</div></div>
-            <div class="card"><div class="label">Poids total</div><div class="value">${formatQuantity(resumen.totalPeso)} kg</div></div>
-            <div class="card"><div class="label">Valeur totale</div><div class="value">CAD$ ${formatMoney(resumen.totalValor)}</div></div>
-            <div class="card"><div class="label">Produits distincts</div><div class="value">${resumen.totalProductos}</div></div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Produit</th>
-                <th>Quantité</th>
-                <th>Poids</th>
-                <th>Valeur</th>
-                <th>Organismes</th>
-                <th>Comandes</th>
-                <th>Dernière date</th>
-              </tr>
-            </thead>
-            <tbody>${filas}</tbody>
-          </table>
-        </body>
-      </html>
-    `);
-
-    ventana.document.close();
-    ventana.focus();
-    ventana.print();
+    try {
+      openAutoPrintPopup(`
+        <html>
+          <head>
+            <title>Liste Produits Distribués</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 24px; color: #1f2937; }
+              h1 { margin: 0 0 8px; color: #1E73BE; }
+              p { margin: 0 0 16px; }
+              .resume { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+              .card { border: 1px solid #dbe3ea; border-radius: 12px; padding: 12px; background: #f8fbff; }
+              .label { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+              .value { font-size: 20px; font-weight: 700; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #dbe3ea; padding: 10px; font-size: 12px; vertical-align: top; }
+              th { background: #1E73BE; color: white; text-align: left; }
+              @media print {
+                body { padding: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Liste des produits distribués</h1>
+            <p>Comandes incluses: ${resumen.totalComandas} | Produits: ${resumen.totalProductos} | Généré le: ${new Date().toLocaleDateString(currentLocale || 'fr')}</p>
+            <div class="resume">
+              <div class="card"><div class="label">Quantité totale</div><div class="value">${formatQuantity(resumen.totalCantidad)}</div></div>
+              <div class="card"><div class="label">Poids total</div><div class="value">${formatQuantity(resumen.totalPeso)} kg</div></div>
+              <div class="card"><div class="label">Valeur totale</div><div class="value">CAD$ ${formatMoney(resumen.totalValor)}</div></div>
+              <div class="card"><div class="label">Produits distincts</div><div class="value">${resumen.totalProductos}</div></div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Quantité</th>
+                  <th>Poids</th>
+                  <th>Valeur</th>
+                  <th>Organismes</th>
+                  <th>Comandes</th>
+                  <th>Dernière date</th>
+                </tr>
+              </thead>
+              <tbody>${filas}</tbody>
+            </table>
+          </body>
+        </html>
+      `, { width: 1200, height: 800, printDelayMs: 350 });
+    } catch (error) {
+      toast.error('Impossible d’ouvrir la fenêtre d’impression');
+    }
   };
 
   const exportarPDF = () => {

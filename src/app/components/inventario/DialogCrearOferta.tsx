@@ -58,7 +58,7 @@ export function DialogCrearOferta({
   const [filtrarPorTipoAsistencia, setFiltrarPorTipoAsistencia] = useState(false);
   const [tiposAsistenciaSeleccionados, setTiposAsistenciaSeleccionados] = useState<string[]>([]);
 
-  const usuarioActual = 'Usuario Sistema';
+  const usuarioActual = t('inventory.offerDialog.systemUser');
   const organismosActivos = obtenerOrganismos().filter(organismo => organismo.activo);
 
   // Reiniciar formulario cuando se abre el diálogo
@@ -131,26 +131,26 @@ export function DialogCrearOferta({
   // Validar formulario
   const validarFormulario = () => {
     if (!titulo.trim()) {
-      toast.error('El título es obligatorio');
+      toast.error(t('inventory.offerDialog.errors.titleRequired'));
       return false;
     }
     if (!fechaExpiracion) {
-      toast.error('La fecha de expiración es obligatoria');
+      toast.error(t('inventory.offerDialog.errors.expirationRequired'));
       return false;
     }
     const fechaExp = new Date(fechaExpiracion);
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     if (fechaExp < hoy) {
-      toast.error('La fecha de expiración debe ser futura');
+      toast.error(t('inventory.offerDialog.errors.expirationMustBeFuture'));
       return false;
     }
     if (destinatarioTipo === 'especificos' && organismosSeleccionados.length === 0) {
-      toast.error('Debe seleccionar al menos un organismo');
+      toast.error(t('inventory.offerDialog.errors.selectOrganization'));
       return false;
     }
     if (filtrarPorTipoAsistencia && tiposAsistenciaSeleccionados.length === 0) {
-      toast.error('Debe seleccionar al menos un tipo de asistencia');
+      toast.error(t('inventory.offerDialog.errors.selectAssistanceType'));
       return false;
     }
     return true;
@@ -178,12 +178,12 @@ export function DialogCrearOferta({
 
       toast.success(
         <div>
-          <p className="font-semibold mb-1">✅ Oferta creada exitosamente</p>
+          <p className="font-semibold mb-1">{t('inventory.offerDialog.toasts.createdTitle')}</p>
           <p className="text-sm">{oferta.numeroOferta}</p>
           <p className="text-sm">
             {destinatarioTipo === 'todos' 
-              ? 'Visible para todos los organismos' 
-              : `Visible para ${organismosSeleccionados.length} organismos`}
+              ? t('inventory.offerDialog.toasts.visibleForAll') 
+              : t('inventory.offerDialog.toasts.visibleForSpecific', { count: organismosSeleccionados.length })}
           </p>
         </div>,
         { duration: 5000 }
@@ -221,7 +221,7 @@ export function DialogCrearOferta({
       onOfertaCreada();
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al crear la oferta');
+      toast.error(error instanceof Error ? error.message : t('inventory.offerDialog.errors.createOffer'));
       console.error(error);
     }
   };
@@ -242,10 +242,10 @@ export function DialogCrearOferta({
             <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#FFC107] to-[#FF9800] flex items-center justify-center">
               <Tag className="h-5 w-5 text-white" />
             </div>
-            🏷️ Crear Nueva Oferta
+            {`🏷️ ${t('inventory.offerDialog.title')}`}
           </DialogTitle>
           <DialogDescription id="crear-oferta-description">
-            Cree una oferta de productos que los organismos podrán ver y aceptar
+            {t('inventory.offerDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -255,34 +255,34 @@ export function DialogCrearOferta({
             <CardContent className="p-4 space-y-4">
               <h3 className="font-semibold text-lg flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <FileText className="w-5 h-5 text-[#1E73BE]" />
-                Información de la Oferta
+                {t('inventory.offerDialog.basicInfoTitle')}
               </h3>
 
               <div className="space-y-2">
-                <Label htmlFor="titulo">Título de la Oferta *</Label>
+                <Label htmlFor="titulo">{t('inventory.offerDialog.offerTitleLabel')}</Label>
                 <Input
                   id="titulo"
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
-                  placeholder="Ej: Oferta de productos frescos - Enero 2024"
+                  placeholder={t('inventory.offerDialog.offerTitlePlaceholder')}
                   className="w-full"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="descripcion">Descripción</Label>
+                <Label htmlFor="descripcion">{t('inventory.offerDialog.offerDescriptionLabel')}</Label>
                 <Textarea
                   id="descripcion"
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  placeholder="Describa los detalles de la oferta (opcional)"
+                  placeholder={t('inventory.offerDialog.offerDescriptionPlaceholder')}
                   rows={3}
                   className="w-full"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fechaExpiracion">Fecha de Expiración *</Label>
+                <Label htmlFor="fechaExpiracion">{t('inventory.offerDialog.expirationLabel')}</Label>
                 <Input
                   id="fechaExpiracion"
                   type="date"
@@ -300,7 +300,7 @@ export function DialogCrearOferta({
             <CardContent className="p-4">
               <h3 className="font-semibold text-lg flex items-center gap-2 mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <Package className="w-5 h-5 text-[#4CAF50]" />
-                Productos Incluidos
+                {t('inventory.offerDialog.includedProductsTitle')}
               </h3>
 
               <div className="grid grid-cols-3 gap-3 mb-4">
@@ -309,7 +309,7 @@ export function DialogCrearOferta({
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-[#1E73BE]" />
                       <div>
-                        <p className="text-xs text-gray-600">Items</p>
+                        <p className="text-xs text-gray-600">{t('inventory.offerDialog.items')}</p>
                         <p className="font-bold text-[#1E73BE]">{formatQuantity(totales.totalItems)}</p>
                       </div>
                     </div>
@@ -320,7 +320,7 @@ export function DialogCrearOferta({
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-[#4CAF50]" />
                       <div>
-                        <p className="text-xs text-gray-600">Valor</p>
+                        <p className="text-xs text-gray-600">{t('inventory.offerDialog.value')}</p>
                         <p className="font-bold text-[#4CAF50]">CAD$ {formatMoney(totales.valorMonetarioTotal)}</p>
                       </div>
                     </div>
@@ -331,7 +331,7 @@ export function DialogCrearOferta({
                     <div className="flex items-center gap-2">
                       <Scale className="w-4 h-4 text-[#FFC107]" />
                       <div>
-                        <p className="text-xs text-gray-600">Peso</p>
+                        <p className="text-xs text-gray-600">{t('inventory.offerDialog.weight')}</p>
                         <p className="font-bold text-[#FFC107]">{formatQuantity(totales.totalKilos)} kg</p>
                       </div>
                     </div>
@@ -351,9 +351,9 @@ export function DialogCrearOferta({
                         <p className="font-semibold text-sm">{producto.productoNombre}</p>
                         <p className="text-xs text-gray-600">{producto.productoCodigo}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Reservable: {reservasInventario[producto.productoId]?.disponibleParaReservar || 0} {producto.unidad}
+                          {t('inventory.offerDialog.reservable')} {reservasInventario[producto.productoId]?.disponibleParaReservar || 0} {producto.unidad}
                           {' · '}
-                          Reservado: {reservasInventario[producto.productoId]?.totalReservado || 0} {producto.unidad}
+                          {t('inventory.offerDialog.reserved')} {reservasInventario[producto.productoId]?.totalReservado || 0} {producto.unidad}
                         </p>
                       </div>
                     </div>
@@ -376,7 +376,7 @@ export function DialogCrearOferta({
             <CardContent className="p-4 space-y-4">
               <h3 className="font-semibold text-lg flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <Users className="w-5 h-5 text-[#FFC107]" />
-                Organismos Destinatarios
+                {t('inventory.offerDialog.recipientsTitle')}
               </h3>
 
               <div className="space-y-3">
@@ -392,8 +392,8 @@ export function DialogCrearOferta({
                   <div className="flex items-center gap-3">
                     <Globe className={`w-6 h-6 ${destinatarioTipo === 'todos' ? 'text-[#4CAF50]' : 'text-gray-400'}`} />
                     <div className="flex-1">
-                      <p className="font-semibold">Todos los Organismos</p>
-                      <p className="text-sm text-gray-600">La oferta será visible para todos los organismos activos</p>
+                      <p className="font-semibold">{t('inventory.offerDialog.allOrganizationsTitle')}</p>
+                      <p className="text-sm text-gray-600">{t('inventory.offerDialog.allOrganizationsDescription')}</p>
                     </div>
                     {destinatarioTipo === 'todos' && (
                       <CheckCircle2 className="w-5 h-5 text-[#4CAF50]" />
@@ -413,8 +413,8 @@ export function DialogCrearOferta({
                   <div className="flex items-center gap-3">
                     <Building2 className={`w-6 h-6 ${destinatarioTipo === 'especificos' ? 'text-[#1E73BE]' : 'text-gray-400'}`} />
                     <div className="flex-1">
-                      <p className="font-semibold">Organismos Específicos</p>
-                      <p className="text-sm text-gray-600">Seleccione organismos particulares que pueden ver la oferta</p>
+                      <p className="font-semibold">{t('inventory.offerDialog.specificOrganizationsTitle')}</p>
+                      <p className="text-sm text-gray-600">{t('inventory.offerDialog.specificOrganizationsDescription')}</p>
                     </div>
                     {destinatarioTipo === 'especificos' && (
                       <CheckCircle2 className="w-5 h-5 text-[#1E73BE]" />
@@ -439,7 +439,7 @@ export function DialogCrearOferta({
                           <div className="flex-1">
                             <p className="font-medium text-sm">{organismo.nombre}</p>
                             <p className="text-xs text-gray-600">
-                              {(organismo.tipoAsistencia || organismo.tipo || 'Sin clasificación')} • {organismo.frecuenciaCita || 'Frecuencia no definida'}
+                              {(organismo.tipoAsistencia || organismo.tipo || t('inventory.offerDialog.unclassified'))} • {organismo.frecuenciaCita || t('inventory.offerDialog.noFrequency')}
                             </p>
                           </div>
                         </div>
@@ -456,7 +456,7 @@ export function DialogCrearOferta({
                       onCheckedChange={(checked) => setFiltrarPorTipoAsistencia(checked as boolean)}
                     />
                     <Label className="cursor-pointer" onClick={() => setFiltrarPorTipoAsistencia(!filtrarPorTipoAsistencia)}>
-                      Filtrar por tipo de asistencia
+                      {t('inventory.offerDialog.filterByAssistanceType')}
                     </Label>
                   </div>
 
@@ -489,12 +489,12 @@ export function DialogCrearOferta({
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-[#1E73BE] flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold text-[#1E73BE] mb-1">ℹ️ Acerca de las ofertas</p>
+                  <p className="font-semibold text-[#1E73BE] mb-1">{t('inventory.offerDialog.aboutTitle')}</p>
                   <ul className="text-gray-700 space-y-1 list-disc list-inside">
-                    <li>Los organismos podrán ver y aceptar total o parcialmente la oferta</li>
-                    <li>Las cantidades se reducen automáticamente según las aceptaciones</li>
-                    <li>La oferta expira automáticamente en la fecha indicada</li>
-                    <li>Puede desactivar la oferta en cualquier momento desde el panel de ofertas</li>
+                    <li>{t('inventory.offerDialog.aboutItem1')}</li>
+                    <li>{t('inventory.offerDialog.aboutItem2')}</li>
+                    <li>{t('inventory.offerDialog.aboutItem3')}</li>
+                    <li>{t('inventory.offerDialog.aboutItem4')}</li>
                   </ul>
                 </div>
               </div>
@@ -505,14 +505,14 @@ export function DialogCrearOferta({
         <DialogFooter className="border-t pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="w-4 h-4 mr-2" />
-            Cancelar
+            {t('inventory.offerDialog.cancel')}
           </Button>
           <Button 
             onClick={handleCrearOferta}
             className="bg-[#FFC107] hover:bg-[#FFA000] text-gray-900"
           >
             <Tag className="w-4 h-4 mr-2" />
-            Crear Oferta
+            {t('inventory.offerDialog.createButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

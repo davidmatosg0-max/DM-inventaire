@@ -32,30 +32,6 @@ const categoriasInfo: Record<string, { icono: string; color: string }> = {
   'Aceites y Condimentos': { icono: '🫒', color: '#66BB6A' },
 };
 
-// Transformaciones predefinidas comunes
-const transformacionesComunes = [
-  {
-    nombre: 'Granel a Porción Individual',
-    ejemplo: 'Arroz 25kg → Bolsas 1kg',
-    ratio: 25
-  },
-  {
-    nombre: 'Porción a Granel',
-    ejemplo: 'Bolsas 1kg → Arroz 25kg',
-    ratio: 0.04
-  },
-  {
-    nombre: 'Producto Fresco a Conserva',
-    ejemplo: 'Frutas → Mermelada',
-    ratio: 0.6
-  },
-  {
-    nombre: 'Procesamiento con Pérdida',
-    ejemplo: 'Con desperdicio del 30%',
-    ratio: 0.7
-  }
-];
-
 export function TransformarProductoDialog({ open, onOpenChange, productoInicial }: TransformarProductoDialogProps) {
   const { t } = useTranslation();
   const [productoOrigenId, setProductoOrigenId] = useState(productoInicial?.id || '');
@@ -71,27 +47,53 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
   const productoDestino = mockProductos.find(p => p.id === productoDestinoId);
   const proveedorSeleccionado = mockUsuariosInternos.find(p => p.id === proveedorId);
 
+  const transformacionesComunes = [
+    {
+      nombre: t('inventory.transformationDialog.commonRatios.bulkToIndividual.name'),
+      ejemplo: t('inventory.transformationDialog.commonRatios.bulkToIndividual.example'),
+      ratio: 25,
+    },
+    {
+      nombre: t('inventory.transformationDialog.commonRatios.individualToBulk.name'),
+      ejemplo: t('inventory.transformationDialog.commonRatios.individualToBulk.example'),
+      ratio: 0.04,
+    },
+    {
+      nombre: t('inventory.transformationDialog.commonRatios.freshToPreserve.name'),
+      ejemplo: t('inventory.transformationDialog.commonRatios.freshToPreserve.example'),
+      ratio: 0.6,
+    },
+    {
+      nombre: t('inventory.transformationDialog.commonRatios.processingLoss.name'),
+      ejemplo: t('inventory.transformationDialog.commonRatios.processingLoss.example'),
+      ratio: 0.7,
+    },
+  ];
+
   const categoriaOrigen = productoOrigen ? categoriasInfo[productoOrigen.categoria] : null;
   const categoriaDestino = productoDestino ? categoriasInfo[productoDestino.categoria] : null;
 
   const handleTransformar = () => {
     if (!productoOrigenId || !productoDestinoId) {
-      toast.error('Selecciona ambos productos');
+      toast.error(t('inventory.transformationDialog.errors.selectBothProducts'));
       return;
     }
 
     if (!cantidadOrigen || cantidadOrigen <= 0) {
-      toast.error('La cantidad de origen debe ser mayor a 0');
+      toast.error(t('inventory.transformationDialog.errors.sourceQuantityPositive'));
       return;
     }
 
     if (!cantidadDestino || cantidadDestino <= 0) {
-      toast.error('La cantidad de destino debe ser mayor a 0');
+      toast.error(t('inventory.transformationDialog.errors.targetQuantityPositive'));
       return;
     }
 
     if (productoOrigen && cantidadOrigen > productoOrigen.stockActual) {
-      toast.error(`Stock insuficiente. Disponible: ${formatQuantity(productoOrigen.stockActual)} ${productoOrigen.unidad}`);
+      toast.error(t('inventory.transformationDialog.errors.insufficientStock', {
+        stock: formatQuantity(productoOrigen.stockActual),
+        unit: productoOrigen.unidad,
+      }));
       return;
     }
 
@@ -100,16 +102,16 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
 
     toast.success(
       <div className="flex flex-col gap-1">
-        <span className="font-semibold">✅ Transformación completada</span>
+        <span className="font-semibold">{t('inventory.transformationDialog.toasts.completed')}</span>
         <div className="text-sm text-[#666666] space-y-1">
           <div>
-            <strong>Origen:</strong> -{formatQuantity(cantidadOrigen)} {productoOrigen?.unidad} de {productoOrigen?.nombre}
+            <strong>{t('inventory.transformationDialog.sourceLabel')}</strong> -{formatQuantity(cantidadOrigen)} {productoOrigen?.unidad} {t('inventory.transformationDialog.ofProduct', { product: productoOrigen?.nombre || '' })}
           </div>
           <div>
-            <strong>Destino:</strong> +{formatQuantity(cantidadDestino)} {productoDestino?.unidad} de {productoDestino?.nombre}
+            <strong>{t('inventory.transformationDialog.targetLabel')}</strong> +{formatQuantity(cantidadDestino)} {productoDestino?.unidad} {t('inventory.transformationDialog.ofProduct', { product: productoDestino?.nombre || '' })}
           </div>
           <div>
-            <strong>Eficiencia:</strong> {eficiencia}%
+            <strong>{t('inventory.transformationDialog.efficiencyLabel')}</strong> {eficiencia}%
           </div>
         </div>
       </div>,
@@ -150,44 +152,55 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
   const usuarioActual = obtenerUsuarioSesion();
   const nombreUsuarioActual = usuarioActual 
     ? `${usuarioActual.nombre} ${usuarioActual.apellido}`
-    : 'Usuario Sistema';
+    : t('inventory.transformationDialog.systemUser');
+
+  const getProviderCategoryLabel = (category?: string) => {
+    switch (category) {
+      case 'donador':
+        return t('inventory.transformationDialog.providerCategories.donor');
+      case 'vendedor':
+        return t('inventory.transformationDialog.providerCategories.vendor');
+      default:
+        return t('inventory.transformationDialog.providerCategories.organization');
+    }
+  };
 
   const historialTransformaciones = [
     {
       id: '1',
       fecha: '2025-01-04 10:30',
-      productoOrigen: 'Arroz Blanco 25kg',
+      productoOrigen: t('inventory.transformationDialog.historyExamples.riceOrigin'),
       cantidadOrigen: 25,
       unidadOrigen: 'kg',
-      productoDestino: 'Arroz Blanco 1kg',
+      productoDestino: t('inventory.transformationDialog.historyExamples.riceTarget'),
       cantidadDestino: 25,
       unidadDestino: 'unidades',
       usuario: nombreUsuarioActual,
-      motivo: 'Fraccionamiento para distribución'
+      motivo: t('inventory.transformationDialog.historyExamples.reasonDistribution')
     },
     {
       id: '2',
       fecha: '2025-01-03 15:45',
-      productoOrigen: 'Tomates Frescos',
+      productoOrigen: t('inventory.transformationDialog.historyExamples.tomatoOrigin'),
       cantidadOrigen: 50,
       unidadOrigen: 'kg',
-      productoDestino: 'Salsa de Tomate',
+      productoDestino: t('inventory.transformationDialog.historyExamples.tomatoTarget'),
       cantidadDestino: 30,
       unidadDestino: 'kg',
       usuario: nombreUsuarioActual,
-      motivo: 'Procesamiento de productos próximos a vencer'
+      motivo: t('inventory.transformationDialog.historyExamples.reasonExpiring')
     },
     {
       id: '3',
       fecha: '2025-01-02 09:15',
-      productoOrigen: 'Leche Líquida 20L',
+      productoOrigen: t('inventory.transformationDialog.historyExamples.milkOrigin'),
       cantidadOrigen: 10,
       unidadOrigen: 'unidades',
-      productoDestino: 'Leche 1L',
+      productoDestino: t('inventory.transformationDialog.historyExamples.milkTarget'),
       cantidadDestino: 200,
       unidadDestino: 'unidades',
       usuario: nombreUsuarioActual,
-      motivo: 'Fraccionamiento para familias'
+      motivo: t('inventory.transformationDialog.historyExamples.reasonFamilies')
     }
   ];
 
@@ -200,11 +213,11 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#9C27B0] to-[#7B1FA2] flex items-center justify-center text-white text-2xl">
                 🔄
               </div>
-              <span className="text-xl">Transformar Producto</span>
+              <span className="text-xl">{t('inventory.transformationDialog.title')}</span>
             </div>
           </DialogTitle>
           <DialogDescription id="transformar-producto-description">
-            Convierte este producto en uno o varios productos diferentes
+            {t('inventory.transformationDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -214,10 +227,9 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
             <div className="flex items-start gap-3">
               <Info className="w-5 h-5 text-[#1E73BE] flex-shrink-0 mt-0.5" />
               <div className="flex-1 text-sm text-[#1E73BE]">
-                <strong>¿Qué es una transformación?</strong>
+                <strong>{t('inventory.transformationDialog.infoTitle')}</strong>
                 <p className="mt-1">
-                  Registra cuando un producto se convierte en otro (ej: arroz a granel → bolsas individuales, 
-                  frutas frescas → conservas). El stock del producto origen se reduce y el del producto destino aumenta.
+                  {t('inventory.transformationDialog.infoDescription')}
                 </p>
               </div>
             </div>
@@ -231,7 +243,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
               onClick={() => setMostrarHistorial(!mostrarHistorial)}
             >
               <History className="w-4 h-4 mr-2" />
-              {mostrarHistorial ? 'Ocultar' : 'Ver'} Historial
+              {mostrarHistorial ? t('inventory.transformationDialog.hide') : t('inventory.transformationDialog.view')} {t('inventory.transformationDialog.historyTitle')}
             </Button>
           </div>
 
@@ -241,7 +253,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
               <CardContent className="pt-6">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
                   <History className="w-5 h-5 text-[#1E73BE]" />
-                  Historial de Transformaciones
+                  {t('inventory.transformationDialog.historyTitle')}
                 </h3>
                 <div className="space-y-3 max-h-60 overflow-y-auto">
                   {historialTransformaciones.map(t => (
@@ -282,15 +294,15 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Minus className="w-5 h-5 text-[#DC3545]" />
-                  <h3 className="font-semibold text-[#DC3545]">Producto Origen</h3>
+                  <h3 className="font-semibold text-[#DC3545]">{t('inventory.transformationDialog.sourceProduct')}</h3>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Producto a transformar</Label>
+                    <Label>{t('inventory.transformationDialog.productToTransform')}</Label>
                     <Select value={productoOrigenId} onValueChange={setProductoOrigenId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar producto" />
+                        <SelectValue placeholder={t('inventory.transformationDialog.selectProduct')} />
                       </SelectTrigger>
                       <SelectContent>
                         {mockProductos.map(p => (
@@ -317,20 +329,20 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs mt-3">
                           <div>
-                            <span className="text-[#666666]">Stock Actual:</span>
+                            <span className="text-[#666666]">{t('inventory.transformationDialog.currentStock')}</span>
                             <p className="font-bold text-[#1E73BE]">
                               {formatQuantity(productoOrigen.stockActual)} {productoOrigen.unidad}
                             </p>
                           </div>
                           <div>
-                            <span className="text-[#666666]">Código:</span>
+                            <span className="text-[#666666]">{t('inventory.code')}</span>
                             <p className="font-mono">{productoOrigen.codigo}</p>
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Cantidad a transformar</Label>
+                        <Label>{t('inventory.transformationDialog.quantityToTransform')}</Label>
                         <div className="flex gap-2">
                           <Input
                             type="number"
@@ -354,7 +366,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                         </div>
                         {cantidadOrigen > productoOrigen.stockActual && (
                           <p className="text-xs text-[#DC3545]">
-                            ⚠️ Stock insuficiente (máx: {formatQuantity(productoOrigen.stockActual)})
+                            {t('inventory.transformationDialog.insufficientStockMax', { max: formatQuantity(productoOrigen.stockActual) })}
                           </p>
                         )}
                       </div>
@@ -372,19 +384,23 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
 
               {cantidadOrigen > 0 && cantidadDestino > 0 && (
                 <div className="bg-white border-2 border-[#1E73BE] rounded-lg p-4 w-full">
-                  <p className="text-xs text-[#666666] text-center mb-1">Ratio de Conversión</p>
+                  <p className="text-xs text-[#666666] text-center mb-1">{t('inventory.transformationDialog.conversionRatio')}</p>
                   <p className="text-2xl font-bold text-[#1E73BE] text-center">
                     {calcularRatio()}
                   </p>
                   <p className="text-xs text-[#666666] text-center mt-1">
-                    1 {productoOrigen?.unidad} → {calcularRatio()} {productoDestino?.unidad}
+                    {t('inventory.transformationDialog.ratioFormula', {
+                      sourceUnit: productoOrigen?.unidad || '',
+                      ratio: calcularRatio(),
+                      targetUnit: productoDestino?.unidad || '',
+                    })}
                   </p>
                 </div>
               )}
 
               {/* Transformaciones comunes */}
               <div className="w-full space-y-2">
-                <Label className="text-xs text-center block">Ratios Comunes</Label>
+                <Label className="text-xs text-center block">{t('inventory.transformationDialog.commonRatiosTitle')}</Label>
                 <div className="grid grid-cols-1 gap-2">
                   {transformacionesComunes.map((tc, index) => (
                     <Button
@@ -397,7 +413,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                     >
                       <div className="text-left w-full">
                         <div className="font-semibold truncate">{tc.nombre}</div>
-                        <div className="text-[#666666] text-[10px]">Ratio: {tc.ratio}</div>
+                        <div className="text-[#666666] text-[10px]">{t('inventory.transformationDialog.ratioValue', { ratio: tc.ratio })}</div>
                       </div>
                     </Button>
                   ))}
@@ -410,15 +426,15 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Plus className="w-5 h-5 text-[#4CAF50]" />
-                  <h3 className="font-semibold text-[#4CAF50]">Producto Destino</h3>
+                  <h3 className="font-semibold text-[#4CAF50]">{t('inventory.transformationDialog.targetProduct')}</h3>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Producto resultante</Label>
+                    <Label>{t('inventory.transformationDialog.resultingProduct')}</Label>
                     <Select value={productoDestinoId} onValueChange={setProductoDestinoId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar producto" />
+                        <SelectValue placeholder={t('inventory.transformationDialog.selectProduct')} />
                       </SelectTrigger>
                       <SelectContent>
                         {mockProductos
@@ -447,13 +463,13 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs mt-3">
                           <div>
-                            <span className="text-[#666666]">Stock Actual:</span>
+                            <span className="text-[#666666]">{t('inventory.transformationDialog.currentStock')}</span>
                             <p className="font-bold text-[#1E73BE]">
                               {productoDestino.stockActual} {productoDestino.unidad}
                             </p>
                           </div>
                           <div>
-                            <span className="text-[#666666]">Código:</span>
+                            <span className="text-[#666666]">{t('inventory.code')}</span>
                             <p className="font-mono">{productoDestino.codigo}</p>
                           </div>
                         </div>
@@ -461,14 +477,14 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Label>Cantidad resultante</Label>
+                          <Label>{t('inventory.transformationDialog.resultingQuantity')}</Label>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setRatioPersonalizado(!ratioPersonalizado)}
                             className="h-auto py-1 px-2 text-xs"
                           >
-                            {ratioPersonalizado ? '🔓 Personalizado' : '🔒 Auto'}
+                            {ratioPersonalizado ? t('inventory.transformationDialog.customMode') : t('inventory.transformationDialog.autoMode')}
                           </Button>
                         </div>
                         <div className="flex gap-2">
@@ -489,14 +505,14 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                         </div>
                         {!ratioPersonalizado && (
                           <p className="text-xs text-[#666666]">
-                            💡 Se calcula automáticamente según el ratio
+                            {t('inventory.transformationDialog.autoCalculated')}
                           </p>
                         )}
                       </div>
 
                       {cantidadDestino > 0 && (
                         <div className="bg-[#E8F5E9] border border-[#4CAF50] rounded-lg p-3">
-                          <p className="text-xs text-[#666666] mb-1">Stock después de transformar:</p>
+                          <p className="text-xs text-[#666666] mb-1">{t('inventory.transformationDialog.stockAfterTransform')}</p>
                           <p className="text-lg font-bold text-[#4CAF50]">
                             {formatQuantity(productoDestino.stockActual + cantidadDestino)} {productoDestino.unidad}
                           </p>
@@ -511,9 +527,9 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
 
           {/* Motivo */}
           <div className="space-y-2">
-            <Label>Motivo de la transformación</Label>
+            <Label>{t('inventory.transformationDialog.reasonLabel')}</Label>
             <Textarea
-              placeholder="Ej: Fraccionamiento para distribución a familias, Procesamiento de productos próximos a vencer..."
+              placeholder={t('inventory.transformationDialog.reasonPlaceholder')}
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               rows={3}
@@ -524,15 +540,15 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#1E73BE]" />
-              Proveedor / Contacto (Opcional)
+              {t('inventory.transformationDialog.providerContactOptional')}
             </Label>
             <Select value={proveedorId} onValueChange={setProveedorId}>
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar proveedor o contacto" />
+                <SelectValue placeholder={t('inventory.transformationDialog.selectProviderOrContact')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ninguno">
-                  <span className="text-[#999999]">Ninguno</span>
+                  <span className="text-[#999999]">{t('inventory.transformationDialog.none')}</span>
                 </SelectItem>
                 {mockUsuariosInternos.map(prov => {
                   const iconoCat = prov.categoria === 'donador' ? '💰' : prov.categoria === 'vendedor' ? '🛍️' : '🏢';
@@ -544,7 +560,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                         <span>{iconoCat}</span>
                         <div className="flex flex-col">
                           <span className="font-medium">{prov.nombre} {prov.apellido}</span>
-                          <span className="text-xs text-[#666666]">{prov.nombreEmpresa || prov.categoria}</span>
+                          <span className="text-xs text-[#666666]">{prov.nombreEmpresa || getProviderCategoryLabel(prov.categoria)}</span>
                         </div>
                       </div>
                     </SelectItem>
@@ -567,16 +583,16 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                   )}
                   <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
                     <div>
-                      <span className="text-[#999999]">ID:</span> {proveedorSeleccionado.numeroID}
+                      <span className="text-[#999999]">{t('inventory.transformationDialog.id')}:</span> {proveedorSeleccionado.numeroID}
                     </div>
                     <div>
-                      <span className="text-[#999999]">Tipo:</span> {proveedorSeleccionado.categoria.charAt(0).toUpperCase() + proveedorSeleccionado.categoria.slice(1)}
+                      <span className="text-[#999999]">{t('inventory.transformationDialog.type')}:</span> {getProviderCategoryLabel(proveedorSeleccionado.categoria)}
                     </div>
                     <div className="col-span-2">
-                      <span className="text-[#999999]">Email:</span> {proveedorSeleccionado.email}
+                      <span className="text-[#999999]">{t('inventory.transformationDialog.email')}:</span> {proveedorSeleccionado.email}
                     </div>
                     <div className="col-span-2">
-                      <span className="text-[#999999]">Tel:</span> {proveedorSeleccionado.telefono}
+                      <span className="text-[#999999]">{t('inventory.transformationDialog.phone')}:</span> {proveedorSeleccionado.telefono}
                     </div>
                   </div>
                 </div>
@@ -590,30 +606,34 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
               <CardContent className="pt-6">
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Check className="w-5 h-5 text-[#1E73BE]" />
-                  Resumen de Transformación
+                  {t('inventory.transformationDialog.summaryTitle')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm text-[#666666] mb-1">Se retirará:</p>
+                    <p className="text-sm text-[#666666] mb-1">{t('inventory.transformationDialog.willRemove')}</p>
                     <p className="font-bold text-[#DC3545]">
                       {formatQuantity(cantidadOrigen)} {productoOrigen.unidad}
                     </p>
                     <p className="text-sm">{productoOrigen.nombre}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#666666] mb-1">Se agregará:</p>
+                    <p className="text-sm text-[#666666] mb-1">{t('inventory.transformationDialog.willAdd')}</p>
                     <p className="font-bold text-[#4CAF50]">
                       {formatQuantity(cantidadDestino)} {productoDestino.unidad}
                     </p>
                     <p className="text-sm">{productoDestino.nombre}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#666666] mb-1">Eficiencia:</p>
+                    <p className="text-sm text-[#666666] mb-1">{t('inventory.transformationDialog.efficiencyLabel')}</p>
                     <p className="font-bold text-[#1E73BE]">
                       {formatQuantity((cantidadDestino / cantidadOrigen) * 100)}%
                     </p>
                     <p className="text-xs text-[#666666]">
-                      {cantidadDestino > cantidadOrigen ? '⬆️ Incremento' : cantidadDestino < cantidadOrigen ? '⬇️ Reducción' : '➡️ Equivalente'}
+                      {cantidadDestino > cantidadOrigen
+                        ? t('inventory.transformationDialog.efficiencyIncrease')
+                        : cantidadDestino < cantidadOrigen
+                          ? t('inventory.transformationDialog.efficiencyReduction')
+                          : t('inventory.transformationDialog.efficiencyEquivalent')}
                     </p>
                   </div>
                 </div>
@@ -630,7 +650,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                 onOpenChange(false);
               }}
             >
-              Cancelar
+              {t('inventory.transformationDialog.cancel')}
             </Button>
             <Button
               onClick={handleTransformar}
@@ -638,7 +658,7 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
               disabled={!productoOrigenId || !productoDestinoId || cantidadOrigen <= 0 || cantidadDestino <= 0}
             >
               <Shuffle className="w-4 h-4 mr-2" />
-              Transformar Producto
+              {t('inventory.transformationDialog.title')}
             </Button>
           </div>
         </div>

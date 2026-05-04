@@ -42,6 +42,7 @@ import {
   type LocationZone,
 } from '../../utils/locationZones';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 
 type LabelSize = 'pequena' | 'mediana' | 'grande';
 type CodeFormat = 'EAN13' | 'CODE128' | 'CODE39';
@@ -813,12 +814,6 @@ export function Etiquetas() {
       return;
     }
 
-    const ventana = window.open('', '', 'width=1100,height=800');
-    if (!ventana) {
-      toast.error('No se pudo abrir la ventana de impresión.');
-      return;
-    }
-
     const dimensiones = {
       pequena: { width: '6cm', height: '4cm' },
       mediana: { width: '10cm', height: '6cm' },
@@ -846,62 +841,56 @@ export function Etiquetas() {
 
     const dim = dimensiones[tamanoEtiqueta];
 
-    ventana.document.write(`
-      <!DOCTYPE html>
-      <html lang="es">
-        <head>
-          <meta charset="UTF-8" />
-          <title>Impresión de ubicaciones</title>
-          <style>
-            * { box-sizing: border-box; }
-            body { margin: 0; font-family: Arial, sans-serif; background: white; }
-            @page { size: A4; margin: 1cm; }
-            .grid { display: grid; grid-template-columns: repeat(${columnasImpresion}, 1fr); gap: 0.5cm; padding: 0.5cm; }
-            .label { width: ${dim.width}; height: ${dim.height}; border: 2px solid #111827; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; page-break-inside: avoid; }
-            .header { border-bottom: 2px solid #d1d5db; padding-bottom: 6px; text-align: center; }
-            .title { font-size: 16px; font-weight: 700; letter-spacing: 0.08em; }
-            .subtitle { font-size: 11px; color: #6b7280; margin-top: 4px; }
-            .qr { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-            .qr img { width: ${tamanoEtiqueta === 'pequena' ? '90px' : tamanoEtiqueta === 'mediana' ? '120px' : '150px'}; height: ${tamanoEtiqueta === 'pequena' ? '90px' : tamanoEtiqueta === 'mediana' ? '120px' : '150px'}; object-fit: contain; }
-            .qr-code { font-size: ${tamanoEtiqueta === 'pequena' ? '10px' : tamanoEtiqueta === 'mediana' ? '12px' : '14px'}; font-weight: 700; }
-            .footer { border-top: 2px solid #d1d5db; padding-top: 6px; font-size: 10px; color: #4b5563; }
-            .system { margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 8px; color: #9ca3af; }
-          </style>
-        </head>
-        <body>
-          <div class="grid">
-            ${etiquetasRenderizadas.map((etiqueta) => `
-              <div class="label">
-                <div class="header">
-                  <div class="title">${etiqueta.titulo}</div>
-                  <div class="subtitle">${etiqueta.subtitulo || ''}</div>
+    try {
+      openAutoPrintPopup(`
+        <!DOCTYPE html>
+        <html lang="es">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Impresión de ubicaciones</title>
+            <style>
+              * { box-sizing: border-box; }
+              body { margin: 0; font-family: Arial, sans-serif; background: white; }
+              @page { size: A4; margin: 1cm; }
+              .grid { display: grid; grid-template-columns: repeat(${columnasImpresion}, 1fr); gap: 0.5cm; padding: 0.5cm; }
+              .label { width: ${dim.width}; height: ${dim.height}; border: 2px solid #111827; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; page-break-inside: avoid; }
+              .header { border-bottom: 2px solid #d1d5db; padding-bottom: 6px; text-align: center; }
+              .title { font-size: 16px; font-weight: 700; letter-spacing: 0.08em; }
+              .subtitle { font-size: 11px; color: #6b7280; margin-top: 4px; }
+              .qr { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+              .qr img { width: ${tamanoEtiqueta === 'pequena' ? '90px' : tamanoEtiqueta === 'mediana' ? '120px' : '150px'}; height: ${tamanoEtiqueta === 'pequena' ? '90px' : tamanoEtiqueta === 'mediana' ? '120px' : '150px'}; object-fit: contain; }
+              .qr-code { font-size: ${tamanoEtiqueta === 'pequena' ? '10px' : tamanoEtiqueta === 'mediana' ? '12px' : '14px'}; font-weight: 700; }
+              .footer { border-top: 2px solid #d1d5db; padding-top: 6px; font-size: 10px; color: #4b5563; }
+              .system { margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 8px; color: #9ca3af; }
+            </style>
+          </head>
+          <body>
+            <div class="grid">
+              ${etiquetasRenderizadas.map((etiqueta) => `
+                <div class="label">
+                  <div class="header">
+                    <div class="title">${etiqueta.titulo}</div>
+                    <div class="subtitle">${etiqueta.subtitulo || ''}</div>
+                  </div>
+                  <div class="qr">
+                    ${etiqueta.qrImage ? `<img src="${etiqueta.qrImage}" alt="QR ${etiqueta.subtitulo || etiqueta.codigo}" />` : ''}
+                    <div class="qr-code">${etiqueta.subtitulo || etiqueta.codigo}</div>
+                  </div>
+                  <div class="footer">
+                    ${etiqueta.descripcion || ''}
+                    <div class="system">Banco de Alimentos · Sistema de inventario</div>
+                  </div>
                 </div>
-                <div class="qr">
-                  ${etiqueta.qrImage ? `<img src="${etiqueta.qrImage}" alt="QR ${etiqueta.subtitulo || etiqueta.codigo}" />` : ''}
-                  <div class="qr-code">${etiqueta.subtitulo || etiqueta.codigo}</div>
-                </div>
-                <div class="footer">
-                  ${etiqueta.descripcion || ''}
-                  <div class="system">Banco de Alimentos · Sistema de inventario</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          <script>
-            window.onload = function () {
-              setTimeout(function () {
-                window.print();
-                window.onafterprint = function () {
-                  window.close();
-                };
-              }, 300);
-            };
-          </script>
-        </body>
-      </html>
-    `);
+              `).join('')}
+            </div>
+          </body>
+        </html>
+      `, { width: 1100, height: 800, printDelayMs: 300 });
+    } catch (error) {
+      toast.error('No se pudo abrir la ventana de impresión.');
+      return;
+    }
 
-    ventana.document.close();
     toast.success(`${formatQuantity(etiquetasUbicacion.length)} etiquetas de ubicación enviadas a impresión.`);
   };
 

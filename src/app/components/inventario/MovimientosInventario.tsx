@@ -4,11 +4,9 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   RefreshCw,
-  Trash2,
   Calendar,
   User,
   Package,
-  Filter,
   Download,
   Search,
   TrendingUp,
@@ -51,11 +49,12 @@ interface MovimientosInventarioProps {
 }
 
 export function MovimientosInventario({ productos = [] }: MovimientosInventarioProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [filtroTipo, setFiltroTipo] = useState<TipoMovimiento | 'todos'>('todos');
   const [filtroFecha, setFiltroFecha] = useState<'hoy' | 'semana' | 'mes' | 'todos'>('todos');
   const [busqueda, setBusqueda] = useState('');
+  const locale = i18n.resolvedLanguage || i18n.language || 'fr';
 
   // Cargar movimientos desde localStorage
   useEffect(() => {
@@ -78,7 +77,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
     // Si no hay usuarios, usar el usuario actual
     if (usuarios.length === 0) {
       const usuarioActual = obtenerUsuarioSesion();
-      usuarios.push(usuarioActual ? `${usuarioActual.nombre} ${usuarioActual.apellido}` : 'Usuario Sistema');
+      usuarios.push(usuarioActual ? `${usuarioActual.nombre} ${usuarioActual.apellido}` : t('inventory.movementsPanel.systemUser'));
     }
     
     const categoriasEjemplo = ['Alimentos Secos', 'Conservas', 'Lácteos', 'Frutas y Verduras', 'Proteínas'];
@@ -114,13 +113,13 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
         stockAnterior,
         stockNuevo,
         usuario: usuarios[Math.floor(Math.random() * usuarios.length)],
-        motivo: tipo === 'ajuste' ? 'Corrección de inventario' : 
-                tipo === 'merma' ? 'Producto vencido' :
-                tipo === 'donacion' ? 'Donación a organismo' : undefined,
+        motivo: tipo === 'ajuste' ? t('inventory.movementsPanel.demoReasonAdjustment') : 
+          tipo === 'merma' ? t('inventory.movementsPanel.demoReasonExpired') :
+          tipo === 'donacion' ? t('inventory.movementsPanel.demoReasonDonation') : undefined,
         referencia: tipo === 'entrada' ? `ENT-${String(i + 1).padStart(3, '0')}` :
                    tipo === 'salida' ? `SAL-${String(i + 1).padStart(3, '0')}` : undefined,
-        destino: tipo === 'transferencia' ? 'Almacén secundario' :
-                tipo === 'donacion' ? 'Organismo Comunitario' : undefined,
+        destino: tipo === 'transferencia' ? t('inventory.movementsPanel.demoDestinationSecondaryWarehouse') :
+          tipo === 'donacion' ? t('inventory.movementsPanel.demoDestinationCommunityOrg') : undefined,
         valorMonetario: cantidad * (Math.random() * 5 + 1)
       });
     }
@@ -175,20 +174,35 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
   const getTipoInfo = (tipo: TipoMovimiento) => {
     switch (tipo) {
       case 'entrada':
-        return { icon: ArrowUpCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Entrée' };
+        return { icon: ArrowUpCircle, color: 'text-green-600', bg: 'bg-green-50', label: t('inventory.entry') };
       case 'salida':
-        return { icon: ArrowDownCircle, color: 'text-red-600', bg: 'bg-red-50', label: 'Sortie' };
+        return { icon: ArrowDownCircle, color: 'text-red-600', bg: 'bg-red-50', label: t('inventory.exit') };
       case 'ajuste':
-        return { icon: RefreshCw, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Ajustement' };
+        return { icon: RefreshCw, color: 'text-blue-600', bg: 'bg-blue-50', label: t('inventory.movementsPanel.adjustment') };
       case 'transferencia':
-        return { icon: RefreshCw, color: 'text-purple-600', bg: 'bg-purple-50', label: 'Transfert' };
+        return { icon: RefreshCw, color: 'text-purple-600', bg: 'bg-purple-50', label: t('inventory.movementsPanel.transfer') };
       case 'merma':
-        return { icon: TrendingDown, color: 'text-orange-600', bg: 'bg-orange-50', label: 'Perte' };
+        return { icon: TrendingDown, color: 'text-orange-600', bg: 'bg-orange-50', label: t('inventory.movementsPanel.loss') };
       case 'donacion':
-        return { icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'Don' };
+        return { icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50', label: t('inventory.movementsPanel.donation') };
       default:
         return { icon: Package, color: 'text-gray-600', bg: 'bg-gray-50', label: tipo };
     }
+  };
+
+  const formatearFecha = (fechaIso: string) => {
+    return new Date(fechaIso).toLocaleDateString(locale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatearHora = (fechaIso: string) => {
+    return new Date(fechaIso).toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   // Calcular estadísticas
@@ -221,10 +235,22 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
 
   // Exportar a CSV
   const exportarCSV = () => {
-    const headers = ['ID', 'Date', 'Type', 'Produit', 'Catégorie', 'Quantité', 'Unité', 'Stock Avant', 'Stock Après', 'Utilisateur', 'Motif'];
+    const headers = [
+      'ID',
+      t('inventory.movementsPanel.dateColumn'),
+      t('inventory.movementType'),
+      t('inventory.product'),
+      t('inventory.category'),
+      t('inventory.quantity'),
+      t('inventory.unit'),
+      t('inventory.movementsPanel.stockBefore'),
+      t('inventory.movementsPanel.stockAfter'),
+      t('inventory.movementsPanel.userColumn'),
+      t('inventory.reason')
+    ];
     const rows = movimientosFiltrados.map(m => [
       m.id,
-      new Date(m.fecha).toLocaleDateString('fr-FR'),
+      formatearFecha(m.fecha),
       getTipoInfo(m.tipo).label,
       m.productoNombre,
       m.categoria,
@@ -244,10 +270,10 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `mouvements_inventaire_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `${t('inventory.movementsPanel.csvFilePrefix')}_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
 
-    toast.success('Exportation réussie');
+    toast.success(t('inventory.movementsPanel.exportSuccess'));
   };
 
   return (
@@ -258,7 +284,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Mouvements</p>
+                <p className="text-sm text-gray-600">{t('inventory.movementsPanel.totalMovements')}</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalMovimientos}</p>
               </div>
               <Package className="w-8 h-8 text-blue-600" />
@@ -270,7 +296,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Entrées</p>
+                <p className="text-sm text-gray-600">{t('inventory.movementsPanel.entries')}</p>
                 <p className="text-2xl font-bold text-green-600">+{stats.totalEntradas} kg</p>
               </div>
               <ArrowUpCircle className="w-8 h-8 text-green-600" />
@@ -282,7 +308,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Sorties</p>
+                <p className="text-sm text-gray-600">{t('inventory.movementsPanel.exits')}</p>
                 <p className="text-2xl font-bold text-red-600">-{stats.totalSalidas} kg</p>
               </div>
               <ArrowDownCircle className="w-8 h-8 text-red-600" />
@@ -294,7 +320,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pertes</p>
+                <p className="text-sm text-gray-600">{t('inventory.movementsPanel.losses')}</p>
                 <p className="text-2xl font-bold text-orange-600">{stats.totalMermas} kg</p>
               </div>
               <TrendingDown className="w-8 h-8 text-orange-600" />
@@ -306,7 +332,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Valeur Total</p>
+                <p className="text-sm text-gray-600">{t('inventory.movementsPanel.totalValue')}</p>
                 <p className="text-2xl font-bold text-blue-600">CAD$ {formatMoney(stats.valorTotal)}</p>
               </div>
               <TrendingUp className="w-8 h-8 text-blue-600" />
@@ -320,12 +346,12 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle>Historique des Mouvements</CardTitle>
-              <CardDescription>Gestion et suivi de tous les mouvements d'inventaire</CardDescription>
+              <CardTitle>{t('inventory.movementsPanel.title')}</CardTitle>
+              <CardDescription>{t('inventory.movementsPanel.description')}</CardDescription>
             </div>
             <Button onClick={exportarCSV} variant="outline" size="sm">
               <Download className="w-4 h-4 mr-2" />
-              Exporter CSV
+              {t('inventory.movementsPanel.exportCsv')}
             </Button>
           </div>
         </CardHeader>
@@ -334,7 +360,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Rechercher par produit, ID, utilisateur..."
+                placeholder={t('inventory.movementsPanel.searchPlaceholder')}
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="pl-10"
@@ -343,28 +369,28 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
 
             <Select value={filtroTipo} onValueChange={(value: any) => setFiltroTipo(value)}>
               <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Type de mouvement" />
+                <SelectValue placeholder={t('inventory.movementsPanel.typePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Tous les types</SelectItem>
-                <SelectItem value="entrada">Entrées</SelectItem>
-                <SelectItem value="salida">Sorties</SelectItem>
-                <SelectItem value="ajuste">Ajustements</SelectItem>
-                <SelectItem value="transferencia">Transferts</SelectItem>
-                <SelectItem value="merma">Pertes</SelectItem>
-                <SelectItem value="donacion">Dons</SelectItem>
+                <SelectItem value="todos">{t('inventory.movementsPanel.allTypes')}</SelectItem>
+                <SelectItem value="entrada">{t('inventory.entry')}</SelectItem>
+                <SelectItem value="salida">{t('inventory.exit')}</SelectItem>
+                <SelectItem value="ajuste">{t('inventory.movementsPanel.adjustment')}</SelectItem>
+                <SelectItem value="transferencia">{t('inventory.movementsPanel.transfer')}</SelectItem>
+                <SelectItem value="merma">{t('inventory.movementsPanel.loss')}</SelectItem>
+                <SelectItem value="donacion">{t('inventory.movementsPanel.donation')}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={filtroFecha} onValueChange={(value: any) => setFiltroFecha(value)}>
               <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Période" />
+                <SelectValue placeholder={t('inventory.movementsPanel.periodPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Toutes les dates</SelectItem>
-                <SelectItem value="hoy">Aujourd'hui</SelectItem>
-                <SelectItem value="semana">Cette semaine</SelectItem>
-                <SelectItem value="mes">Ce mois</SelectItem>
+                <SelectItem value="todos">{t('inventory.movementsPanel.allDates')}</SelectItem>
+                <SelectItem value="hoy">{t('inventory.today')}</SelectItem>
+                <SelectItem value="semana">{t('inventory.movementsPanel.thisWeek')}</SelectItem>
+                <SelectItem value="mes">{t('inventory.movementsPanel.thisMonth')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -375,15 +401,15 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Produit</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead className="text-right">Quantité</TableHead>
-                  <TableHead className="text-right">Stock Avant</TableHead>
-                  <TableHead className="text-right">Stock Après</TableHead>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead>Détails</TableHead>
+                  <TableHead>{t('inventory.movementsPanel.dateColumn')}</TableHead>
+                  <TableHead>{t('inventory.movementType')}</TableHead>
+                  <TableHead>{t('inventory.product')}</TableHead>
+                  <TableHead>{t('inventory.category')}</TableHead>
+                  <TableHead className="text-right">{t('inventory.quantity')}</TableHead>
+                  <TableHead className="text-right">{t('inventory.movementsPanel.stockBefore')}</TableHead>
+                  <TableHead className="text-right">{t('inventory.movementsPanel.stockAfter')}</TableHead>
+                  <TableHead>{t('inventory.movementsPanel.userColumn')}</TableHead>
+                  <TableHead>{t('inventory.movementsPanel.detailsColumn')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -391,7 +417,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
                   <TableRow>
                     <TableCell colSpan={10} className="text-center py-8">
                       <AlertCircle className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                      <p className="text-gray-500">Aucun mouvement trouvé</p>
+                      <p className="text-gray-500">{t('inventory.movementsPanel.noResults')}</p>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -406,18 +432,11 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-gray-400" />
                             <span className="text-sm">
-                              {new Date(movimiento.fecha).toLocaleDateString('fr-FR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              })}
+                              {formatearFecha(movimiento.fecha)}
                             </span>
                           </div>
                           <span className="text-xs text-gray-500">
-                            {new Date(movimiento.fecha).toLocaleTimeString('fr-FR', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {formatearHora(movimiento.fecha)}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -460,7 +479,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
                             <p className="text-xs text-gray-600">{movimiento.motivo}</p>
                           )}
                           {movimiento.referencia && (
-                            <p className="text-xs text-blue-600">Réf: {movimiento.referencia}</p>
+                            <p className="text-xs text-blue-600">{t('inventory.movementsPanel.referencePrefix')} {movimiento.referencia}</p>
                           )}
                           {movimiento.destino && (
                             <p className="text-xs text-purple-600">{movimiento.destino}</p>

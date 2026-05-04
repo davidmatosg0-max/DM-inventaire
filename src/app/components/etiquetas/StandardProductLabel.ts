@@ -18,6 +18,8 @@
  * - Roboto Regular para cuerpo de texto
  */
 
+import { openAutoPrintPopup } from '../../utils/printPopup';
+
 import { generarDatosQR } from '../../utils/barcode';
 import { formatQuantity } from '../../utils/formatUtils';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
@@ -624,121 +626,10 @@ export async function generateStandardProductLabel(
  */
 export async function printStandardLabel(data: ProductLabelData, silent: boolean = false): Promise<void> {
   const html = await generateStandardProductLabel(data);
-  
-  // Crear iframe con dimensiones reales pero fuera de la vista
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.left = '-9999px';
-  iframe.style.top = '-9999px';
-  iframe.style.width = '8.5in';
-  iframe.style.height = '11in';
-  iframe.style.border = 'none';
-  document.body.appendChild(iframe);
-  
-  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    throw new Error('No se pudo crear el documento de impresión');
-  }
-  
-  iframeDoc.open();
-  iframeDoc.write(html);
-  iframeDoc.close();
-  
-  // Retornar promesa que se resuelve cuando se completa la impresión
-  return new Promise((resolve, reject) => {
-    // Función para verificar si todas las imágenes están cargadas
-    const waitForImagesToLoad = () => {
-      return new Promise<void>((resolveImages) => {
-        const images = iframeDoc.querySelectorAll('img');
-        
-        if (images.length === 0) {
-          resolveImages();
-          return;
-        }
-        
-        let loadedCount = 0;
-        const totalImages = images.length;
-        
-        const checkAllLoaded = () => {
-          loadedCount++;
-          if (loadedCount === totalImages) {
-            resolveImages();
-          }
-        };
-        
-        images.forEach(img => {
-          if (img.complete) {
-            checkAllLoaded();
-          } else {
-            img.onload = checkAllLoaded;
-            img.onerror = checkAllLoaded; // Continuar incluso si hay error
-          }
-        });
-        
-        // Timeout de seguridad: si después de 500ms no se cargaron, continuar de todos modos
-        setTimeout(() => {
-          resolveImages();
-        }, 500);
-      });
-    };
-    
-    // Esperar a que se cargue completamente
-    const printContent = async () => {
-      try {
-        // Esperar a que todas las imágenes se carguen
-        await waitForImagesToLoad();
-        
-        // Sin delay - imprimir inmediatamente
-        // El QR code ya está en base64, no necesita tiempo de carga adicional
-        
-        // Enfocar el iframe y llamar a print()
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        
-        // ✅ RESOLVER INMEDIATAMENTE - No esperar a que el usuario cierre el diálogo
-        // Esto permite que la siguiente impresión se lance al instante
-        resolve();
-        
-        // Limpiar el iframe después de que se cierre el diálogo (en background)
-        const afterPrint = () => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        };
-        
-        // Usar onafterprint si está disponible
-        if (iframe.contentWindow) {
-          iframe.contentWindow.onafterprint = afterPrint;
-        }
-        
-        // Backup: limpiar después de 30 segundos si el usuario no hace nada
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 30000);
-        
-      } catch (err) {
-        console.error('Error en impresión:', err);
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-        reject(err);
-      }
-    };
-    
-    if (iframeDoc.readyState === 'complete') {
-      printContent();
-    } else {
-      iframe.onload = printContent;
-    }
-    
-    iframe.onerror = () => {
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-      }
-      reject(new Error('Error al cargar el iframe'));
-    };
+
+  openAutoPrintPopup(html, {
+    width: 900,
+    height: 1100,
+    printDelayMs: 350,
   });
 }

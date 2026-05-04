@@ -162,7 +162,7 @@ export function PWAInstaller() {
   // Banner de instalación
   if (showInstallBanner && !isIOS) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] text-white rounded-lg shadow-2xl p-4 z-50 animate-in slide-in-from-bottom-5">
+      <div className="fixed top-4 left-4 right-4 md:right-auto md:left-4 md:w-96 bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] text-white rounded-lg shadow-2xl p-4 z-50 animate-in slide-in-from-top-5">
         <button
           onClick={handleDismiss}
           className="absolute top-2 right-2 text-white/80 hover:text-white transition-colors"

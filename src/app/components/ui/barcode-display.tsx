@@ -5,6 +5,7 @@ import { Button } from './button';
 import { Download, Printer, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 
 interface BarcodeDisplayProps {
   value: string;
@@ -119,60 +120,53 @@ export function BarcodeDisplay({
   const handlePrint = () => {
     if (!barcodeRef.current) return;
 
-    const printWindow = window.open('', '', 'width=600,height=400');
-    if (!printWindow) return;
-
     const content = barcodeRef.current.innerHTML;
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Código de Barras - ${displayValue || value}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              height: 100vh;
-              margin: 0;
-            }
-            .label {
-              font-size: 14px;
-              font-weight: bold;
-              margin-bottom: 10px;
-            }
-            .barcode-container {
-              border: 1px solid #ddd;
-              padding: 20px;
-              background: white;
-            }
-            @media print {
+
+    try {
+      openAutoPrintPopup(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Código de Barras - ${displayValue || value}</title>
+            <style>
               body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
               }
-            }
-          </style>
-        </head>
-        <body>
-          ${label ? `<div class="label">${label}</div>` : ''}
-          <div class="barcode-container">
-            ${content}
-          </div>
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
-              };
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+              .label {
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 10px;
+              }
+              .barcode-container {
+                border: 1px solid #ddd;
+                padding: 20px;
+                background: white;
+              }
+              @media print {
+                body {
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${label ? `<div class="label">${label}</div>` : ''}
+            <div class="barcode-container">
+              ${content}
+            </div>
+          </body>
+        </html>
+      `, { width: 600, height: 400, printDelayMs: 250 });
+    } catch (error) {
+      toast.error('No se pudo abrir la ventana de impresión.');
+    }
   };
 
   return (

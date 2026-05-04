@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Eye, FileCheck, Search, Printer, Users, Bell, Tag, Package, Check, X, Edit2, Ban, Calendar, Clock, QrCode, Utensils } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
@@ -746,6 +747,17 @@ export function Comandas() {
     };
 
     try {
+      flushSync(() => {
+        setMostrarModeloComanda(false);
+        setMostrarImpresionCompacta(false);
+        setDialogVerSolicitudOpen(false);
+        setComandaSeleccionada(null);
+      });
+
+      await new Promise<void>(resolve => {
+        window.requestAnimationFrame(() => resolve());
+      });
+
       await printStandardOrderLabel(labelData);
       toast.success(t('orders.printLabelSuccess'));
     } catch (err) {
@@ -838,7 +850,10 @@ export function Comandas() {
       <ComandaCompletaImprimible
         comanda={comandaSeleccionada}
         organismo={organismo}
-        onClose={() => setMostrarImpresionCompacta(false)}
+        onClose={() => {
+          setMostrarImpresionCompacta(false);
+          setComandaSeleccionada(null);
+        }}
       />
     );
   }
@@ -1142,7 +1157,7 @@ export function Comandas() {
                               title={t('orders.printLabelTitle')}
                               className="text-[#1E73BE] hover:text-[#1E73BE]"
                             >
-                              <QrCode className="w-4 h-4" />
+                              <Tag className="w-4 h-4" />
                             </Button>
                           </div>
                         </TableCell>

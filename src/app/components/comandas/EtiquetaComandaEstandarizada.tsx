@@ -10,6 +10,7 @@
 import React from 'react';
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 
 interface EtiquetaComandaData {
   // Comanda
@@ -704,74 +705,15 @@ export async function generateStandardOrderLabel(
     </button>
   </div>
   
-  <script>
-    console.log('🖨️ Etiqueta de Comanda - Impresión automática activada');
-    
-    function handlePrint() {
-      console.log('📝 Iniciando impresión de comanda...');
-      window.print();
-      
-      // Cerrar la ventana después de que termine la impresión
-      window.addEventListener('afterprint', function() {
-        console.log('✅ Impresión completada - Cerrando ventana...');
-        window.close();
-      });
-    }
-    
-    // Iniciar impresión automáticamente cuando la página cargue
-    window.onload = function() {
-      console.log('📄 Página cargada - Iniciando impresión automática...');
-      // Pequeño delay para asegurar que todo esté renderizado
-      setTimeout(function() {
-        handlePrint();
-      }, 500);
-    };
-  </script>
 </body>
 </html>
   `.trim();
 }
 
 /**
- * Imprime directamente la etiqueta usando un iframe oculto
+ * Imprime directamente la etiqueta usando una ventana emergente autocerrable
  */
 export async function printStandardOrderLabel(data: EtiquetaComandaData): Promise<void> {
   const html = await generateStandardOrderLabel(data);
-  
-  // Crear iframe oculto
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = 'none';
-  iframe.style.visibility = 'hidden';
-  
-  document.body.appendChild(iframe);
-  
-  // Escribir el contenido
-  const iframeDoc = iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    throw new Error('No se pudo acceder al documento del iframe');
-  }
-  
-  iframeDoc.open();
-  iframeDoc.write(html);
-  iframeDoc.close();
-  
-  // Esperar a que cargue y luego imprimir
-  iframe.onload = () => {
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      
-      // Eliminar el iframe después de imprimir
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    } catch (err) {
-      console.error('Error al imprimir:', err);
-      document.body.removeChild(iframe);
-    }
-  };
+  openAutoPrintPopup(html, { width: 900, height: 1100, printDelayMs: 500 });
 }

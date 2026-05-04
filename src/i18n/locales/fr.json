@@ -314,6 +314,497 @@
     "title": "Gestion de l'Inventaire",
     "subtitle": "Contrôle complet des produits et mouvements",
     "entryHistory": "Historique des Entrées",
+    "entryHistoryCompact": {
+      "tabDescription": "Historique complet des entrées Don/Achat",
+      "emptyTitle": "Aucune entrée enregistrée",
+      "emptyDescription": "Les entrées enregistrées apparaîtront ici",
+      "registeredSingle": "{{count}} entrée enregistrée",
+      "registeredMultiple": "{{count}} entrées enregistrées",
+      "refresh": "Actualiser",
+      "confirmVoid": "Voulez-vous vraiment annuler l'entrée de \"{{product}}\" ?\n\nCette action désactivera l'entrée dans le système.",
+      "voidSuccess": "Entrée annulée avec succès",
+      "voidError": "Erreur lors de l'annulation de l'entrée",
+      "voidButton": "Annuler",
+      "voidButtonTitle": "Annuler l'entrée (suppression logique)"
+    },
+    "movementsPanel": {
+      "totalMovements": "Total mouvements",
+      "entries": "Entrées",
+      "exits": "Sorties",
+      "losses": "Pertes",
+      "totalValue": "Valeur totale",
+      "title": "Historique des mouvements",
+      "description": "Gestion et suivi de tous les mouvements d'inventaire",
+      "exportCsv": "Exporter CSV",
+      "searchPlaceholder": "Rechercher par produit, ID, utilisateur...",
+      "typePlaceholder": "Type de mouvement",
+      "allTypes": "Tous les types",
+      "adjustment": "Ajustement",
+      "transfer": "Transfert",
+      "loss": "Perte",
+      "donation": "Don",
+      "periodPlaceholder": "Période",
+      "allDates": "Toutes les dates",
+      "thisWeek": "Cette semaine",
+      "thisMonth": "Ce mois",
+      "dateColumn": "Date",
+      "stockBefore": "Stock avant",
+      "stockAfter": "Stock après",
+      "userColumn": "Utilisateur",
+      "detailsColumn": "Détails",
+      "noResults": "Aucun mouvement trouvé",
+      "referencePrefix": "Réf:",
+      "exportSuccess": "Exportation réussie",
+      "csvFilePrefix": "mouvements_inventaire",
+      "systemUser": "Utilisateur système",
+      "demoReasonAdjustment": "Correction d'inventaire",
+      "demoReasonExpired": "Produit expiré",
+      "demoReasonDonation": "Don à un organisme",
+      "demoDestinationSecondaryWarehouse": "Entrepôt secondaire",
+      "demoDestinationCommunityOrg": "Organisme communautaire"
+    },
+    "distributionDialog": {
+      "systemUser": "Utilisateur système",
+      "selected": "Sélectionné",
+      "new": "Nouveau",
+      "items": "Articles",
+      "value": "Valeur",
+      "weight": "Poids",
+      "beneficiaryOrganization": "Organisme bénéficiaire",
+      "selectOrganizationPlaceholder": "Sélectionner un organisme",
+      "deliveryDate": "Date de livraison",
+      "observationsOptional": "Observations (optionnel)",
+      "observationsPlaceholder": "Saisir des observations supplémentaires",
+      "observationsPlaceholderOptional": "Saisir des observations supplémentaires (optionnel)",
+      "summary": "Résumé :",
+      "individualSimulation": "Simulation de réception par l'organisme",
+      "back": "Retour",
+      "cancel": "Annuler",
+      "next": "Suivant",
+      "createOrder": "Créer la comanda",
+      "createOrders": "Créer les comandas ({{count}})",
+      "previewNotificationMessage": "Nouvelle commande {{number}} disponible pour confirmation",
+      "groupObservation": "Distribution de groupe ({{percentage}}% du total)",
+      "groupExampleFor": "Exemple pour {{organization}}",
+      "stock": {
+        "reservable": "Réservable :",
+        "reserved": "Réservé :",
+        "physical": "Physique :"
+      },
+      "stepTitles": {
+        "selectType": "📦 Distribuer les produits",
+        "editQuantities": "✏️ Modifier les quantités",
+        "selectOrganization": "🏢 Sélectionner un organisme",
+        "groupDistribution": "👥 Distribution de groupe"
+      },
+      "stepDescriptions": {
+        "selectType": "Sélectionnez la façon de distribuer les produits",
+        "editQuantities": "Ajustez les quantités avant la distribution",
+        "selectOrganization": "Complétez les détails de la commande",
+        "groupDistribution": "La distribution répartit 100 % entre les organismes actifs et réguliers"
+      },
+      "cards": {
+        "individual": {
+          "title": "Organisme individuel",
+          "description": "Attribuer tous les produits à un seul organisme"
+        },
+        "group": {
+          "title": "Distribution de groupe",
+          "description": "Répartir les produits entre plusieurs organismes avec des pourcentages"
+        },
+        "offer": {
+          "title": "Créer une offre",
+          "description": "Publier une offre pour que les organismes puissent l'accepter"
+        }
+      },
+      "group": {
+        "autoDistributionTitle": "Distribution automatique pour les organismes réguliers",
+        "autoDistributionDescription": "La distribution de groupe charge automatiquement tous les organismes actifs et réguliers. Le système répartit le total de 100 % selon le pourcentage de répartition configuré dans le profil de chacun.",
+        "currentCalculation": "Calcul actuel : 100 % réparti selon le pourcentage de répartition",
+        "equalWeightsInfo": "Tous les organismes admissibles ont le même pourcentage de répartition. Résultat : le total de 100 % est divisé en parts égales.",
+        "equalWeightsTwo": "Avec 2 organismes identiques, la répartition correcte est 50 % et 50 %.",
+        "excludedRegularOrganizations": "{{count}} organisme(s) régulier(s) ont été exclus parce que leur pourcentage de répartition est à 0 ou non configuré.",
+        "recalculateButton": "Recalculer la distribution automatique",
+        "organizationsAndPercentages": "Organismes et pourcentages",
+        "eligibleDiagnosis": "Diagnostic des organismes admissibles",
+        "idPrefix": "ID :",
+        "sharePrefix": "Répartition : {{share}}%",
+        "noOrganizationsAvailable": "Aucun organisme avec un pourcentage de répartition disponible",
+        "noOrganizationsAvailableDescription": "Configurez un pourcentage de répartition pour les organismes réguliers afin d'activer la distribution automatique",
+        "percentagePlaceholder": "Pourcentage",
+        "configuredShareBadge": "Pourcentage de répartition : {{share}}%",
+        "totalShareBadge": "Du total de 100 % : {{share}}%",
+        "formula": "Formule : ({{share}} / {{total}}) x 100 -> {{result}}% du total.",
+        "totalDistribution": "Distribution totale :",
+        "totalDistributionDescription": "Base utilisée pour le calcul : uniquement les organismes actifs et réguliers dont le pourcentage de répartition est supérieur à 0. Les 100 % répartis suivent le pourcentage de répartition configuré. Somme des pourcentages configurés : {{total}}%.",
+        "deliveryDateHelp": "La création de la distribution est activée lorsqu'une date de livraison est définie et que la distribution totale atteint 100 %.",
+        "internalSimulation": "Simulation interne du premier organisme bénéficiaire",
+        "internalSimulationDescription": "Aperçu basé sur la première commande générée par la distribution automatique."
+      },
+      "toasts": {
+        "recalculatedTitle": "Distribution recalculée à partir du pourcentage de répartition de chaque organisme",
+        "configuredShare": "Pourcentage de répartition configuré : {{share}}%",
+        "orderCreated": "Commande {{number}} créée avec succès",
+        "emailSent": "Notification automatique envoyée à {{count}} destinataire(s)",
+        "ordersCreatedTitle": "Commandes créées avec succès :",
+        "emailSummary": "✉️ Notifications automatiques envoyées à {{organizations}} organisme(s) ({{recipients}} destinataire(s))."
+      },
+      "errors": {
+        "noRegularOrganizationsWithShare": "Aucun organisme régulier avec un pourcentage de répartition configuré",
+        "completeAllFields": "Veuillez compléter tous les champs",
+        "createOrder": "Erreur lors de la création de la commande",
+        "totalPercentageMustBe100": "Le pourcentage total doit être de 100 % (actuel : {{current}}%)",
+        "completeAllFieldsCorrectly": "Veuillez compléter correctement tous les champs",
+        "selectDeliveryDate": "Veuillez sélectionner une date de livraison",
+        "atLeastOnePositiveProduct": "Au moins un produit doit avoir une quantité supérieure à 0 pour créer la distribution de groupe",
+        "noAssignedProducts": "La distribution n'a attribué aucun produit à un organisme",
+        "createOrders": "Erreur lors de la création des commandes",
+        "atLeastOneProduct": "Vous devez avoir au moins un produit"
+      },
+      "blocked": {
+        "selectDeliveryDate": "Sélectionnez une date de livraison pour créer la distribution.",
+        "noEligibleOrganizations": "Aucun organisme actif et régulier avec un pourcentage de répartition supérieur à 0.",
+        "totalNot100": "La distribution n'atteint pas encore 100 %."
+      }
+    },
+    "offerDialog": {
+      "systemUser": "Utilisateur système",
+      "title": "Créer une nouvelle offre",
+      "description": "Créez une offre de produits que les organismes pourront voir et accepter",
+      "basicInfoTitle": "Informations sur l'offre",
+      "offerTitleLabel": "Titre de l'offre *",
+      "offerTitlePlaceholder": "Ex. : Offre de produits frais - Janvier 2024",
+      "offerDescriptionLabel": "Description",
+      "offerDescriptionPlaceholder": "Décrivez les détails de l'offre (optionnel)",
+      "expirationLabel": "Date d'expiration *",
+      "includedProductsTitle": "Produits inclus",
+      "items": "Articles",
+      "value": "Valeur",
+      "weight": "Poids",
+      "reservable": "Réservable :",
+      "reserved": "Réservé :",
+      "recipientsTitle": "Organismes destinataires",
+      "allOrganizationsTitle": "Tous les organismes",
+      "allOrganizationsDescription": "L'offre sera visible pour tous les organismes actifs",
+      "specificOrganizationsTitle": "Organismes spécifiques",
+      "specificOrganizationsDescription": "Sélectionnez les organismes précis qui peuvent voir l'offre",
+      "unclassified": "Sans classification",
+      "noFrequency": "Fréquence non définie",
+      "filterByAssistanceType": "Filtrer par type d'assistance",
+      "aboutTitle": "ℹ️ À propos des offres",
+      "aboutItem1": "Les organismes pourront voir et accepter l'offre en totalité ou en partie",
+      "aboutItem2": "Les quantités sont réduites automatiquement selon les acceptations",
+      "aboutItem3": "L'offre expire automatiquement à la date indiquée",
+      "aboutItem4": "Vous pouvez désactiver l'offre à tout moment depuis le panneau des offres",
+      "cancel": "Annuler",
+      "createButton": "Créer l'offre",
+      "toasts": {
+        "createdTitle": "✅ Offre créée avec succès",
+        "visibleForAll": "Visible pour tous les organismes",
+        "visibleForSpecific": "Visible pour {{count}} organisme(s)"
+      },
+      "errors": {
+        "titleRequired": "Le titre est obligatoire",
+        "expirationRequired": "La date d'expiration est obligatoire",
+        "expirationMustBeFuture": "La date d'expiration doit être ultérieure",
+        "selectOrganization": "Vous devez sélectionner au moins un organisme",
+        "selectAssistanceType": "Vous devez sélectionner au moins un type d'assistance",
+        "createOffer": "Erreur lors de la création de l'offre"
+      }
+    },
+    "conversionDialog": {
+      "title": "Conversion des unités",
+      "description": "Convertissez la quantité et l'unité du produit sélectionné",
+      "selectTargetUnit": "Sélectionnez l'unité cible",
+      "sourceUnitLabel": "Unité source",
+      "currentUnitWeight": "Poids unitaire actuel :",
+      "perEachUnit": "pour chaque {{unit}}",
+      "targetUnitLabel": "Unité cible *",
+      "selectUnitPlaceholder": "Sélectionner une unité",
+      "noConversionsAvailable": "Aucune conversion disponible pour {{unit}}",
+      "availableOptions": "{{count}} option(s) disponible(s)",
+      "amountToConvert": "Quantité à convertir *",
+      "maximum": "Maximum : {{amount}} {{unit}}",
+      "conversionFactor": "Facteur de conversion *",
+      "unitsPerEach": "{{targetUnit}} pour chaque {{sourceUnit}}",
+      "resultTitle": "Résultat de la conversion :",
+      "resultingUnitWeight": "⚖️ Poids unitaire résultant :",
+      "eachUnitWillWeigh": "Chaque {{unit}} pèsera {{weight}} kilogrammes",
+      "weightCalculationTitle": "📊 Calcul du poids unitaire :",
+      "step1": "Étape 1 :",
+      "step2": "Étape 2 :",
+      "weightOriginStep": "Poids unitaire source = {{weight}} kg/{{unit}}",
+      "conversionFactorStep": "Facteur de conversion = {{factor}} {{targetUnit}}/{{sourceUnit}}",
+      "formula": "Formule :",
+      "stockUpdateNotice": "Le stock sera mis à jour automatiquement après la conversion.",
+      "cancel": "Annuler",
+      "convert": "Convertir",
+      "success": "Conversion réussie : {{sourceAmount}} {{sourceUnit}} -> {{targetAmount}} {{targetUnit}}",
+      "successWithWeight": "✅ Conversion réussie : {{sourceAmount}} {{sourceUnit}} -> {{targetAmount}} {{targetUnit}}\n⚖️ Poids unitaire : {{weight}} kg/{{targetUnit}}",
+      "errors": {
+        "invalidQuantity": "Veuillez saisir une quantité valide",
+        "invalidFactor": "Veuillez saisir un facteur de conversion valide",
+        "selectTargetUnit": "Veuillez sélectionner une unité cible",
+        "insufficientStock": "Stock insuffisant. Disponible : {{stock}} {{unit}}"
+      }
+    },
+    "transformationDialog": {
+      "title": "Transformer le produit",
+      "description": "Convertissez ce produit en un ou plusieurs produits différents",
+      "infoTitle": "Qu'est-ce qu'une transformation ?",
+      "infoDescription": "Enregistrez lorsqu'un produit est converti en un autre (ex. : riz en vrac -> sacs individuels, fruits frais -> conserves). Le stock du produit source diminue et celui du produit cible augmente.",
+      "hide": "Masquer",
+      "view": "Voir",
+      "historyTitle": "Historique des transformations",
+      "sourceProduct": "Produit source",
+      "productToTransform": "Produit à transformer",
+      "selectProduct": "Sélectionner un produit",
+      "currentStock": "Stock actuel :",
+      "quantityToTransform": "Quantité à transformer",
+      "insufficientStockMax": "⚠️ Stock insuffisant (max : {{max}})",
+      "conversionRatio": "Ratio de conversion",
+      "ratioFormula": "1 {{sourceUnit}} -> {{ratio}} {{targetUnit}}",
+      "commonRatiosTitle": "Ratios communs",
+      "ratioValue": "Ratio : {{ratio}}",
+      "targetProduct": "Produit cible",
+      "resultingProduct": "Produit résultant",
+      "resultingQuantity": "Quantité résultante",
+      "customMode": "🔓 Personnalisé",
+      "autoMode": "🔒 Auto",
+      "autoCalculated": "💡 Calculé automatiquement selon le ratio",
+      "stockAfterTransform": "Stock après transformation :",
+      "reasonLabel": "Motif de la transformation",
+      "reasonPlaceholder": "Ex. : Fractionnement pour la distribution aux familles, traitement de produits proches de la date limite...",
+      "providerContactOptional": "Fournisseur / contact (optionnel)",
+      "selectProviderOrContact": "Sélectionner un fournisseur ou un contact",
+      "none": "Aucun",
+      "id": "ID",
+      "email": "Courriel",
+      "type": "Type",
+      "phone": "Tél",
+      "summaryTitle": "Résumé de la transformation",
+      "willRemove": "Sera retiré :",
+      "willAdd": "Sera ajouté :",
+      "efficiencyLabel": "Efficacité :",
+      "efficiencyIncrease": "⬆️ Augmentation",
+      "efficiencyReduction": "⬇️ Réduction",
+      "efficiencyEquivalent": "➡️ Équivalent",
+      "cancel": "Annuler",
+      "systemUser": "Utilisateur système",
+      "sourceLabel": "Source :",
+      "targetLabel": "Cible :",
+      "ofProduct": "de {{product}}",
+      "toasts": {
+        "completed": "✅ Transformation terminée"
+      },
+      "errors": {
+        "selectBothProducts": "Sélectionnez les deux produits",
+        "sourceQuantityPositive": "La quantité source doit être supérieure à 0",
+        "targetQuantityPositive": "La quantité cible doit être supérieure à 0",
+        "insufficientStock": "Stock insuffisant. Disponible : {{stock}} {{unit}}"
+      },
+      "providerCategories": {
+        "donor": "Donateur",
+        "vendor": "Vendeur",
+        "organization": "Organisme"
+      },
+      "commonRatios": {
+        "bulkToIndividual": {
+          "name": "Vrac vers portion individuelle",
+          "example": "Riz 25kg -> sacs 1kg"
+        },
+        "individualToBulk": {
+          "name": "Portion vers vrac",
+          "example": "Sacs 1kg -> riz 25kg"
+        },
+        "freshToPreserve": {
+          "name": "Produit frais vers conserve",
+          "example": "Fruits -> confiture"
+        },
+        "processingLoss": {
+          "name": "Traitement avec perte",
+          "example": "Avec 30% de perte"
+        }
+      },
+      "historyExamples": {
+        "riceOrigin": "Riz blanc 25kg",
+        "riceTarget": "Riz blanc 1kg",
+        "tomatoOrigin": "Tomates fraîches",
+        "tomatoTarget": "Sauce tomate",
+        "milkOrigin": "Lait liquide 20L",
+        "milkTarget": "Lait 1L",
+        "reasonDistribution": "Fractionnement pour la distribution",
+        "reasonExpiring": "Traitement de produits proches de la date limite",
+        "reasonFamilies": "Fractionnement pour les familles"
+      }
+    },
+    "unitManagement": {
+      "title": "Unités",
+      "description": "Gérer les unités de mesure pour l'inventaire",
+      "newUnit": "Nouvelle unité",
+      "empty": "Aucune unité enregistrée",
+      "createFirst": "Créer la première unité",
+      "confirmDelete": "Êtes-vous sûr de vouloir supprimer l'unité \"{{name}}\" ?",
+      "toasts": {
+        "created": "Unité créée avec succès",
+        "updated": "Unité mise à jour avec succès",
+        "deleted": "Unité supprimée avec succès"
+      },
+      "errors": {
+        "nameRequired": "Le nom est requis",
+        "abbreviationRequired": "L'abréviation est requise",
+        "saveFailed": "Erreur lors de la sauvegarde de l'unité",
+        "deleteFailed": "Erreur lors de la suppression de l'unité"
+      },
+      "dialog": {
+        "createTitle": "✨ Nouvelle unité",
+        "editTitle": "✏️ Modifier l'unité",
+        "createDescription": "Définir une nouvelle unité de mesure",
+        "editDescription": "Modifier les données de l'unité"
+      },
+      "form": {
+        "name": "Nom *",
+        "namePlaceholder": "Ex. : Palette, boîte, sac...",
+        "abbreviation": "Abréviation *",
+        "abbreviationPlaceholder": "Ex. : PLT, BTE, SAC...",
+        "abbreviationHelp": "Maximum 5 caractères",
+        "tareWeight": "⚖️ Poids de l'unité vide (tare) en kg",
+        "tareWeightPlaceholder": "Ex. : 30 (pour une palette de 30 kg)",
+        "tareWeightHelp": "💡 Ce poids sera automatiquement déduit lors de la pesée avec la balance",
+        "icon": "Icône",
+        "iconHelp": "{{count}} icônes disponibles - Faites défiler pour voir plus"
+      },
+      "preview": {
+        "label": "Aperçu :",
+        "defaultName": "Nom de l'unité",
+        "defaultAbbreviation": "ABR"
+      },
+      "actions": {
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "create": "Créer l'unité"
+      }
+    },
+    "variantManagement": {
+      "title": "Variantes",
+      "count_one": "{{count}} variante",
+      "count_other": "{{count}} variantes",
+      "newVariant": "Nouvelle variante",
+      "empty": "Aucune variante créée",
+      "createFirst": "Créer la première variante",
+      "inactive": "Inactive",
+      "notDefined": "Non définie",
+      "confirmDelete": "Êtes-vous sûr de vouloir supprimer la variante \"{{name}}\" ?",
+      "toasts": {
+        "created": "Variante créée avec succès",
+        "updated": "Variante mise à jour avec succès",
+        "deleted": "Variante supprimée avec succès",
+        "activated": "Variante activée",
+        "deactivated": "Variante désactivée"
+      },
+      "errors": {
+        "nameRequired": "Le nom de la variante est requis"
+      },
+      "dialog": {
+        "createTitle": "✨ Nouvelle variante",
+        "editTitle": "✏️ Modifier la variante",
+        "createDescription": "Créer une nouvelle variante pour ce produit",
+        "editDescription": "Modifier les informations de la variante existante"
+      },
+      "form": {
+        "name": "Nom de la variante *",
+        "namePlaceholder": "Ex. : Grande, 500ml, marque A, biologique...",
+        "code": "Code (optionnel)",
+        "codePlaceholder": "Ex. : VAR-001",
+        "unit": "Unité de mesure",
+        "unitPlaceholder": "Utiliser l'unité de la sous-catégorie ({{unit}})",
+        "specificUnit": "Unité spécifique : {{unit}}",
+        "subcategoryUnit": "L'unité de la sous-catégorie sera utilisée : {{unit}}",
+        "unitWeight": "Poids unitaire (kg)",
+        "unitWeightHelp": "Laisser vide pour utiliser le poids de la sous-catégorie",
+        "valuePerKg": "Valeur par kg ($)",
+        "valuePerKgHelp": "Laisser vide pour utiliser la valeur de la catégorie",
+        "icon": "Icône",
+        "description": "Description (optionnelle)",
+        "descriptionPlaceholder": "Description supplémentaire de la variante..."
+      },
+      "preview": {
+        "label": "Aperçu :",
+        "defaultName": "Nom de la variante"
+      },
+      "actions": {
+        "cancel": "Annuler",
+        "create": "Créer la variante",
+        "saveChanges": "Enregistrer les modifications",
+        "activate": "Activer",
+        "deactivate": "Désactiver"
+      }
+    },
+    "productHistoryDialog": {
+      "title": "Historique du produit",
+      "description": "Consultez toutes les entrées, sorties et mouvements de ce produit",
+      "productInfoTitle": "Informations du produit",
+      "code": "Code",
+      "location": "Emplacement",
+      "expiration": "Date d'expiration",
+      "unitsPerPackage": "Unités par paquet",
+      "batch": "Lot",
+      "stockState": "État du stock",
+      "currentStock": "Stock actuel",
+      "minimumStock": "Stock minimum",
+      "percentage": "Pourcentage",
+      "stockStatus": {
+        "low": "Stock faible",
+        "medium": "Stock moyen",
+        "optimal": "Stock optimal"
+      },
+      "totals": {
+        "entries": "Total des entrées",
+        "outputs": "Total des sorties",
+        "transformations": "Transformations",
+        "corrections": "Corrections"
+      },
+      "tabs": {
+        "history_one": "Historique des mouvements ({{count}})",
+        "history_other": "Historique des mouvements ({{count}})",
+        "barcodes": "Codes-barres"
+      },
+      "movementLogTitle": "Journal des mouvements",
+      "noMovements": "Aucun mouvement enregistré pour ce produit",
+      "table": {
+        "date": "Date",
+        "type": "Type",
+        "quantity": "Quantité",
+        "unitWeight": "Poids unitaire",
+        "entryDate": "Date d'entrée",
+        "reasonDestination": "Motif / destination",
+        "user": "Utilisateur",
+        "document": "Document"
+      },
+      "perUnit": "par unité",
+      "barcodes": {
+        "productCode": "Code produit (EAN-13)",
+        "batchCode": "Code de lot",
+        "locationCode": "Code d'emplacement",
+        "locationValue": "Emplacement : {{location}}"
+      },
+      "quickActions": "Actions rapides",
+      "actions": {
+        "downloadAllCodes": "Télécharger tous les codes",
+        "printLabels": "Imprimer les étiquettes",
+        "generateQr": "Générer le code QR"
+      },
+      "types": {
+        "entry": "Entrée",
+        "output": "Sortie",
+        "transformation": "Transformation",
+        "correction": "Correction",
+        "distribution": "Distribution",
+        "delivered": "Livré",
+        "adjustment": "Ajustement",
+        "conversion": "Conversion"
+      }
+    },
     "recentVerifications": "Vérifications Récentes",
     "addProduct": "Ajouter un Produit",
     "editProduct": "Modifier le Produit",
@@ -488,6 +979,29 @@
     "movementsHistory": "Historique des Mouvements",
     "conversionsTab": "Conversions",
     "validationTab": "Validation",
+    "entryValidationDialog": {
+      "title": "Validation des entrées en attente",
+      "description": "Vérifiez et validez les entrées de produits en attente d'approbation",
+      "tabTitle": "Validation des entrées",
+      "tabDescription": "Vérifiez et validez les entrées récentes de l'inventaire",
+      "pendingTotal": "Total en attente",
+      "selectedTotal": "Sélectionnées",
+      "withAlerts": "Avec alertes",
+      "openPanelTitle": "Ouvrir le panneau de validation",
+      "panelTitle": "Système de validation des entrées",
+      "panelDescription": "Validez les entrées reçues au cours des 7 derniers jours. Les alertes de caducité proche, de stock élevé et les cas à révision manuelle sont détectés automatiquement.",
+      "reviewRecentInfo": "Vérifiez les entrées récentes et cochez celles que vous avez déjà contrôlées",
+      "emptyRecent": "Aucune entrée en attente de validation au cours des 7 derniers jours",
+      "noPending": "Aucune entrée en attente",
+      "selectAtLeastOne": "Sélectionnez au moins une entrée à valider",
+      "validationSuccess": "✅ {{count}} entrée(s) validée(s) avec succès",
+      "startButton": "Démarrer la validation",
+      "validateButton": "Valider ({{count}})",
+      "validating": "Validation...",
+      "donorColumn": "Donateur",
+      "daysColumn": "Jours",
+      "daysShort": "j"
+    },
     "predictionTab": "Prédiction",
     "viewList": "Vue liste",
     "viewGrid": "Vue grille",

@@ -202,7 +202,7 @@ export function DialogDistribuirProductos({
   // Estado para diálogo de ofertas
   const [ofertaDialogOpen, setOfertaDialogOpen] = useState(false);
 
-  const usuarioActual = 'Usuario Sistema'; // En producción vendría del contexto de autenticación
+  const usuarioActual = t('inventory.distributionDialog.systemUser'); // En producción vendría del contexto de autenticación
   const reservasInventario = React.useMemo(
     () => obtenerResumenReservasInventario(carrito.map(item => item.productoId)),
     [carrito]
@@ -308,7 +308,7 @@ export function DialogDistribuirProductos({
 
   const recalcularDistribucionAutomatica = () => {
     if (organismosActivosRegularesConPorcentaje.length === 0) {
-      toast.error('No hay organismos regulares con porcentaje de repartición configurado');
+      toast.error(t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare'));
       return;
     }
 
@@ -316,13 +316,13 @@ export function DialogDistribuirProductos({
     
     toast.success(
       <div>
-        <p className="font-semibold mb-1">Distribución recalculada usando el porcentaje de repartición de cada organismo</p>
+        <p className="font-semibold mb-1">{t('inventory.distributionDialog.toasts.recalculatedTitle')}</p>
         <ul className="text-sm space-y-1">
           {nuevosOrganismos.map((org, i) => {
             return (
               <li key={i}>
                 • {org.nombre}: {org.porcentaje}%
-                {` (Porcentaje de repartición configurado: ${org.porcentajeReparticionConfigurado}%)`}
+                {` (${t('inventory.distributionDialog.toasts.configuredShare', { share: org.porcentajeReparticionConfigurado })})`}
               </li>
             );
           })}
@@ -349,7 +349,7 @@ export function DialogDistribuirProductos({
 
   const crearComandaIndividual = () => {
     if (!organismoSeleccionado || !fechaEntrega) {
-      toast.error('Por favor complete todos los campos');
+      toast.error(t('inventory.distributionDialog.errors.completeAllFields'));
       return;
     }
 
@@ -404,7 +404,7 @@ export function DialogDistribuirProductos({
 
     try {
       guardarComanda(comanda);
-      toast.success(`Comanda ${numeroComanda} creada correctamente`);
+      toast.success(t('inventory.distributionDialog.toasts.orderCreated', { number: numeroComanda }));
       // Guardar notificación
       const notificacion = crearNotificacionNuevaComanda(
         comanda.id,
@@ -422,12 +422,12 @@ export function DialogDistribuirProductos({
         observaciones,
       });
       if (resultadoEmail.enviado) {
-        toast.success(`Notification email automatique envoyée à ${resultadoEmail.destinatarios.length} destinataire(s)`);
+        toast.success(t('inventory.distributionDialog.toasts.emailSent', { count: resultadoEmail.destinatarios.length }));
       }
       cerrarYReiniciar();
       onDistribucionCompletada();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al crear la comanda');
+      toast.error(error instanceof Error ? error.message : t('inventory.distributionDialog.errors.createOrder'));
       console.error(error);
     }
   };
@@ -436,28 +436,28 @@ export function DialogDistribuirProductos({
     const distribucionActual = obtenerDistribucionAutomaticaOrganismos(organismosDisponibles);
 
     if (distribucionActual.length === 0) {
-      toast.error('No hay organismos regulares con porcentaje de repartición configurado');
+      toast.error(t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare'));
       return;
     }
 
     const validacion = validarDistribucionGrupo(distribucionActual);
     if (!validacion.valido) {
       if (Math.abs(validacion.porcentajeTotal - 100) >= 0.01) {
-        toast.error(`El porcentaje total debe ser 100% (actual: ${redondearPorcentajeTotal(validacion.porcentajeTotal)}%)`);
+        toast.error(t('inventory.distributionDialog.errors.totalPercentageMustBe100', { current: redondearPorcentajeTotal(validacion.porcentajeTotal) }));
       } else {
-        toast.error('Por favor complete todos los campos correctamente');
+        toast.error(t('inventory.distributionDialog.errors.completeAllFieldsCorrectly'));
       }
       return;
     }
 
     if (!fechaEntrega) {
-      toast.error('Por favor seleccione una fecha de entrega');
+      toast.error(t('inventory.distributionDialog.errors.selectDeliveryDate'));
       return;
     }
 
     const productosDistribuibles = productosEditables.filter(item => item.cantidad > 0);
     if (productosDistribuibles.length === 0) {
-      toast.error('Debe haber al menos un producto con cantidad mayor que 0 para crear la distribución de grupo');
+      toast.error(t('inventory.distributionDialog.errors.atLeastOnePositiveProduct'));
       return;
     }
 
@@ -542,7 +542,7 @@ export function DialogDistribuirProductos({
           usuarioCreacion: usuarioActual,
           creadoPor: usuarioActual,
           fechaEntrega: fechaEntrega,
-          observaciones: `Distribución en grupo (${normalizarPorcentajeEntero(orgInfo.porcentaje)}% del total)${observaciones ? '\n' + observaciones : ''}`,
+          observaciones: `${t('inventory.distributionDialog.groupObservation', { percentage: normalizarPorcentajeEntero(orgInfo.porcentaje) })}${observaciones ? '\n' + observaciones : ''}`,
           items: itemsComanda,
           valorTotal: Math.round(valorTotalComanda),
           pesoTotal: Math.round(pesoTotalComanda),
@@ -577,13 +577,13 @@ export function DialogDistribuirProductos({
       });
 
       if (comandasCreadas.length === 0) {
-        toast.error('La distribución no generó productos asignados para ningún organismo');
+        toast.error(t('inventory.distributionDialog.errors.noAssignedProducts'));
         return;
       }
 
       toast.success(
         <div>
-          <p className="font-semibold mb-1">Comandas creadas correctamente:</p>
+          <p className="font-semibold mb-1">{t('inventory.distributionDialog.toasts.ordersCreatedTitle')}</p>
           <ul className="text-sm space-y-1">
             {comandasCreadas.map((comandaCreada, i) => (
               <li key={i}>• {comandaCreada.numero} - {comandaCreada.nombre} ({comandaCreada.porcentaje}%)</li>
@@ -591,7 +591,10 @@ export function DialogDistribuirProductos({
           </ul>
           {resumenEmails.organismosNotificados > 0 && (
             <p className="text-sm mt-2">
-              ✉️ Notifications email automatiques envoyées à {resumenEmails.organismosNotificados} organisme(s) ({resumenEmails.destinatarios} destinataire(s)).
+              {t('inventory.distributionDialog.toasts.emailSummary', {
+                organizations: resumenEmails.organismosNotificados,
+                recipients: resumenEmails.destinatarios
+              })}
             </p>
           )}
         </div>,
@@ -601,7 +604,7 @@ export function DialogDistribuirProductos({
       cerrarYReiniciar();
       onDistribucionCompletada();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al crear las comandas');
+      toast.error(error instanceof Error ? error.message : t('inventory.distributionDialog.errors.createOrders'));
       console.error(error);
     }
   };
@@ -623,7 +626,7 @@ export function DialogDistribuirProductos({
       setPaso('editar_cantidades');
     } else if (paso === 'editar_cantidades') {
       if (productosEditables.length === 0) {
-        toast.error('Debe tener al menos un producto');
+        toast.error(t('inventory.distributionDialog.errors.atLeastOneProduct'));
         return;
       }
       if (tipoDistribucion === 'individual') {
@@ -662,11 +665,11 @@ export function DialogDistribuirProductos({
         normalizarPorcentajeEntero(organismosActivosRegularesConPorcentaje[0]?.porcentajeReparticion || 0)
     );
   const mensajeBloqueoDistribucionGrupo = !fechaEntrega
-    ? 'Seleccione una fecha de entrega para crear la distribución.'
+    ? t('inventory.distributionDialog.blocked.selectDeliveryDate')
     : organismosConPorcentajes.length === 0
-        ? 'No hay organismos activos y regulares con porcentaje de repartición mayor que 0.'
+        ? t('inventory.distributionDialog.blocked.noEligibleOrganizations')
         : !porcentajeGrupoValido
-          ? 'La distribución todavía no suma 100%.'
+          ? t('inventory.distributionDialog.blocked.totalNot100')
           : null;
   const organismoPreviewIndividual = organismosDisponibles.find(
     organismo => organismo.id === organismoSeleccionado
@@ -697,7 +700,7 @@ export function DialogDistribuirProductos({
     : null;
   const notificacionPreviewIndividual = comandaPreviewIndividual
     ? {
-        mensaje: `Nouvelle commande ${comandaPreviewIndividual.numero} disponible pour confirmation`,
+        mensaje: t('inventory.distributionDialog.previewNotificationMessage', { number: comandaPreviewIndividual.numero }),
         fecha: new Date().toISOString(),
         leida: false,
         urlAcceso: construirRutaAccesoOrganismo(organismoPreviewIndividual?.claveAcceso),
@@ -745,19 +748,33 @@ export function DialogDistribuirProductos({
         fecha: new Date().toISOString(),
         fechaEntrega,
         estado: 'pendiente',
-        observaciones: `Ejemplo para ${organismoPreviewGrupo.nombre}${observaciones ? `\n${observaciones}` : ''}`,
+        observaciones: `${t('inventory.distributionDialog.groupExampleFor', { organization: organismoPreviewGrupo.nombre })}${observaciones ? `\n${observaciones}` : ''}`,
         items: itemsPreviewGrupo,
         valorTotal: Math.round(valorPreviewGrupo),
       } as Comanda)
     : null;
   const notificacionPreviewGrupo = comandaPreviewGrupo
     ? {
-        mensaje: `Nouvelle commande ${comandaPreviewGrupo.numero} disponible pour confirmation`,
+        mensaje: t('inventory.distributionDialog.previewNotificationMessage', { number: comandaPreviewGrupo.numero }),
         fecha: new Date().toISOString(),
         leida: false,
         urlAcceso: construirRutaAccesoOrganismo(organismoPreviewGrupo?.claveAcceso),
       }
     : null;
+
+  const tituloPaso = {
+    seleccion_tipo: t('inventory.distributionDialog.stepTitles.selectType'),
+    editar_cantidades: t('inventory.distributionDialog.stepTitles.editQuantities'),
+    seleccionar_organismo: t('inventory.distributionDialog.stepTitles.selectOrganization'),
+    distribuir_grupo: t('inventory.distributionDialog.stepTitles.groupDistribution'),
+  }[paso];
+
+  const descripcionPaso = {
+    seleccion_tipo: t('inventory.distributionDialog.stepDescriptions.selectType'),
+    editar_cantidades: t('inventory.distributionDialog.stepDescriptions.editQuantities'),
+    seleccionar_organismo: t('inventory.distributionDialog.stepDescriptions.selectOrganization'),
+    distribuir_grupo: t('inventory.distributionDialog.stepDescriptions.groupDistribution'),
+  }[paso];
 
   return (
     <>
@@ -765,16 +782,10 @@ export function DialogDistribuirProductos({
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col" aria-describedby="distribuir-productos-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              {paso === 'seleccion_tipo' && '📦 Distribuir Productos'}
-              {paso === 'editar_cantidades' && '✏️ Editar Cantidades'}
-              {paso === 'seleccionar_organismo' && '🏢 Seleccionar Organismo'}
-              {paso === 'distribuir_grupo' && '👥 Distribución en Grupo'}
+              {tituloPaso}
             </DialogTitle>
             <DialogDescription id="distribuir-productos-description">
-              {paso === 'seleccion_tipo' && 'Seleccione cómo desea distribuir los productos'}
-              {paso === 'editar_cantidades' && 'Ajuste las cantidades de productos antes de distribuir'}
-              {paso === 'seleccionar_organismo' && 'Complete los detalles de la comanda'}
-              {paso === 'distribuir_grupo' && 'La distribución reparte el 100% entre organismos activos y regulares'}
+              {descripcionPaso}
             </DialogDescription>
           </DialogHeader>
 
@@ -789,15 +800,15 @@ export function DialogDistribuirProductos({
                   <CardContent className="p-6 text-center">
                     <Building2 className={`w-16 h-16 mx-auto mb-4 ${tipoDistribucion === 'individual' ? 'text-[#1E73BE]' : 'text-gray-400'}`} />
                     <h3 className="font-semibold mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Organismo Individual
+                      {t('inventory.distributionDialog.cards.individual.title')}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Asignar todos los productos a un solo organismo
+                      {t('inventory.distributionDialog.cards.individual.description')}
                     </p>
                     {tipoDistribucion === 'individual' && (
                       <Badge className="mt-3 bg-[#1E73BE] text-white">
                         <CheckCircle2 className="w-3 h-3 mr-1" />
-                        Seleccionado
+                        {t('inventory.distributionDialog.selected')}
                       </Badge>
                     )}
                   </CardContent>
@@ -810,15 +821,15 @@ export function DialogDistribuirProductos({
                   <CardContent className="p-6 text-center">
                     <Users className={`w-16 h-16 mx-auto mb-4 ${tipoDistribucion === 'grupo' ? 'text-[#4CAF50]' : 'text-gray-400'}`} />
                     <h3 className="font-semibold mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Distribución en Grupo
+                      {t('inventory.distributionDialog.cards.group.title')}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Distribuir productos entre varios organismos con porcentajes
+                      {t('inventory.distributionDialog.cards.group.description')}
                     </p>
                     {tipoDistribucion === 'grupo' && (
                       <Badge className="mt-3 bg-[#4CAF50] text-white">
                         <CheckCircle2 className="w-3 h-3 mr-1" />
-                        Seleccionado
+                        {t('inventory.distributionDialog.selected')}
                       </Badge>
                     )}
                   </CardContent>
@@ -834,13 +845,13 @@ export function DialogDistribuirProductos({
                   <CardContent className="p-6 text-center">
                     <Tag className="w-16 h-16 mx-auto mb-4 text-[#FFC107]" />
                     <h3 className="font-semibold mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Crear Oferta
+                      {t('inventory.distributionDialog.cards.offer.title')}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Publicar oferta para que organismos la acepten
+                      {t('inventory.distributionDialog.cards.offer.description')}
                     </p>
                     <Badge className="mt-3 bg-[#FFC107] text-gray-900">
-                      Nuevo
+                      {t('inventory.distributionDialog.new')}
                     </Badge>
                   </CardContent>
                 </Card>
@@ -857,7 +868,7 @@ export function DialogDistribuirProductos({
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-[#1E73BE]" />
                         <div>
-                          <p className="text-xs text-gray-600">Items</p>
+                          <p className="text-xs text-gray-600">{t('inventory.distributionDialog.items')}</p>
                           <p className="font-bold text-[#1E73BE]">{totalItemsFormateado}</p>
                         </div>
                       </div>
@@ -868,7 +879,7 @@ export function DialogDistribuirProductos({
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-[#4CAF50]" />
                         <div>
-                          <p className="text-xs text-gray-600">Valor</p>
+                          <p className="text-xs text-gray-600">{t('inventory.distributionDialog.value')}</p>
                           <p className="font-bold text-[#4CAF50]">CAD$ {valorTotalFormateado}</p>
                         </div>
                       </div>
@@ -879,7 +890,7 @@ export function DialogDistribuirProductos({
                       <div className="flex items-center gap-2">
                         <Scale className="w-4 h-4 text-[#FFC107]" />
                         <div>
-                          <p className="text-xs text-gray-600">Peso</p>
+                          <p className="text-xs text-gray-600">{t('inventory.distributionDialog.weight')}</p>
                           <p className="font-bold text-[#FFC107]">{pesoTotalFormateado} kg</p>
                         </div>
                       </div>
@@ -955,10 +966,10 @@ export function DialogDistribuirProductos({
                                   </Button>
                                 </div>
                                 <div className="text-xs text-gray-600 text-right">
-                                  <p>Reservable:</p>
+                                  <p>{t('inventory.distributionDialog.stock.reservable')}</p>
                                   <p className="font-semibold text-gray-900">{formatQuantity(item.stockReservable)} {item.unidad}</p>
-                                  <p className="text-gray-500">Reservado: {formatQuantity(item.stockReservado)} {item.unidad}</p>
-                                  <p className="text-gray-400">Físico: {formatQuantity(item.stockActual)} {item.unidad}</p>
+                                  <p className="text-gray-500">{t('inventory.distributionDialog.stock.reserved')} {formatQuantity(item.stockReservado)} {item.unidad}</p>
+                                  <p className="text-gray-400">{t('inventory.distributionDialog.stock.physical')} {formatQuantity(item.stockActual)} {item.unidad}</p>
                                 </div>
                               </div>
                             </>
@@ -975,13 +986,13 @@ export function DialogDistribuirProductos({
             {paso === 'seleccionar_organismo' && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Organismo Beneficiario</Label>
+                  <Label>{t('inventory.distributionDialog.beneficiaryOrganization')}</Label>
                   <Select
                     value={organismoSeleccionado}
                     onValueChange={setOrganismoSeleccionado}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccione un organismo" />
+                      <SelectValue placeholder={t('inventory.distributionDialog.selectOrganizationPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {organismosActivos.map(org => (
@@ -994,7 +1005,7 @@ export function DialogDistribuirProductos({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fecha de Entrega</Label>
+                  <Label>{t('inventory.distributionDialog.deliveryDate')}</Label>
                   <Input
                     type="date"
                     value={fechaEntrega}
@@ -1004,18 +1015,18 @@ export function DialogDistribuirProductos({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Observaciones</Label>
+                  <Label>{t('inventory.observations')}</Label>
                   <Textarea
                     value={observaciones}
                     onChange={(e) => setObservaciones(e.target.value)}
                     className="w-full"
-                    placeholder="Ingrese observaciones adicionales (opcional)"
+                    placeholder={t('inventory.distributionDialog.observationsPlaceholderOptional')}
                     rows={3}
                   />
                 </div>
 
                 <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 font-semibold mb-2">Resumen:</p>
+                  <p className="text-sm text-gray-600 font-semibold mb-2">{t('inventory.distributionDialog.summary')}</p>
                   <div className="space-y-1 text-sm">
                     <p>{totalItemsFormateado} items • CAD$ {valorTotalFormateado}</p>
                     <p>{pesoTotalFormateado} kg</p>
@@ -1024,7 +1035,7 @@ export function DialogDistribuirProductos({
 
                 {organismoPreviewIndividual && comandaPreviewIndividual && (
                   <div className="space-y-2">
-                    <Label>Simulation de réception par l'organisme</Label>
+                    <Label>{t('inventory.distributionDialog.individualSimulation')}</Label>
                     <SimulacionRecepcionNotificacion
                       organismo={organismoPreviewIndividual}
                       comanda={comandaPreviewIndividual}
@@ -1044,11 +1055,9 @@ export function DialogDistribuirProductos({
                     <div className="flex items-start gap-2">
                       <AlertCircle className="w-5 h-5 text-[#1E73BE] flex-shrink-0 mt-0.5" />
                       <div className="text-sm">
-                        <p className="font-semibold text-[#1E73BE] mb-1">Distribución automática para organismos regulares</p>
+                        <p className="font-semibold text-[#1E73BE] mb-1">{t('inventory.distributionDialog.group.autoDistributionTitle')}</p>
                         <p className="text-gray-700">
-                          La distribución en grupo carga automáticamente todos los organismos <strong>activos</strong> y <strong>regulares</strong>.
-                          El sistema divide el <strong>100%</strong> total entre esos organismos tomando como base el
-                          <strong> porcentaje de repartición</strong> configurado en el perfil de cada uno.
+                          {t('inventory.distributionDialog.group.autoDistributionDescription')}
                         </p>
                       </div>
                     </div>
@@ -1057,15 +1066,15 @@ export function DialogDistribuirProductos({
 
                 <div className="flex justify-center">
                   <Badge className="bg-[#1E73BE] text-white px-3 py-1">
-                    Cálculo actual: 100% distribuido según el porcentaje de repartición
+                    {t('inventory.distributionDialog.group.currentCalculation')}
                   </Badge>
                 </div>
 
                 {todosLosPesosIguales && cantidadOrganismosElegibles > 0 && (
                   <Card className="border-l-4 border-l-[#4CAF50] bg-[#E8F5E9]">
                     <CardContent className="p-3 text-sm text-gray-700">
-                      Todos los organismos elegibles tienen el mismo porcentaje de repartición. Resultado: el 100% se divide en partes iguales.
-                      {cantidadOrganismosElegibles === 2 && ' Con 2 organismos iguales, la distribución correcta es 50% y 50%.'}
+                      {t('inventory.distributionDialog.group.equalWeightsInfo')}
+                      {cantidadOrganismosElegibles === 2 && ` ${t('inventory.distributionDialog.group.equalWeightsTwo')}`}
                     </CardContent>
                   </Card>
                 )}
@@ -1073,7 +1082,9 @@ export function DialogDistribuirProductos({
                 {organismosActivosRegulares.length > organismosActivosRegularesConPorcentaje.length && (
                   <Card className="border-l-4 border-l-[#FFC107] bg-[#FFF8E1]">
                     <CardContent className="p-3 text-sm text-gray-700">
-                      {organismosActivosRegulares.length - organismosActivosRegularesConPorcentaje.length} organismo(s) regular(es) quedaron fuera porque su porcentaje de repartición es 0 o no está configurado.
+                      {t('inventory.distributionDialog.group.excludedRegularOrganizations', {
+                        count: organismosActivosRegulares.length - organismosActivosRegularesConPorcentaje.length
+                      })}
                     </CardContent>
                   </Card>
                 )}
@@ -1086,25 +1097,25 @@ export function DialogDistribuirProductos({
                     size="lg"
                   >
                     <Calculator className="w-5 h-5 mr-2" />
-                    Recalcular distribución automática
+                    {t('inventory.distributionDialog.group.recalculateButton')}
                   </Button>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center mb-3">
-                    <Label>Organismos y Porcentajes</Label>
+                    <Label>{t('inventory.distributionDialog.group.organizationsAndPercentages')}</Label>
                   </div>
 
                   {organismosActivosRegularesConPorcentaje.length > 0 && (
                     <Card className="border border-[#90CAF9] bg-[#F4F9FF]">
                       <CardContent className="p-3 text-xs text-gray-700 space-y-2">
-                        <p className="font-semibold text-[#1E73BE]">Diagnóstico de organismos elegibles</p>
+                        <p className="font-semibold text-[#1E73BE]">{t('inventory.distributionDialog.group.eligibleDiagnosis')}</p>
                         <div className="space-y-1">
                           {organismosActivosRegularesConPorcentaje.map((organismo) => (
                             <div key={`${organismo.id}-${organismo.nombre}`} className="flex flex-wrap gap-2">
                               <span>{organismo.nombre}</span>
-                              <span className="text-gray-500">ID: {organismo.id}</span>
-                              <span className="text-gray-500">Repartición: {normalizarPorcentajeEntero(organismo.porcentajeReparticion)}%</span>
+                              <span className="text-gray-500">{t('inventory.distributionDialog.group.idPrefix')} {organismo.id}</span>
+                              <span className="text-gray-500">{t('inventory.distributionDialog.group.sharePrefix', { share: normalizarPorcentajeEntero(organismo.porcentajeReparticion) })}</span>
                             </div>
                           ))}
                         </div>
@@ -1115,9 +1126,9 @@ export function DialogDistribuirProductos({
                   {organismosConPorcentajes.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                      <p>No hay organismos con porcentaje de repartición disponible</p>
+                      <p>{t('inventory.distributionDialog.group.noOrganizationsAvailable')}</p>
                       <p className="text-sm">
-                        Configure porcentaje de repartición en los organismos regulares para habilitar la distribución automática
+                        {t('inventory.distributionDialog.group.noOrganizationsAvailableDescription')}
                       </p>
                     </div>
                   )}
@@ -1138,7 +1149,7 @@ export function DialogDistribuirProductos({
                                 <Input
                                   type="number"
                                   value={org.porcentaje}
-                                  placeholder="Porcentaje"
+                                  placeholder={t('inventory.distributionDialog.group.percentagePlaceholder')}
                                   min="0"
                                   max="100"
                                   step="1"
@@ -1147,10 +1158,10 @@ export function DialogDistribuirProductos({
                                 />
                                 <span className="text-gray-600">%</span>
                                 <Badge variant="outline" className="text-xs">
-                                  Porcentaje de repartición: {porcentajeReparticionOrganismo}%
+                                  {t('inventory.distributionDialog.group.configuredShareBadge', { share: porcentajeReparticionOrganismo })}
                                 </Badge>
                                 <Badge variant="outline" className="text-xs bg-[#E3F2FD] text-[#1E73BE] border-[#90CAF9]">
-                                  Del 100% total: {org.porcentaje}%
+                                  {t('inventory.distributionDialog.group.totalShareBadge', { share: org.porcentaje })}
                                 </Badge>
                                 {org.porcentaje > 0 && (
                                   <Badge className="bg-[#4CAF50] text-white">
@@ -1159,7 +1170,11 @@ export function DialogDistribuirProductos({
                                 )}
                               </div>
                               <p className="text-xs text-gray-500">
-                                Fórmula: ({porcentajeReparticionOrganismo} / {porcentajeReparticionTotalConfigurado || 1}) x 100 {'->'} {org.porcentaje}% del total.
+                                {t('inventory.distributionDialog.group.formula', {
+                                  share: porcentajeReparticionOrganismo,
+                                  total: porcentajeReparticionTotalConfigurado || 1,
+                                  result: org.porcentaje
+                                })}
                               </p>
                             </div>
                           </div>
@@ -1173,7 +1188,7 @@ export function DialogDistribuirProductos({
                     <Card className={`border-2 ${porcentajeGrupoValido ? 'border-[#4CAF50] bg-[#E8F5E9]' : 'border-[#FFC107] bg-[#FFF8E1]'}`}>
                       <CardContent className="p-3">
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold">Distribución Total:</span>
+                          <span className="font-semibold">{t('inventory.distributionDialog.group.totalDistribution')}</span>
                           <div className="flex items-center gap-2">
                             <span className={`font-bold text-lg ${porcentajeGrupoValido ? 'text-[#4CAF50]' : 'text-[#FFC107]'}`}>
                               {porcentajeTotalGrupoRedondeado}%
@@ -1186,7 +1201,9 @@ export function DialogDistribuirProductos({
                           </div>
                         </div>
                         <p className="mt-2 text-sm text-gray-600">
-                          Base usada para el cálculo: solo organismos activos y regulares con porcentaje de repartición mayor que 0. El 100% distribuido se reparte según el porcentaje de repartición configurado. Suma de porcentajes de repartición configurados: {porcentajeReparticionTotalConfigurado}%.
+                          {t('inventory.distributionDialog.group.totalDistributionDescription', {
+                            total: porcentajeReparticionTotalConfigurado
+                          })}
                         </p>
                       </CardContent>
                     </Card>
@@ -1194,7 +1211,7 @@ export function DialogDistribuirProductos({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fecha de Entrega</Label>
+                  <Label>{t('inventory.distributionDialog.deliveryDate')}</Label>
                   <Input
                     type="date"
                     value={fechaEntrega}
@@ -1202,26 +1219,26 @@ export function DialogDistribuirProductos({
                     className="w-full"
                   />
                   <p className="text-xs text-gray-500">
-                    La creación de la distribución se habilita cuando haya fecha de entrega y la distribución total sea 100%.
+                    {t('inventory.distributionDialog.group.deliveryDateHelp')}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Observaciones (Opcional)</Label>
+                  <Label>{t('inventory.distributionDialog.observationsOptional')}</Label>
                   <Textarea
                     value={observaciones}
                     onChange={(e) => setObservaciones(e.target.value)}
                     className="w-full"
-                    placeholder="Ingrese observaciones adicionales"
+                    placeholder={t('inventory.distributionDialog.observationsPlaceholder')}
                     rows={2}
                   />
                 </div>
 
                 {organismoPreviewGrupo && comandaPreviewGrupo && (
                   <div className="space-y-2">
-                    <Label>Simulation interne du premier organisme bénéficiaire</Label>
+                    <Label>{t('inventory.distributionDialog.group.internalSimulation')}</Label>
                     <p className="text-xs text-gray-500">
-                      Aperçu basé sur la première commande générée par la distribution automatique.
+                      {t('inventory.distributionDialog.group.internalSimulationDescription')}
                     </p>
                     <SimulacionRecepcionNotificacion
                       organismo={organismoPreviewGrupo}
@@ -1239,13 +1256,13 @@ export function DialogDistribuirProductos({
               <div>
                 {paso !== 'seleccion_tipo' && (
                   <Button variant="outline" onClick={retrocederPaso}>
-                    Atrás
+                    {t('inventory.distributionDialog.back')}
                   </Button>
                 )}
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={cerrarYReiniciar}>
-                  Cancelar
+                  {t('inventory.distributionDialog.cancel')}
                 </Button>
                 {paso === 'distribuir_grupo' && mensajeBloqueoDistribucionGrupo && (
                   <span className="self-center text-xs text-[#B45309] max-w-xs text-right">
@@ -1254,7 +1271,7 @@ export function DialogDistribuirProductos({
                 )}
                 {(paso === 'seleccion_tipo' || paso === 'editar_cantidades') && (
                   <Button onClick={avanzarPaso} className="bg-[#1E73BE] hover:bg-[#1557A0]">
-                    Siguiente
+                    {t('inventory.distributionDialog.next')}
                   </Button>
                 )}
                 {paso === 'seleccionar_organismo' && (
@@ -1264,7 +1281,7 @@ export function DialogDistribuirProductos({
                     disabled={!organismoSeleccionado || !fechaEntrega}
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Crear Comanda
+                    {t('inventory.distributionDialog.createOrder')}
                   </Button>
                 )}
                 {paso === 'distribuir_grupo' && (
@@ -1274,7 +1291,7 @@ export function DialogDistribuirProductos({
                     disabled={!fechaEntrega || !porcentajeGrupoValido || organismosConPorcentajes.length === 0}
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Crear Comandas ({organismosConPorcentajes.length})
+                    {t('inventory.distributionDialog.createOrders', { count: organismosConPorcentajes.length })}
                   </Button>
                 )}
               </div>

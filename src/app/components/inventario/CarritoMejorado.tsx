@@ -23,6 +23,7 @@ import { DialogDistribuirProductos } from './DialogDistribuirProductos';
 import { DialogEnviarCocina } from './DialogEnviarCocina';
 import { obtenerResumenReservasInventario } from '../../utils/inventoryReservations';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 
 type CarritoItem = {
   productoId: string;
@@ -167,9 +168,6 @@ export function CarritoMejorado({
   };
 
   const imprimirCarrito = () => {
-    const printWindow = window.open('', '', 'height=600,width=800');
-    if (!printWindow) return;
-
     const carritoHTML = `
       <!DOCTYPE html>
       <html>
@@ -252,12 +250,11 @@ export function CarritoMejorado({
       </html>
     `;
 
-    printWindow.document.write(carritoHTML);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
+    try {
+      openAutoPrintPopup(carritoHTML, { width: 800, height: 600, printDelayMs: 250 });
+    } catch (error) {
+      toast.error('No se pudo abrir la ventana de impresión.');
+    }
   };
 
   const handleDistribucionCompletada = () => {

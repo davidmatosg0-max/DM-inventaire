@@ -90,6 +90,7 @@ export function ModeloComanda({
   // Función para imprimir
   const handleImprimir = () => {
     if (onAbrirImpresionCompacta) {
+      onCerrar();
       onAbrirImpresionCompacta();
       return;
     }

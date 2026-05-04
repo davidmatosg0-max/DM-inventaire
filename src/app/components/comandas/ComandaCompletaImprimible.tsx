@@ -1,9 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Calendar, Mail, MapPin, Package, Phone, Printer, User, X } from 'lucide-react';
+import { mockProductos } from '../../data/mockData';
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { obtenerProductos } from '../../utils/productStorage';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
+import { openPrintPopup, writeAutoPrintPopupContent, writePrintPopupPlaceholder } from '../../utils/printPopup';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
 
 interface ComandaCompletaImprimibleProps {
@@ -70,6 +73,22 @@ function formatDate(value: unknown, locale: string, withTime = false): string {
         month: '2-digit',
         day: '2-digit',
       });
+}
+
+function getItemUnitValue(item: any, product?: any): number {
+  if (typeof item?.valorUnitario === 'number' && Number.isFinite(item.valorUnitario) && item.valorUnitario > 0) {
+    return item.valorUnitario;
+  }
+
+  if (typeof item?.producto?.valorUnitario === 'number' && Number.isFinite(item.producto.valorUnitario) && item.producto.valorUnitario > 0) {
+    return item.producto.valorUnitario;
+  }
+
+  if (typeof product?.valorUnitario === 'number' && Number.isFinite(product.valorUnitario) && product.valorUnitario > 0) {
+    return product.valorUnitario;
+  }
+
+  return 0;
 }
 
 function escapeHtml(value: unknown): string {
@@ -443,11 +462,6 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
             </div>
           </div>
         </div>
-        <script>
-          window.addEventListener('load', () => {
-            window.setTimeout(() => window.print(), 350);
-          }, { once: true });
-        </script>
       </body>
     </html>
   `;
@@ -457,6 +471,17 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
   const { t, i18n } = useTranslation();
   const locale = i18n.language || 'fr-CA';
   const items = Array.isArray(comanda?.items) ? comanda.items : [];
+  const productosInventario = React.useMemo(() => obtenerProductos(), []);
+  const productosCatalogoMap = React.useMemo(() => new Map(
+    [
+      ...productosInventario,
+      ...mockProductos.filter(mockProducto => !productosInventario.some(producto => producto.id === mockProducto.id)),
+    ].map(producto => [producto.id, producto])
+  ), [productosInventario]);
+  const printableItemsData = React.useMemo(() => items.map((item: any) => ({
+    item,
+    product: productosCatalogoMap.get(item?.productoId),
+  })), [items, productosCatalogoMap]);
   const numeroComanda = getFirstText(comanda?.numero, comanda?.numeroComanda, comanda?.id);
   const fechaEntrega = comanda?.fechaEntrega || comanda?.fecha;
   const fechaCreacion = comanda?.fechaCreacion || comanda?.fecha;
@@ -464,7 +489,10 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
   const preparadoPor = getFirstText(comanda?.preparadoPor, comanda?.usuarioCreacion, comanda?.creadoPor, 'Non attribué');
   const totalUnidades = items.reduce((sum: number, item: any) => sum + getSafeNumber(item?.cantidad), 0);
   const totalPeso = items.reduce((sum: number, item: any) => sum + (getSafeNumber(item?.peso) * Math.max(getSafeNumber(item?.cantidad), 1)), 0);
-  const totalValor = items.reduce((sum: number, item: any) => sum + (getSafeNumber(item?.valorUnitario) * getSafeNumber(item?.cantidad)), 0);
+  const totalValor = printableItemsData.reduce((sum: number, entry: any) => {
+    const quantite = getSafeNumber(entry.item?.cantidad);
+    return sum + (getItemUnitValue(entry.item, entry.product) * quantite);
+  }, 0);
   const qrData = buildComandaQRData({
     numeroComanda,
     organismo: getFirstText(organismo?.nombre, comanda?.nombreOrganismo),
@@ -476,40 +504,29 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
   });
 
   const handleImprimir = async () => {
-    const printWindow = window.open('', '_blank', 'width=1024,height=768');
-    if (!printWindow) {
+    let printWindow: Window;
+
+    try {
+      printWindow = openPrintPopup({ width: 1024, height: 768, printDelayMs: 350 });
+    } catch (error) {
       console.error('El navegador bloqueó la ventana de impresión');
       return;
     }
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html lang="fr">
-        <head>
-          <meta charset="UTF-8" />
-          <title>Préparation impression...</title>
-          <style>
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              padding: 24px;
-              color: #334155;
-            }
-          </style>
-        </head>
-        <body>Préparation de la commande pour impression...</body>
-      </html>
-    `);
-    printWindow.document.close();
+    onClose?.();
+
+    writePrintPopupPlaceholder(printWindow, 'Préparation de la commande pour impression...');
 
     try {
-      const printableItems = items.map((item: any) => {
+      const printableItems = printableItemsData.map((entry: any) => {
+        const { item, product } = entry;
         const quantite = getSafeNumber(item?.cantidad);
         const poids = getSafeNumber(item?.peso);
-        const valorUnitario = getSafeNumber(item?.valorUnitario);
+        const valorUnitario = getItemUnitValue(item, product);
         const valorLinea = quantite * valorUnitario;
 
         return {
-          nombre: getFirstText(item?.nombreProducto, item?.productoNombre),
+          nombre: getFirstText(item?.nombreProducto, item?.productoNombre, product?.nombre),
           temperatura: formatTemperature(item?.temperatura || item?.temperaturaOriginalEntrada),
           cantidad: formatQuantity(quantite),
           unidad: getFirstText(item?.unidad, 'u'),
@@ -545,9 +562,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
         items: printableItems,
       });
 
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
+      writeAutoPrintPopupContent(printWindow, html, { width: 1024, height: 768, printDelayMs: 350 });
     } catch (error) {
       console.error('Error al preparar la impresión de la comanda:', error);
       printWindow.document.open();
@@ -734,15 +749,16 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                         </td>
                       </tr>
                     ) : (
-                      items.map((item: any, index: number) => {
+                      printableItemsData.map((entry: any, index: number) => {
+                        const { item, product } = entry;
                         const quantite = getSafeNumber(item?.cantidad);
                         const poids = getSafeNumber(item?.peso);
-                        const valorUnitario = getSafeNumber(item?.valorUnitario);
+                        const valorUnitario = getItemUnitValue(item, product);
                         const valorLinea = quantite * valorUnitario;
 
                         return (
                           <tr key={`${item?.productoId || item?.nombreProducto || 'item'}-${index}`} className="border-t border-slate-200 align-top">
-                            <td className="px-3 py-2 font-medium text-slate-900 print-table">{getFirstText(item?.nombreProducto, item?.productoNombre)}</td>
+                            <td className="px-3 py-2 font-medium text-slate-900 print-table">{getFirstText(item?.nombreProducto, item?.productoNombre, product?.nombre)}</td>
                             <td className="px-3 py-2 text-slate-600 print-table">{formatTemperature(item?.temperatura || item?.temperaturaOriginalEntrada)}</td>
                             <td className="px-3 py-2 text-right text-slate-700 print-table">{formatQuantity(quantite)}</td>
                             <td className="px-3 py-2 text-slate-700 print-table">{getFirstText(item?.unidad, 'u')}</td>

@@ -1,11 +1,12 @@
 /**
  * ImpresionComandaEtiquetaSeparada
  * 
- * Imprime la comanda detallada y la etiqueta en hojas separadas usando un iframe oculto
+ * Imprime la comanda detallada y la etiqueta en hojas separadas usando una ventana autocerrable
  */
 
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
+import { openPrintPopup, writeAutoPrintPopupContent } from '../../utils/printPopup';
 
 interface ComandaParaImprimir {
   numero?: string;
@@ -947,43 +948,8 @@ export async function printComandaYEtiquetaSeparadas(
   comanda: ComandaParaImprimir,
   organismo: OrganismoParaImprimir
 ): Promise<void> {
-  // Generar HTML con ambas páginas
+  const printWindow = openPrintPopup({ width: 1024, height: 900, printDelayMs: 500 });
   const printHTML = await generatePrintHTML(comanda, organismo);
 
-  // Crear iframe oculto
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = 'none';
-  iframe.style.visibility = 'hidden';
-  
-  document.body.appendChild(iframe);
-  
-  // Escribir el contenido
-  const iframeDoc = iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    throw new Error('No se pudo acceder al documento del iframe');
-  }
-  
-  iframeDoc.open();
-  iframeDoc.write(printHTML);
-  iframeDoc.close();
-  
-  // Esperar a que cargue y luego imprimir
-  iframe.onload = () => {
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      
-      // Eliminar el iframe después de imprimir
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    } catch (err) {
-      console.error('Error al imprimir:', err);
-      document.body.removeChild(iframe);
-    }
-  };
+  writeAutoPrintPopupContent(printWindow, printHTML, { width: 1024, height: 900, printDelayMs: 500 });
 }

@@ -46,8 +46,9 @@ export function HistorialProductoDialog({
   productoId,
   categoriasInfo
 }: HistorialProductoDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tabActiva, setTabActiva] = useState('historial');
+  const locale = i18n.resolvedLanguage || i18n.language || 'fr';
   
   // Buscar el producto primero en localStorage, luego en mockProductos
   const productosLocalStorage = obtenerProductos();
@@ -131,14 +132,14 @@ export function HistorialProductoDialog({
 
   const getTipoLabel = (tipo: string) => {
     switch (tipo) {
-      case 'entrada': return 'Entrada';
-      case 'salida': return 'Salida';
-      case 'transformacion': return 'Transformación';
-      case 'correccion': return 'Corrección';
-      case 'distribucion': return 'Distribución';
-      case 'distribucion_completada': return 'Entregado';
-      case 'ajuste_stock': return 'Ajuste';
-      case 'conversion_unidad': return 'Conversión';
+      case 'entrada': return t('inventory.productHistoryDialog.types.entry');
+      case 'salida': return t('inventory.productHistoryDialog.types.output');
+      case 'transformacion': return t('inventory.productHistoryDialog.types.transformation');
+      case 'correccion': return t('inventory.productHistoryDialog.types.correction');
+      case 'distribucion': return t('inventory.productHistoryDialog.types.distribution');
+      case 'distribucion_completada': return t('inventory.productHistoryDialog.types.delivered');
+      case 'ajuste_stock': return t('inventory.productHistoryDialog.types.adjustment');
+      case 'conversion_unidad': return t('inventory.productHistoryDialog.types.conversion');
       default: return tipo.charAt(0).toUpperCase() + tipo.slice(1);
     }
   };
@@ -146,21 +147,21 @@ export function HistorialProductoDialog({
   const getStockStatus = () => {
     const percentage = (producto.stockActual / producto.stockMinimo) * 100;
     if (percentage <= 100) return { 
-      label: 'Stock Bajo', 
+      label: t('inventory.productHistoryDialog.stockStatus.low'), 
       color: 'bg-[#DC3545]', 
       textColor: 'text-[#DC3545]',
       bgColor: 'bg-red-50',
       icon: <TrendingDown className="w-5 h-5" />
     };
     if (percentage <= 150) return { 
-      label: 'Stock Medio', 
+      label: t('inventory.productHistoryDialog.stockStatus.medium'), 
       color: 'bg-[#FFC107]', 
       textColor: 'text-[#FFC107]',
       bgColor: 'bg-yellow-50',
       icon: <TrendingUp className="w-5 h-5" />
     };
     return { 
-      label: 'Stock Óptimo', 
+      label: t('inventory.productHistoryDialog.stockStatus.optimal'), 
       color: 'bg-[#4CAF50]', 
       textColor: 'text-[#4CAF50]',
       bgColor: 'bg-green-50',
@@ -175,10 +176,10 @@ export function HistorialProductoDialog({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" aria-describedby="historial-producto-description">
         <DialogHeader>
           <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, fontSize: '1.5rem' }}>
-            Historial del Producto
+            {t('inventory.productHistoryDialog.title')}
           </DialogTitle>
           <DialogDescription id="historial-producto-description">
-            Revisa todas las entradas, salidas y movimientos de este producto
+            {t('inventory.productHistoryDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -191,7 +192,7 @@ export function HistorialProductoDialog({
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     <Package className="w-5 h-5 text-[#1E73BE]" />
-                    Información del Producto
+                    {t('inventory.productHistoryDialog.productInfoTitle')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -217,7 +218,7 @@ export function HistorialProductoDialog({
                         <h3 className="font-bold text-xl text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                           {producto.nombre}
                         </h3>
-                        <p className="text-[#666666] text-sm">Código: {producto.codigo}</p>
+                        <p className="text-[#666666] text-sm">{t('inventory.productHistoryDialog.code')}: {producto.codigo}</p>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
@@ -250,7 +251,7 @@ export function HistorialProductoDialog({
 
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                          <p className="text-[#666666]">Ubicación</p>
+                          <p className="text-[#666666]">{t('inventory.productHistoryDialog.location')}</p>
                           <p className="font-medium flex items-center gap-1">
                             <MapPin className="w-4 h-4 text-[#1E73BE]" />
                             {producto.ubicacion}
@@ -258,7 +259,7 @@ export function HistorialProductoDialog({
                         </div>
                         {producto.fechaVencimiento && (
                           <div>
-                            <p className="text-[#666666]">Vencimiento</p>
+                            <p className="text-[#666666]">{t('inventory.productHistoryDialog.expiration')}</p>
                             <p className="font-medium flex items-center gap-1">
                               <Calendar className="w-4 h-4 text-[#DC3545]" />
                               {producto.fechaVencimiento}
@@ -267,7 +268,7 @@ export function HistorialProductoDialog({
                         )}
                         {producto.cantidadUnidades && (
                           <div>
-                            <p className="text-[#666666]">Unidades por paquete</p>
+                            <p className="text-[#666666]">{t('inventory.productHistoryDialog.unitsPerPackage')}</p>
                             <p className="font-medium">
                               {producto.cantidadUnidades} {producto.tipoUnidad}
                             </p>
@@ -275,7 +276,7 @@ export function HistorialProductoDialog({
                         )}
                         {producto.lote && (
                           <div>
-                            <p className="text-[#666666]">Lote</p>
+                            <p className="text-[#666666]">{t('inventory.productHistoryDialog.batch')}</p>
                             <p className="font-medium">{producto.lote}</p>
                           </div>
                         )}
@@ -290,12 +291,12 @@ export function HistorialProductoDialog({
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     {status.icon}
-                    <span className={status.textColor}>Estado del Stock</span>
+                    <span className={status.textColor}>{t('inventory.productHistoryDialog.stockState')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-[#666666] mb-1">Stock Actual</p>
+                    <p className="text-sm text-[#666666] mb-1">{t('inventory.productHistoryDialog.currentStock')}</p>
                     <p className="font-bold text-3xl" style={{ color: status.color.replace('bg-', '#') }}>
                       {producto.stockActual}
                     </p>
@@ -304,11 +305,11 @@ export function HistorialProductoDialog({
                   
                   <div className="pt-3 border-t border-gray-300">
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-[#666666]">Stock Mínimo</span>
+                      <span className="text-[#666666]">{t('inventory.productHistoryDialog.minimumStock')}</span>
                       <span className="font-medium">{producto.stockMinimo} {producto.unidad}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#666666]">Porcentaje</span>
+                      <span className="text-[#666666]">{t('inventory.productHistoryDialog.percentage')}</span>
                       <span className={`font-bold ${status.textColor}`}>
                         {((producto.stockActual / producto.stockMinimo) * 100).toFixed(0)}%
                       </span>
@@ -328,7 +329,7 @@ export function HistorialProductoDialog({
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#666666]">Total Entradas</p>
+                      <p className="text-sm text-[#666666]">{t('inventory.productHistoryDialog.totals.entries')}</p>
                       <p className="font-bold text-2xl text-[#4CAF50]">
                         +{totalEntradas}
                       </p>
@@ -342,7 +343,7 @@ export function HistorialProductoDialog({
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#666666]">Total Salidas</p>
+                      <p className="text-sm text-[#666666]">{t('inventory.productHistoryDialog.totals.outputs')}</p>
                       <p className="font-bold text-2xl text-[#DC3545]">
                         -{totalSalidas}
                       </p>
@@ -356,7 +357,7 @@ export function HistorialProductoDialog({
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#666666]">Transformaciones</p>
+                      <p className="text-sm text-[#666666]">{t('inventory.productHistoryDialog.totals.transformations')}</p>
                       <p className="font-bold text-2xl text-[#1E73BE]">
                         {totalTransformaciones}
                       </p>
@@ -370,7 +371,7 @@ export function HistorialProductoDialog({
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#666666]">Correcciones</p>
+                      <p className="text-sm text-[#666666]">{t('inventory.productHistoryDialog.totals.corrections')}</p>
                       <p className="font-bold text-2xl text-[#FFC107]">
                         {totalCorrecciones}
                       </p>
@@ -386,11 +387,11 @@ export function HistorialProductoDialog({
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="historial" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   <FileText className="w-4 h-4 mr-2" />
-                  Historial de Movimientos ({movimientosProducto.length})
+                  {t('inventory.productHistoryDialog.tabs.history', { count: movimientosProducto.length })}
                 </TabsTrigger>
                 <TabsTrigger value="codigos" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   <Barcode className="w-4 h-4 mr-2" />
-                  Códigos de Barras
+                  {t('inventory.productHistoryDialog.tabs.barcodes')}
                 </TabsTrigger>
               </TabsList>
 
@@ -398,28 +399,28 @@ export function HistorialProductoDialog({
                 <Card>
                   <CardHeader>
                     <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Registro de Movimientos
+                      {t('inventory.productHistoryDialog.movementLogTitle')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {movimientosProducto.length === 0 ? (
                       <div className="text-center py-12">
                         <Clock className="w-16 h-16 text-[#CCCCCC] mx-auto mb-4" />
-                        <p className="text-[#666666]">No hay movimientos registrados para este producto</p>
+                        <p className="text-[#666666]">{t('inventory.productHistoryDialog.noMovements')}</p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Fecha</TableHead>
-                              <TableHead>Tipo</TableHead>
-                              <TableHead>Cantidad</TableHead>
-                              <TableHead>Peso Unitario</TableHead>
-                              <TableHead>Fecha Entrada</TableHead>
-                              <TableHead>Motivo/Destino</TableHead>
-                              <TableHead>Usuario</TableHead>
-                              <TableHead>Documento</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.date')}</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.type')}</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.quantity')}</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.unitWeight')}</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.entryDate')}</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.reasonDestination')}</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.user')}</TableHead>
+                              <TableHead>{t('inventory.productHistoryDialog.table.document')}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -431,7 +432,7 @@ export function HistorialProductoDialog({
                                     <div className="flex items-center gap-2">
                                       <Calendar className="w-4 h-4 text-[#666666]" />
                                       <span className="text-sm">
-                                        {new Date(mov.fecha).toLocaleString('es-ES', {
+                                        {new Date(mov.fecha).toLocaleString(locale, {
                                           year: 'numeric',
                                           month: '2-digit',
                                           day: '2-digit',
@@ -469,7 +470,7 @@ export function HistorialProductoDialog({
                                           {formatQuantity(mov.pesoUnitario)} kg
                                         </span>
                                         <span className="text-xs text-[#999999]">
-                                          por unidad
+                                          {t('inventory.productHistoryDialog.perUnit')}
                                         </span>
                                       </div>
                                     ) : (
@@ -481,7 +482,7 @@ export function HistorialProductoDialog({
                                       <div className="flex items-center gap-2">
                                         <Calendar className="w-4 h-4 text-[#1E73BE]" />
                                         <span className="text-sm">
-                                          {new Date(mov.fechaEntrada).toLocaleDateString('es-ES', {
+                                          {new Date(mov.fechaEntrada).toLocaleDateString(locale, {
                                             year: 'numeric',
                                             month: '2-digit',
                                             day: '2-digit'
@@ -537,7 +538,7 @@ export function HistorialProductoDialog({
                   <BarcodeDisplay
                     value={codigoBarrasProducto}
                     format="EAN13"
-                    label="Código de Producto (EAN-13)"
+                    label={t('inventory.productHistoryDialog.barcodes.productCode')}
                     displayValue={`${producto.nombre} - ${producto.codigo}`}
                     width={2}
                     height={60}
@@ -546,7 +547,7 @@ export function HistorialProductoDialog({
                   <BarcodeDisplay
                     value={codigoLote}
                     format="CODE128"
-                    label="Código de Lote"
+                    label={t('inventory.productHistoryDialog.barcodes.batchCode')}
                     displayValue={codigoLote}
                     width={2}
                     height={60}
@@ -555,8 +556,8 @@ export function HistorialProductoDialog({
                   <BarcodeDisplay
                     value={codigoUbicacion}
                     format="CODE128"
-                    label="Código de Ubicación"
-                    displayValue={`Ubicación: ${producto.ubicacion}`}
+                    label={t('inventory.productHistoryDialog.barcodes.locationCode')}
+                    displayValue={t('inventory.productHistoryDialog.barcodes.locationValue', { location: producto.ubicacion })}
                     width={2}
                     height={60}
                   />
@@ -565,22 +566,22 @@ export function HistorialProductoDialog({
                 <Card className="mt-4">
                   <CardHeader>
                     <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Acciones Rápidas
+                      {t('inventory.productHistoryDialog.quickActions')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-3">
                       <Button variant="outline" className="flex items-center gap-2">
                         <Download className="w-4 h-4" />
-                        Descargar Todos los Códigos
+                        {t('inventory.productHistoryDialog.actions.downloadAllCodes')}
                       </Button>
                       <Button variant="outline" className="flex items-center gap-2">
                         <Printer className="w-4 h-4" />
-                        Imprimir Etiquetas
+                        {t('inventory.productHistoryDialog.actions.printLabels')}
                       </Button>
                       <Button variant="outline" className="flex items-center gap-2">
                         <Barcode className="w-4 h-4" />
-                        Generar Código QR
+                        {t('inventory.productHistoryDialog.actions.generateQr')}
                       </Button>
                     </div>
                   </CardContent>

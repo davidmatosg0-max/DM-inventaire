@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, Save, X, Package2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
@@ -25,6 +26,7 @@ const iconosVariantes = [
 ];
 
 export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: GestionVariantesProps) {
+  const { t } = useTranslation();
   const [variantes, setVariantes] = useState<Variante[]>(subcategoria.variantes || []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -98,7 +100,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
 
   const handleGuardar = () => {
     if (!formData.nombre.trim()) {
-      toast.error('El nombre de la variante es requerido');
+      toast.error(t('inventory.variantManagement.errors.nameRequired'));
       return;
     }
 
@@ -138,7 +140,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
           
           setVariantes(variantesActualizadas);
           setDialogOpen(false);
-          toast.success(modoEdicion ? 'Variante actualizada correctamente' : 'Variante creada correctamente');
+          toast.success(modoEdicion ? t('inventory.variantManagement.toasts.updated') : t('inventory.variantManagement.toasts.created'));
           
           if (onActualizar) {
             onActualizar();
@@ -149,7 +151,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
   };
 
   const handleEliminar = (variante: Variante) => {
-    if (confirm(`¿Está seguro de eliminar la variante "${variante.nombre}"?`)) {
+    if (confirm(t('inventory.variantManagement.confirmDelete', { name: variante.nombre }))) {
       const variantesActualizadas = variantes.filter(v => v.id !== variante.id);
       
       // Actualizar en la base de datos
@@ -168,7 +170,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
             window.dispatchEvent(new Event('categorias-actualizadas'));
             
             setVariantes(variantesActualizadas);
-            toast.success('Variante eliminada correctamente');
+            toast.success(t('inventory.variantManagement.toasts.deleted'));
             
             if (onActualizar) {
               onActualizar();
@@ -200,7 +202,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
           window.dispatchEvent(new Event('categorias-actualizadas'));
           
           setVariantes(variantesActualizadas);
-          toast.success(variante.activa ? 'Variante desactivada' : 'Variante activada');
+          toast.success(variante.activa ? t('inventory.variantManagement.toasts.deactivated') : t('inventory.variantManagement.toasts.activated'));
           
           if (onActualizar) {
             onActualizar();
@@ -221,10 +223,10 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
           <Package2 className="w-5 h-5 text-[#9C27B0]" />
           <div className="text-left">
             <h4 className="text-sm font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              Variantes
+              {t('inventory.variantManagement.title')}
             </h4>
             <p className="text-xs text-[#666666]">
-              {variantes.length} {variantes.length === 1 ? 'variante' : 'variantes'}
+              {t('inventory.variantManagement.count', { count: variantes.length })}
             </p>
           </div>
           {expandido ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -237,7 +239,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
         >
           <Plus className="w-3 h-3 mr-1" />
-          Nueva Variante
+          {t('inventory.variantManagement.newVariant')}
         </Button>
       </div>
 
@@ -247,14 +249,14 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
           {variantes.length === 0 ? (
             <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
               <Package2 className="w-10 h-10 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-[#666666] mb-2">No hay variantes creadas</p>
+              <p className="text-sm text-[#666666] mb-2">{t('inventory.variantManagement.empty')}</p>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleAbrirNuevo}
               >
                 <Plus className="w-3 h-3 mr-1" />
-                Crear primera variante
+                {t('inventory.variantManagement.createFirst')}
               </Button>
             </div>
           ) : (
@@ -273,7 +275,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                             {variante.nombre}
                           </p>
                           {!variante.activa && (
-                            <Badge variant="secondary" className="text-xs">Inactiva</Badge>
+                            <Badge variant="secondary" className="text-xs">{t('inventory.variantManagement.inactive')}</Badge>
                           )}
                           {variante.codigo && (
                             <Badge variant="outline" className="text-xs">{variante.codigo}</Badge>
@@ -301,7 +303,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                         variant="ghost"
                         onClick={() => handleToggleActiva(variante)}
                         className="h-7 w-7 p-0"
-                        title={variante.activa ? 'Desactivar' : 'Activar'}
+                        title={variante.activa ? t('inventory.variantManagement.actions.deactivate') : t('inventory.variantManagement.actions.activate')}
                       >
                         {variante.activa ? '👁️' : '🚫'}
                       </Button>
@@ -335,10 +337,10 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
         <DialogContent className="max-w-2xl" aria-describedby="gestion-variantes-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              {modoEdicion ? '✏️ Editar Variante' : '✨ Nueva Variante'}
+              {modoEdicion ? t('inventory.variantManagement.dialog.editTitle') : t('inventory.variantManagement.dialog.createTitle')}
             </DialogTitle>
             <DialogDescription id="gestion-variantes-description">
-              {modoEdicion ? 'Modifica la información de la variante existente' : 'Crea una nueva variante para este producto'}
+              {modoEdicion ? t('inventory.variantManagement.dialog.editDescription') : t('inventory.variantManagement.dialog.createDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -346,31 +348,31 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
             <div className="grid grid-cols-2 gap-4">
               {/* Nombre */}
               <div className="space-y-2">
-                <Label>Nombre de la Variante *</Label>
+                <Label>{t('inventory.variantManagement.form.name')}</Label>
                 <Input
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  placeholder="Ej: Grande, 500ml, Marca A, Orgánico..."
+                  placeholder={t('inventory.variantManagement.form.namePlaceholder')}
                 />
               </div>
 
               {/* Código */}
               <div className="space-y-2">
-                <Label>Código (opcional)</Label>
+                <Label>{t('inventory.variantManagement.form.code')}</Label>
                 <Input
                   value={formData.codigo}
                   onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                  placeholder="Ej: VAR-001"
+                  placeholder={t('inventory.variantManagement.form.codePlaceholder')}
                 />
               </div>
             </div>
 
             {/* Unidad de Medida */}
             <div className="space-y-2">
-              <Label>Unidad de Medida</Label>
+              <Label>{t('inventory.variantManagement.form.unit')}</Label>
               <Select value={formData.unidad} onValueChange={(value) => setFormData({ ...formData, unidad: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder={`Usar unidad de subcategoría (${subcategoria.unidad || 'No definida'})`} />
+                  <SelectValue placeholder={t('inventory.variantManagement.form.unitPlaceholder', { unit: subcategoria.unidad || t('inventory.variantManagement.notDefined') })} />
                 </SelectTrigger>
                 <SelectContent>
                   {unidades.map((unidad) => (
@@ -379,14 +381,16 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                 </SelectContent>
               </Select>
               <p className="text-xs text-[#666666]">
-                {formData.unidad ? `Unidad específica: ${formData.unidad}` : `Se usará la unidad de la subcategoría: ${subcategoria.unidad || 'No definida'}`}
+                {formData.unidad
+                  ? t('inventory.variantManagement.form.specificUnit', { unit: formData.unidad })
+                  : t('inventory.variantManagement.form.subcategoryUnit', { unit: subcategoria.unidad || t('inventory.variantManagement.notDefined') })}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               {/* Peso Unitario */}
               <div className="space-y-2">
-                <Label>Peso Unitario (kg)</Label>
+                <Label>{t('inventory.variantManagement.form.unitWeight')}</Label>
                 <Input
                   type="number"
                   step="1"
@@ -395,13 +399,13 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                   placeholder="0"
                 />
                 <p className="text-xs text-[#666666]">
-                  Deja vacío para usar el peso de la subcategoría
+                  {t('inventory.variantManagement.form.unitWeightHelp')}
                 </p>
               </div>
 
               {/* Valor por Kg */}
               <div className="space-y-2">
-                <Label>Valor por Kg ($)</Label>
+                <Label>{t('inventory.variantManagement.form.valuePerKg')}</Label>
                 <Input
                   type="number"
                   step="1"
@@ -410,14 +414,14 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                   placeholder="0"
                 />
                 <p className="text-xs text-[#666666]">
-                  Deja vacío para usar el valor de la categoría
+                  {t('inventory.variantManagement.form.valuePerKgHelp')}
                 </p>
               </div>
             </div>
 
             {/* Selector de Icono */}
             <div className="space-y-2">
-              <Label>Icono</Label>
+              <Label>{t('inventory.variantManagement.form.icon')}</Label>
               <div className="grid grid-cols-10 gap-2">
                 {iconosVariantes.map((icono) => (
                   <button
@@ -437,23 +441,23 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
 
             {/* Descripción */}
             <div className="space-y-2">
-              <Label>Descripción (opcional)</Label>
+              <Label>{t('inventory.variantManagement.form.description')}</Label>
               <Input
                 value={formData.descripcion}
                 onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                placeholder="Descripción adicional de la variante..."
+                placeholder={t('inventory.variantManagement.form.descriptionPlaceholder')}
               />
             </div>
 
             {/* Vista Previa */}
             <div className="p-4 bg-gradient-to-br from-purple-50 to-white rounded-lg border border-purple-200">
-              <p className="text-xs text-[#666666] mb-2">Vista Previa:</p>
+              <p className="text-xs text-[#666666] mb-2">{t('inventory.variantManagement.preview.label')}</p>
               <div className="flex items-center gap-3">
                 <div className="text-3xl">{formData.icono}</div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="font-medium" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {formData.nombre || 'Nombre de la variante'}
+                      {formData.nombre || t('inventory.variantManagement.preview.defaultName')}
                     </p>
                     {formData.codigo && (
                       <Badge variant="outline" className="text-xs">{formData.codigo}</Badge>
@@ -482,7 +486,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
               onClick={() => setDialogOpen(false)}
             >
               <X className="w-4 h-4 mr-2" />
-              Cancelar
+              {t('inventory.variantManagement.actions.cancel')}
             </Button>
             <Button
               onClick={handleGuardar}
@@ -490,7 +494,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
               style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
             >
               <Save className="w-4 h-4 mr-2" />
-              {modoEdicion ? 'Guardar Cambios' : 'Crear Variante'}
+              {modoEdicion ? t('inventory.variantManagement.actions.saveChanges') : t('inventory.variantManagement.actions.create')}
             </Button>
           </div>
         </DialogContent>

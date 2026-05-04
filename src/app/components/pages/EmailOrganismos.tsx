@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { saveAs } from 'file-saver';
 import { createWorkbookFromRowSheets, saveWorkbook } from '../../utils/excelWorkbook';
+import { openAutoPrintPopup } from '../../utils/printPopup';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
@@ -215,103 +216,96 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
 
   // Función de impresión
   const imprimirEstadisticas = () => {
-    const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) return;
-
     const contenido = estadisticasRef.current?.innerHTML || '';
-    
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Statistiques Liaison - ${new Date().toLocaleDateString('fr-FR')}</title>
-          <style>
-            body { 
-              font-family: 'Roboto', sans-serif; 
-              padding: 20px;
-              color: #333;
-            }
-            h1 { 
-              color: #1E73BE; 
-              font-family: 'Montserrat', sans-serif;
-              border-bottom: 3px solid #1E73BE;
-              padding-bottom: 10px;
-            }
-            h2 { 
-              color: #4CAF50; 
-              font-family: 'Montserrat', sans-serif;
-              margin-top: 30px;
-            }
-            .stat-card {
-              display: inline-block;
-              padding: 15px;
-              margin: 10px;
-              border: 1px solid #ddd;
-              border-radius: 8px;
-              min-width: 200px;
-            }
-            .stat-value {
-              font-size: 32px;
-              font-weight: bold;
-              color: #1E73BE;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-            }
-            th, td {
-              border: 1px solid #ddd;
-              padding: 12px;
-              text-align: left;
-            }
-            th {
-              background-color: #f4f4f4;
-              font-weight: bold;
-            }
-            .footer {
-              margin-top: 40px;
-              text-align: center;
-              color: #666;
-              font-size: 12px;
-            }
-            @media print {
-              button { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>📊 Rapport Statistique - Module Liaison</h1>
-          <p><strong>Date du rapport:</strong> ${new Date().toLocaleDateString('fr-FR', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</p>
-          <p><strong>Période analysée:</strong> ${new Date(fechaInicio).toLocaleDateString('fr-FR', { 
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric' 
-          })} - ${new Date(fechaFin).toLocaleDateString('fr-FR', { 
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric' 
-          })}</p>
-          ${contenido}
-          <div class="footer">
-            <p>© ${new Date().getFullYear()} Banque Alimentaire - Système de Gestion</p>
-          </div>
-          <script>
-            window.onload = () => {
-              window.print();
-              window.onafterprint = () => window.close();
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
+
+    try {
+      openAutoPrintPopup(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Statistiques Liaison - ${new Date().toLocaleDateString('fr-FR')}</title>
+            <style>
+              body { 
+                font-family: 'Roboto', sans-serif; 
+                padding: 20px;
+                color: #333;
+              }
+              h1 { 
+                color: #1E73BE; 
+                font-family: 'Montserrat', sans-serif;
+                border-bottom: 3px solid #1E73BE;
+                padding-bottom: 10px;
+              }
+              h2 { 
+                color: #4CAF50; 
+                font-family: 'Montserrat', sans-serif;
+                margin-top: 30px;
+              }
+              .stat-card {
+                display: inline-block;
+                padding: 15px;
+                margin: 10px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                min-width: 200px;
+              }
+              .stat-value {
+                font-size: 32px;
+                font-weight: bold;
+                color: #1E73BE;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+              }
+              th, td {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+              }
+              th {
+                background-color: #f4f4f4;
+                font-weight: bold;
+              }
+              .footer {
+                margin-top: 40px;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+              }
+              @media print {
+                button { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>📊 Rapport Statistique - Module Liaison</h1>
+            <p><strong>Date du rapport:</strong> ${new Date().toLocaleDateString('fr-FR', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</p>
+            <p><strong>Période analysée:</strong> ${new Date(fechaInicio).toLocaleDateString('fr-FR', { 
+              day: 'numeric', 
+              month: 'long', 
+              year: 'numeric' 
+            })} - ${new Date(fechaFin).toLocaleDateString('fr-FR', { 
+              day: 'numeric', 
+              month: 'long', 
+              year: 'numeric' 
+            })}</p>
+            ${contenido}
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} Banque Alimentaire - Système de Gestion</p>
+            </div>
+          </body>
+        </html>
+      `, { width: 800, height: 600, printDelayMs: 250 });
+    } catch (error) {
+      toast.error('Impossible d’ouvrir la fenêtre d’impression');
+    }
   };
 
   // Función para descargar en PDF

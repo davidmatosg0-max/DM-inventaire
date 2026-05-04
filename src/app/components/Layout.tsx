@@ -30,6 +30,7 @@ import {
   Apple,
   UserPlus,
   Scale,
+  Plus,
   Warehouse,
   ChevronDown,
   ChevronRight,
@@ -48,6 +49,7 @@ import { GlobalSearch } from './GlobalSearch';
 import { GuideCompletModules } from './GuideCompletModules';
 import { PWAFloatingButton } from './PWAInstallButton';
 import { PWAInstallButton } from './PWAInstallButton';
+import { savePendingEntrepotQuickAction } from '../utils/pendingEntrepotQuickAction';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -86,6 +88,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const dragThreshold = 5; // Umbral mínimo de movimiento para considerar que es un drag
   const [totalDragDistance, setTotalDragDistance] = React.useState(0);
+  const [entrepotQuickActionsDragging, setEntrepotQuickActionsDragging] = React.useState(false);
+  const [entrepotQuickActionsPosition, setEntrepotQuickActionsPosition] = React.useState({ x: 0, y: 0 });
+  const [entrepotQuickActionsDragStart, setEntrepotQuickActionsDragStart] = React.useState({ x: 0, y: 0 });
+  const [entrepotQuickActionsDragDistance, setEntrepotQuickActionsDragDistance] = React.useState(0);
+  const entrepotQuickActionsRef = React.useRef<HTMLDivElement>(null);
   
   const { t } = useTranslation();
   const branding = useBranding();
@@ -223,6 +230,93 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     setIsDragging(false);
   }, []);
 
+  const handleEntrepotQuickActionsMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    setEntrepotQuickActionsDragging(true);
+    setEntrepotQuickActionsDragDistance(0);
+
+    const rect = entrepotQuickActionsRef.current?.getBoundingClientRect();
+    if (rect) {
+      setEntrepotQuickActionsDragStart({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+      setEntrepotQuickActionsPosition({
+        x: rect.left,
+        y: rect.top,
+      });
+    }
+  };
+
+  const handleEntrepotQuickActionsTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setEntrepotQuickActionsDragging(true);
+    setEntrepotQuickActionsDragDistance(0);
+
+    const touch = e.touches[0];
+    const rect = entrepotQuickActionsRef.current?.getBoundingClientRect();
+    if (rect) {
+      setEntrepotQuickActionsDragStart({
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+      });
+      setEntrepotQuickActionsPosition({
+        x: rect.left,
+        y: rect.top,
+      });
+    }
+  };
+
+  const handleEntrepotQuickActionsMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!entrepotQuickActionsDragging) return;
+
+    e.preventDefault();
+    const newX = e.clientX - entrepotQuickActionsDragStart.x;
+    const newY = e.clientY - entrepotQuickActionsDragStart.y;
+    const margin = 10;
+    const maxX = window.innerWidth - (entrepotQuickActionsRef.current?.offsetWidth || 56) - margin;
+    const maxY = window.innerHeight - (entrepotQuickActionsRef.current?.offsetHeight || 112) - margin;
+
+    const boundedX = Math.max(margin, Math.min(newX, maxX));
+    const boundedY = Math.max(margin, Math.min(newY, maxY));
+
+    setEntrepotQuickActionsPosition({ x: boundedX, y: boundedY });
+
+    const distance = Math.sqrt(
+      Math.pow(boundedX - entrepotQuickActionsPosition.x, 2) +
+      Math.pow(boundedY - entrepotQuickActionsPosition.y, 2)
+    );
+    setEntrepotQuickActionsDragDistance(prev => prev + distance);
+  }, [entrepotQuickActionsDragging, entrepotQuickActionsDragStart, entrepotQuickActionsPosition]);
+
+  const handleEntrepotQuickActionsTouchMove = React.useCallback((e: TouchEvent) => {
+    if (!entrepotQuickActionsDragging) return;
+
+    e.preventDefault();
+    const touch = e.touches[0];
+    const newX = touch.clientX - entrepotQuickActionsDragStart.x;
+    const newY = touch.clientY - entrepotQuickActionsDragStart.y;
+    const margin = 10;
+    const maxX = window.innerWidth - (entrepotQuickActionsRef.current?.offsetWidth || 56) - margin;
+    const maxY = window.innerHeight - (entrepotQuickActionsRef.current?.offsetHeight || 112) - margin;
+
+    const boundedX = Math.max(margin, Math.min(newX, maxX));
+    const boundedY = Math.max(margin, Math.min(newY, maxY));
+
+    setEntrepotQuickActionsPosition({ x: boundedX, y: boundedY });
+
+    const distance = Math.sqrt(
+      Math.pow(boundedX - entrepotQuickActionsPosition.x, 2) +
+      Math.pow(boundedY - entrepotQuickActionsPosition.y, 2)
+    );
+    setEntrepotQuickActionsDragDistance(prev => prev + distance);
+  }, [entrepotQuickActionsDragging, entrepotQuickActionsDragStart, entrepotQuickActionsPosition]);
+
+  const handleEntrepotQuickActionsDragEnd = React.useCallback(() => {
+    setEntrepotQuickActionsDragging(false);
+  }, []);
+
   // Agregar event listeners para mouse y touch
   React.useEffect(() => {
     if (isDragging) {
@@ -243,6 +337,30 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+
+  React.useEffect(() => {
+    if (entrepotQuickActionsDragging) {
+      document.addEventListener('mousemove', handleEntrepotQuickActionsMouseMove);
+      document.addEventListener('mouseup', handleEntrepotQuickActionsDragEnd);
+      document.addEventListener('touchmove', handleEntrepotQuickActionsTouchMove, { passive: false });
+      document.addEventListener('touchend', handleEntrepotQuickActionsDragEnd);
+
+      document.body.style.userSelect = 'none';
+
+      return () => {
+        document.removeEventListener('mousemove', handleEntrepotQuickActionsMouseMove);
+        document.removeEventListener('mouseup', handleEntrepotQuickActionsDragEnd);
+        document.removeEventListener('touchmove', handleEntrepotQuickActionsTouchMove);
+        document.removeEventListener('touchend', handleEntrepotQuickActionsDragEnd);
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [
+    entrepotQuickActionsDragging,
+    handleEntrepotQuickActionsMouseMove,
+    handleEntrepotQuickActionsTouchMove,
+    handleEntrepotQuickActionsDragEnd,
+  ]);
 
   const handleLogout = () => {
     if (onLogout) {
@@ -307,6 +425,18 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     { id: 'panel-marca', label: 'Identité visuelle', icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
     { id: 'api-keys', label: 'API & intégrations', icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
   ];
+
+  const entrepotModulePageIds = React.useMemo(
+    () => menuItems.find(item => item.id === 'entrepot')?.children?.map(child => child.id) ?? [],
+    [menuItems]
+  );
+
+  const showEntrepotQuickActions = entrepotModulePageIds.includes(currentPage) && currentPage !== 'inventario';
+
+  const navigateToInventarioQuickAction = (action: 'open-scanner' | 'open-new-entry') => {
+    savePendingEntrepotQuickAction(action);
+    onNavigate('inventario');
+  };
 
   const menuSections: MenuSection[] = [
     { id: 'overview', label: 'Vue d’ensemble', itemIds: ['dashboard'] },
@@ -613,6 +743,60 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
         </span>
       </button>
 
+      {showEntrepotQuickActions && (
+        <div
+          ref={entrepotQuickActionsRef}
+          onMouseDown={handleEntrepotQuickActionsMouseDown}
+          onTouchStart={handleEntrepotQuickActionsTouchStart}
+          className={`fixed z-[60] flex flex-col items-end gap-3 ${entrepotQuickActionsDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          style={{
+            bottom: 'auto',
+            right: entrepotQuickActionsPosition.x === 0 ? 'max(env(safe-area-inset-right), 1rem)' : 'auto',
+            top: entrepotQuickActionsPosition.y === 0 ? '50%' : `${entrepotQuickActionsPosition.y}px`,
+            left: entrepotQuickActionsPosition.x !== 0 ? `${entrepotQuickActionsPosition.x}px` : 'auto',
+            transform: entrepotQuickActionsPosition.y === 0 ? 'translateY(-50%)' : 'none',
+            transition: entrepotQuickActionsDragging ? 'none' : 'all 0.3s ease',
+            userSelect: 'none',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none'
+          }}
+        >
+          <button
+            onClick={() => {
+              if (entrepotQuickActionsDragDistance < dragThreshold) {
+                navigateToInventarioQuickAction('open-new-entry');
+              }
+            }}
+            className="h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105 shadow-2xl flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, #1a4d7a 0%, #153d61 100%)',
+              boxShadow: '0 10px 25px rgba(26, 77, 122, 0.35)'
+            }}
+            title="Nouvelle entrée"
+            aria-label="Nouvelle entrée"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+
+          <button
+            onClick={() => {
+              if (entrepotQuickActionsDragDistance < dragThreshold) {
+                navigateToInventarioQuickAction('open-scanner');
+              }
+            }}
+            className="h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105 shadow-2xl flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, #0f8f6f 0%, #0b6e56 100%)',
+              boxShadow: '0 10px 25px rgba(15, 143, 111, 0.3)'
+            }}
+            title="Scanner QR"
+            aria-label="Scanner QR"
+          >
+            <QrCode className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
       {/* Botón flotante de Guide Complet - DRAGGABLE */}
       <button
         ref={buttonRef}
@@ -629,10 +813,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
         }`}
         style={{ 
           position: 'fixed',
-          bottom: position.y === 0 ? '20rem' : 'auto',
+          bottom: 'auto',
           right: position.y === 0 ? '1rem' : 'auto',
-          top: position.y !== 0 ? `${position.y}px` : 'auto',
+          top: position.y === 0 ? 'calc(50% + 7rem)' : `${position.y}px`,
           left: position.x !== 0 ? `${position.x}px` : 'auto',
+          transform: position.y === 0 ? 'translateY(-50%)' : 'none',
           background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
           transition: isDragging ? 'none' : 'all 0.3s ease',
           userSelect: 'none',

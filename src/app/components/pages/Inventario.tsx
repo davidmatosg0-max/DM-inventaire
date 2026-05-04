@@ -80,6 +80,10 @@ import {
   readPendingQrNavigation,
   savePendingQrNavigation,
 } from '../../utils/pendingQrNavigation';
+import {
+  clearPendingEntrepotQuickAction,
+  readPendingEntrepotQuickAction,
+} from '../../utils/pendingEntrepotQuickAction';
 
 type CarritoItem = {
   productoId: string;
@@ -215,6 +219,12 @@ export function Inventario() {
   const [quickCartQuantityDialogOpen, setQuickCartQuantityDialogOpen] = useState(false);
   const [quickCartProduct, setQuickCartProduct] = useState<ProductoCreado | null>(null);
   const [quickCartQuantity, setQuickCartQuantity] = useState('');
+  const [quickCartResumeScannerAction, setQuickCartResumeScannerAction] = useState<string | null>(null);
+  const [floatingButtonsDragging, setFloatingButtonsDragging] = useState(false);
+  const [floatingButtonsPosition, setFloatingButtonsPosition] = useState({ x: 0, y: 0 });
+  const [floatingButtonsDragStart, setFloatingButtonsDragStart] = useState({ x: 0, y: 0 });
+  const [floatingButtonsDragDistance, setFloatingButtonsDragDistance] = useState(0);
+  const floatingButtonsRef = React.useRef<HTMLDivElement>(null);
   
   // Estados para nuevos componentes
   const [validacionEntradasOpen, setValidacionEntradasOpen] = useState(false);
@@ -576,14 +586,17 @@ export function Inventario() {
       case 'agregar_carrito':
         setEscanerQROpen(false);
         setScannerDefaultProductAction(null);
-        agregarAlCarrito(producto.id, 1);
-        setCarritoOpen(true);
+        setQuickCartProduct(producto);
+        setQuickCartQuantity('');
+        setQuickCartResumeScannerAction(null);
+        setQuickCartQuantityDialogOpen(true);
         return;
       case 'agregar_carrito_rapido':
         setEscanerQROpen(false);
         setScannerDefaultProductAction(null);
         setQuickCartProduct(producto);
         setQuickCartQuantity('');
+        setQuickCartResumeScannerAction('agregar_carrito_rapido');
         setQuickCartQuantityDialogOpen(true);
         return;
       case 'ver_historial':
@@ -663,6 +676,24 @@ export function Inventario() {
         }))
     );
   }, [todosLosProductos]); // Agregada dependencia todosLosProductos
+
+  useEffect(() => {
+    const pendingQuickAction = readPendingEntrepotQuickAction();
+
+    if (!pendingQuickAction) {
+      return;
+    }
+
+    clearPendingEntrepotQuickAction();
+
+    if (pendingQuickAction === 'open-new-entry') {
+      setEntradaDonAchatOpen(true);
+      return;
+    }
+
+    setScannerDefaultProductAction(null);
+    setEscanerQROpen(true);
+  }, []);
 
   useEffect(() => {
     const pendingNavigation = readPendingQrNavigation();
@@ -884,6 +915,7 @@ export function Inventario() {
     setQuickCartQuantityDialogOpen(false);
     setQuickCartProduct(null);
     setQuickCartQuantity('');
+    setQuickCartResumeScannerAction(null);
   };
 
   const confirmarQuickCartQuantity = () => {
@@ -905,8 +937,14 @@ export function Inventario() {
     }
 
     agregarAlCarrito(quickCartProduct.id, cantidad);
+    const resumeScannerAction = quickCartResumeScannerAction;
     cerrarQuickCartQuantityDialog();
-    openInventoryScanner('agregar_carrito_rapido');
+
+    if (resumeScannerAction) {
+      openInventoryScanner(resumeScannerAction);
+    } else {
+      setCarritoOpen(true);
+    }
   };
 
   const actualizarCantidad = (productoId: string, cantidad: number) => {
@@ -1863,6 +1901,126 @@ export function Inventario() {
   const quickCartQuantityInvalid = quickCartHasTypedQuantity && (!Number.isFinite(quickCartRequestedQuantity) || quickCartRequestedQuantity <= 0);
   const quickCartQuantityExceedsAvailable = Number.isFinite(quickCartRequestedQuantity) && quickCartRequestedQuantity > quickCartAvailableQuantity;
   const quickCartConfirmDisabled = !quickCartHasTypedQuantity || quickCartQuantityInvalid || quickCartQuantityExceedsAvailable;
+  const quickCartContinuesScanning = Boolean(quickCartResumeScannerAction);
+  const floatingButtonsDragThreshold = 5;
+
+  const handleFloatingButtonsMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    setFloatingButtonsDragging(true);
+    setFloatingButtonsDragDistance(0);
+
+    const rect = floatingButtonsRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    setFloatingButtonsDragStart({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+    setFloatingButtonsPosition({
+      x: rect.left,
+      y: rect.top,
+    });
+  };
+
+  const handleFloatingButtonsTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setFloatingButtonsDragging(true);
+    setFloatingButtonsDragDistance(0);
+
+    const touch = event.touches[0];
+    const rect = floatingButtonsRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    setFloatingButtonsDragStart({
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    });
+    setFloatingButtonsPosition({
+      x: rect.left,
+      y: rect.top,
+    });
+  };
+
+  const handleFloatingButtonsMouseMove = React.useCallback((event: MouseEvent) => {
+    if (!floatingButtonsDragging) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const newX = event.clientX - floatingButtonsDragStart.x;
+    const newY = event.clientY - floatingButtonsDragStart.y;
+    const margin = 10;
+    const maxX = window.innerWidth - (floatingButtonsRef.current?.offsetWidth || 56) - margin;
+    const maxY = window.innerHeight - (floatingButtonsRef.current?.offsetHeight || 112) - margin;
+    const boundedX = Math.max(margin, Math.min(newX, maxX));
+    const boundedY = Math.max(margin, Math.min(newY, maxY));
+
+    setFloatingButtonsPosition({ x: boundedX, y: boundedY });
+
+    const distance = Math.sqrt(
+      Math.pow(boundedX - floatingButtonsPosition.x, 2) +
+      Math.pow(boundedY - floatingButtonsPosition.y, 2)
+    );
+    setFloatingButtonsDragDistance((current) => current + distance);
+  }, [floatingButtonsDragging, floatingButtonsDragStart, floatingButtonsPosition.x, floatingButtonsPosition.y]);
+
+  const handleFloatingButtonsTouchMove = React.useCallback((event: TouchEvent) => {
+    if (!floatingButtonsDragging) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const touch = event.touches[0];
+    const newX = touch.clientX - floatingButtonsDragStart.x;
+    const newY = touch.clientY - floatingButtonsDragStart.y;
+    const margin = 10;
+    const maxX = window.innerWidth - (floatingButtonsRef.current?.offsetWidth || 56) - margin;
+    const maxY = window.innerHeight - (floatingButtonsRef.current?.offsetHeight || 112) - margin;
+    const boundedX = Math.max(margin, Math.min(newX, maxX));
+    const boundedY = Math.max(margin, Math.min(newY, maxY));
+
+    setFloatingButtonsPosition({ x: boundedX, y: boundedY });
+
+    const distance = Math.sqrt(
+      Math.pow(boundedX - floatingButtonsPosition.x, 2) +
+      Math.pow(boundedY - floatingButtonsPosition.y, 2)
+    );
+    setFloatingButtonsDragDistance((current) => current + distance);
+  }, [floatingButtonsDragging, floatingButtonsDragStart, floatingButtonsPosition.x, floatingButtonsPosition.y]);
+
+  const handleFloatingButtonsDragEnd = React.useCallback(() => {
+    setFloatingButtonsDragging(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (!floatingButtonsDragging) {
+      return;
+    }
+
+    document.addEventListener('mousemove', handleFloatingButtonsMouseMove);
+    document.addEventListener('mouseup', handleFloatingButtonsDragEnd);
+    document.addEventListener('touchmove', handleFloatingButtonsTouchMove, { passive: false });
+    document.addEventListener('touchend', handleFloatingButtonsDragEnd);
+    document.body.style.userSelect = 'none';
+
+    return () => {
+      document.removeEventListener('mousemove', handleFloatingButtonsMouseMove);
+      document.removeEventListener('mouseup', handleFloatingButtonsDragEnd);
+      document.removeEventListener('touchmove', handleFloatingButtonsTouchMove);
+      document.removeEventListener('touchend', handleFloatingButtonsDragEnd);
+      document.body.style.userSelect = '';
+    };
+  }, [floatingButtonsDragging, handleFloatingButtonsMouseMove, handleFloatingButtonsTouchMove, handleFloatingButtonsDragEnd]);
 
   const navigateToModule = (page: string) => {
     if (typeof window === 'undefined') {
@@ -2102,7 +2260,7 @@ export function Inventario() {
                 onClick={() => openInventoryScanner('agregar_carrito_rapido')}
                 variant="outline"
                 className="border-[#2d9561] text-[#2d9561] hover:bg-green-50"
-                title="Scanner QR et ajouter directement au panier"
+                title="Scanner QR et saisir la quantité pour le panier"
               >
                 <ShoppingCart className="h-4 w-4" />
               </Button>
@@ -2845,7 +3003,7 @@ export function Inventario() {
           <div className="flex items-center">
             <div>
               <h2 className="text-xl font-bold text-[#333333]">{t('inventory.entryHistory')}</h2>
-              <p className="text-sm text-[#666666]">Historial completo de entradas Don/Achat</p>
+              <p className="text-sm text-[#666666]">{t('inventory.entryHistoryCompact.tabDescription')}</p>
             </div>
           </div>
 
@@ -2860,14 +3018,14 @@ export function Inventario() {
         <TabsContent value="validacion" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-xl font-bold text-[#333333]">Validación de Entradas</h2>
-              <p className="text-sm text-[#666666]">Revisa y valida las entradas recientes de inventario</p>
+              <h2 className="text-xl font-bold text-[#333333]">{t('inventory.entryValidationDialog.tabTitle')}</h2>
+              <p className="text-sm text-[#666666]">{t('inventory.entryValidationDialog.tabDescription')}</p>
             </div>
             <Button
               size="icon"
               onClick={() => setValidacionEntradasOpen(true)}
               className="bg-[#2d9561] hover:bg-[#267a4f]"
-              title="Abrir Panel de Validación"
+              title={t('inventory.entryValidationDialog.openPanelTitle')}
             >
               <Check className="h-4 w-4" />
             </Button>
@@ -2878,11 +3036,10 @@ export function Inventario() {
               <div className="py-12 text-center">
                 <CheckSquare className="mx-auto h-16 w-16 text-[#2d9561] mb-4" />
                 <h3 className="text-lg font-semibold text-[#333333] mb-2">
-                  Sistema de Validación de Entradas
+                  {t('inventory.entryValidationDialog.panelTitle')}
                 </h3>
                 <p className="text-[#666666] mb-4 max-w-2xl mx-auto">
-                  Valida las entradas recibidas en los últimos 7 días. Detecta automáticamente alertas de 
-                  caducidad próxima, stock alto y otros eventos que requieren revisión manual.
+                  {t('inventory.entryValidationDialog.panelDescription')}
                 </p>
                 <Button
                   onClick={() => setValidacionEntradasOpen(true)}
@@ -2890,7 +3047,7 @@ export function Inventario() {
                   size="lg"
                 >
                   <CheckSquare className="h-5 w-5 mr-2" />
-                  Iniciar Validación
+                  {t('inventory.entryValidationDialog.startButton')}
                 </Button>
               </div>
             </CardContent>
@@ -3525,11 +3682,32 @@ export function Inventario() {
         </DialogContent>
       </Dialog>
 
-      {!entradaDonAchatOpen && (
+      <div
+        ref={floatingButtonsRef}
+        onMouseDown={handleFloatingButtonsMouseDown}
+        onTouchStart={handleFloatingButtonsTouchStart}
+        className={`fixed z-[60] flex flex-col items-end gap-3 ${floatingButtonsDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        style={{
+          bottom: 'auto',
+          right: floatingButtonsPosition.x === 0 ? 'max(env(safe-area-inset-right), 1rem)' : 'auto',
+          top: floatingButtonsPosition.y === 0 ? '50%' : `${floatingButtonsPosition.y}px`,
+          left: floatingButtonsPosition.x !== 0 ? `${floatingButtonsPosition.x}px` : 'auto',
+          transform: floatingButtonsPosition.y === 0 ? 'translateY(-50%)' : 'none',
+          transition: floatingButtonsDragging ? 'none' : 'all 0.3s ease',
+          userSelect: 'none',
+          touchAction: 'none',
+          WebkitTouchCallout: 'none',
+        }}
+      >
         <Button
           size="icon"
-          onClick={() => setEntradaDonAchatOpen(true)}
-          className="fixed bottom-20 right-6 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
+          onClick={() => {
+            if (floatingButtonsDragDistance < floatingButtonsDragThreshold) {
+              setEntradaDonAchatOpen(true);
+            }
+          }}
+          disabled={entradaDonAchatOpen}
+          className="h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105 disabled:scale-100 disabled:opacity-70"
           style={{
             background: 'linear-gradient(135deg, #1a4d7a 0%, #153d61 100%)',
             boxShadow: '0 10px 25px rgba(26, 77, 122, 0.35)'
@@ -3539,13 +3717,16 @@ export function Inventario() {
         >
           <Plus className="h-5 w-5" />
         </Button>
-      )}
 
-      {!escanerQROpen && (
         <Button
           size="icon"
-          onClick={() => openInventoryScanner()}
-          className="fixed bottom-6 right-6 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
+          onClick={() => {
+            if (floatingButtonsDragDistance < floatingButtonsDragThreshold) {
+              openInventoryScanner();
+            }
+          }}
+          disabled={escanerQROpen}
+          className="h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105 disabled:scale-100 disabled:opacity-70"
           style={{
             background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
             boxShadow: '0 10px 25px rgba(156, 39, 176, 0.35)'
@@ -3555,7 +3736,7 @@ export function Inventario() {
         >
           <QrCode className="h-5 w-5" />
         </Button>
-      )}
+      </div>
 
       {/* Escáner QR para Inventario */}
       {escanerQROpen && (
@@ -3779,7 +3960,7 @@ export function Inventario() {
               Annuler
             </Button>
             <Button onClick={confirmarQuickCartQuantity} disabled={quickCartConfirmDisabled} className="bg-[#1a4d7a] hover:bg-[#153d61] disabled:bg-[#cbd5e1] disabled:text-[#64748b]">
-              Ajouter et continuer
+              {quickCartContinuesScanning ? 'Ajouter et continuer' : 'Ajouter au panier'}
             </Button>
           </DialogFooter>
         </DialogContent>

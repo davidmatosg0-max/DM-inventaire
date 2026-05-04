@@ -317,6 +317,484 @@
     "title": "إدارة المخزون",
     "subtitle": "تحكم كامل في المنتجات والحركات",
     "entryHistory": "سجل المدخلات",
+    "movementsPanel": {
+      "totalMovements": "إجمالي الحركات",
+      "entries": "المدخلات",
+      "exits": "المخرجات",
+      "losses": "الفاقد",
+      "totalValue": "القيمة الإجمالية",
+      "title": "سجل الحركات",
+      "description": "إدارة وتتبع جميع حركات المخزون",
+      "exportCsv": "تصدير CSV",
+      "searchPlaceholder": "ابحث بالمنتج أو المعرّف أو المستخدم...",
+      "typePlaceholder": "نوع الحركة",
+      "allTypes": "كل الأنواع",
+      "adjustment": "تسوية",
+      "transfer": "تحويل",
+      "loss": "فاقد",
+      "donation": "تبرع",
+      "periodPlaceholder": "الفترة",
+      "allDates": "كل التواريخ",
+      "thisWeek": "هذا الأسبوع",
+      "thisMonth": "هذا الشهر",
+      "dateColumn": "التاريخ",
+      "stockBefore": "المخزون السابق",
+      "stockAfter": "المخزون اللاحق",
+      "userColumn": "المستخدم",
+      "detailsColumn": "التفاصيل",
+      "noResults": "لم يتم العثور على حركات",
+      "referencePrefix": "مرجع:",
+      "exportSuccess": "تم التصدير بنجاح",
+      "csvFilePrefix": "حركات_المخزون",
+      "systemUser": "مستخدم النظام",
+      "demoReasonAdjustment": "تصحيح المخزون",
+      "demoReasonExpired": "منتج منتهي الصلاحية",
+      "demoReasonDonation": "تبرع إلى جهة",
+      "demoDestinationSecondaryWarehouse": "مستودع ثانوي",
+      "demoDestinationCommunityOrg": "جهة مجتمعية"
+    },
+    "distributionDialog": {
+      "systemUser": "مستخدم النظام",
+      "selected": "محدد",
+      "new": "جديد",
+      "items": "العناصر",
+      "value": "القيمة",
+      "weight": "الوزن",
+      "beneficiaryOrganization": "الجهة المستفيدة",
+      "selectOrganizationPlaceholder": "اختر جهة",
+      "deliveryDate": "تاريخ التسليم",
+      "observationsOptional": "ملاحظات (اختياري)",
+      "observationsPlaceholder": "أدخل ملاحظات إضافية",
+      "observationsPlaceholderOptional": "أدخل ملاحظات إضافية (اختياري)",
+      "summary": "الملخص:",
+      "individualSimulation": "محاكاة استلام الجهة",
+      "back": "رجوع",
+      "cancel": "إلغاء",
+      "next": "التالي",
+      "createOrder": "إنشاء طلب",
+      "createOrders": "إنشاء الطلبات ({{count}})",
+      "previewNotificationMessage": "طلب جديد {{number}} متاح للتأكيد",
+      "groupObservation": "توزيع جماعي ({{percentage}}% من الإجمالي)",
+      "groupExampleFor": "مثال لـ {{organization}}",
+      "stock": {
+        "reservable": "القابل للحجز:",
+        "reserved": "المحجوز:",
+        "physical": "الفعلي:"
+      },
+      "stepTitles": {
+        "selectType": "📦 توزيع المنتجات",
+        "editQuantities": "✏️ تعديل الكميات",
+        "selectOrganization": "🏢 اختيار الجهة",
+        "groupDistribution": "👥 توزيع جماعي"
+      },
+      "stepDescriptions": {
+        "selectType": "اختر كيف تريد توزيع المنتجات",
+        "editQuantities": "عدّل كميات المنتجات قبل التوزيع",
+        "selectOrganization": "أكمل تفاصيل الطلب",
+        "groupDistribution": "يوزع هذا المسار 100% بين الجهات النشطة والمنتظمة"
+      },
+      "cards": {
+        "individual": {
+          "title": "جهة واحدة",
+          "description": "إسناد كل المنتجات إلى جهة واحدة"
+        },
+        "group": {
+          "title": "توزيع جماعي",
+          "description": "توزيع المنتجات بين عدة جهات وفق نسب مئوية"
+        },
+        "offer": {
+          "title": "إنشاء عرض",
+          "description": "نشر عرض لكي تقبله الجهات"
+        }
+      },
+      "group": {
+        "autoDistributionTitle": "توزيع تلقائي للجهات المنتظمة",
+        "autoDistributionDescription": "يقوم التوزيع الجماعي بتحميل جميع الجهات النشطة والمنتظمة تلقائياً. ويقسم النظام نسبة 100% الكاملة وفق نسبة التوزيع المضبوطة في ملف كل جهة.",
+        "currentCalculation": "الحساب الحالي: تم توزيع 100% وفق نسبة التوزيع المضبوطة",
+        "equalWeightsInfo": "جميع الجهات المؤهلة لها نفس نسبة التوزيع. النتيجة: يتم تقسيم 100% بالتساوي.",
+        "equalWeightsTwo": "مع جهتين متساويتين، يكون التوزيع الصحيح 50% و50%.",
+        "excludedRegularOrganizations": "تم استبعاد {{count}} جهة منتظمة لأن نسبة التوزيع لديها 0 أو غير مضبوطة.",
+        "recalculateButton": "إعادة حساب التوزيع التلقائي",
+        "organizationsAndPercentages": "الجهات والنسب",
+        "eligibleDiagnosis": "تشخيص الجهات المؤهلة",
+        "idPrefix": "المعرف:",
+        "sharePrefix": "نسبة التوزيع: {{share}}%",
+        "noOrganizationsAvailable": "لا توجد جهات بنسبة توزيع متاحة",
+        "noOrganizationsAvailableDescription": "اضبط نسبة توزيع للجهات المنتظمة لتفعيل التوزيع التلقائي",
+        "percentagePlaceholder": "النسبة",
+        "configuredShareBadge": "نسبة التوزيع المضبوطة: {{share}}%",
+        "totalShareBadge": "من إجمالي 100%: {{share}}%",
+        "formula": "المعادلة: ({{share}} / {{total}}) x 100 -> {{result}}% من الإجمالي.",
+        "totalDistribution": "إجمالي التوزيع:",
+        "totalDistributionDescription": "أساس الحساب: فقط الجهات النشطة والمنتظمة التي تزيد نسبة توزيعها عن 0. ويتم توزيع 100% وفق نسب التوزيع المضبوطة. مجموع النسب المضبوطة: {{total}}%.",
+        "deliveryDateHelp": "يتم تفعيل إنشاء التوزيع عند تحديد تاريخ التسليم ووصول إجمالي التوزيع إلى 100%.",
+        "internalSimulation": "محاكاة داخلية لأول جهة مستفيدة",
+        "internalSimulationDescription": "معاينة مبنية على أول طلب تم إنشاؤه بواسطة التوزيع التلقائي."
+      },
+      "toasts": {
+        "recalculatedTitle": "تمت إعادة حساب التوزيع باستخدام نسبة التوزيع المضبوطة لكل جهة",
+        "configuredShare": "نسبة التوزيع المضبوطة: {{share}}%",
+        "orderCreated": "تم إنشاء الطلب {{number}} بنجاح",
+        "emailSent": "تم إرسال إشعار تلقائي إلى {{count}} مستلم/مستلمين",
+        "ordersCreatedTitle": "تم إنشاء الطلبات بنجاح:",
+        "emailSummary": "✉️ تم إرسال إشعارات تلقائية إلى {{organizations}} جهة ({{recipients}} مستلم/مستلمين)."
+      },
+      "errors": {
+        "noRegularOrganizationsWithShare": "لا توجد جهات منتظمة بنسبة توزيع مضبوطة",
+        "completeAllFields": "يرجى إكمال جميع الحقول",
+        "createOrder": "حدث خطأ أثناء إنشاء الطلب",
+        "totalPercentageMustBe100": "يجب أن تكون النسبة الإجمالية 100% (الحالي: {{current}}%)",
+        "completeAllFieldsCorrectly": "يرجى إكمال جميع الحقول بشكل صحيح",
+        "selectDeliveryDate": "يرجى اختيار تاريخ التسليم",
+        "atLeastOnePositiveProduct": "يجب أن يحتوي التوزيع الجماعي على منتج واحد على الأقل بكمية أكبر من 0",
+        "noAssignedProducts": "لم ينتج عن التوزيع أي منتجات مخصصة لأي جهة",
+        "createOrders": "حدث خطأ أثناء إنشاء الطلبات",
+        "atLeastOneProduct": "يجب أن يكون لديك منتج واحد على الأقل"
+      },
+      "blocked": {
+        "selectDeliveryDate": "اختر تاريخ تسليم لإنشاء التوزيع.",
+        "noEligibleOrganizations": "لا توجد جهات نشطة ومنتظمة بنسبة توزيع أكبر من 0.",
+        "totalNot100": "التوزيع لا يصل إلى 100% بعد."
+      }
+    },
+    "offerDialog": {
+      "systemUser": "مستخدم النظام",
+      "title": "إنشاء عرض جديد",
+      "description": "أنشئ عرض منتجات يمكن للجهات رؤيته وقبوله",
+      "basicInfoTitle": "معلومات العرض",
+      "offerTitleLabel": "عنوان العرض *",
+      "offerTitlePlaceholder": "مثال: عرض منتجات طازجة - يناير 2024",
+      "offerDescriptionLabel": "الوصف",
+      "offerDescriptionPlaceholder": "صف تفاصيل العرض (اختياري)",
+      "expirationLabel": "تاريخ الانتهاء *",
+      "includedProductsTitle": "المنتجات المضمنة",
+      "items": "العناصر",
+      "value": "القيمة",
+      "weight": "الوزن",
+      "reservable": "القابل للحجز:",
+      "reserved": "المحجوز:",
+      "recipientsTitle": "الجهات المستفيدة",
+      "allOrganizationsTitle": "جميع الجهات",
+      "allOrganizationsDescription": "سيكون العرض مرئياً لكل الجهات النشطة",
+      "specificOrganizationsTitle": "جهات محددة",
+      "specificOrganizationsDescription": "اختر الجهات المحددة التي يمكنها رؤية العرض",
+      "unclassified": "غير مصنف",
+      "noFrequency": "لا توجد وتيرة محددة",
+      "filterByAssistanceType": "التصفية حسب نوع المساعدة",
+      "aboutTitle": "ℹ️ حول العروض",
+      "aboutItem1": "يمكن للجهات رؤية العرض وقبوله كلياً أو جزئياً",
+      "aboutItem2": "تُخفض الكميات تلقائياً وفقاً لعمليات القبول",
+      "aboutItem3": "ينتهي العرض تلقائياً في التاريخ المحدد",
+      "aboutItem4": "يمكنك تعطيل العرض في أي وقت من لوحة العروض",
+      "cancel": "إلغاء",
+      "createButton": "إنشاء العرض",
+      "toasts": {
+        "createdTitle": "✅ تم إنشاء العرض بنجاح",
+        "visibleForAll": "مرئي لجميع الجهات",
+        "visibleForSpecific": "مرئي لـ {{count}} جهة"
+      },
+      "errors": {
+        "titleRequired": "العنوان إلزامي",
+        "expirationRequired": "تاريخ الانتهاء إلزامي",
+        "expirationMustBeFuture": "يجب أن يكون تاريخ الانتهاء في المستقبل",
+        "selectOrganization": "يجب اختيار جهة واحدة على الأقل",
+        "selectAssistanceType": "يجب اختيار نوع مساعدة واحد على الأقل",
+        "createOffer": "حدث خطأ أثناء إنشاء العرض"
+      }
+    },
+    "conversionDialog": {
+      "title": "تحويل الوحدات",
+      "description": "حوّل الكمية والوحدة للمنتج المحدد",
+      "selectTargetUnit": "اختر الوحدة الهدف",
+      "sourceUnitLabel": "وحدة المصدر",
+      "currentUnitWeight": "الوزن الوحدوي الحالي:",
+      "perEachUnit": "لكل {{unit}}",
+      "targetUnitLabel": "وحدة الهدف *",
+      "selectUnitPlaceholder": "اختر وحدة",
+      "noConversionsAvailable": "لا توجد تحويلات متاحة لـ {{unit}}",
+      "availableOptions": "{{count}} خيار/خيارات متاحة",
+      "amountToConvert": "الكمية المطلوب تحويلها *",
+      "maximum": "الحد الأقصى: {{amount}} {{unit}}",
+      "conversionFactor": "معامل التحويل *",
+      "unitsPerEach": "{{targetUnit}} لكل {{sourceUnit}}",
+      "resultTitle": "نتيجة التحويل:",
+      "resultingUnitWeight": "⚖️ الوزن الوحدوي الناتج:",
+      "eachUnitWillWeigh": "سيزن كل {{unit}} مقدار {{weight}} كيلوغرام",
+      "weightCalculationTitle": "📊 حساب الوزن الوحدوي:",
+      "step1": "الخطوة 1:",
+      "step2": "الخطوة 2:",
+      "weightOriginStep": "الوزن الوحدوي للمصدر = {{weight}} كغ/{{unit}}",
+      "conversionFactorStep": "معامل التحويل = {{factor}} {{targetUnit}}/{{sourceUnit}}",
+      "formula": "الصيغة:",
+      "stockUpdateNotice": "سيتم تحديث المخزون تلقائياً بعد التحويل.",
+      "cancel": "إلغاء",
+      "convert": "تحويل",
+      "success": "تم التحويل بنجاح: {{sourceAmount}} {{sourceUnit}} -> {{targetAmount}} {{targetUnit}}",
+      "successWithWeight": "✅ تم التحويل بنجاح: {{sourceAmount}} {{sourceUnit}} -> {{targetAmount}} {{targetUnit}}\n⚖️ الوزن الوحدوي: {{weight}} كغ/{{targetUnit}}",
+      "errors": {
+        "invalidQuantity": "يرجى إدخال كمية صالحة",
+        "invalidFactor": "يرجى إدخال معامل تحويل صالح",
+        "selectTargetUnit": "يرجى اختيار وحدة هدف",
+        "insufficientStock": "المخزون غير كافٍ. المتاح: {{stock}} {{unit}}"
+      }
+    },
+    "transformationDialog": {
+      "title": "تحويل المنتج",
+      "description": "حوّل هذا المنتج إلى منتج أو عدة منتجات مختلفة",
+      "infoTitle": "ما هي عملية التحويل؟",
+      "infoDescription": "سجّل عندما يتحول منتج إلى آخر (مثال: أرز بالجملة -> أكياس فردية، فواكه طازجة -> محفوظات). ينخفض مخزون المنتج المصدر ويزداد مخزون المنتج الهدف.",
+      "hide": "إخفاء",
+      "view": "عرض",
+      "historyTitle": "سجل التحويلات",
+      "sourceProduct": "المنتج المصدر",
+      "productToTransform": "المنتج المراد تحويله",
+      "selectProduct": "اختر المنتج",
+      "currentStock": "المخزون الحالي:",
+      "quantityToTransform": "الكمية المراد تحويلها",
+      "insufficientStockMax": "⚠️ المخزون غير كافٍ (الحد الأقصى: {{max}})",
+      "conversionRatio": "نسبة التحويل",
+      "ratioFormula": "1 {{sourceUnit}} -> {{ratio}} {{targetUnit}}",
+      "commonRatiosTitle": "نسب شائعة",
+      "ratioValue": "النسبة: {{ratio}}",
+      "targetProduct": "المنتج الهدف",
+      "resultingProduct": "المنتج الناتج",
+      "resultingQuantity": "الكمية الناتجة",
+      "customMode": "🔓 مخصص",
+      "autoMode": "🔒 تلقائي",
+      "autoCalculated": "💡 يتم حسابه تلقائياً حسب النسبة",
+      "stockAfterTransform": "المخزون بعد التحويل:",
+      "reasonLabel": "سبب التحويل",
+      "reasonPlaceholder": "مثال: تجزئة للتوزيع على العائلات، معالجة منتجات قاربت على الانتهاء...",
+      "providerContactOptional": "المورد / جهة الاتصال (اختياري)",
+      "selectProviderOrContact": "اختر مورداً أو جهة اتصال",
+      "none": "لا أحد",
+      "id": "المعرف",
+      "email": "البريد الإلكتروني",
+      "type": "النوع",
+      "phone": "الهاتف",
+      "summaryTitle": "ملخص التحويل",
+      "willRemove": "سيتم سحب:",
+      "willAdd": "سيتم إضافة:",
+      "efficiencyLabel": "الكفاءة:",
+      "efficiencyIncrease": "⬆️ زيادة",
+      "efficiencyReduction": "⬇️ تقليل",
+      "efficiencyEquivalent": "➡️ مكافئ",
+      "cancel": "إلغاء",
+      "systemUser": "مستخدم النظام",
+      "sourceLabel": "المصدر:",
+      "targetLabel": "الهدف:",
+      "ofProduct": "من {{product}}",
+      "toasts": {
+        "completed": "✅ اكتمل التحويل"
+      },
+      "errors": {
+        "selectBothProducts": "اختر كلا المنتجين",
+        "sourceQuantityPositive": "يجب أن تكون كمية المصدر أكبر من 0",
+        "targetQuantityPositive": "يجب أن تكون كمية الهدف أكبر من 0",
+        "insufficientStock": "المخزون غير كافٍ. المتاح: {{stock}} {{unit}}"
+      },
+      "providerCategories": {
+        "donor": "متبرع",
+        "vendor": "بائع",
+        "organization": "جهة"
+      },
+      "commonRatios": {
+        "bulkToIndividual": {
+          "name": "جملة إلى حصة فردية",
+          "example": "أرز 25كغ -> أكياس 1كغ"
+        },
+        "individualToBulk": {
+          "name": "حصة إلى جملة",
+          "example": "أكياس 1كغ -> أرز 25كغ"
+        },
+        "freshToPreserve": {
+          "name": "منتج طازج إلى محفوظ",
+          "example": "فواكه -> مربى"
+        },
+        "processingLoss": {
+          "name": "معالجة مع فاقد",
+          "example": "مع هدر 30%"
+        }
+      },
+      "historyExamples": {
+        "riceOrigin": "أرز أبيض 25كغ",
+        "riceTarget": "أرز أبيض 1كغ",
+        "tomatoOrigin": "طماطم طازجة",
+        "tomatoTarget": "صلصة طماطم",
+        "milkOrigin": "حليب سائل 20ل",
+        "milkTarget": "حليب 1ل",
+        "reasonDistribution": "تجزئة للتوزيع",
+        "reasonExpiring": "معالجة منتجات قاربت على الانتهاء",
+        "reasonFamilies": "تجزئة للعائلات"
+      }
+    },
+    "unitManagement": {
+      "title": "الوحدات",
+      "description": "إدارة وحدات القياس للمخزون",
+      "newUnit": "وحدة جديدة",
+      "empty": "لا توجد وحدات مسجلة",
+      "createFirst": "إنشاء أول وحدة",
+      "confirmDelete": "هل أنت متأكد أنك تريد حذف الوحدة \"{{name}}\"؟",
+      "toasts": {
+        "created": "تم إنشاء الوحدة بنجاح",
+        "updated": "تم تحديث الوحدة بنجاح",
+        "deleted": "تم حذف الوحدة بنجاح"
+      },
+      "errors": {
+        "nameRequired": "الاسم مطلوب",
+        "abbreviationRequired": "الاختصار مطلوب",
+        "saveFailed": "حدث خطأ أثناء حفظ الوحدة",
+        "deleteFailed": "حدث خطأ أثناء حذف الوحدة"
+      },
+      "dialog": {
+        "createTitle": "✨ وحدة جديدة",
+        "editTitle": "✏️ تعديل الوحدة",
+        "createDescription": "تعريف وحدة قياس جديدة",
+        "editDescription": "تعديل بيانات الوحدة"
+      },
+      "form": {
+        "name": "الاسم *",
+        "namePlaceholder": "مثال: منصة، صندوق، كيس...",
+        "abbreviation": "الاختصار *",
+        "abbreviationPlaceholder": "مثال: PLT، BOX، BAG...",
+        "abbreviationHelp": "الحد الأقصى 5 أحرف",
+        "tareWeight": "⚖️ وزن الوحدة الفارغة (التارة) بالكغ",
+        "tareWeightPlaceholder": "مثال: 30 (لمنصة وزنها 30 كغ)",
+        "tareWeightHelp": "💡 سيتم خصم هذا الوزن تلقائياً عند الوزن بالميزان",
+        "icon": "الأيقونة",
+        "iconHelp": "{{count}} أيقونة متاحة - مرر لرؤية المزيد"
+      },
+      "preview": {
+        "label": "معاينة:",
+        "defaultName": "اسم الوحدة",
+        "defaultAbbreviation": "اخت"
+      },
+      "actions": {
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "create": "إنشاء وحدة"
+      }
+    },
+    "variantManagement": {
+      "title": "الأنواع",
+      "count_one": "{{count}} نوع",
+      "count_other": "{{count}} أنواع",
+      "newVariant": "نوع جديد",
+      "empty": "لا توجد أنواع مُنشأة",
+      "createFirst": "إنشاء أول نوع",
+      "inactive": "غير نشطة",
+      "notDefined": "غير محددة",
+      "confirmDelete": "هل أنت متأكد أنك تريد حذف النوع \"{{name}}\"؟",
+      "toasts": {
+        "created": "تم إنشاء النوع بنجاح",
+        "updated": "تم تحديث النوع بنجاح",
+        "deleted": "تم حذف النوع بنجاح",
+        "activated": "تم تفعيل النوع",
+        "deactivated": "تم تعطيل النوع"
+      },
+      "errors": {
+        "nameRequired": "اسم النوع مطلوب"
+      },
+      "dialog": {
+        "createTitle": "✨ نوع جديد",
+        "editTitle": "✏️ تعديل النوع",
+        "createDescription": "أنشئ نوعاً جديداً لهذا المنتج",
+        "editDescription": "عدّل معلومات النوع الحالية"
+      },
+      "form": {
+        "name": "اسم النوع *",
+        "namePlaceholder": "مثال: كبير، 500مل، العلامة A، عضوي...",
+        "code": "الرمز (اختياري)",
+        "codePlaceholder": "مثال: VAR-001",
+        "unit": "وحدة القياس",
+        "unitPlaceholder": "استخدام وحدة الفئة الفرعية ({{unit}})",
+        "specificUnit": "وحدة مخصصة: {{unit}}",
+        "subcategoryUnit": "سيتم استخدام وحدة الفئة الفرعية: {{unit}}",
+        "unitWeight": "وزن الوحدة (كغ)",
+        "unitWeightHelp": "اتركه فارغاً لاستخدام وزن الفئة الفرعية",
+        "valuePerKg": "القيمة لكل كغ ($)",
+        "valuePerKgHelp": "اتركه فارغاً لاستخدام قيمة الفئة",
+        "icon": "الأيقونة",
+        "description": "الوصف (اختياري)",
+        "descriptionPlaceholder": "وصف إضافي للنوع..."
+      },
+      "preview": {
+        "label": "معاينة:",
+        "defaultName": "اسم النوع"
+      },
+      "actions": {
+        "cancel": "إلغاء",
+        "create": "إنشاء النوع",
+        "saveChanges": "حفظ التغييرات",
+        "activate": "تفعيل",
+        "deactivate": "تعطيل"
+      }
+    },
+    "productHistoryDialog": {
+      "title": "سجل المنتج",
+      "description": "راجع جميع الإدخالات والإخراجات وحركات هذا المنتج",
+      "productInfoTitle": "معلومات المنتج",
+      "code": "الرمز",
+      "location": "الموقع",
+      "expiration": "تاريخ الانتهاء",
+      "unitsPerPackage": "الوحدات لكل عبوة",
+      "batch": "الدفعة",
+      "stockState": "حالة المخزون",
+      "currentStock": "المخزون الحالي",
+      "minimumStock": "الحد الأدنى للمخزون",
+      "percentage": "النسبة",
+      "stockStatus": {
+        "low": "مخزون منخفض",
+        "medium": "مخزون متوسط",
+        "optimal": "مخزون مثالي"
+      },
+      "totals": {
+        "entries": "إجمالي الإدخالات",
+        "outputs": "إجمالي الإخراجات",
+        "transformations": "التحويلات",
+        "corrections": "التصحيحات"
+      },
+      "tabs": {
+        "history_one": "سجل الحركات ({{count}})",
+        "history_other": "سجل الحركات ({{count}})",
+        "barcodes": "الرموز الشريطية"
+      },
+      "movementLogTitle": "سجل الحركات",
+      "noMovements": "لا توجد حركات مسجلة لهذا المنتج",
+      "table": {
+        "date": "التاريخ",
+        "type": "النوع",
+        "quantity": "الكمية",
+        "unitWeight": "وزن الوحدة",
+        "entryDate": "تاريخ الإدخال",
+        "reasonDestination": "السبب / الوجهة",
+        "user": "المستخدم",
+        "document": "المستند"
+      },
+      "perUnit": "لكل وحدة",
+      "barcodes": {
+        "productCode": "رمز المنتج (EAN-13)",
+        "batchCode": "رمز الدفعة",
+        "locationCode": "رمز الموقع",
+        "locationValue": "الموقع: {{location}}"
+      },
+      "quickActions": "إجراءات سريعة",
+      "actions": {
+        "downloadAllCodes": "تنزيل كل الرموز",
+        "printLabels": "طباعة الملصقات",
+        "generateQr": "إنشاء رمز QR"
+      },
+      "types": {
+        "entry": "إدخال",
+        "output": "إخراج",
+        "transformation": "تحويل",
+        "correction": "تصحيح",
+        "distribution": "توزيع",
+        "delivered": "تم التسليم",
+        "adjustment": "تعديل",
+        "conversion": "تحويل وحدة"
+      }
+    },
     "recentVerifications": "التحققات الأخيرة",
     "addProduct": "إضافة منتج",
     "editProduct": "تعديل المنتج",
@@ -384,6 +862,19 @@
     "expiringToSoon": "تنتهي صلاحيتها قريباً",
     "requireImediateAttention": "تتطلب انتباهاً فورياً",
     "searchByNameOrCode": "البحث بالاسم أو الرمز...",
+    "entryHistoryCompact": {
+      "tabDescription": "السجل الكامل لإدخالات التبرع/الشراء",
+      "emptyTitle": "لا توجد إدخالات مسجلة",
+      "emptyDescription": "ستظهر الإدخالات المسجلة هنا",
+      "registeredSingle": "{{count}} إدخال مسجل",
+      "registeredMultiple": "{{count}} إدخالات مسجلة",
+      "refresh": "تحديث",
+      "confirmVoid": "هل أنت متأكد أنك تريد إلغاء إدخال \"{{product}}\"؟\n\nسيؤدي هذا الإجراء إلى تعطيل الإدخال في النظام.",
+      "voidSuccess": "تم إلغاء الإدخال بنجاح",
+      "voidError": "حدث خطأ أثناء إلغاء الإدخال",
+      "voidButton": "إلغاء",
+      "voidButtonTitle": "إلغاء الإدخال (حذف منطقي)"
+    },
     "searchByLotNumber": "البحث برقم الدفعة...",
     "filterByLotNumber": "تصفية برقم الدفعة",
     "noResultsForLot": "لا توجد نتائج لرقم الدفعة هذا",
@@ -479,6 +970,29 @@
     "optimal": "مثالي",
     "conversionsTab": "التحويلات",
     "validationTab": "التحقق",
+    "entryValidationDialog": {
+      "title": "التحقق من الإدخالات المعلقة",
+      "description": "راجع إدخالات المنتجات التي تنتظر الموافقة وقم بالتحقق منها",
+      "tabTitle": "التحقق من الإدخالات",
+      "tabDescription": "راجع إدخالات المخزون الأخيرة وتحقق منها",
+      "pendingTotal": "إجمالي المعلّق",
+      "selectedTotal": "المحددة",
+      "withAlerts": "مع تنبيهات",
+      "openPanelTitle": "فتح لوحة التحقق",
+      "panelTitle": "نظام التحقق من الإدخالات",
+      "panelDescription": "تحقق من الإدخالات المستلمة خلال آخر 7 أيام. يتم اكتشاف تنبيهات قرب انتهاء الصلاحية وارتفاع المخزون والحالات التي تحتاج إلى مراجعة يدوية تلقائيًا.",
+      "reviewRecentInfo": "راجع الإدخالات الأخيرة وحدد تلك التي تم التحقق منها بالفعل",
+      "emptyRecent": "لا توجد إدخالات معلقة للتحقق خلال آخر 7 أيام",
+      "noPending": "لا توجد إدخالات معلقة",
+      "selectAtLeastOne": "حدد إدخالاً واحداً على الأقل للتحقق",
+      "validationSuccess": "✅ تم التحقق من {{count}} إدخال/إدخالات بنجاح",
+      "startButton": "بدء التحقق",
+      "validateButton": "تحقق ({{count}})",
+      "validating": "جارٍ التحقق...",
+      "donorColumn": "المتبرع",
+      "daysColumn": "الأيام",
+      "daysShort": "ي"
+    },
     "predictionTab": "التنبؤ",
     "viewList": "عرض القائمة",
     "viewGrid": "عرض الشبكة",
