@@ -24,6 +24,7 @@ import './migrateCostcoFlags';
 import { migrarProgramasEntrada, yaMigradoProgramas, marcarMigracionProgramas } from './migrateProgramasEntrada';
 import './migrateProgramasEntrada';
 import { migrarPesoUnitarioProductos } from './productStorage';
+import { migrarProductosDuplicadosInventario } from './entradaInventarioStorage';
 import { inicializarProteccionDatos } from './proteccionDatos';
 import './debugBenevoles';
 import { sincronizarTodosLosBenevolesConContactos } from './debugBenevoles';
@@ -134,6 +135,13 @@ export async function runAppBootstrap() {
   const productosCorregidos = migrarPesoUnitarioProductos();
   if (productosCorregidos > 0) {
     logger.info(`🔄 Peso unitario de productos migrado: ${productosCorregidos} producto(s) corregido(s)`);
+  }
+
+  const duplicadosInventario = migrarProductosDuplicadosInventario();
+  if (duplicadosInventario.productosFusionados > 0) {
+    logger.info(
+      `🔄 Duplicados de inventario fusionados: ${duplicadosInventario.productosFusionados} producto(s), ${duplicadosInventario.entradasReasignadas} entrada(s), ${duplicadosInventario.movimientosReasignados} movimiento(s)`
+    );
   }
 
   inicializarComandosConsola();

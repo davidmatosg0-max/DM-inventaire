@@ -10,12 +10,15 @@ import {
   actualizarProducto, 
   obtenerProductoPorId,
   obtenerProductosActivos,
+  eliminarProducto,
+  construirClaveProductoInventario,
   type ProductoCreado 
 } from './productStorage';
 import {
   registrarEntrada as registrarMovimientoEntrada,
   actualizarMovimientoEntrada,
-  eliminarMovimientosPorDocumento
+  eliminarMovimientosPorDocumento,
+  reasignarProductoEnMovimientos
 } from './movimientoStorage';
 
 export type EntradaInventario = {
@@ -95,6 +98,30 @@ function convertirTemperaturaAlmacenamiento(
 
 const STORAGE_KEY = 'banco_alimentos_entradas_inventario';
 
+const DEFAULT_PRODUCT_LOCATION = 'Almacén Principal';
+
+function seleccionarUbicacionCanonica(ubicacionActual?: string, ubicacionDuplicada?: string): string {
+  const actual = typeof ubicacionActual === 'string' ? ubicacionActual.trim() : '';
+  const duplicada = typeof ubicacionDuplicada === 'string' ? ubicacionDuplicada.trim() : '';
+
+  if (actual && actual !== DEFAULT_PRODUCT_LOCATION) {
+    return actual;
+  }
+
+  if (duplicada && duplicada !== DEFAULT_PRODUCT_LOCATION) {
+    return duplicada;
+  }
+
+  return actual || duplicada || DEFAULT_PRODUCT_LOCATION;
+}
+
+function seleccionarFechaReciente(fechaActual?: string, fechaDuplicada?: string): string {
+  if (!fechaActual) return fechaDuplicada || '';
+  if (!fechaDuplicada) return fechaActual;
+
+  return new Date(fechaDuplicada).getTime() > new Date(fechaActual).getTime() ? fechaDuplicada : fechaActual;
+}
+
 function sincronizarProductoEnMemoria(productoId: string): void {
   const productoActualizado = obtenerProductoPorId(productoId);
   if (!productoActualizado) return;
@@ -163,6 +190,92 @@ function recalcularProductoDesdeEntradas(productoId: string): void {
   });
 
   sincronizarProductoEnMemoria(productoId);
+}
+
+export function migrarProductosDuplicadosInventario(): {
+  productosFusionados: number;
+  entradasReasignadas: number;
+  movimientosReasignados: number;
+} {
+  try {
+    const productosOrdenados = obtenerProductosActivos()
+      .slice()
+      .sort((left, right) => new Date(left.fechaCreacion || 0).getTime() - new Date(right.fechaCreacion || 0).getTime());
+    const entradas = obtenerTodasLasEntradas();
+    const productosPorClave = new Map<string, ProductoCreado>();
+    const productosCanonicosActualizados = new Set<string>();
+    let entradasReasignadas = 0;
+    let movimientosReasignados = 0;
+    let productosFusionados = 0;
+    let entradasModificadas = false;
+
+    for (const producto of productosOrdenados) {
+      const claveProducto = construirClaveProductoInventario(producto);
+      const productoCanonico = productosPorClave.get(claveProducto);
+
+      if (!productoCanonico) {
+        productosPorClave.set(claveProducto, producto);
+        continue;
+      }
+
+      if (productoCanonico.id === producto.id) {
+        continue;
+      }
+
+      for (const entrada of entradas) {
+        if (entrada.productoId === producto.id) {
+          entrada.productoId = productoCanonico.id;
+          entradasReasignadas += 1;
+          entradasModificadas = true;
+        }
+      }
+
+      movimientosReasignados += reasignarProductoEnMovimientos(producto.id, productoCanonico.id);
+
+      actualizarProducto(productoCanonico.id, {
+        lote: productoCanonico.lote || producto.lote,
+        fechaVencimiento: seleccionarFechaReciente(productoCanonico.fechaVencimiento, producto.fechaVencimiento),
+        ubicacion: seleccionarUbicacionCanonica(productoCanonico.ubicacion, producto.ubicacion),
+        icono: productoCanonico.icono || producto.icono,
+      });
+
+      eliminarProducto(producto.id);
+
+      const mockIndex = mockProductos.findIndex((item: any) => item.id === producto.id);
+      if (mockIndex !== -1) {
+        mockProductos.splice(mockIndex, 1);
+      }
+
+      const mockMovimientoIds = mockMovimientos.filter((movimiento: any) => movimiento.productoId === producto.id);
+      mockMovimientoIds.forEach((movimiento: any) => {
+        movimiento.productoId = productoCanonico.id;
+      });
+
+      productosCanonicosActualizados.add(productoCanonico.id);
+      productosFusionados += 1;
+    }
+
+    if (entradasModificadas) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entradas));
+    }
+
+    productosCanonicosActualizados.forEach(productoId => {
+      recalcularProductoDesdeEntradas(productoId);
+    });
+
+    return {
+      productosFusionados,
+      entradasReasignadas,
+      movimientosReasignados,
+    };
+  } catch (error) {
+    console.error('Error al migrar productos duplicados de inventario:', error);
+    return {
+      productosFusionados: 0,
+      entradasReasignadas: 0,
+      movimientosReasignados: 0,
+    };
+  }
 }
 
 function construirEntradaActualizada(
@@ -268,33 +381,31 @@ function registrarEnInventario(entrada: EntradaInventario): string {
   
   // Tolerancia para comparar pesos (0.001 kg = 1 gramo)
   const TOLERANCIA_PESO = 0.001;
+  const claveEntrada = construirClaveProductoInventario({
+    nombre: entrada.nombreProducto,
+    categoria: categoriaFinal,
+    subcategoria: subcategoriaFinal,
+    varianteId: entrada.varianteId,
+    varianteNombre: entrada.variante?.nombre,
+    peso: entrada.pesoUnidad,
+    pesoUnitario: entrada.pesoUnidad,
+  });
   
   const productoExistenteLS = productosLocalStorage.find((p) => {
-    const nombreCoincide = p.nombre.toLowerCase() === entrada.nombreProducto.toLowerCase();
-    const categoriaCoincide = p.categoria === categoriaFinal;
-    const subcategoriaCoincide = p.subcategoria === subcategoriaFinal;
-    const varianteCoincide = (p.varianteId || '') === (entrada.varianteId || '');
-    
-    // Verificar si el peso unitario es el mismo (con tolerancia)
     const pesoUnitarioProducto = p.pesoUnitario || 0;
     const pesoCoincide = Math.abs(pesoUnitarioProducto - entrada.pesoUnidad) < TOLERANCIA_PESO;
-    
-    // Si todo coincide (nombre, categoría, subcategoría y peso unitario), es el MISMO producto
-    return nombreCoincide && categoriaCoincide && subcategoriaCoincide && varianteCoincide && pesoCoincide;
+
+    return pesoCoincide && construirClaveProductoInventario(p) === claveEntrada;
   });
   
   console.log(`🔍 Producto existente encontrado: ${productoExistenteLS ? productoExistenteLS.nombre : 'NO'} (Total productos en localStorage: ${productosLocalStorage.length})`);
 
   // 🔄 PASO 2: Verificar si el producto existe en mockProductos (memoria)
   const productoExistenteMock = mockProductos.find((p: any) => {
-    const nombreCoincide = p.nombre.toLowerCase() === entrada.nombreProducto.toLowerCase();
-    const categoriaCoincide = p.categoria === categoriaFinal;
-    const subcategoriaCoincide = p.subcategoria === subcategoriaFinal;
-    const varianteCoincide = (p.varianteId || '') === (entrada.varianteId || '');
     const pesoUnitarioProducto = p.pesoUnitario || 0;
     const pesoCoincide = Math.abs(pesoUnitarioProducto - entrada.pesoUnidad) < TOLERANCIA_PESO;
-    
-    return nombreCoincide && categoriaCoincide && subcategoriaCoincide && varianteCoincide && pesoCoincide;
+
+    return pesoCoincide && construirClaveProductoInventario(p) === claveEntrada;
   });
 
   let productoId = '';

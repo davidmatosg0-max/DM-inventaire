@@ -101,6 +101,38 @@ export function eliminarMovimientosPorDocumento(documentoReferencia: string): nu
   }
 }
 
+export function reasignarProductoEnMovimientos(productoIdAnterior: string, productoIdNuevo: string): number {
+  try {
+    if (!productoIdAnterior || !productoIdNuevo || productoIdAnterior === productoIdNuevo) {
+      return 0;
+    }
+
+    const movimientos = obtenerMovimientos();
+    let actualizados = 0;
+
+    const movimientosActualizados = movimientos.map(movimiento => {
+      if (movimiento.productoId !== productoIdAnterior) {
+        return movimiento;
+      }
+
+      actualizados += 1;
+      return {
+        ...movimiento,
+        productoId: productoIdNuevo,
+      };
+    });
+
+    if (actualizados > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(movimientosActualizados));
+    }
+
+    return actualizados;
+  } catch (error) {
+    console.error('Error al reasignar producto en movimientos:', error);
+    return 0;
+  }
+}
+
 /**
  * Registrar un nuevo movimiento
  */

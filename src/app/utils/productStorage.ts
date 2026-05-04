@@ -38,10 +38,22 @@ export type ProductoCreado = {
   valorTotal?: number; // Valor monetario total en CAD$ (valorUnitario × stockActual)
 };
 
+type ProductoInventarioComparable = Pick<ProductoCreado, 'categoria' | 'subcategoria' | 'varianteNombre' | 'peso' | 'pesoUnitario'> & {
+  varianteId?: string;
+};
+
 const STORAGE_KEY = 'banco_alimentos_productos';
 
 function normalizeProductNameToken(value?: string): string {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').toLowerCase() : '';
+}
+
+function normalizeProductWeight(value?: number): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '0.000';
+  }
+
+  return value.toFixed(3);
 }
 
 function getNormalizedProductName(producto: Pick<ProductoCreado, 'nombre' | 'categoria' | 'subcategoria' | 'varianteNombre'>): string {
@@ -67,6 +79,18 @@ function getNormalizedProductName(producto: Pick<ProductoCreado, 'nombre' | 'cat
   }
 
   return legacyCandidates.includes(normalizeProductNameToken(rawName)) ? cleanName : rawName;
+}
+
+export function construirClaveProductoInventario(producto: ProductoInventarioComparable): string {
+  const pesoNormalizado = normalizeProductWeight(producto.pesoUnitario ?? producto.peso ?? 0);
+  const varianteNormalizada = normalizeProductNameToken(producto.varianteNombre || producto.varianteId || '');
+
+  return [
+    normalizeProductNameToken(producto.categoria),
+    normalizeProductNameToken(producto.subcategoria),
+    varianteNormalizada,
+    pesoNormalizado,
+  ].join('|');
 }
 
 function getCurrentStandardLocations(): string[] {
