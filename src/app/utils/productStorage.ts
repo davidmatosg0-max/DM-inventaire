@@ -42,6 +42,12 @@ type ProductoInventarioComparable = Pick<ProductoCreado, 'categoria' | 'subcateg
   varianteId?: string;
 };
 
+export type GuardarProductoEstrategia = 'id' | 'inventario-canonico';
+
+type GuardarProductoOpciones = {
+  estrategiaDeduplicacion?: GuardarProductoEstrategia;
+};
+
 const STORAGE_KEY = 'banco_alimentos_productos';
 
 function normalizeProductNameToken(value?: string): string {
@@ -91,6 +97,42 @@ export function construirClaveProductoInventario(producto: ProductoInventarioCom
     varianteNormalizada,
     pesoNormalizado,
   ].join('|');
+}
+
+function calcularPesoRegistrado(producto: Pick<ProductoCreado, 'pesoRegistrado' | 'pesoUnitario' | 'peso' | 'stockActual'>): number {
+  if (typeof producto.pesoRegistrado === 'number' && Number.isFinite(producto.pesoRegistrado)) {
+    return producto.pesoRegistrado;
+  }
+
+  const pesoUnitario = producto.pesoUnitario ?? producto.peso ?? 0;
+  const stockActual = producto.stockActual ?? 0;
+  return pesoUnitario * stockActual;
+}
+
+function fusionarProductoCanonico(
+  productoExistente: ProductoCreado,
+  productoEntrante: ProductoCreado,
+  standardLocations: string[]
+): ProductoCreado {
+  const stockExistente = productoExistente.stockActual ?? 0;
+  const stockEntrante = productoEntrante.stockActual ?? 0;
+  const pesoRegistradoExistente = calcularPesoRegistrado(productoExistente);
+  const pesoRegistradoEntrante = calcularPesoRegistrado(productoEntrante);
+
+  return aplicarTemperaturaProducto(normalizeStoredProduct({
+    ...productoExistente,
+    stockActual: stockExistente + stockEntrante,
+    stockMinimo: Math.max(productoExistente.stockMinimo ?? 0, productoEntrante.stockMinimo ?? 0),
+    pesoRegistrado: pesoRegistradoExistente + pesoRegistradoEntrante,
+    valorTotal: (productoExistente.valorTotal ?? 0) + (productoEntrante.valorTotal ?? 0),
+    valorUnitario: productoEntrante.valorUnitario ?? productoExistente.valorUnitario,
+    icono: productoExistente.icono || productoEntrante.icono,
+    ubicacion: productoExistente.ubicacion || productoEntrante.ubicacion,
+    lote: productoExistente.lote || productoEntrante.lote,
+    fechaVencimiento: productoExistente.fechaVencimiento || productoEntrante.fechaVencimiento,
+    esPRS: productoExistente.esPRS || productoEntrante.esPRS,
+    activo: productoExistente.activo !== false && productoEntrante.activo !== false,
+  }, standardLocations));
 }
 
 function getCurrentStandardLocations(): string[] {
@@ -170,16 +212,37 @@ export function obtenerProductos(): ProductoCreado[] {
 /**
  * Guardar un nuevo producto
  */
-export function guardarProducto(producto: ProductoCreado | Omit<ProductoCreado, 'id'>): ProductoCreado {
+export function guardarProducto(
+  producto: ProductoCreado | Omit<ProductoCreado, 'id'>,
+  opciones: GuardarProductoOpciones = {}
+): ProductoCreado {
   try {
     const productos = obtenerProductos();
     const standardLocations = getCurrentStandardLocations();
+    const estrategiaDeduplicacion = opciones.estrategiaDeduplicacion || 'id';
     
     // Generar ID si no existe
     const productoConId: ProductoCreado = 'id' in producto 
       ? producto as ProductoCreado
       : { ...producto, id: Date.now().toString() } as ProductoCreado;
     const productoNormalizado = aplicarTemperaturaProducto(normalizeStoredProduct(productoConId, standardLocations));
+
+    if (estrategiaDeduplicacion === 'inventario-canonico') {
+      const claveProducto = construirClaveProductoInventario(productoNormalizado);
+      const productoCanonicoExistente = productos.find(p =>
+        p.id !== productoNormalizado.id &&
+        p.activo !== false &&
+        construirClaveProductoInventario(p) === claveProducto
+      );
+
+      if (productoCanonicoExistente) {
+        const productoFusionado = fusionarProductoCanonico(productoCanonicoExistente, productoNormalizado, standardLocations);
+        const productosActualizados = productos.map(p => p.id === productoCanonicoExistente.id ? productoFusionado : p);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(productosActualizados));
+        console.log('✅ Producto fusionado con existente en localStorage:', productoFusionado.nombre);
+        return productoFusionado;
+      }
+    }
     
     // Verificar si el producto ya existe para evitar duplicados
     const existeProducto = productos.find(p => p.id === productoNormalizado.id);

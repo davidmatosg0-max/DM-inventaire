@@ -1656,7 +1656,7 @@ export function Inventario() {
       productoBaseNombre: productoBase?.nombre
     };
     
-    guardarProducto(nuevaSubcategoria);
+    guardarProducto(nuevaSubcategoria, { estrategiaDeduplicacion: 'inventario-canonico' });
     toast.success(`✅ Variante creada: "${formVariante.nombre}"`);
     cerrarVarianteDialog();
     

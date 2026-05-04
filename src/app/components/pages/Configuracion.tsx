@@ -1017,7 +1017,7 @@ export function Configuracion() {
         valorTotal: valorTotal
       };
 
-      const productoGuardado = guardarProducto(nuevoProducto);
+      const productoGuardado = guardarProducto(nuevoProducto, { estrategiaDeduplicacion: 'inventario-canonico' });
       // Recargar productos desde localStorage
       setProductos(obtenerProductos());
       
@@ -1214,10 +1214,10 @@ export function Configuracion() {
       };
       
       // Guardar en localStorage
-      guardarProducto(nuevoProducto);
+      guardarProducto(nuevoProducto, { estrategiaDeduplicacion: 'inventario-canonico' });
       
       // Actualizar en estado local
-      setProductos([...productos, nuevoProducto]);
+      setProductos(obtenerProductos());
       
       // Disparar evento de actualización
       window.dispatchEvent(new Event('productos-actualizados'));
@@ -1270,10 +1270,10 @@ export function Configuracion() {
     };
     
     // Guardar en localStorage
-    guardarProducto(varianteProducto);
+    guardarProducto(varianteProducto, { estrategiaDeduplicacion: 'inventario-canonico' });
     
     // Actualizar en estado local
-    setProductos([...productos, varianteProducto]);
+    setProductos(obtenerProductos());
     
     // Disparar evento de actualización
     window.dispatchEvent(new Event('productos-actualizados'));
@@ -1507,8 +1507,8 @@ export function Configuracion() {
       fechaCreacion: new Date().toISOString()
     };
     
-    guardarProducto(nuevoProducto);
-    setProductos([...productos, nuevoProducto]);
+    guardarProducto(nuevoProducto, { estrategiaDeduplicacion: 'inventario-canonico' });
+    setProductos(obtenerProductos());
     
     // Disparar evento de actualización
     window.dispatchEvent(new Event('productos-actualizados'));
