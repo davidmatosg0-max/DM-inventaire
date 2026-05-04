@@ -2325,6 +2325,8 @@
     "colorSettings": "Color Settings",
     "primaryColor": "Primary Color",
     "primaryColorDesc": "Primary color used in buttons and headers",
+    "secondaryColor": "Secondary Color",
+    "secondaryColorDesc": "Secondary color used for accents and complementary elements",
     "successColor": "Success Color",
     "successColorDesc": "Color for success messages and states",
     "warningColor": "Warning Color",

@@ -1652,6 +1652,8 @@
     "colorSettings": "Configuración de Colores",
     "primaryColor": "Color Principal",
     "primaryColorDesc": "Color principal usado en botones y encabezados",
+    "secondaryColor": "Color Secundario",
+    "secondaryColorDesc": "Color secundario usado para acentos y elementos complementarios",
     "successColor": "Color de Éxito",
     "successColorDesc": "Color para mensajes y estados de éxito",
     "warningColor": "Color de Advertencia",

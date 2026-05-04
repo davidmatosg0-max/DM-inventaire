@@ -362,7 +362,7 @@ export function PanelMarca() {
                 className="w-full px-4 py-2 rounded-lg text-white"
                 style={{ backgroundColor: config.secondaryColor }}
               >
-                {t('branding.successColor')}
+                {t('branding.secondaryColor')}
               </button>
               <button
                 className="w-full px-4 py-2 rounded-lg text-white"
@@ -403,10 +403,10 @@ export function PanelMarca() {
           />
 
           <ColorPicker
-            label={t('branding.successColor')}
+            label={t('branding.secondaryColor')}
             value={config.secondaryColor}
             onChange={(value) => handleColorChange('secondaryColor', value)}
-            description={t('branding.successColorDesc')}
+            description={t('branding.secondaryColorDesc')}
           />
 
           <ColorPicker

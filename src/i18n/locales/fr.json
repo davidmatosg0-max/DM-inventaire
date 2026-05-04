@@ -1885,6 +1885,8 @@
     "colorSettings": "Configuration des Couleurs",
     "primaryColor": "Couleur Principale",
     "primaryColorDesc": "Couleur principale utilisée dans les boutons et les en-têtes",
+    "secondaryColor": "Couleur Secondaire",
+    "secondaryColorDesc": "Couleur secondaire utilisée pour les accents et éléments complémentaires",
     "successColor": "Couleur de Succès",
     "successColorDesc": "Couleur pour les messages et états de succès",
     "warningColor": "Couleur d'Avertissement",

@@ -2343,6 +2343,8 @@
     "colorSettings": "إعدادات الألوان",
     "primaryColor": "اللون الأساسي",
     "primaryColorDesc": "اللون الأساسي المستخدم في الأزرار والعناوين",
+    "secondaryColor": "اللون الثانوي",
+    "secondaryColorDesc": "اللون الثانوي المستخدم للعناصر المساعدة واللمسات البصرية",
     "successColor": "لون النجاح",
     "successColorDesc": "اللون لرسائل وحالات النجاح",
     "warningColor": "لون التحذير",
