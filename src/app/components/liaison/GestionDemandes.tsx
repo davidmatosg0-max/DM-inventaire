@@ -122,13 +122,15 @@ export const GestionDemandes: React.FC = () => {
   };
 
   const assignerDemandeA = () => {
-    if (!demandeSelectionnee || !assigneNom.trim()) {
+    const nomAssigne = assigneNom.trim();
+
+    if (!demandeSelectionnee || !nomAssigne) {
       toast.error('Veuillez entrer un nom');
       return;
     }
 
-    assignerDemande(demandeSelectionnee.id, assigneNom);
-    toast.success(`✅ Demande assignée à ${assigneNom}`);
+    assignerDemande(demandeSelectionnee.id, nomAssigne);
+    toast.success(`✅ Demande assignée à ${nomAssigne}`);
     setDialogAssigner(false);
     setAssigneNom('');
     chargerDemandes();
@@ -152,6 +154,7 @@ export const GestionDemandes: React.FC = () => {
 
   const stats = obtenirStatistiquesDemandes();
   const reponseVide = nouvelleReponse.trim().length === 0;
+  const assigneNomVide = assigneNom.trim().length === 0;
 
   const getStatutBadge = (statut: Demande['statut']) => {
     const configs = {
@@ -422,7 +425,7 @@ export const GestionDemandes: React.FC = () => {
                 <Button variant="outline" onClick={() => setDialogAssigner(false)}>
                   Annuler
                 </Button>
-                <Button onClick={assignerDemandeA} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={assignerDemandeA} disabled={assigneNomVide} className="bg-blue-600 hover:bg-blue-700">
                   <UserCheck className="w-4 h-4 mr-2" />
                   Assigner
                 </Button>
