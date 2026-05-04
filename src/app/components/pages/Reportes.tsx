@@ -1040,7 +1040,7 @@ export function Reportes() {
                     Rapports opérationnels
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Approvisionnement, distribution y comparatifs consolidés ahora viven dentro del módulo Rapports.
+                    Les rapports d'approvisionnement, de distribution et les comparatifs consolidés sont désormais regroupés dans ce module.
                   </p>
                 </div>
               </div>
