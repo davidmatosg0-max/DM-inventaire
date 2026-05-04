@@ -183,11 +183,11 @@ function AppContent() {
     );
   }
 
-  // Si está en vista pública de benevoles (hojas de tiempo), mostrar sin autenticación
-  if (currentPage === 'benevoles-public') {
+  // Compatibilidad: la ruta pública heredada ahora usa el flujo de Recrutement
+  if (currentPage === 'benevoles-public' || currentPage === 'recrutement-public') {
     return (
       <>
-        {renderWithSuspense(<Benevoles isPublicAccess={true} />)}
+        {renderWithSuspense(<Recrutement isPublicAccess={true} />)}
         <Toaster position="top-right" />
       </>
     );

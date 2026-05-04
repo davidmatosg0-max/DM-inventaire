@@ -22,6 +22,15 @@ export interface FeuilleTiempoCandidato {
   duree: number;
   notes: string;
   enCours?: boolean;
+  correctionHistory?: HistorialCorreccionFeuilleTiempo[];
+}
+
+export interface HistorialCorreccionFeuilleTiempo {
+  id: string;
+  actor: string;
+  timestamp: string;
+  source: 'public' | 'internal';
+  changes: string[];
 }
 
 export interface Candidato {

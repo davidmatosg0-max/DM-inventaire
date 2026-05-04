@@ -311,7 +311,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
         {onAccessPublic && (
           <div className="mt-6 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <button
-              onClick={() => onAccessPublic('benevoles-public')}
+              onClick={() => onAccessPublic('recrutement-public')}
               className="w-full backdrop-blur-xl bg-gradient-to-r from-white/70 to-white/50 rounded-xl shadow-lg p-4 border border-white/60 group hover:shadow-xl hover:from-white/80 hover:to-white/60 transition-all duration-300 transform hover:-translate-y-1"
               style={{
                 boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.08)',

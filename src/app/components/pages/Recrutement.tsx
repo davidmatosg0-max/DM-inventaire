@@ -12,6 +12,7 @@ import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
+  ArrowLeft,
   UserPlus, 
   Users, 
   FileText, 
@@ -56,8 +57,10 @@ import {
   agregarCandidato,
   eliminarCandidato,
   type Candidato,
-  type FeuilleTiempoCandidato
+  type FeuilleTiempoCandidato,
+  type HistorialCorreccionFeuilleTiempo
 } from '../../utils/candidatosStorage'; // ✅ Importar storage
+import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 
 // ✅ Usar tipo Candidato del storage
 type Candidate = Candidato;
@@ -77,6 +80,10 @@ type FlattenedCandidateTimesheet = FeuilleTiempoCandidato & {
   candidateName: string;
   candidateEmail: string;
 };
+
+interface RecrutementProps {
+  isPublicAccess?: boolean;
+}
 
 const diasSemana = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -178,6 +185,18 @@ const getCurrentLocalTime = () => {
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
+};
+
+const getCurrentTimestamp = () => new Date().toISOString();
+
+const formatCorrectionTimestamp = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} • ${hours}:${minutes}`;
 };
 
 const createInitialTimesheetForm = (candidate?: Candidate): CandidateTimesheetForm => ({
@@ -283,7 +302,7 @@ const mapContactFormToCandidate = (
   };
 };
 
-export function Recrutement() {
+export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   const { t } = useTranslation();
   const branding = useBranding();
   const [searchTerm, setSearchTerm] = useState('');
@@ -302,12 +321,18 @@ export function Recrutement() {
   // 🎯 Estado para el diálogo de perfil detallado
   const [dialogPerfilOpen, setDialogPerfilOpen] = useState(false);
   const [candidatoParaPerfil, setCandidatoParaPerfil] = useState<Candidate | null>(null);
-  const [mainView, setMainView] = useState<RecruitmentMainView>('candidatures');
+  const [mainView, setMainView] = useState<RecruitmentMainView>(isPublicAccess ? 'timesheets' : 'candidatures');
   const [timesheetDepartmentFilter, setTimesheetDepartmentFilter] = useState<TimesheetDepartmentFilter>('all');
   const [timesheetMonthFilter, setTimesheetMonthFilter] = useState('');
   const [selectedTimesheetCandidateId, setSelectedTimesheetCandidateId] = useState('');
   const [timesheetForm, setTimesheetForm] = useState<CandidateTimesheetForm>(createInitialTimesheetForm);
   const [editingTimesheetId, setEditingTimesheetId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isPublicAccess && mainView !== 'timesheets') {
+      setMainView('timesheets');
+    }
+  }, [isPublicAccess, mainView]);
   
   // ✅ NUEVO: Estados para el diálogo de edición
   const [dialogEdicionOpen, setDialogEdicionOpen] = useState(false);
@@ -491,6 +516,56 @@ export function Recrutement() {
     }
 
     return candidatoActualizado;
+  };
+
+  const getTimesheetActorName = () => {
+    if (isPublicAccess) {
+      return 'Accès public';
+    }
+
+    const usuario = obtenerUsuarioSesion();
+    if (!usuario) {
+      return 'Utilisateur interne';
+    }
+
+    return [usuario.nombre?.trim(), usuario.apellido?.trim()].filter(Boolean).join(' ') || usuario.username || usuario.email || 'Utilisateur interne';
+  };
+
+  const buildTimesheetCorrectionHistory = (
+    originalTimesheet: FeuilleTiempoCandidato,
+    nextTimesheet: FeuilleTiempoCandidato
+  ) => {
+    const changes: string[] = [];
+
+    if (originalTimesheet.heureDebut !== nextTimesheet.heureDebut) {
+      changes.push(`Arrivée: ${originalTimesheet.heureDebut || '—'} -> ${nextTimesheet.heureDebut || '—'}`);
+    }
+
+    if ((originalTimesheet.heureFin || '') !== (nextTimesheet.heureFin || '')) {
+      changes.push(`Départ: ${originalTimesheet.heureFin || '—'} -> ${nextTimesheet.heureFin || '—'}`);
+    }
+
+    if (originalTimesheet.date !== nextTimesheet.date) {
+      changes.push(`Date: ${originalTimesheet.date} -> ${nextTimesheet.date}`);
+    }
+
+    if (originalTimesheet.departement !== nextTimesheet.departement) {
+      changes.push(`Département: ${originalTimesheet.departement} -> ${nextTimesheet.departement}`);
+    }
+
+    if (changes.length === 0) {
+      return originalTimesheet.correctionHistory || [];
+    }
+
+    const nextEntry: HistorialCorreccionFeuilleTiempo = {
+      id: `${nextTimesheet.id}-${Date.now()}`,
+      actor: getTimesheetActorName(),
+      timestamp: getCurrentTimestamp(),
+      source: isPublicAccess ? 'public' : 'internal',
+      changes
+    };
+
+    return [nextEntry, ...(originalTimesheet.correctionHistory || [])];
   };
 
   const tiposPermitidos: TipoContacto[] = ['benevole'];
@@ -813,6 +888,16 @@ export function Recrutement() {
                       {timesheet.notes && (
                         <p className="text-xs text-gray-500 max-w-[220px] truncate">{timesheet.notes}</p>
                       )}
+                      {timesheet.correctionHistory && timesheet.correctionHistory.length > 0 && (
+                        <div className="mt-1 space-y-1">
+                          <Badge className="border-0 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5">
+                            {timesheet.correctionHistory.length} correction{timesheet.correctionHistory.length > 1 ? 's' : ''}
+                          </Badge>
+                          <p className="text-[11px] text-amber-700 leading-snug max-w-[260px]">
+                            Dernière correction: {timesheet.correctionHistory[0].actor} • {formatCorrectionTimestamp(timesheet.correctionHistory[0].timestamp)}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -847,7 +932,14 @@ export function Recrutement() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-[#666666]">
-                  {timesheet.date}
+                  <div>
+                    <p>{timesheet.date}</p>
+                    {timesheet.correctionHistory && timesheet.correctionHistory.length > 0 && (
+                      <p className="text-[11px] text-gray-500 mt-1 max-w-[200px] leading-snug">
+                        {timesheet.correctionHistory[0].changes[0]}
+                      </p>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-2">
@@ -1421,13 +1513,20 @@ export function Recrutement() {
       return;
     }
 
-    if (!timesheetForm.departamentoId || !timesheetForm.date || !timesheetForm.heureDebut || !timesheetForm.heureFin) {
+    const currentTimesheets = candidatoFeuilleTempsSeleccionado.feuillesTemps || [];
+    const originalTimesheet = editingTimesheetId
+      ? currentTimesheets.find(timesheet => timesheet.id === editingTimesheetId)
+      : undefined;
+    const isEditingActiveTimesheet = Boolean(originalTimesheet?.enCours);
+
+    if (!timesheetForm.departamentoId || !timesheetForm.date || !timesheetForm.heureDebut || (!timesheetForm.heureFin && !isEditingActiveTimesheet)) {
       toast.error('Veuillez remplir tous les champs obligatoires de la feuille de temps');
       return;
     }
 
-    const duration = calculateTimesheetDuration(timesheetForm.heureDebut, timesheetForm.heureFin);
-    if (duration <= 0) {
+    const isOpenEntry = isEditingActiveTimesheet && !timesheetForm.heureFin;
+    const duration = isOpenEntry ? 0 : calculateTimesheetDuration(timesheetForm.heureDebut, timesheetForm.heureFin);
+    if (!isOpenEntry && duration <= 0) {
       toast.error('L\'heure de fin doit être après l\'heure de début');
       return;
     }
@@ -1438,8 +1537,7 @@ export function Recrutement() {
       return;
     }
 
-    const currentTimesheets = candidatoFeuilleTempsSeleccionado.feuillesTemps || [];
-    const nextTimesheet: FeuilleTiempoCandidato = {
+    const nextTimesheetBase: FeuilleTiempoCandidato = {
       id: editingTimesheetId || Date.now(),
       departamentoId: timesheetForm.departamentoId,
       departement: department.nombre,
@@ -1448,8 +1546,15 @@ export function Recrutement() {
       heureFin: timesheetForm.heureFin,
       duree: duration,
       notes: timesheetForm.notes.trim(),
-      enCours: false
+      enCours: isOpenEntry
     };
+
+    const nextTimesheet = originalTimesheet
+      ? {
+          ...nextTimesheetBase,
+          correctionHistory: buildTimesheetCorrectionHistory(originalTimesheet, nextTimesheetBase)
+        }
+      : nextTimesheetBase;
 
     const updatedTimesheets = editingTimesheetId
       ? currentTimesheets.map(timesheet =>
@@ -1468,7 +1573,9 @@ export function Recrutement() {
 
     toast.success(
       editingTimesheetId
-        ? '✅ Feuille de temps mise à jour avec succès'
+        ? isOpenEntry
+          ? '✅ Entrée mise à jour avec succès'
+          : '✅ Feuille de temps mise à jour avec succès'
         : `✅ Feuille de temps enregistrée: ${formatTimesheetHours(duration)}`
     );
 
@@ -1764,7 +1871,45 @@ export function Recrutement() {
             />
           </div>
 
+          {isPublicAccess && (
+            <Card className="border-gray-200/60 shadow-sm mb-6 overflow-hidden">
+              <CardContent
+                className="p-5 sm:p-6"
+                style={{
+                  background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`
+                }}
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p
+                      className="text-xl sm:text-2xl font-bold"
+                      style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                    >
+                      Feuilles de temps - Accès public
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Enregistrez une entrée, une sortie ou corrigez les heures d'un bénévole assigné depuis la page d'accueil.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.location.href = window.location.pathname;
+                      }
+                    }}
+                    style={{ fontFamily: 'Montserrat, sans-serif' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Retour à l'accueil
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Estadísticas */}
+          {!isPublicAccess && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
             {/* Total Candidats */}
             <div 
@@ -1863,27 +2008,31 @@ export function Recrutement() {
               </div>
             </div>
           </div>
+          )}
 
           <Tabs value={mainView} onValueChange={(value) => setMainView(value as RecruitmentMainView)} className="mb-6 gap-4">
-            <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-white border border-gray-200 shadow-sm">
-              <TabsTrigger
-                value="candidatures"
-                className="py-3"
-                style={{ fontFamily: 'Montserrat, sans-serif' }}
-              >
-                <Users className="w-4 h-4" />
-                Candidatures
-              </TabsTrigger>
-              <TabsTrigger
-                value="timesheets"
-                className="py-3"
-                style={{ fontFamily: 'Montserrat, sans-serif' }}
-              >
-                <Clock className="w-4 h-4" />
-                Feuille de temps
-              </TabsTrigger>
-            </TabsList>
+            {!isPublicAccess && (
+              <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-white border border-gray-200 shadow-sm">
+                <TabsTrigger
+                  value="candidatures"
+                  className="py-3"
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                >
+                  <Users className="w-4 h-4" />
+                  Candidatures
+                </TabsTrigger>
+                <TabsTrigger
+                  value="timesheets"
+                  className="py-3"
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                >
+                  <Clock className="w-4 h-4" />
+                  Feuille de temps
+                </TabsTrigger>
+              </TabsList>
+            )}
 
+            {!isPublicAccess && (
             <TabsContent value="candidatures" className="space-y-6">
               <Card className="border-gray-200/50 shadow-sm">
                 <CardContent className="p-4">
@@ -2197,6 +2346,7 @@ export function Recrutement() {
                 </Card>
               )}
             </TabsContent>
+            )}
 
             <TabsContent value="timesheets" className="space-y-6">
               <Card className="border-gray-200/50 shadow-sm overflow-hidden">
@@ -2439,7 +2589,9 @@ export function Recrutement() {
                               {editingTimesheetId ? 'Modifier une entrée' : 'Enregistrer une nouvelle entrée'}
                             </CardTitle>
                             <p className="text-xs text-gray-500 mt-1">
-                              Les heures sont enregistrées directement sur le bénévole sélectionné.
+                              {editingTimesheetId && feuillesTempsActivasSeleccionadas.some(timesheet => timesheet.id === editingTimesheetId)
+                                ? 'Laissez l\'heure de fin vide pour corriger uniquement l\'entrée et conserver la session en cours.'
+                                : 'Les heures sont enregistrées directement sur le bénévole sélectionné.'}
                             </p>
                           </div>
                           {editingTimesheetId && candidatoFeuilleTempsSeleccionado && (
@@ -2680,14 +2832,25 @@ export function Recrutement() {
                                         )}
                                       </div>
                                     </div>
-                                    <Button
-                                      onClick={() => handleRegisterTimesheetExit(timesheet.id)}
-                                      className="ml-4 h-12 px-6 text-white shadow-lg hover:shadow-xl transition-all"
-                                      style={{ backgroundColor: '#DC3545' }}
-                                    >
-                                      <LogOut className="w-5 h-5 mr-2" />
-                                      Enregistrer Sortie
-                                    </Button>
+                                    <div className="ml-4 flex items-center gap-3">
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => handleStartEditTimesheet(timesheet)}
+                                        className="h-12 px-4"
+                                        style={{ fontFamily: 'Montserrat, sans-serif' }}
+                                      >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Modifier
+                                      </Button>
+                                      <Button
+                                        onClick={() => handleRegisterTimesheetExit(timesheet.id)}
+                                        className="h-12 px-6 text-white shadow-lg hover:shadow-xl transition-all"
+                                        style={{ backgroundColor: '#DC3545' }}
+                                      >
+                                        <LogOut className="w-5 h-5 mr-2" />
+                                        Enregistrer Sortie
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
                               );
