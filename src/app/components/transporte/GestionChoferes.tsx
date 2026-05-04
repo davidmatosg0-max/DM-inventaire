@@ -438,15 +438,15 @@ export function GestionChoferes() {
         </CardContent>
       </Card>
 
-      {/* Dialog Agregar/Editar Chofer */}
+      {/* Dialog Ajouter/Modifier Conducteur */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="chofer-dialog-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              {editando ? '✏️ Editar Chofer' : '➕ Agregar Nuevo Chofer'}
+              {editando ? t('transport.driversManagement.dialog.editTitle') : t('transport.driversManagement.dialog.addTitle')}
             </DialogTitle>
             <DialogDescription id="chofer-dialog-description">
-              {editando ? 'Actualiza la información del chofer' : 'Completa los datos para registrar un nuevo chofer'}
+              {editando ? t('transport.driversManagement.dialog.editDescription') : t('transport.driversManagement.dialog.addDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -455,39 +455,39 @@ export function GestionChoferes() {
             <div className="space-y-4 md:col-span-2">
               <h3 className="font-semibold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <User className="inline h-4 w-4 mr-2" />
-                Información Personal
+                {t('transport.driversManagement.dialog.personalInfo')}
               </h3>
             </div>
 
             <div className="space-y-2">
-              <Label>Nombre *</Label>
+              <Label>{t('transport.driversManagement.dialog.firstNameRequired')}</Label>
               <Input
                 value={formData.nombre}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                placeholder="Juan"
+                placeholder={t('transport.driversManagement.dialog.firstNamePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Apellido *</Label>
+              <Label>{t('transport.driversManagement.dialog.lastNameRequired')}</Label>
               <Input
                 value={formData.apellido}
                 onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-                placeholder="Pérez"
+                placeholder={t('transport.driversManagement.dialog.lastNamePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Cédula/ID *</Label>
+              <Label>{t('transport.driversManagement.dialog.idRequired')}</Label>
               <Input
                 value={formData.cedula}
                 onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                placeholder="ABC123456"
+                placeholder={t('transport.driversManagement.dialog.idPlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Fecha de Nacimiento</Label>
+              <Label>{t('transport.driversManagement.dialog.birthDate')}</Label>
               <Input
                 type="date"
                 value={formData.fechaNacimiento}
@@ -499,12 +499,12 @@ export function GestionChoferes() {
             <div className="space-y-4 md:col-span-2 mt-4">
               <h3 className="font-semibold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <Phone className="inline h-4 w-4 mr-2" />
-                Contacto
+                {t('transport.driversManagement.dialog.contact')}
               </h3>
             </div>
 
             <div className="space-y-2">
-              <Label>Teléfono</Label>
+              <Label>{t('transport.driversManagement.dialog.phone')}</Label>
               <Input
                 value={formData.telefono}
                 onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
@@ -513,12 +513,12 @@ export function GestionChoferes() {
             </div>
 
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{t('transport.driversManagement.dialog.email')}</Label>
               <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="chofer@example.com"
+                placeholder={t('transport.driversManagement.dialog.emailPlaceholder')}
               />
             </div>
 
@@ -526,21 +526,21 @@ export function GestionChoferes() {
             <div className="space-y-4 md:col-span-2 mt-4">
               <h3 className="font-semibold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <IdCard className="inline h-4 w-4 mr-2" />
-                Licencia de Conducir
+                {t('transport.driversManagement.dialog.licenseInfo')}
               </h3>
             </div>
 
             <div className="space-y-2">
-              <Label>Número de Licencia *</Label>
+              <Label>{t('transport.driversManagement.dialog.licenseNumberRequired')}</Label>
               <Input
                 value={formData.licencia}
                 onChange={(e) => setFormData({ ...formData, licencia: e.target.value })}
-                placeholder="QC-12345678"
+                placeholder={t('transport.driversManagement.dialog.licensePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Tipo de Licencia</Label>
+              <Label>{t('transport.driversManagement.dialog.licenseType')}</Label>
               <Select
                 value={formData.tipoLicencia}
                 onValueChange={(value) => setFormData({ ...formData, tipoLicencia: value })}
@@ -549,11 +549,11 @@ export function GestionChoferes() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Clase 1">Clase 1 (Camiones pesados)</SelectItem>
-                  <SelectItem value="Clase 2">Clase 2 (Autobuses)</SelectItem>
-                  <SelectItem value="Clase 3">Clase 3 (Camiones medianos)</SelectItem>
-                  <SelectItem value="Clase 4">Clase 4 (Taxis/Ambulancias)</SelectItem>
-                  <SelectItem value="Clase 5">Clase 5 (Automóviles)</SelectItem>
+                  <SelectItem value="Clase 1">{t('transport.driversManagement.dialog.licenseClass1')}</SelectItem>
+                  <SelectItem value="Clase 2">{t('transport.driversManagement.dialog.licenseClass2')}</SelectItem>
+                  <SelectItem value="Clase 3">{t('transport.driversManagement.dialog.licenseClass3')}</SelectItem>
+                  <SelectItem value="Clase 4">{t('transport.driversManagement.dialog.licenseClass4')}</SelectItem>
+                  <SelectItem value="Clase 5">{t('transport.driversManagement.dialog.licenseClass5')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -562,12 +562,12 @@ export function GestionChoferes() {
             <div className="space-y-4 md:col-span-2 mt-4">
               <h3 className="font-semibold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <FileText className="inline h-4 w-4 mr-2" />
-                Información Laboral
+                {t('transport.driversManagement.dialog.workInfo')}
               </h3>
             </div>
 
             <div className="space-y-2">
-              <Label>Fecha de Contratación</Label>
+              <Label>{t('transport.driversManagement.dialog.hireDate')}</Label>
               <Input
                 type="date"
                 value={formData.fechaContratacion}
@@ -576,7 +576,7 @@ export function GestionChoferes() {
             </div>
 
             <div className="space-y-2">
-              <Label>Años de Experiencia</Label>
+              <Label>{t('transport.driversManagement.dialog.experienceYears')}</Label>
               <Input
                 type="number"
                 value={formData.experienciaAnios}
@@ -587,16 +587,16 @@ export function GestionChoferes() {
             </div>
 
             <div className="space-y-2">
-              <Label>Vehículo Asignado</Label>
+              <Label>{t('transport.driversManagement.dialog.assignedVehicle')}</Label>
               <Select
                 value={formData.vehiculoAsignado}
                 onValueChange={(value) => setFormData({ ...formData, vehiculoAsignado: value === 'sin_asignar' ? '' : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sin asignar" />
+                  <SelectValue placeholder={t('transport.driversManagement.unassigned')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+                  <SelectItem value="sin_asignar">{t('transport.driversManagement.unassigned')}</SelectItem>
                   {vehiculos.map(vehiculo => (
                     <SelectItem key={vehiculo.id} value={vehiculo.placa || vehiculo.matricula}>
                       {obtenerNombreVehiculo(vehiculo)}
@@ -607,7 +607,7 @@ export function GestionChoferes() {
             </div>
 
             <div className="space-y-2">
-              <Label>Estado</Label>
+              <Label>{t('transport.driversManagement.dialog.state')}</Label>
               <Select
                 value={formData.estado}
                 onValueChange={(value: 'activo' | 'inactivo' | 'vacaciones') => 
@@ -618,9 +618,9 @@ export function GestionChoferes() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="activo">Activo</SelectItem>
-                  <SelectItem value="vacaciones">En Vacaciones</SelectItem>
-                  <SelectItem value="inactivo">Inactivo</SelectItem>
+                  <SelectItem value="activo">{t('transport.driversManagement.active')}</SelectItem>
+                  <SelectItem value="vacaciones">{t('transport.driversManagement.onVacation')}</SelectItem>
+                  <SelectItem value="inactivo">{t('transport.driversManagement.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -637,10 +637,10 @@ export function GestionChoferes() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
+              {t('transport.driversManagement.dialog.cancel')}
             </Button>
             <Button onClick={guardarChofer} className="bg-[#1E73BE] hover:bg-[#1557A0]">
-              {editando ? 'Actualizar' : 'Guardar'}
+              {editando ? t('transport.driversManagement.dialog.update') : t('transport.driversManagement.dialog.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
