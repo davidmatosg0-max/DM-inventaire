@@ -2681,6 +2681,15 @@ export function Recrutement() {
         departamentoId="7"
         departamentoNombre="Recrutement"
         contactoId={candidatoParaEditar ? String(candidatoParaEditar.id) : undefined}
+        textOverrides={{
+          createTitle: 'Enregistrer une nouvelle candidature',
+          editTitle: 'Modifier la candidature',
+          createDescription: 'Formulaire d\'enregistrement d\'une nouvelle candidature',
+          editDescription: 'Modifier les informations de la candidature',
+          emptyTypeTitle: 'Aucun type de candidature créé',
+          emptyTypeDescription: 'Le système est vide. Créez vos premiers types de candidature pour commencer.',
+          createTypeButtonLabel: 'Créer des types'
+        }}
       />
 
       {/* Dialog: Assigner au Département */}

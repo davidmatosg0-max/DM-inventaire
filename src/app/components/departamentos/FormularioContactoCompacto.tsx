@@ -160,6 +160,15 @@ interface FormularioContactoCompactoProps {
   departamentoId?: string; // Nuevo: para identificar el departamento
   departamentoNombre?: string; // Nuevo: nombre del departamento para mostrar
   contactoId?: string; // ✅ NUEVO: ID del contacto en modo edición para forzar reinicialización de componentes
+  textOverrides?: {
+    createTitle?: string;
+    editTitle?: string;
+    createDescription?: string;
+    editDescription?: string;
+    emptyTypeTitle?: string;
+    emptyTypeDescription?: string;
+    createTypeButtonLabel?: string;
+  };
 }
 
 // Mapeo de iconos
@@ -185,7 +194,8 @@ export function FormularioContactoCompacto({
   tiposPermitidos,
   departamentoId, // Nuevo parámetro
   departamentoNombre = 'Département', // Nuevo parámetro con valor por defecto
-  contactoId // ✅ NUEVO: ID del contacto en modo edición
+  contactoId, // ✅ NUEVO: ID del contacto en modo edición
+  textOverrides
 }: FormularioContactoCompactoProps) {
   const branding = useBranding();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -549,10 +559,14 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
           <DialogHeader className="flex-none bg-white border-b-2 border-[#E0E0E0] px-3 sm:px-4 md:px-6 py-2 sm:py-3 shadow-sm z-10">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }} className="text-base sm:text-lg md:text-xl">
               <Users className="w-4 h-4 sm:w-5 sm:h-5 inline mr-2" />
-              {modoEdicion ? 'Modifier le contact' : 'Enregistrer un nouveau contact'}
+              {modoEdicion
+                ? (textOverrides?.editTitle ?? 'Modifier le contact')
+                : (textOverrides?.createTitle ?? 'Enregistrer un nouveau contact')}
             </DialogTitle>
             <DialogDescription id="contact-form-description" className="text-xs text-gray-500 mt-1">
-              {modoEdicion ? 'Modifier les informations du contact' : 'Formulaire d\'enregistrement d\'un nouveau contact'}
+              {modoEdicion
+                ? (textOverrides?.editDescription ?? 'Modifier les informations du contact')
+                : (textOverrides?.createDescription ?? 'Formulaire d\'enregistrement d\'un nouveau contact')}
             </DialogDescription>
           </DialogHeader>
           
@@ -616,10 +630,10 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-amber-900 mb-1">
-                            Aucun type de contact créé
+                            {textOverrides?.emptyTypeTitle ?? 'Aucun type de contact créé'}
                           </p>
                           <p className="text-xs text-amber-700 mb-3">
-                            Le système est vide. Créez vos premiers types de contact pour commencer.
+                            {textOverrides?.emptyTypeDescription ?? 'Le système est vide. Créez vos premiers types de contact pour commencer.'}
                           </p>
                           <Button
                             type="button"
@@ -627,7 +641,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                             className="bg-amber-600 hover:bg-amber-700 text-white text-xs h-8"
                           >
                             <Plus className="w-3 h-3 mr-1" />
-                            Créer des types
+                            {textOverrides?.createTypeButtonLabel ?? 'Créer des types'}
                           </Button>
                         </div>
                       </div>
