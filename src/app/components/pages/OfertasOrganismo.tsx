@@ -25,6 +25,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { DialogAceptarOferta } from '../inventario/DialogAceptarOferta';
 import { useBranding } from '../../../hooks/useBranding';
+import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { obtenerProductos } from '../../utils/productStorage';
 import { calcularValorMonetario } from '../../utils/categoriaStorage';
 import { obtenerOrganismos } from '../../utils/organismosStorage';
@@ -32,6 +33,19 @@ import { obtenerOrganismos } from '../../utils/organismosStorage';
 export function OfertasOrganismo() {
   const { t } = useTranslation();
   const branding = useBranding();
+  const { viewportZoom: offersViewportZoom } = useCompactViewport({
+    resolveZoom: ({ width, height }) => {
+      if (height < 600) {
+        return 0.78;
+      }
+
+      if (height < 700 || width < 1100) {
+        return 0.9;
+      }
+
+      return 1;
+    },
+  });
   const organismoActual = React.useMemo(() => obtenerOrganismos().find(organismo => organismo.activo) || null, []);
   const tipoAsistenciaOrganismo = typeof organismoActual?.tipoAsistencia === 'string'
     ? organismoActual.tipoAsistencia
@@ -152,7 +166,7 @@ export function OfertasOrganismo() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-[calc(100vh-56px)] relative overflow-hidden" style={offersViewportZoom < 1 ? { zoom: offersViewportZoom } : undefined}>
       {/* Fondo degradado con colores del branding */}
       <div 
         className="fixed inset-0 -z-10"
@@ -195,9 +209,9 @@ export function OfertasOrganismo() {
       </div>
 
       {/* Contenido con z-index superior */}
-      <div className="relative z-10 space-y-4 sm:space-y-6 p-4 sm:p-6">
+      <div className="relative z-10 space-y-3 sm:space-y-4 p-3 sm:p-4">
         {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
+        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60">
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
@@ -240,7 +254,7 @@ export function OfertasOrganismo() {
       )}
 
       {/* Estadísticas con glassmorphism */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60 border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
           <div className="flex items-center justify-between">
             <div>
@@ -253,7 +267,7 @@ export function OfertasOrganismo() {
           </div>
         </div>
 
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60 border-l-4 border-l-[#4CAF50]">
+        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60 border-l-4 border-l-[#4CAF50]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm text-gray-600">{t('offers.activeOffers')}</p>
@@ -265,7 +279,7 @@ export function OfertasOrganismo() {
           </div>
         </div>
 
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60 border-l-4 border-l-[#FFC107]">
+        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60 border-l-4 border-l-[#FFC107]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm text-gray-600">{t('offers.newOffers')}</p>
@@ -279,7 +293,7 @@ export function OfertasOrganismo() {
       </div>
 
       {/* Filtros y búsqueda con glassmorphism */}
-      <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 border border-white/60">
+      <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 border border-white/60">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -308,14 +322,14 @@ export function OfertasOrganismo() {
       </div>
 
       {/* Lista de ofertas con glassmorphism */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {ofertasFiltradas.length === 0 ? (
-          <div className="col-span-full backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-12 border border-white/60 text-center">
-            <Tag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-xl text-gray-500 mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <div className="col-span-full backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-6 border border-white/60 text-center">
+            <Tag className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+            <p className="text-sm sm:text-base text-gray-500 mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('offers.noOffersAvailable')}
             </p>
-            <p className="text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-400">
               {filtro === 'activas' ? t('offers.noActiveOffersAtMoment') : t('offers.noOffersWithFilters')}
             </p>
           </div>

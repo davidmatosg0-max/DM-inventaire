@@ -34,6 +34,7 @@ import { obtenerComandasReporte } from '../reports/reportComandas';
 import { isActiveReportComanda } from '../reports/reportComandaStatus';
 import { registrarActividad } from '../../utils/actividadLogger';
 import type { Comanda } from '../../types';
+import { useCompactViewport } from '../../../hooks/useCompactViewport';
 
 type ComandaExportable = Comanda & {
   organismo?: {
@@ -236,6 +237,49 @@ export function Reportes() {
   const branding = useBranding();
   const initialRange = getDatePresetRange('month');
   const [activeReportTab, setActiveReportTab] = useState<ReportTab>('operaciones');
+  const {
+    isCompactViewport: isCompactReportsViewport,
+    viewportZoom: reportsViewportZoom,
+  } = useCompactViewport({
+    deps: [activeReportTab],
+    resolveZoom: ({ height, isCompact }) => {
+      const compactGeneralOverview = isCompact && activeReportTab === 'general';
+
+      if (!isCompact) {
+        return 1;
+      }
+
+      if (height < 600) {
+        if (compactGeneralOverview) {
+          return 0.44;
+        }
+
+        if (activeReportTab === 'operaciones' || activeReportTab === 'auditoria') {
+          return 0.14;
+        }
+
+        if (activeReportTab === 'comandas' || activeReportTab === 'prs') {
+          return 0.28;
+        }
+
+        return 0.32;
+      }
+
+      if (height < 700) {
+        if (compactGeneralOverview) {
+          return 0.62;
+        }
+
+        if (activeReportTab === 'operaciones' || activeReportTab === 'auditoria') {
+          return 0.22;
+        }
+
+        return 0.5;
+      }
+
+      return activeReportTab === 'operaciones' || activeReportTab === 'auditoria' ? 0.6 : 0.8;
+    },
+  });
   const [fechaInicio, setFechaInicio] = useState(initialRange.start);
   const [fechaFin, setFechaFin] = useState(initialRange.end);
   const [productos, setProductos] = useState<ProductoCreado[]>([]);
@@ -258,6 +302,12 @@ export function Reportes() {
 
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
+
+  useEffect(() => {
+    if (isCompactReportsViewport && activeReportTab === 'operaciones') {
+      setActiveReportTab('general');
+    }
+  }, [isCompactReportsViewport]);
 
   const rangoInicio = parseDateValue(fechaInicio);
   const rangoFin = parseDateValue(fechaFin, true);
@@ -819,8 +869,29 @@ export function Reportes() {
     },
   ];
 
+  const showCompactGeneralOverview = isCompactReportsViewport && activeReportTab === 'general';
+  const compactMonthlyOrders = datosComandasMes.slice(-4);
+  const compactOrganismSummary = datosOrganismos.slice(0, 4);
+  const compactGeneralHighlights = [
+    {
+      key: 'stock',
+      label: 'Stock total',
+      value: productos.reduce((sum, producto) => sum + producto.stockActual, 0),
+    },
+    {
+      key: 'value',
+      label: 'Valeur estimée',
+      value: `CAD$ ${valorTotalCalculado.toFixed(0)}`,
+    },
+    {
+      key: 'period',
+      label: 'Période',
+      value: `${fechaInicio} -> ${fechaFin}`,
+    },
+  ];
+
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-[calc(100vh-56px)] relative overflow-hidden" style={reportsViewportZoom < 1 ? { zoom: reportsViewportZoom } : undefined}>
       {/* Fondo degradado con colores del branding */}
       <div 
         className="fixed inset-0 -z-10"
@@ -863,49 +934,49 @@ export function Reportes() {
       </div>
 
       {/* Contenido con z-index superior */}
-      <div className="relative z-10 space-y-4 sm:space-y-6 p-4 sm:p-6">
+      <div className="relative z-10 space-y-3 sm:space-y-4 p-3 sm:p-4">
         {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60">
+          <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
             {t('reports.title')}
           </h1>
-          <p className="text-gray-700">{t('reports.subtitle')}</p>
+          <p className="text-xs sm:text-sm text-gray-700">{t('reports.subtitle')}</p>
         </div>
 
       {/* Tabs de Reportes con glassmorphism */}
       <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
-        <Tabs value={activeReportTab} onValueChange={handleReportTabChange} className="space-y-4">
+        <Tabs value={activeReportTab} onValueChange={handleReportTabChange} className="space-y-3">
           {exportableReportType && (
-            <div className="border-b border-white/60 px-4 pt-4 sm:px-6 sm:pt-6 pb-4">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                <div className="flex flex-col gap-3">
+            <div className="border-b border-white/60 px-3 pt-3 sm:px-4 sm:pt-4 pb-3">
+              <div className={`flex flex-col ${showCompactGeneralOverview ? 'gap-2' : 'gap-4'} xl:flex-row xl:items-end xl:justify-between`}>
+                <div className={`flex flex-col ${showCompactGeneralOverview ? 'gap-2' : 'gap-3'}`}>
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
                       {usesPageDateRange ? 'Période de la vue' : 'Export de la vue'}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className={`${showCompactGeneralOverview ? 'text-xs' : 'text-sm'} text-gray-600 mt-1`}>
                       {exportContextDescription}
                     </p>
                   </div>
                   {usesPageDateRange && (
                     <>
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                      <div className={`flex flex-col ${showCompactGeneralOverview ? 'gap-2' : 'gap-3'} lg:flex-row lg:items-end`}>
                         <div className="flex flex-col gap-1">
-                          <span className="text-sm font-medium text-gray-700">{t('reports.startDate')}</span>
+                          <span className="text-xs font-medium text-gray-700">{t('reports.startDate')}</span>
                           <Input
                             type="date"
                             value={fechaInicio}
                             onChange={(e) => setFechaInicio(e.target.value)}
-                            className="w-full sm:w-[170px] bg-white/85"
+                            className={`w-full sm:w-[160px] bg-white/85 text-xs ${showCompactGeneralOverview ? 'h-8' : 'h-9'}`}
                           />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="text-sm font-medium text-gray-700">{t('reports.endDate')}</span>
+                          <span className="text-xs font-medium text-gray-700">{t('reports.endDate')}</span>
                           <Input
                             type="date"
                             value={fechaFin}
                             onChange={(e) => setFechaFin(e.target.value)}
-                            className="w-full sm:w-[170px] bg-white/85"
+                            className={`w-full sm:w-[160px] bg-white/85 text-xs ${showCompactGeneralOverview ? 'h-8' : 'h-9'}`}
                           />
                         </div>
                       </div>
@@ -917,7 +988,7 @@ export function Reportes() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleApplyDatePreset(preset.value)}
-                            className={presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}
+                            className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} ${presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}`}
                           >
                             {preset.label}
                           </Button>
@@ -931,14 +1002,14 @@ export function Reportes() {
                   <Button
                     onClick={() => handleGenerarReporte('pdf')}
                     variant="outline"
-                    className="border-[#DC3545] text-[#DC3545] hover:bg-red-50"
+                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#DC3545] text-[#DC3545] hover:bg-red-50`}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     PDF
                   </Button>
                   <Button
                     onClick={() => handleGenerarReporte('excel')}
-                    className="bg-[#4CAF50] hover:bg-[#45a049]"
+                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} bg-[#4CAF50] hover:bg-[#45a049]`}
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Excel
@@ -946,7 +1017,7 @@ export function Reportes() {
                   <Button
                     onClick={() => handleGenerarReporte('csv')}
                     variant="outline"
-                    className="border-[#2d9561] text-[#2d9561] hover:bg-green-50"
+                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#2d9561] text-[#2d9561] hover:bg-green-50`}
                   >
                     <Download className="w-4 h-4 mr-2" />
                     CSV
@@ -954,7 +1025,7 @@ export function Reportes() {
                   <Button
                     onClick={() => handleGenerarReporte('json')}
                     variant="outline"
-                    className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50"
+                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50`}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     JSON
@@ -964,31 +1035,31 @@ export function Reportes() {
             </div>
           )}
 
-          <TabsList className="app-compact-tabs-grid w-full bg-transparent border-b rounded-none">
-            <TabsTrigger value="general" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <TabsList className="app-compact-tabs-grid w-full bg-transparent border-b rounded-none gap-1">
+            <TabsTrigger value="general" className="app-compact-tab-trigger flex-1 min-w-[96px] min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('reports.general')}
             </TabsTrigger>
-            <TabsTrigger value="operaciones" className="app-compact-tab-trigger flex-1 min-w-[140px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="operaciones" className="app-compact-tab-trigger flex-1 min-w-[110px] min-h-8 px-2 py-1.5 text-[11px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <BarChart3 className="w-4 h-4" />
               Opérations
             </TabsTrigger>
-            <TabsTrigger value="inventario" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="inventario" className="app-compact-tab-trigger flex-1 min-w-[96px] min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('nav.inventory')}
             </TabsTrigger>
-            <TabsTrigger value="comandas" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="comandas" className="app-compact-tab-trigger flex-1 min-w-[96px] min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('nav.orders')}
             </TabsTrigger>
-            <TabsTrigger value="prs" className="app-compact-tab-trigger flex-1 min-w-[120px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="prs" className="app-compact-tab-trigger flex-1 min-w-[96px] min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               PRS
             </TabsTrigger>
-            <TabsTrigger value="auditoria" className="app-compact-tab-trigger flex-1 min-w-[120px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <TabsTrigger value="auditoria" className="app-compact-tab-trigger flex-1 min-w-[96px] min-h-8 px-2 py-1.5 text-[11px] gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Shield className="w-4 h-4" />
               Audit
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="space-y-4 p-4 sm:p-6 pt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <TabsContent value="general" className="space-y-3 p-3 sm:p-4 pt-0">
+            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'}`}>
               {generalOverviewCards.map((card) => (
                 <ReportStatCard
                   key={card.key}
@@ -1000,36 +1071,93 @@ export function Reportes() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <ReportChartCard title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0}>
-                  <ResponsiveContainer width="100%" height={300} key="linechart-comandas-mes">
-                    <LineChart data={datosComandasMes}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="mes" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="comandas" stroke={branding.primaryColor} strokeWidth={2} name={t('nav.orders')} />
-                    </LineChart>
-                  </ResponsiveContainer>
-              </ReportChartCard>
+            {showCompactGeneralOverview ? (
+              <div className="grid gap-3 xl:grid-cols-2">
+                <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-3 border border-white/40">
+                  <h3 className="text-sm font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                    Synthèse rapide
+                  </h3>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {compactGeneralHighlights.map((item) => (
+                      <div key={item.key} className="rounded-xl bg-gray-50 px-3 py-2">
+                        <p className="text-[11px] uppercase tracking-wide text-[#999999]">{item.label}</p>
+                        <p className="mt-1 text-sm font-semibold text-[#1f2937]">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-              <ReportChartCard title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0}>
-                  <ResponsiveContainer width="100%" height={300} key="barchart-organismos">
-                    <BarChart data={datosOrganismos}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={100} />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="beneficiarios" fill="#4CAF50" name={t('reports.beneficiaries')} />
-                    </BarChart>
-                  </ResponsiveContainer>
-              </ReportChartCard>
-            </div>
+                <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-3 border border-white/40">
+                  <h3 className="text-sm font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                    Activité récente
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl bg-gray-50 px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-[#999999] mb-2">Commandes sur 4 mois</p>
+                      {compactMonthlyOrders.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {compactMonthlyOrders.map((entry) => (
+                            <div key={entry.mes} className="flex items-center justify-between text-sm text-[#1f2937]">
+                              <span>{entry.mes}</span>
+                              <span className="font-semibold">{entry.comandas}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#666666]">Aucune donnée disponible.</p>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl bg-gray-50 px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-[#999999] mb-2">Organismes principaux</p>
+                      {compactOrganismSummary.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {compactOrganismSummary.map((entry) => (
+                            <div key={entry.id} className="flex items-center justify-between gap-3 text-sm text-[#1f2937]">
+                              <span className="truncate">{entry.nombre}</span>
+                              <span className="font-semibold">{entry.beneficiarios}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#666666]">Aucune donnée disponible.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <ReportChartCard title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0}>
+                <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="linechart-comandas-mes">
+                      <LineChart data={datosComandasMes}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="mes" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="comandas" stroke={branding.primaryColor} strokeWidth={2} name={t('nav.orders')} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                </ReportChartCard>
+
+                <ReportChartCard title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0}>
+                    <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="barchart-organismos">
+                      <BarChart data={datosOrganismos}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={100} />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="beneficiarios" fill="#4CAF50" name={t('reports.beneficiaries')} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                </ReportChartCard>
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="operaciones" className="space-y-4 p-4 sm:p-6 pt-0">
+          <TabsContent value="operaciones" className="space-y-3 p-3 sm:p-4 pt-0">
             <div className={LEGACY_PANEL_CLASSNAME}>
               <div className="flex items-start gap-3">
                 <div className="rounded-xl bg-[#1a4d7a]/10 p-3 text-[#1a4d7a]">
@@ -1049,10 +1177,10 @@ export function Reportes() {
             <ReportsModule embedded hideHeader />
           </TabsContent>
 
-          <TabsContent value="inventario" className="space-y-4 p-4 sm:p-6 pt-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <TabsContent value="inventario" className="space-y-3 p-3 sm:p-4 pt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <ReportChartCard title={t('reports.stockCategory')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
-                  <ResponsiveContainer width="100%" height={300} key="barchart-inventario">
+                  <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="barchart-inventario">
                     <BarChart data={datosInventario}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="categoria" />
@@ -1064,7 +1192,7 @@ export function Reportes() {
               </ReportChartCard>
 
               <ReportChartCard title={t('reports.inventoryDistribution')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
-                  <ResponsiveContainer width="100%" height={300} key="piechart-inventario">
+                  <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="piechart-inventario">
                     <PieChart>
                       <Pie
                         data={datosInventario}
@@ -1072,7 +1200,7 @@ export function Reportes() {
                         cy="50%"
                         labelLine={false}
                         label={(entry) => entry.categoria}
-                        outerRadius={80}
+                        outerRadius={isCompactReportsViewport ? 58 : 80}
                         fill="#8884d8"
                         dataKey="stock"
                       >
@@ -1087,9 +1215,9 @@ export function Reportes() {
             </div>
           </TabsContent>
 
-          <TabsContent value="comandas" className="space-y-4 p-4 sm:p-6 pt-0">
-            <ReportChartCard title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={400}>
-                <ResponsiveContainer width="100%" height={400} key="barchart-comandas">
+          <TabsContent value="comandas" className="space-y-3 p-3 sm:p-4 pt-0">
+            <ReportChartCard title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 400}>
+                <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="barchart-comandas">
                   <BarChart data={datosComandasMes}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="mes" />
@@ -1102,9 +1230,9 @@ export function Reportes() {
             </ReportChartCard>
           </TabsContent>
 
-          <TabsContent value="prs" className="space-y-4 p-4 sm:p-6 pt-0">
-            <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={400}>
-                <ResponsiveContainer width="100%" height={400} key="linechart-prs">
+          <TabsContent value="prs" className="space-y-3 p-3 sm:p-4 pt-0">
+            <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 400}>
+                <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="linechart-prs">
                   <LineChart data={datosPRS}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="mes" />
@@ -1117,7 +1245,7 @@ export function Reportes() {
             </ReportChartCard>
           </TabsContent>
 
-          <TabsContent value="auditoria" className="space-y-4 p-4 sm:p-6 pt-0">
+          <TabsContent value="auditoria" className="space-y-3 p-3 sm:p-4 pt-0">
             <AuditLogViewer />
           </TabsContent>
         </Tabs>

@@ -36,6 +36,7 @@ import {
 } from '../../utils/ofertaStorage';
 import { OfertasDisponibles } from '../cuisine/OfertasDisponibles';
 import { useBranding } from '../../../hooks/useBranding';
+import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { Sparkles } from 'lucide-react';
 import type { Comanda, ItemComanda, Organismo, ProductoOferta, Oferta as OfertaTipo, Solicitud, ProductoAceptado, DatosQR } from '../../types';
 import { registrarActividad } from '../../utils/actividadLogger';
@@ -54,6 +55,55 @@ import { sortByTemperature } from '../../utils/temperatureSort';
 export function Comandas() {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
+  const [tabActual, setTabActual] = useState('comandas');
+  const {
+    isCompactViewport: isCompactOrdersViewport,
+    viewportZoom: ordersViewportZoom,
+  } = useCompactViewport({
+    deps: [tabActual],
+    resolveZoom: ({ height, isCompact }) => {
+      const compactOrdersOverview = isCompact && tabActual === 'comandas';
+      const compactOffersView = isCompact && (tabActual === 'ofertas' || tabActual === 'ofertas-cocina');
+
+      if (height < 600) {
+        if (compactOrdersOverview) {
+          return 0.56;
+        }
+
+        if (compactOffersView) {
+          return 0.5;
+        }
+
+        return 0.38;
+      }
+
+      if (height < 700) {
+        if (compactOrdersOverview) {
+          return 0.66;
+        }
+
+        if (compactOffersView) {
+          return 0.6;
+        }
+
+        return 0.52;
+      }
+
+      if (isCompact) {
+        if (compactOrdersOverview) {
+          return 0.84;
+        }
+
+        if (compactOffersView) {
+          return 0.82;
+        }
+
+        return 0.78;
+      }
+
+      return 1;
+    },
+  });
   const currentLocale = i18n.language || 'fr';
 
   const formatLocalizedDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
@@ -75,7 +125,6 @@ export function Comandas() {
   const [searchInventario, setSearchInventario] = useState('');
   const [cantidadesInventario, setCantidadesInventario] = useState<Record<string, number>>({});
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
-  const [tabActual, setTabActual] = useState('comandas');
   
   // Estados para proponer nueva fecha
   const [dialogProponerFechaOpen, setDialogProponerFechaOpen] = useState(false);
@@ -979,10 +1028,11 @@ export function Comandas() {
 
   return (
     <div 
-      className="min-h-screen p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 relative overflow-hidden"
+      className="min-h-[calc(100vh-56px)] p-2.5 sm:p-3 lg:p-4 space-y-3 sm:space-y-4 relative overflow-hidden"
       style={{ 
         fontFamily: 'Roboto, sans-serif',
         background: 'linear-gradient(135deg, #1a4d7a15 0%, #2d956110 100%)',
+        ...(ordersViewportZoom < 1 ? { zoom: ordersViewportZoom } : {}),
       }}
     >
       {/* Formas decorativas de fondo */}
@@ -1002,17 +1052,17 @@ export function Comandas() {
       </div>
 
       {/* Contenido con z-index superior */}
-      <div className="relative z-10 space-y-4 sm:space-y-6">
+      <div className="relative z-10 space-y-3 sm:space-y-4">
         {/* Alerta de comandas urgentes */}
         <AlertaComandasUrgentes />
 
         {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
+        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
               {branding.logo ? (
                 <div 
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center overflow-hidden shadow-lg border-2"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center overflow-hidden shadow-lg border-2"
                   style={{ borderColor: branding.primaryColor }}
                 >
                   <img 
@@ -1024,16 +1074,16 @@ export function Comandas() {
                 </div>
               ) : (
                 <div 
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center text-white shadow-lg"
+                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center text-white shadow-lg"
                   style={{ backgroundColor: branding.primaryColor }}
                 >
-                  <FileCheck className="w-6 h-6 sm:w-7 sm:h-7" />
+                  <FileCheck className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
               )}
               <div>
                 <div className="flex items-center gap-2">
                   <h1 
-                    className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight"
+                    className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight"
                     style={{ 
                       fontFamily: 'Montserrat, sans-serif',
                       color: branding.primaryColor 
@@ -1042,11 +1092,11 @@ export function Comandas() {
                     {t('orders.title')}
                   </h1>
                   <Sparkles 
-                    className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" 
+                    className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" 
                     style={{ color: branding.secondaryColor }}
                   />
                 </div>
-                <p className="text-xs sm:text-sm text-[#666666] mt-1">{t('orders.subtitle')}</p>
+                <p className="text-xs text-[#666666] mt-1">{t('orders.subtitle')}</p>
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -1079,9 +1129,9 @@ export function Comandas() {
         </div>
 
         {/* Stats con glassmorphism */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className={`${isCompactOrdersViewport ? 'grid grid-cols-5 gap-2' : 'grid grid-cols-1 md:grid-cols-5 gap-4'}`}>
           <div 
-            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             style={{ 
               borderLeftColor: branding.primaryColor,
               boxShadow: `0 4px 15px ${branding.primaryColor}20`
@@ -1089,23 +1139,23 @@ export function Comandas() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('orders.totalOrders')}</p>
+                <p className="text-[11px] text-[#666666]">{t('orders.totalOrders')}</p>
                 <p 
-                  className="font-bold text-2xl"
+                  className="font-bold text-lg sm:text-xl"
                   style={{ color: branding.primaryColor }}
                 >
                   {totalComandas}
                 </p>
               </div>
               <FileCheck 
-                className="w-10 h-10 sm:w-12 sm:h-12 opacity-20" 
+                className="w-7 h-7 sm:w-9 sm:h-9 opacity-20" 
                 style={{ color: branding.primaryColor }}
               />
             </div>
           </div>
 
           <div 
-            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             style={{ 
               borderLeftColor: branding.secondaryColor,
               boxShadow: `0 4px 15px ${branding.secondaryColor}20`
@@ -1113,48 +1163,48 @@ export function Comandas() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('orders.activeOrders')}</p>
+                <p className="text-[11px] text-[#666666]">{t('orders.activeOrders')}</p>
                 <p 
-                  className="font-bold text-2xl"
+                  className="font-bold text-lg sm:text-xl"
                   style={{ color: branding.secondaryColor }}
                 >
                   {comandasActivas}
                 </p>
               </div>
               <Eye 
-                className="w-10 h-10 sm:w-12 sm:h-12 opacity-20" 
+                className="w-7 h-7 sm:w-9 sm:h-9 opacity-20" 
                 style={{ color: branding.secondaryColor }}
               />
             </div>
           </div>
 
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#FFC107] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 border-l-[#FFC107] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('orders.pendingOrders')}</p>
-                <p className="font-bold text-2xl text-[#FFC107]">{comandasPendientesCount}</p>
+                <p className="text-[11px] text-[#666666]">{t('orders.pendingOrders')}</p>
+                <p className="font-bold text-lg sm:text-xl text-[#FFC107]">{comandasPendientesCount}</p>
               </div>
-              <Printer className="w-10 h-10 sm:w-12 sm:h-12 text-[#FFC107] opacity-20" />
+              <Printer className="w-7 h-7 sm:w-9 sm:h-9 text-[#FFC107] opacity-20" />
             </div>
           </div>
 
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#7E57C2] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 border-l-[#7E57C2] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">Commandes acceptées</p>
-                <p className="font-bold text-2xl text-[#7E57C2]">{comandasAceptadasCount}</p>
+                <p className="text-[11px] text-[#666666]">Commandes acceptées</p>
+                <p className="font-bold text-lg sm:text-xl text-[#7E57C2]">{comandasAceptadasCount}</p>
               </div>
-              <Check className="w-10 h-10 sm:w-12 sm:h-12 text-[#7E57C2] opacity-20" />
+              <Check className="w-7 h-7 sm:w-9 sm:h-9 text-[#7E57C2] opacity-20" />
             </div>
           </div>
 
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#2E7D32] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 border-l-[#2E7D32] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('orders.completedOrders')}</p>
-                <p className="font-bold text-2xl text-[#2E7D32]">{comandasCompletadas}</p>
+                <p className="text-[11px] text-[#666666]">{t('orders.completedOrders')}</p>
+                <p className="font-bold text-lg sm:text-xl text-[#2E7D32]">{comandasCompletadas}</p>
               </div>
-              <FileCheck className="w-10 h-10 sm:w-12 sm:h-12 text-[#2E7D32] opacity-20" />
+              <FileCheck className="w-7 h-7 sm:w-9 sm:h-9 text-[#2E7D32] opacity-20" />
             </div>
           </div>
       </div>
@@ -1162,17 +1212,17 @@ export function Comandas() {
         {/* Tabs: Comandas, Ofertas y Ofertas Cocina - Con glassmorphism */}
         <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
           <Tabs value={tabActual} onValueChange={setTabActual}>
-            <div className="p-4 sm:p-6">
-              <TabsList className="app-compact-tabs-grid w-full">
-                <TabsTrigger value="comandas" className="app-compact-tab-trigger flex items-center gap-2">
+            <div className="p-3 sm:p-4">
+              <TabsList className="app-compact-tabs-grid w-full gap-1">
+                <TabsTrigger value="comandas" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
                   <Package className="w-4 h-4" />
                   {t('orders.title')}
                 </TabsTrigger>
-                <TabsTrigger value="ofertas" className="app-compact-tab-trigger flex items-center gap-2">
+                <TabsTrigger value="ofertas" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
                   <Tag className="w-4 h-4" />
                   {t('orders.offersRequestsTab')}
                 </TabsTrigger>
-                <TabsTrigger value="ofertas-cocina" className="app-compact-tab-trigger flex items-center gap-2">
+                <TabsTrigger value="ofertas-cocina" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
                   <Utensils className="w-4 h-4" />
                   {t('orders.kitchenOffersTab')}
                 </TabsTrigger>
@@ -1180,7 +1230,7 @@ export function Comandas() {
             </div>
 
           {/* TAB: COMANDAS */}
-          <TabsContent value="comandas" className="p-4 sm:p-6 pt-0 space-y-4">
+          <TabsContent value="comandas" className="p-3 sm:p-4 pt-0 space-y-3">
             {/* Búsqueda y filtros */}
           <div className="app-compact-filters">
             <div className="flex-1">
@@ -1192,7 +1242,7 @@ export function Comandas() {
               />
             </div>
             <Select value={estadoFiltro} onValueChange={setEstadoFiltro}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[180px] h-9 text-xs">
                 <SelectValue placeholder={t('orders.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
@@ -1209,7 +1259,7 @@ export function Comandas() {
               variant="outline"
               onClick={() => setDialogListaDistribuidosOpen(true)}
               disabled={comandasDistribuidasFiltradas.length === 0}
-              className="whitespace-nowrap"
+              className="whitespace-nowrap h-9 text-xs"
             >
               <Package className="w-4 h-4 mr-2" />
               Liste produits distribués
@@ -1217,7 +1267,7 @@ export function Comandas() {
           </div>
 
           <Card className="border-white/60 bg-white/75 shadow-lg backdrop-blur-xl">
-            <CardContent className="pt-5 space-y-4">
+            <CardContent className="pt-4 space-y-3">
               <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <h2
@@ -1248,10 +1298,10 @@ export function Comandas() {
               </div>
 
               {comandasFiltradas.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#d0d7de] bg-[#f8fafc] p-10 text-center">
+                <div className="rounded-2xl border border-dashed border-[#d0d7de] bg-[#f8fafc] p-5 text-center">
                   <Package className="mx-auto mb-3 h-10 w-10 text-[#9aa4b2]" />
-                  <p className="text-base font-medium text-[#334155]">Aucune commande ne correspond aux filtres actuels.</p>
-                  <p className="mt-1 text-sm text-[#64748b]">Essayez une autre recherche ou changez le statut sélectionné.</p>
+                  <p className="text-sm font-medium text-[#334155]">Aucune commande ne correspond aux filtres actuels.</p>
+                  <p className="mt-1 text-xs text-[#64748b]">Essayez une autre recherche ou changez le statut sélectionné.</p>
                 </div>
               ) : (
                 <div

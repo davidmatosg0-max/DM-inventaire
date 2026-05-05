@@ -42,7 +42,11 @@ import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/Select
 import { registrarActividad } from '../../utils/actividadLogger';
 import { TRANSPORTE_MODULE_EVENT, actualizarChofer, crearChofer, eliminarChofer as eliminarChoferTransporte, obtenerChoferes, obtenerVehiculos, type Chofer, type Vehiculo } from '../../utils/transporteLogic';
 
-export function GestionChoferes() {
+interface GestionChoferesProps {
+  compactMode?: boolean;
+}
+
+export function GestionChoferes({ compactMode = false }: GestionChoferesProps) {
   const { t } = useTranslation();
   const [choferes, setChoferes] = useState<Chofer[]>(() => obtenerChoferes());
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>(() => obtenerVehiculos());
@@ -254,51 +258,51 @@ export function GestionChoferes() {
   return (
     <div className="space-y-6">
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className={`${compactMode ? 'grid grid-cols-4 gap-2' : 'grid grid-cols-1 md:grid-cols-4 gap-4'}`}>
         <Card className="border-l-4 border-l-[#1E73BE]">
-          <CardContent className="pt-6">
+          <CardContent className={compactMode ? 'p-3' : 'pt-6'}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('transport.driversManagement.totalDrivers')}</p>
-                <p className="text-2xl font-bold text-[#1E73BE]">{estadisticas.total}</p>
+                <p className={`${compactMode ? 'text-[11px]' : 'text-sm'} text-[#666666]`}>{t('transport.driversManagement.totalDrivers')}</p>
+                <p className={`${compactMode ? 'text-lg' : 'text-2xl'} font-bold text-[#1E73BE]`}>{estadisticas.total}</p>
               </div>
-              <User className="h-8 w-8 text-[#1E73BE]" />
+              <User className={`${compactMode ? 'h-5 w-5' : 'h-8 w-8'} text-[#1E73BE]`} />
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-[#4CAF50]">
-          <CardContent className="pt-6">
+          <CardContent className={compactMode ? 'p-3' : 'pt-6'}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('transport.driversManagement.active')}</p>
-                <p className="text-2xl font-bold text-[#4CAF50]">{estadisticas.activos}</p>
+                <p className={`${compactMode ? 'text-[11px]' : 'text-sm'} text-[#666666]`}>{t('transport.driversManagement.active')}</p>
+                <p className={`${compactMode ? 'text-lg' : 'text-2xl'} font-bold text-[#4CAF50]`}>{estadisticas.activos}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-[#4CAF50]" />
+              <CheckCircle className={`${compactMode ? 'h-5 w-5' : 'h-8 w-8'} text-[#4CAF50]`} />
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-[#FFC107]">
-          <CardContent className="pt-6">
+          <CardContent className={compactMode ? 'p-3' : 'pt-6'}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('transport.driversManagement.onVacation')}</p>
-                <p className="text-2xl font-bold text-[#FFC107]">{estadisticas.vacaciones}</p>
+                <p className={`${compactMode ? 'text-[11px]' : 'text-sm'} text-[#666666]`}>{t('transport.driversManagement.onVacation')}</p>
+                <p className={`${compactMode ? 'text-lg' : 'text-2xl'} font-bold text-[#FFC107]`}>{estadisticas.vacaciones}</p>
               </div>
-              <Calendar className="h-8 w-8 text-[#FFC107]" />
+              <Calendar className={`${compactMode ? 'h-5 w-5' : 'h-8 w-8'} text-[#FFC107]`} />
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-[#DC3545]">
-          <CardContent className="pt-6">
+          <CardContent className={compactMode ? 'p-3' : 'pt-6'}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#666666]">{t('transport.driversManagement.inactive')}</p>
-                <p className="text-2xl font-bold text-[#DC3545]">{estadisticas.inactivos}</p>
+                <p className={`${compactMode ? 'text-[11px]' : 'text-sm'} text-[#666666]`}>{t('transport.driversManagement.inactive')}</p>
+                <p className={`${compactMode ? 'text-lg' : 'text-2xl'} font-bold text-[#DC3545]`}>{estadisticas.inactivos}</p>
               </div>
-              <XCircle className="h-8 w-8 text-[#DC3545]" />
+              <XCircle className={`${compactMode ? 'h-5 w-5' : 'h-8 w-8'} text-[#DC3545]`} />
             </div>
           </CardContent>
         </Card>
@@ -307,7 +311,7 @@ export function GestionChoferes() {
       {/* Tabla de choferes */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
               👨‍✈️ {t('transport.driversManagement.title')}
             </CardTitle>
@@ -321,7 +325,7 @@ export function GestionChoferes() {
           </div>
 
           {/* Filtros */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center mt-4">
+          <div className={`flex flex-col gap-2 sm:flex-row sm:items-center ${compactMode ? 'mt-3' : 'mt-4'}`}>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
               <Input
@@ -346,72 +350,49 @@ export function GestionChoferes() {
         </CardHeader>
 
         <CardContent>
-          <div className="max-h-[500px] overflow-y-auto border rounded-lg">
-            <Table>
-              <TableHeader className="sticky top-0 bg-white z-10">
-                <TableRow>
-                  <TableHead>{t('transport.driversManagement.photo')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.name')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.idCard')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.license')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.type')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.contact')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.assignedVehicle')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.experience')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.status')}</TableHead>
-                  <TableHead>{t('transport.driversManagement.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {choferesFiltrados.map(chofer => (
-                  <TableRow key={chofer.id}>
-                    <TableCell>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F4F4F4] text-2xl">
-                        {chofer.foto}
+          {compactMode ? (
+            <div className="space-y-3">
+              {choferesFiltrados.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 py-8 text-center">
+                  <User className="mx-auto h-10 w-10 text-[#999999]" />
+                  <p className="mt-3 text-sm text-[#666666]">{t('transport.driversManagement.noDriversFound')}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                  {choferesFiltrados.map((chofer) => (
+                    <div key={chofer.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F4F4F4] text-2xl">
+                            {chofer.foto}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-[#333333] truncate">{chofer.nombre} {chofer.apellido}</p>
+                            <p className="text-xs text-[#666666] truncate">{chofer.email || chofer.telefono || t('transport.driversManagement.unassigned')}</p>
+                          </div>
+                        </div>
+                        {getEstadoBadge(chofer.estado)}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-[#333333]">
-                          {chofer.nombre} {chofer.apellido}
-                        </p>
-                        <p className="text-xs text-[#666666]">{chofer.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{chofer.cedula}</TableCell>
-                    <TableCell className="font-mono text-sm">{chofer.licencia}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{chofer.tipoLicencia}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 text-xs text-[#666666]">
-                          <Phone className="h-3 w-3" />
-                          {chofer.telefono}
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#666666]">
+                        <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                          <p className="text-[10px] uppercase tracking-wide text-slate-400">Permis</p>
+                          <p className="mt-1 font-medium text-[#334155]">{chofer.tipoLicencia}</p>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                          <p className="text-[10px] uppercase tracking-wide text-slate-400">Expérience</p>
+                          <p className="mt-1 font-medium text-[#334155]">{chofer.experienciaAnios} {t('transport.driversManagement.years')}</p>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 px-2.5 py-2 col-span-2">
+                          <p className="text-[10px] uppercase tracking-wide text-slate-400">Véhicule assigné</p>
+                          <p className="mt-1 font-medium text-[#334155] truncate">{chofer.vehiculoAsignado || t('transport.driversManagement.unassigned')}</p>
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {chofer.vehiculoAsignado ? (
-                        <span className="text-sm font-medium text-[#1E73BE]">
-                          {chofer.vehiculoAsignado}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-[#999999]">{t('transport.driversManagement.unassigned')}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{chofer.experienciaAnios} {t('transport.driversManagement.years')}</span>
-                    </TableCell>
-                    <TableCell>{getEstadoBadge(chofer.estado)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => abrirDialogEditar(chofer)}
-                        >
-                          <Edit className="h-4 w-4" />
+
+                      <div className="mt-3 flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => abrirDialogEditar(chofer)} className="flex-1">
+                          <Edit className="h-4 w-4 mr-1.5" />
+                          Modifier
                         </Button>
                         <Button
                           size="sm"
@@ -422,19 +403,102 @@ export function GestionChoferes() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </TableCell>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="max-h-[500px] overflow-y-auto border rounded-lg">
+              <Table>
+                <TableHeader className="sticky top-0 bg-white z-10">
+                  <TableRow>
+                    <TableHead>{t('transport.driversManagement.photo')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.name')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.idCard')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.license')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.type')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.contact')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.assignedVehicle')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.experience')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.status')}</TableHead>
+                    <TableHead>{t('transport.driversManagement.actions')}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {choferesFiltrados.map(chofer => (
+                    <TableRow key={chofer.id}>
+                      <TableCell>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F4F4F4] text-2xl">
+                          {chofer.foto}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-[#333333]">
+                            {chofer.nombre} {chofer.apellido}
+                          </p>
+                          <p className="text-xs text-[#666666]">{chofer.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{chofer.cedula}</TableCell>
+                      <TableCell className="font-mono text-sm">{chofer.licencia}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{chofer.tipoLicencia}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1 text-xs text-[#666666]">
+                            <Phone className="h-3 w-3" />
+                            {chofer.telefono}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {chofer.vehiculoAsignado ? (
+                          <span className="text-sm font-medium text-[#1E73BE]">
+                            {chofer.vehiculoAsignado}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-[#999999]">{t('transport.driversManagement.unassigned')}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{chofer.experienciaAnios} {t('transport.driversManagement.years')}</span>
+                      </TableCell>
+                      <TableCell>{getEstadoBadge(chofer.estado)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => abrirDialogEditar(chofer)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEliminarChofer(chofer.id)}
+                            className="text-[#DC3545] hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-            {choferesFiltrados.length === 0 && (
-              <div className="py-12 text-center">
-                <User className="mx-auto h-12 w-12 text-[#999999]" />
-                <p className="mt-4 text-[#666666]">{t('transport.driversManagement.noDriversFound')}</p>
-              </div>
-            )}
-          </div>
+              {choferesFiltrados.length === 0 && (
+                <div className="py-12 text-center">
+                  <User className="mx-auto h-12 w-12 text-[#999999]" />
+                  <p className="mt-4 text-[#666666]">{t('transport.driversManagement.noDriversFound')}</p>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

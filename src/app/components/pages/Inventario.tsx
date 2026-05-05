@@ -65,6 +65,7 @@ import {
   type PlantillaConversion
 } from '../../utils/conversionStorage';
 import { useBranding } from '../../../hooks/useBranding';
+import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { 
   migrarValoresMonetariosDesdeEntradas,
   recalcularValoresTotales,
@@ -175,6 +176,23 @@ export function Inventario() {
   const [searchUbicacion, setSearchUbicacion] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [vistaMode, setVistaMode] = useState<'grid' | 'list'>('list');
+  const {
+    isCompactViewport: isCompactInventoryViewport,
+    viewportZoom: inventoryViewportZoom,
+  } = useCompactViewport({
+    compactHeight: 720,
+    resolveZoom: ({ height }) => {
+      if (height < 600) {
+        return 0.72;
+      }
+
+      if (height < 700) {
+        return 0.86;
+      }
+
+      return 1;
+    },
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
   const [carritoOpen, setCarritoOpen] = useState(false);
@@ -328,6 +346,8 @@ export function Inventario() {
   }, [productosCreados, refreshKey]);
 
   const organismosActivos = mockOrganismos.filter(o => o.activo);
+
+  const effectiveVistaMode = isCompactInventoryViewport ? 'grid' : vistaMode;
 
   const zonasUbicacionConfiguradas = React.useMemo<LocationZone[]>(() => loadLocationZones(), [refreshKey, dialogLocalizacionOpen, escanerQROpen]);
 
@@ -2033,7 +2053,10 @@ export function Inventario() {
   };
 
   return (
-    <div className="app-compact-page relative h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] flex flex-col overflow-hidden -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6">
+    <div
+      className="app-compact-page relative min-h-[calc(100vh-56px)] sm:min-h-[calc(100vh-64px)] flex flex-col overflow-visible -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6"
+      style={inventoryViewportZoom < 1 ? { zoom: inventoryViewportZoom } : undefined}
+    >
       {/* Fondo degradado fijo con glassmorphism */}
       <div 
         className="fixed inset-0 -z-10"
@@ -2057,24 +2080,24 @@ export function Inventario() {
         />
       </div>
 
-      <Card className="border-none shadow-none flex-1 flex flex-col overflow-hidden rounded-none w-full relative z-10">
-        <CardHeader className="border-b backdrop-blur-xl bg-white/90 flex-shrink-0 py-3 sm:py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+      <Card className="border-none shadow-none flex flex-col overflow-visible rounded-none w-full relative z-10">
+        <CardHeader className="border-b backdrop-blur-xl bg-white/90 flex-shrink-0 py-2.5 sm:py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
               <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
                 style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
               >
-                <Package className="h-6 w-6 text-white" />
+                <Package className="h-5 w-5 text-white" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <CardTitle className="text-lg sm:text-xl break-words" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: branding.primaryColor }}>
+                  <CardTitle className="text-base sm:text-lg break-words" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: branding.primaryColor }}>
                     {t('inventory.title')}
                   </CardTitle>
-                  <Sparkles className="w-5 h-5 animate-pulse" style={{ color: branding.secondaryColor }} />
+                  <Sparkles className="w-4 h-4 animate-pulse" style={{ color: branding.secondaryColor }} />
                 </div>
-                <CardDescription className="text-[#666666] text-sm mt-0.5">
+                <CardDescription className="text-[#666666] text-xs mt-0.5">
                   {t('inventory.subtitle')}
                 </CardDescription>
               </div>
@@ -2092,85 +2115,88 @@ export function Inventario() {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-3 sm:pt-4 flex-1 flex flex-col overflow-hidden space-y-3">
+        <CardContent className="pt-2.5 sm:pt-3 flex flex-col overflow-visible space-y-2.5">
           {/* Stats Cards */}
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 flex-shrink-0">
-            <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
+          <div className={`${isCompactInventoryViewport ? 'grid grid-cols-4 gap-1.5' : 'grid grid-cols-2 gap-2 md:grid-cols-4'} flex-shrink-0`}>
+            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.totalProducts')}</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>{todosLosProductos.length}</p>
+                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.totalProducts')}</p>
+                  <p className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>{todosLosProductos.length}</p>
                 </div>
                 <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
                   style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
                 >
-                  <Package className="h-5 w-5 text-white" />
+                  <Package className="h-4 w-4 text-white" />
                 </div>
               </div>
             </div>
 
-            <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
+            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Sous-catégories</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>{subcategoriasInventario.length}</p>
+                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Sous-catégories</p>
+                  <p className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>{subcategoriasInventario.length}</p>
                 </div>
                 <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
                   style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
                 >
-                  <Grid3x3 className="h-5 w-5 text-white" />
+                  <Grid3x3 className="h-4 w-4 text-white" />
                 </div>
               </div>
             </div>
 
-            <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4 border-l-[#e8a419]">
+            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4 border-l-[#e8a419]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.totalStock')}</p>
-                  <p className="text-2xl font-bold text-[#e8a419]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.totalStock')}</p>
+                  <p className="text-lg font-bold text-[#e8a419]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     {todosLosProductos.reduce((sum, p) => sum + p.stockActual, 0)}
                   </p>
                 </div>
                 <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
                   style={{ background: 'linear-gradient(135deg, #e8a419 0%, #d19316 100%)' }}
                 >
-                  <FileText className="h-5 w-5 text-white" />
+                  <FileText className="h-4 w-4 text-white" />
                 </div>
               </div>
             </div>
 
-            <div className="card-glass rounded-2xl p-4 hover-lift cursor-pointer border-l-4 border-l-[#c23934]">
+            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4 border-l-[#c23934]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.inCart')}</p>
-                  <p className="text-2xl font-bold text-[#c23934]" style={{ fontFamily: 'Montserrat, sans-serif' }}>{calcularTotalItems()}</p>
+                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.inCart')}</p>
+                  <p className="text-lg font-bold text-[#c23934]" style={{ fontFamily: 'Montserrat, sans-serif' }}>{calcularTotalItems()}</p>
                 </div>
                 <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
                   style={{ background: 'linear-gradient(135deg, #c23934 0%, #a82f2a 100%)' }}
                 >
-                  <ShoppingCart className="h-5 w-5 text-white" />
+                  <ShoppingCart className="h-4 w-4 text-white" />
                 </div>
               </div>
             </div>
           </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="app-compact-tabs-grid flex-shrink-0">
-          <TabsTrigger className="app-compact-tab-trigger" value="productos">{t('inventory.products')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger" value="movimientos">{t('inventory.movements')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger" value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger" value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger" value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger" value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col overflow-visible">
+        <TabsList
+          className="app-compact-tabs-grid flex-shrink-0 gap-1"
+          style={isCompactInventoryViewport ? { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' } : undefined}
+        >
+          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="productos">{t('inventory.products')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="movimientos">{t('inventory.movements')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
+          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
         </TabsList>
 
         {/* Productos Tab */}
-        <TabsContent value="productos" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
+        <TabsContent value="productos" className="flex flex-col overflow-visible space-y-3 mt-3">
           {/* Toolbar */}
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between flex-shrink-0">
             <div className="flex-1 flex flex-col gap-2 sm:flex-row">
@@ -2180,7 +2206,7 @@ export function Inventario() {
                   placeholder={t('inventory.searchPlaceholder', { defaultValue: t('inventory.searchByNameOrCode') })}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-9 text-xs"
                 />
               </div>
 
@@ -2190,21 +2216,21 @@ export function Inventario() {
                   placeholder={t('inventory.searchByLotNumber')}
                   value={searchLote}
                   onChange={(e) => setSearchLote(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-9 text-xs"
                 />
               </div>
 
               <Button
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
-                className="gap-2"
+                className="gap-2 h-9 text-xs"
               >
                 <Filter className="h-4 w-4" />
                 {t('common.filter')}
               </Button>
 
               <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[160px] h-9 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2217,19 +2243,22 @@ export function Inventario() {
             </div>
 
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setVistaMode(vistaMode === 'grid' ? 'list' : 'grid')}
-                title={vistaMode === 'grid' ? t('inventory.viewList') : t('inventory.viewGrid')}
-              >
-                {vistaMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
-              </Button>
+              {!isCompactInventoryViewport && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setVistaMode(vistaMode === 'grid' ? 'list' : 'grid')}
+                  title={vistaMode === 'grid' ? t('inventory.viewList') : t('inventory.viewGrid')}
+                  className="h-9 w-9"
+                >
+                  {vistaMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
+                </Button>
+              )}
 
               <Button
                 size="icon"
                 onClick={() => setCompartirDialogOpen(true)}
-                className="bg-[#2d9561] hover:bg-[#267a4f]"
+                className="bg-[#2d9561] hover:bg-[#267a4f] h-9 w-9"
                 title={t('inventory.shareProductList')}
               >
                 <Share2 className="h-4 w-4" />
@@ -2239,7 +2268,7 @@ export function Inventario() {
                 size="icon"
                 onClick={() => setExportacionOpen(true)}
                 variant="outline"
-                className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50"
+                className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 h-9 w-9"
                 title={t('common.export')}
               >
                 <Download className="h-4 w-4" />
@@ -2249,7 +2278,7 @@ export function Inventario() {
                 size="icon"
                 onClick={() => openInventoryScanner()}
                 variant="outline"
-                className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50"
+                className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50 h-9 w-9"
                 title={t('inventory.scanQrTitle')}
               >
                 <QrCode className="h-4 w-4" />
@@ -2259,7 +2288,7 @@ export function Inventario() {
                 size="icon"
                 onClick={() => openInventoryScanner('agregar_carrito_rapido')}
                 variant="outline"
-                className="border-[#2d9561] text-[#2d9561] hover:bg-green-50"
+                className="border-[#2d9561] text-[#2d9561] hover:bg-green-50 h-9 w-9"
                 title="Scanner QR et saisir la quantité pour le panier"
               >
                 <ShoppingCart className="h-4 w-4" />
@@ -2269,7 +2298,7 @@ export function Inventario() {
                 size="icon"
                 onClick={() => setCarritoOpen(true)}
                 variant="outline"
-                className="relative"
+                className="relative h-9 w-9"
                 title={t('inventory.cart')}
               >
                 <ShoppingCart className="h-4 w-4" />
@@ -2359,25 +2388,25 @@ export function Inventario() {
           )}
 
           {/* Products List */}
-          {vistaMode === 'list' ? (
-            <Card className="shadow-lg border-[#E0E0E0] flex-1 flex flex-col overflow-hidden">
-              <CardContent className="pt-4 px-4 pb-4 flex-1 overflow-hidden">
-                <div className="h-full overflow-y-auto border-2 border-[#E0E0E0] rounded-xl shadow-sm">
-                  <Table>
+          {effectiveVistaMode === 'list' ? (
+            <Card className="shadow-lg border-[#E0E0E0] flex flex-col overflow-visible">
+              <CardContent className="pt-4 px-4 pb-4 overflow-visible">
+                <div className="overflow-visible border-2 border-[#E0E0E0] rounded-xl shadow-sm">
+                  <Table className="min-w-0 table-fixed [&_th]:whitespace-normal [&_th]:break-words [&_td]:whitespace-normal [&_td]:break-words">
                     <TableHeader className="sticky top-0 bg-gradient-to-r from-[#F8F9FA] to-[#E9ECEF] z-10 border-b-2 border-[#1a4d7a]">
                       <TableRow className="h-8">
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.photo')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.code')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.productName')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>📦 {t('inventory.lotNumberShort')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unit')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unitWeight')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.currentStock')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.minimumStock')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>💰 Valor Total</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.location')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.status')}</TableHead>
-                        <TableHead className="font-semibold text-[#333333] text-xs py-1 px-2 text-center" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.actions')}</TableHead>
+                        <TableHead className="w-[4%] font-semibold text-[#333333] text-[11px] py-1 px-1.5 text-center" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.photo')}</TableHead>
+                        <TableHead className="w-[8%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.code')}</TableHead>
+                        <TableHead className="w-[15%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.productName')}</TableHead>
+                        <TableHead className="w-[8%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>📦 {t('inventory.lotNumberShort')}</TableHead>
+                        <TableHead className="w-[6%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unit')}</TableHead>
+                        <TableHead className="w-[9%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unitWeight')}</TableHead>
+                        <TableHead className="w-[12%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.currentStock')}</TableHead>
+                        <TableHead className="w-[7%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.minimumStock')}</TableHead>
+                        <TableHead className="w-[10%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>💰 Valor Total</TableHead>
+                        <TableHead className="w-[9%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.location')}</TableHead>
+                        <TableHead className="w-[5%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.status')}</TableHead>
+                        <TableHead className="w-[7%] font-semibold text-[#333333] text-[11px] py-1 px-1.5 text-center" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2396,28 +2425,28 @@ export function Inventario() {
                               index % 2 === 0 ? 'bg-white' : 'bg-[#FAFBFC]'
                             }`}
                           >
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               <div className="flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br from-[#F4F4F4] to-[#E8E8E8] border border-[#E0E0E0]">
                                 <span className="text-lg emoji-icon">{obtenerIconoProducto(producto)}</span>
                               </div>
                             </TableCell>
-                            <TableCell className="py-1 px-2">
-                              <span className="font-mono text-[10px] font-semibold text-[#1a4d7a] bg-blue-50 px-1.5 py-0.5 rounded">
+                            <TableCell className="py-1 px-1.5 align-top">
+                              <span className="inline-block font-mono text-[10px] font-semibold text-[#1a4d7a] bg-blue-50 px-1.5 py-0.5 rounded break-all">
                                 {producto.codigo}
                               </span>
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               <div className="flex flex-col">
                                 <span className="font-semibold text-[#333333] text-xs leading-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                                   {getInventoryProductName(producto)}
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               {producto.lote ? (
                                 <Badge 
                                   variant="outline" 
-                                  className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a] font-mono text-[10px] px-1.5 py-0"
+                                  className="max-w-full bg-blue-50 text-[#1a4d7a] border-[#1a4d7a] font-mono text-[10px] px-1.5 py-0 break-all"
                                 >
                                   📦 {producto.lote}
                                 </Badge>
@@ -2425,7 +2454,7 @@ export function Inventario() {
                                 <span className="text-[10px] text-[#999999] italic">-</span>
                               )}
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top text-center">
                               <Badge 
                                 variant="secondary" 
                                 className="font-medium bg-[#F4F4F4] text-[#333333] border border-[#E0E0E0] text-[10px] px-1.5 py-0"
@@ -2433,7 +2462,7 @@ export function Inventario() {
                                 {producto.unidad}
                               </Badge>
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (
                                 <span className="font-bold text-[#1a4d7a] text-xs">
                                   {Math.round(producto.pesoUnitario)} <span className="text-[10px]">kg</span>
@@ -2450,19 +2479,19 @@ export function Inventario() {
                                 <span className="text-[#999999] text-[10px] italic">N/A</span>
                               )}
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               <div className="flex flex-col leading-tight">
                                 <span className="text-sm font-bold text-[#333333]">{reserva.disponibleParaReservar}</span>
                                 <span className="text-[10px] text-[#666666]">Reservado: {reserva.totalReservado}</span>
                                 <span className="text-[10px] text-[#999999]">Físico: {producto.stockActual}</span>
                               </div>
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               <span className="text-xs font-medium text-[#666666]">
                                 {producto.stockMinimo}
                               </span>
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               {(() => {
                                 // 🎯 PRIORIDAD 1: Usar valorTotal o valorUnitario si están disponibles
                                 if (producto.valorTotal && producto.valorTotal > 0) {
@@ -2519,16 +2548,16 @@ export function Inventario() {
                                 return <span className="text-[10px] text-[#999999] italic">-</span>;
                               })()}
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top">
                               {producto.ubicacion ? (
                                 <button
                                   type="button"
                                   onClick={() => focusLocationProductsFromQr(producto.ubicacion)}
                                   title={`Modifier tous les produits de ${producto.ubicacion}`}
-                                  className="flex items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded border border-[#2d9561] hover:bg-green-100 transition-colors"
+                                  className="flex max-w-full items-center gap-1 bg-green-50 px-1.5 py-0.5 rounded border border-[#2d9561] hover:bg-green-100 transition-colors"
                                 >
                                   <MapPin className="h-3 w-3 text-[#2d9561]" />
-                                  <span className="text-[10px] font-medium text-[#333333]">{producto.ubicacion}</span>
+                                  <span className="text-[10px] font-medium text-[#333333] break-words">{producto.ubicacion}</span>
                                 </button>
                               ) : (
                                 <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">
@@ -2537,16 +2566,16 @@ export function Inventario() {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell className="py-1 px-2">
+                            <TableCell className="py-1 px-1.5 align-top text-center">
                               <Badge 
-                                className={`${stockStatus.color} text-white font-medium text-[10px] px-2 py-0`}
+                                className={`${stockStatus.color} max-w-full text-white font-medium text-[10px] px-2 py-0 whitespace-normal break-words`}
                                 style={{ fontFamily: 'Montserrat, sans-serif' }}
                               >
                                 {stockStatus.label}
                               </Badge>
                             </TableCell>
-                            <TableCell className="py-1 px-2">
-                              <div className="flex gap-1 justify-center">
+                            <TableCell className="py-1 px-1.5 align-top">
+                              <div className="grid grid-cols-2 gap-1 justify-center">
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -2555,7 +2584,7 @@ export function Inventario() {
                                     setDialogLocalizacionOpen(true);
                                   }}
                                   title="Localiser le produit"
-                                  className="hover:bg-green-50 hover:border-[#2d9561] transition-all h-7 w-7 p-0"
+                                  className="hover:bg-green-50 hover:border-[#2d9561] transition-all h-7 w-full min-w-0 p-0"
                                 >
                                   <MapPin className="h-3 w-3 text-[#2d9561]" />
                                 </Button>
@@ -2564,7 +2593,7 @@ export function Inventario() {
                                   variant="outline"
                                   onClick={() => abrirConversionUnidades(producto)}
                                   title={t('inventory.convertUnits')}
-                                  className="hover:bg-blue-50 hover:border-[#1a4d7a] transition-all h-7 w-7 p-0"
+                                  className="hover:bg-blue-50 hover:border-[#1a4d7a] transition-all h-7 w-full min-w-0 p-0"
                                 >
                                   <ArrowLeftRight className="h-3 w-3 text-[#1a4d7a]" />
                                 </Button>
@@ -2576,14 +2605,14 @@ export function Inventario() {
                                     setHistorialProductoDialogOpen(true);
                                   }}
                                   title={t('inventory.viewHistory')}
-                                  className="hover:bg-purple-50 hover:border-[#9C27B0] transition-all h-7 w-7 p-0"
+                                  className="hover:bg-purple-50 hover:border-[#9C27B0] transition-all h-7 w-full min-w-0 p-0"
                                 >
                                   <History className="h-3 w-3 text-[#9C27B0]" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   onClick={() => agregarAlCarrito(producto.id, 1)}
-                                  className={`transition-all h-7 w-7 p-0 ${
+                                  className={`transition-all h-7 w-full min-w-0 p-0 ${
                                     itemEnCarrito 
                                       ? 'bg-[#2d9561] text-white hover:bg-[#267a4f]' 
                                       : 'bg-white border-2 border-[#2d9561] text-[#2d9561] hover:bg-[#2d9561] hover:text-white'
@@ -2602,16 +2631,16 @@ export function Inventario() {
                 </div>
 
                 {productosFiltrados.length === 0 && (
-                  <div className="py-16 text-center bg-gradient-to-b from-white to-[#F8F9FA]">
+                  <div className="py-6 text-center bg-gradient-to-b from-white to-[#F8F9FA]">
                     <div className="flex flex-col items-center gap-4">
-                      <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                        <Package className="h-12 w-12 text-[#1a4d7a]" />
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+                        <Package className="h-7 w-7 text-[#1a4d7a]" />
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-[#333333] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                        <p className="text-sm font-semibold text-[#333333] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                           {t('common.noResults')}
                         </p>
-                        <p className="text-sm text-[#666666]">
+                        <p className="text-xs text-[#666666]">
                           {t('inventory.adjustSearchFilters')}
                         </p>
                       </div>
@@ -2622,7 +2651,7 @@ export function Inventario() {
             </Card>
           ) : (
             /* Vista Grid */
-            <div className="max-h-[600px] overflow-y-auto border rounded-lg p-3 bg-white">
+            <div className="overflow-visible border rounded-lg p-3 bg-white">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
                 {productosFiltrados.map(producto => {
                   const stockStatus = getStockStatus(producto);
@@ -2818,7 +2847,7 @@ export function Inventario() {
         </TabsContent>
 
         {/* Movimientos Tab */}
-        <TabsContent value="movimientos" className="flex-1 flex flex-col overflow-hidden mt-3">
+        <TabsContent value="movimientos" className="flex flex-col overflow-hidden mt-3">
           {activeTab === 'movimientos' && (
             <DeferredPanel>
               <MovimientosInventario productos={todosLosProductos} />
@@ -2827,7 +2856,7 @@ export function Inventario() {
         </TabsContent>
 
         {/* Conversions Tab */}
-        <TabsContent value="conversions" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
+        <TabsContent value="conversions" className="flex flex-col overflow-hidden space-y-3 mt-3">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -2999,7 +3028,7 @@ export function Inventario() {
         </TabsContent>
 
         {/* Entradas Tab */}
-        <TabsContent value="entradas" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
+        <TabsContent value="entradas" className="flex flex-col overflow-hidden space-y-3 mt-3">
           <div className="flex items-center">
             <div>
               <h2 className="text-xl font-bold text-[#333333]">{t('inventory.entryHistory')}</h2>
@@ -3015,7 +3044,7 @@ export function Inventario() {
         </TabsContent>
 
         {/* Validación Tab - NUEVO */}
-        <TabsContent value="validacion" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
+        <TabsContent value="validacion" className="flex flex-col overflow-hidden space-y-3 mt-3">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h2 className="text-xl font-bold text-[#333333]">{t('inventory.entryValidationDialog.tabTitle')}</h2>
@@ -3055,7 +3084,7 @@ export function Inventario() {
         </TabsContent>
 
         {/* Predicción Tab - NUEVO */}
-        <TabsContent value="prediccion" className="flex-1 flex flex-col overflow-hidden space-y-3 mt-3">
+        <TabsContent value="prediccion" className="flex flex-col overflow-hidden space-y-3 mt-3">
           <div className="mb-4">
             <h2 className="text-xl font-bold text-[#333333]">Análisis Predictivo de Stock</h2>
             <p className="text-sm text-[#666666]">

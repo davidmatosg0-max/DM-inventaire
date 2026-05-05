@@ -89,6 +89,7 @@ import { FormularioContactoCompacto } from './FormularioContactoCompacto';
 import { CalendarioContactos } from './CalendarioContactos';
 import { AsignarRolContacto } from '../AsignarRolContacto';
 import { HistoriqueActivite } from '../benevoles/HistoriqueActivite';
+import { useCompactViewport } from '../../../hooks/useCompactViewport';
 
 // Mapeo de iconos para tipos personalizados
 const ICON_MAP: Record<string, any> = {
@@ -105,6 +106,42 @@ interface GestionContactosDepartamentoProps {
 export function GestionContactosDepartamento({ departamentoId, departamentoNombre }: GestionContactosDepartamentoProps) {
   const branding = useBranding();
   const departamentosDisponibles = obtenerDepartamentos();
+  const [activeContactsTab, setActiveContactsTab] = useState('liste');
+  const {
+    isCompactViewport: isCompactContactsViewport,
+    viewportZoom: contactsViewportZoom,
+  } = useCompactViewport({
+    deps: [activeContactsTab],
+    resolveZoom: ({ height, isCompact }) => {
+      const compactCalendarOverview = isCompact && activeContactsTab === 'calendrier';
+
+      if (height < 600) {
+        if (compactCalendarOverview) {
+          return 0.56;
+        }
+
+        return 0.52;
+      }
+
+      if (height < 700) {
+        if (compactCalendarOverview) {
+          return 0.68;
+        }
+
+        return 0.68;
+      }
+
+      if (isCompact) {
+        if (compactCalendarOverview) {
+          return 0.8;
+        }
+
+        return 0.84;
+      }
+
+      return 1;
+    },
+  });
   const [contactos, setContactos] = useState<ContactoDepartamento[]>([]);
   const [dialogAbierto, setDialogAbierto] = useState(false);
   const [dialogEliminar, setDialogEliminar] = useState(false);
@@ -1362,22 +1399,25 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 p-6 space-y-6">
+    <div
+      className="min-h-[calc(100vh-56px)] bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 p-3 sm:p-4 space-y-3 sm:space-y-4"
+      style={contactsViewportZoom < 1 ? { zoom: contactsViewportZoom } : undefined}
+    >
       {/* Header avec statistiques - Diseño Premium */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white/80 backdrop-blur-xl shadow-2xl border border-white/60 p-4 sm:p-6 lg:p-8">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white/80 backdrop-blur-xl shadow-2xl border border-white/60 p-3 sm:p-4 lg:p-5">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-green-500/5 pointer-events-none" />
         
         <div className="relative z-10">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
             <div className="flex-1 w-full">
-              <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0" 
+              <div className="flex items-center gap-2 sm:gap-3 mb-1.5">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0" 
                      style={{ background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})` }}>
-                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent truncate" 
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent truncate" 
                       style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     Gestion des Contacts
                   </h2>
@@ -1386,7 +1426,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                   </p>
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-slate-600 ml-0 sm:ml-15" style={{ fontFamily: 'Roboto, sans-serif' }}>
+              <p className="text-xs text-slate-600 ml-0" style={{ fontFamily: 'Roboto, sans-serif' }}>
                 Gérez tous les contacts du département • <span className="font-semibold">{contactos.length} contacts</span> actifs
               </p>
             </div>
@@ -1419,7 +1459,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                 </>
               )}
               {departamentoId === 'todos' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-xs text-blue-700" style={{ fontFamily: 'Roboto, sans-serif' }}>
                   💡 <strong>Mode Visualisation</strong> - Pour assigner des départements aux bénévoles, utilisez le bouton "Assigner aux départements" dans la liste des bénévoles.
                 </div>
               )}
@@ -1456,7 +1496,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
+          <div className={`${isCompactContactsViewport ? 'grid grid-cols-3 sm:grid-cols-6 gap-2' : 'grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4'}`}>
             {Object.entries(estadisticas)
               .filter(([tipo]) => tiposPermitidos.includes(tipo as TipoContacto))
               .map(([tipo, count]) => {
@@ -1469,17 +1509,17 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                        style={{ background: `linear-gradient(135deg, ${config.color}15, transparent)` }} />
-                  <div className="relative p-3 sm:p-4">
+                  <div className="relative p-2.5 sm:p-3">
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm flex-shrink-0" 
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm flex-shrink-0" 
                            style={{ backgroundColor: config.bgColor }}>
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: config.color }} />
+                        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: config.color }} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs text-slate-600 font-medium truncate" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                        <p className="text-[11px] text-slate-600 font-medium truncate" style={{ fontFamily: 'Roboto, sans-serif' }}>
                           {config.label.split(' /')[0]}
                         </p>
-                        <p className="text-xl sm:text-2xl font-bold" style={{ color: config.color, fontFamily: 'Montserrat, sans-serif' }}>
+                        <p className="text-base sm:text-lg font-bold" style={{ color: config.color, fontFamily: 'Montserrat, sans-serif' }}>
                           {count}
                         </p>
                       </div>
@@ -1496,14 +1536,14 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
       </div>
 
       {/* Tabs: Liste et Calendrier */}
-      <Tabs defaultValue="liste" className="w-full">
-        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg border border-white/60 p-4 sm:p-6 mb-4 sm:mb-6">
+      <Tabs value={activeContactsTab} onValueChange={setActiveContactsTab} className="w-full">
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg border border-white/60 p-3 sm:p-4 mb-3 sm:mb-4">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 pointer-events-none" />
           <div className="relative z-10">
-            <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-md bg-slate-100/80 p-1 rounded-xl">
+            <TabsList className={`grid w-full grid-cols-2 ${isCompactContactsViewport ? 'max-w-full' : 'max-w-full sm:max-w-md'} bg-slate-100/80 p-1 rounded-xl`}>
               <TabsTrigger 
                 value="liste" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg transition-all duration-300"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg transition-all duration-300 text-xs sm:text-sm"
                 style={{ fontFamily: 'Montserrat, sans-serif' }}
               >
                 <Users className="w-4 h-4" />
@@ -1511,7 +1551,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
               </TabsTrigger>
               <TabsTrigger 
                 value="calendrier" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg transition-all duration-300"
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg transition-all duration-300 text-xs sm:text-sm"
                 style={{ fontFamily: 'Montserrat, sans-serif' }}
               >
                 <Calendar className="w-4 h-4" />
@@ -1522,9 +1562,9 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
         </div>
 
         {/* Tab Liste */}
-        <TabsContent value="liste" className="space-y-6 mt-0">
+        <TabsContent value="liste" className="space-y-3 sm:space-y-4 mt-0">
           {/* Recherche et filtres */}
-          <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg border border-white/60 p-6">
+          <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg border border-white/60 p-3 sm:p-4">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-blue-50/30 pointer-events-none" />
             <div className="relative z-10 flex flex-col lg:flex-row gap-4">
               <div className="relative flex-1">
@@ -1533,7 +1573,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                   placeholder="Rechercher par nom, email ou téléphone..."
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  className="pl-12 h-12 rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all bg-white/80"
+                  className="pl-12 h-10 rounded-xl border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all bg-white/80 text-xs"
                   style={{ fontFamily: 'Roboto, sans-serif' }}
                 />
               </div>
@@ -1576,18 +1616,18 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
           </div>
 
           {/* Liste de contacts */}
-          <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg border border-white/60 p-6">
+          <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg border border-white/60 p-3 sm:p-4">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/20 pointer-events-none" />
             <div className="relative z-10">
               {contactosFiltrados.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <Users className="w-10 h-10 text-slate-400" />
+                <div className="text-center py-8 sm:py-10">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Users className="w-7 h-7 text-slate-400" />
                   </div>
-                  <p className="text-slate-700 text-xl font-semibold mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  <p className="text-slate-700 text-sm sm:text-base font-semibold mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     Aucun contact trouvé
                   </p>
-                  <p className="text-slate-500 text-sm" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                  <p className="text-slate-500 text-xs" style={{ fontFamily: 'Roboto, sans-serif' }}>
                     Créez un nouveau contact pour commencer
                   </p>
                 </div>
@@ -1777,6 +1817,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
             getTipoConfig={getTipoConfig}
             departamentoNombre={departamentoNombre}
             departamentoId={departamentoId}
+            compactMode={isCompactContactsViewport}
           />
         </TabsContent>
       </Tabs>

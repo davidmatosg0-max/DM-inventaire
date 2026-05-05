@@ -44,10 +44,12 @@ import {
 } from '../../utils/locationZones';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 import { openAutoPrintPopup } from '../../utils/printPopup';
+import { useCompactViewport } from '../../../hooks/useCompactViewport';
 
 type LabelSize = 'pequena' | 'mediana' | 'grande';
 type CodeFormat = 'EAN13' | 'CODE128' | 'CODE39';
 type QueueFilter = 'todas' | 'ubicacion' | 'producto';
+type LabelTab = 'ubicaciones' | 'productos' | 'cola';
 
 type ProductoEtiqueta = {
   id: string;
@@ -165,6 +167,50 @@ export function Etiquetas() {
   const { t, i18n } = useTranslation();
   const locale = i18n.resolvedLanguage || i18n.language || 'fr';
   const htmlLang = locale.split('-')[0] || 'fr';
+  const [activeLabelTab, setActiveLabelTab] = useState<LabelTab>('ubicaciones');
+  const {
+    isCompactViewport: isCompactLabelsViewport,
+    viewportZoom: labelsViewportZoom,
+  } = useCompactViewport({
+    deps: [activeLabelTab],
+    resolveZoom: ({ height, isCompact }) => {
+      const compactLocationOverview = isCompact && activeLabelTab === 'ubicaciones';
+
+      if (!isCompact) {
+        return 1;
+      }
+
+      if (height < 600) {
+        if (activeLabelTab === 'ubicaciones') {
+          return compactLocationOverview ? 0.24 : 0.055;
+        }
+
+        if (activeLabelTab === 'cola') {
+          return 0.28;
+        }
+
+        return 0.36;
+      }
+
+      if (height < 700) {
+        if (activeLabelTab === 'ubicaciones') {
+          return compactLocationOverview ? 0.34 : 0.1;
+        }
+
+        if (activeLabelTab === 'cola') {
+          return 0.4;
+        }
+
+        return 0.5;
+      }
+
+      if (activeLabelTab === 'ubicaciones') {
+        return compactLocationOverview ? 0.48 : 0.18;
+      }
+
+      return activeLabelTab === 'cola' ? 0.65 : 0.72;
+    },
+  });
 
   const translateLocationType = (type?: string) => {
     switch (type) {
@@ -459,6 +505,8 @@ export function Etiquetas() {
 
     return seccionesUbicacion.filter((seccion) => seccion.codigoZona === filtroZonaUbicaciones);
   }, [seccionesUbicacion, filtroZonaUbicaciones]);
+
+  const showCompactLocationOverview = isCompactLabelsViewport && activeLabelTab === 'ubicaciones';
 
   const colaVisible = useMemo(() => {
     return colaEtiquetas
@@ -953,27 +1001,28 @@ export function Etiquetas() {
 
   return (
     <div
-      className="min-h-screen space-y-6 p-4 sm:p-6"
+      className="min-h-[calc(100vh-56px)] space-y-3 sm:space-y-4 p-3 sm:p-4"
       style={{
         background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`,
+        ...(labelsViewportZoom < 1 ? { zoom: labelsViewportZoom } : {}),
       }}
     >
-      <div className="space-y-6">
+      <div className="space-y-3 sm:space-y-4">
         <Card className="border-0 shadow-xl">
-          <CardContent className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <CardContent className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg"
+                  className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl text-white shadow-lg"
                   style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
                 >
-                  <Tag className="h-7 w-7" />
+                  <Tag className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold" style={{ color: branding.primaryColor }}>
+                  <h1 className="text-xl sm:text-2xl font-bold" style={{ color: branding.primaryColor }}>
                     {t('labels.inventoryTitle')}
                   </h1>
-                  <p className="text-sm text-[#666666]">
+                  <p className="text-xs text-[#666666]">
                     {t('labels.inventorySubtitle')}
                   </p>
                 </div>
@@ -991,7 +1040,7 @@ export function Etiquetas() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className={`grid gap-3 ${isCompactLabelsViewport ? 'grid-cols-4' : 'md:grid-cols-2 xl:grid-cols-4'}`}>
           <MetricCard
             title={t('labels.configuredZones')}
             value={formatQuantity(zonas.length)}
@@ -1022,291 +1071,360 @@ export function Etiquetas() {
           />
         </div>
 
-        <Tabs defaultValue="ubicaciones" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white shadow-md">
-            <TabsTrigger value="ubicaciones">
+        <Tabs value={activeLabelTab} onValueChange={(value) => setActiveLabelTab(value as LabelTab)} className="space-y-3 sm:space-y-4">
+          <TabsList className="grid w-full grid-cols-3 gap-1 bg-white shadow-md">
+            <TabsTrigger value="ubicaciones" className="min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
               <MapPin className="mr-2 h-4 w-4" />
               {t('labels.locations')}
             </TabsTrigger>
-            <TabsTrigger value="productos">
+            <TabsTrigger value="productos" className="min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
               <Package className="mr-2 h-4 w-4" />
               {t('labels.products')}
             </TabsTrigger>
-            <TabsTrigger value="cola">
+            <TabsTrigger value="cola" className="min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
               <Printer className="mr-2 h-4 w-4" />
               {t('labels.createdLabels')}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="ubicaciones" className="space-y-6">
-            <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-              <div className="space-y-6">
+          <TabsContent value="ubicaciones" className="space-y-3 sm:space-y-4">
+            {showCompactLocationOverview ? (
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="gap-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <MapPin className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                    {t('labels.locationMapTitle')}
+                  </CardTitle>
+                  <p className="text-sm text-[#666666]">
+                    Vue synthétique des zones et actions rapides pour petit écran.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {seccionesFiltradas.map((seccion) => {
+                      const zoneSummary = resumenZonas.find((item) => item.zona === seccion.codigoZona);
+                      const isConfiguredZone = seccion.codigoZona !== 'AUTRES';
+                      const occupiedCount = zoneSummary?.ocupadas ?? 0;
+                      const productCount = zoneSummary?.productos ?? 0;
+                      const queuedCount = zoneSummary?.etiquetadas ?? 0;
+                      const locationCount = zoneSummary?.cantidad ?? seccion.ubicaciones.length;
+
+                      return (
+                        <div key={seccion.codigoZona} className="rounded-2xl border bg-white p-3 shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-base font-semibold text-[#111827]">
+                                  {isConfiguredZone ? t('labels.zoneLabel', { zone: seccion.codigoZona }) : t('labels.inheritedLocations')}
+                                </p>
+                                <Badge variant="outline" className="text-[11px]">
+                                  {isConfiguredZone ? translateLocationType(seccion.tipoZona) : t('labels.outsideCurrentConfiguration')}
+                                </Badge>
+                              </div>
+                              <p className="mt-1 text-xs text-[#666666]">
+                                {locationCount} emplacements, {occupiedCount} occupés, {productCount} produits.
+                              </p>
+                            </div>
+                            <Badge style={{ backgroundColor: branding.primaryColor }}>{locationCount}</Badge>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                            <div className="rounded-xl bg-gray-50 px-2.5 py-2">
+                              <p className="text-[#999999]">Occupés</p>
+                              <p className="font-semibold text-[#111827]">{occupiedCount}</p>
+                            </div>
+                            <div className="rounded-xl bg-gray-50 px-2.5 py-2">
+                              <p className="text-[#999999]">Produits</p>
+                              <p className="font-semibold text-[#111827]">{productCount}</p>
+                            </div>
+                            <div className="rounded-xl bg-gray-50 px-2.5 py-2">
+                              <p className="text-[#999999]">En file</p>
+                              <p className="font-semibold text-[#111827]">{queuedCount}</p>
+                            </div>
+                          </div>
+
+                          {isConfiguredZone ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Button variant="outline" size="sm" className="h-8 px-2 text-[11px]" onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, true)}>
+                                {t('labels.labelOccupied')}
+                              </Button>
+                              <Button size="sm" className="h-8 px-2 text-[11px] text-white" style={{ backgroundColor: branding.secondaryColor }} onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, false)}>
+                                {t('labels.labelFullZone')}
+                              </Button>
+                            </div>
+                          ) : null}
+
+                          <div className="mt-3 rounded-xl bg-gray-50 px-3 py-2 text-xs text-[#4b5563]">
+                            {isConfiguredZone && zoneSummary
+                              ? buildLocationRangeLabel(zoneSummary)
+                              : `${seccion.ubicaciones.slice(0, 4).join(', ')}${seccion.ubicaciones.length > 4 ? '...' : ''}`}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className={`grid gap-4 ${isCompactLabelsViewport ? 'xl:grid-cols-[280px_minmax(0,1fr)]' : 'xl:grid-cols-[360px_minmax(0,1fr)]'}`}>
+                <div className="space-y-4">
+                  <Card className="border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Settings className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                        {editingZoneCode ? t('labels.editZone', { zone: editingZoneCode }) : t('labels.configureZone')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2">
+                        <Label>{t('labels.code')}</Label>
+                        <Input
+                          placeholder="A, B, C..."
+                          maxLength={3}
+                          value={zoneForm.zona}
+                          onChange={(event) => setZoneForm((current) => ({ ...current, zona: event.target.value.toUpperCase() }))}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>{t('labels.type')}</Label>
+                        <Select value={zoneForm.tipo} onValueChange={(value) => setZoneForm((current) => ({ ...current, tipo: value }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LOCATION_TYPE_OPTIONS.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {translateLocationType(type)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>{t('labels.capacity')}</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={zoneForm.cantidad}
+                          onChange={(event) => setZoneForm((current) => ({ ...current, cantidad: Math.max(1, parseInt(event.target.value, 10) || 1) }))}
+                        />
+                      </div>
+
+                      {zoneForm.zona ? (
+                        <div className="rounded-2xl border p-4" style={{ backgroundColor: `${branding.primaryColor}08`, borderColor: `${branding.primaryColor}30` }}>
+                          <p className="text-xs uppercase tracking-wide text-[#666666]">{t('labels.preview')}</p>
+                          <p className="mt-1 text-lg font-semibold" style={{ color: branding.primaryColor }}>
+                            {t('labels.zonePreview', { zone: zoneForm.zona.trim().toUpperCase(), type: translateLocationType(zoneForm.tipo) })}
+                          </p>
+                          <p className="text-sm text-[#666666]">
+                            {buildLocationRangeLabel({ zona: zoneForm.zona.trim().toUpperCase(), tipo: zoneForm.tipo, cantidad: Math.max(1, Math.round(zoneForm.cantidad)) })}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      <div className="flex gap-2">
+                        {editingZoneCode ? (
+                          <Button variant="outline" className="flex-1" onClick={resetZoneForm}>
+                            {t('labels.cancelEdit')}
+                          </Button>
+                        ) : null}
+                        <Button className="flex-1 text-white" style={{ backgroundColor: branding.primaryColor }} onClick={handleSaveZone}>
+                          {editingZoneCode ? t('labels.saveZone') : t('labels.createZone')}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <List className="h-5 w-5" style={{ color: branding.secondaryColor }} />
+                        {t('labels.zoneSummary')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2.5">
+                      {resumenZonas.map((zona) => (
+                        <div key={zona.zona} className="rounded-2xl border p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-base font-semibold text-[#1f2937]">{t('labels.zoneLabel', { zone: zona.zona })}</p>
+                              <p className="text-sm text-[#666666]">{translateLocationType(zona.tipo)}</p>
+                              <p className="text-xs text-[#999999]">{buildLocationRangeLabel(zona)}</p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => handleEditZone(zona.zona)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteZone(zona.zona)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#666666]">
+                            <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.locationsCount', { count: formatQuantity(zona.cantidad) })}</div>
+                            <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.occupiedCount', { count: formatQuantity(zona.ocupadas) })}</div>
+                            <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.alreadyQueuedCount', { count: formatQuantity(zona.etiquetadas) })}</div>
+                            <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.productsCount', { count: formatQuantity(zona.productos) })}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+
                 <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Settings className="h-5 w-5" style={{ color: branding.primaryColor }} />
-                      {editingZoneCode ? t('labels.editZone', { zone: editingZoneCode }) : t('labels.configureZone')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>{t('labels.code')}</Label>
-                      <Input
-                        placeholder="A, B, C..."
-                        maxLength={3}
-                        value={zoneForm.zona}
-                        onChange={(event) => setZoneForm((current) => ({ ...current, zona: event.target.value.toUpperCase() }))}
-                      />
+                  <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <MapPin className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                        {t('labels.locationMapTitle')}
+                      </CardTitle>
+                      <p className="text-sm text-[#666666]">
+                        {t('labels.locationMapDescription')}
+                      </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>{t('labels.type')}</Label>
-                      <Select value={zoneForm.tipo} onValueChange={(value) => setZoneForm((current) => ({ ...current, tipo: value }))}>
+                    <div className="w-full lg:max-w-xs">
+                      <Label className="mb-2 block text-xs uppercase tracking-wide text-[#666666]">{t('labels.filterZone')}</Label>
+                      <Select value={filtroZonaUbicaciones} onValueChange={setFiltroZonaUbicaciones}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {LOCATION_TYPE_OPTIONS.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {translateLocationType(type)}
+                          <SelectItem value={ALL_ZONES_VALUE}>{t('labels.allZones')}</SelectItem>
+                          {seccionesUbicacion.map((seccion) => (
+                            <SelectItem key={seccion.codigoZona} value={seccion.codigoZona}>
+                              {seccion.codigoZona === 'AUTRES' ? t('labels.inheritedLocations') : t('labels.zoneLabel', { zone: seccion.codigoZona })}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>{t('labels.capacity')}</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={zoneForm.cantidad}
-                        onChange={(event) => setZoneForm((current) => ({ ...current, cantidad: Math.max(1, parseInt(event.target.value, 10) || 1) }))}
-                      />
-                    </div>
-
-                    {zoneForm.zona ? (
-                      <div className="rounded-2xl border p-4" style={{ backgroundColor: `${branding.primaryColor}08`, borderColor: `${branding.primaryColor}30` }}>
-                        <p className="text-xs uppercase tracking-wide text-[#666666]">{t('labels.preview')}</p>
-                        <p className="mt-1 text-lg font-semibold" style={{ color: branding.primaryColor }}>
-                          {t('labels.zonePreview', { zone: zoneForm.zona.trim().toUpperCase(), type: translateLocationType(zoneForm.tipo) })}
-                        </p>
-                        <p className="text-sm text-[#666666]">
-                          {buildLocationRangeLabel({ zona: zoneForm.zona.trim().toUpperCase(), tipo: zoneForm.tipo, cantidad: Math.max(1, Math.round(zoneForm.cantidad)) })}
-                        </p>
-                      </div>
-                    ) : null}
-
-                    <div className="flex gap-2">
-                      {editingZoneCode ? (
-                        <Button variant="outline" className="flex-1" onClick={resetZoneForm}>
-                          {t('labels.cancelEdit')}
-                        </Button>
-                      ) : null}
-                      <Button
-                        className="flex-1 text-white"
-                        style={{ backgroundColor: branding.primaryColor }}
-                        onClick={handleSaveZone}
-                      >
-                        {editingZoneCode ? t('labels.saveZone') : t('labels.createZone')}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <List className="h-5 w-5" style={{ color: branding.secondaryColor }} />
-                      {t('labels.zoneSummary')}
-                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {resumenZonas.map((zona) => (
-                      <div key={zona.zona} className="rounded-2xl border p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-base font-semibold text-[#1f2937]">{t('labels.zoneLabel', { zone: zona.zona })}</p>
-                            <p className="text-sm text-[#666666]">{translateLocationType(zona.tipo)}</p>
-                            <p className="text-xs text-[#999999]">{buildLocationRangeLabel(zona)}</p>
+                    {seccionesFiltradas.map((seccion) => {
+                      const zoneSummary = resumenZonas.find((item) => item.zona === seccion.codigoZona);
+                      const isConfiguredZone = seccion.codigoZona !== 'AUTRES';
+
+                      return (
+                        <div key={seccion.codigoZona} className="rounded-3xl border p-3 sm:p-4">
+                          <div className="flex flex-col gap-3 border-b pb-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold text-[#1f2937]">
+                                  {isConfiguredZone ? t('labels.zoneLabel', { zone: seccion.codigoZona }) : t('labels.inheritedLocations')}
+                                </h3>
+                                <Badge variant="outline">
+                                  {isConfiguredZone ? translateLocationType(seccion.tipoZona) : t('labels.outsideCurrentConfiguration')}
+                                </Badge>
+                              </div>
+                              <p className="mt-1 text-sm text-[#666666]">
+                                {isConfiguredZone && zoneSummary
+                                  ? t('labels.zoneSummaryLine', {
+                                      locations: formatQuantity(zoneSummary.cantidad),
+                                      occupied: formatQuantity(zoneSummary.ocupadas),
+                                      products: formatQuantity(zoneSummary.productos),
+                                    })
+                                  : t('labels.inheritedLocationsSummary', { count: formatQuantity(seccion.ubicaciones.length) })}
+                              </p>
+                            </div>
+
+                            {isConfiguredZone ? (
+                              <div className="flex flex-wrap gap-2">
+                                <Button variant="outline" onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, true)}>
+                                  {t('labels.labelOccupied')}
+                                </Button>
+                                <Button className="text-white" style={{ backgroundColor: branding.secondaryColor }} onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, false)}>
+                                  {t('labels.labelFullZone')}
+                                </Button>
+                              </div>
+                            ) : null}
                           </div>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleEditZone(zona.zona)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteZone(zona.zona)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+
+                          <div className={`mt-3 grid gap-2 ${isCompactLabelsViewport ? 'xl:grid-cols-4' : 'xl:grid-cols-2'}`}>
+                            {seccion.ubicaciones.map((ubicacion) => {
+                              const productos = productosPorUbicacion.get(ubicacion) || [];
+                              const queued = ubicacionesEtiquetadasEnCola.has(ubicacion);
+
+                              return (
+                                <div key={ubicacion} className="rounded-2xl border bg-white p-3 shadow-sm">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-sm sm:text-base font-semibold text-[#111827]">{ubicacion}</p>
+                                        {queued ? <Badge style={{ backgroundColor: branding.primaryColor }}>{t('labels.queued')}</Badge> : null}
+                                        {productos.length > 0 ? <Badge variant="outline">{t('labels.productsCount', { count: formatQuantity(productos.length) })}</Badge> : <Badge variant="secondary">{t('labels.empty')}</Badge>}
+                                      </div>
+                                      <p className="text-xs text-[#666666]">{getSectionTypeLabel(metaUbicacion.get(ubicacion))}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button variant="outline" size="sm" className="h-8 px-2 text-[11px]" disabled={queued} onClick={() => addLocationLabels([ubicacion])}>
+                                        <MapPin className="mr-1 h-4 w-4" />
+                                        {t('labels.createLocationLabel')}
+                                      </Button>
+                                      <Button size="sm" className="h-8 px-2 text-[11px] text-white" style={{ backgroundColor: branding.secondaryColor }} disabled={productos.length === 0} onClick={() => handleAddLocationProductLabels(ubicacion)}>
+                                        <Package className="mr-1 h-4 w-4" />
+                                        {t('labels.createProductLabels')}
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-2 space-y-1.5">
+                                    {productos.length === 0 ? (
+                                      <p className="text-sm text-[#999999]">{t('labels.noProductsAssigned')}</p>
+                                    ) : (
+                                      productos.slice(0, 3).map((producto) => (
+                                        <div key={producto.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-2.5 py-1.5 text-[11px]">
+                                          <div className="min-w-0">
+                                            <p className="truncate font-medium text-[#1f2937]">{producto.nombre}</p>
+                                            <p className="truncate text-xs text-[#666666]">{producto.codigo} · {getCategoriaLabel(producto.categoria)}</p>
+                                          </div>
+                                          <Badge variant="outline">
+                                            {formatQuantity(producto.stockActual)} {producto.unidad}
+                                          </Badge>
+                                        </div>
+                                      ))
+                                    )}
+                                    {productos.length > 3 ? (
+                                      <p className="text-xs text-[#999999]">{t('labels.moreProducts', { count: formatQuantity(productos.length - 3) })}</p>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#666666]">
-                          <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.locationsCount', { count: formatQuantity(zona.cantidad) })}</div>
-                          <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.occupiedCount', { count: formatQuantity(zona.ocupadas) })}</div>
-                          <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.alreadyQueuedCount', { count: formatQuantity(zona.etiquetadas) })}</div>
-                          <div className="rounded-xl bg-gray-50 px-3 py-2">{t('labels.productsCount', { count: formatQuantity(zona.productos) })}</div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </CardContent>
                 </Card>
               </div>
-
-              <Card className="border-0 shadow-lg">
-                <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <MapPin className="h-5 w-5" style={{ color: branding.primaryColor }} />
-                      {t('labels.locationMapTitle')}
-                    </CardTitle>
-                    <p className="text-sm text-[#666666]">
-                      {t('labels.locationMapDescription')}
-                    </p>
-                  </div>
-
-                  <div className="w-full lg:max-w-xs">
-                    <Label className="mb-2 block text-xs uppercase tracking-wide text-[#666666]">{t('labels.filterZone')}</Label>
-                    <Select value={filtroZonaUbicaciones} onValueChange={setFiltroZonaUbicaciones}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={ALL_ZONES_VALUE}>{t('labels.allZones')}</SelectItem>
-                        {seccionesUbicacion.map((seccion) => (
-                          <SelectItem key={seccion.codigoZona} value={seccion.codigoZona}>
-                            {seccion.codigoZona === 'AUTRES' ? t('labels.inheritedLocations') : t('labels.zoneLabel', { zone: seccion.codigoZona })}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {seccionesFiltradas.map((seccion) => {
-                    const zoneSummary = resumenZonas.find((item) => item.zona === seccion.codigoZona);
-                    const isConfiguredZone = seccion.codigoZona !== 'AUTRES';
-
-                    return (
-                      <div key={seccion.codigoZona} className="rounded-3xl border p-4 sm:p-5">
-                        <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-lg font-semibold text-[#1f2937]">
-                                {isConfiguredZone ? t('labels.zoneLabel', { zone: seccion.codigoZona }) : t('labels.inheritedLocations')}
-                              </h3>
-                              <Badge variant="outline">
-                                {isConfiguredZone ? translateLocationType(seccion.tipoZona) : t('labels.outsideCurrentConfiguration')}
-                              </Badge>
-                            </div>
-                            <p className="mt-1 text-sm text-[#666666]">
-                              {isConfiguredZone && zoneSummary
-                                ? t('labels.zoneSummaryLine', {
-                                    locations: formatQuantity(zoneSummary.cantidad),
-                                    occupied: formatQuantity(zoneSummary.ocupadas),
-                                    products: formatQuantity(zoneSummary.productos),
-                                  })
-                                : t('labels.inheritedLocationsSummary', { count: formatQuantity(seccion.ubicaciones.length) })}
-                            </p>
-                          </div>
-
-                          {isConfiguredZone ? (
-                            <div className="flex flex-wrap gap-2">
-                              <Button variant="outline" onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, true)}>
-                                {t('labels.labelOccupied')}
-                              </Button>
-                              <Button className="text-white" style={{ backgroundColor: branding.secondaryColor }} onClick={() => handleAddZoneLocationLabels(seccion.codigoZona, false)}>
-                                {t('labels.labelFullZone')}
-                              </Button>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <div className="mt-4 grid gap-3 xl:grid-cols-2">
-                          {seccion.ubicaciones.map((ubicacion) => {
-                            const productos = productosPorUbicacion.get(ubicacion) || [];
-                            const queued = ubicacionesEtiquetadasEnCola.has(ubicacion);
-
-                            return (
-                              <div key={ubicacion} className="rounded-2xl border bg-white p-4 shadow-sm">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-lg font-semibold text-[#111827]">{ubicacion}</p>
-                                      {queued ? <Badge style={{ backgroundColor: branding.primaryColor }}>{t('labels.queued')}</Badge> : null}
-                                      {productos.length > 0 ? <Badge variant="outline">{t('labels.productsCount', { count: formatQuantity(productos.length) })}</Badge> : <Badge variant="secondary">{t('labels.empty')}</Badge>}
-                                    </div>
-                                    <p className="text-sm text-[#666666]">{getSectionTypeLabel(metaUbicacion.get(ubicacion))}</p>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" disabled={queued} onClick={() => addLocationLabels([ubicacion])}>
-                                      <MapPin className="mr-1 h-4 w-4" />
-                                      {t('labels.createLocationLabel')}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      className="text-white"
-                                      style={{ backgroundColor: branding.secondaryColor }}
-                                      disabled={productos.length === 0}
-                                      onClick={() => handleAddLocationProductLabels(ubicacion)}
-                                    >
-                                      <Package className="mr-1 h-4 w-4" />
-                                      {t('labels.createProductLabels')}
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                <div className="mt-3 space-y-2">
-                                  {productos.length === 0 ? (
-                                    <p className="text-sm text-[#999999]">{t('labels.noProductsAssigned')}</p>
-                                  ) : (
-                                    productos.slice(0, 3).map((producto) => (
-                                      <div key={producto.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm">
-                                        <div className="min-w-0">
-                                          <p className="truncate font-medium text-[#1f2937]">{producto.nombre}</p>
-                                          <p className="truncate text-xs text-[#666666]">{producto.codigo} · {getCategoriaLabel(producto.categoria)}</p>
-                                        </div>
-                                        <Badge variant="outline">
-                                          {formatQuantity(producto.stockActual)} {producto.unidad}
-                                        </Badge>
-                                      </div>
-                                    ))
-                                  )}
-                                  {productos.length > 3 ? (
-                                    <p className="text-xs text-[#999999]">{t('labels.moreProducts', { count: formatQuantity(productos.length - 3) })}</p>
-                                  ) : null}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="productos" className="space-y-6">
+          <TabsContent value="productos" className="space-y-3 sm:space-y-4">
             <Card className="border-0 shadow-lg">
-              <CardHeader className="gap-4">
+              <CardHeader className="gap-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Filter className="h-5 w-5" style={{ color: branding.primaryColor }} />
                   {t('labels.filterProductsForLabels')}
                 </CardTitle>
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px_auto]">
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px_auto]">
                   <div className="space-y-2">
                     <Label>{t('labels.search')}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999999]" />
-                      <Input className="pl-9" placeholder={t('labels.productSearchPlaceholder')} value={busquedaProducto} onChange={(event) => setBusquedaProducto(event.target.value)} />
+                      <Input className="h-9 pl-9 text-xs" placeholder={t('labels.productSearchPlaceholder')} value={busquedaProducto} onChange={(event) => setBusquedaProducto(event.target.value)} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label>{t('labels.location')}</Label>
                     <Select value={filtroUbicacionProducto} onValueChange={setFiltroUbicacionProducto}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1322,7 +1440,7 @@ export function Etiquetas() {
                   </div>
 
                   <div className="flex items-end">
-                    <Button className="w-full text-white lg:w-auto" style={{ backgroundColor: branding.secondaryColor }} onClick={() => addProductLabels(productosFiltrados.map((producto) => producto.id))}>
+                    <Button className="h-9 w-full text-xs text-white lg:w-auto" style={{ backgroundColor: branding.secondaryColor }} onClick={() => addProductLabels(productosFiltrados.map((producto) => producto.id))}>
                       {t('labels.labelFiltered')}
                     </Button>
                   </div>
@@ -1330,52 +1448,52 @@ export function Etiquetas() {
               </CardHeader>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className={`grid gap-3 ${isCompactLabelsViewport ? 'md:grid-cols-4 xl:grid-cols-5' : 'md:grid-cols-2 xl:grid-cols-3'}`}>
               {productosFiltrados.map((producto) => {
                 const ubicacion = normalizeLocationCode(producto.ubicacion);
                 const queued = productosEtiquetadosEnCola.has(producto.id);
 
                 return (
                   <Card key={producto.id} className="border-0 shadow-lg">
-                    <CardContent className="space-y-4 p-5">
+                    <CardContent className="space-y-3 p-3.5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-2xl">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gray-100 text-lg">
                             {producto.icono || categoriasInfo[producto.categoria]?.icono || '📦'}
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-base font-semibold text-[#111827]">{producto.nombre}</p>
-                            <p className="truncate text-sm text-[#666666]">{producto.codigo}</p>
+                            <p className="truncate text-sm font-semibold text-[#111827]">{producto.nombre}</p>
+                            <p className="truncate text-xs text-[#666666]">{producto.codigo}</p>
                           </div>
                         </div>
                         {queued ? <Badge style={{ backgroundColor: branding.primaryColor }}>{t('labels.queued')}</Badge> : null}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                      <div className="grid grid-cols-2 gap-1.5 text-xs">
+                        <div className="rounded-xl bg-gray-50 px-2 py-1.5">
                           <p className="text-xs uppercase tracking-wide text-[#999999]">{t('labels.category')}</p>
                           <p className="truncate font-medium text-[#1f2937]">{getCategoriaLabel(producto.categoria)}</p>
                         </div>
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                        <div className="rounded-xl bg-gray-50 px-2 py-1.5">
                           <p className="text-xs uppercase tracking-wide text-[#999999]">{t('labels.location')}</p>
                           <p className="truncate font-medium text-[#1f2937]">{ubicacion || t('labels.withoutLocation')}</p>
                         </div>
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                        <div className="rounded-xl bg-gray-50 px-2 py-1.5">
                           <p className="text-xs uppercase tracking-wide text-[#999999]">{t('labels.stock')}</p>
                           <p className="font-medium text-[#1f2937]">{formatQuantity(producto.stockActual)} {producto.unidad}</p>
                         </div>
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
+                        <div className="rounded-xl bg-gray-50 px-2 py-1.5">
                           <p className="text-xs uppercase tracking-wide text-[#999999]">{t('labels.lot')}</p>
                           <p className="truncate font-medium text-[#1f2937]">{producto.lote || t('labels.withoutBatch')}</p>
                         </div>
                       </div>
 
                       <div className="flex gap-2">
-                        <Button className="flex-1 text-white" style={{ backgroundColor: branding.primaryColor }} disabled={queued} onClick={() => addProductLabels([producto.id])}>
+                        <Button className="h-8 flex-1 px-2 text-[11px] text-white" style={{ backgroundColor: branding.primaryColor }} disabled={queued} onClick={() => addProductLabels([producto.id])}>
                           {t('labels.createLabel')}
                         </Button>
                         {ubicacion ? (
-                          <Button variant="outline" onClick={() => addLocationLabels([ubicacion])} disabled={ubicacionesEtiquetadasEnCola.has(ubicacion)}>
+                          <Button variant="outline" className="h-8 px-2" onClick={() => addLocationLabels([ubicacion])} disabled={ubicacionesEtiquetadasEnCola.has(ubicacion)}>
                             <MapPin className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -1396,19 +1514,19 @@ export function Etiquetas() {
             </div>
           </TabsContent>
 
-          <TabsContent value="cola" className="space-y-6">
+          <TabsContent value="cola" className="space-y-3 sm:space-y-4">
             <Card className="border-0 shadow-lg">
-              <CardHeader className="gap-4">
+              <CardHeader className="gap-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Printer className="h-5 w-5" style={{ color: branding.primaryColor }} />
                   {t('labels.preparePrint')}
                 </CardTitle>
 
-                <div className="grid gap-4 xl:grid-cols-[220px_220px_220px_140px_minmax(0,1fr)]">
+                <div className={`grid gap-3 ${isCompactLabelsViewport ? 'xl:grid-cols-[180px_180px_180px_110px_minmax(0,1fr)]' : 'xl:grid-cols-[220px_220px_220px_140px_minmax(0,1fr)]'}`}>
                   <div className="space-y-2">
                     <Label>{t('labels.queueFilter')}</Label>
                     <Select value={filtroCola} onValueChange={(value) => setFiltroCola(value as QueueFilter)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1422,7 +1540,7 @@ export function Etiquetas() {
                   <div className="space-y-2">
                     <Label>{t('labels.labelSize')}</Label>
                     <Select value={tamanoEtiqueta} onValueChange={(value) => setTamanoEtiqueta(value as LabelSize)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1436,7 +1554,7 @@ export function Etiquetas() {
                   <div className="space-y-2">
                     <Label>{t('labels.codeFormat')}</Label>
                     <Select value={formatoCodigo} onValueChange={(value) => setFormatoCodigo(value as CodeFormat)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1450,7 +1568,7 @@ export function Etiquetas() {
                   <div className="space-y-2">
                     <Label>{t('labels.columns')}</Label>
                     <Select value={columnasImpresion.toString()} onValueChange={(value) => setColumnasImpresion(parseInt(value, 10))}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1463,11 +1581,11 @@ export function Etiquetas() {
                   </div>
 
                   <div className="flex flex-wrap items-end gap-2">
-                    <Button variant="outline" onClick={() => setVistaPrevia((current) => !current)}>
+                    <Button variant="outline" className="h-9 text-xs" onClick={() => setVistaPrevia((current) => !current)}>
                       <Eye className="mr-2 h-4 w-4" />
                       {vistaPrevia ? t('labels.hidePreview') : t('labels.showPreview')}
                     </Button>
-                    <Button className="text-white" style={{ backgroundColor: branding.secondaryColor }} onClick={imprimirEtiquetas}>
+                    <Button className="h-9 text-xs text-white" style={{ backgroundColor: branding.secondaryColor }} onClick={imprimirEtiquetas}>
                       {t('labels.print')}
                     </Button>
                   </div>
@@ -1507,24 +1625,24 @@ export function Etiquetas() {
               </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className={`grid gap-3 ${isCompactLabelsViewport ? 'md:grid-cols-4 xl:grid-cols-5' : 'md:grid-cols-2 xl:grid-cols-3'}`}>
               {colaVisible.map(({ etiqueta, index }) => (
                 <Card
                   key={`${etiqueta.tipo}-${index}`}
                   className={`border-0 shadow-lg transition-all ${etiquetasSeleccionadas.includes(index) ? 'ring-2 ring-offset-2' : ''}`}
                   style={etiquetasSeleccionadas.includes(index) ? { borderColor: branding.primaryColor } : undefined}
                 >
-                  <CardContent className="p-5">
+                  <CardContent className="p-3.5">
                     <div className="flex items-start gap-3">
                       <Checkbox checked={etiquetasSeleccionadas.includes(index)} onCheckedChange={() => toggleSeleccion(index)} />
                       <div className="min-w-0 flex-1 space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-2xl">{etiqueta.icono || '🏷️'}</span>
+                              <span className="text-lg">{etiqueta.icono || '🏷️'}</span>
                               <div>
-                                <p className="truncate text-base font-semibold text-[#111827]">{etiqueta.titulo}</p>
-                                <p className="truncate text-sm text-[#666666]">{etiqueta.subtitulo || etiqueta.codigo}</p>
+                                <p className="truncate text-sm font-semibold text-[#111827]">{etiqueta.titulo}</p>
+                                <p className="truncate text-xs text-[#666666]">{etiqueta.subtitulo || etiqueta.codigo}</p>
                               </div>
                             </div>
                           </div>
@@ -1533,7 +1651,7 @@ export function Etiquetas() {
                           </Badge>
                         </div>
 
-                        <div className="space-y-2 rounded-2xl bg-gray-50 p-3 text-sm">
+                        <div className="space-y-1.5 rounded-2xl bg-gray-50 p-2.5 text-xs">
                           <p className="font-mono text-xs text-[#4b5563] break-all">{etiqueta.codigo}</p>
                           {etiqueta.descripcion ? <p className="text-[#666666]">{etiqueta.descripcion}</p> : null}
                           {etiqueta.categoria ? <p className="text-[#666666]">{t('labels.category')}: {getCategoriaLabel(etiqueta.categoria)}</p> : null}
