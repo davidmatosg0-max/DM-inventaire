@@ -181,12 +181,23 @@ export function Inventario() {
     viewportZoom: inventoryViewportZoom,
   } = useCompactViewport({
     compactHeight: 720,
-    resolveZoom: ({ height }) => {
+    deps: [activeTab],
+    resolveZoom: ({ height, isCompact }) => {
+      const compactProductsOverview = isCompact && activeTab === 'productos';
+
       if (height < 600) {
+        if (compactProductsOverview) {
+          return 0.74;
+        }
+
         return 0.72;
       }
 
       if (height < 700) {
+        if (compactProductsOverview) {
+          return 0.84;
+        }
+
         return 0.86;
       }
 
@@ -862,6 +873,48 @@ export function Inventario() {
           return 0;
       }
     });
+
+  const showCompactProductsOverview = isCompactInventoryViewport && activeTab === 'productos';
+
+  const compactProductsBySubcategory = Array.from(
+    productosFiltrados.reduce((acc, producto) => {
+      const label = getInventorySubcategoriaLabel(producto);
+      const current = acc.get(label);
+
+      if (current) {
+        current.count += 1;
+        current.stock += producto.stockActual;
+        return acc;
+      }
+
+      acc.set(label, {
+        label,
+        icon: obtenerIconoProducto(producto),
+        count: 1,
+        stock: producto.stockActual,
+      });
+      return acc;
+    }, new Map<string, { label: string; icon: string; count: number; stock: number }>())
+      .values()
+  )
+    .sort((left, right) => right.stock - left.stock)
+    .slice(0, 4);
+
+  const compactHighlightedProducts = [...productosFiltrados]
+    .sort((left, right) => {
+      const leftAvailable = reservasInventario[left.id]?.disponibleParaReservar ?? left.stockActual;
+      const rightAvailable = reservasInventario[right.id]?.disponibleParaReservar ?? right.stockActual;
+      return rightAvailable - leftAvailable;
+    })
+    .slice(0, 4);
+
+  const compactLowStockProducts = productosFiltrados
+    .filter(producto => getStockStatus(producto).value === 'bajo')
+    .slice(0, 3);
+
+  const compactReservedTotal = productosFiltrados.reduce((sum, producto) => {
+    return sum + (reservasInventario[producto.id]?.totalReservado ?? 0);
+  }, 0);
 
   // Funciones del carrito
   const agregarAlCarrito = (productoId: string, cantidad: number) => {
@@ -2196,9 +2249,9 @@ export function Inventario() {
         </TabsList>
 
         {/* Productos Tab */}
-        <TabsContent value="productos" className="flex flex-col overflow-visible space-y-3 mt-3">
+        <TabsContent value="productos" className={`flex flex-col overflow-visible ${showCompactProductsOverview ? 'space-y-2 mt-2' : 'space-y-3 mt-3'}`}>
           {/* Toolbar */}
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between flex-shrink-0">
+          <div className={`flex flex-col ${showCompactProductsOverview ? 'gap-1.5' : 'gap-2'} lg:flex-row lg:items-center lg:justify-between flex-shrink-0`}>
             <div className="flex-1 flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
@@ -2388,7 +2441,107 @@ export function Inventario() {
           )}
 
           {/* Products List */}
-          {effectiveVistaMode === 'list' ? (
+          {showCompactProductsOverview ? (
+            <Card className="border-[#E0E0E0] shadow-sm">
+              <CardContent className="space-y-2.5 p-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-[#D8E6F2] bg-[#F4F8FB] px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-[#666666]">Produits visibles</p>
+                    <p className="mt-1 text-lg font-bold text-[#1a4d7a]">{productosFiltrados.length}</p>
+                  </div>
+                  <div className="rounded-lg border border-[#E7E0C8] bg-[#FFF8E8] px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-[#666666]">Unités réservées</p>
+                    <p className="mt-1 text-lg font-bold text-[#e8a419]">{compactReservedTotal}</p>
+                  </div>
+                </div>
+
+                {productosFiltrados.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-[#D6D6D6] bg-[#FAFBFC] px-3 py-3.5 text-center">
+                    <Package className="mx-auto h-8 w-8 text-[#999999]" />
+                    <p className="mt-2 text-sm font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      {t('common.noResults')}
+                    </p>
+                    <p className="mt-1 text-[11px] text-[#666666]">{t('inventory.adjustSearchFilters')}</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#666666]">Sous-catégories dominantes</p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {compactProductsBySubcategory.length} vues
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {compactProductsBySubcategory.map(item => (
+                          <div key={item.label} className="rounded-lg border border-[#E0E0E0] bg-white px-2.5 py-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold text-[#333333]">
+                                  <span className="emoji-icon mr-1">{item.icon}</span>
+                                  {item.label}
+                                </p>
+                                <p className="mt-1 text-[10px] text-[#666666]">{item.count} produits</p>
+                              </div>
+                              <span className="text-xs font-bold text-[#1a4d7a]">{item.stock}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#666666]">Produits prioritaires</p>
+                        {compactLowStockProducts.length > 0 && (
+                          <Badge className="bg-[#c23934] text-[10px] text-white hover:bg-[#c23934]">
+                            {compactLowStockProducts.length} stock bas
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="grid gap-2">
+                        {compactHighlightedProducts.map(producto => {
+                          const reserva = reservasInventario[producto.id] || {
+                            totalReservado: 0,
+                            disponibleParaReservar: producto.stockActual,
+                          };
+                          const stockStatus = getStockStatus(producto);
+
+                          return (
+                            <div key={producto.id} className="rounded-lg border border-[#E0E0E0] bg-white px-3 py-2">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold text-[#333333]" title={getInventoryProductName(producto)}>
+                                    <span className="emoji-icon mr-1">{obtenerIconoProducto(producto)}</span>
+                                    {getInventoryProductName(producto)}
+                                  </p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-[#666666]">
+                                    <span>{producto.codigo}</span>
+                                    {producto.ubicacion && <span>• {producto.ubicacion}</span>}
+                                    {producto.lote && <span>• L:{producto.lote}</span>}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-[#1a4d7a]">{reserva.disponibleParaReservar}</p>
+                                  <p className="text-[10px] text-[#666666]">res.</p>
+                                </div>
+                              </div>
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <Badge className={`${stockStatus.color} text-[10px] text-white hover:${stockStatus.color}`}>
+                                  {stockStatus.label}
+                                </Badge>
+                                <p className="text-[10px] text-[#666666]">Réservé: {reserva.totalReservado}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ) : effectiveVistaMode === 'list' ? (
             <Card className="shadow-lg border-[#E0E0E0] flex flex-col overflow-visible">
               <CardContent className="pt-4 px-4 pb-4 overflow-visible">
                 <div className="overflow-visible border-2 border-[#E0E0E0] rounded-xl shadow-sm">
