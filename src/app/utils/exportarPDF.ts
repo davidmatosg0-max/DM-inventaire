@@ -11,6 +11,8 @@ const COLORS = {
   lightGray: [244, 244, 244], // #F4F4F4
 };
 
+const PDF_HEADER_BOTTOM_Y = 55;
+
 // Función auxiliar para agregar encabezado
 function agregarEncabezado(doc: jsPDF, titulo: string, subtitulo?: string) {
   // Logo/Marca
@@ -195,9 +197,9 @@ export function exportarInventarioPDF(productos: any[], nombreArchivo?: string) 
   autoTable(doc, {
     head: [['Code', 'Produit', 'Catégorie', 'Sous-catégorie', 'Stock', 'Min.', 'Poids', 'Emplacement', 'Lot', 'Venc.', 'Temp.', 'État', 'Valeur']],
     body: datos.length > 0 ? datos : [['N/A', 'Aucune donnée disponible.', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']],
-    startY: 55,
+    startY: PDF_HEADER_BOTTOM_Y,
     theme: 'grid',
-    margin: { left: 10, right: 10 },
+    margin: { top: PDF_HEADER_BOTTOM_Y, left: 10, right: 10 },
     styles: {
       fontSize: 6,
       cellPadding: 1.3,
@@ -230,7 +232,7 @@ export function exportarInventarioPDF(productos: any[], nombreArchivo?: string) 
     alternateRowStyles: {
       fillColor: COLORS.lightGray,
     },
-    didDrawPage: (data) => {
+    willDrawPage: (data) => {
       if (data.pageNumber > 1) {
         agregarEncabezado(doc, 'Rapport d\'inventaire compact', 'Modèle 2: Détail complet condensé');
       }
