@@ -193,16 +193,18 @@ type ReportStatCardProps = {
   value: React.ReactNode;
   accentColor: string;
   valueColor: string;
+  helper?: string;
   compact?: boolean;
 };
 
-function ReportStatCard({ label, value, accentColor, valueColor, compact = false }: ReportStatCardProps) {
+function ReportStatCard({ label, value, accentColor, valueColor, helper, compact = false }: ReportStatCardProps) {
   return (
     <div className={`backdrop-blur-lg bg-white/80 rounded-xl shadow-lg border-l-4 ${compact ? 'p-3' : 'p-4 sm:p-6'}`} style={{ borderLeftColor: accentColor }}>
       <p className={`${compact ? 'text-[11px]' : 'text-xs sm:text-sm'} text-gray-600`}>{label}</p>
       <div className={`${compact ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl'} font-bold mt-1`} style={{ fontFamily: 'Montserrat, sans-serif', color: valueColor }}>
         {value}
       </div>
+      {helper ? <p className={`${compact ? 'text-[10px]' : 'text-xs'} mt-1 text-gray-500`}>{helper}</p> : null}
     </div>
   );
 }
@@ -279,6 +281,10 @@ function ReportDetailPanel({ title, description, items, emptyMessage = 'Aucune d
 
 function formatCurrencySummary(value: number): string {
   return `CAD$ ${value.toFixed(0)}`;
+}
+
+function formatWeightSummary(value: number): string {
+  return `${Number(value.toFixed(1))} kg`;
 }
 
 function formatReportDate(value?: string): string {
@@ -911,9 +917,15 @@ export function Reportes() {
     (sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)),
     0,
   );
+  const operationalEntriesKg = Number(
+    operationalEntries.reduce((sum, entry) => sum + getSafeNumericValue(entry.pesoTotal), 0).toFixed(1)
+  );
   const distributionValue = operationalDistributions.reduce(
     (sum, comanda) => sum + getSafeNumericValue(comanda.totalValorMonetario),
     0,
+  );
+  const operationalDistributionsKg = Number(
+    operationalDistributions.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.totalPeso), 0).toFixed(1)
   );
   const operationalDonors = new Set(operationalEntries.map((entry) => entry.donadorNombre).filter(Boolean)).size;
   const operationalPrograms = new Set(operationalEntries.map((entry) => entry.programaCodigo || entry.programaNombre).filter(Boolean)).size;
@@ -979,9 +991,9 @@ export function Reportes() {
       helper: formatCurrencySummary(valorTotalCalculado),
     },
     {
-      label: 'Flux du mois',
-      value: `${operationalEntries.length}/${operationalDistributions.length}`,
-      helper: 'Entrées / distributions sur la fenêtre mensuelle courante.',
+      label: 'Flux physiques',
+      value: `${formatWeightSummary(operationalEntriesKg)} / ${formatWeightSummary(operationalDistributionsKg)}`,
+      helper: `${operationalEntries.length} entrées • ${operationalDistributions.length} distributions sur la fenêtre mensuelle courante.`,
     },
     {
       label: 'Attention immédiate',
@@ -990,6 +1002,11 @@ export function Reportes() {
     },
   ];
   const compactOperationsItems: ReportDetailItem[] = [
+    {
+      label: 'Flux physiques',
+      value: `${formatWeightSummary(operationalEntriesKg)} / ${formatWeightSummary(operationalDistributionsKg)}`,
+      helper: `${operationalEntries.length} entrées actives • ${operationalDistributions.length} distributions actives`,
+    },
     { label: 'Balance', value: formatCurrencySummary(procurementValue - distributionValue), helper: `${formatCurrencySummary(procurementValue)} entrants • ${formatCurrencySummary(distributionValue)} sortants` },
     { label: 'Acteurs', value: `${operationalDonors} donateurs`, helper: `${operationalPrograms} programmes actifs` },
     { label: 'Distribution', value: `${operationalDistributions.length} commandas`, helper: topOrderingOrganisms[0] ? `${topOrderingOrganisms[0][0]} en tête` : 'Aucun organisme servi sur la période.' },
@@ -1266,9 +1283,9 @@ export function Reportes() {
                       : 'Aucun produit n’est sous son stock minimum.',
                   },
                   {
-                    label: 'Flux du mois',
-                    value: `${operationalEntries.length} entrées / ${operationalDistributions.length} distributions`,
-                    helper: `Balance financière actuelle: ${formatCurrencySummary(procurementValue - distributionValue)}.`,
+                    label: 'Flux physiques du mois',
+                    value: `${formatWeightSummary(operationalEntriesKg)} / ${formatWeightSummary(operationalDistributionsKg)}`,
+                    helper: `${operationalEntries.length} entrées et ${operationalDistributions.length} distributions. Balance financière actuelle: ${formatCurrencySummary(procurementValue - distributionValue)}.`,
                   },
                   {
                     label: 'Activité PRS',
@@ -1319,17 +1336,17 @@ export function Reportes() {
             {showCompactReportsOverview ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  <ReportStatCard label="Entrées" value={operationalEntries.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
-                  <ReportStatCard label="Sorties" value={operationalDistributions.length} accentColor="#e8a419" valueColor="#e8a419" compact />
+                  <ReportStatCard label="Kg entrants" value={formatWeightSummary(operationalEntriesKg)} helper={`${operationalEntries.length} entrées`} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Kg distribués" value={formatWeightSummary(operationalDistributionsKg)} helper={`${operationalDistributions.length} distributions`} accentColor="#e8a419" valueColor="#e8a419" compact />
                 </div>
                 <ReportDetailPanel title="Lecture opérationnelle" description="Synthèse courte des flux en cours." items={compactOperationsItems} compact />
               </>
             ) : (
             <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
-              <ReportStatCard label="Entrées du mois" value={operationalEntries.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Kg entrants du mois" value={formatWeightSummary(operationalEntriesKg)} helper={`${operationalEntries.length} entrées actives`} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Valeur entrante" value={formatCurrencySummary(procurementValue)} accentColor="#2d9561" valueColor="#2d9561" />
-              <ReportStatCard label="Distributions du mois" value={operationalDistributions.length} accentColor="#e8a419" valueColor="#e8a419" />
+              <ReportStatCard label="Kg distribués du mois" value={formatWeightSummary(operationalDistributionsKg)} helper={`${operationalDistributions.length} distributions actives`} accentColor="#e8a419" valueColor="#e8a419" />
               <ReportStatCard label="Valeur sortante" value={formatCurrencySummary(distributionValue)} accentColor="#c23934" valueColor="#c23934" />
             </div>
 
@@ -1342,6 +1359,11 @@ export function Reportes() {
                     label: 'Période de pilotage',
                     value: currentMonthRange.label,
                     helper: 'Cette synthèse reste calée sur le mois en cours pour comparer les flux actifs.',
+                  },
+                  {
+                    label: 'Flux physiques',
+                    value: `${formatWeightSummary(operationalEntriesKg)} / ${formatWeightSummary(operationalDistributionsKg)}`,
+                    helper: `${operationalEntries.length} entrées actives contre ${operationalDistributions.length} distributions actives.`,
                   },
                   {
                     label: 'Balance financière',
