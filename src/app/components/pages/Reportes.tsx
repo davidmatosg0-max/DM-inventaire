@@ -193,13 +193,14 @@ type ReportStatCardProps = {
   value: React.ReactNode;
   accentColor: string;
   valueColor: string;
+  compact?: boolean;
 };
 
-function ReportStatCard({ label, value, accentColor, valueColor }: ReportStatCardProps) {
+function ReportStatCard({ label, value, accentColor, valueColor, compact = false }: ReportStatCardProps) {
   return (
-    <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4" style={{ borderLeftColor: accentColor }}>
-      <p className="text-xs sm:text-sm text-gray-600">{label}</p>
-      <div className="text-2xl sm:text-3xl font-bold mt-1" style={{ fontFamily: 'Montserrat, sans-serif', color: valueColor }}>
+    <div className={`backdrop-blur-lg bg-white/80 rounded-xl shadow-lg border-l-4 ${compact ? 'p-3' : 'p-4 sm:p-6'}`} style={{ borderLeftColor: accentColor }}>
+      <p className={`${compact ? 'text-[11px]' : 'text-xs sm:text-sm'} text-gray-600`}>{label}</p>
+      <div className={`${compact ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl'} font-bold mt-1`} style={{ fontFamily: 'Montserrat, sans-serif', color: valueColor }}>
         {value}
       </div>
     </div>
@@ -242,27 +243,28 @@ type ReportDetailPanelProps = {
   description?: string;
   items: ReportDetailItem[];
   emptyMessage?: string;
+  compact?: boolean;
 };
 
-function ReportDetailPanel({ title, description, items, emptyMessage = 'Aucune donnée disponible.' }: ReportDetailPanelProps) {
+function ReportDetailPanel({ title, description, items, emptyMessage = 'Aucune donnée disponible.', compact = false }: ReportDetailPanelProps) {
   return (
     <div className={LEGACY_PANEL_CLASSNAME}>
-      <div className="mb-4 space-y-1">
-        <h3 className="text-base sm:text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#1a4d7a' }}>
+      <div className={`${compact ? 'mb-3' : 'mb-4'} space-y-1`}>
+        <h3 className={`${compact ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-bold`} style={{ fontFamily: 'Montserrat, sans-serif', color: '#1a4d7a' }}>
           {title}
         </h3>
-        {description && <p className="text-xs sm:text-sm text-gray-600">{description}</p>}
+        {description && <p className={`${compact ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'} text-gray-600`}>{description}</p>}
       </div>
 
       {items.length > 0 ? (
-        <div className="space-y-3">
+        <div className={`${compact ? 'space-y-2' : 'space-y-3'}`}>
           {items.map((item) => (
-            <div key={item.label} className="rounded-xl bg-gray-50/90 px-3 py-3">
+            <div key={item.label} className={`rounded-xl bg-gray-50/90 ${compact ? 'px-2.5 py-2.5' : 'px-3 py-3'}`}>
               <div className="flex items-start justify-between gap-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{item.label}</span>
-                <span className="text-sm font-semibold text-gray-900 text-right">{item.value}</span>
+                <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold uppercase tracking-wide text-gray-500`}>{item.label}</span>
+                <span className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-gray-900 text-right`}>{item.value}</span>
               </div>
-              {item.helper && <div className="mt-1.5 text-xs text-gray-600">{item.helper}</div>}
+              {item.helper && <div className={`${compact ? 'mt-1 text-[11px]' : 'mt-1.5 text-xs'} text-gray-600`}>{item.helper}</div>}
             </div>
           ))}
         </div>
@@ -302,11 +304,11 @@ export function Reportes() {
       }
 
       if (height < 600) {
-        return activeReportTab === 'auditoria' ? 0.68 : 0.78;
+        return activeReportTab === 'auditoria' ? 0.5 : 0.55;
       }
 
       if (height < 700) {
-        return activeReportTab === 'auditoria' ? 0.82 : 0.9;
+        return activeReportTab === 'auditoria' ? 0.62 : 0.68;
       }
 
       return 1;
@@ -334,12 +336,6 @@ export function Reportes() {
 
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
-
-  useEffect(() => {
-    if (isCompactReportsViewport && activeReportTab === 'operaciones') {
-      setActiveReportTab('general');
-    }
-  }, [isCompactReportsViewport]);
 
   const rangoInicio = parseDateValue(fechaInicio);
   const rangoFin = parseDateValue(fechaFin, true);
@@ -901,7 +897,8 @@ export function Reportes() {
     },
   ];
 
-  const showCompactGeneralOverview = isCompactReportsViewport && activeReportTab === 'general';
+  const showCompactReportsOverview = isCompactReportsViewport;
+  const showCompactGeneralOverview = showCompactReportsOverview && activeReportTab === 'general';
   const stockTotal = productos.reduce((sum, producto) => sum + producto.stockActual, 0);
   const totalBeneficiarios = organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0);
   const activeOrganisms = organismos.filter((organismo) => organismo.activo);
@@ -970,6 +967,65 @@ export function Reportes() {
     .sort((left, right) => right[1] - left[1])
     .slice(0, 5);
   const recentAuditLogs = auditLogs.slice(0, 5);
+  const compactGeneralItems: ReportDetailItem[] = [
+    {
+      label: 'Période',
+      value: `${fechaInicio} -> ${fechaFin}`,
+      helper: `${productos.length} produits • ${activeOrganisms.length} organismes actifs`,
+    },
+    {
+      label: 'Stock et valeur',
+      value: `${stockTotal} unités`,
+      helper: formatCurrencySummary(valorTotalCalculado),
+    },
+    {
+      label: 'Flux du mois',
+      value: `${operationalEntries.length}/${operationalDistributions.length}`,
+      helper: 'Entrées / distributions sur la fenêtre mensuelle courante.',
+    },
+    {
+      label: 'Attention immédiate',
+      value: `${lowStockProducts.length} produits`,
+      helper: lowStockProducts[0]?.nombre || 'Aucune alerte prioritaire.',
+    },
+  ];
+  const compactOperationsItems: ReportDetailItem[] = [
+    { label: 'Balance', value: formatCurrencySummary(procurementValue - distributionValue), helper: `${formatCurrencySummary(procurementValue)} entrants • ${formatCurrencySummary(distributionValue)} sortants` },
+    { label: 'Acteurs', value: `${operationalDonors} donateurs`, helper: `${operationalPrograms} programmes actifs` },
+    { label: 'Distribution', value: `${operationalDistributions.length} commandas`, helper: topOrderingOrganisms[0] ? `${topOrderingOrganisms[0][0]} en tête` : 'Aucun organisme servi sur la période.' },
+  ];
+  const compactInventoryItems: ReportDetailItem[] = [
+    ...topInventoryCategories.slice(0, 3).map((item) => ({ label: item.categoria, value: `${item.stock} kg`, helper: 'Volume dominant actuellement en stock.' })),
+    {
+      label: 'Sous seuil',
+      value: lowStockProducts.length,
+      helper: lowStockProducts[0] ? `${lowStockProducts[0].nombre} à surveiller en priorité.` : 'Aucune rupture imminente.',
+    },
+  ];
+  const compactOrdersItems: ReportDetailItem[] = [
+    ...orderStatusSummary.slice(0, 3).map(([status, total]) => ({ label: status, value: total, helper: 'État observé sur la période filtrée.' })),
+    {
+      label: 'Panier moyen',
+      value: formatCurrencySummary(averageOrderValue),
+      helper: topOrderingOrganisms[0] ? `${topOrderingOrganisms[0][0]} est l'organisme le plus demandeur.` : 'Aucun organisme demandeur sur la période.',
+    },
+  ];
+  const compactPrsItems: ReportDetailItem[] = [
+    { label: 'Production', value: `${totalPrsKg} kg`, helper: `${transformacionesTerminadas.length} transformations terminées` },
+    ...latestTransformations.slice(0, 2).map((transformacion) => ({
+      label: transformacion.recetaNombre,
+      value: `${transformacion.productosGenerados.reduce((sum, producto) => sum + producto.pesoTotal, 0).toFixed(1)} kg`,
+      helper: `${formatReportDate(transformacion.fecha)} • ${transformacion.responsable}`,
+    })),
+  ];
+  const compactAuditItems: ReportDetailItem[] = [
+    { label: 'Registre', value: `${auditLogs.length} événements`, helper: `${auditSuccessCount} succès • ${auditErrorCount} erreurs • ${auditCriticalCount} critiques` },
+    ...recentAuditLogs.slice(0, 2).map((log) => ({
+      label: `${log.modulo || 'Général'} • ${log.accion}`,
+      value: log.exito ? 'Succès' : 'Erreur',
+      helper: `${formatReportDate(log.fecha)} • ${log.usuario || 'Système'}`,
+    })),
+  ];
 
   return (
     <div className="min-h-[calc(100vh-56px)] relative overflow-hidden" style={reportsViewportZoom < 1 ? { zoom: reportsViewportZoom } : undefined}>
@@ -1015,40 +1071,47 @@ export function Reportes() {
       </div>
 
       {/* Contenido con z-index superior */}
-      <div className="relative z-10 space-y-3 sm:space-y-4 p-3 sm:p-4">
+      <div className={`relative z-10 ${showCompactReportsOverview ? 'space-y-2 p-2.5' : 'space-y-3 sm:space-y-4 p-3 sm:p-4'}`}>
         {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60">
-          <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-            {t('reports.title')}
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-700">{t('reports.subtitle')}</p>
-        </div>
+        {!showCompactReportsOverview && (
+          <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60 p-3 sm:p-4">
+            <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+              {t('reports.title')}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-700">{t('reports.subtitle')}</p>
+          </div>
+        )}
 
       {/* Tabs de Reportes con glassmorphism */}
       <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
         <Tabs value={activeReportTab} onValueChange={handleReportTabChange} className="space-y-3">
           {exportableReportType && (
             <div className="border-b border-white/60 px-3 pt-3 sm:px-4 sm:pt-4 pb-3">
-              <div className={`flex flex-col ${showCompactGeneralOverview ? 'gap-2' : 'gap-4'} xl:flex-row xl:items-end xl:justify-between`}>
-                <div className={`flex flex-col ${showCompactGeneralOverview ? 'gap-2' : 'gap-3'}`}>
+              <div className={`flex flex-col ${showCompactReportsOverview ? 'gap-2' : 'gap-4'} xl:flex-row xl:items-end xl:justify-between`}>
+                <div className={`flex flex-col ${showCompactReportsOverview ? 'gap-2' : 'gap-3'}`}>
                   <div>
+                    {showCompactReportsOverview && (
+                      <h1 className="text-base font-bold mb-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                        {t('reports.title')}
+                      </h1>
+                    )}
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
                       {usesPageDateRange ? 'Période de la vue' : 'Export de la vue'}
                     </p>
-                    <p className={`${showCompactGeneralOverview ? 'text-xs' : 'text-sm'} text-gray-600 mt-1`}>
+                    <p className={`${showCompactReportsOverview ? 'text-[11px]' : 'text-sm'} text-gray-600 mt-1`}>
                       {exportContextDescription}
                     </p>
                   </div>
                   {usesPageDateRange && (
                     <>
-                      <div className={`flex flex-col ${showCompactGeneralOverview ? 'gap-2' : 'gap-3'} lg:flex-row lg:items-end`}>
+                      <div className={`flex flex-col ${showCompactReportsOverview ? 'gap-1.5' : 'gap-3'} lg:flex-row lg:items-end`}>
                         <div className="flex flex-col gap-1">
                           <span className="text-xs font-medium text-gray-700">{t('reports.startDate')}</span>
                           <Input
                             type="date"
                             value={fechaInicio}
                             onChange={(e) => setFechaInicio(e.target.value)}
-                            className={`w-full sm:w-[160px] bg-white/85 text-xs ${showCompactGeneralOverview ? 'h-8' : 'h-9'}`}
+                            className={`w-full ${showCompactReportsOverview ? 'sm:w-[132px]' : 'sm:w-[160px]'} bg-white/85 text-xs ${showCompactReportsOverview ? 'h-[30px]' : 'h-9'}`}
                           />
                         </div>
                         <div className="flex flex-col gap-1">
@@ -1057,11 +1120,11 @@ export function Reportes() {
                             type="date"
                             value={fechaFin}
                             onChange={(e) => setFechaFin(e.target.value)}
-                            className={`w-full sm:w-[160px] bg-white/85 text-xs ${showCompactGeneralOverview ? 'h-8' : 'h-9'}`}
+                            className={`w-full ${showCompactReportsOverview ? 'sm:w-[132px]' : 'sm:w-[160px]'} bg-white/85 text-xs ${showCompactReportsOverview ? 'h-[30px]' : 'h-9'}`}
                           />
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      {!showCompactReportsOverview && <div className="flex flex-wrap gap-2">
                         {DATE_PRESET_OPTIONS.map((preset) => (
                           <Button
                             key={preset.value}
@@ -1069,12 +1132,12 @@ export function Reportes() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleApplyDatePreset(preset.value)}
-                            className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} ${presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}`}
+                            className={`${presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}`}
                           >
                             {preset.label}
                           </Button>
                         ))}
-                      </div>
+                      </div>}
                     </>
                   )}
                 </div>
@@ -1083,14 +1146,14 @@ export function Reportes() {
                   <Button
                     onClick={() => handleGenerarReporte('pdf')}
                     variant="outline"
-                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#DC3545] text-[#DC3545] hover:bg-red-50`}
+                    className={`${showCompactReportsOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#DC3545] text-[#DC3545] hover:bg-red-50`}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     PDF
                   </Button>
                   <Button
                     onClick={() => handleGenerarReporte('excel')}
-                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} bg-[#4CAF50] hover:bg-[#45a049]`}
+                    className={`${showCompactReportsOverview ? 'h-8 px-2 text-[11px]' : ''} bg-[#4CAF50] hover:bg-[#45a049]`}
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Excel
@@ -1098,7 +1161,7 @@ export function Reportes() {
                   <Button
                     onClick={() => handleGenerarReporte('csv')}
                     variant="outline"
-                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#2d9561] text-[#2d9561] hover:bg-green-50`}
+                    className={`${showCompactReportsOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#2d9561] text-[#2d9561] hover:bg-green-50`}
                   >
                     <Download className="w-4 h-4 mr-2" />
                     CSV
@@ -1106,7 +1169,7 @@ export function Reportes() {
                   <Button
                     onClick={() => handleGenerarReporte('json')}
                     variant="outline"
-                    className={`${showCompactGeneralOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50`}
+                    className={`${showCompactReportsOverview ? 'h-8 px-2 text-[11px]' : ''} border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50`}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     JSON
@@ -1116,7 +1179,7 @@ export function Reportes() {
             </div>
           )}
 
-          <TabsList className="app-compact-tabs-grid w-full bg-transparent border-b rounded-none gap-1">
+          <TabsList className={`app-compact-tabs-grid w-full bg-transparent border-b rounded-none gap-1 ${showCompactReportsOverview ? 'flex-nowrap overflow-x-auto justify-start' : ''}`}>
             <TabsTrigger value="general" className="app-compact-tab-trigger flex-1 min-w-[96px] min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {t('reports.general')}
             </TabsTrigger>
@@ -1139,7 +1202,18 @@ export function Reportes() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="space-y-3 p-3 sm:p-4 pt-0">
+          <TabsContent value="general" className={`${showCompactReportsOverview ? 'space-y-2 p-2.5 pt-0' : 'space-y-3 p-3 sm:p-4 pt-0'}`}>
+            {showCompactReportsOverview ? (
+              <>
+                <ReportDetailPanel
+                  title="Résumé exécutif"
+                  description="Version compacte de la lecture globale du module."
+                  items={compactGeneralItems}
+                  compact
+                />
+              </>
+            ) : (
+            <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
               {generalOverviewCards.map((card) => (
                 <ReportStatCard
@@ -1237,9 +1311,21 @@ export function Reportes() {
                 </ResponsiveContainer>
               </ReportChartCard>
             </div>
+            </>
+            )}
           </TabsContent>
 
-          <TabsContent value="operaciones" className="space-y-3 p-3 sm:p-4 pt-0">
+          <TabsContent value="operaciones" className={`${showCompactReportsOverview ? 'space-y-2 p-2.5 pt-0' : 'space-y-3 p-3 sm:p-4 pt-0'}`}>
+            {showCompactReportsOverview ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <ReportStatCard label="Entrées" value={operationalEntries.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Sorties" value={operationalDistributions.length} accentColor="#e8a419" valueColor="#e8a419" compact />
+                </div>
+                <ReportDetailPanel title="Lecture opérationnelle" description="Synthèse courte des flux en cours." items={compactOperationsItems} compact />
+              </>
+            ) : (
+            <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
               <ReportStatCard label="Entrées du mois" value={operationalEntries.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Valeur entrante" value={formatCurrencySummary(procurementValue)} accentColor="#2d9561" valueColor="#2d9561" />
@@ -1298,9 +1384,21 @@ export function Reportes() {
                 </BarChart>
               </ResponsiveContainer>
             </ReportChartCard>
+            </>
+            )}
           </TabsContent>
 
-          <TabsContent value="inventario" className="space-y-3 p-3 sm:p-4 pt-0">
+          <TabsContent value="inventario" className={`${showCompactReportsOverview ? 'space-y-2 p-2.5 pt-0' : 'space-y-3 p-3 sm:p-4 pt-0'}`}>
+            {showCompactReportsOverview ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <ReportStatCard label="Produits" value={productos.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Sous seuil" value={lowStockProducts.length} accentColor="#c23934" valueColor="#c23934" compact />
+                </div>
+                <ReportDetailPanel title="Catégories dominantes" description="Vue rapide de l'inventaire en petit format." items={compactInventoryItems} compact />
+              </>
+            ) : (
+            <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
               <ReportStatCard label="Produits suivis" value={productos.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Stock total" value={stockTotal} accentColor="#2d9561" valueColor="#2d9561" />
@@ -1365,9 +1463,21 @@ export function Reportes() {
                   </ResponsiveContainer>
               </ReportChartCard>
             </div>
+            </>
+            )}
           </TabsContent>
 
-          <TabsContent value="comandas" className="space-y-3 p-3 sm:p-4 pt-0">
+          <TabsContent value="comandas" className={`${showCompactReportsOverview ? 'space-y-2 p-2.5 pt-0' : 'space-y-3 p-3 sm:p-4 pt-0'}`}>
+            {showCompactReportsOverview ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <ReportStatCard label="Commandes" value={comandasExportables.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Panier moyen" value={formatCurrencySummary(averageOrderValue)} accentColor="#c23934" valueColor="#c23934" compact />
+                </div>
+                <ReportDetailPanel title="États de commandes" description="Vue compacte des commandas sur la période." items={compactOrdersItems} compact />
+              </>
+            ) : (
+            <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
               <ReportStatCard label="Commandes filtrées" value={comandasExportables.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Organismes servis" value={topOrderingOrganisms.length} accentColor="#2d9561" valueColor="#2d9561" />
@@ -1409,9 +1519,21 @@ export function Reportes() {
                   </BarChart>
                 </ResponsiveContainer>
             </ReportChartCard>
+            </>
+            )}
           </TabsContent>
 
-          <TabsContent value="prs" className="space-y-3 p-3 sm:p-4 pt-0">
+          <TabsContent value="prs" className={`${showCompactReportsOverview ? 'space-y-2 p-2.5 pt-0' : 'space-y-3 p-3 sm:p-4 pt-0'}`}>
+            {showCompactReportsOverview ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <ReportStatCard label="Production" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" compact />
+                  <ReportStatCard label="Transformations" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                </div>
+                <ReportDetailPanel title="Dernières transformations" description="Résumé PRS en petit format." items={compactPrsItems} compact />
+              </>
+            ) : (
+            <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
               <ReportStatCard label="Transformations terminées" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Production totale" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" />
@@ -1453,9 +1575,21 @@ export function Reportes() {
                   </LineChart>
                 </ResponsiveContainer>
             </ReportChartCard>
+            </>
+            )}
           </TabsContent>
 
-          <TabsContent value="auditoria" className="space-y-3 p-3 sm:p-4 pt-0">
+          <TabsContent value="auditoria" className={`${showCompactReportsOverview ? 'space-y-2 p-2.5 pt-0' : 'space-y-3 p-3 sm:p-4 pt-0'}`}>
+            {showCompactReportsOverview ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <ReportStatCard label="Événements" value={auditLogs.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Critiques" value={auditCriticalCount} accentColor="#c23934" valueColor="#c23934" compact />
+                </div>
+                <ReportDetailPanel title="Modules les plus journalisés" description="Résumé du registre d'audit en petit format." items={compactAuditItems} compact />
+              </>
+            ) : (
+            <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
               <ReportStatCard label="Événements totaux" value={auditLogs.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Succès" value={auditSuccessCount} accentColor="#2d9561" valueColor="#2d9561" />
@@ -1486,6 +1620,8 @@ export function Reportes() {
             </div>
 
             <AuditLogViewer />
+            </>
+            )}
           </TabsContent>
         </Tabs>
       </div>
