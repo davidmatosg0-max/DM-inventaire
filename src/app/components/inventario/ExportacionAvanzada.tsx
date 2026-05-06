@@ -24,6 +24,22 @@ type ExportacionAvanzadaProps = {
 type FormatoExportacion = 'csv' | 'excel' | 'json' | 'pdf';
 type TipoDatos = 'productos' | 'entradas' | 'ambos';
 
+function getExtension(formato: FormatoExportacion): string {
+  return formato === 'excel' ? 'xlsx' : formato;
+}
+
+function getNombreArchivo(tipoDatos: TipoDatos, formato: FormatoExportacion): string {
+  if (tipoDatos === 'productos' && formato === 'pdf') {
+    return generateFilename('Inventario_compacto', 'pdf');
+  }
+
+  if (tipoDatos === 'ambos') {
+    return generateFilename('inventario_completo', getExtension(formato));
+  }
+
+  return generateFilename(`inventario_${tipoDatos}`, getExtension(formato));
+}
+
 export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaProps) {
   const { t } = useTranslation();
   const [formato, setFormato] = useState<FormatoExportacion>('excel');
@@ -102,27 +118,81 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
         : entradasFiltradas;
     }
 
-    const nombreArchivo = tipoDatos === 'productos' && formato === 'pdf'
-      ? generateFilename('Inventario_compacto', 'pdf')
-      : `inventario_${tipoDatos}_${new Date().getTime()}.${formato}`;
+    const nombreArchivo = getNombreArchivo(tipoDatos, formato);
+    const filasProductos = (tipoDatos === 'productos' || tipoDatos === 'ambos')
+      ? (tipoDatos === 'productos' ? datosExportar : productos.filter((producto) => {
+          const productoActivo = incluirInactivos ? true : producto.activo;
+          const categoriaValida = categoriasSeleccionadas.length === 0 || categoriasSeleccionadas.includes(producto.categoria);
+          return productoActivo && categoriaValida;
+        })).map((producto) => ({
+          recordType: 'Produit',
+          recordDate: '',
+          entryType: '',
+          program: '',
+          actor: '',
+          prsParticipant: '',
+          code: producto.codigo || 'N/A',
+          name: producto.nombre || 'Sans nom',
+          category: producto.categoria || 'N/A',
+          subcategory: producto.subcategoria || 'N/A',
+          quantity: producto.stockActual ?? 0,
+          unit: producto.unidad || 'u',
+          unitWeight: producto.pesoUnitario ?? producto.peso ?? 0,
+          totalWeight: producto.pesoRegistrado ?? ((producto.pesoUnitario ?? producto.peso ?? 0) * (producto.stockActual ?? 0)),
+          location: producto.ubicacion || 'N/A',
+          batch: producto.lote || 'N/A',
+          expiration: producto.fechaVencimiento || 'N/A',
+          temperature: producto.temperaturaAlmacenamiento || producto.temperatura || 'N/A',
+          packageDetails: '',
+          notes: '',
+          status: producto.estado || 'Disponible',
+          value: incluirValorMonetario ? (producto.valorTotal ?? 0) : '',
+          minStock: producto.stockMinimo ?? 0,
+        }))
+      : [];
+    const filasEntradas = (tipoDatos === 'entradas' || tipoDatos === 'ambos')
+      ? entradas.filter((entrada) => {
+          if (rangoFechas === 'todos') {
+            return true;
+          }
+
+          const ahora = new Date();
+          const diasAtras = rangoFechas === '7dias' ? 7 : rangoFechas === '30dias' ? 30 : 90;
+          const fechaLimite = new Date(ahora.getTime() - (diasAtras * 24 * 60 * 60 * 1000));
+          return new Date(entrada.fecha) >= fechaLimite;
+        }).map((entrada) => ({
+          recordType: 'Entrée',
+          recordDate: entrada.fecha,
+          entryType: entrada.tipoEntrada || 'N/A',
+          program: entrada.programaNombre || 'N/A',
+          actor: entrada.donadorNombre || 'N/A',
+          prsParticipant: entrada.participantePRSNombre || 'N/A',
+          code: entrada.productoCodigo || 'N/A',
+          name: entrada.nombreProducto || 'N/A',
+          category: entrada.productoCategoria || entrada.categoria || 'N/A',
+          subcategory: entrada.productoSubcategoria || entrada.subcategoria || 'N/A',
+          quantity: entrada.cantidad ?? 0,
+          unit: entrada.unidad || 'u',
+          unitWeight: entrada.pesoUnidad ?? 0,
+          totalWeight: entrada.pesoTotal ?? 0,
+          location: '',
+          batch: entrada.lote || 'N/A',
+          expiration: entrada.fechaCaducidad || 'N/A',
+          temperature: entrada.temperatura || 'N/A',
+          packageDetails: entrada.detallesEmpaque || 'N/A',
+          notes: entrada.observaciones || 'N/A',
+          status: entrada.activo ? 'Active' : 'Inactive',
+          value: incluirValorMonetario ? (entrada.valorTotal ?? 0) : '',
+          minStock: '',
+        }))
+      : [];
 
     if (tipoDatos === 'productos') {
-      const filasProductos = datosExportar.map((producto) => ({
-        code: producto.codigo || 'N/A',
-        name: producto.nombre || 'Sans nom',
-        category: producto.categoria || 'N/A',
-        subcategory: producto.subcategoria || 'N/A',
-        stock: producto.stockActual ?? 0,
-        minStock: producto.stockMinimo ?? 0,
-        unit: producto.unidad || 'u',
-        weight: producto.pesoRegistrado ?? ((producto.pesoUnitario ?? producto.peso ?? 0) * (producto.stockActual ?? 0)),
-        location: producto.ubicacion || 'N/A',
-        batch: producto.lote || 'N/A',
-        expiration: producto.fechaVencimiento || 'N/A',
-        temperature: producto.temperaturaAlmacenamiento || producto.temperatura || 'N/A',
-        status: producto.estado || 'Disponible',
-        value: incluirValorMonetario ? (producto.valorTotal ?? 0) : '',
-      }));
+      if (filasProductos.length === 0 && formato !== 'pdf') {
+        toast.error('Aucun produit disponible pour cette exportation.');
+        onOpenChange(false);
+        return;
+      }
 
       if (formato === 'pdf') {
         exportarInventarioPDF(datosExportar, nombreArchivo);
@@ -132,10 +202,10 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
           { header: 'Producto', key: 'name' },
           { header: 'Categoría', key: 'category' },
           { header: 'Subcategoría', key: 'subcategory' },
-          { header: 'Stock', key: 'stock' },
+          { header: 'Stock', key: 'quantity' },
           { header: 'Mínimo', key: 'minStock' },
           { header: 'Unidad', key: 'unit' },
-          { header: 'Poids (kg)', key: 'weight' },
+          { header: 'Poids (kg)', key: 'totalWeight' },
           ...(incluirUbicacion ? [{ header: 'Ubicación', key: 'location' }] : []),
           ...(incluirFechas ? [
             { header: 'Lote', key: 'batch' },
@@ -147,7 +217,7 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
         ];
 
         await exportData(formato, filasProductos, columns, {
-          filename: generateFilename(`inventario_${tipoDatos}`, formato === 'excel' ? 'xlsx' : formato),
+          filename: nombreArchivo,
           title: 'Exportación Avanzada de Inventario',
           subtitle: `${filasProductos.length} registros exportados`,
           orientation: 'landscape',
@@ -166,22 +236,80 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
       onOpenChange(false);
       return;
     }
-    
-    console.log('Exportando:', {
-      formato,
-      tipoDatos,
-      registros: datosExportar.length,
-      opciones: {
-        incluirInactivos,
-        incluirValorMonetario,
-        incluirUbicacion,
-        incluirFechas,
-        rangoFechas,
-        categoriasSeleccionadas
-      }
+
+    const filasExportacion = tipoDatos === 'entradas'
+      ? filasEntradas
+      : [...filasProductos, ...filasEntradas];
+
+    if (filasExportacion.length === 0) {
+      toast.error('Aucune donnée disponible pour cette exportation.');
+      onOpenChange(false);
+      return;
+    }
+
+    const columns: TableColumn[] = tipoDatos === 'entradas'
+      ? [
+          { header: 'Date', key: 'recordDate' },
+          { header: 'Type', key: 'entryType' },
+          { header: 'Programme', key: 'program' },
+          { header: 'Donateur / fournisseur', key: 'actor' },
+          { header: 'Participant PRS', key: 'prsParticipant' },
+          { header: 'Code', key: 'code' },
+          { header: 'Produit', key: 'name' },
+          { header: 'Catégorie', key: 'category' },
+          { header: 'Sous-catégorie', key: 'subcategory' },
+          { header: 'Quantité', key: 'quantity' },
+          { header: 'Unité', key: 'unit' },
+          { header: 'Poids unitaire', key: 'unitWeight' },
+          { header: 'Poids total', key: 'totalWeight' },
+          { header: 'Température', key: 'temperature' },
+          ...(incluirFechas ? [
+            { header: 'Lot', key: 'batch' },
+            { header: 'Date de péremption', key: 'expiration' },
+          ] : []),
+          { header: 'Détails emballage', key: 'packageDetails' },
+          { header: 'Notes', key: 'notes' },
+          ...(incluirValorMonetario ? [{ header: 'Valeur', key: 'value' }] : []),
+          { header: 'État', key: 'status' },
+        ]
+      : [
+          { header: 'Type de registre', key: 'recordType' },
+          { header: 'Date', key: 'recordDate' },
+          { header: 'Type entrée', key: 'entryType' },
+          { header: 'Programme', key: 'program' },
+          { header: 'Acteur', key: 'actor' },
+          { header: 'Code', key: 'code' },
+          { header: 'Produit', key: 'name' },
+          { header: 'Catégorie', key: 'category' },
+          { header: 'Sous-catégorie', key: 'subcategory' },
+          { header: 'Quantité', key: 'quantity' },
+          { header: 'Unité', key: 'unit' },
+          { header: 'Poids total', key: 'totalWeight' },
+          ...(incluirUbicacion ? [{ header: 'Emplacement', key: 'location' }] : []),
+          ...(incluirFechas ? [
+            { header: 'Lot', key: 'batch' },
+            { header: 'Date de péremption', key: 'expiration' },
+          ] : []),
+          { header: 'Température', key: 'temperature' },
+          { header: 'État', key: 'status' },
+          ...(incluirValorMonetario ? [{ header: 'Valeur', key: 'value' }] : []),
+        ];
+
+    await exportData(formato, filasExportacion, columns, {
+      filename: nombreArchivo,
+      title: tipoDatos === 'entradas' ? 'Exportación de Entradas de Inventario' : 'Exportación Completa de Inventario',
+      subtitle: `${filasExportacion.length} registros exportados`,
+      orientation: 'landscape',
     });
 
-    toast.info('La exportation réelle des entrées et des jeux combinés sera ajoutée ensuite.');
+    toast.success(
+      <div className="space-y-1">
+        <p className="font-bold">✅ Exportación completada</p>
+        <p className="text-sm">Archivo: {nombreArchivo}</p>
+        <p className="text-xs text-[#666666]">{filasExportacion.length} registros exportados</p>
+      </div>,
+      { duration: 5000 }
+    );
 
     onOpenChange(false);
   };
