@@ -29,7 +29,6 @@ import {
 import { exportData, generateFilename, type TableColumn } from '../../utils/exportUtils';
 import { useBranding } from '../../../hooks/useBranding';
 import { AuditLogViewer } from '../auditoria/AuditLogViewer';
-import { ReportsModule } from '../reports/ReportsModule';
 import { obtenerComandasReporte } from '../reports/reportComandas';
 import { isActiveReportComanda } from '../reports/reportComandaStatus';
 import { registrarActividad } from '../../utils/actividadLogger';
@@ -232,52 +231,85 @@ function ReportChartCard({ title, titleColor, hasData, emptyHeight = 300, childr
   );
 }
 
+type ReportDetailItem = {
+  label: string;
+  value: React.ReactNode;
+  helper?: React.ReactNode;
+};
+
+type ReportDetailPanelProps = {
+  title: string;
+  description?: string;
+  items: ReportDetailItem[];
+  emptyMessage?: string;
+};
+
+function ReportDetailPanel({ title, description, items, emptyMessage = 'Aucune donnée disponible.' }: ReportDetailPanelProps) {
+  return (
+    <div className={LEGACY_PANEL_CLASSNAME}>
+      <div className="mb-4 space-y-1">
+        <h3 className="text-base sm:text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#1a4d7a' }}>
+          {title}
+        </h3>
+        {description && <p className="text-xs sm:text-sm text-gray-600">{description}</p>}
+      </div>
+
+      {items.length > 0 ? (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div key={item.label} className="rounded-xl bg-gray-50/90 px-3 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{item.label}</span>
+                <span className="text-sm font-semibold text-gray-900 text-right">{item.value}</span>
+              </div>
+              {item.helper && <div className="mt-1.5 text-xs text-gray-600">{item.helper}</div>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl bg-gray-50/90 px-3 py-6 text-sm text-gray-500">
+          {emptyMessage}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatCurrencySummary(value: number): string {
+  return `CAD$ ${value.toFixed(0)}`;
+}
+
+function formatReportDate(value?: string): string {
+  if (!value) return 'N/A';
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) return value;
+  return parsedDate.toLocaleDateString('fr-CA');
+}
+
 export function Reportes() {
   const { t } = useTranslation();
   const branding = useBranding();
   const initialRange = getDatePresetRange('month');
-  const [activeReportTab, setActiveReportTab] = useState<ReportTab>('operaciones');
+  const [activeReportTab, setActiveReportTab] = useState<ReportTab>('general');
   const {
     isCompactViewport: isCompactReportsViewport,
     viewportZoom: reportsViewportZoom,
   } = useCompactViewport({
     deps: [activeReportTab],
     resolveZoom: ({ height, isCompact }) => {
-      const compactGeneralOverview = isCompact && activeReportTab === 'general';
-
       if (!isCompact) {
         return 1;
       }
 
       if (height < 600) {
-        if (compactGeneralOverview) {
-          return 0.44;
-        }
-
-        if (activeReportTab === 'operaciones' || activeReportTab === 'auditoria') {
-          return 0.14;
-        }
-
-        if (activeReportTab === 'comandas' || activeReportTab === 'prs') {
-          return 0.28;
-        }
-
-        return 0.32;
+        return activeReportTab === 'auditoria' ? 0.68 : 0.78;
       }
 
       if (height < 700) {
-        if (compactGeneralOverview) {
-          return 0.62;
-        }
-
-        if (activeReportTab === 'operaciones' || activeReportTab === 'auditoria') {
-          return 0.22;
-        }
-
-        return 0.5;
+        return activeReportTab === 'auditoria' ? 0.82 : 0.9;
       }
 
-      return activeReportTab === 'operaciones' || activeReportTab === 'auditoria' ? 0.6 : 0.8;
+      return 1;
     },
   });
   const [fechaInicio, setFechaInicio] = useState(initialRange.start);
@@ -870,25 +902,74 @@ export function Reportes() {
   ];
 
   const showCompactGeneralOverview = isCompactReportsViewport && activeReportTab === 'general';
-  const compactMonthlyOrders = datosComandasMes.slice(-4);
-  const compactOrganismSummary = datosOrganismos.slice(0, 4);
-  const compactGeneralHighlights = [
-    {
-      key: 'stock',
-      label: 'Stock total',
-      value: productos.reduce((sum, producto) => sum + producto.stockActual, 0),
-    },
-    {
-      key: 'value',
-      label: 'Valeur estimée',
-      value: `CAD$ ${valorTotalCalculado.toFixed(0)}`,
-    },
-    {
-      key: 'period',
-      label: 'Période',
-      value: `${fechaInicio} -> ${fechaFin}`,
-    },
-  ];
+  const stockTotal = productos.reduce((sum, producto) => sum + producto.stockActual, 0);
+  const totalBeneficiarios = organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0);
+  const activeOrganisms = organismos.filter((organismo) => organismo.activo);
+  const currentMonthRange = getCurrentMonthReportRange();
+  const operationalEntries = obtenerTodasLasEntradas().filter((entry) => entry.activo && isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end));
+  const operationalDistributions = obtenerComandasReporte()
+    .filter(isActiveReportComanda)
+    .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end));
+  const procurementValue = operationalEntries.reduce(
+    (sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)),
+    0,
+  );
+  const distributionValue = operationalDistributions.reduce(
+    (sum, comanda) => sum + getSafeNumericValue(comanda.totalValorMonetario),
+    0,
+  );
+  const operationalDonors = new Set(operationalEntries.map((entry) => entry.donadorNombre).filter(Boolean)).size;
+  const operationalPrograms = new Set(operationalEntries.map((entry) => entry.programaCodigo || entry.programaNombre).filter(Boolean)).size;
+  const lowStockProducts = productos
+    .filter((producto) => producto.stockActual <= producto.stockMinimo)
+    .sort((left, right) => (left.stockActual - left.stockMinimo) - (right.stockActual - right.stockMinimo))
+    .slice(0, 5);
+  const topInventoryCategories = [...datosInventario]
+    .sort((left, right) => right.stock - left.stock)
+    .slice(0, 5);
+  const orderStatusSummary = Array.from(
+    comandasFiltradas.reduce((mapa, comanda) => {
+      const estado = comanda.estado || 'Sans état';
+      mapa.set(estado, (mapa.get(estado) || 0) + 1);
+      return mapa;
+    }, new Map<string, number>())
+  )
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 5);
+  const topOrderingOrganisms = Array.from(
+    comandasExportables.reduce((mapa, comanda) => {
+      const nombre = comanda.organismo?.nombre || 'N/A';
+      mapa.set(nombre, (mapa.get(nombre) || 0) + 1);
+      return mapa;
+    }, new Map<string, number>())
+  )
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 5);
+  const commandasTotalValue = comandasExportables.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.valorTotal), 0);
+  const averageOrderValue = comandasExportables.length > 0 ? commandasTotalValue / comandasExportables.length : 0;
+  const totalPrsKg = Number(
+    transformacionesTerminadas
+      .reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0)
+      .toFixed(1)
+  );
+  const participatingPrsCount = organismos.filter((organismo) => organismo.participantePRS).length;
+  const latestTransformations = [...transformacionesTerminadas]
+    .sort((left, right) => new Date(right.fecha).getTime() - new Date(left.fecha).getTime())
+    .slice(0, 5);
+  const auditLogs = obtenerLogs();
+  const auditSuccessCount = auditLogs.filter((log) => log.exito).length;
+  const auditErrorCount = auditLogs.filter((log) => !log.exito).length;
+  const auditCriticalCount = auditLogs.filter((log) => log.severidad === 'critical').length;
+  const auditModuleSummary = Array.from(
+    auditLogs.reduce((mapa, log) => {
+      const modulo = log.modulo || 'Général';
+      mapa.set(modulo, (mapa.get(modulo) || 0) + 1);
+      return mapa;
+    }, new Map<string, number>())
+  )
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 5);
+  const recentAuditLogs = auditLogs.slice(0, 5);
 
   return (
     <div className="min-h-[calc(100vh-56px)] relative overflow-hidden" style={reportsViewportZoom < 1 ? { zoom: reportsViewportZoom } : undefined}>
@@ -1059,7 +1140,7 @@ export function Reportes() {
           </TabsList>
 
           <TabsContent value="general" className="space-y-3 p-3 sm:p-4 pt-0">
-            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'}`}>
+            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
               {generalOverviewCards.map((card) => (
                 <ReportStatCard
                   key={card.key}
@@ -1071,113 +1152,184 @@ export function Reportes() {
               ))}
             </div>
 
-            {showCompactGeneralOverview ? (
-              <div className="grid gap-3 xl:grid-cols-2">
-                <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-3 border border-white/40">
-                  <h3 className="text-sm font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                    Synthèse rapide
-                  </h3>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {compactGeneralHighlights.map((item) => (
-                      <div key={item.key} className="rounded-xl bg-gray-50 px-3 py-2">
-                        <p className="text-[11px] uppercase tracking-wide text-[#999999]">{item.label}</p>
-                        <p className="mt-1 text-sm font-semibold text-[#1f2937]">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <ReportDetailPanel
+                title="Résumé exécutif"
+                description="Lecture simple de la période affichée et de la couverture actuelle du service."
+                items={[
+                  {
+                    label: 'Période analysée',
+                    value: `${fechaInicio} -> ${fechaFin}`,
+                    helper: rangoValido ? 'Les cartes, graphiques et exports suivent cette plage.' : 'La plage sélectionnée doit être corrigée pour réactiver les exports.',
+                  },
+                  {
+                    label: 'Couverture active',
+                    value: `${activeOrganisms.length} organismes`,
+                    helper: `${totalBeneficiarios} bénéficiaires suivis dans le réseau.`,
+                  },
+                  {
+                    label: 'Stock disponible',
+                    value: `${stockTotal} unités`,
+                    helper: `${productos.length} produits répartis dans ${datosInventario.length} catégories.`,
+                  },
+                  {
+                    label: 'Valeur estimée',
+                    value: formatCurrencySummary(valorTotalCalculado),
+                    helper: 'Estimation basée sur la valorisation disponible dans l’inventaire.',
+                  },
+                ]}
+              />
 
-                <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-3 border border-white/40">
-                  <h3 className="text-sm font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                    Activité récente
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl bg-gray-50 px-3 py-3">
-                      <p className="text-[11px] uppercase tracking-wide text-[#999999] mb-2">Commandes sur 4 mois</p>
-                      {compactMonthlyOrders.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {compactMonthlyOrders.map((entry) => (
-                            <div key={entry.mes} className="flex items-center justify-between text-sm text-[#1f2937]">
-                              <span>{entry.mes}</span>
-                              <span className="font-semibold">{entry.comandas}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-[#666666]">Aucune donnée disponible.</p>
-                      )}
-                    </div>
+              <ReportDetailPanel
+                title="Points d'attention"
+                description="Éléments à surveiller avant la prochaine revue opérationnelle."
+                items={[
+                  {
+                    label: 'Produits en tension',
+                    value: lowStockProducts.length,
+                    helper: lowStockProducts.length > 0
+                      ? `${lowStockProducts[0].nombre} est la référence la plus proche de sa rupture.`
+                      : 'Aucun produit n’est sous son stock minimum.',
+                  },
+                  {
+                    label: 'Flux du mois',
+                    value: `${operationalEntries.length} entrées / ${operationalDistributions.length} distributions`,
+                    helper: `Balance financière actuelle: ${formatCurrencySummary(procurementValue - distributionValue)}.`,
+                  },
+                  {
+                    label: 'Activité PRS',
+                    value: `${totalPrsKg} kg`,
+                    helper: `${transformacionesTerminadas.length} transformations terminées sur la période filtrée.`,
+                  },
+                  {
+                    label: 'Audit critique',
+                    value: auditCriticalCount,
+                    helper: `${auditErrorCount} événements en erreur dans le registre courant.`,
+                  },
+                ]}
+              />
+            </div>
 
-                    <div className="rounded-xl bg-gray-50 px-3 py-3">
-                      <p className="text-[11px] uppercase tracking-wide text-[#999999] mb-2">Organismes principaux</p>
-                      {compactOrganismSummary.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {compactOrganismSummary.map((entry) => (
-                            <div key={entry.id} className="flex items-center justify-between gap-3 text-sm text-[#1f2937]">
-                              <span className="truncate">{entry.nombre}</span>
-                              <span className="font-semibold">{entry.beneficiarios}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-[#666666]">Aucune donnée disponible.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                <ReportChartCard title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0}>
-                <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="linechart-comandas-mes">
-                      <LineChart data={datosComandasMes}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="mes" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="comandas" stroke={branding.primaryColor} strokeWidth={2} name={t('nav.orders')} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                </ReportChartCard>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <ReportChartCard title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 280}>
+                <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 280} key="linechart-comandas-mes">
+                  <LineChart data={datosComandasMes}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="comandas" stroke={branding.primaryColor} strokeWidth={2} name={t('nav.orders')} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ReportChartCard>
 
-                <ReportChartCard title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0}>
-                    <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="barchart-organismos">
-                      <BarChart data={datosOrganismos}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={100} />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="beneficiarios" fill="#4CAF50" name={t('reports.beneficiaries')} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                </ReportChartCard>
-              </div>
-            )}
+              <ReportChartCard title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 280}>
+                <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 280} key="barchart-organismos">
+                  <BarChart data={datosOrganismos}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={90} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="beneficiarios" fill="#4CAF50" name={t('reports.beneficiaries')} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ReportChartCard>
+            </div>
           </TabsContent>
 
           <TabsContent value="operaciones" className="space-y-3 p-3 sm:p-4 pt-0">
-            <div className={LEGACY_PANEL_CLASSNAME}>
-              <div className="flex items-start gap-3">
-                <div className="rounded-xl bg-[#1a4d7a]/10 p-3 text-[#1a4d7a]">
-                  <BarChart3 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                    Rapports opérationnels
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Les rapports d'approvisionnement, de distribution et les comparatifs consolidés sont désormais regroupés dans ce module.
-                  </p>
-                </div>
-              </div>
+            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
+              <ReportStatCard label="Entrées du mois" value={operationalEntries.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Valeur entrante" value={formatCurrencySummary(procurementValue)} accentColor="#2d9561" valueColor="#2d9561" />
+              <ReportStatCard label="Distributions du mois" value={operationalDistributions.length} accentColor="#e8a419" valueColor="#e8a419" />
+              <ReportStatCard label="Valeur sortante" value={formatCurrencySummary(distributionValue)} accentColor="#c23934" valueColor="#c23934" />
             </div>
 
-            <ReportsModule embedded hideHeader />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <ReportDetailPanel
+                title="Lecture opérationnelle"
+                description="Indicateurs mensuels pour suivre l’équilibre entre approvisionnement et distribution."
+                items={[
+                  {
+                    label: 'Période de pilotage',
+                    value: currentMonthRange.label,
+                    helper: 'Cette synthèse reste calée sur le mois en cours pour comparer les flux actifs.',
+                  },
+                  {
+                    label: 'Balance financière',
+                    value: formatCurrencySummary(procurementValue - distributionValue),
+                    helper: `${formatCurrencySummary(procurementValue)} d’entrées contre ${formatCurrencySummary(distributionValue)} de sorties valorisées.`,
+                  },
+                  {
+                    label: 'Acteurs engagés',
+                    value: `${operationalDonors} donateurs`,
+                    helper: `${operationalPrograms} programmes ou campagnes actifs sur le mois courant.`,
+                  },
+                  {
+                    label: 'Rythme de distribution',
+                    value: operationalDistributions.length,
+                    helper: `${topOrderingOrganisms.length} organismes se retrouvent dans le top des distributions.`,
+                  },
+                ]}
+              />
+
+              <ReportDetailPanel
+                title="Organismes les plus servis"
+                description="Classement simple des organismes les plus présents dans les commandas filtrées."
+                items={topOrderingOrganisms.map(([name, total]) => ({
+                  label: name,
+                  value: `${total} commande${total > 1 ? 's' : ''}`,
+                  helper: 'Présence comptée sur la plage de dates actuellement affichée.',
+                }))}
+              />
+            </div>
+
+            <ReportChartCard title="Tendance mensuelle des distributions" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 260}>
+              <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 260} key="barchart-operaciones-monthly">
+                <BarChart data={datosComandasMes}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="comandas" fill={branding.primaryColor} name="Commandes livrées" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ReportChartCard>
           </TabsContent>
 
           <TabsContent value="inventario" className="space-y-3 p-3 sm:p-4 pt-0">
+            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
+              <ReportStatCard label="Produits suivis" value={productos.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Stock total" value={stockTotal} accentColor="#2d9561" valueColor="#2d9561" />
+              <ReportStatCard label="Catégories" value={datosInventario.length} accentColor="#e8a419" valueColor="#e8a419" />
+              <ReportStatCard label="Sous seuil" value={lowStockProducts.length} accentColor="#c23934" valueColor="#c23934" />
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <ReportDetailPanel
+                title="Catégories dominantes"
+                description="Répartition des volumes actuellement les plus représentés dans l’inventaire."
+                items={topInventoryCategories.map((item) => ({
+                  label: item.categoria,
+                  value: `${item.stock} kg`,
+                  helper: 'Volume calculé à partir du poids ou du stock équivalent disponible.',
+                }))}
+              />
+
+              <ReportDetailPanel
+                title="Produits à surveiller"
+                description="Produits déjà sous leur minimum ou proches d’un réapprovisionnement."
+                items={lowStockProducts.map((producto) => ({
+                  label: producto.nombre,
+                  value: `${producto.stockActual}/${producto.stockMinimo}`,
+                  helper: `${producto.categoria || 'Sans catégorie'} • ${producto.unidad} • ${producto.ubicacion || 'Sans emplacement'}`,
+                }))}
+              />
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <ReportChartCard title={t('reports.stockCategory')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
                   <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="barchart-inventario">
@@ -1216,7 +1368,36 @@ export function Reportes() {
           </TabsContent>
 
           <TabsContent value="comandas" className="space-y-3 p-3 sm:p-4 pt-0">
-            <ReportChartCard title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 400}>
+            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
+              <ReportStatCard label="Commandes filtrées" value={comandasExportables.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Organismes servis" value={topOrderingOrganisms.length} accentColor="#2d9561" valueColor="#2d9561" />
+              <ReportStatCard label="Valeur cumulée" value={formatCurrencySummary(commandasTotalValue)} accentColor="#e8a419" valueColor="#e8a419" />
+              <ReportStatCard label="Panier moyen" value={formatCurrencySummary(averageOrderValue)} accentColor="#c23934" valueColor="#c23934" />
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <ReportDetailPanel
+                title="États de commandes"
+                description="Répartition simple des commandas sur la période sélectionnée."
+                items={orderStatusSummary.map(([status, total]) => ({
+                  label: status,
+                  value: total,
+                  helper: 'Le statut est repris tel qu’il est stocké dans la comanda.',
+                }))}
+              />
+
+              <ReportDetailPanel
+                title="Organismes les plus demandants"
+                description="Vue détaillée des organismes qui concentrent le plus de demandes sur la période."
+                items={topOrderingOrganisms.map(([name, total]) => ({
+                  label: name,
+                  value: `${total} commande${total > 1 ? 's' : ''}`,
+                  helper: `Valeur moyenne non pondérée incluse dans la synthèse globale de ${formatCurrencySummary(commandasTotalValue)}.`,
+                }))}
+              />
+            </div>
+
+            <ReportChartCard title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
                 <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="barchart-comandas">
                   <BarChart data={datosComandasMes}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1231,7 +1412,36 @@ export function Reportes() {
           </TabsContent>
 
           <TabsContent value="prs" className="space-y-3 p-3 sm:p-4 pt-0">
-            <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 400}>
+            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
+              <ReportStatCard label="Transformations terminées" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Production totale" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" />
+              <ReportStatCard label="Organismes PRS" value={participatingPrsCount} accentColor="#e8a419" valueColor="#e8a419" />
+              <ReportStatCard label="Moyenne par transformation" value={`${transformacionesTerminadas.length > 0 ? (totalPrsKg / transformacionesTerminadas.length).toFixed(1) : '0.0'} kg`} accentColor="#c23934" valueColor="#c23934" />
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <ReportDetailPanel
+                title="Dernières transformations"
+                description="Opérations PRS terminées les plus récentes avec responsable et production générée."
+                items={latestTransformations.map((transformacion) => ({
+                  label: transformacion.recetaNombre,
+                  value: `${transformacion.productosGenerados.reduce((sum, producto) => sum + producto.pesoTotal, 0).toFixed(1)} kg`,
+                  helper: `${formatReportDate(transformacion.fecha)} • ${transformacion.responsable}`,
+                }))}
+              />
+
+              <ReportDetailPanel
+                title="Production mensuelle"
+                description="Lecture détaillée des volumes PRS sur les derniers mois calculés."
+                items={datosPRS.map((entry) => ({
+                  label: entry.mes,
+                  value: `${entry.kg} kg`,
+                  helper: entry.kg > 0 ? 'Production enregistrée sur la période.' : 'Aucune transformation terminée sur ce mois.',
+                }))}
+              />
+            </div>
+
+            <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
                 <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="linechart-prs">
                   <LineChart data={datosPRS}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1246,6 +1456,35 @@ export function Reportes() {
           </TabsContent>
 
           <TabsContent value="auditoria" className="space-y-3 p-3 sm:p-4 pt-0">
+            <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
+              <ReportStatCard label="Événements totaux" value={auditLogs.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Succès" value={auditSuccessCount} accentColor="#2d9561" valueColor="#2d9561" />
+              <ReportStatCard label="Erreurs" value={auditErrorCount} accentColor="#e8a419" valueColor="#e8a419" />
+              <ReportStatCard label="Critiques" value={auditCriticalCount} accentColor="#c23934" valueColor="#c23934" />
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <ReportDetailPanel
+                title="Modules les plus journalisés"
+                description="Vue synthétique des modules qui produisent le plus d’événements dans le registre actuel."
+                items={auditModuleSummary.map(([module, total]) => ({
+                  label: module,
+                  value: total,
+                  helper: 'Nombre brut d’événements journalisés pour ce module.',
+                }))}
+              />
+
+              <ReportDetailPanel
+                title="Derniers événements"
+                description="Aperçu rapide avant de descendre dans le journal complet."
+                items={recentAuditLogs.map((log) => ({
+                  label: `${log.modulo || 'Général'} • ${log.accion}`,
+                  value: log.exito ? 'Succès' : 'Erreur',
+                  helper: `${formatReportDate(log.fecha)} • ${log.usuario || 'Système'}${log.severidad ? ` • ${log.severidad}` : ''}`,
+                }))}
+              />
+            </div>
+
             <AuditLogViewer />
           </TabsContent>
         </Tabs>
