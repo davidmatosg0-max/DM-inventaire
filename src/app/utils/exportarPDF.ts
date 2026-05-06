@@ -74,37 +74,67 @@ function agregarPieDePagina(doc: jsPDF) {
   }
 }
 
+function getInventarioPesoKg(producto: any): number {
+  if (typeof producto?.pesoRegistrado === 'number' && Number.isFinite(producto.pesoRegistrado) && producto.pesoRegistrado > 0) {
+    return producto.pesoRegistrado;
+  }
+
+  if (producto?.unidad === 'kg') {
+    return Number(producto?.stockActual || 0);
+  }
+
+  const pesoUnitario = Number(producto?.pesoUnitario ?? producto?.peso ?? 0);
+  const stockActual = Number(producto?.stockActual ?? 0);
+  return pesoUnitario > 0 ? pesoUnitario * stockActual : stockActual;
+}
+
+function formatCurrencyCompact(value: number): string {
+  return `CAD$ ${value.toFixed(0)}`;
+}
+
 // ===== EXPORTACIONES ESPECÍFICAS =====
 
 /**
  * Exportar reporte de inventario a PDF
  */
 export function exportarInventarioPDF(productos: any[]) {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const totalStock = productos.reduce((sum, producto) => sum + Number(producto?.stockActual || 0), 0);
+  const totalPeso = productos.reduce((sum, producto) => sum + getInventarioPesoKg(producto), 0);
+  const totalValor = productos.reduce((sum, producto) => sum + Number(producto?.valorTotal || 0), 0);
+  const lowStock = productos.filter((producto) => Number(producto?.stockActual || 0) <= Number(producto?.stockMinimo || 0)).length;
+  const resumenCategorias = Array.from(
+    productos.reduce((mapa, producto) => {
+      const categoria = producto?.categoria || 'Sans catégorie';
+      mapa.set(categoria, (mapa.get(categoria) || 0) + getInventarioPesoKg(producto));
+      return mapa;
+    }, new Map<string, number>())
+  )
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 6)
+    .map(([categoria, peso]) => [categoria, `${peso.toFixed(1)} kg`]);
 
-  agregarEncabezado(doc, 'Reporte de Inventario', `Total de productos: ${productos.length}`);
+  agregarEncabezado(doc, 'Rapport d\'inventaire compact', `Total de produits: ${productos.length}`);
 
-  // Preparar datos
-  const datos = productos.map((p) => [
-    p.codigo || 'N/A',
-    p.nombre,
-    p.categoria,
-    p.subcategoria || 'N/A',
-    `${p.stockActual} ${p.unidad}`,
-    p.stockMinimo,
-    p.ubicacion || 'N/A',
-    p.estado || 'Disponible',
-  ]);
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.gray);
+  doc.text('Modèle 1: Synthèse compacte', 20, 58);
 
-  // Crear tabla
   autoTable(doc, {
-    head: [['Código', 'Producto', 'Categoría', 'Subcategoría', 'Stock', 'Mín.', 'Ubicación', 'Estado']],
-    body: datos,
-    startY: 55,
+    startY: 62,
     theme: 'grid',
+    head: [['Produits', 'Stock total', 'Poids total', 'Valeur totale', 'Sous seuil']],
+    body: [[
+      String(productos.length),
+      String(totalStock),
+      `${totalPeso.toFixed(1)} kg`,
+      formatCurrencyCompact(totalValor),
+      String(lowStock),
+    ]],
     styles: {
-      fontSize: 8,
+      fontSize: 9,
       cellPadding: 3,
+      halign: 'center',
       font: 'helvetica',
     },
     headStyles: {
@@ -113,25 +143,102 @@ export function exportarInventarioPDF(productos: any[]) {
       fontStyle: 'bold',
       halign: 'center',
     },
+    bodyStyles: {
+      fillColor: [255, 255, 255],
+      textColor: COLORS.gray,
+    },
+  });
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 6,
+    theme: 'grid',
+    head: [['Catégories dominantes', 'Volume']],
+    body: resumenCategorias.length > 0 ? resumenCategorias : [['Aucune catégorie', '0 kg']],
+    styles: {
+      fontSize: 8,
+      cellPadding: 2.5,
+      font: 'helvetica',
+    },
+    headStyles: {
+      fillColor: COLORS.success,
+      textColor: 255,
+      fontStyle: 'bold',
+    },
     columnStyles: {
-      0: { cellWidth: 20 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 30 },
-      4: { cellWidth: 20, halign: 'center' },
-      5: { cellWidth: 15, halign: 'center' },
-      6: { cellWidth: 25 },
-      7: { cellWidth: 20, halign: 'center' },
+      0: { cellWidth: 80 },
+      1: { cellWidth: 35, halign: 'right' },
     },
     alternateRowStyles: {
       fillColor: COLORS.lightGray,
     },
   });
 
-  agregarPieDePagina(doc);
+  doc.addPage('a4', 'landscape');
+  agregarEncabezado(doc, 'Rapport d\'inventaire compact', 'Modèle 2: Détail complet condensé');
 
-  // Descargar
-  doc.save(`Inventario_${Date.now()}.pdf`);
+  const datos = productos.map((producto) => [
+    producto?.codigo || 'N/A',
+    producto?.nombre || 'Sans nom',
+    producto?.categoria || 'N/A',
+    producto?.subcategoria || 'N/A',
+    `${Number(producto?.stockActual || 0)} ${producto?.unidad || ''}`.trim(),
+    Number(producto?.stockMinimo || 0),
+    `${getInventarioPesoKg(producto).toFixed(1)} kg`,
+    producto?.ubicacion || 'N/A',
+    producto?.lote || 'N/A',
+    producto?.fechaVencimiento || 'N/A',
+    producto?.temperaturaAlmacenamiento || producto?.temperatura || 'N/A',
+    producto?.estado || 'Disponible',
+    formatCurrencyCompact(Number(producto?.valorTotal || 0)),
+  ]);
+
+  autoTable(doc, {
+    head: [['Code', 'Produit', 'Catégorie', 'Sous-catégorie', 'Stock', 'Min.', 'Poids', 'Emplacement', 'Lot', 'Venc.', 'Temp.', 'État', 'Valeur']],
+    body: datos.length > 0 ? datos : [['N/A', 'Aucune donnée disponible.', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']],
+    startY: 55,
+    theme: 'grid',
+    margin: { left: 10, right: 10 },
+    styles: {
+      fontSize: 6,
+      cellPadding: 1.3,
+      font: 'helvetica',
+      overflow: 'linebreak',
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: COLORS.primary,
+      textColor: 255,
+      fontStyle: 'bold',
+      halign: 'center',
+      fontSize: 7,
+    },
+    columnStyles: {
+      0: { cellWidth: 14 },
+      1: { cellWidth: 36 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 22 },
+      4: { cellWidth: 17, halign: 'center' },
+      5: { cellWidth: 10, halign: 'center' },
+      6: { cellWidth: 16, halign: 'right' },
+      7: { cellWidth: 22 },
+      8: { cellWidth: 16 },
+      9: { cellWidth: 17, halign: 'center' },
+      10: { cellWidth: 17, halign: 'center' },
+      11: { cellWidth: 14, halign: 'center' },
+      12: { cellWidth: 16, halign: 'right' },
+    },
+    alternateRowStyles: {
+      fillColor: COLORS.lightGray,
+    },
+    didDrawPage: (data) => {
+      if (data.pageNumber > 1) {
+        agregarEncabezado(doc, 'Rapport d\'inventaire compact', 'Modèle 2: Détail complet condensé');
+      }
+    },
+  });
+
+  agregarPieDePagina(doc);
+  doc.save(`Inventario_compacto_${Date.now()}.pdf`);
 }
 
 /**
