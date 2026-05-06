@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { obtenerProductos, type ProductoCreado } from '../../utils/productStorage';
 import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
-import { obtenerTransformaciones, type Transformacion } from '../../utils/recetaStorage';
+import { obtenerRecetas, obtenerTransformaciones, type Transformacion } from '../../utils/recetaStorage';
 import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
 import { obtenerLogs } from '../../utils/auditStorage';
 import { 
@@ -296,6 +296,27 @@ function formatChartCategoryLabel(value: string, maxLength = 18): string {
   return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
 }
 
+function getPrsCategoryLabel(value?: string): string {
+  switch (value) {
+    case 'plat-principal':
+      return 'Plat principal';
+    case 'soupe':
+      return 'Soupe';
+    case 'dessert':
+      return 'Dessert';
+    case 'pain':
+      return 'Pain';
+    case 'sauce':
+      return 'Sauce';
+    case 'conserve':
+      return 'Conserve';
+    case 'autre':
+      return 'Autre';
+    default:
+      return 'Sans catégorie';
+  }
+}
+
 function getProductCategoryLabel(producto?: Pick<ProductoCreado, 'categoria'> | null): string {
   return producto?.categoria?.trim() || 'Sans catégorie';
 }
@@ -381,12 +402,14 @@ export function Reportes() {
   const [productos, setProductos] = useState<ProductoCreado[]>([]);
   const [comandas, setComandas] = useState<Comanda[]>([]);
   const [organismos, setOrganismos] = useState<Organismo[]>([]);
+  const [recetas, setRecetas] = useState(obtenerRecetas());
   const [transformaciones, setTransformaciones] = useState<Transformacion[]>([]);
 
   const cargarDatos = () => {
     setProductos(obtenerProductos());
     setComandas(obtenerComandas());
     setOrganismos(obtenerOrganismos());
+    setRecetas(obtenerRecetas());
     setTransformaciones(obtenerTransformaciones());
   };
 
@@ -404,6 +427,7 @@ export function Reportes() {
   const rangoValido = Boolean(rangoInicio && rangoFin && rangoInicio <= rangoFin);
   const referenciaFin = rangoFin ?? new Date();
   const organismosPorId = new Map(organismos.map((organismo) => [organismo.id, organismo]));
+  const recipeIndex = new Map(recetas.map((receta) => [receta.id, receta]));
   const productIndex = new Map(productos.map((producto) => [producto.id, producto]));
   const activeEntries = obtenerTodasLasEntradas().filter((entry) => entry.activo);
   const categoryOptions = Array.from(
@@ -487,6 +511,17 @@ export function Reportes() {
       ),
     };
   });
+
+  const datosPrsCategoria = Array.from(
+    transformacionesTerminadas.reduce((mapa, transformacion) => {
+      const categoria = getPrsCategoryLabel(recipeIndex.get(transformacion.recetaId)?.categoria);
+      const totalKg = transformacion.productosGenerados.reduce((sum, producto) => sum + producto.pesoTotal, 0);
+      mapa.set(categoria, (mapa.get(categoria) || 0) + totalKg);
+      return mapa;
+    }, new Map<string, number>())
+  )
+    .map(([categoria, kg]) => ({ categoria, kg: Number(kg.toFixed(1)) }))
+    .sort((left, right) => right.kg - left.kg);
 
   const comandasExportables: ComandaExportable[] = comandasFiltradas.map((comanda) => ({
     ...comanda,
@@ -1835,6 +1870,25 @@ export function Reportes() {
                   <ReportStatCard label="Transformations" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
                 </div>
                 <ReportDetailPanel title="Dernières transformations" description="Résumé PRS en petit format." items={compactPrsItems} compact />
+                <ReportChartCard title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={160}>
+                    <ResponsiveContainer width="100%" height={160} key="barchart-prs-category-compact">
+                      <BarChart data={datosPrsCategoria}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="categoria"
+                          tickFormatter={(value) => formatChartCategoryLabel(String(value), 10)}
+                          angle={-28}
+                          textAnchor="end"
+                          interval={0}
+                          height={52}
+                          tick={{ fontSize: 10 }}
+                        />
+                        <YAxis tick={{ fontSize: 10 }} />
+                        <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Production']} />
+                        <Bar dataKey="kg" fill="#2d9561" name="Production PRS" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                </ReportChartCard>
               </>
             ) : (
             <>
@@ -1845,7 +1899,7 @@ export function Reportes() {
               <ReportStatCard label="Moyenne par transformation" value={`${transformacionesTerminadas.length > 0 ? (totalPrsKg / transformacionesTerminadas.length).toFixed(1) : '0.0'} kg`} accentColor="#c23934" valueColor="#c23934" />
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
               <ReportDetailPanel
                 title="Dernières transformations"
                 description="Opérations PRS terminées les plus récentes avec responsable et production générée."
@@ -1865,20 +1919,53 @@ export function Reportes() {
                   helper: entry.kg > 0 ? 'Production enregistrée sur la période.' : 'Aucune transformation terminée sur ce mois.',
                 }))}
               />
+
+              <ReportDetailPanel
+                title="Production par catégorie"
+                description="Répartition PRS par catégorie de recette sur la période filtrée."
+                items={datosPrsCategoria.map((entry) => ({
+                  label: entry.categoria,
+                  value: `${entry.kg} kg`,
+                  helper: 'Poids total des produits générés pour cette catégorie.',
+                }))}
+              />
             </div>
 
-            <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
-                <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="linechart-prs">
-                  <LineChart data={datosPRS}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name={t('reports.rescuedKg')} />
-                  </LineChart>
-                </ResponsiveContainer>
-            </ReportChartCard>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
+                  <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="linechart-prs">
+                    <LineChart data={datosPRS}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name={t('reports.rescuedKg')} />
+                    </LineChart>
+                  </ResponsiveContainer>
+              </ReportChartCard>
+
+              <ReportChartCard title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
+                  <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="barchart-prs-category">
+                    <BarChart data={datosPrsCategoria}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="categoria"
+                        tickFormatter={(value) => formatChartCategoryLabel(String(value), isCompactReportsViewport ? 10 : 14)}
+                        angle={isCompactReportsViewport ? -28 : -18}
+                        textAnchor="end"
+                        interval={0}
+                        height={isCompactReportsViewport ? 52 : 64}
+                        tick={{ fontSize: isCompactReportsViewport ? 10 : 11 }}
+                      />
+                      <YAxis />
+                      <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Production']} />
+                      <Legend />
+                      <Bar dataKey="kg" fill="#2d9561" name="Production PRS" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+              </ReportChartCard>
+            </div>
             </>
             )}
           </TabsContent>
