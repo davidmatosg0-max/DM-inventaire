@@ -288,6 +288,14 @@ function formatWeightSummary(value: number): string {
   return `${Number(value.toFixed(1))} kg`;
 }
 
+function formatChartCategoryLabel(value: string, maxLength = 18): string {
+  if (!value) {
+    return 'Sans catégorie';
+  }
+
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+}
+
 function getProductCategoryLabel(producto?: Pick<ProductoCreado, 'categoria'> | null): string {
   return producto?.categoria?.trim() || 'Sans catégorie';
 }
@@ -517,6 +525,7 @@ export function Reportes() {
   }, 0);
 
   const COLORS = ['#1E73BE', '#4CAF50', '#FFC107', '#DC3545', '#9C27B0', '#00BCD4'];
+  const inventoryDistributionTotal = datosInventario.reduce((sum, item) => sum + item.stock, 0);
 
   const handleApplyDatePreset = (preset: DatePreset) => {
     const rango = getDatePresetRange(preset);
@@ -1683,7 +1692,15 @@ export function Reportes() {
                   <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="barchart-inventario">
                     <BarChart data={datosInventario}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="categoria" />
+                      <XAxis
+                        dataKey="categoria"
+                        tickFormatter={(value) => formatChartCategoryLabel(String(value), isCompactReportsViewport ? 10 : 14)}
+                        angle={isCompactReportsViewport ? -28 : -18}
+                        textAnchor="end"
+                        interval={0}
+                        height={isCompactReportsViewport ? 52 : 64}
+                        tick={{ fontSize: isCompactReportsViewport ? 10 : 11 }}
+                      />
                       <YAxis />
                       <Tooltip />
                       <Bar dataKey="stock" fill={branding.primaryColor} name={t('reports.stockKg')} />
@@ -1692,25 +1709,62 @@ export function Reportes() {
               </ReportChartCard>
 
               <ReportChartCard title={t('reports.inventoryDistribution')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
-                  <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="piechart-inventario">
-                    <PieChart>
-                      <Pie
-                        data={datosInventario}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={(entry) => entry.categoria}
-                        outerRadius={isCompactReportsViewport ? 58 : 80}
-                        fill="#8884d8"
-                        dataKey="stock"
-                      >
-                        {datosInventario.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="space-y-3">
+                    <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 260} key="piechart-inventario">
+                      <PieChart>
+                        <Pie
+                          data={datosInventario}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={isCompactReportsViewport ? 58 : 78}
+                          innerRadius={isCompactReportsViewport ? 26 : 34}
+                          paddingAngle={2}
+                          fill="#8884d8"
+                          dataKey="stock"
+                        >
+                          {datosInventario.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Volume']}
+                          labelFormatter={(_, payload) => {
+                            const item = payload?.[0]?.payload as { categoria?: string } | undefined;
+                            return item?.categoria || 'Sans catégorie';
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    <div className={`grid gap-2 ${isCompactReportsViewport ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                      {datosInventario
+                        .slice()
+                        .sort((left, right) => right.stock - left.stock)
+                        .map((item, index) => {
+                          const percentage = inventoryDistributionTotal > 0
+                            ? ((item.stock / inventoryDistributionTotal) * 100).toFixed(1)
+                            : '0.0';
+
+                          return (
+                            <div key={item.categoria} className="flex items-start gap-2 rounded-lg bg-gray-50/90 px-3 py-2">
+                              <span
+                                className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-medium text-gray-800" title={item.categoria}>
+                                  {item.categoria}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {formatWeightSummary(item.stock)} • {percentage}%
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
               </ReportChartCard>
             </div>
             </>
