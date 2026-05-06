@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Printer, X, Thermometer, Snowflake, Sun, Maximize2, Minimize2, Check, Ban, Edit2, Box } from 'lucide-react';
+import { Printer, X, Thermometer, Snowflake, Sun, Maximize2, Minimize2, Check, Ban, Edit2, Box, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
 import { mockProductos } from '../../data/mockData';
 import { obtenerProductos } from '../../utils/productStorage';
 import {
@@ -18,6 +19,8 @@ import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { useTranslation } from 'react-i18next';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
+import { actualizarComanda, actualizarComandasGrupo } from '../../utils/comandaStorage';
+import { toast } from 'sonner';
 
 interface ModeloComandaProps {
   comanda: any;
@@ -29,6 +32,8 @@ interface ModeloComandaProps {
   onAceptarComanda?: (itemsAceptados: any[], comandaOrigen?: any) => void;
   onAnularComanda?: (comandaOrigen?: any) => void;
   modoOrganismo?: boolean; // Para diferenciar si es vista de organismo o administrador
+  onComandaActualizada?: (comandaActualizada: any) => void;
+  abrirEdicionGrupoInicial?: boolean;
 }
 
 export function ModeloComanda({ 
@@ -40,11 +45,14 @@ export function ModeloComanda({
   onCambiarEstado,
   onAceptarComanda,
   onAnularComanda,
-  modoOrganismo = false
+  modoOrganismo = false,
+  onComandaActualizada,
+  abrirEdicionGrupoInicial = false,
 }: ModeloComandaProps) {
   const { t } = useTranslation();
   const defaultLocale = 'fr-CA';
   const comandaRef = useRef<HTMLDivElement>(null);
+  const bloqueGrupoRef = useRef<HTMLDivElement>(null);
 
   const obtenerEtiquetaProducto = (producto: any, nombreProducto?: string) => {
     return nombreProducto || producto?.nombre || producto?.subcategoria || 'Produit introuvable';
@@ -75,6 +83,11 @@ export function ModeloComanda({
   const [modoEdicion, setModoEdicion] = useState(false);
   const [cantidadesEditadas, setCantidadesEditadas] = useState<{[key: string]: number}>({});
   const [campoEditando, setCampoEditando] = useState<string | null>(null); // Para edición inline
+  const [modoEdicionGrupo, setModoEdicionGrupo] = useState(false);
+  const [fechaCaducidadGrupoEditada, setFechaCaducidadGrupoEditada] = useState('');
+  const [grupoAncladoEditado, setGrupoAncladoEditado] = useState(false);
+  const [observacionesGrupoEditadas, setObservacionesGrupoEditadas] = useState('');
+  const distribucionGrupoFinalizada = ['entregada', 'anulada'].includes(String(comanda.estado || ''));
   
   // 🎯 NUEVO: Estado para marcar productos como completados durante la preparación
   const [productosCompletados, setProductosCompletados] = useState<{[key: string]: boolean}>({});
@@ -281,6 +294,58 @@ export function ModeloComanda({
     }
   }, [mostrar, modoOrganismo, productosOrdenados]);
 
+  useEffect(() => {
+    if (mostrar) {
+      setFechaCaducidadGrupoEditada(comanda.fechaCaducidadGrupo || '');
+      setGrupoAncladoEditado(Boolean(comanda.grupoDistribucionAnclada));
+      setObservacionesGrupoEditadas(comanda.observaciones || '');
+      setModoEdicionGrupo(abrirEdicionGrupoInicial && Boolean(comanda.grupoDistribucionId || comanda.fechaCaducidadGrupo));
+    }
+  }, [mostrar, comanda.fechaCaducidadGrupo, comanda.grupoDistribucionAnclada, comanda.observaciones, comanda.grupoDistribucionId, abrirEdicionGrupoInicial]);
+
+  useEffect(() => {
+    if (!mostrar || !modoEdicionGrupo || !bloqueGrupoRef.current) {
+      return;
+    }
+
+    bloqueGrupoRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [mostrar, modoEdicionGrupo]);
+
+  const handleGuardarMetadatosGrupo = () => {
+    try {
+      if (distribucionGrupoFinalizada) {
+        toast.error('Cette distribution de groupe est finalisée et ne peut plus être modifiée.');
+        return;
+      }
+
+      if (!comanda.grupoDistribucionId) {
+        toast.error('La date de péremption de la distribution doit être modifiée depuis une distribution de groupe valide.');
+        return;
+      }
+
+      const cambios = {
+        fechaCaducidadGrupo: fechaCaducidadGrupoEditada || undefined,
+        grupoDistribucionAnclada: grupoAncladoEditado,
+        observaciones: observacionesGrupoEditadas.trim() || undefined,
+        fechaModificacion: new Date().toISOString(),
+      };
+
+      const comandasActualizadas = actualizarComandasGrupo(comanda.grupoDistribucionId, cambios);
+      const comandaActualizada = comandasActualizadas.find((item) => item.id === comanda.id);
+      if (comandaActualizada) {
+        Object.assign(comanda, comandaActualizada);
+        onComandaActualizada?.(comandaActualizada);
+      }
+
+      toast.success('Distribution de groupe mise à jour pour tout le groupe.');
+
+      setModoEdicionGrupo(false);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la distribution de groupe:', error);
+      toast.error('Impossible d’appliquer les modifications de la distribution de groupe.');
+    }
+  };
+
   // Función para cambiar cantidad
   const handleCambioCantidad = (itemKey: string, nuevaCantidad: number, cantidadOriginal: number) => {
     // Solo permitir disminuir o mantener igual
@@ -311,7 +376,7 @@ export function ModeloComanda({
         const itemKey = `${item.productoId}-${index}`;
         return {
           ...item,
-          cantidadAceptada: cantidadesEditadas[itemKey] || item.cantidad
+          cantidadAceptada: cantidadesEditadas[itemKey] ?? item.cantidad
         };
       });
       onAceptarComanda(itemsAceptados, comanda);
@@ -402,7 +467,7 @@ export function ModeloComanda({
                   Cochez les produits au fur et à mesure de la préparation
                 </p>
               </div>
-              <div className="text-right">
+              <div className="flex flex-col items-end text-right">
                 <p className="text-3xl font-bold" style={{ 
                   fontFamily: 'Montserrat, sans-serif',
                   color: porcentajeCompletado === 100 ? '#4CAF50' : porcentajeCompletado > 50 ? '#FFC107' : '#DC3545'
@@ -524,7 +589,7 @@ export function ModeloComanda({
                 <p className="text-[#666666] mb-1" style={{ fontSize: '1.1rem' }}>Système de gestion des commandes</p>
                 <p className="text-[#666666]">Laval, Québec, Canada</p>
               </div>
-              <div className="text-right">
+              <div className="flex flex-col items-end text-right">
                 <div className="mb-4 bg-white p-2 rounded-lg shadow-md qrcode-container">
                   <BrandedQRCode
                     value={qrData}
@@ -537,8 +602,38 @@ export function ModeloComanda({
                 <p className="font-bold text-[#1E73BE]" style={{ fontSize: '1.3rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {comanda.numero}
                 </p>
+                {modoOrganismo && comanda.estado === 'pendiente' && (
+                  <div className="mt-3 w-[20rem] max-w-full rounded-lg border-l-4 border-t border-r border-b border-[#F6C26B] border-l-[#C27A00] bg-gradient-to-r from-[#FFF3D6] to-[#FFE7B8] p-3 text-left shadow-sm print:hidden">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#B46900]" />
+                      <div>
+                        <p className="font-bold text-[#7A4200] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                          Acceptation requise avant la date prévue
+                        </p>
+                        <p className="text-sm leading-5 text-[#7A4200]">
+                          Si cette commande n’est pas acceptée avant le {new Date(comanda.fechaEntrega || comanda.fecha).toLocaleDateString(defaultLocale)}, elle sera annulée automatiquement.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {(comanda.grupoDistribucionAnclada || comanda.fechaCaducidadGrupo) && (
+                  <div className="mt-3 flex flex-col items-end gap-2">
+                    {comanda.grupoDistribucionAnclada && (
+                      <Badge className="border border-[#1E73BE]/20 bg-[#EAF4FF] text-[#1E73BE] hover:bg-[#EAF4FF]">
+                        Distribution ancrée
+                      </Badge>
+                    )}
+                    {comanda.fechaCaducidadGrupo && (
+                      <Badge className="border border-[#F59E0B]/20 bg-[#FFF7E8] text-[#B45309] hover:bg-[#FFF7E8]">
+                        Péremption: {new Date(comanda.fechaCaducidadGrupo).toLocaleDateString(defaultLocale)}
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
+
           </div>
 
           {/* ORGANISMO EN GRANDE */}
@@ -611,6 +706,96 @@ export function ModeloComanda({
               </div>
             </div>
           </div>
+
+          {(comanda.grupoDistribucionId || comanda.fechaCaducidadGrupo) && !modoOrganismo && (
+            <div ref={bloqueGrupoRef} className="mb-8 rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] p-4 sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-[#666666]">Distribution de groupe</p>
+                  <h3 className="text-lg font-bold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    {comanda.grupoDistribucionEtiqueta || comanda.grupoDistribucionId || 'Distribution de groupe'}
+                  </h3>
+                </div>
+                <Badge className={grupoAncladoEditado ? 'bg-[#1E73BE]' : 'bg-gray-500'}>
+                  {grupoAncladoEditado ? 'Ancrée' : 'Non ancrée'}
+                </Badge>
+              </div>
+
+              {modoEdicionGrupo ? (
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[#333333]">Date de péremption de la distribution</label>
+                      <Input
+                        type="date"
+                        value={fechaCaducidadGrupoEditada}
+                        onChange={(e) => setFechaCaducidadGrupoEditada(e.target.value)}
+                        disabled={distribucionGrupoFinalizada}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[#333333]">Observations de la distribution</label>
+                      <Textarea
+                        value={observacionesGrupoEditadas}
+                        onChange={(e) => setObservacionesGrupoEditadas(e.target.value)}
+                        placeholder="Notes partagées pour toute la distribution"
+                        className="min-h-[110px]"
+                        disabled={distribucionGrupoFinalizada}
+                      />
+                    </div>
+                    <label className="flex items-start gap-3 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4"
+                        checked={grupoAncladoEditado}
+                        onChange={(e) => setGrupoAncladoEditado(e.target.checked)}
+                        disabled={distribucionGrupoFinalizada}
+                      />
+                      <span>
+                        <span className="block font-medium">Conserver la distribution ancrée</span>
+                        <span className="block text-xs text-gray-500 mt-1">
+                          La date de péremption et les observations restent toujours liées à toute la distribution.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setModoEdicionGrupo(false)}>
+                      Annuler
+                    </Button>
+                    <Button className="bg-[#1E73BE] hover:bg-[#1557A0]" onClick={handleGuardarMetadatosGrupo} disabled={distribucionGrupoFinalizada}>
+                      Enregistrer
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1 text-sm text-[#333333]">
+                    <p>
+                      <strong>Date de péremption de la distribution :</strong>{' '}
+                      {comanda.fechaCaducidadGrupo
+                        ? new Date(comanda.fechaCaducidadGrupo).toLocaleDateString(defaultLocale)
+                        : 'Non définie'}
+                    </p>
+                    <p>
+                      <strong>Portée des modifications :</strong> Toute la distribution de groupe
+                    </p>
+                    <p>
+                      <strong>Observations de la distribution :</strong>{' '}
+                      {comanda.observaciones?.trim() ? comanda.observaciones : 'Aucune observation'}
+                    </p>
+                    {distribucionGrupoFinalizada && (
+                      <p className="font-medium text-[#8D6E63]">Cette distribution est finalisée et n’est plus modifiable.</p>
+                    )}
+                  </div>
+                  <Button variant="outline" onClick={() => setModoEdicionGrupo(true)} disabled={distribucionGrupoFinalizada}>
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    Modifier la distribution
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Productos organizados por temperatura */}
           <div className="mb-6">

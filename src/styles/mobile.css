@@ -107,6 +107,59 @@
   padding: 0.875rem 1rem !important;
 }
 
+.app-dialog-form-shell {
+  width: min(96vw, 1180px);
+  max-width: 1180px;
+  max-height: 92vh;
+  overflow: hidden;
+  padding: 0;
+  gap: 0;
+}
+
+.app-dialog-form-shell--wide {
+  width: min(96vw, 1240px);
+  max-width: 1240px;
+}
+
+.app-dialog-form-shell--compact {
+  width: min(96vw, 1040px);
+  max-width: 1040px;
+}
+
+.app-dialog-form-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem 1.5rem 1rem;
+}
+
+.app-dialog-form-body {
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.app-dialog-form-body--split {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.app-dialog-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 1rem 1.5rem;
+}
+
+@media (min-width: 1280px) {
+  .app-dialog-form-body--split {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.92fr);
+  }
+
+  .app-dialog-form-body--split.app-dialog-form-body--sidebar-wide {
+    grid-template-columns: minmax(0, 1fr) minmax(420px, 1.05fr);
+  }
+}
+
 .app-compact-filters {
   display: flex;
   align-items: center;
@@ -168,6 +221,20 @@
   .app-form-compact .grid.grid-cols-8,
   .app-form-compact .grid.grid-cols-5 {
     gap: 0.75rem !important;
+  }
+
+  .app-dialog-form-shell,
+  .app-dialog-form-shell--wide,
+  .app-dialog-form-shell--compact {
+    width: min(calc(100vw - 1rem), 100%);
+    max-height: calc(100dvh - 1rem);
+  }
+
+  .app-dialog-form-header,
+  .app-dialog-form-body,
+  .app-dialog-form-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .app-compact-filters > *,

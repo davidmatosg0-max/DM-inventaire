@@ -213,6 +213,74 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
   }
 }
 
+export function actualizarComandasGrupo(grupoDistribucionId: string, cambios: Partial<Comanda>): Comanda[] {
+  try {
+    const comandas = obtenerComandas();
+    const comandasActualizadas = comandas.map((comanda) => {
+      if (comanda.grupoDistribucionId !== grupoDistribucionId) {
+        return comanda;
+      }
+
+      return normalizarComanda({
+        ...comanda,
+        ...cambios,
+        fechaModificacion: new Date().toISOString(),
+      }, obtenerProductos());
+    });
+
+    localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasActualizadas));
+
+    registrarActividad(
+      'Commandes',
+      'modificar',
+      `Distribution groupée ${grupoDistribucionId} mise à jour`,
+      { grupoDistribucionId, cambios }
+    );
+
+    return comandasActualizadas.filter(comanda => comanda.grupoDistribucionId === grupoDistribucionId);
+  } catch (error) {
+    console.error('Error al actualizar comandas del grupo:', error);
+    throw error;
+  }
+}
+
+export function actualizarComandasDistribucion(
+  comandaIds: string[],
+  cambios: Partial<Comanda>,
+  metadatosGrupo?: Pick<Comanda, 'grupoDistribucionId' | 'grupoDistribucionEtiqueta' | 'grupoDistribucionAnclada'>,
+): Comanda[] {
+  try {
+    const idsObjetivo = new Set(comandaIds);
+    const comandas = obtenerComandas();
+    const comandasActualizadas = comandas.map((comanda) => {
+      if (!idsObjetivo.has(comanda.id)) {
+        return comanda;
+      }
+
+      return normalizarComanda({
+        ...comanda,
+        ...metadatosGrupo,
+        ...cambios,
+        fechaModificacion: new Date().toISOString(),
+      }, obtenerProductos());
+    });
+
+    localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasActualizadas));
+
+    registrarActividad(
+      'Commandes',
+      'modificar',
+      `Distribution ${metadatosGrupo?.grupoDistribucionId || comandaIds.join(',')} mise à jour`,
+      { comandaIds, cambios, metadatosGrupo }
+    );
+
+    return comandasActualizadas.filter(comanda => idsObjetivo.has(comanda.id));
+  } catch (error) {
+    console.error('Error al actualizar comandas de la distribución:', error);
+    throw error;
+  }
+}
+
 // Eliminar una comanda
 export function eliminarComanda(comandaId: string): void {
   try {

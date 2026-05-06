@@ -40,6 +40,9 @@ export interface ProductoInventarioCocina {
   ultimaActualizacion: string;
 }
 
+const INVENTARIO_COCINA_KEY = 'inventario_cocina';
+const MOVIMIENTOS_COCINA_KEY = 'movimientos_cocina';
+
 export interface MovimientoStock {
   id: string;
   productoInventarioCocinaId: string;
@@ -49,19 +52,12 @@ export interface MovimientoStock {
   unidad: string;
   stockAnterior: number;
   stockNuevo: number;
-  
-  // Contexto
   motivo: string;
-  referencia?: string; // ID de receta, transformación, etc.
+  referencia?: string;
   usuario: string;
   fecha: string;
   notas?: string;
 }
-
-const INVENTARIO_COCINA_KEY = 'inventario_cocina';
-const MOVIMIENTOS_COCINA_KEY = 'movimientos_inventario_cocina';
-
-// ========== INVENTARIO ==========
 
 export function obtenerInventarioCocina(): ProductoInventarioCocina[] {
   try {
@@ -73,126 +69,20 @@ export function obtenerInventarioCocina(): ProductoInventarioCocina[] {
   }
 }
 
-export function obtenerProductoPorId(id: string): ProductoInventarioCocina | null {
-  const inventario = obtenerInventarioCocina();
-  return inventario.find(p => p.id === id) || null;
-}
-
-export function obtenerProductosPorCategoria(categoria: string): ProductoInventarioCocina[] {
-  const inventario = obtenerInventarioCocina();
-  return inventario.filter(p => p.categoria === categoria);
-}
-
 export function obtenerProductosAlertaBaja(): ProductoInventarioCocina[] {
   const inventario = obtenerInventarioCocina();
-  return inventario.filter(p => p.alertaBaja || (p.stockMinimo && p.stockActual <= p.stockMinimo));
+  return inventario.filter(
+    producto => producto.alertaBaja || (producto.stockMinimo ? producto.stockActual <= producto.stockMinimo : false)
+  );
 }
 
 export function obtenerProductosPorZona(zona: string): ProductoInventarioCocina[] {
   const inventario = obtenerInventarioCocina();
-  return inventario.filter(p => p.zona === zona);
+  return inventario.filter(producto => producto.zona === zona);
 }
 
 function guardarInventario(inventario: ProductoInventarioCocina[]): void {
   localStorage.setItem(INVENTARIO_COCINA_KEY, JSON.stringify(inventario));
-}
-
-/**
- * Agregar productos al inventario de cocina desde una oferta aceptada
- */
-export function agregarProductosDesdeOferta(
-  productos: Array<{
-    productoId: string;
-    productoNombre: string;
-    productoCodigo: string;
-    categoria: string;
-    subcategoria?: string;
-    cantidad: number;
-    unidad: string;
-    peso: number;
-    icono: string;
-  }>,
-  origenEnvio: string,
-  usuario: string
-): ProductoInventarioCocina[] {
-  const inventario = obtenerInventarioCocina();
-  const productosAgregados: ProductoInventarioCocina[] = [];
-  
-  productos.forEach(prod => {
-    // Buscar si ya existe el producto en inventario
-    const existente = inventario.find(
-      p => p.productoId === prod.productoId && 
-           p.categoria === prod.categoria &&
-           p.subcategoria === prod.subcategoria
-    );
-    
-    if (existente) {
-      // Actualizar stock existente
-      const stockAnterior = existente.stockActual;
-      existente.stockActual += prod.cantidad;
-      existente.ultimaActualizacion = new Date().toISOString();
-      existente.alertaBaja = existente.stockMinimo ? existente.stockActual <= existente.stockMinimo : false;
-      
-      // Registrar movimiento
-      registrarMovimiento({
-        productoInventarioCocinaId: existente.id,
-        productoNombre: existente.productoNombre,
-        tipo: 'entrada',
-        cantidad: prod.cantidad,
-        unidad: prod.unidad,
-        stockAnterior,
-        stockNuevo: existente.stockActual,
-        motivo: `Recepción desde inventario general - ${origenEnvio}`,
-        referencia: origenEnvio,
-        usuario,
-        fecha: new Date().toISOString()
-      });
-      
-      productosAgregados.push(existente);
-    } else {
-      // Crear nuevo producto en inventario
-      const nuevoProducto: ProductoInventarioCocina = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        productoId: prod.productoId,
-        productoNombre: prod.productoNombre,
-        productoCodigo: prod.productoCodigo,
-        categoria: prod.categoria,
-        subcategoria: prod.subcategoria,
-        icono: prod.icono,
-        stockActual: prod.cantidad,
-        unidad: prod.unidad,
-        peso: prod.peso,
-        origenEnvio,
-        fechaRecepcion: new Date().toISOString(),
-        alertaBaja: false,
-        fechaCreacion: new Date().toISOString(),
-        ultimaActualizacion: new Date().toISOString()
-      };
-      
-      inventario.push(nuevoProducto);
-      
-      // Registrar movimiento
-      registrarMovimiento({
-        productoInventarioCocinaId: nuevoProducto.id,
-        productoNombre: nuevoProducto.productoNombre,
-        tipo: 'entrada',
-        cantidad: prod.cantidad,
-        unidad: prod.unidad,
-        stockAnterior: 0,
-        stockNuevo: prod.cantidad,
-        motivo: `Primera recepción desde inventario general - ${origenEnvio}`,
-        referencia: origenEnvio,
-        usuario,
-        fecha: new Date().toISOString()
-      });
-      
-      productosAgregados.push(nuevoProducto);
-    }
-  });
-  
-  guardarInventario(inventario);
-  console.log('✅ Productos agregados al inventario de cocina:', productosAgregados);
-  return productosAgregados;
 }
 
 /**

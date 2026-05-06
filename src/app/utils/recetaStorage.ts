@@ -411,10 +411,6 @@ export function inicializarRecetasEjemplo(): void {
   console.log('✅ Recetas de ejemplo creadas');
 }
 
-// ========== ENVÍO DE PRODUCTOS DESDE INVENTARIO ==========
-
-const PRODUCTOS_COCINA_PENDIENTES_KEY = 'productos_cocina_pendientes';
-
 export interface ProductoCocina {
   productoId: string;
   productoNombre: string;
@@ -425,104 +421,4 @@ export interface ProductoCocina {
   unidad: string;
   peso: number;
   icono: string;
-}
-
-export interface EnvioCocina {
-  id: string;
-  numeroEnvio: string; // ENV-2024-001
-  productos: ProductoCocina[];
-  tipoEnvio: 'receta' | 'transformacion' | 'inventario';
-  notas?: string;
-  usuarioEnvio: string;
-  fechaEnvio: string;
-  estado: 'pendiente' | 'procesado' | 'cancelado';
-  procesadoPor?: string;
-  fechaProcesado?: string;
-}
-
-export function generarNumeroEnvio(): string {
-  const envios = obtenerEnviosCocina();
-  const año = new Date().getFullYear();
-  const numero = envios.filter(e => e.numeroEnvio.includes(`ENV-${año}`)).length + 1;
-  return `ENV-${año}-${String(numero).padStart(3, '0')}`;
-}
-
-export function obtenerEnviosCocina(): EnvioCocina[] {
-  try {
-    const data = localStorage.getItem(PRODUCTOS_COCINA_PENDIENTES_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Error al obtener envíos a cocina:', error);
-    return [];
-  }
-}
-
-export function obtenerEnviosPendientes(): EnvioCocina[] {
-  return obtenerEnviosCocina().filter(e => e.estado === 'pendiente');
-}
-
-export async function enviarProductosACocina(datos: {
-  productos: ProductoCocina[];
-  tipoEnvio: 'receta' | 'transformacion' | 'inventario';
-  notas?: string;
-  usuarioEnvio: string;
-}): Promise<string> {
-  const envios = obtenerEnviosCocina();
-  
-  const nuevoEnvio: EnvioCocina = {
-    id: Date.now().toString(),
-    numeroEnvio: generarNumeroEnvio(),
-    productos: datos.productos,
-    tipoEnvio: datos.tipoEnvio,
-    notas: datos.notas,
-    usuarioEnvio: datos.usuarioEnvio,
-    fechaEnvio: new Date().toISOString(),
-    estado: 'pendiente'
-  };
-  
-  envios.push(nuevoEnvio);
-  localStorage.setItem(PRODUCTOS_COCINA_PENDIENTES_KEY, JSON.stringify(envios));
-  
-  console.log('✅ Productos enviados a cocina:', nuevoEnvio);
-  return nuevoEnvio.id;
-}
-
-export function procesarEnvioCocina(envioId: string, procesadoPor: string): boolean {
-  const envios = obtenerEnviosCocina();
-  const index = envios.findIndex(e => e.id === envioId);
-  
-  if (index === -1) {
-    console.error('Envío no encontrado');
-    return false;
-  }
-  
-  envios[index] = {
-    ...envios[index],
-    estado: 'procesado',
-    procesadoPor,
-    fechaProcesado: new Date().toISOString()
-  };
-  
-  localStorage.setItem(PRODUCTOS_COCINA_PENDIENTES_KEY, JSON.stringify(envios));
-  console.log('✅ Envío procesado:', envios[index]);
-  return true;
-}
-
-export function cancelarEnvioCocina(envioId: string): boolean {
-  const envios = obtenerEnviosCocina();
-  const index = envios.findIndex(e => e.id === envioId);
-  
-  if (index === -1) {
-    console.error('Envío no encontrado');
-    return false;
-  }
-  
-  envios[index] = {
-    ...envios[index],
-    estado: 'cancelado'
-  };
-  
-  localStorage.setItem(PRODUCTOS_COCINA_PENDIENTES_KEY, JSON.stringify(envios));
-  console.log('✅ Envío cancelado:', envios[index]);
-  return true;
 }

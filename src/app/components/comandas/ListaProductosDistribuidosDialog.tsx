@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
-import { Package, Printer, FileText, Download } from 'lucide-react';
+import { Package, Printer, FileText, Download, Edit2, Eye } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
+import { actualizarComandasDistribucion } from '../../utils/comandaStorage';
 import { obtenerProductos } from '../../utils/productStorage';
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
@@ -22,6 +23,7 @@ interface ListaProductosDistribuidosDialogProps {
   onOpenChange: (open: boolean) => void;
   comandas: Comanda[];
   currentLocale: string;
+  onDistribucionesActualizadas?: () => void;
 }
 
 type ProductoDistribuidoResumen = {
@@ -52,9 +54,14 @@ type ProductoDistribucionDetalle = {
 type DistribucionResumen = {
   comandaId: string;
   comandaIds: string[];
+  comandaReferenciaId: string;
   numeroDistribucion: string;
   organismo: string;
   fecha: string;
+  grupoDistribucionId?: string;
+  grupoDistribucionEtiqueta?: string;
+  grupoDistribucionAnclada?: boolean;
+  fechaCaducidadGrupo?: string;
   totalProductos: number;
   totalCantidad: number;
   totalPeso: number;
@@ -68,6 +75,8 @@ type GrupoTemperatura = {
   badgeClassName: string;
   productos: ProductoDistribucionDetalle[];
 };
+
+const DISTRIBUCION_ESTADOS_FINALIZADOS = new Set(['entregada', 'anulada']);
 
 type ResumenDistribuciones = {
   productos: ProductoDistribuidoResumen[];
@@ -292,12 +301,16 @@ export function ListaProductosDistribuidosDialog({
   open,
   onOpenChange,
   comandas,
-  currentLocale
+  currentLocale,
+  onDistribucionesActualizadas
 }: ListaProductosDistribuidosDialogProps) {
   const [distribucionSeleccionadaId, setDistribucionSeleccionadaId] = useState<string | null>(null);
   const [filtroDistribucion, setFiltroDistribucion] = useState('');
   const [filtroProductos, setFiltroProductos] = useState('');
   const [filtroDetalleDistribucion, setFiltroDetalleDistribucion] = useState('');
+  const [fechaCaducidadDistribucionEditada, setFechaCaducidadDistribucionEditada] = useState('');
+  const detalleDistribucionRef = useRef<HTMLDivElement | null>(null);
+  const debeDesplazarADetalleRef = useRef(false);
 
   const resumen = useMemo(() => {
     const productosReales = obtenerProductos();
@@ -319,37 +332,44 @@ export function ListaProductosDistribuidosDialog({
       ...productosReales,
       ...mockProductos.filter(mockProducto => !productosReales.some(producto => producto.id === mockProducto.id))
     ];
-    const comandasPorFecha = new Map<string, Comanda[]>();
+    const comandasPorGrupo = new Map<string, Comanda[]>();
 
     comandas.forEach((comanda) => {
       const fechaBase = comanda.fechaEntrega || comanda.fecha;
       const fechaKey = normalizarClaveFechaDistribucion(fechaBase) || 'sin-fecha';
-      const grupo = comandasPorFecha.get(fechaKey) || [];
+      const grupoKey = comanda.grupoDistribucionId || `comanda-${comanda.id || fechaKey}`;
+      const grupo = comandasPorGrupo.get(grupoKey) || [];
       grupo.push(comanda);
-      comandasPorFecha.set(fechaKey, grupo);
+      comandasPorGrupo.set(grupoKey, grupo);
     });
 
-    return Array.from(comandasPorFecha.entries())
-      .map(([fechaKey, comandasAgrupadas]) => {
+    return Array.from(comandasPorGrupo.entries())
+      .map(([grupoKey, comandasAgrupadas]) => {
         const productos = construirProductosDistribucion(comandasAgrupadas, productosCatalogo);
         if (productos.length === 0) {
           return null;
         }
 
+        const comandaReferencia = comandasAgrupadas.find(comanda => comanda.grupoDistribucionId) || comandasAgrupadas[0];
         const organismos = Array.from(new Set(comandasAgrupadas.map(comanda => comanda.nombreOrganismo || 'Sin organismo')));
         const fecha = comandasAgrupadas
           .map(comanda => comanda.fechaEntrega || comanda.fecha)
           .filter(Boolean)
           .sort()
-          .at(-1) || fechaKey || new Date().toISOString();
-        const numeroDistribucion = generarNumeroDistribucionUnico(comandasAgrupadas);
+          .at(-1) || grupoKey || new Date().toISOString();
+        const numeroDistribucion = comandaReferencia?.grupoDistribucionEtiqueta || generarNumeroDistribucionUnico(comandasAgrupadas);
 
         return {
           comandaId: numeroDistribucion,
           comandaIds: comandasAgrupadas.map(comanda => comanda.id),
+          comandaReferenciaId: comandaReferencia?.id || comandasAgrupadas[0]?.id || numeroDistribucion,
           numeroDistribucion,
           organismo: organismos.length === 1 ? organismos[0] : `${organismos.length} organismes regroupés`,
           fecha,
+          grupoDistribucionId: comandaReferencia?.grupoDistribucionId,
+          grupoDistribucionEtiqueta: comandaReferencia?.grupoDistribucionEtiqueta,
+          grupoDistribucionAnclada: comandaReferencia?.grupoDistribucionAnclada,
+          fechaCaducidadGrupo: comandaReferencia?.fechaCaducidadGrupo,
           totalProductos: productos.length,
           totalCantidad: productos.reduce((sum, producto) => sum + producto.cantidad, 0),
           totalPeso: productos.reduce((sum, producto) => sum + producto.pesoTotal, 0),
@@ -385,6 +405,17 @@ export function ListaProductosDistribuidosDialog({
     () => distribucionesFiltradas.find(distribucion => distribucion.comandaId === distribucionSeleccionadaId) || null,
     [distribucionSeleccionadaId, distribucionesFiltradas]
   );
+  const ultimaDistribucionVisibleId = distribucionesFiltradas[0]?.comandaId || null;
+  const distribucionSeleccionadaFinalizada = useMemo(() => {
+    if (!distribucionSeleccionadaFiltrada) {
+      return false;
+    }
+
+    return distribucionSeleccionadaFiltrada.comandaIds.every((comandaId) => {
+      const comanda = comandas.find((item) => item.id === comandaId);
+      return Boolean(comanda?.estado && DISTRIBUCION_ESTADOS_FINALIZADOS.has(comanda.estado));
+    });
+  }, [comandas, distribucionSeleccionadaFiltrada]);
 
   const resumenVisible = useMemo(() => {
     if (distribucionesFiltradas.length === distribuciones.length) {
@@ -498,18 +529,88 @@ export function ListaProductosDistribuidosDialog({
 
     setDistribucionSeleccionadaId(currentId => {
       if (!currentId) {
-        return null;
+        return distribucionesFiltradas[0]?.comandaId || null;
       }
 
       return distribucionesFiltradas.some(distribucion => distribucion.comandaId === currentId)
         ? currentId
-        : null;
+        : distribucionesFiltradas[0]?.comandaId || null;
     });
   }, [open, distribucionesFiltradas]);
 
   useEffect(() => {
     setFiltroDetalleDistribucion('');
   }, [distribucionSeleccionadaId]);
+
+  useEffect(() => {
+    setFechaCaducidadDistribucionEditada(distribucionSeleccionadaFiltrada?.fechaCaducidadGrupo || '');
+  }, [distribucionSeleccionadaFiltrada]);
+
+  useEffect(() => {
+    if (!debeDesplazarADetalleRef.current || !distribucionSeleccionadaFiltrada || !detalleDistribucionRef.current) {
+      return;
+    }
+
+    detalleDistribucionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    debeDesplazarADetalleRef.current = false;
+  }, [distribucionSeleccionadaFiltrada]);
+
+  const abrirDistribucion = (distribucionId: string) => {
+    if (distribucionId === distribucionSeleccionadaId) {
+      detalleDistribucionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    debeDesplazarADetalleRef.current = true;
+    setDistribucionSeleccionadaId(distribucionId);
+  };
+
+  const handleGuardarFechaDistribucion = () => {
+    if (!distribucionSeleccionadaFiltrada) {
+      return;
+    }
+
+    if (distribucionSeleccionadaFinalizada) {
+      toast.error('Cette distribution est finalisée et ne peut plus être modifiée.');
+      return;
+    }
+
+    const distribucionEditable =
+      distribucionSeleccionadaFiltrada.comandaIds.length > 1 ||
+      Boolean(distribucionSeleccionadaFiltrada.grupoDistribucionId);
+
+    if (!distribucionEditable) {
+      toast.error('Cette distribution ne possède pas de portée groupée modifiable.');
+      return;
+    }
+
+    try {
+      const grupoDistribucionId =
+        distribucionSeleccionadaFiltrada.grupoDistribucionId ||
+        `dist-${distribucionSeleccionadaFiltrada.comandaId.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`;
+      const grupoDistribucionEtiqueta =
+        distribucionSeleccionadaFiltrada.grupoDistribucionEtiqueta ||
+        distribucionSeleccionadaFiltrada.numeroDistribucion;
+
+      actualizarComandasDistribucion(
+        distribucionSeleccionadaFiltrada.comandaIds,
+        {
+          fechaCaducidadGrupo: fechaCaducidadDistribucionEditada || undefined,
+        },
+        {
+          grupoDistribucionId,
+          grupoDistribucionEtiqueta,
+          grupoDistribucionAnclada: true,
+        },
+      );
+
+      onDistribucionesActualizadas?.();
+      toast.success('La date de péremption de la distribution a été mise à jour.');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la distribution:', error);
+      toast.error('Impossible de mettre à jour la date de péremption de la distribution.');
+    }
+  };
 
   const imprimirLista = () => {
     const imprimirDetalle = Boolean(distribucionSeleccionadaFiltrada);
@@ -526,7 +627,7 @@ export function ListaProductosDistribuidosDialog({
 
     const titre = imprimirDetalle
       ? `Produits de la distribution ${distribucionSeleccionadaFiltrada?.numeroDistribucion || ''}`
-      : 'Liste des produits distribués';
+      : 'Liste de distributions';
 
     const resume = imprimirDetalle ? resumenImpresionDetalle : resumenImpresionConsolidado;
 
@@ -596,7 +697,7 @@ export function ListaProductosDistribuidosDialog({
       openAutoPrintPopup(`
         <html>
           <head>
-            <title>Liste Produits Distribués</title>
+            <title>Liste de distributions</title>
             <style>
               body { font-family: Arial, sans-serif; padding: 24px; color: #1f2937; }
               h1 { margin: 0 0 8px; color: #1E73BE; }
@@ -653,7 +754,7 @@ export function ListaProductosDistribuidosDialog({
     const resumePDF = exportarDetalle ? resumenImpresionDetalle : resumenImpresionConsolidado;
     const titre = exportarDetalle
       ? `Produits de la distribution ${distribucionSeleccionadaFiltrada?.numeroDistribucion || ''}`
-      : 'Liste des produits distribués';
+      : 'Liste de distributions';
 
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(18);
@@ -741,7 +842,7 @@ export function ListaProductosDistribuidosDialog({
         : currentY + 24;
     });
 
-    doc.save(`Liste_Produits_Distribues_${Date.now()}.pdf`);
+    doc.save(`Liste_Distributions_${Date.now()}.pdf`);
   };
 
   return (
@@ -750,7 +851,7 @@ export function ListaProductosDistribuidosDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <Package className="w-5 h-5 text-[#1E73BE]" />
-            Liste des produits distribués
+            Liste de distributions
           </DialogTitle>
           <DialogDescription id="liste-produits-distribues-description">
             Résumé consolidé des produits présents dans les commandes filtrées.
@@ -784,7 +885,7 @@ export function ListaProductosDistribuidosDialog({
                     Distributions
                   </h3>
                   <p className="text-sm text-[#666666]">
-                    Cliquez sur un numéro de distribution pour ouvrir sa liste de produits.
+                    La distribution la plus récente est mise en évidence et les distributions de groupe peuvent être modifiées directement.
                   </p>
                 </div>
 
@@ -805,35 +906,68 @@ export function ListaProductosDistribuidosDialog({
                         <TableHead className="text-center">Produits</TableHead>
                         <TableHead className="text-center">Quantité</TableHead>
                         <TableHead className="text-right">Valeur</TableHead>
+                        <TableHead className="text-center">
+                          <span className="inline-flex items-center justify-center" title="Accès">
+                            <Edit2 className="h-4 w-4" aria-hidden="true" />
+                            <span className="sr-only">Accès</span>
+                          </span>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {distribucionesFiltradas.map(distribucion => {
                         const isActive = distribucion.comandaId === distribucionSeleccionadaId;
+                        const isLatestVisible = distribucion.comandaId === ultimaDistribucionVisibleId;
+                        const distribucionFinalizada = distribucion.comandaIds.every((comandaId) => {
+                          const comanda = comandas.find((item) => item.id === comandaId);
+                          return Boolean(comanda?.estado && DISTRIBUCION_ESTADOS_FINALIZADOS.has(comanda.estado));
+                        });
+                        const esDistribucionEditable =
+                          (distribucion.comandaIds.length > 1 || Boolean(distribucion.grupoDistribucionId)) && !distribucionFinalizada;
 
                         return (
-                          <TableRow key={distribucion.comandaId} className={isActive ? 'bg-blue-50/70' : undefined}>
+                          <TableRow key={distribucion.comandaId} className={isActive ? 'bg-blue-50/70' : isLatestVisible ? 'bg-emerald-50/60' : undefined}>
                             <TableCell>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setDistribucionSeleccionadaId(distribucion.comandaId)}
-                                className="h-auto px-0 font-semibold text-[#1E73BE] hover:bg-transparent hover:text-[#175a95]"
-                              >
-                                {distribucion.numeroDistribucion}
-                              </Button>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => abrirDistribucion(distribucion.comandaId)}
+                                  className="h-auto px-0 font-semibold text-[#1E73BE] hover:bg-transparent hover:text-[#175a95]"
+                                >
+                                  {distribucion.numeroDistribucion}
+                                </Button>
+                                {isLatestVisible && (
+                                  <Badge className="bg-[#2E7D32] text-white hover:bg-[#2E7D32]">
+                                    Dernière
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>{distribucion.organismo}</TableCell>
                             <TableCell className="text-center">{formatearFecha(distribucion.fecha, currentLocale)}</TableCell>
                             <TableCell className="text-center">{distribucion.totalProductos}</TableCell>
                             <TableCell className="text-center">{formatQuantity(distribucion.totalCantidad)}</TableCell>
                             <TableCell className="text-right font-semibold text-[#2E7D32]">CAD$ {formatMoney(distribucion.totalValor)}</TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={isLatestVisible ? 'default' : 'outline'}
+                                onClick={() => abrirDistribucion(distribucion.comandaId)}
+                                className={isLatestVisible ? 'bg-[#1E73BE] hover:bg-[#175a95]' : ''}
+                                title={distribucionFinalizada ? 'Voir la distribution finalisée' : esDistribucionEditable ? 'Modifier la distribution' : 'Ouvrir la distribution'}
+                                aria-label={distribucionFinalizada ? 'Voir la distribution finalisée' : esDistribucionEditable ? 'Modifier la distribution' : 'Ouvrir la distribution'}
+                              >
+                                {esDistribucionEditable ? <Edit2 className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         );
                       })}
                       {distribucionesFiltradas.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="py-8 text-center text-[#666666]">
+                          <TableCell colSpan={7} className="py-8 text-center text-[#666666]">
                             Aucune distribution ne correspond au filtre actuel.
                           </TableCell>
                         </TableRow>
@@ -846,7 +980,7 @@ export function ListaProductosDistribuidosDialog({
           )}
 
           {distribucionSeleccionadaFiltrada && (
-            <Card>
+            <Card ref={detalleDistribucionRef}>
               <CardContent className="pt-6 space-y-4">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -866,6 +1000,39 @@ export function ListaProductosDistribuidosDialog({
                   placeholder="Filtrer les produits de cette distribution"
                   className="max-w-xl"
                 />
+
+                {(distribucionSeleccionadaFiltrada.comandaIds.length > 1 || distribucionSeleccionadaFiltrada.grupoDistribucionId) && (
+                  <div className="rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-xs uppercase tracking-wide text-[#666666]">Distribution de groupe</p>
+                          {distribucionSeleccionadaFinalizada && (
+                            <Badge className="bg-gray-600 text-white">Finalisée</Badge>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-[#333333]">Date de péremption de la distribution</label>
+                          <Input
+                            type="date"
+                            value={fechaCaducidadDistribucionEditada}
+                            onChange={(event) => setFechaCaducidadDistribucionEditada(event.target.value)}
+                            className="max-w-xs"
+                            disabled={distribucionSeleccionadaFinalizada}
+                          />
+                        </div>
+                        <p className="text-xs text-[#5F6B7A]">
+                          {distribucionSeleccionadaFinalizada
+                            ? 'La distribution est terminée. Les modifications sont verrouillées.'
+                            : 'Cette modification s’applique à toutes les commandes incluses dans cette distribution.'}
+                        </p>
+                      </div>
+                      <Button className="bg-[#1E73BE] hover:bg-[#175a95]" onClick={handleGuardarFechaDistribucion} disabled={distribucionSeleccionadaFinalizada}>
+                        Enregistrer la date
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   {gruposTemperaturaDistribucion.map((grupo) => (

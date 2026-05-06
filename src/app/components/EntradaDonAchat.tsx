@@ -2533,8 +2533,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
       {/* DIÁLOGO: Crear Nueva Variante */}
       <Dialog open={nuevaVarianteDialogOpen} onOpenChange={setNuevaVarianteDialogOpen}>
-        <DialogContent className="max-w-2xl" aria-describedby="new-variant-description">
-          <DialogHeader>
+        <DialogContent className="w-[min(96vw,1100px)] max-w-[1100px] max-h-[92vh] overflow-hidden p-0" aria-describedby="new-variant-description">
+          <DialogHeader className="border-b px-6 py-5 pb-4">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
               🏷️ Créer une Nouvelle Variante
             </DialogTitle>
@@ -2543,111 +2543,108 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Información de contexto */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Catégorie:</strong> {formData.categoriaNombre}
-                {' → '}
-                <strong>Sous-catégorie:</strong> {formData.subcategoriaNombre}
-              </p>
-            </div>
-
-            {/* Nombre */}
-            <div>
-              <Label>Nom de la variante *</Label>
-              <Input
-                value={formVariante.nombre}
-                onChange={(e) => setFormVariante(prev => ({ ...prev, nombre: e.target.value }))}
-                placeholder="Ex: Grande, 500ml, Marca A, Orgánico..."
-              />
-            </div>
-
-            {/* Código e Icono */}
-            <div>
-              <Label>Code (optionnel)</Label>
-              <Input
-                value={formVariante.codigo}
-                onChange={(e) => setFormVariante(prev => ({ ...prev, codigo: e.target.value }))}
-                placeholder="VAR-001"
-              />
-            </div>
-
-            {/* Sélecteur d'icône */}
-            <div>
-              <IconSelector
-                value={formVariante.icono}
-                onChange={(icono) => setFormVariante(prev => ({ ...prev, icono }))}
-                label="Icône de la variante"
-                gridCols={10}
-                maxHeight="max-h-60"
-              />
-            </div>
-
-            {/* Unidad y Peso Unitario */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Unité (optionnel)</Label>
-                <Select 
-                  value={formVariante.unidad} 
-                  onValueChange={(value) => setFormVariante(prev => ({ ...prev, unidad: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Hérite de la sous-catégorie" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unidades.map((unidad) => (
-                      <SelectItem key={unidad.id} value={unidad.abreviatura}>
-                        {unidad.nombre} ({unidad.abreviatura})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!formVariante.unidad && subcategoriaSeleccionada?.unidad && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Par défaut: {subcategoriaSeleccionada.unidad}
-                  </p>
-                )}
+          <div className="grid gap-6 overflow-y-auto px-6 py-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
+            <div className="space-y-4">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Catégorie:</strong> {formData.categoriaNombre}
+                  {' → '}
+                  <strong>Sous-catégorie:</strong> {formData.subcategoriaNombre}
+                </p>
               </div>
+
               <div>
-                <Label>Poids Unitaire (kg) (optionnel)</Label>
+                <Label>Nom de la variante *</Label>
+                <Input
+                  value={formVariante.nombre}
+                  onChange={(e) => setFormVariante(prev => ({ ...prev, nombre: e.target.value }))}
+                  placeholder="Ex: Grande, 500ml, Marca A, Orgánico..."
+                />
+              </div>
+
+              <div>
+                <Label>Code (optionnel)</Label>
+                <Input
+                  value={formVariante.codigo}
+                  onChange={(e) => setFormVariante(prev => ({ ...prev, codigo: e.target.value }))}
+                  placeholder="VAR-001"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Unité (optionnel)</Label>
+                  <Select 
+                    value={formVariante.unidad} 
+                    onValueChange={(value) => setFormVariante(prev => ({ ...prev, unidad: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Hérite de la sous-catégorie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unidades.map((unidad) => (
+                        <SelectItem key={unidad.id} value={unidad.abreviatura}>
+                          {unidad.nombre} ({unidad.abreviatura})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!formVariante.unidad && subcategoriaSeleccionada?.unidad && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Par défaut: {subcategoriaSeleccionada.unidad}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>Poids Unitaire (kg) (optionnel)</Label>
+                  <Input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={formVariante.pesoUnitario}
+                    onChange={(e) => setFormVariante(prev => ({ ...prev, pesoUnitario: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Valeur par Kg (CAD$) (optionnel)</Label>
                 <Input
                   type="number"
                   step="1"
                   min="0"
-                  value={formVariante.pesoUnitario}
-                  onChange={(e) => setFormVariante(prev => ({ ...prev, pesoUnitario: e.target.value }))}
+                  value={formVariante.valorPorKg}
+                  onChange={(e) => setFormVariante(prev => ({ ...prev, valorPorKg: e.target.value }))}
                   placeholder="0"
+                />
+              </div>
+
+              <div>
+                <Label>Description (optionnel)</Label>
+                <Textarea
+                  value={formVariante.descripcion}
+                  onChange={(e) => setFormVariante(prev => ({ ...prev, descripcion: e.target.value }))}
+                  placeholder="Description de la variante..."
+                  rows={4}
                 />
               </div>
             </div>
 
-            {/* Valor por Kg */}
-            <div>
-              <Label>Valeur par Kg (CAD$) (optionnel)</Label>
-              <Input
-                type="number"
-                step="1"
-                min="0"
-                value={formVariante.valorPorKg}
-                onChange={(e) => setFormVariante(prev => ({ ...prev, valorPorKg: e.target.value }))}
-                placeholder="0"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <Label>Description (optionnel)</Label>
-              <Textarea
-                value={formVariante.descripcion}
-                onChange={(e) => setFormVariante(prev => ({ ...prev, descripcion: e.target.value }))}
-                placeholder="Description de la variante..."
-                rows={3}
-              />
+            <div className="space-y-3">
+              <div className="rounded-lg border bg-[#FAFBFC] p-3">
+                <IconSelector
+                  value={formVariante.icono}
+                  onChange={(icono) => setFormVariante(prev => ({ ...prev, icono }))}
+                  label="Icône de la variante"
+                  gridCols={10}
+                  maxHeight="max-h-36"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 border-t px-6 py-4 bg-white">
             <Button
               type="button"
               variant="outline"
@@ -2673,8 +2670,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
       {/* DIÁLOGO: Crear Nueva Subcategoría */}
       <Dialog open={nuevaSubcategoriaDialogOpen} onOpenChange={setNuevaSubcategoriaDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="new-subcategory-description">
-          <DialogHeader>
+        <DialogContent className="w-[min(96vw,1180px)] max-w-[1180px] max-h-[92vh] overflow-hidden p-0" aria-describedby="new-subcategory-description">
+          <DialogHeader className="border-b px-6 py-5 pb-4">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
               📦 Créer une Nouvelle Sous-catégorie
             </DialogTitle>
@@ -2683,87 +2680,119 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Informations de contexte */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Catégorie:</strong> {formData.categoriaNombre}
-              </p>
+          <div className="grid gap-6 overflow-y-auto px-6 py-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,1.05fr)]">
+            <div className="space-y-4">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Catégorie:</strong> {formData.categoriaNombre}
+                </p>
+              </div>
+
+              <div>
+                <Label>Nom de la sous-catégorie *</Label>
+                <Input
+                  value={formSubcategoria.nombre}
+                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, nombre: e.target.value }))}
+                  placeholder="Ex: Pain Blanc, Lait 2%, Pommes..."
+                />
+              </div>
+
+              <div>
+                <Label>Code (optionnel)</Label>
+                <Input
+                  value={formSubcategoria.codigo}
+                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, codigo: e.target.value }))}
+                  placeholder="SUBCAT-001"
+                />
+              </div>
+
+              <div>
+                <Label>Unité par défaut (optionnel)</Label>
+                <Select 
+                  value={formSubcategoria.unidad} 
+                  onValueChange={(value) => setFormSubcategoria(prev => ({ ...prev, unidad: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une unité..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unidades.map((unidad) => (
+                      <SelectItem key={unidad.id} value={unidad.abreviatura}>
+                        {unidad.nombre} ({unidad.abreviatura})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="peso-unitario-input" className="font-semibold">⚖️ Poids unitaire (kg) - Optionnel</Label>
+                <Input
+                  id="peso-unitario-input"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formSubcategoria.pesoUnitario || ''}
+                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
+                  placeholder="0"
+                  className="border-2 border-blue-300 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Poids moyen d'une unité de ce produit (exemple: 0.500 kg pour une boîte de 500g)
+                </p>
+              </div>
+
+              <div>
+                <Label>Poids Unitaire Héritage (kg) (optionnel)</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formSubcategoria.pesoUnitario || ''}
+                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Maintenu pour compatibilité. Utilisez les poids par unité ci-dessous.
+                </p>
+              </div>
+
+              <div>
+                <Label>Stock Minimum (optionnel)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formSubcategoria.stockMinimo || ''}
+                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, stockMinimo: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <Label>Description (optionnel)</Label>
+                <Textarea
+                  value={formSubcategoria.descripcion}
+                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, descripcion: e.target.value }))}
+                  placeholder="Description de la sous-catégorie..."
+                  rows={3}
+                />
+              </div>
             </div>
 
-            {/* Nom */}
-            <div>
-              <Label>Nom de la sous-catégorie *</Label>
-              <Input
-                value={formSubcategoria.nombre}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, nombre: e.target.value }))}
-                placeholder="Ex: Pain Blanc, Lait 2%, Pommes..."
-              />
-            </div>
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-[#FAFBFC] p-3">
+                <IconSelector
+                  value={formSubcategoria.icono}
+                  onChange={(icono) => setFormSubcategoria(prev => ({ ...prev, icono }))}
+                  label="Icône de la sous-catégorie"
+                  gridCols={10}
+                  maxHeight="max-h-36"
+                />
+              </div>
 
-            {/* Code */}
-            <div>
-              <Label>Code (optionnel)</Label>
-              <Input
-                value={formSubcategoria.codigo}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, codigo: e.target.value }))}
-                placeholder="SUBCAT-001"
-              />
-            </div>
-
-            {/* Sélecteur d'icône */}
-            <div>
-              <IconSelector
-                value={formSubcategoria.icono}
-                onChange={(icono) => setFormSubcategoria(prev => ({ ...prev, icono }))}
-                label="Icône de la sous-catégorie"
-                gridCols={10}
-                maxHeight="max-h-60"
-              />
-            </div>
-
-            {/* Unité */}
-            <div>
-              <Label>Unité par défaut (optionnel)</Label>
-              <Select 
-                value={formSubcategoria.unidad} 
-                onValueChange={(value) => setFormSubcategoria(prev => ({ ...prev, unidad: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une unité..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unidades.map((unidad) => (
-                    <SelectItem key={unidad.id} value={unidad.abreviatura}>
-                      {unidad.nombre} ({unidad.abreviatura})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Poids Unitaire - MIS À JOUR 15/03/2026 */}
-            <div>
-              <Label htmlFor="peso-unitario-input" className="font-semibold">⚖️ Poids unitaire (kg) - Optionnel</Label>
-              <Input
-                id="peso-unitario-input"
-                type="number"
-                step="1"
-                min="0"
-                value={formSubcategoria.pesoUnitario || ''}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
-                placeholder="0"
-                className="border-2 border-blue-300 focus:border-blue-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                💡 Poids moyen d'une unité de ce produit (exemple: 0.500 kg pour une boîte de 500g)
-              </p>
-            </div>
-
-            {/* Poids par unité */}
-            <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-              <Label className="text-sm font-semibold">Poids par unité (kg) - Optionnel</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3 rounded-lg bg-gray-50 p-4">
+                <Label className="text-sm font-semibold">Poids par unité (kg) - Optionnel</Label>
+                <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Palette (PLT)</Label>
                   <Input
@@ -2831,49 +2860,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Poids Unitaire (héritage) */}
-            <div>
-              <Label>Poids Unitaire Héritage (kg) (optionnel)</Label>
-              <Input
-                type="number"
-                step="1"
-                min="0"
-                value={formSubcategoria.pesoUnitario || ''}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
-                placeholder="0"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Maintenu pour compatibilité. Utilisez les poids par unité ci-dessus.
-              </p>
-            </div>
-
-            {/* Stock Minimum */}
-            <div>
-              <Label>Stock Minimum (optionnel)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={formSubcategoria.stockMinimo || ''}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, stockMinimo: parseInt(e.target.value) || 0 }))}
-                placeholder="0"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <Label>Description (optionnel)</Label>
-              <Textarea
-                value={formSubcategoria.descripcion}
-                onChange={(e) => setFormSubcategoria(prev => ({ ...prev, descripcion: e.target.value }))}
-                placeholder="Description de la sous-catégorie..."
-                rows={3}
-              />
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 border-t bg-white px-6 py-4">
             <Button
               type="button"
               variant="outline"

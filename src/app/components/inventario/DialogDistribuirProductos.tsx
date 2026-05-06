@@ -175,6 +175,11 @@ interface DialogDistribuirProductosProps {
   productos: any[];
   categoriasInfo: Record<string, { icono: string; valorMonetario: number; color: string }>;
   onDistribucionCompletada: () => void;
+  onDistribucionGrupoCreada?: (resumen: {
+    grupoDistribucionId: string;
+    grupoDistribucionEtiqueta: string;
+    comandas: Array<{ numero: string; nombre: string; porcentaje: number }>;
+  }) => void;
 }
 
 export function DialogDistribuirProductos({
@@ -183,13 +188,19 @@ export function DialogDistribuirProductos({
   carrito,
   productos,
   categoriasInfo,
-  onDistribucionCompletada
+  onDistribucionCompletada,
+  onDistribucionGrupoCreada,
 }: DialogDistribuirProductosProps) {
   const { t } = useTranslation();
   
   // Estados principales
-  const [paso, setPaso] = useState<'seleccion_tipo' | 'editar_cantidades' | 'seleccionar_organismo' | 'distribuir_grupo'>('seleccion_tipo');
+  const [paso, setPaso] = useState<'seleccion_tipo' | 'editar_cantidades' | 'seleccionar_organismo' | 'distribuir_grupo' | 'grupo_creado'>('seleccion_tipo');
   const [tipoDistribucion, setTipoDistribucion] = useState<'individual' | 'grupo'>('individual');
+  const [ultimaDistribucionGrupo, setUltimaDistribucionGrupo] = useState<{
+    grupoDistribucionId: string;
+    grupoDistribucionEtiqueta: string;
+    comandas: Array<{ numero: string; nombre: string; porcentaje: number }>;
+  } | null>(null);
   
   // Estados para productos editables
   const [productosEditables, setProductosEditables] = useState<ProductoEditableItem[]>([]);
@@ -198,6 +209,8 @@ export function DialogDistribuirProductos({
   const [organismoSeleccionado, setOrganismoSeleccionado] = useState('');
   const [fechaEntrega, setFechaEntrega] = useState('');
   const [observaciones, setObservaciones] = useState('');
+  const [fechaCaducidadGrupo, setFechaCaducidadGrupo] = useState('');
+  const [grupoDistribucionAnclada, setGrupoDistribucionAnclada] = useState(true);
   
   // Estado para diálogo de ofertas
   const [ofertaDialogOpen, setOfertaDialogOpen] = useState(false);
@@ -472,6 +485,8 @@ export function DialogDistribuirProductos({
         distribuirCantidadesEnteras(item.cantidad, distribucionActual)
       ])
     );
+    const grupoDistribucionId = `grp-${Date.now()}`;
+    const grupoDistribucionEtiqueta = `Distribution de groupe ${new Date().toLocaleDateString('fr-CA')}`;
 
     try {
       distribucionActual.forEach(orgInfo => {
@@ -536,6 +551,10 @@ export function DialogDistribuirProductos({
           id: `comanda-${Date.now()}-${orgInfo.id}`,
           numero: numeroComanda,
           numeroComanda,
+          grupoDistribucionId,
+          grupoDistribucionEtiqueta,
+          grupoDistribucionAnclada,
+          fechaCaducidadGrupo: fechaCaducidadGrupo || undefined,
           organismoId: orgInfo.id,
           nombreOrganismo: orgInfo.nombre,
           fecha: new Date().toISOString(),
@@ -600,13 +619,27 @@ export function DialogDistribuirProductos({
         </div>,
         { duration: 6000 }
       );
-      
-      cerrarYReiniciar();
+
+      const resumenGrupoCreado = {
+        grupoDistribucionId,
+        grupoDistribucionEtiqueta,
+        comandas: comandasCreadas,
+      };
+
+      setUltimaDistribucionGrupo(resumenGrupoCreado);
+      onDistribucionGrupoCreada?.(resumenGrupoCreado);
+      setPaso('grupo_creado');
       onDistribucionCompletada();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('inventory.distributionDialog.errors.createOrders'));
       console.error(error);
     }
+  };
+
+  const abrirModuloCommandes = () => {
+    const targetUrl = new URL(window.location.href);
+    targetUrl.searchParams.set('page', 'comandas');
+    window.location.href = targetUrl.toString();
   };
 
   const cerrarYReiniciar = () => {
@@ -618,6 +651,9 @@ export function DialogDistribuirProductos({
       setOrganismoSeleccionado('');
       setFechaEntrega('');
       setObservaciones('');
+      setFechaCaducidadGrupo('');
+      setGrupoDistribucionAnclada(true);
+      setUltimaDistribucionGrupo(null);
     }, 300);
   };
 
@@ -743,6 +779,10 @@ export function DialogDistribuirProductos({
     ? ({
         id: `preview-group-${organismoPreviewGrupo.id}`,
         numero: `SIM-GRP-${organismoPreviewGrupo.id.toUpperCase().slice(0, 4)}`,
+        grupoDistribucionId: 'preview-group',
+        grupoDistribucionEtiqueta: 'Distribution de groupe',
+        grupoDistribucionAnclada,
+        fechaCaducidadGrupo: fechaCaducidadGrupo || undefined,
         organismoId: organismoPreviewGrupo.id,
         nombreOrganismo: organismoPreviewGrupo.nombre,
         fecha: new Date().toISOString(),
@@ -767,6 +807,7 @@ export function DialogDistribuirProductos({
     editar_cantidades: t('inventory.distributionDialog.stepTitles.editQuantities'),
     seleccionar_organismo: t('inventory.distributionDialog.stepTitles.selectOrganization'),
     distribuir_grupo: t('inventory.distributionDialog.stepTitles.groupDistribution'),
+    grupo_creado: 'Distribution de groupe créée',
   }[paso];
 
   const descripcionPaso = {
@@ -774,6 +815,7 @@ export function DialogDistribuirProductos({
     editar_cantidades: t('inventory.distributionDialog.stepDescriptions.editQuantities'),
     seleccionar_organismo: t('inventory.distributionDialog.stepDescriptions.selectOrganization'),
     distribuir_grupo: t('inventory.distributionDialog.stepDescriptions.groupDistribution'),
+    grupo_creado: 'Accès direct à la distribution créée et aux commandes générées.',
   }[paso];
 
   return (
@@ -1210,6 +1252,36 @@ export function DialogDistribuirProductos({
                   )}
                 </div>
 
+                <div className="rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] px-4 py-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5B7AA4]">
+                        Parametres du groupe
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[#1E73BE]">
+                        Ancrage de la distribution de groupe
+                      </p>
+                    </div>
+                    <Badge className={grupoDistribucionAnclada ? 'bg-[#1E73BE]' : 'bg-gray-500'}>
+                      {grupoDistribucionAnclada ? 'Ancrée' : 'Non ancrée'}
+                    </Badge>
+                  </div>
+                  <label className="flex items-start gap-3 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4"
+                      checked={grupoDistribucionAnclada}
+                      onChange={(e) => setGrupoDistribucionAnclada(e.target.checked)}
+                    />
+                    <span>
+                      <span className="block font-medium text-[#1E73BE]">Ancrer cette distribution de groupe</span>
+                      <span className="block text-xs text-gray-500 mt-1">
+                        Si cette option reste activée, les modifications de péremption et d'observations seront appliquées à tout le groupe.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
                 <div className="space-y-2">
                   <Label>{t('inventory.distributionDialog.deliveryDate')}</Label>
                   <Input
@@ -1220,6 +1292,19 @@ export function DialogDistribuirProductos({
                   />
                   <p className="text-xs text-gray-500">
                     {t('inventory.distributionDialog.group.deliveryDateHelp')}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Date de péremption de la distribution</Label>
+                  <Input
+                    type="date"
+                    value={fechaCaducidadGrupo}
+                    onChange={(e) => setFechaCaducidadGrupo(e.target.value)}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Option facultative. Elle restera modifiable après la création de la distribution.
                   </p>
                 </div>
 
@@ -1249,21 +1334,86 @@ export function DialogDistribuirProductos({
                 )}
               </div>
             )}
+
+            {paso === 'grupo_creado' && ultimaDistribucionGrupo && (
+              <div className="space-y-4">
+                <Card className="border-2 border-[#4CAF50] bg-[#E8F5E9] shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 h-6 w-6 text-[#2E7D32]" />
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2E7D32]">
+                            Distribution créée
+                          </p>
+                          <h3 className="text-lg font-bold text-[#1B5E20]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            {ultimaDistribucionGrupo.grupoDistribucionEtiqueta}
+                          </h3>
+                        </div>
+                        <p className="text-sm text-[#355E3B]">
+                          L'accès reste visible ici après la création. Vous pouvez ouvrir tout de suite le module Commandes pour modifier la distribution ancrée.
+                        </p>
+                        <Badge className="bg-[#1E73BE] text-white">
+                          Groupe: {ultimaDistribucionGrupo.grupoDistribucionId}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-[#DCE7F5] bg-white">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[#1E73BE]">Commandes générées</p>
+                        <p className="text-xs text-gray-500">Résumé du groupe créé pour accès immédiat.</p>
+                      </div>
+                      <Badge className="bg-[#4CAF50] text-white">
+                        {ultimaDistribucionGrupo.comandas.length} commandes
+                      </Badge>
+                    </div>
+                    <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                      {ultimaDistribucionGrupo.comandas.map((comandaCreada) => (
+                        <div key={comandaCreada.numero} className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-sm text-[#334155]">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-semibold text-[#0F172A]">{comandaCreada.numero}</span>
+                            <Badge variant="outline" className="border-[#90CAF9] text-[#1E73BE]">
+                              {comandaCreada.porcentaje}%
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-[#64748B]">{comandaCreada.nombre}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button onClick={abrirModuloCommandes} className="bg-[#1E73BE] hover:bg-[#1557A0]">
+                        Ouvrir les commandes
+                      </Button>
+                      <Button variant="outline" onClick={cerrarYReiniciar}>
+                        Fermer
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="border-t pt-4">
             <div className="flex justify-between items-center w-full">
               <div>
-                {paso !== 'seleccion_tipo' && (
+                {paso !== 'seleccion_tipo' && paso !== 'grupo_creado' && (
                   <Button variant="outline" onClick={retrocederPaso}>
                     {t('inventory.distributionDialog.back')}
                   </Button>
                 )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={cerrarYReiniciar}>
-                  {t('inventory.distributionDialog.cancel')}
-                </Button>
+                {paso !== 'grupo_creado' && (
+                  <Button variant="outline" onClick={cerrarYReiniciar}>
+                    {t('inventory.distributionDialog.cancel')}
+                  </Button>
+                )}
                 {paso === 'distribuir_grupo' && mensajeBloqueoDistribucionGrupo && (
                   <span className="self-center text-xs text-[#B45309] max-w-xs text-right">
                     {mensajeBloqueoDistribucionGrupo}

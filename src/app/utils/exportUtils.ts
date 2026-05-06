@@ -185,7 +185,13 @@ export async function exportToExcel(
 /**
  * Capturar gráfico como imagen
  */
-async function captureChart(chartId: string): Promise<string | null> {
+type CapturedChart = {
+  dataUrl: string;
+  width: number;
+  height: number;
+};
+
+async function captureChart(chartId: string): Promise<CapturedChart | null> {
   try {
     const chartElement = document.getElementById(chartId);
     if (!chartElement) {
@@ -199,7 +205,11 @@ async function captureChart(chartId: string): Promise<string | null> {
       logging: false
     });
 
-    return canvas.toDataURL('image/png');
+    return {
+      dataUrl: canvas.toDataURL('image/png'),
+      width: canvas.width,
+      height: canvas.height,
+    };
   } catch (error) {
     console.error('Error capturing chart:', error);
     return null;
@@ -390,8 +400,22 @@ export async function exportToPDFWithCharts(
     const chartImage = await captureChart(chart.id);
     
     if (chartImage) {
+      const maxChartWidth = pageWidth - 2 * margin;
+      const maxChartHeight = Math.min(pageHeight - (2 * margin) - 20, 110);
+      const aspectRatio = chartImage.height > 0 ? chartImage.width / chartImage.height : 1;
+
+      let chartWidth = maxChartWidth;
+      let chartHeight = chartWidth / aspectRatio;
+
+      if (chartHeight > maxChartHeight) {
+        chartHeight = maxChartHeight;
+        chartWidth = chartHeight * aspectRatio;
+      }
+
+      const requiredHeight = chartHeight + (chart.title ? 12 : 0) + 15;
+
       // Verificar si necesitamos una nueva página
-      if (yPosition + 80 > pageHeight - margin) {
+      if (yPosition + requiredHeight > pageHeight - margin) {
         doc.addPage();
         yPosition = margin;
       }
@@ -404,10 +428,10 @@ export async function exportToPDFWithCharts(
         yPosition += 8;
       }
 
-      // Agregar gráfico
-      const chartWidth = pageWidth - 2 * margin;
-      const chartHeight = 70;
-      doc.addImage(chartImage, 'PNG', margin, yPosition, chartWidth, chartHeight);
+      const chartX = margin + ((maxChartWidth - chartWidth) / 2);
+
+      // Agregar gráfico conservando su proporción real
+      doc.addImage(chartImage.dataUrl, 'PNG', chartX, yPosition, chartWidth, chartHeight);
       yPosition += chartHeight + 15;
     }
   }

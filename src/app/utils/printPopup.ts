@@ -107,3 +107,47 @@ export function openAutoPrintPopup(html: string, options: PrintPopupOptions = {}
   writeAutoPrintPopupContent(printWindow, html, options);
   return printWindow;
 }
+
+export function waitForPrintPopupToClose(
+  printWindow: Window,
+  options: { timeoutMs?: number; pollMs?: number } = {}
+): Promise<void> {
+  const timeoutMs = options.timeoutMs ?? 45000;
+  const pollMs = options.pollMs ?? 200;
+
+  return new Promise((resolve) => {
+    if (printWindow.closed) {
+      resolve();
+      return;
+    }
+
+    let settled = false;
+
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+
+    const intervalId = window.setInterval(() => {
+      if (printWindow.closed) {
+        finish();
+      }
+    }, pollMs);
+
+    const timeoutId = window.setTimeout(() => {
+      finish();
+    }, timeoutMs);
+
+    try {
+      printWindow.addEventListener('beforeunload', finish, { once: true });
+    } catch {
+      // Algunos navegadores no exponen listeners fiables en popups de impresión.
+    }
+  });
+}

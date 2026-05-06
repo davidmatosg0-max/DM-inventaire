@@ -32,6 +32,22 @@ import './debugContactosDepartamentos';
 import './limpiarContactosDepartamento';
 import './ejemplosFuncionalesPrueba';
 
+const CLAVES_OBSOLETAS_CUISINE = ['productos_cocina_pendientes'];
+
+function limpiarDatosObsoletosCuisine(): void {
+  CLAVES_OBSOLETAS_CUISINE.forEach((clave) => {
+    if (localStorage.getItem(clave) !== null) {
+      localStorage.removeItem(clave);
+      logger.info(`🧹 Clave obsoleta eliminada: ${clave}`);
+    }
+  });
+
+  if (localStorage.getItem('comandas-tab-activo') === 'ofertas-cocina') {
+    localStorage.removeItem('comandas-tab-activo');
+    logger.info('🧹 Tab obsoleto de ofertas cuisine eliminado');
+  }
+}
+
 export async function runAppBootstrap() {
   inicializarProteccionDatos();
 
@@ -44,6 +60,7 @@ export async function runAppBootstrap() {
   logger.info('🛡️ Limpieza automática PERMANENTEMENTE DESHABILITADA');
 
   runDataMigrations();
+  limpiarDatosObsoletosCuisine();
   logger.info('✅ Sistema protegido - Limpieza automática omitida');
 
   inicializarUnidades();

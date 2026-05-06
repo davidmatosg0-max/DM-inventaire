@@ -208,6 +208,11 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
   // Calcular estadísticas
   const totalComandas = comandasOrganismo.length;
   const comandasCompletadas = comandasOrganismo.filter(c => esComandaHistorica(c.estado)).length;
+  const comandasEnAttenteAcceptation = comandasOrganismo.filter(c => c.estado === 'pendiente');
+  const prochaineDateLimiteAcceptation = comandasEnAttenteAcceptation
+    .map(comanda => comanda.fechaEntrega || comanda.fecha)
+    .filter(Boolean)
+    .sort()[0] || null;
 
   // Calcular datos para el gráfico de categorías
   const calcularDatosCategorias = () => {
@@ -576,12 +581,17 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     }
 
     try {
+      const itemsReconstruidos = reconstruirItemsAceptados(comandaObjetivo.items || [], itemsAceptados);
+      const totalAceptado = itemsReconstruidos.reduce(
+        (total, item) => total + Number(item.cantidadAceptada ?? item.cantidad ?? 0),
+        0,
+      );
       const comandaActualizada = {
         ...comandaObjetivo,
-        estado: 'confirmada',
-        items: reconstruirItemsAceptados(comandaObjetivo.items || [], itemsAceptados),
-        confirmadaPorOrganismo: true,
-        fechaConfirmacion: new Date().toISOString(),
+        estado: totalAceptado > 0 ? 'confirmada' : 'anulada',
+        items: itemsReconstruidos,
+        confirmadaPorOrganismo: totalAceptado > 0,
+        fechaConfirmacion: totalAceptado > 0 ? new Date().toISOString() : undefined,
         fechaModificacion: new Date().toISOString()
       };
 
@@ -593,8 +603,10 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       return;
     }
 
-    toast.success(t('organismPortal.orderAccepted'), {
-      description: t('organismPortal.orderAcceptedDescription'),
+    toast.success(totalAceptado > 0 ? t('organismPortal.orderAccepted') : t('organismPortal.orderCancelled'), {
+      description: totalAceptado > 0
+        ? t('organismPortal.orderAcceptedDescription')
+        : 'Aucune quantité acceptée, la commande a été annulée automatiquement.',
       duration: 5000
     });
     setMostrarDetalles(false);
@@ -1536,6 +1548,26 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
+              <div className="mb-4 rounded-xl border border-[#F6C26B] bg-[#FFF8E8] p-4 text-sm text-[#7A4B00]">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-[#8A5A00]">Rappel important concernant l’acceptation des commandes</p>
+                    <p>
+                      Si une commande n’est pas acceptée avant la date prévue, elle sera annulée automatiquement.
+                    </p>
+                    {comandasEnAttenteAcceptation.length > 0 && (
+                      <p className="text-xs text-[#946200]">
+                        {comandasEnAttenteAcceptation.length} commande(s) en attente d’acceptation
+                        {prochaineDateLimiteAcceptation
+                          ? ` • Prochaine échéance: ${new Date(prochaineDateLimiteAcceptation).toLocaleDateString(i18n.language)}`
+                          : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {comandasOrganismo.length > 0 ? (
                 <div className="space-y-3">
                   {comandasOrganismo.map(comanda => {

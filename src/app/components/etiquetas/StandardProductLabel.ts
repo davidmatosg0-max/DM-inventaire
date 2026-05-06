@@ -18,7 +18,7 @@
  * - Roboto Regular para cuerpo de texto
  */
 
-import { openAutoPrintPopup } from '../../utils/printPopup';
+import { openAutoPrintPopup, waitForPrintPopupToClose } from '../../utils/printPopup';
 
 import { generarDatosQR } from '../../utils/barcode';
 import { formatQuantity } from '../../utils/formatUtils';
@@ -635,9 +635,13 @@ export async function generateStandardProductLabel(
 export async function printStandardLabel(data: ProductLabelData, silent: boolean = false): Promise<void> {
   const html = await generateStandardProductLabel(data);
 
-  openAutoPrintPopup(html, {
+  const printWindow = openAutoPrintPopup(html, {
     width: 900,
     height: 1100,
     printDelayMs: 350,
   });
+
+  if (silent) {
+    await waitForPrintPopupToClose(printWindow);
+  }
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   ShoppingCart, Trash2, Plus, Minus, Package, DollarSign, Scale, 
-  FileText, Save, Download, Printer, TrendingUp, X, Users, Building2, Calendar, Share2, AlertTriangle, ChefHat
+  FileText, Save, Download, Printer, TrendingUp, X, Users, Building2, Calendar, Share2, AlertTriangle
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '../ui/sheet';
 import { Button } from '../ui/button';
@@ -20,7 +20,6 @@ import { obtenerProductos, actualizarProducto } from '../../utils/productStorage
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
 import { Comanda } from '../../types';
 import { DialogDistribuirProductos } from './DialogDistribuirProductos';
-import { DialogEnviarCocina } from './DialogEnviarCocina';
 import { obtenerResumenReservasInventario } from '../../utils/inventoryReservations';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { openAutoPrintPopup } from '../../utils/printPopup';
@@ -57,6 +56,11 @@ interface CarritoMejoradoProps {
   eliminarDelCarrito: (productoId: string) => void;
   vaciarCarrito: () => void;
   onComandaCreada?: () => void; // Callback opcional cuando se crea una comanda
+  onDistribucionGrupoCreada?: (resumen: {
+    grupoDistribucionId: string;
+    grupoDistribucionEtiqueta: string;
+    comandas: Array<{ numero: string; nombre: string; porcentaje: number }>;
+  }) => void;
   productos?: any[]; // Lista de productos (opcional, usa mockProductos por defecto)
 }
 
@@ -68,6 +72,7 @@ export function CarritoMejorado({
   eliminarDelCarrito,
   vaciarCarrito,
   onComandaCreada,
+  onDistribucionGrupoCreada,
   productos = mockProductos
 }: CarritoMejoradoProps) {
   const { t } = useTranslation();
@@ -77,7 +82,6 @@ export function CarritoMejorado({
   
   // Estados para distribuir productos
   const [distribuirDialogOpen, setDistribuirDialogOpen] = useState(false);
-  const [enviarCocinaDialogOpen, setEnviarCocinaDialogOpen] = useState(false);
   const reservasInventario = React.useMemo(
     () => obtenerResumenReservasInventario(productos.map(producto => producto.id)),
     [productos]
@@ -547,19 +551,11 @@ export function CarritoMejorado({
                 <div className="w-full flex gap-2">
                   <Button 
                     onClick={() => setDistribuirDialogOpen(true)}
-                    className="flex-1 bg-[#4CAF50] hover:bg-[#45a049] text-white"
+                    className="w-full bg-[#4CAF50] hover:bg-[#45a049] text-white"
                     style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
                   >
                     <Share2 className="w-4 h-4 mr-2" />
                     Accès Organismes
-                  </Button>
-                  <Button 
-                    onClick={() => setEnviarCocinaDialogOpen(true)}
-                    className="flex-1 bg-[#FF9800] hover:bg-[#F57C00] text-white"
-                    style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
-                  >
-                    <ChefHat className="w-4 h-4 mr-2" />
-                    Envoyer à Cuisine
                   </Button>
                 </div>
               </>
@@ -617,16 +613,7 @@ export function CarritoMejorado({
         productos={productos}
         categoriasInfo={categoriasInfo}
         onDistribucionCompletada={handleDistribucionCompletada}
-      />
-      
-      {/* Dialog para enviar a cocina */}
-      <DialogEnviarCocina
-        open={enviarCocinaDialogOpen}
-        onOpenChange={setEnviarCocinaDialogOpen}
-        carrito={carrito}
-        productos={productos}
-        categoriasInfo={categoriasInfo}
-        onEnvioCompletado={handleDistribucionCompletada}
+        onDistribucionGrupoCreada={onDistribucionGrupoCreada}
       />
     </>
   );

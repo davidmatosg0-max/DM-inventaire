@@ -112,6 +112,10 @@ export interface Comanda {
   observaciones?: string;
   prioridad?: 'baja' | 'normal' | 'alta' | 'urgente';
   tipo?: 'standard' | 'urgente' | 'periodica';
+  grupoDistribucionId?: string;
+  grupoDistribucionEtiqueta?: string;
+  grupoDistribucionAnclada?: boolean;
+  fechaCaducidadGrupo?: string;
   fechaCreacion?: string;
   fechaModificacion?: string;
   creadoPor?: string;

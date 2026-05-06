@@ -334,8 +334,8 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
 
       {/* Diálogo Crear/Editar Variante */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl" aria-describedby="gestion-variantes-description">
-          <DialogHeader>
+        <DialogContent className="app-dialog-form-shell app-dialog-form-shell--compact" aria-describedby="gestion-variantes-description">
+          <DialogHeader className="app-dialog-form-header">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
               {modoEdicion ? t('inventory.variantManagement.dialog.editTitle') : t('inventory.variantManagement.dialog.createTitle')}
             </DialogTitle>
@@ -344,7 +344,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="app-dialog-form-body space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {/* Nombre */}
               <div className="space-y-2">
@@ -480,7 +480,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
           </div>
 
           {/* Acciones */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="app-dialog-form-footer">
             <Button
               variant="outline"
               onClick={() => setDialogOpen(false)}

@@ -3821,8 +3821,8 @@ export function Configuracion() {
 
       {/* Dialog Crear Variante */}
       <Dialog open={varianteDialogOpen} onOpenChange={setVarianteDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="variante-dialog-description">
-          <DialogHeader>
+        <DialogContent className="app-dialog-form-shell app-dialog-form-shell--compact" aria-describedby="variante-dialog-description">
+          <DialogHeader className="app-dialog-form-header">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', color: '#1E73BE' }}>
               <div className="flex items-center gap-2">
                 <Copy className="w-5 h-5" />
@@ -3834,7 +3834,7 @@ export function Configuracion() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="app-dialog-form-body space-y-4">
             {/* Producto Base */}
             {productoBase && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -4059,7 +4059,7 @@ export function Configuracion() {
           </div>
 
           {/* Botones de acción */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="app-dialog-form-footer">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -4091,8 +4091,8 @@ export function Configuracion() {
           setSubcategoriaBase(null);
         }
       }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="subcategoria-variante-description">
-          <DialogHeader className="pb-4 border-b">
+        <DialogContent className="app-dialog-form-shell app-dialog-form-shell--wide" aria-describedby="subcategoria-variante-description">
+          <DialogHeader className="app-dialog-form-header">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9C27B0] to-[#7B1FA2] flex items-center justify-center text-white text-2xl">
                 ✨
@@ -4110,7 +4110,7 @@ export function Configuracion() {
             </div>
           </DialogHeader>
 
-          <div className="py-6 space-y-6">
+          <div className="app-dialog-form-body space-y-6">
             {/* Sección: Información Básica */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2">
@@ -4446,7 +4446,7 @@ export function Configuracion() {
           </div>
 
           {/* Acciones */}
-          <div className="flex justify-between items-center gap-3 pt-4 border-t">
+          <div className="app-dialog-form-footer justify-between">
             <p className="text-xs text-[#666666]">
               <span className="text-[#DC3545]">*</span> {t('configuration.requiredFieldsNote')}
             </p>

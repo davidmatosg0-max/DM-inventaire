@@ -14,11 +14,7 @@ import { obtenerRecetas, obtenerTransformaciones, type Transformacion } from '..
 import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
 import { obtenerLogs } from '../../utils/auditStorage';
 import { 
-  exportarInventarioPDF, 
-  exportarComandasPDF, 
   exportarOrganismosPDF,
-  exportarEstadisticasPDF,
-  exportarReportePersonalizado,
 } from '../../utils/exportarPDF';
 import { 
   exportarInventarioExcel, 
@@ -27,7 +23,7 @@ import {
   exportarEstadisticasExcel,
   exportarDatosPersonalizados,
 } from '../../utils/exportarExcel';
-import { exportData, generateFilename, type TableColumn } from '../../utils/exportUtils';
+import { exportData, exportToPDFWithCharts, generateFilename, type ChartElement, type TableColumn } from '../../utils/exportUtils';
 import { useBranding } from '../../../hooks/useBranding';
 import { AuditLogViewer } from '../auditoria/AuditLogViewer';
 import { obtenerComandasReporte } from '../reports/reportComandas';
@@ -187,7 +183,35 @@ async function exportStructuredRows(
   });
 }
 
+async function exportReportRowsToPdf(
+  prefix: string,
+  title: string,
+  subtitle: string,
+  rows: Array<Record<string, unknown>>,
+  charts: ChartElement[] = [],
+  orientation: 'portrait' | 'landscape' = 'landscape',
+) {
+  const exportRows = rows.length > 0 ? rows : [{ Note: 'Aucune donnée disponible.' }];
+
+  await exportToPDFWithCharts(exportRows, buildExportColumns(exportRows), charts, {
+    filename: generateFilename(prefix, 'pdf'),
+    title,
+    subtitle,
+    orientation,
+  });
+}
+
 const LEGACY_PANEL_CLASSNAME = 'backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40';
+const REPORT_EXPORT_CANVAS_STYLE: React.CSSProperties = {
+  position: 'fixed',
+  left: '-10000px',
+  top: 0,
+  width: '1280px',
+  padding: '24px',
+  background: '#ffffff',
+  pointerEvents: 'none',
+  zIndex: -1,
+};
 
 type ReportStatCardProps = {
   label: string;
@@ -215,12 +239,13 @@ type ReportChartCardProps = {
   titleColor: string;
   hasData: boolean;
   emptyHeight?: number;
+  chartId?: string;
   children: React.ReactNode;
 };
 
-function ReportChartCard({ title, titleColor, hasData, emptyHeight = 300, children }: ReportChartCardProps) {
+function ReportChartCard({ title, titleColor, hasData, emptyHeight = 300, chartId, children }: ReportChartCardProps) {
   return (
-    <div className={LEGACY_PANEL_CLASSNAME}>
+    <div id={chartId} className={LEGACY_PANEL_CLASSNAME}>
       <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: titleColor }}>
         {title}
       </h3>
@@ -228,6 +253,32 @@ function ReportChartCard({ title, titleColor, hasData, emptyHeight = 300, childr
         children
       ) : (
         <div className="flex items-center justify-center text-gray-400" style={{ height: `${emptyHeight}px` }}>
+          <p className="text-center">Aucune donnée disponible</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExportChartCard({ title, titleColor, hasData, emptyHeight = 300, chartId, children }: ReportChartCardProps) {
+  return (
+    <div
+      id={chartId}
+      style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid rgba(203, 213, 225, 0.95)',
+        borderRadius: '16px',
+        padding: '16px',
+        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+      }}
+    >
+      <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px', color: titleColor, fontFamily: 'Montserrat, sans-serif' }}>
+        {title}
+      </h3>
+      {hasData ? (
+        children
+      ) : (
+        <div className="flex items-center justify-center text-gray-400" style={{ height: `${emptyHeight}px`, color: '#94a3b8' }}>
           <p className="text-center">Aucune donnée disponible</p>
         </div>
       )}
@@ -582,6 +633,8 @@ export function Reportes() {
       toast.error('Définissez une plage de dates valide avant de générer un rapport.');
       return;
     }
+
+    const activePdfCharts = pdfChartsByTab[activeReportTab] ?? [];
     
     try {
       switch (exportableReportType) {
@@ -643,17 +696,37 @@ export function Reportes() {
           ];
 
           if (formato === 'pdf') {
-            exportarReportePersonalizado(
+            await exportReportRowsToPdf(
+              'rapport_operaciones',
               'Rapports opérationnels',
               `Résumé consolidé du mois en cours (${currentMonthRange.label})`,
               [
-                {
-                  titulo: 'Résumé opérationnel',
-                  columnas: ['Indicateur', 'Valeur'],
-                  datos: operationalSummary.map((row) => [row.Indicateur, String(row.Valeur)]),
-                },
+                ...operationalSummary.map((row) => ({ Section: 'Résumé opérationnel', ...row })),
+                ...(operationalEntries.length > 0
+                  ? operationalEntries.map((entry) => ({
+                      Section: 'Approvisionnement',
+                      Date: entry.fecha,
+                      Produit: entry.nombreProducto,
+                      Acteur: entry.donadorNombre || 'N/A',
+                      Catégorie: getEntryCategoryLabel(entry, productIndex),
+                      Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
+                      Quantité: entry.cantidad,
+                      Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
+                    }))
+                  : [{ Section: 'Approvisionnement', Note: 'Aucune donnée disponible.' }]),
+                ...(operationalDistributions.length > 0
+                  ? operationalDistributions.map((comanda) => ({
+                      Section: 'Distribution',
+                      Comanda: comanda.numero,
+                      Date: comanda.fecha,
+                      Organisme: comanda.organismoNombre,
+                      État: comanda.estado,
+                      Quantité: getSafeNumericValue(comanda.filteredPeso),
+                      Valeur: getSafeNumericValue(comanda.filteredValor),
+                    }))
+                  : [{ Section: 'Distribution', Note: 'Aucune donnée disponible.' }]),
               ],
-              'rapport-operaciones'
+              activePdfCharts,
             );
           } else if (formato === 'excel') {
             exportarDatosPersonalizados('rapport-operaciones', [
@@ -725,7 +798,24 @@ export function Reportes() {
 
         case 'inventario':
           if (formato === 'pdf') {
-            exportarInventarioPDF(productosFiltrados);
+            await exportReportRowsToPdf(
+              'rapport_inventaire',
+              'Rapport d\'inventaire',
+              `Vue exportée le ${new Date().toLocaleDateString('fr-CA')}`,
+              productosFiltrados.length > 0
+                ? productosFiltrados.map((producto) => ({
+                    Code: producto.codigo || 'N/A',
+                    Produit: producto.nombre,
+                    Catégorie: producto.categoria || 'N/A',
+                    SousCatégorie: producto.subcategoria || 'N/A',
+                    Stock: producto.stockActual,
+                    Unité: producto.unidad,
+                    PoidsKg: Number(getProductWeight(producto).toFixed(2)),
+                    État: producto.estado || 'Disponible',
+                  }))
+                : [{ Note: 'Aucune donnée disponible.' }],
+              activePdfCharts,
+            );
           } else if (formato === 'excel') {
             exportarInventarioExcel(productosFiltrados);
           } else {
@@ -752,7 +842,23 @@ export function Reportes() {
         
         case 'comandas':
           if (formato === 'pdf') {
-            exportarComandasPDF(comandasExportablesFiltradas);
+            await exportReportRowsToPdf(
+              'rapport_commandes',
+              'Rapport de commandas',
+              `Période: ${fechaInicio} - ${fechaFin}`,
+              comandasExportablesFiltradas.length > 0
+                ? comandasExportablesFiltradas.map((comanda) => ({
+                    Comanda: comanda.numero,
+                    Organisme: comanda.organismo?.nombre || 'N/A',
+                    Date: comanda.fecha,
+                    Livraison: comanda.fechaEntrega || 'N/A',
+                    État: comanda.estado,
+                    Produits: comanda.productos?.length || 0,
+                    Valeur: comanda.valorTotal || 0,
+                  }))
+                : [{ Note: 'Aucune donnée disponible.' }],
+              activePdfCharts,
+            );
           } else if (formato === 'excel') {
             exportarComandasExcel(comandasExportablesFiltradas);
           } else {
@@ -786,17 +892,36 @@ export function Reportes() {
 
         case 'prs':
           if (formato === 'pdf') {
-            exportarReportePersonalizado('Rapport PRS', `Période: ${fechaInicio} - ${fechaFin}`, [
-              {
-                titulo: 'Résumé PRS',
-                columnas: ['Indicateur', 'Valeur'],
-                datos: [
-                  ['Transformations terminées', String(transformacionesTerminadas.length)],
-                  ['Production totale (kg)', String(Number(transformacionesTerminadas.reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0).toFixed(1)))],
-                  ['Organismes PRS', String(organismos.filter((organismo) => organismo.participantePRS).length)],
-                ],
-              },
-            ]);
+            await exportReportRowsToPdf(
+              'rapport_prs',
+              'Rapport PRS',
+              `Période: ${fechaInicio} - ${fechaFin}`,
+              [
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Période',
+                  Valeur: `${fechaInicio} - ${fechaFin}`,
+                },
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Transformations terminées',
+                  Valeur: transformacionesTerminadas.length,
+                },
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Production totale (kg)',
+                  Valeur: Number(transformacionesTerminadas.reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0).toFixed(1)),
+                },
+                ...(datosPRS.length > 0
+                  ? datosPRS.map((entry) => ({
+                      Section: 'Production mensuelle',
+                      Mois: entry.mes,
+                      ProductionKg: entry.kg,
+                    }))
+                  : [{ Section: 'Production mensuelle', Note: 'Aucune donnée disponible.' }]),
+              ],
+              activePdfCharts,
+            );
           } else if (formato === 'excel') {
             exportarDatosPersonalizados('rapport-prs-simple', [
               {
@@ -862,29 +987,25 @@ export function Reportes() {
           ];
 
           if (formato === 'pdf') {
-            exportarReportePersonalizado(
+            await exportReportRowsToPdf(
+              'rapport_audit',
               'Rapport d\'audit',
               `Export du registre courant (${auditLogs.length} événements)`,
               [
-                {
-                  titulo: 'Résumé d\'audit',
-                  columnas: ['Indicateur', 'Valeur'],
-                  datos: auditSummary.map((row) => [row.Indicateur, String(row.Valeur)]),
-                },
-                {
-                  titulo: 'Derniers événements',
-                  columnas: ['Date', 'Utilisateur', 'Module', 'Action', 'Succès'],
-                  datos: (auditLogs.length > 0 ? auditLogs.slice(0, 100) : [{ fecha: 'N/A', usuario: 'N/A', modulo: 'N/A', accion: 'N/A', exito: false }])
-                    .map((log) => [
-                      log.fecha,
-                      log.usuario,
-                      log.modulo,
-                      log.accion,
-                      log.exito ? 'Oui' : 'Non',
-                    ]),
-                },
+                ...auditSummary.map((row) => ({ Section: 'Résumé audit', ...row })),
+                ...(auditLogs.length > 0
+                  ? auditLogs.map((log) => ({
+                      Section: 'Logs',
+                      Date: log.fecha,
+                      Utilisateur: log.usuario,
+                      Module: log.modulo,
+                      Action: log.accion,
+                      Sévérité: log.severidad || 'info',
+                      Succès: log.exito ? 'Oui' : 'Non',
+                    }))
+                  : [{ Section: 'Logs', Note: 'Aucune donnée disponible.' }]),
               ],
-              'rapport-audit'
+              activePdfCharts,
             );
           } else if (formato === 'excel') {
             exportarDatosPersonalizados('rapport-audit', [
@@ -940,7 +1061,49 @@ export function Reportes() {
           };
           
           if (formato === 'pdf') {
-            exportarEstadisticasPDF(estadisticas);
+            await exportReportRowsToPdf(
+              'rapport_general',
+              'Rapport général',
+              `Période: ${fechaInicio} - ${fechaFin}`,
+              [
+                { Section: 'Résumé général', Indicateur: 'Catégorie', Valeur: selectedCategory === 'all' ? 'Toutes' : selectedCategory },
+                { Section: 'Résumé général', Indicateur: 'Donateur / fournisseur', Valeur: selectedActor === 'all' ? 'Tous' : selectedActor },
+                { Section: 'Résumé général', Indicateur: 'Total produits', Valeur: productosFiltrados.length },
+                { Section: 'Résumé général', Indicateur: 'Stock total', Valeur: productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0) },
+                { Section: 'Résumé général', Indicateur: 'Commandes filtrées', Valeur: comandasExportablesFiltradas.length },
+                { Section: 'Résumé général', Indicateur: 'Organismes actifs', Valeur: organismos.filter((organismo) => organismo.activo).length },
+                { Section: 'Résumé général', Indicateur: 'Valeur totale', Valeur: Number(valorTotalCalculado.toFixed(2)) },
+                ...(productosFiltrados.length > 0
+                  ? productosFiltrados.map((producto) => ({
+                      Section: 'Inventaire',
+                      Code: producto.codigo || 'N/A',
+                      Produit: producto.nombre,
+                      Catégorie: producto.categoria || 'N/A',
+                      Stock: producto.stockActual,
+                      Unité: producto.unidad,
+                    }))
+                  : [{ Section: 'Inventaire', Note: 'Aucune donnée disponible.' }]),
+                ...(comandasExportablesFiltradas.length > 0
+                  ? comandasExportablesFiltradas.map((comanda) => ({
+                      Section: 'Commandes',
+                      Comanda: comanda.numero,
+                      Organisme: comanda.organismo?.nombre || 'N/A',
+                      Date: comanda.fecha,
+                      État: comanda.estado,
+                    }))
+                  : [{ Section: 'Commandes', Note: 'Aucune donnée disponible.' }]),
+                ...(organismos.length > 0
+                  ? organismos.map((organismo) => ({
+                      Section: 'Organismes',
+                      Nom: organismo.nombre,
+                      Type: organismo.tipo || 'N/A',
+                      Bénéficiaires: organismo.beneficiarios || 0,
+                      État: organismo.activo ? 'Actif' : 'Inactif',
+                    }))
+                  : [{ Section: 'Organismes', Note: 'Aucune donnée disponible.' }]),
+              ],
+              activePdfCharts,
+            );
           } else if (formato === 'excel') {
             exportarEstadisticasExcel({
               resumen: estadisticas,
@@ -1031,6 +1194,23 @@ export function Reportes() {
 
   const showCompactReportsOverview = isCompactReportsViewport;
   const showCompactGeneralOverview = showCompactReportsOverview && activeReportTab === 'general';
+  const pdfChartsByTab: Record<ReportTab, ChartElement[]> = {
+    general: [
+      { id: 'pdf-chart-general-orders' },
+      { id: 'pdf-chart-general-organisms' },
+    ],
+    operaciones: [{ id: 'pdf-chart-operaciones-monthly' }],
+    inventario: [
+      { id: 'pdf-chart-inventario-stock-category' },
+      { id: 'pdf-chart-inventario-distribution' },
+    ],
+    comandas: [{ id: 'pdf-chart-comandas-evolution' }],
+    prs: [
+      { id: 'pdf-chart-prs-monthly' },
+      { id: 'pdf-chart-prs-category' },
+    ],
+    auditoria: [],
+  };
   const stockTotal = productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0);
   const totalBeneficiarios = organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0);
   const activeOrganisms = organismos.filter((organismo) => organismo.activo);
@@ -1574,7 +1754,7 @@ export function Reportes() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <ReportChartCard title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 280}>
+              <ReportChartCard chartId="report-chart-general-orders" title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 280}>
                 <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 280} key="linechart-comandas-mes">
                   <LineChart data={datosComandasMes}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1587,7 +1767,7 @@ export function Reportes() {
                 </ResponsiveContainer>
               </ReportChartCard>
 
-              <ReportChartCard title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 280}>
+              <ReportChartCard chartId="report-chart-general-organisms" title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 280}>
                 <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 280} key="barchart-organismos">
                   <BarChart data={datosOrganismos}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1666,7 +1846,7 @@ export function Reportes() {
               />
             </div>
 
-            <ReportChartCard title="Tendance mensuelle des distributions" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 260}>
+            <ReportChartCard chartId="report-chart-operaciones-monthly" title="Tendance mensuelle des distributions" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 260}>
               <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 260} key="barchart-operaciones-monthly">
                 <BarChart data={datosComandasMes}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1723,7 +1903,7 @@ export function Reportes() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <ReportChartCard title={t('reports.stockCategory')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
+              <ReportChartCard chartId="report-chart-inventario-stock-category" title={t('reports.stockCategory')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
                   <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 300} key="barchart-inventario">
                     <BarChart data={datosInventario}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1743,7 +1923,7 @@ export function Reportes() {
                   </ResponsiveContainer>
               </ReportChartCard>
 
-              <ReportChartCard title={t('reports.inventoryDistribution')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
+              <ReportChartCard chartId="report-chart-inventario-distribution" title={t('reports.inventoryDistribution')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0}>
                   <div className="space-y-3">
                     <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 260} key="piechart-inventario">
                       <PieChart>
@@ -1846,7 +2026,7 @@ export function Reportes() {
               />
             </div>
 
-            <ReportChartCard title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
+            <ReportChartCard chartId="report-chart-comandas-evolution" title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
                 <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="barchart-comandas">
                   <BarChart data={datosComandasMes}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1870,7 +2050,7 @@ export function Reportes() {
                   <ReportStatCard label="Transformations" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
                 </div>
                 <ReportDetailPanel title="Dernières transformations" description="Résumé PRS en petit format." items={compactPrsItems} compact />
-                <ReportChartCard title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={160}>
+                <ReportChartCard chartId="report-chart-prs-category-compact" title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={160}>
                     <ResponsiveContainer width="100%" height={160} key="barchart-prs-category-compact">
                       <BarChart data={datosPrsCategoria}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -1932,7 +2112,7 @@ export function Reportes() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-              <ReportChartCard title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
+              <ReportChartCard chartId="report-chart-prs-monthly" title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
                   <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="linechart-prs">
                     <LineChart data={datosPRS}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1945,7 +2125,7 @@ export function Reportes() {
                   </ResponsiveContainer>
               </ReportChartCard>
 
-              <ReportChartCard title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
+              <ReportChartCard chartId="report-chart-prs-category" title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
                   <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="barchart-prs-category">
                     <BarChart data={datosPrsCategoria}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -2015,6 +2195,189 @@ export function Reportes() {
             )}
           </TabsContent>
         </Tabs>
+
+        <div aria-hidden="true" style={REPORT_EXPORT_CANVAS_STYLE}>
+          {activeReportTab === 'general' && (
+            <div className="grid grid-cols-1 gap-4">
+              <ExportChartCard chartId="pdf-chart-general-orders" title={t('reports.ordersMonth')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={280}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={datosComandasMes}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="comandas" stroke={branding.primaryColor} strokeWidth={2} name={t('nav.orders')} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ExportChartCard>
+
+              <ExportChartCard chartId="pdf-chart-general-organisms" title={t('reports.beneficiariesOrganism')} titleColor={branding.primaryColor} hasData={datosOrganismos.length > 0} emptyHeight={280}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={datosOrganismos}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={90} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="beneficiarios" fill="#4CAF50" name={t('reports.beneficiaries')} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ExportChartCard>
+            </div>
+          )}
+
+          {activeReportTab === 'operaciones' && (
+            <ExportChartCard chartId="pdf-chart-operaciones-monthly" title="Tendance mensuelle des distributions" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={260}>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={datosComandasMes}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="comandas" fill={branding.primaryColor} name="Commandes livrées" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ExportChartCard>
+          )}
+
+          {activeReportTab === 'inventario' && (
+            <div className="grid grid-cols-1 gap-4">
+              <ExportChartCard chartId="pdf-chart-inventario-stock-category" title={t('reports.stockCategory')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0} emptyHeight={300}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={datosInventario}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="categoria"
+                      tickFormatter={(value) => formatChartCategoryLabel(String(value), 14)}
+                      angle={-18}
+                      textAnchor="end"
+                      interval={0}
+                      height={64}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="stock" fill={branding.primaryColor} name={t('reports.stockKg')} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ExportChartCard>
+
+              <ExportChartCard chartId="pdf-chart-inventario-distribution" title={t('reports.inventoryDistribution')} titleColor={branding.primaryColor} hasData={datosInventario.length > 0} emptyHeight={320}>
+                <div className="space-y-3">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie
+                        data={datosInventario}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={78}
+                        innerRadius={34}
+                        paddingAngle={2}
+                        fill="#8884d8"
+                        dataKey="stock"
+                      >
+                        {datosInventario.map((entry, index) => (
+                          <Cell key={`pdf-cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Volume']}
+                        labelFormatter={(_, payload) => {
+                          const item = payload?.[0]?.payload as { categoria?: string } | undefined;
+                          return item?.categoria || 'Sans catégorie';
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {datosInventario
+                      .slice()
+                      .sort((left, right) => right.stock - left.stock)
+                      .map((item, index) => {
+                        const percentage = inventoryDistributionTotal > 0
+                          ? ((item.stock / inventoryDistributionTotal) * 100).toFixed(1)
+                          : '0.0';
+
+                        return (
+                          <div key={`pdf-legend-${item.categoria}`} className="flex items-start gap-2 rounded-lg bg-gray-50/90 px-3 py-2">
+                            <span
+                              className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium text-gray-800" title={item.categoria}>
+                                {item.categoria}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {formatWeightSummary(item.stock)} • {percentage}%
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </ExportChartCard>
+            </div>
+          )}
+
+          {activeReportTab === 'comandas' && (
+            <ExportChartCard chartId="pdf-chart-comandas-evolution" title={t('reports.ordersEvolution')} titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={320}>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={datosComandasMes}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="comandas" fill="#4CAF50" name={t('reports.completedOrders')} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ExportChartCard>
+          )}
+
+          {activeReportTab === 'prs' && (
+            <div className="grid grid-cols-1 gap-4">
+              <ExportChartCard chartId="pdf-chart-prs-monthly" title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={320}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={datosPRS}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name={t('reports.rescuedKg')} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ExportChartCard>
+
+              <ExportChartCard chartId="pdf-chart-prs-category" title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={320}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={datosPrsCategoria}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="categoria"
+                      tickFormatter={(value) => formatChartCategoryLabel(String(value), 14)}
+                      angle={-18}
+                      textAnchor="end"
+                      interval={0}
+                      height={64}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis />
+                    <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Production']} />
+                    <Legend />
+                    <Bar dataKey="kg" fill="#2d9561" name="Production PRS" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ExportChartCard>
+            </div>
+          )}
+        </div>
       </div>
       </div>
     </div>

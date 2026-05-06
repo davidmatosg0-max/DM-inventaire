@@ -6,7 +6,7 @@ import {
   Calendar, Users, AlertTriangle, Clock, CheckCircle,
   XCircle, PlayCircle, List, BookOpen, Utensils, Scale,
   BarChart3, FileText, ArrowLeft, Edit, Trash2, Copy,
-  Search, Filter, X, Save, ChevronDown, ChevronUp, Gift, Printer
+  Search, Filter, X, Save, ChevronDown, ChevronUp, Printer
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -26,7 +26,6 @@ import {
   crearTransformacion,
   actualizarTransformacion,
   eliminarTransformacion,
-  obtenerEnviosPendientes,
   type Receta,
   type Transformacion,
   type IngredienteReceta,
@@ -35,7 +34,6 @@ import {
   type EstadoTransformacion
 } from '../../utils/recetaStorage';
 import { obtenerProductos, type ProductoCreado } from '../../utils/productStorage';
-import { OfertasDisponibles } from '../cuisine/OfertasDisponibles';
 import { InventarioCocina } from '../cuisine/InventarioCocina';
 import { EtiquetaReceta } from '../cuisine/EtiquetaReceta';
 import { GestionContactosDepartamento } from '../departamentos/GestionContactosDepartamento';
@@ -46,7 +44,7 @@ interface CuisinePageProps {
   onNavigate?: (page: string) => void;
 }
 
-type VistaActual = 'dashboard' | 'recetas' | 'transformaciones' | 'produccion' | 'inventario' | 'estadisticas' | 'perdidas' | 'ofertas' | 'contactos';
+type VistaActual = 'dashboard' | 'recetas' | 'transformaciones' | 'produccion' | 'inventario' | 'estadisticas' | 'perdidas' | 'contactos';
 
 export function CuisinePage({ onNavigate }: CuisinePageProps) {
   const { t } = useTranslation();
@@ -56,7 +54,6 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
   const [transformaciones, setTransformaciones] = useState<Transformacion[]>([]);
   const [estadisticas, setEstadisticas] = useState<any>(null);
   const [productos, setProductos] = useState<ProductoCreado[]>([]);
-  const [ofertasPendientes, setOfertasPendientes] = useState(0);
   
   // Estados para modales
   const [modalRecetaAbierto, setModalRecetaAbierto] = useState(false);
@@ -80,7 +77,6 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     setTransformaciones(obtenerTransformaciones());
     setEstadisticas(obtenerEstadisticasCocina());
     setProductos(obtenerProductos());
-    setOfertasPendientes(obtenerEnviosPendientes().length);
   };
 
   // Renderizar header común
@@ -1021,26 +1017,6 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
           <div 
             className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
-            onClick={() => setVistaActual('ofertas')}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FF980020' }}>
-                <Gift className="w-6 h-6 text-[#FF9800]" />
-              </div>
-              <h3 className="text-lg font-bold text-[#FF9800]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Offres Disponibles
-              </h3>
-            </div>
-            <p className="text-sm text-gray-700 mb-3">
-              Consulter les offres de produits disponibles.
-            </p>
-            <Badge variant="outline" className="text-[#FF9800] border-[#FF9800]">
-              {ofertasPendientes} offres
-            </Badge>
-          </div>
-
-          <div 
-            className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
             onClick={() => setVistaActual('contactos')}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -1837,27 +1813,12 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
         return renderEstadisticas();
       case 'perdidas':
         return renderPerdidas();
-      case 'ofertas':
-        return renderOfertas();
       case 'contactos':
         return renderContactos();
       default:
         return renderDashboard();
     }
   };
-
-  // Renderizar vista de ofertas
-  const renderOfertas = () => (
-    <div className="p-6 space-y-6">
-      <BoutonRetourHeader 
-        onClick={() => setVistaActual('dashboard')} 
-        titre="Offres Disponibles"
-      />
-      {renderHeader('Offres Disponibles', <Gift className="w-8 h-8 text-[#FF9800]" />)}
-      
-      <OfertasDisponibles onOfertaAceptada={cargarDatos} />
-    </div>
-  );
 
   // Renderizar vista de contactos
   const renderContactos = () => (

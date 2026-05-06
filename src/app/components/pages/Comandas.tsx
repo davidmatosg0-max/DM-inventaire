@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, FileCheck, Search, Printer, Users, Bell, Tag, Package, Check, X, Edit2, Ban, Calendar, Clock, QrCode, Utensils } from 'lucide-react';
+import { Plus, Eye, FileCheck, Search, Printer, Users, Bell, Tag, Package, Check, X, Edit2, Ban, Calendar, Clock } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -34,7 +34,6 @@ import {
   type Oferta,
   type SolicitudOferta 
 } from '../../utils/ofertaStorage';
-import { OfertasDisponibles } from '../cuisine/OfertasDisponibles';
 import { useBranding } from '../../../hooks/useBranding';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { Sparkles } from 'lucide-react';
@@ -63,7 +62,7 @@ export function Comandas() {
     deps: [tabActual],
     resolveZoom: ({ height, isCompact }) => {
       const compactOrdersOverview = isCompact && tabActual === 'comandas';
-      const compactOffersView = isCompact && (tabActual === 'ofertas' || tabActual === 'ofertas-cocina');
+      const compactOffersView = isCompact && tabActual === 'ofertas';
 
       if (height < 600) {
         if (compactOrdersOverview) {
@@ -116,6 +115,7 @@ export function Comandas() {
   const [dialogListaDistribuidosOpen, setDialogListaDistribuidosOpen] = useState(false);
   const [mostrarModeloComanda, setMostrarModeloComanda] = useState(false);
   const [mostrarImpresionCompacta, setMostrarImpresionCompacta] = useState(false);
+  const [abrirEdicionGrupoDirecta, setAbrirEdicionGrupoDirecta] = useState(false);
   const [comandaSeleccionada, setComandaSeleccionada] = useState<Comanda | null>(null);
   const [selectedOrganismos, setSelectedOrganismos] = useState<string[]>([]);
   const [comandasSeleccionadas, setComandasSeleccionadas] = useState<string[]>([]);
@@ -190,6 +190,11 @@ export function Comandas() {
     const comandasCargadas = obtenerComandas();
     setComandas(comandasCargadas);
     return comandasCargadas;
+  };
+
+  const handleCerrarModeloComanda = () => {
+    setMostrarModeloComanda(false);
+    setAbrirEdicionGrupoDirecta(false);
   };
   
   // Cargar comandas desde localStorage
@@ -388,7 +393,7 @@ export function Comandas() {
   useEffect(() => {
     const tabGuardado = localStorage.getItem('comandas-tab-activo');
     if (tabGuardado === 'ofertas-cocina') {
-      setTabActual('ofertas-cocina');
+      setTabActual('ofertas');
       // Limpiar el localStorage después de usarlo
       localStorage.removeItem('comandas-tab-activo');
     }
@@ -621,10 +626,73 @@ export function Comandas() {
     toast.success(`${t('orders.statusChangedTo')} ${estadoTexto}`);
   };
 
-  const handleAceptarComanda = (itemsAceptados: ItemComanda[]) => {
-    console.log('Items aceptados:', itemsAceptados);
-    toast.success(t('orders.orderAccepted'));
-    setMostrarModeloComanda(false);
+  const reconstruirItemsAceptados = (itemsOriginales: ItemComanda[], itemsAceptados: ItemComanda[]) => {
+    const aceptadosPorProducto = new Map<string, ItemComanda[]>();
+
+    itemsAceptados.forEach((itemAceptado) => {
+      const productoId = itemAceptado?.productoId;
+      if (!productoId) {
+        return;
+      }
+
+      const aceptadosActuales = aceptadosPorProducto.get(productoId) || [];
+      aceptadosActuales.push(itemAceptado);
+      aceptadosPorProducto.set(productoId, aceptadosActuales);
+    });
+
+    return itemsOriginales.map((item) => {
+      const aceptadosDelProducto = aceptadosPorProducto.get(item.productoId) || [];
+      const itemAceptado = aceptadosDelProducto.shift();
+
+      if (!itemAceptado) {
+        return item;
+      }
+
+      const cantidadAceptada = Number(itemAceptado.cantidadAceptada ?? itemAceptado.cantidad ?? item.cantidad);
+
+      return {
+        ...item,
+        cantidad: cantidadAceptada,
+        cantidadAceptada,
+      };
+    });
+  };
+
+  const handleAceptarComanda = (itemsAceptados: ItemComanda[], comandaOrigen?: Comanda) => {
+    const comandaObjetivo = comandaOrigen || comandaSeleccionada;
+
+    if (!comandaObjetivo) {
+      return;
+    }
+
+    try {
+      const itemsReconstruidos = reconstruirItemsAceptados(comandaObjetivo.items || [], itemsAceptados);
+      const totalAceptado = itemsReconstruidos.reduce(
+        (total, item) => total + Number(item.cantidadAceptada ?? item.cantidad ?? 0),
+        0,
+      );
+      const comandaActualizada = {
+        ...comandaObjetivo,
+        estado: (totalAceptado > 0 ? 'confirmada' : 'anulada') as const,
+        items: itemsReconstruidos,
+        fechaConfirmacion: totalAceptado > 0 ? new Date().toISOString() : undefined,
+        fechaModificacion: new Date().toISOString(),
+      };
+
+      actualizarComanda(comandaActualizada);
+      const comandasActualizadas = cargarComandas();
+      const comandaPersistida = comandasActualizadas.find(comanda => comanda.id === comandaActualizada.id) || comandaActualizada;
+      setComandaSeleccionada(comandaPersistida);
+      toast.success(totalAceptado > 0 ? t('orders.orderAccepted') : t('orders.orderCancelled'), {
+        description: totalAceptado > 0
+          ? 'Les quantités acceptées ont été confirmées.'
+          : 'Aucune quantité acceptée, la commande a été annulée automatiquement.',
+      });
+      setMostrarModeloComanda(false);
+    } catch (error) {
+      console.error('Error al aceptar la comanda:', error);
+      toast.error('Impossible de valider cette commande.');
+    }
   };
 
   const handleAnularComanda = () => {
@@ -1017,11 +1085,13 @@ export function Comandas() {
         comanda={comandaSeleccionada}
         organismo={organismo}
         mostrar={mostrarModeloComanda}
-        onCerrar={() => setMostrarModeloComanda(false)}
+        onCerrar={handleCerrarModeloComanda}
         onAbrirImpresionCompacta={() => handleAbrirImpresionCompacta(comandaSeleccionada)}
         onCambiarEstado={handleCambiarEstado}
         onAceptarComanda={handleAceptarComanda}
         onAnularComanda={handleAnularComanda}
+        onComandaActualizada={setComandaSeleccionada}
+        abrirEdicionGrupoInicial={abrirEdicionGrupoDirecta}
       />
     );
   }
@@ -1100,18 +1170,6 @@ export function Comandas() {
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button
-                size="icon"
-                onClick={() => setEscanerQROpen(true)}
-                className="text-white transition-all duration-300 hover:scale-105"
-                style={{ 
-                  background: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)',
-                  boxShadow: '0 4px 15px rgba(147, 51, 234, 0.4)'
-                }}
-                title={t('orders.scanQrTitle')}
-              >
-                <QrCode className="w-4 h-4" />
-              </Button>
               <Button
                 onClick={() => setDialogNotificacionOpen(true)}
                 size="icon"
@@ -1209,7 +1267,7 @@ export function Comandas() {
           </div>
       </div>
 
-        {/* Tabs: Comandas, Ofertas y Ofertas Cocina - Con glassmorphism */}
+        {/* Tabs: Comandas y Ofertas - Con glassmorphism */}
         <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
           <Tabs value={tabActual} onValueChange={setTabActual}>
             <div className="p-3 sm:p-4">
@@ -1221,10 +1279,6 @@ export function Comandas() {
                 <TabsTrigger value="ofertas" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
                   <Tag className="w-4 h-4" />
                   {t('orders.offersRequestsTab')}
-                </TabsTrigger>
-                <TabsTrigger value="ofertas-cocina" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
-                  <Utensils className="w-4 h-4" />
-                  {t('orders.kitchenOffersTab')}
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1262,7 +1316,7 @@ export function Comandas() {
               className="whitespace-nowrap h-9 text-xs"
             >
               <Package className="w-4 h-4 mr-2" />
-              Liste produits distribués
+              Liste de distributions
             </Button>
           </div>
 
@@ -1403,6 +1457,20 @@ export function Comandas() {
                                           {comanda.numero || comanda.id}
                                         </span>
                                       </div>
+                                      {(comanda.grupoDistribucionAnclada || comanda.fechaCaducidadGrupo) && (
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                          {comanda.grupoDistribucionAnclada && (
+                                            <Badge className="border border-[#1E73BE]/20 bg-[#EAF4FF] text-[#1E73BE] hover:bg-[#EAF4FF]">
+                                              Distribution ancrée
+                                            </Badge>
+                                          )}
+                                          {comanda.fechaCaducidadGrupo && (
+                                            <Badge className="border border-[#F59E0B]/20 bg-[#FFF7E8] text-[#B45309] hover:bg-[#FFF7E8]">
+                                              Péremption: {formatLocalizedDate(comanda.fechaCaducidadGrupo)}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                     {getEstadoBadge(comanda.estado)}
                                   </div>
@@ -1832,22 +1900,6 @@ export function Comandas() {
           </div>
         </TabsContent>
 
-        {/* TAB: OFERTAS COCINA */}
-        <TabsContent value="ofertas-cocina" className="p-4 sm:p-6 pt-0 space-y-4">
-          <div className="bg-white rounded-lg border p-6">
-            <h3 className="text-lg font-semibold text-[#333333] mb-4 flex items-center gap-2">
-              <Utensils className="w-5 h-5 text-[#FF9800]" />
-              {t('orders.kitchenOffersTitle')}
-            </h3>
-            <p className="text-sm text-[#666666] mb-4">
-              {t('orders.kitchenOffersDescription')}
-            </p>
-            <OfertasDisponibles onOfertaAceptada={() => {
-              // Recargar datos si es necesario
-              setRefreshOfertas(prev => prev + 1);
-            }} />
-          </div>
-          </TabsContent>
         </Tabs>
       </div>
 
@@ -1907,6 +1959,7 @@ export function Comandas() {
         onOpenChange={setDialogListaDistribuidosOpen}
         comandas={comandasDistribuidasFiltradas}
         currentLocale={currentLocale}
+        onDistribucionesActualizadas={cargarComandas}
       />
 
       {/* Dialog para proponer nueva fecha */}
@@ -2074,22 +2127,6 @@ export function Comandas() {
           )}
         </DialogContent>
       </Dialog>
-
-      {!escanerQROpen && (
-        <Button
-          size="icon"
-          onClick={() => setEscanerQROpen(true)}
-          className="app-floating-qr fixed right-6 top-24 z-30 h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105"
-          style={{
-            background: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)',
-            boxShadow: '0 10px 25px rgba(147, 51, 234, 0.35)'
-          }}
-          title={t('orders.scanQrTitle')}
-          aria-label={t('orders.scanQrTitle')}
-        >
-          <QrCode className="w-5 h-5" />
-        </Button>
-      )}
 
       {/* Escáner QR */}
       {escanerQROpen && (

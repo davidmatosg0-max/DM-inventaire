@@ -70,7 +70,6 @@ export function checkTranslationCoverage(): TranslationCheckResult {
     // Módulos de Inventario
     'DialogCrearOferta.tsx',
     'DialogDistribuirProductos.tsx',
-    'DialogEnviarCocina.tsx',
     'AnalisisPredictivoStock.tsx',
     'FormularioEntradaProductoCompacto.tsx',
     'PanierProductos.tsx',

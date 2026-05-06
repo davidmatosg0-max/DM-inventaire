@@ -157,6 +157,37 @@ function DeferredPanel({ children }: { children: React.ReactNode }) {
   );
 }
 
+type UltimaDistribucionGrupoResumen = {
+  grupoDistribucionId: string;
+  grupoDistribucionEtiqueta: string;
+  comandas: Array<{ numero: string; nombre: string; porcentaje: number }>;
+};
+
+const ULTIMA_DISTRIBUCION_GRUPO_STORAGE_KEY = 'inventario_ultima_distribucion_grupo';
+
+function cargarUltimaDistribucionGrupo(): UltimaDistribucionGrupoResumen | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(ULTIMA_DISTRIBUCION_GRUPO_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as UltimaDistribucionGrupoResumen;
+    if (!parsed?.grupoDistribucionId || !Array.isArray(parsed.comandas)) {
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error('Erreur lors du chargement de la dernière distribution groupée:', error);
+    return null;
+  }
+}
+
 export function Inventario() {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
@@ -207,6 +238,7 @@ export function Inventario() {
   const [showFilters, setShowFilters] = useState(false);
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
   const [carritoOpen, setCarritoOpen] = useState(false);
+  const [ultimaDistribucionGrupoCreada, setUltimaDistribucionGrupoCreada] = useState<UltimaDistribucionGrupoResumen | null>(() => cargarUltimaDistribucionGrupo());
   const [sortBy, setSortBy] = useState<'nombre' | 'stock' | 'categoria' | 'valor'>('nombre');
   
   // Estado para forzar actualización de productos sin recargar página
@@ -2105,6 +2137,25 @@ export function Inventario() {
     window.location.href = url.toString();
   };
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      if (ultimaDistribucionGrupoCreada) {
+        window.localStorage.setItem(
+          ULTIMA_DISTRIBUCION_GRUPO_STORAGE_KEY,
+          JSON.stringify(ultimaDistribucionGrupoCreada)
+        );
+      } else {
+        window.localStorage.removeItem(ULTIMA_DISTRIBUCION_GRUPO_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la dernière distribution groupée:', error);
+    }
+  }, [ultimaDistribucionGrupoCreada]);
+
   return (
     <div
       className="app-compact-page relative min-h-[calc(100vh-56px)] sm:min-h-[calc(100vh-64px)] flex flex-col overflow-visible -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6"
@@ -2233,6 +2284,57 @@ export function Inventario() {
               </div>
             </div>
           </div>
+
+      {ultimaDistribucionGrupoCreada && (
+        <Card className="mx-3 mb-3 border-2 border-[#4CAF50] bg-[#E8F5E9] shadow-sm sm:mx-4 lg:mx-6">
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="bg-[#2E7D32] text-white">Derniere distribution de groupe</Badge>
+                  <Badge className="bg-[#1E73BE] text-white">{ultimaDistribucionGrupoCreada.grupoDistribucionId}</Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#1B5E20]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    {ultimaDistribucionGrupoCreada.grupoDistribucionEtiqueta}
+                  </p>
+                  <p className="text-xs text-[#355E3B]">
+                    L'acces reste visible ici apres la creation. Vous pouvez ouvrir Commandes a tout moment pour modifier la distribution ancree.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ultimaDistribucionGrupoCreada.comandas.slice(0, 4).map((comanda) => (
+                    <span
+                      key={comanda.numero}
+                      className="rounded-full border border-[#A7D7AE] bg-white px-2.5 py-1 text-[11px] font-medium text-[#1F2937]"
+                    >
+                      {comanda.numero}
+                    </span>
+                  ))}
+                  {ultimaDistribucionGrupoCreada.comandas.length > 4 && (
+                    <span className="rounded-full border border-dashed border-[#A7D7AE] px-2.5 py-1 text-[11px] font-medium text-[#355E3B]">
+                      +{ultimaDistribucionGrupoCreada.comandas.length - 4}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => navigateToModule('comandas')}
+                  className="bg-[#1E73BE] hover:bg-[#1557A0]"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Ouvrir les commandes
+                </Button>
+                <Button variant="outline" onClick={() => setUltimaDistribucionGrupoCreada(null)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Masquer
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col overflow-visible">
@@ -3564,6 +3666,7 @@ export function Inventario() {
               toast.success(t('orders.orderCreatedSuccessfully'));
               setCarritoOpen(false);
             }}
+            onDistribucionGrupoCreada={setUltimaDistribucionGrupoCreada}
             productos={todosLosProductos}
           />
         </DeferredPanel>
@@ -3708,8 +3811,8 @@ export function Inventario() {
 
       {/* Dialog Crear Variante de Producto */}
       <Dialog open={varianteDialogOpen} onOpenChange={setVarianteDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="crear-variante-description">
-          <DialogHeader>
+        <DialogContent className="app-dialog-form-shell app-dialog-form-shell--compact" aria-describedby="crear-variante-description">
+          <DialogHeader className="app-dialog-form-header">
             <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Copy className="h-5 w-5 text-[#1a4d7a]" />
               Crear Variante de Producto
@@ -3720,7 +3823,7 @@ export function Inventario() {
           </DialogHeader>
 
           {productoBase && (
-            <div className="space-y-4">
+            <div className="app-dialog-form-body space-y-4">
               {/* Producto Base Info */}
               <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
                 <div className="flex items-center gap-3">
@@ -3844,7 +3947,7 @@ export function Inventario() {
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="app-dialog-form-footer">
             <Button 
               variant="outline" 
               onClick={cerrarVarianteDialog}
