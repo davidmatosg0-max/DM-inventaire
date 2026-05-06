@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FileText, Download, BarChart3, Shield } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
@@ -287,6 +288,51 @@ function formatWeightSummary(value: number): string {
   return `${Number(value.toFixed(1))} kg`;
 }
 
+function getProductCategoryLabel(producto?: Pick<ProductoCreado, 'categoria'> | null): string {
+  return producto?.categoria?.trim() || 'Sans catégorie';
+}
+
+function getProductUnitWeight(producto?: ProductoCreado | null): number {
+  if (!producto) {
+    return 0;
+  }
+
+  if (producto.unidad === 'kg') {
+    return 1;
+  }
+
+  if (producto.pesoUnitario && producto.pesoUnitario > 0) {
+    return producto.pesoUnitario;
+  }
+
+  if (producto.peso && producto.peso > 0) {
+    return producto.peso;
+  }
+
+  return 0;
+}
+
+function getEntryCategoryLabel(
+  entry: { productoCategoria?: string; categoria?: string; productoId?: string },
+  productIndex: Map<string, ProductoCreado>
+): string {
+  return entry.productoCategoria?.trim()
+    || entry.categoria?.trim()
+    || getProductCategoryLabel(productIndex.get(entry.productoId || ''));
+}
+
+function getReportProductWeight(
+  item: { productoId?: string; cantidad: number; unidad?: string },
+  productIndex: Map<string, ProductoCreado>
+): number {
+  if (item.unidad === 'kg') {
+    return item.cantidad;
+  }
+
+  const unitWeight = getProductUnitWeight(productIndex.get(item.productoId || ''));
+  return unitWeight > 0 ? unitWeight * item.cantidad : item.cantidad;
+}
+
 function formatReportDate(value?: string): string {
   if (!value) return 'N/A';
   const parsedDate = new Date(value);
@@ -322,6 +368,8 @@ export function Reportes() {
   });
   const [fechaInicio, setFechaInicio] = useState(initialRange.start);
   const [fechaFin, setFechaFin] = useState(initialRange.end);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedActor, setSelectedActor] = useState('all');
   const [productos, setProductos] = useState<ProductoCreado[]>([]);
   const [comandas, setComandas] = useState<Comanda[]>([]);
   const [organismos, setOrganismos] = useState<Organismo[]>([]);
@@ -348,17 +396,37 @@ export function Reportes() {
   const rangoValido = Boolean(rangoInicio && rangoFin && rangoInicio <= rangoFin);
   const referenciaFin = rangoFin ?? new Date();
   const organismosPorId = new Map(organismos.map((organismo) => [organismo.id, organismo]));
+  const productIndex = new Map(productos.map((producto) => [producto.id, producto]));
+  const activeEntries = obtenerTodasLasEntradas().filter((entry) => entry.activo);
+  const categoryOptions = Array.from(
+    new Set([
+      ...productos.map((producto) => getProductCategoryLabel(producto)),
+      ...activeEntries.map((entry) => getEntryCategoryLabel(entry, productIndex)),
+    ])
+  ).sort((left, right) => left.localeCompare(right, 'fr'));
+  const actorOptions = Array.from(
+    new Set(activeEntries.map((entry) => entry.donadorNombre?.trim()).filter((value): value is string => Boolean(value)))
+  ).sort((left, right) => left.localeCompare(right, 'fr'));
   const presetActivo = DATE_PRESET_OPTIONS.find((preset) => {
     const rango = getDatePresetRange(preset.value);
     return rango.start === fechaInicio && rango.end === fechaFin;
   })?.value;
   const exportableReportType = REPORT_TAB_TO_TYPE[activeReportTab];
   const usesPageDateRange = exportableReportType ? PAGE_RANGE_REPORT_TYPES.includes(exportableReportType) : false;
+  const showCategoryFilter = exportableReportType === 'general'
+    || exportableReportType === 'operaciones'
+    || exportableReportType === 'inventario'
+    || exportableReportType === 'comandas';
+  const showActorFilter = exportableReportType === 'general' || exportableReportType === 'operaciones';
   const exportContextDescription = exportableReportType === 'operaciones'
     ? 'Télécharge un résumé consolidé du mois en cours pour les rapports opérationnels.'
     : exportableReportType === 'auditoria'
       ? 'Télécharge l\'état actuel du registre d\'audit.'
       : 'Les graphiques et exports de cette vue utilisent cette plage de dates.';
+  const activeFilterDescription = [
+    selectedCategory !== 'all' ? `Catégorie: ${selectedCategory}` : null,
+    selectedActor !== 'all' ? `Donateur / fournisseur: ${selectedActor}` : null,
+  ].filter(Boolean).join(' • ');
   const comandasFiltradas = rangoValido
     ? comandas.filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha, rangoInicio, rangoFin))
     : [];
@@ -366,8 +434,12 @@ export function Reportes() {
     ? transformaciones.filter((transformacion) => isDateInRange(transformacion.fecha, rangoInicio, rangoFin) && transformacion.estado === 'terminée')
     : [];
 
+  const productosFiltrados = productos.filter((producto) => (
+    selectedCategory === 'all' || getProductCategoryLabel(producto) === selectedCategory
+  ));
+
   const datosInventario = Array.from(
-    productos.reduce((mapa, producto) => {
+    productosFiltrados.reduce((mapa, producto) => {
       const categoria = producto.categoria || 'Sans catégorie';
       mapa.set(categoria, (mapa.get(categoria) || 0) + getProductWeight(producto));
       return mapa;
@@ -379,7 +451,11 @@ export function Reportes() {
     const delMes = comandas.filter((comanda) => getMonthKey(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha) === bucket.key);
     return {
       mes: bucket.label,
-      comandas: delMes.length,
+      comandas: selectedCategory === 'all'
+        ? delMes.length
+        : delMes.filter((comanda) =>
+            (comanda.items || []).some((item) => getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory)
+          ).length,
     };
   });
 
@@ -409,6 +485,12 @@ export function Reportes() {
     organismo: (comanda as ComandaExportable).organismo ?? (comanda.organismoId ? { nombre: organismosPorId.get(comanda.organismoId)?.nombre || 'N/A' } : undefined),
   }));
 
+  const comandasExportablesFiltradas = selectedCategory === 'all'
+    ? comandasExportables
+    : comandasExportables.filter((comanda) =>
+        (comanda.items || []).some((item) => getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory)
+      );
+
   const organismosExportables = organismos.map((organismo) => ({
     ...organismo,
     contacto: {
@@ -422,7 +504,7 @@ export function Reportes() {
     },
   }));
 
-  const valorTotalCalculado = productos.reduce((sum, producto) => {
+  const valorTotalCalculado = productosFiltrados.reduce((sum, producto) => {
     if (producto.valorTotal && producto.valorTotal > 0) {
       return sum + producto.valorTotal;
     }
@@ -461,17 +543,41 @@ export function Reportes() {
       switch (exportableReportType) {
         case 'operaciones': {
           const currentMonthRange = getCurrentMonthReportRange();
-          const operationalEntries = obtenerTodasLasEntradas().filter((entry) => entry.activo && isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end));
+          const operationalEntries = activeEntries.filter((entry) =>
+            isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end)
+            && (selectedCategory === 'all' || getEntryCategoryLabel(entry, productIndex) === selectedCategory)
+            && (selectedActor === 'all' || (entry.donadorNombre || '').trim() === selectedActor)
+          );
           const operationalDistributions = obtenerComandasReporte()
             .filter(isActiveReportComanda)
-            .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end));
+            .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end))
+            .map((comanda) => {
+              const filteredPeso = selectedCategory === 'all'
+                ? getSafeNumericValue(comanda.totalPeso)
+                : comanda.productos.reduce((sum, item) => (
+                    getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory
+                      ? sum + getReportProductWeight(item, productIndex)
+                      : sum
+                  ), 0);
+              const totalPeso = getSafeNumericValue(comanda.totalPeso);
+              const filteredValor = selectedCategory === 'all'
+                ? getSafeNumericValue(comanda.totalValorMonetario)
+                : (totalPeso > 0 ? getSafeNumericValue(comanda.totalValorMonetario) * (filteredPeso / totalPeso) : 0);
+
+              return {
+                ...comanda,
+                filteredPeso: Number(filteredPeso.toFixed(1)),
+                filteredValor: Number(filteredValor.toFixed(2)),
+              };
+            })
+            .filter((comanda) => selectedCategory === 'all' || comanda.filteredPeso > 0);
 
           const procurementValue = operationalEntries.reduce(
             (sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)),
             0,
           );
           const distributionValue = operationalDistributions.reduce(
-            (sum, comanda) => sum + getSafeNumericValue(comanda.totalValorMonetario),
+            (sum, comanda) => sum + getSafeNumericValue(comanda.filteredValor),
             0,
           );
           const activeDonors = new Set(
@@ -482,6 +588,8 @@ export function Reportes() {
           ).size;
           const operationalSummary = [
             { Indicateur: 'Période', Valeur: currentMonthRange.label },
+            { Indicateur: 'Catégorie', Valeur: selectedCategory === 'all' ? 'Toutes' : selectedCategory },
+            { Indicateur: 'Donateur / fournisseur', Valeur: selectedActor === 'all' ? 'Tous' : selectedActor },
             { Indicateur: 'Approvisionnements', Valeur: operationalEntries.length },
             { Indicateur: 'Valeur approvisionnement', Valeur: `CAD$ ${procurementValue.toFixed(2)}` },
             { Indicateur: 'Distributions', Valeur: operationalDistributions.length },
@@ -513,6 +621,7 @@ export function Reportes() {
                       Date: entry.fecha,
                       Produit: entry.nombreProducto,
                       Acteur: entry.donadorNombre || 'N/A',
+                      Catégorie: getEntryCategoryLabel(entry, productIndex),
                       Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
                       Quantité: entry.cantidad,
                       Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
@@ -527,8 +636,8 @@ export function Reportes() {
                       Date: comanda.fecha,
                       Organisme: comanda.organismoNombre,
                       État: comanda.estado,
-                      Quantité: getSafeNumericValue(comanda.totalPeso),
-                      Valeur: getSafeNumericValue(comanda.totalValorMonetario),
+                      Quantité: getSafeNumericValue(comanda.filteredPeso),
+                      Valeur: getSafeNumericValue(comanda.filteredValor),
                     }))
                   : [{ Note: 'Aucune donnée disponible.' }],
               },
@@ -547,6 +656,7 @@ export function Reportes() {
                       Date: entry.fecha,
                       Produit: entry.nombreProducto,
                       Acteur: entry.donadorNombre || 'N/A',
+                      Catégorie: getEntryCategoryLabel(entry, productIndex),
                       Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
                       Quantité: entry.cantidad,
                       Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
@@ -559,8 +669,8 @@ export function Reportes() {
                       Date: comanda.fecha,
                       Organisme: comanda.organismoNombre,
                       État: comanda.estado,
-                      Quantité: getSafeNumericValue(comanda.totalPeso),
-                      Valeur: getSafeNumericValue(comanda.totalValorMonetario),
+                      Quantité: getSafeNumericValue(comanda.filteredPeso),
+                      Valeur: getSafeNumericValue(comanda.filteredValor),
                     }))
                   : [{ Section: 'Distribution', Note: 'Aucune donnée disponible.' }]),
               ],
@@ -571,17 +681,17 @@ export function Reportes() {
 
         case 'inventario':
           if (formato === 'pdf') {
-            exportarInventarioPDF(productos);
+            exportarInventarioPDF(productosFiltrados);
           } else if (formato === 'excel') {
-            exportarInventarioExcel(productos);
+            exportarInventarioExcel(productosFiltrados);
           } else {
             await exportStructuredRows(
               formato,
               'rapport_inventaire',
               'Rapport d\'inventaire',
               `Vue exportée le ${new Date().toLocaleDateString('fr-CA')}`,
-              productos.length > 0
-                ? productos.map((producto) => ({
+              productosFiltrados.length > 0
+                ? productosFiltrados.map((producto) => ({
                     Code: producto.codigo || 'N/A',
                     Produit: producto.nombre,
                     Catégorie: producto.categoria || 'N/A',
@@ -598,17 +708,17 @@ export function Reportes() {
         
         case 'comandas':
           if (formato === 'pdf') {
-            exportarComandasPDF(comandasExportables);
+            exportarComandasPDF(comandasExportablesFiltradas);
           } else if (formato === 'excel') {
-            exportarComandasExcel(comandasExportables);
+            exportarComandasExcel(comandasExportablesFiltradas);
           } else {
             await exportStructuredRows(
               formato,
               'rapport_commandes',
               'Rapport de commandas',
               `Période: ${fechaInicio} - ${fechaFin}`,
-              comandasExportables.length > 0
-                ? comandasExportables.map((comanda) => ({
+              comandasExportablesFiltradas.length > 0
+                ? comandasExportablesFiltradas.map((comanda) => ({
                     Comanda: comanda.numero,
                     Organisme: comanda.organismo?.nombre || 'N/A',
                     Date: comanda.fecha,
@@ -777,9 +887,9 @@ export function Reportes() {
         case 'general':
         default:
           const estadisticas = {
-            totalProductos: productos.length,
-            totalStock: productos.reduce((sum, producto) => sum + producto.stockActual, 0),
-            totalComandas: comandasFiltradas.length,
+            totalProductos: productosFiltrados.length,
+            totalStock: productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0),
+            totalComandas: comandasExportablesFiltradas.length,
             totalOrganismos: organismos.filter((organismo) => organismo.activo).length,
             valorTotal: valorTotalCalculado,
             periodo: `${fechaInicio} - ${fechaFin}`,
@@ -790,14 +900,14 @@ export function Reportes() {
           } else if (formato === 'excel') {
             exportarEstadisticasExcel({
               resumen: estadisticas,
-              inventario: productos.map((producto) => ({
+              inventario: productosFiltrados.map((producto) => ({
                 Code: producto.codigo || 'N/A',
                 Produit: producto.nombre,
                 Catégorie: producto.categoria,
                 Stock: producto.stockActual,
                 Unité: producto.unidad,
               })),
-              comandas: comandasExportables.map((comanda) => ({
+              comandas: comandasExportablesFiltradas.map((comanda) => ({
                 'No commande': comanda.numero,
                 Organisme: comanda.organismo?.nombre || 'N/A',
                 Date: new Date(comanda.fecha).toLocaleDateString('fr-CA'),
@@ -818,13 +928,16 @@ export function Reportes() {
               'Rapport général',
               `Période: ${fechaInicio} - ${fechaFin}`,
               [
-                { Section: 'Résumé général', Indicateur: 'Total produits', Valeur: productos.length },
-                { Section: 'Résumé général', Indicateur: 'Stock total', Valeur: productos.reduce((sum, producto) => sum + producto.stockActual, 0) },
-                { Section: 'Résumé général', Indicateur: 'Commandes filtrées', Valeur: comandasFiltradas.length },
+                { Section: 'Résumé général', Indicateur: 'Total produits', Valeur: productosFiltrados.length },
+                { Section: 'Résumé général', Indicateur: 'Catégorie', Valeur: selectedCategory === 'all' ? 'Toutes' : selectedCategory },
+                { Section: 'Résumé général', Indicateur: 'Donateur / fournisseur', Valeur: selectedActor === 'all' ? 'Tous' : selectedActor },
+                { Section: 'Résumé général', Indicateur: 'Total produits', Valeur: productosFiltrados.length },
+                { Section: 'Résumé général', Indicateur: 'Stock total', Valeur: productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0) },
+                { Section: 'Résumé général', Indicateur: 'Commandes filtrées', Valeur: comandasExportablesFiltradas.length },
                 { Section: 'Résumé général', Indicateur: 'Organismes actifs', Valeur: organismos.filter((organismo) => organismo.activo).length },
                 { Section: 'Résumé général', Indicateur: 'Valeur totale', Valeur: Number(valorTotalCalculado.toFixed(2)) },
-                ...(productos.length > 0
-                  ? productos.map((producto) => ({
+                ...(productosFiltrados.length > 0
+                  ? productosFiltrados.map((producto) => ({
                       Section: 'Inventaire',
                       Code: producto.codigo || 'N/A',
                       Produit: producto.nombre,
@@ -833,8 +946,8 @@ export function Reportes() {
                       Unité: producto.unidad,
                     }))
                   : [{ Section: 'Inventaire', Note: 'Aucune donnée disponible.' }]),
-                ...(comandasExportables.length > 0
-                  ? comandasExportables.map((comanda) => ({
+                ...(comandasExportablesFiltradas.length > 0
+                  ? comandasExportablesFiltradas.map((comanda) => ({
                       Section: 'Commandes',
                       Comanda: comanda.numero,
                       Organisme: comanda.organismo?.nombre || 'N/A',
@@ -862,7 +975,7 @@ export function Reportes() {
         'Rapports',
         'crear',
         `Rapport généré: ${exportableReportType} (${formato.toUpperCase()}) pour la période ${fechaInicio} - ${fechaFin}`,
-        { tipoReporte: exportableReportType, formato, fechaInicio, fechaFin }
+        { tipoReporte: exportableReportType, formato, fechaInicio, fechaFin, categorie: selectedCategory, acteur: selectedActor }
       );
       
       toast.success(`✅ Rapport ${formato.toUpperCase()} généré avec succès`);
@@ -872,47 +985,40 @@ export function Reportes() {
     }
   };
 
-  const generalOverviewCards = [
-    {
-      key: 'products',
-      label: t('reports.totalProducts'),
-      value: productos.length,
-      accentColor: branding.primaryColor,
-      valueColor: branding.primaryColor,
-    },
-    {
-      key: 'orders',
-      label: t('reports.ordersMonth'),
-      value: comandasFiltradas.length,
-      accentColor: '#4CAF50',
-      valueColor: '#4CAF50',
-    },
-    {
-      key: 'organisms',
-      label: t('reports.organisms'),
-      value: organismos.length,
-      accentColor: '#FFC107',
-      valueColor: '#FFC107',
-    },
-    {
-      key: 'beneficiaries',
-      label: t('reports.beneficiaries'),
-      value: organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0),
-      accentColor: '#DC3545',
-      valueColor: '#DC3545',
-    },
-  ];
-
   const showCompactReportsOverview = isCompactReportsViewport;
   const showCompactGeneralOverview = showCompactReportsOverview && activeReportTab === 'general';
-  const stockTotal = productos.reduce((sum, producto) => sum + producto.stockActual, 0);
+  const stockTotal = productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0);
   const totalBeneficiarios = organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0);
   const activeOrganisms = organismos.filter((organismo) => organismo.activo);
   const currentMonthRange = getCurrentMonthReportRange();
-  const operationalEntries = obtenerTodasLasEntradas().filter((entry) => entry.activo && isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end));
+  const operationalEntries = activeEntries.filter((entry) =>
+    isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end)
+    && (selectedCategory === 'all' || getEntryCategoryLabel(entry, productIndex) === selectedCategory)
+    && (selectedActor === 'all' || (entry.donadorNombre || '').trim() === selectedActor)
+  );
   const operationalDistributions = obtenerComandasReporte()
     .filter(isActiveReportComanda)
-    .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end));
+    .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end))
+    .map((comanda) => {
+      const filteredPeso = selectedCategory === 'all'
+        ? getSafeNumericValue(comanda.totalPeso)
+        : comanda.productos.reduce((sum, item) => (
+            getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory
+              ? sum + getReportProductWeight(item, productIndex)
+              : sum
+          ), 0);
+      const totalPeso = getSafeNumericValue(comanda.totalPeso);
+      const filteredValor = selectedCategory === 'all'
+        ? getSafeNumericValue(comanda.totalValorMonetario)
+        : (totalPeso > 0 ? getSafeNumericValue(comanda.totalValorMonetario) * (filteredPeso / totalPeso) : 0);
+
+      return {
+        ...comanda,
+        filteredPeso: Number(filteredPeso.toFixed(1)),
+        filteredValor: Number(filteredValor.toFixed(2)),
+      };
+    })
+    .filter((comanda) => selectedCategory === 'all' || comanda.filteredPeso > 0);
   const procurementValue = operationalEntries.reduce(
     (sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)),
     0,
@@ -921,11 +1027,11 @@ export function Reportes() {
     operationalEntries.reduce((sum, entry) => sum + getSafeNumericValue(entry.pesoTotal), 0).toFixed(1)
   );
   const distributionValue = operationalDistributions.reduce(
-    (sum, comanda) => sum + getSafeNumericValue(comanda.totalValorMonetario),
+    (sum, comanda) => sum + getSafeNumericValue(comanda.filteredValor),
     0,
   );
   const operationalDistributionsKg = Number(
-    operationalDistributions.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.totalPeso), 0).toFixed(1)
+    operationalDistributions.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.filteredPeso), 0).toFixed(1)
   );
   const operationalDonors = new Set(operationalEntries.map((entry) => entry.donadorNombre).filter(Boolean)).size;
   const operationalPrograms = new Set(operationalEntries.map((entry) => entry.programaCodigo || entry.programaNombre).filter(Boolean)).size;
@@ -937,7 +1043,7 @@ export function Reportes() {
     .sort((left, right) => right.stock - left.stock)
     .slice(0, 5);
   const orderStatusSummary = Array.from(
-    comandasFiltradas.reduce((mapa, comanda) => {
+    comandasExportablesFiltradas.reduce((mapa, comanda) => {
       const estado = comanda.estado || 'Sans état';
       mapa.set(estado, (mapa.get(estado) || 0) + 1);
       return mapa;
@@ -946,7 +1052,7 @@ export function Reportes() {
     .sort((left, right) => right[1] - left[1])
     .slice(0, 5);
   const topOrderingOrganisms = Array.from(
-    comandasExportables.reduce((mapa, comanda) => {
+    comandasExportablesFiltradas.reduce((mapa, comanda) => {
       const nombre = comanda.organismo?.nombre || 'N/A';
       mapa.set(nombre, (mapa.get(nombre) || 0) + 1);
       return mapa;
@@ -954,8 +1060,8 @@ export function Reportes() {
   )
     .sort((left, right) => right[1] - left[1])
     .slice(0, 5);
-  const commandasTotalValue = comandasExportables.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.valorTotal), 0);
-  const averageOrderValue = comandasExportables.length > 0 ? commandasTotalValue / comandasExportables.length : 0;
+  const commandasTotalValue = comandasExportablesFiltradas.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.valorTotal), 0);
+  const averageOrderValue = comandasExportablesFiltradas.length > 0 ? commandasTotalValue / comandasExportablesFiltradas.length : 0;
   const totalPrsKg = Number(
     transformacionesTerminadas
       .reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0)
@@ -983,7 +1089,7 @@ export function Reportes() {
     {
       label: 'Période',
       value: `${fechaInicio} -> ${fechaFin}`,
-      helper: `${productos.length} produits • ${activeOrganisms.length} organismes actifs`,
+      helper: `${productosFiltrados.length} produits • ${activeOrganisms.length} organismes actifs`,
     },
     {
       label: 'Stock et valeur',
@@ -1042,6 +1148,36 @@ export function Reportes() {
       value: log.exito ? 'Succès' : 'Erreur',
       helper: `${formatReportDate(log.fecha)} • ${log.usuario || 'Système'}`,
     })),
+  ];
+  const generalOverviewCards = [
+    {
+      key: 'products',
+      label: t('reports.totalProducts'),
+      value: productosFiltrados.length,
+      accentColor: branding.primaryColor,
+      valueColor: branding.primaryColor,
+    },
+    {
+      key: 'orders',
+      label: t('reports.ordersMonth'),
+      value: comandasExportablesFiltradas.length,
+      accentColor: '#4CAF50',
+      valueColor: '#4CAF50',
+    },
+    {
+      key: 'organisms',
+      label: t('reports.organisms'),
+      value: organismos.length,
+      accentColor: '#FFC107',
+      valueColor: '#FFC107',
+    },
+    {
+      key: 'beneficiaries',
+      label: t('reports.beneficiaries'),
+      value: organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0),
+      accentColor: '#DC3545',
+      valueColor: '#DC3545',
+    },
   ];
 
   return (
@@ -1118,43 +1254,135 @@ export function Reportes() {
                     <p className={`${showCompactReportsOverview ? 'text-[11px]' : 'text-sm'} text-gray-600 mt-1`}>
                       {exportContextDescription}
                     </p>
+                    {activeFilterDescription && (
+                      <p className={`${showCompactReportsOverview ? 'text-[10px]' : 'text-xs'} text-gray-500 mt-1`}>
+                        {activeFilterDescription}
+                      </p>
+                    )}
                   </div>
-                  {usesPageDateRange && (
-                    <>
-                      <div className={`flex flex-col ${showCompactReportsOverview ? 'gap-1.5' : 'gap-3'} lg:flex-row lg:items-end`}>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs font-medium text-gray-700">{t('reports.startDate')}</span>
+                  {showCompactReportsOverview ? (
+                    <div className="flex gap-1 overflow-x-auto pb-0.5">
+                      {usesPageDateRange && (
+                        <>
                           <Input
                             type="date"
+                            title={t('reports.startDate')}
                             value={fechaInicio}
                             onChange={(e) => setFechaInicio(e.target.value)}
-                            className={`w-full ${showCompactReportsOverview ? 'sm:w-[132px]' : 'sm:w-[160px]'} bg-white/85 text-xs ${showCompactReportsOverview ? 'h-[30px]' : 'h-9'}`}
+                            className="w-[132px] h-7 bg-white/85 text-[11px]"
                           />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs font-medium text-gray-700">{t('reports.endDate')}</span>
                           <Input
                             type="date"
+                            title={t('reports.endDate')}
                             value={fechaFin}
                             onChange={(e) => setFechaFin(e.target.value)}
-                            className={`w-full ${showCompactReportsOverview ? 'sm:w-[132px]' : 'sm:w-[160px]'} bg-white/85 text-xs ${showCompactReportsOverview ? 'h-[30px]' : 'h-9'}`}
+                            className="w-[132px] h-7 bg-white/85 text-[11px]"
                           />
+                        </>
+                      )}
+                      {showCategoryFilter && (
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                          <SelectTrigger className="w-[156px] h-7 bg-white/85 text-[11px]">
+                            <SelectValue placeholder="Toutes les catégories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes les catégories</SelectItem>
+                            {categoryOptions.map((category) => (
+                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {showActorFilter && (
+                        <Select value={selectedActor} onValueChange={setSelectedActor}>
+                          <SelectTrigger className="w-[188px] h-7 bg-white/85 text-[11px]">
+                            <SelectValue placeholder="Tous les donateurs / fournisseurs" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tous les donateurs / fournisseurs</SelectItem>
+                            {actorOptions.map((actor) => (
+                              <SelectItem key={actor} value={actor}>{actor}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {usesPageDateRange && (
+                        <>
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-medium text-gray-700">{t('reports.startDate')}</span>
+                              <Input
+                                type="date"
+                                value={fechaInicio}
+                                onChange={(e) => setFechaInicio(e.target.value)}
+                                className="w-full sm:w-[160px] bg-white/85 text-xs h-9"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-medium text-gray-700">{t('reports.endDate')}</span>
+                              <Input
+                                type="date"
+                                value={fechaFin}
+                                onChange={(e) => setFechaFin(e.target.value)}
+                                className="w-full sm:w-[160px] bg-white/85 text-xs h-9"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {DATE_PRESET_OPTIONS.map((preset) => (
+                              <Button
+                                key={preset.value}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleApplyDatePreset(preset.value)}
+                                className={`${presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}`}
+                              >
+                                {preset.label}
+                              </Button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      {(showCategoryFilter || showActorFilter) && (
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                          {showCategoryFilter && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-medium text-gray-700">Catégorie</span>
+                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                                <SelectTrigger className="w-full sm:w-[210px] h-9 bg-white/85 text-xs">
+                                  <SelectValue placeholder="Toutes les catégories" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Toutes les catégories</SelectItem>
+                                  {categoryOptions.map((category) => (
+                                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                          {showActorFilter && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-medium text-gray-700">Donateur / fournisseur</span>
+                              <Select value={selectedActor} onValueChange={setSelectedActor}>
+                                <SelectTrigger className="w-full sm:w-[230px] h-9 bg-white/85 text-xs">
+                                  <SelectValue placeholder="Tous les donateurs / fournisseurs" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tous les donateurs / fournisseurs</SelectItem>
+                                  {actorOptions.map((actor) => (
+                                    <SelectItem key={actor} value={actor}>{actor}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      {!showCompactReportsOverview && <div className="flex flex-wrap gap-2">
-                        {DATE_PRESET_OPTIONS.map((preset) => (
-                          <Button
-                            key={preset.value}
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleApplyDatePreset(preset.value)}
-                            className={`${presetActivo === preset.value ? 'border-[#1E73BE] bg-[#1E73BE] text-white hover:bg-[#1557A0] hover:text-white' : 'border-white/60 bg-white/80 text-gray-700'}`}
-                          >
-                            {preset.label}
-                          </Button>
-                        ))}
-                      </div>}
+                      )}
                     </>
                   )}
                 </div>
@@ -1261,7 +1489,7 @@ export function Reportes() {
                   {
                     label: 'Stock disponible',
                     value: `${stockTotal} unités`,
-                    helper: `${productos.length} produits répartis dans ${datosInventario.length} catégories.`,
+                    helper: `${productosFiltrados.length} produits répartis dans ${datosInventario.length} catégories.`,
                   },
                   {
                     label: 'Valeur estimée',
@@ -1414,7 +1642,7 @@ export function Reportes() {
             {showCompactReportsOverview ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  <ReportStatCard label="Produits" value={productos.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Produits" value={productosFiltrados.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
                   <ReportStatCard label="Sous seuil" value={lowStockProducts.length} accentColor="#c23934" valueColor="#c23934" compact />
                 </div>
                 <ReportDetailPanel title="Catégories dominantes" description="Vue rapide de l'inventaire en petit format." items={compactInventoryItems} compact />
@@ -1422,7 +1650,7 @@ export function Reportes() {
             ) : (
             <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
-              <ReportStatCard label="Produits suivis" value={productos.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Produits suivis" value={productosFiltrados.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Stock total" value={stockTotal} accentColor="#2d9561" valueColor="#2d9561" />
               <ReportStatCard label="Catégories" value={datosInventario.length} accentColor="#e8a419" valueColor="#e8a419" />
               <ReportStatCard label="Sous seuil" value={lowStockProducts.length} accentColor="#c23934" valueColor="#c23934" />
@@ -1493,7 +1721,7 @@ export function Reportes() {
             {showCompactReportsOverview ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  <ReportStatCard label="Commandes" value={comandasExportables.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Commandes" value={comandasExportablesFiltradas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
                   <ReportStatCard label="Panier moyen" value={formatCurrencySummary(averageOrderValue)} accentColor="#c23934" valueColor="#c23934" compact />
                 </div>
                 <ReportDetailPanel title="États de commandes" description="Vue compacte des commandas sur la période." items={compactOrdersItems} compact />
@@ -1501,7 +1729,7 @@ export function Reportes() {
             ) : (
             <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
-              <ReportStatCard label="Commandes filtrées" value={comandasExportables.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Commandes filtrées" value={comandasExportablesFiltradas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Organismes servis" value={topOrderingOrganisms.length} accentColor="#2d9561" valueColor="#2d9561" />
               <ReportStatCard label="Valeur cumulée" value={formatCurrencySummary(commandasTotalValue)} accentColor="#e8a419" valueColor="#e8a419" />
               <ReportStatCard label="Panier moyen" value={formatCurrencySummary(averageOrderValue)} accentColor="#c23934" valueColor="#c23934" />
