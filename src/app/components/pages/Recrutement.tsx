@@ -19,6 +19,7 @@ import {
   Calendar, 
   CheckCircle, 
   Clock,
+  BarChart3,
   Mail,
   Phone,
   MapPin,
@@ -39,6 +40,7 @@ import {
   Plus,
   Download
 } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { exportToCSV, type TableColumn } from '../../utils/exportUtils';
 import {
@@ -324,6 +326,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   const [mainView, setMainView] = useState<RecruitmentMainView>(isPublicAccess ? 'timesheets' : 'candidatures');
   const [timesheetDepartmentFilter, setTimesheetDepartmentFilter] = useState<TimesheetDepartmentFilter>('all');
   const [timesheetMonthFilter, setTimesheetMonthFilter] = useState('');
+  const [timesheetCandidateSearch, setTimesheetCandidateSearch] = useState('');
   const [selectedTimesheetCandidateId, setSelectedTimesheetCandidateId] = useState('');
   const [timesheetForm, setTimesheetForm] = useState<CandidateTimesheetForm>(createInitialTimesheetForm);
   const [editingTimesheetId, setEditingTimesheetId] = useState<number | null>(null);
@@ -421,7 +424,35 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     })
     .sort((left, right) => left.name.localeCompare(right.name, 'fr'));
 
-  const candidatoFeuilleTempsSeleccionado = candidatosFeuilleTemps.find(
+  const candidatosFeuilleTempsFiltrados = candidatosFeuilleTemps.filter(candidate => {
+    const searchValue = timesheetCandidateSearch.trim().toLowerCase();
+    if (!searchValue) {
+      return true;
+    }
+
+    return [candidate.name, candidate.email, candidate.phone]
+      .filter(Boolean)
+      .some(value => value.toLowerCase().includes(searchValue));
+  });
+
+  useEffect(() => {
+    if (candidatosFeuilleTempsFiltrados.length === 0) {
+      if (selectedTimesheetCandidateId) {
+        setSelectedTimesheetCandidateId('');
+      }
+      return;
+    }
+
+    const existeSeleccionFiltrada = candidatosFeuilleTempsFiltrados.some(
+      candidate => String(candidate.id) === selectedTimesheetCandidateId
+    );
+
+    if (!existeSeleccionFiltrada) {
+      setSelectedTimesheetCandidateId(String(candidatosFeuilleTempsFiltrados[0].id));
+    }
+  }, [candidatosFeuilleTempsFiltrados, selectedTimesheetCandidateId]);
+
+  const candidatoFeuilleTempsSeleccionado = candidatosFeuilleTempsFiltrados.find(
     candidate => String(candidate.id) === selectedTimesheetCandidateId
   ) || null;
 
@@ -470,6 +501,19 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     : calculateCurrentMonthHours(feuillesTempsSeleccionadas);
   const totalEntreesFeuilleTemps = feuillesTempsGlobalesFiltradas.length;
   const totalHeuresFeuilleTemps = feuillesTempsGlobalesFiltradas.reduce((sum, timesheet) => sum + timesheet.duree, 0);
+  const heuresAccumuleesParDepartement = departamentosDisponibles
+    .map(department => {
+      const heures = feuillesTempsGlobalesFiltradas
+        .filter(timesheet => timesheet.departamentoId === department.id)
+        .reduce((sum, timesheet) => sum + timesheet.duree, 0);
+
+      return {
+        departement: department.nombre,
+        heures: Number(heures.toFixed(2)),
+        color: department.color
+      };
+    })
+    .filter(item => item.heures > 0);
 
   useEffect(() => {
     if (!candidatoFeuilleTempsSeleccionado) {
@@ -858,9 +902,11 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: branding.primaryColor }}>
               Date
             </th>
-            <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider" style={{ color: branding.primaryColor }}>
-              Actions
-            </th>
+            {!isPublicAccess && (
+              <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider" style={{ color: branding.primaryColor }}>
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -941,28 +987,30 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-blue-50"
-                      onClick={() => handleStartEditTimesheet(timesheet)}
-                      title="Modifier la feuille de temps"
-                    >
-                      <Edit className="w-4 h-4" style={{ color: branding.primaryColor }} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-red-50"
-                      onClick={() => handleDeleteTimesheet(timesheet.id)}
-                      title="Supprimer la feuille de temps"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </Button>
-                  </div>
-                </td>
+                {!isPublicAccess && (
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-blue-50"
+                        onClick={() => handleStartEditTimesheet(timesheet)}
+                        title="Modifier la feuille de temps"
+                      >
+                        <Edit className="w-4 h-4" style={{ color: branding.primaryColor }} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-red-50"
+                        onClick={() => handleDeleteTimesheet(timesheet.id)}
+                        title="Supprimer la feuille de temps"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
         </tbody>
@@ -1888,7 +1936,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       Feuilles de temps - Accès public
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Enregistrez une entrée, une sortie ou corrigez les heures d'un bénévole assigné depuis la page d'accueil.
+                      Les bénévoles peuvent uniquement enregistrer une entrée et une sortie automatiques depuis cette page.
                     </p>
                   </div>
                   <Button
@@ -2349,10 +2397,11 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             )}
 
             <TabsContent value="timesheets" className="space-y-6">
+              <div className={`grid grid-cols-1 ${heuresAccumuleesParDepartement.length > 0 ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]' : ''} gap-4`}>
               <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                 <CardContent className="p-0">
                   <div
-                    className="p-5 sm:p-6"
+                    className="p-4 sm:p-5"
                     style={{
                       background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`
                     }}
@@ -2364,35 +2413,38 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
                         >
                           <Clock className="w-5 h-5" />
-                          Gestion des feuilles de temps
+                          {isPublicAccess ? 'Entrée et sortie des bénévoles' : 'Gestion des feuilles de temps'}
                         </h2>
                         <p className="text-sm text-gray-600 mt-1">
-                          Gérez les heures des bénévoles assignés à un département depuis la page principale.
+                          {isPublicAccess
+                            ? 'Sélectionnez un bénévole assigné puis utilisez uniquement les boutons Entrée et Sortie.'
+                            : 'Gérez les heures des bénévoles assignés à un département depuis la page principale.'}
                         </p>
                       </div>
-                      <div className="flex flex-col gap-3 lg:items-end">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:min-w-[520px]">
-                          <div className="p-4 rounded-xl bg-white/90 border border-white/70 shadow-sm">
+                      {!isPublicAccess && (
+                      <div className="flex flex-col gap-2 lg:items-end">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[460px]">
+                          <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
                             <p className="text-xs text-gray-500 mb-1">Bénévoles disponibles</p>
-                            <p className="text-2xl font-semibold" style={{ color: branding.primaryColor }}>
+                            <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                               {candidatosFeuilleTemps.length}
                             </p>
                           </div>
-                          <div className="p-4 rounded-xl bg-white/90 border border-white/70 shadow-sm">
+                          <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
                             <p className="text-xs text-gray-500 mb-1">Entrées filtrées</p>
-                            <p className="text-2xl font-semibold" style={{ color: branding.primaryColor }}>
+                            <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                               {totalEntreesFeuilleTemps}
                             </p>
                           </div>
-                          <div className="p-4 rounded-xl bg-white/90 border border-white/70 shadow-sm">
+                          <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
                             <p className="text-xs text-gray-500 mb-1">Heures filtrées</p>
-                            <p className="text-2xl font-semibold" style={{ color: branding.secondaryColor }}>
+                            <p className="text-xl font-semibold" style={{ color: branding.secondaryColor }}>
                               {formatTimesheetHours(totalHeuresFeuilleTemps)}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-3 lg:min-w-[520px]">
+                        <div className="flex flex-col sm:flex-row gap-2 lg:min-w-[460px]">
                           <div className="flex-1">
                             <Label htmlFor="recruit-timesheet-filter-department" className="text-xs font-semibold text-gray-600">Département</Label>
                             <Select
@@ -2456,10 +2508,52 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           </div>
                         </div>
                       </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {heuresAccumuleesParDepartement.length > 0 && (
+                <Card className="border-gray-200/50 shadow-sm overflow-hidden self-stretch">
+                  <CardHeader className="pb-2">
+                    <CardTitle
+                      className="flex items-center gap-2 text-base"
+                      style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Heures accumulées par département
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 pb-3">
+                    <div className="h-[220px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={heuresAccumuleesParDepartement} margin={{ top: 6, right: 8, left: -12, bottom: 24 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis
+                            dataKey="departement"
+                            angle={-12}
+                            textAnchor="end"
+                            height={46}
+                            tick={{ fill: '#666666', fontSize: 11 }}
+                          />
+                          <YAxis width={36} tick={{ fill: '#666666', fontSize: 11 }} />
+                          <Tooltip
+                            formatter={(value: number) => [`${formatTimesheetHours(Number(value))}`, 'Heures']}
+                            contentStyle={{
+                              backgroundColor: '#FFFFFF',
+                              border: '1px solid #E5E7EB',
+                              borderRadius: '12px'
+                            }}
+                          />
+                          <Bar dataKey="heures" fill={branding.primaryColor} radius={[6, 6, 0, 0]} maxBarSize={42} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              </div>
 
               {candidatosFeuilleTemps.length === 0 ? (
                 <Card className="border-amber-200 bg-amber-50/60">
@@ -2468,7 +2562,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-[380px_minmax(0,1fr)] gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-[340px_minmax(0,1fr)] gap-4">
                   <Card className="border-gray-200/50 shadow-sm">
                     <CardHeader className="pb-3">
                       <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
@@ -2478,8 +2572,21 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <CardContent className="space-y-4">
                       <div>
                         <Label className="text-xs font-semibold">Bénévoles *</Label>
-                        <div className="mt-2 space-y-2 max-h-[320px] overflow-y-auto pr-1">
-                          {candidatosFeuilleTemps.map(candidate => {
+                        <div className="mt-2 relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Input
+                            value={timesheetCandidateSearch}
+                            onChange={(event) => setTimesheetCandidateSearch(event.target.value)}
+                            placeholder="Rechercher rapidement un bénévole..."
+                            className="pl-10 h-10"
+                          />
+                        </div>
+                        <div className="mt-2 space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                          {candidatosFeuilleTempsFiltrados.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+                              Aucun bénévole ne correspond à cette recherche.
+                            </div>
+                          ) : candidatosFeuilleTempsFiltrados.map(candidate => {
                             const isSelected = String(candidate.id) === selectedTimesheetCandidateId;
                             const totalCandidateHours = feuillesTempsGlobalesFiltradas
                               .filter(timesheet => timesheet.candidateId === candidate.id)
@@ -2526,7 +2633,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
                       {candidatoFeuilleTempsSeleccionado && (
                         <div className="space-y-3">
-                          <div className="p-4 rounded-xl border border-gray-200 bg-gray-50">
+                          <div className="p-3 rounded-xl border border-gray-200 bg-gray-50">
                             <p className="text-sm font-semibold" style={{ color: branding.primaryColor }}>
                               {candidatoFeuilleTempsSeleccionado.name}
                             </p>
@@ -2549,22 +2656,22 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
                               <p className="text-xs text-gray-500 mb-1">Entrées</p>
-                              <p className="text-2xl font-semibold" style={{ color: branding.primaryColor }}>
+                              <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                                 {feuillesTempsSeleccionadas.length}
                               </p>
                             </div>
-                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                            <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
                               <p className="text-xs text-gray-500 mb-1">Heures totales</p>
-                              <p className="text-2xl font-semibold" style={{ color: branding.primaryColor }}>
+                              <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                                 {formatTimesheetHours(totalHeuresFeuilleTempsSeleccionada)}
                               </p>
                             </div>
-                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                            <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
                               <p className="text-xs text-gray-500 mb-1">{timesheetMonthFilter ? 'Période filtrée' : 'Ce mois-ci'}</p>
-                              <p className="text-2xl font-semibold" style={{ color: branding.secondaryColor }}>
+                              <p className="text-xl font-semibold" style={{ color: branding.secondaryColor }}>
                                 {formatTimesheetHours(heuresMoisFeuilleTempsSeleccionada)}
                               </p>
                             </div>
@@ -2574,7 +2681,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     </CardContent>
                   </Card>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <Card className="border-0 shadow-lg">
                       <CardHeader
                         className="pb-3"
@@ -2586,15 +2693,17 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <CardTitle className="flex items-center gap-2" style={{ color: branding.primaryColor }}>
                               <Clock className="w-5 h-5" />
-                              {editingTimesheetId ? 'Modifier une entrée' : 'Enregistrer une nouvelle entrée'}
+                              {isPublicAccess ? 'Enregistrer une entrée' : (editingTimesheetId ? 'Modifier une entrée' : 'Enregistrer une nouvelle entrée')}
                             </CardTitle>
                             <p className="text-xs text-gray-500 mt-1">
-                              {editingTimesheetId && feuillesTempsActivasSeleccionadas.some(timesheet => timesheet.id === editingTimesheetId)
-                                ? 'Laissez l\'heure de fin vide pour corriger uniquement l\'entrée et conserver la session en cours.'
-                                : 'Les heures sont enregistrées directement sur le bénévole sélectionné.'}
+                              {isPublicAccess
+                                ? 'L’heure est capturée automatiquement avec le bouton Entrée. Aucune correction manuelle n’est disponible ici.'
+                                : (editingTimesheetId && feuillesTempsActivasSeleccionadas.some(timesheet => timesheet.id === editingTimesheetId)
+                                  ? 'Laissez l\'heure de fin vide pour corriger uniquement l\'entrée et conserver la session en cours.'
+                                  : 'Les heures sont enregistrées directement sur le bénévole sélectionné.')}
                             </p>
                           </div>
-                          {editingTimesheetId && candidatoFeuilleTempsSeleccionado && (
+                          {!isPublicAccess && editingTimesheetId && candidatoFeuilleTempsSeleccionado && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -2638,17 +2747,29 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               <Calendar className="w-3 h-3" />
                               Date
                             </Label>
-                            <Input
-                              id="recruit-timesheet-date"
-                              type="date"
-                              className="h-11"
-                              value={timesheetForm.date}
-                              onChange={(event) => setTimesheetForm(prev => ({ ...prev, date: event.target.value }))}
-                            />
+                            {isPublicAccess ? (
+                              <div className="h-11 px-4 rounded-lg flex items-center border bg-gray-50 text-sm text-gray-700">
+                                {timesheetForm.date}
+                              </div>
+                            ) : (
+                              <Input
+                                id="recruit-timesheet-date"
+                                type="date"
+                                className="h-11"
+                                value={timesheetForm.date}
+                                onChange={(event) => setTimesheetForm(prev => ({ ...prev, date: event.target.value }))}
+                              />
+                            )}
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mt-4">
+                          {isPublicAccess ? (
+                            <div className="md:col-span-3 rounded-xl border p-4 text-sm bg-amber-50 border-amber-200 text-amber-900">
+                              Les heures d’entrée et de sortie sont enregistrées automatiquement. Les corrections manuelles et les sessions complètes ne sont pas disponibles en accès public.
+                            </div>
+                          ) : (
+                            <>
                           <div>
                             <Label htmlFor="recruit-timesheet-start" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
@@ -2700,6 +2821,8 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               </p>
                             </div>
                           </div>
+                            </>
+                          )}
                           <div>
                             <Label htmlFor="recruit-timesheet-notes" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <FileText className="w-3 h-3" />
@@ -2716,7 +2839,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         </div>
 
                         <div className="flex justify-end gap-3 mt-4">
-                          {editingTimesheetId ? (
+                          {!isPublicAccess && editingTimesheetId ? (
                             <Button
                               onClick={handleSaveTimesheet}
                               style={{
@@ -2744,19 +2867,21 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 <LogIn className="w-4 h-4 mr-2" />
                                 Entrée
                               </Button>
-                              <Button
-                                onClick={handleSaveTimesheet}
-                                style={{
-                                  backgroundColor: branding.primaryColor,
-                                  fontFamily: 'Montserrat, sans-serif'
-                                }}
-                                className="h-11 text-white shadow-lg hover:shadow-xl transition-all"
-                                disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId || !timesheetForm.heureDebut || !timesheetForm.heureFin}
-                                title="Enregistrer une session complète"
-                              >
-                                <Check className="w-4 h-4 mr-2" />
-                                Complet
-                              </Button>
+                              {!isPublicAccess && (
+                                <Button
+                                  onClick={handleSaveTimesheet}
+                                  style={{
+                                    backgroundColor: branding.primaryColor,
+                                    fontFamily: 'Montserrat, sans-serif'
+                                  }}
+                                  className="h-11 text-white shadow-lg hover:shadow-xl transition-all"
+                                  disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId || !timesheetForm.heureDebut || !timesheetForm.heureFin}
+                                  title="Enregistrer une session complète"
+                                >
+                                  <Check className="w-4 h-4 mr-2" />
+                                  Complet
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>
@@ -2833,6 +2958,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                       </div>
                                     </div>
                                     <div className="ml-4 flex items-center gap-3">
+                                      {!isPublicAccess && (
                                       <Button
                                         variant="outline"
                                         onClick={() => handleStartEditTimesheet(timesheet)}
@@ -2842,6 +2968,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                         <Edit className="w-4 h-4 mr-2" />
                                         Modifier
                                       </Button>
+                                      )}
                                       <Button
                                         onClick={() => handleRegisterTimesheetExit(timesheet.id)}
                                         className="h-12 px-6 text-white shadow-lg hover:shadow-xl transition-all"

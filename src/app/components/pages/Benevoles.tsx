@@ -794,12 +794,9 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
   const [editingFeuilleId, setEditingFeuilleId] = useState<number | null>(null);
   const [editFeuilleTemps, setEditFeuilleTemps] = useState<FeuilleTemps | null>(null);
 
-  // La gestion des feuilles de temps est reservee au module Recrutement.
-  const gestionFeuillesTempsDepuisRecrutement = false;
-
   // Verificar permisos del usuario para correcciones
   const usuarioActual = obtenerUsuarioSesion();
-  const puedeCorregir = gestionFeuillesTempsDepuisRecrutement && usuarioActual && (
+  const puedeCorregir = false && usuarioActual && (
     tienePermiso('administrador_general') || 
     tienePermiso('acceso_total') || 
     tienePermiso('desarrollador')
@@ -927,11 +924,11 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
       return;
     }
 
-    // Capturar hora actual si no se ha ingresado una
+    // La hora d'entree se captura siempre automaticamente desde el boton.
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    const heureDebut = newFeuilleTemps.heureDebut || `${hours}:${minutes}`;
+    const heureDebut = `${hours}:${minutes}`;
 
     const nouvelleFeuille: FeuilleTemps = {
       id: Date.now(), // Usar timestamp para ID único
@@ -3642,7 +3639,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
 
   // RENDER: Feuilles de temps
   const renderFeuillesTemps = () => {
-    const dureeCalculee = calculateDuree(newFeuilleTemps.heureDebut, newFeuilleTemps.heureFin);
+    const accesLibreLectureSeule = isPublicAccess;
     const sessionsEnCours = feuillesTemps.filter(f => f.enCours);
     const sessionsEnCoursFiltradas = sessionsEnCours.filter(feuille =>
       feuille.benevoleName.toLowerCase().includes(searchSortiePending.toLowerCase().trim())
@@ -3650,33 +3647,198 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
 
     return (
       <div className="space-y-4">
-        {/* Information: gestion centralisée dans Recrutement */}
+        {/* Bloc principal */}
         <Card className="border-0 shadow-lg">
           <CardHeader
             className="pb-3"
             style={{
-              background: `linear-gradient(135deg, ${branding.warningColor}15 0%, ${branding.primaryColor}10 100%)`
+              background: accesLibreLectureSeule
+                ? `linear-gradient(135deg, ${branding.warningColor}15 0%, ${branding.primaryColor}10 100%)`
+                : `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`
             }}
           >
-            <CardTitle className="flex items-center gap-2" style={{ color: branding.warningColor }}>
-              <AlertCircle className="w-5 h-5" />
-              Feuilles de temps en lecture seule
+            <CardTitle className="flex items-center gap-2" style={{ color: accesLibreLectureSeule ? branding.warningColor : branding.primaryColor }}>
+              {accesLibreLectureSeule ? <AlertCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+              {accesLibreLectureSeule ? 'Feuilles de temps en consultation' : 'Enregistrer une entrée'}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
+            {accesLibreLectureSeule ? (
+              <div
+                className="rounded-xl border p-4 text-sm"
+                style={{
+                  backgroundColor: branding.warningColor + '10',
+                  borderColor: branding.warningColor + '35',
+                  color: '#5f6368'
+                }}
+              >
+                <p className="font-semibold text-[#333333] mb-1">L’accès libre est en lecture seule.</p>
+                <p>
+                  Cette page ne permet ni entrée, ni sortie, ni correction manuelle. La gestion des feuilles de temps se fait uniquement depuis l’espace interne.
+                </p>
+              </div>
+            ) : (
+              <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  Nom
+                </Label>
+                <Select
+                  value={newFeuilleTemps.benevoleId}
+                  onValueChange={(value) => {
+                    const benevoleSeleccionado = benevoles.find(b => b.id === parseInt(value));
+
+                    if (benevoleSeleccionado && benevoleSeleccionado.departement) {
+                      const departementValue = Array.isArray(benevoleSeleccionado.departement)
+                        ? benevoleSeleccionado.departement[0]
+                        : benevoleSeleccionado.departement;
+
+                      setNewFeuilleTemps({
+                        ...newFeuilleTemps,
+                        benevoleId: value,
+                        departement: departementValue
+                      });
+                    } else {
+                      setNewFeuilleTemps({ ...newFeuilleTemps, benevoleId: value });
+                    }
+
+                    setSearchBenevole('');
+                  }}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2 border-b sticky top-0 bg-white z-10">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input
+                          placeholder="Rechercher par nom, prénom..."
+                          value={searchBenevole}
+                          onChange={(e) => setSearchBenevole(e.target.value)}
+                          className="pl-8 h-9"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                    {(() => {
+                      const filteredBenevoles = benevoles
+                        .filter(b => b.statut === 'actif')
+                        .filter(b => {
+                          const searchLower = searchBenevole.toLowerCase();
+                          return (
+                            b.prenom.toLowerCase().includes(searchLower) ||
+                            b.nom.toLowerCase().includes(searchLower) ||
+                            `${b.prenom} ${b.nom}`.toLowerCase().includes(searchLower)
+                          );
+                        });
+
+                      if (filteredBenevoles.length === 0) {
+                        return (
+                          <div className="p-4 text-center text-sm text-gray-500">
+                            Aucun bénévole trouvé
+                          </div>
+                        );
+                      }
+
+                      return filteredBenevoles.map(b => (
+                        <SelectItem key={b.id} value={b.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: branding.primaryColor }}
+                            >
+                              {b.prenom[0]}{b.nom[0]}
+                            </div>
+                            <span>{b.prenom} {b.nom}</span>
+                          </div>
+                        </SelectItem>
+                      ));
+                    })()}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1">
+                  <Building className="w-3 h-3" />
+                  Département
+                </Label>
+                <Select
+                  value={newFeuilleTemps.departement}
+                  onValueChange={(value) => setNewFeuilleTemps({ ...newFeuilleTemps, departement: value })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departements.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mt-4">
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Date
+                </Label>
+                <Input
+                  type="date"
+                  value={newFeuilleTemps.date}
+                  onChange={(e) => setNewFeuilleTemps({ ...newFeuilleTemps, date: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1">
+                  <FileText className="w-3 h-3" />
+                  Notes (optionnel)
+                </Label>
+                <Input
+                  value={newFeuilleTemps.notes}
+                  onChange={(e) => setNewFeuilleTemps({ ...newFeuilleTemps, notes: e.target.value })}
+                  placeholder="Tâches effectuées..."
+                  className="h-11"
+                />
+              </div>
+
+              <div>
+                <Button
+                  className="w-full h-11 text-white shadow-lg hover:shadow-xl transition-all"
+                  style={{ backgroundColor: branding.secondaryColor }}
+                  onClick={handleRegistrarEntrada}
+                  disabled={!newFeuilleTemps.benevoleId || !newFeuilleTemps.departement}
+                  title="Enregistrer l'arrivée avec l'heure actuelle"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Entrée automatique
+                </Button>
+              </div>
+            </div>
+
             <div
-              className="rounded-xl border p-4 text-sm"
+              className="mt-4 rounded-xl border p-4 text-sm"
               style={{
                 backgroundColor: branding.warningColor + '10',
                 borderColor: branding.warningColor + '35',
                 color: '#5f6368'
               }}
             >
-              <p className="font-semibold text-[#333333] mb-1">La modification du temps n’est pas autorisée depuis Bénévoles.</p>
+              <p className="font-semibold text-[#333333] mb-1">Les heures d’entrée et de sortie sont automatiques dans Bénévoles.</p>
               <p>
-                Les entrées, sorties, corrections et suppressions de feuilles de temps doivent être faites uniquement dans le module Recrutement.
+                Les boutons Entrée et Sortie enregistrent l’heure actuelle. Les corrections manuelles restent réservées au module Recrutement.
               </p>
             </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -3771,11 +3933,22 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                               )}
                             </div>
                           </div>
-                          <Badge
-                            className="ml-4 border border-[#F59E0B]/20 bg-[#FFF7E8] px-4 py-2 text-[#B45309] hover:bg-[#FFF7E8]"
-                          >
-                            Sortie à enregistrer depuis Recrutement
-                          </Badge>
+                          {accesLibreLectureSeule ? (
+                            <Badge
+                              className="ml-4 border border-[#F59E0B]/20 bg-[#FFF7E8] px-4 py-2 text-[#B45309] hover:bg-[#FFF7E8]"
+                            >
+                              Gestion interne requise
+                            </Badge>
+                          ) : (
+                            <Button
+                              onClick={() => handleRegistrarSalida(feuille.id)}
+                              className="ml-4 h-12 px-6 text-white shadow-lg hover:shadow-xl transition-all"
+                              style={{ backgroundColor: '#DC3545' }}
+                            >
+                              <LogOut className="w-5 h-5 mr-2" />
+                              Sortie automatique
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
@@ -3820,7 +3993,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: branding.warningColor }} />
                 <span>
-                  <strong>Mode lecture seule:</strong> Les feuilles de temps se gèrent uniquement dans Recrutement.
+                  <strong>Mode lecture seule:</strong> {accesLibreLectureSeule ? 'L’accès libre ne permet aucune gestion des feuilles de temps.' : 'Les corrections manuelles se gèrent uniquement dans Recrutement.'}
                 </span>
               </div>
             )}
