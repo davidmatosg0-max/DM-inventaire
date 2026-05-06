@@ -105,6 +105,272 @@ const frenchRules = [
   { pattern: /\btoi\s+aussi\b/gi, replacement: 'toi aussi', explanation: 'Correct' },
 ];
 
+const feminineSingularNouns = [
+  'demande',
+  'réponse',
+  'information',
+  'confirmation',
+  'livraison',
+  'quantité',
+  'priorité',
+  'disponibilité',
+  'annonce',
+  'équipe',
+  'personne',
+  'adresse',
+  'date'
+];
+
+const femininePluralNouns = [
+  'demandes',
+  'réponses',
+  'informations',
+  'confirmations',
+  'livraisons',
+  'quantités',
+  'priorités',
+  'disponibilités',
+  'annonces',
+  'équipes',
+  'personnes',
+  'adresses',
+  'dates'
+];
+
+const masculineSingularNouns = [
+  'message',
+  'besoin',
+  'transport',
+  'département',
+  'document',
+  'produit',
+  'courriel',
+  'suivi'
+];
+
+const masculinePluralNouns = [
+  'messages',
+  'besoins',
+  'transports',
+  'départements',
+  'documents',
+  'produits',
+  'courriels',
+  'suivis',
+  'bénévoles',
+  'volontaires',
+  'organismes'
+];
+
+const agreementAdjectives = [
+  { masculine: 'urgent', feminine: 'urgente' },
+  { masculine: 'important', feminine: 'importante' },
+  { masculine: 'complet', feminine: 'complète' },
+  { masculine: 'prêt', feminine: 'prête' }
+];
+
+const nounGroupPattern = (words: string[]) => words.join('|');
+
+const normalizeSpacing = (text: string) => {
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,;:!?])/g, '$1')
+    .replace(/([.,;:!?])([^\s\n])/g, '$1 $2')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .trim();
+};
+
+const applyFrenchAgreementCorrections = (text: string) => {
+  let rewritten = text;
+
+  const feminineSingularPattern = nounGroupPattern(feminineSingularNouns);
+  const femininePluralPattern = nounGroupPattern(femininePluralNouns);
+  const masculineSingularPattern = nounGroupPattern(masculineSingularNouns);
+  const masculinePluralPattern = nounGroupPattern(masculinePluralNouns);
+
+  rewritten = rewritten
+    .replace(new RegExp(`\\bce\\s+(${feminineSingularPattern})\\b`, 'gi'), 'cette $1')
+    .replace(new RegExp(`\\bcette\\s+(${masculineSingularPattern})\\b`, 'gi'), 'ce $1')
+    .replace(new RegExp(`\\bce\\s+(${femininePluralPattern}|${masculinePluralPattern})\\b`, 'gi'), 'ces $1')
+    .replace(new RegExp(`\\bcette\\s+(${femininePluralPattern}|${masculinePluralPattern})\\b`, 'gi'), 'ces $1')
+    .replace(new RegExp(`\\btout\\s+les\\s+(${femininePluralPattern})\\b`, 'gi'), 'toutes les $1')
+    .replace(new RegExp(`\\btout\\s+les\\s+(${masculinePluralPattern})\\b`, 'gi'), 'tous les $1')
+    .replace(new RegExp(`\\btous\\s+les\\s+(${femininePluralPattern})\\b`, 'gi'), 'toutes les $1')
+    .replace(new RegExp(`\\btoutes\\s+les\\s+(${masculinePluralPattern})\\b`, 'gi'), 'tous les $1');
+
+  agreementAdjectives.forEach(({ masculine, feminine }) => {
+    rewritten = rewritten
+      .replace(new RegExp(`\\b(${feminineSingularPattern})\\s+${masculine}\\b`, 'gi'), `$1 ${feminine}`)
+      .replace(new RegExp(`\\b(${masculineSingularPattern})\\s+${feminine}\\b`, 'gi'), `$1 ${masculine}`)
+      .replace(new RegExp(`\\b(${femininePluralPattern})\\s+${masculine}s?\\b`, 'gi'), `$1 ${feminine}s`)
+      .replace(new RegExp(`\\b(${masculinePluralPattern})\\s+${feminine}s\\b`, 'gi'), `$1 ${masculine}s`)
+      .replace(new RegExp(`\\b(${feminineSingularPattern})([^.!?]{0,40}?)\\best\\s+${masculine}\\b`, 'gi'), `$1$2est ${feminine}`)
+      .replace(new RegExp(`\\b(${masculineSingularPattern})([^.!?]{0,40}?)\\best\\s+${feminine}\\b`, 'gi'), `$1$2est ${masculine}`)
+      .replace(new RegExp(`\\b(${femininePluralPattern})([^.!?]{0,40}?)\\bsont\\s+${masculine}s\\b`, 'gi'), `$1$2sont ${feminine}s`)
+      .replace(new RegExp(`\\b(${masculinePluralPattern})([^.!?]{0,40}?)\\bsont\\s+${feminine}s\\b`, 'gi'), `$1$2sont ${masculine}s`);
+  });
+
+  return rewritten;
+};
+
+const applyFrenchFormalityCorrections = (text: string) => {
+  let rewritten = text;
+
+  const formalRules: Array<[RegExp, string]> = [
+    [/\bsalut\b/gi, 'bonjour'],
+    [/\bcoucou\b/gi, 'bonjour'],
+    [/\bstp\b/gi, "s'il vous plaît"],
+    [/\bsvp\b/gi, "s'il vous plaît"],
+    [/\bon\s+a\s+besoin\s+de\b/gi, 'nous avons besoin de'],
+    [/\bon\s+veut\b/gi, 'nous souhaitons'],
+    [/\bje\s+veux\s+savoir\b/gi, 'je souhaiterais savoir'],
+    [/\bje\s+veux\b/gi, 'je souhaite'],
+    [/\best[-\s]?ce\s+que\s+tu\s+peux\b/gi, 'pouvez-vous'],
+    [/\bpeux[-\s]?tu\b/gi, 'pouvez-vous'],
+    [/\btu\s+peux\b/gi, 'vous pouvez'],
+    [/\bdis[-\s]?moi\b/gi, 'merci de me dire'],
+    [/\bdit[-\s]?moi\b/gi, 'merci de me dire'],
+    [/\bré?ponds[-\s]?moi\b/gi, 'merci de me répondre'],
+    [/\benvoie[-\s]?moi\b/gi, "veuillez m'envoyer"],
+    [/\bconfirme[-\s]?moi\b/gi, 'merci de me confirmer'],
+    [/\bdonne[-\s]?moi\b/gi, 'merci de me transmettre'],
+    [/\bj'attends\s+ton\s+retour\b/gi, "dans l'attente de votre retour"],
+    [/\bj'attends\s+ta\s+réponse\b/gi, "dans l'attente de votre réponse"]
+  ];
+
+  formalRules.forEach(([pattern, replacement]) => {
+    rewritten = rewritten.replace(pattern, replacement);
+  });
+
+  return rewritten;
+};
+
+const splitOverlongFrenchSentence = (sentence: string) => {
+  let rewritten = sentence;
+
+  rewritten = rewritten
+    .replace(/;\s*/g, '. ')
+    .replace(/:\s+(?=(nous|je|vous|il|elle|ils|elles|cependant|néanmoins|par ailleurs|ensuite|puis|en outre|de plus)\b)/gi, '. ')
+    .replace(/,\s+(cependant|néanmoins|par ailleurs|ensuite|puis|en outre|de plus)\b/gi, '. $1');
+
+  if (rewritten.length > 140) {
+    rewritten = rewritten.replace(/,\s+(nous devons|nous avons|je souhaite|je voudrais|veuillez)\b/gi, '. $1');
+  }
+
+  return rewritten
+    .split(/(?<=[.!?])\s+/)
+    .map(part => part.trim())
+    .filter(Boolean);
+};
+
+const applyFrenchSentenceHeuristics = (text: string) => {
+  let rewritten = normalizeSpacing(text);
+
+  rewritten = rewritten.replace(/\b(je|me|te|se|ne|que|de|le)\s+([aeiouhàâäéèêëîïôöùûüÿœ])/gi, (_, prefix: string, vowel: string) => {
+    const base = prefix.slice(0, -1);
+    const normalizedPrefix = prefix[0] === prefix[0].toUpperCase()
+      ? base.charAt(0).toUpperCase() + base.slice(1)
+      : base;
+    return `${normalizedPrefix}'${vowel}`;
+  });
+
+  rewritten = applyFrenchFormalityCorrections(rewritten);
+  rewritten = applyFrenchAgreementCorrections(rewritten);
+
+  const rewriteRules: Array<[RegExp, string]> = [
+    [/\bje\s+ai\s+besoin\s+de\b/gi, "j'ai besoin de"],
+    [/\bnous\s+besoin\s+de\b/gi, 'nous avons besoin de'],
+    [/\bvous\s+besoin\s+de\b/gi, 'vous avez besoin de'],
+    [/\b(il|elle|on)\s+besoin\s+de\b/gi, '$1 a besoin de'],
+    [/\bils\s+besoin\s+de\b/gi, 'ils ont besoin de'],
+    [/\belles\s+besoin\s+de\b/gi, 'elles ont besoin de'],
+    [/\bje\s+peut\b/gi, 'je peux'],
+    [/\bje\s+voudrais\s+savoir\s+si\s+vous\s+pouvez\b/gi, 'je voudrais savoir si vous pouvez'],
+    [/\bmerci\s+de\s+me\s+confirmer\s+si\b/gi, 'merci de me confirmer si'],
+    [/\bsi\s+il\b/gi, "s'il"],
+    [/\bsi\s+ils\b/gi, "s'ils"],
+    [/\bsi\s+elle\b/gi, "si elle"],
+    [/\bque\s+il\b/gi, "qu'il"],
+    [/\bque\s+ils\b/gi, "qu'ils"],
+    [/\bque\s+elle\b/gi, "qu'elle"],
+    [/\bde\s+le\b/gi, 'du'],
+    [/\bde\s+les\b/gi, 'des'],
+    [/\bà\s+le\b/gi, 'au'],
+    [/\bà\s+les\b/gi, 'aux'],
+    [/\bmerci\s+de\s+confirmer\b/gi, 'merci de bien vouloir confirmer'],
+    [/\bmerci\s+de\s+envoyer\b/gi, 'merci de bien vouloir envoyer'],
+    [/\bbonjour\b(?!\s*,)/gi, 'Bonjour,'],
+    [/\bbonsoir\b(?!\s*,)/gi, 'Bonsoir,'],
+    [/\bcordialement\b(?!\s*,)/gi, 'Cordialement,'],
+  ];
+
+  rewriteRules.forEach(([pattern, replacement]) => {
+    rewritten = rewritten.replace(pattern, replacement);
+  });
+
+  rewritten = rewritten
+    .replace(/\b(merci|bonjour|bonsoir|cordialement),\s*,/gi, '$1,')
+    .replace(/\b(par ailleurs|cependant|néanmoins|ensuite|puis)\s+(?=[a-zà-ÿ])/gi, (_, connector: string) => `${connector.charAt(0).toUpperCase()}${connector.slice(1)}, `)
+    .replace(/\bque\s+que\b/gi, 'que')
+    .replace(/\bde\s+de\b/gi, 'de')
+    .replace(/\bà\s+à\b/gi, 'à');
+
+  return normalizeSpacing(rewritten);
+};
+
+const splitIntoStructuredSentences = (text: string, language: 'es' | 'en' | 'ar' | 'fr') => {
+  let normalized = text.replace(/\n+/g, ' ').trim();
+
+  if (language === 'fr') {
+    normalized = normalized
+      .replace(/,\s+(merci|bonjour|bonsoir|afin|pour|puis|ensuite)\b/gi, '. $1')
+      .replace(/;\s*/g, '. ')
+      .replace(/:\s+(nous|je|vous|il|elle|ils|elles)\b/gi, '. $1');
+  }
+
+  normalized = normalizeSpacing(normalized);
+
+  const rawSentences = normalized
+    .split(/(?<=[.!?])\s+/)
+    .flatMap(sentence => language === 'fr' ? splitOverlongFrenchSentence(sentence) : [sentence])
+    .map(sentence => sentence.trim())
+    .filter(Boolean);
+
+  const formattedSentences = rawSentences.map(sentence => {
+    let rewrittenSentence = sentence;
+
+    if (language === 'fr') {
+      rewrittenSentence = applyFrenchSentenceHeuristics(rewrittenSentence);
+    }
+
+    if (!/[.!?]$/.test(rewrittenSentence)) {
+      rewrittenSentence += '.';
+    }
+
+    return rewrittenSentence.charAt(0).toUpperCase() + rewrittenSentence.slice(1);
+  });
+
+  const mergedSentences: string[] = [];
+
+  formattedSentences.forEach(sentence => {
+    if (
+      /^Merci de me confirmer/i.test(sentence) &&
+      mergedSentences.length > 0 &&
+      /^S'il/i.test(mergedSentences[mergedSentences.length - 1])
+    ) {
+      mergedSentences[mergedSentences.length - 1] =
+        mergedSentences[mergedSentences.length - 1].replace(/[.!?]$/, ',') +
+        ` ${sentence.charAt(0).toLowerCase()}${sentence.slice(1)}`;
+      return;
+    }
+
+    mergedSentences.push(sentence);
+  });
+
+  return mergedSentences;
+};
+
 export function TextCorrector() {
   const { t, i18n } = useTranslation();
   
@@ -165,6 +431,20 @@ export function TextCorrector() {
         correctedText = correctedText.replace(rule.pattern, rule.replacement);
       }
     });
+
+    if (language === 'fr') {
+      const rewrittenSentences = splitIntoStructuredSentences(correctedText, language);
+      const rewrittenText = rewrittenSentences.join(' ');
+
+      if (normalizeSpacing(rewrittenText) !== normalizeSpacing(correctedText)) {
+        corrections.push({
+          original: correctedText,
+          corrected: rewrittenText,
+          explanation: 'Reformulation de la phrase pour une syntaxe plus naturelle et professionnelle'
+        });
+        correctedText = rewrittenText;
+      }
+    }
     
     // Generar sugerencias según el idioma
     const suggestions = generateSuggestions(correctedText, language);
@@ -233,50 +513,15 @@ export function TextCorrector() {
 
   // Generar estructura mejorada del texto
   const generateStructuredText = (text: string, language: 'es' | 'en' | 'ar' | 'fr'): string => {
-    // Eliminar espacios múltiples
-    let structured = text.replace(/\s+/g, ' ').trim();
-    
-    // Capitalizar después de punto (incluye caracteres franceses)
-    if (language === 'fr') {
-      structured = structured.replace(/([.!?])\s+([a-zàâäæçéèêëïîôùûüÿœ])/gi, (match, punctuation, letter) => {
-        return punctuation + ' ' + letter.toUpperCase();
-      });
-    } else {
-      structured = structured.replace(/([.!?])\s+([a-záéíóúñ])/gi, (match, punctuation, letter) => {
-        return punctuation + ' ' + letter.toUpperCase();
-      });
-    }
-    
-    // Capitalizar primera letra
-    structured = structured.charAt(0).toUpperCase() + structured.slice(1);
-    
-    // Dividir en oraciones
-    const sentences = structured.split(/([.!?])\s+/);
-    const formattedSentences: string[] = [];
-    let currentSentence = '';
-    
-    sentences.forEach((part, index) => {
-      if (part.match(/[.!?]/)) {
-        currentSentence += part;
-        formattedSentences.push(currentSentence.trim());
-        currentSentence = '';
-      } else {
-        currentSentence += part;
-      }
-    });
-    
-    if (currentSentence.trim()) {
-      formattedSentences.push(currentSentence.trim());
-    }
-    
-    // Agrupar oraciones en párrafos (cada 3-4 oraciones)
+    const formattedSentences = splitIntoStructuredSentences(text, language);
+
+    // Agrupar oraciones en párrafos (cada 2-3 oraciones para mensajes más naturales)
     const paragraphs: string[] = [];
-    for (let i = 0; i < formattedSentences.length; i += 3) {
-      const paragraph = formattedSentences.slice(i, i + 3).join(' ');
+    for (let i = 0; i < formattedSentences.length; i += 2) {
+      const paragraph = formattedSentences.slice(i, i + 2).join(' ');
       paragraphs.push(paragraph);
     }
-    
-    // Unir párrafos con doble salto de línea
+
     return paragraphs.join('\n\n');
   };
 

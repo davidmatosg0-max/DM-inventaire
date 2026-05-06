@@ -320,8 +320,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   const [departamentoOrigenSeleccionado, setDepartamentoOrigenSeleccionado] = useState('');
   const [assignationMode, setAssignationMode] = useState<AssignationMode>('assign');
   
-  // 🎯 Estado para el diálogo de perfil detallado
-  const [dialogPerfilOpen, setDialogPerfilOpen] = useState(false);
+  // 🎯 Estado para el panel de perfil detallado
   const [candidatoParaPerfil, setCandidatoParaPerfil] = useState<Candidate | null>(null);
   const [mainView, setMainView] = useState<RecruitmentMainView>(isPublicAccess ? 'timesheets' : 'candidatures');
   const [timesheetDepartmentFilter, setTimesheetDepartmentFilter] = useState<TimesheetDepartmentFilter>('all');
@@ -876,7 +875,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     return matchesSearch && matchesFilter;
   });
 
-  const renderTimesheetEntries = (timesheets: FeuilleTiempoCandidato[]) => (
+  const renderTimesheetEntries = (timesheets: FeuilleTiempoCandidato[]) => {
+    const sortedTimesheets = timesheets
+      .slice()
+      .sort((left, right) => `${right.date}-${right.heureDebut}`.localeCompare(`${left.date}-${left.heureDebut}`));
+    const displayedTimesheets = isPublicAccess ? sortedTimesheets.slice(0, 6) : sortedTimesheets;
+
+    return (
     <div className="app-dense-table-wrap overflow-x-auto">
       <table className="app-dense-table w-full">
         <thead>
@@ -884,22 +889,22 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             className="border-b-2"
             style={{ borderColor: `${branding.primaryColor}20` }}
           >
-            <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: branding.primaryColor }}>
+            <th className={`${isPublicAccess ? 'px-3 py-2' : 'px-4 py-3'} text-left text-xs font-bold uppercase tracking-wider`} style={{ color: branding.primaryColor }}>
               Nom
             </th>
-            <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: branding.primaryColor }}>
+            <th className={`${isPublicAccess ? 'px-3 py-2' : 'px-4 py-3'} text-left text-xs font-bold uppercase tracking-wider`} style={{ color: branding.primaryColor }}>
               Département
             </th>
-            <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider" style={{ color: branding.secondaryColor }}>
+            <th className={`${isPublicAccess ? 'px-2 py-2' : 'px-4 py-3'} text-center text-xs font-bold uppercase tracking-wider`} style={{ color: branding.secondaryColor }}>
               Arrivée
             </th>
-            <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#DC3545' }}>
+            <th className={`${isPublicAccess ? 'px-2 py-2' : 'px-4 py-3'} text-center text-xs font-bold uppercase tracking-wider`} style={{ color: '#DC3545' }}>
               Départ
             </th>
-            <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider" style={{ color: branding.primaryColor }}>
+            <th className={`${isPublicAccess ? 'px-3 py-2' : 'px-4 py-3'} text-right text-xs font-bold uppercase tracking-wider`} style={{ color: branding.primaryColor }}>
               Temps total
             </th>
-            <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: branding.primaryColor }}>
+            <th className={`${isPublicAccess ? 'px-3 py-2' : 'px-4 py-3'} text-left text-xs font-bold uppercase tracking-wider`} style={{ color: branding.primaryColor }}>
               Date
             </th>
             {!isPublicAccess && (
@@ -910,31 +915,28 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
           </tr>
         </thead>
         <tbody>
-          {timesheets
-            .slice()
-            .sort((left, right) => `${right.date}-${right.heureDebut}`.localeCompare(`${left.date}-${left.heureDebut}`))
-            .map((timesheet, index) => (
+          {displayedTimesheets.map((timesheet, index) => (
               <tr
                 key={timesheet.id}
                 className="border-b hover:bg-gray-50 transition-colors"
                 style={{ backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#F9FAFB' }}
               >
-                <td className="px-4 py-3">
+                <td className={isPublicAccess ? 'px-3 py-2' : 'px-4 py-3'}>
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      className={`${isPublicAccess ? 'w-7 h-7 text-[10px]' : 'w-8 h-8 text-xs'} rounded-full flex items-center justify-center text-white font-bold`}
                       style={{ backgroundColor: branding.primaryColor }}
                     >
                       {(candidatoFeuilleTempsSeleccionado?.name || 'BA').split(' ').map(name => name[0]).join('').slice(0, 2)}
                     </div>
                     <div>
-                      <span className="font-semibold text-sm text-[#333333]">
+                      <span className="font-semibold text-sm text-[#333333] leading-tight">
                         {candidatoFeuilleTempsSeleccionado?.name || 'Bénévole'}
                       </span>
-                      {timesheet.notes && (
+                      {!isPublicAccess && timesheet.notes && (
                         <p className="text-xs text-gray-500 max-w-[220px] truncate">{timesheet.notes}</p>
                       )}
-                      {timesheet.correctionHistory && timesheet.correctionHistory.length > 0 && (
+                      {!isPublicAccess && timesheet.correctionHistory && timesheet.correctionHistory.length > 0 && (
                         <div className="mt-1 space-y-1">
                           <Badge className="border-0 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5">
                             {timesheet.correctionHistory.length} correction{timesheet.correctionHistory.length > 1 ? 's' : ''}
@@ -947,12 +949,12 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-[#666666]">
+                <td className={`${isPublicAccess ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'} text-[#666666]`}>
                   {timesheet.departement}
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className={isPublicAccess ? 'px-2 py-2 text-center' : 'px-4 py-3 text-center'}>
                   <span
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-mono font-semibold"
+                    className={`inline-flex items-center gap-1 ${isPublicAccess ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm'} rounded-full font-mono font-semibold`}
                     style={{
                       backgroundColor: `${branding.secondaryColor}15`,
                       color: branding.secondaryColor
@@ -961,9 +963,9 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     {timesheet.heureDebut}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className={isPublicAccess ? 'px-2 py-2 text-center' : 'px-4 py-3 text-center'}>
                   <span
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-mono font-semibold"
+                    className={`inline-flex items-center gap-1 ${isPublicAccess ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm'} rounded-full font-mono font-semibold`}
                     style={{
                       backgroundColor: '#DC354515',
                       color: '#DC3545'
@@ -972,15 +974,15 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     {timesheet.heureFin}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <span className="font-bold text-lg" style={{ color: branding.primaryColor }}>
+                <td className={isPublicAccess ? 'px-3 py-2 text-right' : 'px-4 py-3 text-right'}>
+                  <span className={`font-bold ${isPublicAccess ? 'text-sm' : 'text-lg'}`} style={{ color: branding.primaryColor }}>
                     {formatTimesheetHours(timesheet.duree)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-[#666666]">
+                <td className={`${isPublicAccess ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'} text-[#666666]`}>
                   <div>
                     <p>{timesheet.date}</p>
-                    {timesheet.correctionHistory && timesheet.correctionHistory.length > 0 && (
+                    {!isPublicAccess && timesheet.correctionHistory && timesheet.correctionHistory.length > 0 && (
                       <p className="text-[11px] text-gray-500 mt-1 max-w-[200px] leading-snug">
                         {timesheet.correctionHistory[0].changes[0]}
                       </p>
@@ -1015,8 +1017,601 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             ))}
         </tbody>
       </table>
+      {isPublicAccess && sortedTimesheets.length > displayedTimesheets.length && (
+        <p className="mt-2 text-right text-xs text-gray-500">
+          Affichage des 6 dernières entrées pour conserver l'écran complet.
+        </p>
+      )}
     </div>
-  );
+    );
+  };
+
+  const renderCandidateProfilePanel = () => {
+    if (!candidatoParaPerfil) {
+      return null;
+    }
+
+    const numeroArchivo = obtenerNumeroArchivoCandidato(candidatoParaPerfil);
+    const cardColor = branding.primaryColor;
+    const tieneContacto = obtenerContactoCandidato(candidatoParaPerfil);
+
+    return (
+      <Card className="border-gray-200/50 shadow-sm overflow-hidden xl:sticky xl:top-4">
+        <CardHeader className="pb-3 border-b border-gray-100 bg-white">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+              <Users className="w-5 h-5" />
+              Profil détaillé du candidat
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={() => setCandidatoParaPerfil(null)} style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              Fermer
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 space-y-4">
+          <div
+            className="p-4 rounded-xl relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`
+            }}
+          >
+            <div className="flex flex-col lg:flex-row items-start gap-4">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
+                style={{
+                  background: `linear-gradient(135deg, ${cardColor} 0%, ${cardColor}dd 100%)`,
+                  boxShadow: `0 4px 12px ${cardColor}30`
+                }}
+              >
+                <Users className="w-8 h-8" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-bold mb-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                  {candidatoParaPerfil.name}
+                </h3>
+                <p className="text-base mb-2" style={{ color: branding.secondaryColor }}>
+                  {candidatoParaPerfil.position}
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {getStatusBadge(candidatoParaPerfil.status)}
+                  {numeroArchivo && (
+                    <div className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white/80">
+                      <FileText className="w-4 h-4" style={{ color: branding.primaryColor }} />
+                      <span className="text-sm font-mono font-semibold tracking-wide" style={{ color: branding.primaryColor }}>
+                        {numeroArchivo}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-base flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                <Mail className="w-5 h-5" />
+                Coordonnées
+              </h4>
+              <div className="grid grid-cols-1 gap-2.5">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
+                  <Mail className="w-5 h-5 flex-shrink-0" style={{ color: cardColor }} />
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Email</p>
+                    <p className="text-sm font-medium break-all">{candidatoParaPerfil.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
+                  <Phone className="w-5 h-5 flex-shrink-0" style={{ color: cardColor }} />
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Téléphone</p>
+                    <p className="text-sm font-medium">{candidatoParaPerfil.phone}</p>
+                  </div>
+                </div>
+                {(candidatoParaPerfil.adresse || candidatoParaPerfil.ville || candidatoParaPerfil.codePostal || candidatoParaPerfil.appartement) && (
+                  <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="w-5 h-5" style={{ color: cardColor }} />
+                      <p className="text-sm font-semibold">Adresse</p>
+                    </div>
+                    <div className="space-y-1 text-sm text-gray-700">
+                      {candidatoParaPerfil.adresse && <p className="font-medium">{candidatoParaPerfil.adresse}</p>}
+                      {candidatoParaPerfil.appartement && <p>Apt/Unité: {candidatoParaPerfil.appartement}</p>}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {candidatoParaPerfil.ville && <span>{candidatoParaPerfil.ville}</span>}
+                        {candidatoParaPerfil.ville && candidatoParaPerfil.codePostal && <span>•</span>}
+                        {candidatoParaPerfil.codePostal && <span>{candidatoParaPerfil.codePostal}</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold text-base flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                <Briefcase className="w-5 h-5" />
+                Détails de la candidature
+              </h4>
+              <div className="grid grid-cols-1 gap-2.5">
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
+                  <Calendar className="w-5 h-5 flex-shrink-0 mt-1" style={{ color: cardColor }} />
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Date de candidature</p>
+                    <p className="text-sm font-medium">
+                      {new Date(candidatoParaPerfil.applicationDate).toLocaleDateString('fr-FR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
+                  <Clock className="w-5 h-5 flex-shrink-0 mt-1" style={{ color: cardColor }} />
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Disponibilité</p>
+                    <p className="text-sm font-medium">{candidatoParaPerfil.availability}</p>
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl border-l-4" style={{ backgroundColor: `${branding.secondaryColor}10`, borderLeftColor: branding.secondaryColor }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-5 h-5" style={{ color: branding.secondaryColor }} />
+                    <p className="text-sm font-semibold">Expérience</p>
+                  </div>
+                  <p className="text-sm leading-relaxed">{candidatoParaPerfil.experience}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-3 border-t border-gray-100 flex-wrap">
+            {tieneContacto ? (
+              <>
+                <Button
+                  variant="outline"
+                  className="shadow-sm"
+                  style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor, borderColor: `${branding.primaryColor}55` }}
+                  onClick={() => abrirDialogoAssignacion(candidatoParaPerfil, 'modify')}
+                >
+                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                  Modifier l'assignation
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-red-500 text-red-600 hover:bg-red-50 shadow-sm"
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                  onClick={() => handleEliminarContacto(candidatoParaPerfil)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Supprimer le contact
+                </Button>
+              </>
+            ) : (
+              <Button
+                className="text-white shadow-sm"
+                style={{
+                  background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
+                  fontFamily: 'Montserrat, sans-serif'
+                }}
+                onClick={() => abrirDialogoAssignacion(candidatoParaPerfil, 'assign')}
+              >
+                <Link className="w-4 h-4 mr-2" />
+                Assigner au département
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderPublicTimesheetsLayout = () => {
+    const publicRecentTimesheets = feuillesTempsHistorialSeleccionadas
+      .slice()
+      .sort((left, right) => `${right.date}-${right.heureDebut}`.localeCompare(`${left.date}-${left.heureDebut}`))
+      .slice(0, 4);
+    const publicActiveTimesheets = feuillesTempsActivasSeleccionadas.slice(0, 2);
+    const selectedDepartmentName = departamentosFeuilleTemps.find(
+      department => department.id === timesheetForm.departamentoId
+    )?.nombre || 'Non sélectionné';
+    const selectedCandidateInitials = candidatoFeuilleTempsSeleccionado?.name
+      ?.split(' ')
+      .map(name => name[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'BA';
+
+    return (
+      <div className="grid grid-cols-1 gap-3 md:h-[412px] md:grid-cols-[minmax(292px,1.02fr)_minmax(330px,1.18fr)_minmax(248px,0.96fr)]">
+        <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] md:h-full">
+          <CardContent className="flex h-full flex-col gap-4 p-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-bold text-white"
+                  style={{
+                    backgroundColor: branding.primaryColor,
+                    fontFamily: 'Montserrat, sans-serif'
+                  }}
+                >
+                  {selectedCandidateInitials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                    Bénévole sélectionné
+                  </p>
+                  <p className="mt-1 text-lg font-bold leading-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    {candidatoFeuilleTempsSeleccionado?.name || 'Sélectionnez un bénévole'}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {candidatoFeuilleTempsSeleccionado
+                      ? 'Choisissez un département puis utilisez Entrée ou Sortie.'
+                      : 'Recherchez un bénévole pour activer la feuille de temps.'}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl border border-slate-200 bg-white px-2 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Entrées</p>
+                  <p className="mt-1 text-base font-semibold text-slate-900">{feuillesTempsSeleccionadas.length}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white px-2 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Total</p>
+                  <p className="mt-1 text-base font-semibold text-slate-900">{formatTimesheetHours(totalHeuresFeuilleTempsSeleccionada)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white px-2 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Mois</p>
+                  <p className="mt-1 text-base font-semibold" style={{ color: branding.secondaryColor }}>{formatTimesheetHours(heuresMoisFeuilleTempsSeleccionada)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Bénévoles</Label>
+                <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-500">
+                  {candidatosFeuilleTempsFiltrados.length}
+                </span>
+              </div>
+              <div className="mt-2 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  value={timesheetCandidateSearch}
+                  onChange={(event) => setTimesheetCandidateSearch(event.target.value)}
+                  placeholder="Rechercher rapidement..."
+                  className="h-10 rounded-xl border-white bg-gray-50 pl-10 text-sm"
+                />
+              </div>
+              <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                {candidatosFeuilleTempsFiltrados.length === 0 ? (
+                  <div className="flex h-full min-h-[140px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-gray-500">
+                    Aucun bénévole trouvé.
+                  </div>
+                ) : candidatosFeuilleTempsFiltrados.slice(0, 5).map(candidate => {
+                  const isSelected = String(candidate.id) === selectedTimesheetCandidateId;
+                  const totalCandidateHours = feuillesTempsGlobalesFiltradas
+                    .filter(timesheet => timesheet.candidateId === candidate.id)
+                    .reduce((sum, timesheet) => sum + timesheet.duree, 0);
+
+                  return (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      onClick={() => setSelectedTimesheetCandidateId(String(candidate.id))}
+                      aria-label={`Sélectionner ${candidate.name}`}
+                      className="w-full rounded-2xl border px-3 py-2.5 text-left transition-all duration-200"
+                      style={{
+                        borderColor: isSelected ? branding.primaryColor : '#E2E8F0',
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: isSelected ? `0 8px 20px ${branding.primaryColor}14` : '0 2px 10px rgba(15, 23, 42, 0.04)'
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold" style={{ color: isSelected ? branding.primaryColor : '#1F2937' }}>
+                            {candidate.name}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-gray-500">{candidate.email}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-400">Heures</p>
+                          <p className="text-sm font-semibold" style={{ color: branding.secondaryColor }}>
+                            {formatTimesheetHours(totalCandidateHours)}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {candidatoFeuilleTempsSeleccionado && departamentosFeuilleTemps.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">
+                  {departamentosFeuilleTemps.map(departamento => (
+                    <Badge
+                      key={departamento.id}
+                      className="border-0 px-2.5 py-1 text-xs"
+                      style={{
+                        backgroundColor: `${departamento.color}15`,
+                        color: departamento.color,
+                        fontFamily: 'Montserrat, sans-serif'
+                      }}
+                    >
+                      {departamento.icono} {departamento.nombre}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] md:h-full">
+          <CardContent className="flex h-full flex-col gap-4 p-4">
+            <div
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                    Feuille de temps
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Clock className="h-4 w-4" style={{ color: branding.primaryColor }} />
+                    <p className="text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      Enregistrer une entrée
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 shadow-sm">
+                  Automatique
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <Label htmlFor="recruit-timesheet-department-public" className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  <Briefcase className="h-3.5 w-3.5" />
+                  Département
+                </Label>
+                <Select
+                  value={timesheetForm.departamentoId}
+                  onValueChange={(value) => setTimesheetForm(prev => ({ ...prev, departamentoId: value }))}
+                >
+                  <SelectTrigger
+                    id="recruit-timesheet-department-public"
+                    aria-label="Sélectionner un département pour la feuille de temps"
+                    className="h-11 rounded-xl bg-white"
+                  >
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departamentosFeuilleTemps.map(department => (
+                      <SelectItem key={department.id} value={department.id}>
+                        {department.icono} {department.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <Label className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Date
+                </Label>
+                <div className="flex h-11 items-center rounded-xl border border-white bg-white px-3 text-sm text-gray-700">
+                  {timesheetForm.date}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+              <Label htmlFor="recruit-timesheet-notes-public" className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                <FileText className="h-3.5 w-3.5" />
+                Notes
+              </Label>
+              <div className="grid grid-cols-[minmax(0,1fr)_170px] gap-2.5 items-center">
+                <Input
+                  id="recruit-timesheet-notes-public"
+                  className="h-11 rounded-xl border-slate-200 bg-gray-50 text-sm"
+                  placeholder="Tâches effectuées..."
+                  value={timesheetForm.notes}
+                  onChange={(event) => setTimesheetForm(prev => ({ ...prev, notes: event.target.value }))}
+                />
+                <Button
+                  className="h-11 rounded-xl px-4 text-base font-semibold text-white shadow-lg hover:shadow-xl transition-all"
+                  style={{
+                    backgroundColor: branding.primaryColor,
+                    boxShadow: `0 12px 26px ${branding.primaryColor}33`,
+                    fontFamily: 'Montserrat, sans-serif'
+                  }}
+                  onClick={handleRegisterTimesheetEntry}
+                  disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId}
+                  title="Enregistrer l'arrivée maintenant"
+                >
+                  <LogIn className="mr-2 h-5 w-5" />
+                  Entrée
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border-l-4 border-amber-500 bg-amber-50/70 px-4 py-2.5 text-sm text-amber-900">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold leading-5">Entrée et sortie automatiques uniquement.</p>
+                  <p className="mt-0.5 text-xs leading-4 text-amber-800">
+                    Pas de correction manuelle en accès public.
+                  </p>
+                </div>
+                <span className="rounded-full bg-white/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                  Public
+                </span>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                      Sessions actives
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-700">
+                      {feuillesTempsActivasSeleccionadas.length > 0 ? `${feuillesTempsActivasSeleccionadas.length} en cours` : 'Aucune session ouverte'}
+                    </p>
+                  </div>
+                  {feuillesTempsActivasSeleccionadas.length > 0 ? (
+                    <Badge className="border-0 px-2.5 py-1 text-xs text-white" style={{ backgroundColor: '#D97706' }}>
+                      En attente
+                    </Badge>
+                  ) : (
+                    <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
+                      Prêt
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-3 min-h-0 space-y-2 overflow-y-auto">
+                {publicActiveTimesheets.length === 0 ? (
+                  <div className="flex h-[122px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 text-center text-sm text-gray-500">
+                    La sortie apparaîtra ici dès qu'une session sera ouverte.
+                  </div>
+                ) : publicActiveTimesheets.map(timesheet => {
+                  const elapsedHours = calculateTimesheetDuration(timesheet.heureDebut, getCurrentLocalTime());
+
+                  return (
+                    <div
+                      key={timesheet.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-800">{candidatoFeuilleTempsSeleccionado?.name}</p>
+                        <p className="mt-0.5 truncate text-xs text-gray-500">{timesheet.departement} • {timesheet.date}</p>
+                        <div className="mt-2 flex items-center gap-3 text-xs">
+                          <span className="rounded-full bg-emerald-50 px-2 py-1 font-mono font-semibold text-emerald-700">
+                            {timesheet.heureDebut}
+                          </span>
+                          <span className="font-mono text-amber-700">{formatTimesheetHours(elapsedHours)}</span>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleRegisterTimesheetExit(timesheet.id)}
+                        className="h-10 rounded-xl px-4 text-white shadow-lg hover:shadow-xl transition-all"
+                        style={{ backgroundColor: '#DC3545' }}
+                      >
+                        <LogOut className="mr-1.5 h-4 w-4" />
+                        Sortie
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] md:h-full">
+          <CardContent className="flex h-full flex-col gap-3 p-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Vue d'ensemble</p>
+              <div className="mt-1 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" style={{ color: branding.primaryColor }} />
+                <p className="text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Heures accumulées
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              {heuresAccumuleesParDepartement.length > 0 ? (
+                <div className="h-[130px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={heuresAccumuleesParDepartement} margin={{ top: 4, right: 4, left: -20, bottom: 18 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="departement" tick={{ fill: '#666666', fontSize: 10 }} height={26} />
+                      <YAxis width={26} tick={{ fill: '#666666', fontSize: 10 }} />
+                      <Tooltip
+                        formatter={(value: number) => [`${formatTimesheetHours(Number(value))}`, 'Heures']}
+                        contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px' }}
+                      />
+                      <Bar dataKey="heures" fill={branding.primaryColor} radius={[8, 8, 0, 0]} maxBarSize={30} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-4 text-sm text-gray-600">
+                  <p className="text-center font-semibold text-slate-700">Aucune donnée d'heures disponible.</p>
+                  <p className="mt-1 text-center text-xs leading-4 text-gray-500">
+                    Le graphique apparaîtra dès qu'une entrée sera enregistrée.
+                  </p>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs">
+                      <span className="text-gray-500">Bénévole</span>
+                      <span className="max-w-[55%] truncate font-medium text-slate-700">
+                        {candidatoFeuilleTempsSeleccionado?.name || 'Aucun'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs">
+                      <span className="text-gray-500">Département</span>
+                      <span className="max-w-[55%] truncate font-medium text-slate-700">
+                        {selectedDepartmentName}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs">
+                      <span className="text-gray-500">Session active</span>
+                      <span className="font-medium text-slate-700">
+                        {feuillesTempsActivasSeleccionadas.length > 0 ? 'Oui' : 'Non'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Bénévoles</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{candidatosFeuilleTemps.length}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Entrées</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{totalEntreesFeuilleTemps}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Total</p>
+                <p className="mt-1 text-lg font-semibold" style={{ color: branding.secondaryColor }}>{formatTimesheetHours(totalHeuresFeuilleTemps)}</p>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Entrées récentes</p>
+              <div className="mt-2 min-h-0 space-y-2 overflow-y-auto">
+                {publicRecentTimesheets.length === 0 ? (
+                  <div className="flex h-[84px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white px-3 text-center text-sm text-gray-500">
+                    Aucune feuille de temps pour ce bénévole.
+                  </div>
+                ) : publicRecentTimesheets.slice(0, 3).map(timesheet => (
+                  <div key={timesheet.id} className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                    <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                      <span className="truncate">{timesheet.date}</span>
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600">{timesheet.departement}</span>
+                    </div>
+                    <p className="mt-2 font-mono text-sm text-gray-700">
+                      {timesheet.heureDebut}{timesheet.heureFin ? ` - ${timesheet.heureFin}` : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   const handleExportTimesheets = async () => {
     if (feuillesTempsGlobalesFiltradas.length === 0) {
@@ -1137,8 +1732,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
           description: 'Le candidat est maintenant disponible pour être assigné à nouveau'
         });
 
-        // Cerrar el dialog de perfil
-        setDialogPerfilOpen(false);
+        // Cerrar el panel de perfil
         setCandidatoParaPerfil(null);
       } catch (error) {
         console.error('❌ Erreur lors de la suppression du contact:', error);
@@ -1831,7 +2425,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   return (
     <div 
-      className="min-h-screen p-3 sm:p-4 md:p-6 relative overflow-hidden" 
+      className={`${isPublicAccess ? 'h-screen p-1 sm:p-2' : 'min-h-screen p-3 sm:p-4 md:p-6'} relative overflow-hidden`} 
       style={{ 
         fontFamily: 'Roboto, sans-serif',
         background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`,
@@ -1854,14 +2448,15 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       </div>
 
       {/* Conteneur principal avec glassmorphism */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto">
+      <div className={`relative z-10 w-full ${isPublicAccess ? 'h-full max-w-[1500px]' : 'max-w-7xl'} mx-auto`}>
         <div 
-          className="backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
+          className={`backdrop-blur-xl bg-white/90 ${isPublicAccess ? 'rounded-2xl' : 'rounded-3xl'} shadow-2xl border border-white/60 ${isPublicAccess ? 'h-full flex flex-col p-2 sm:p-2.5' : 'p-4 sm:p-6 md:p-8'}`}
           style={{
             boxShadow: '0 8px 32px 0 rgba(26, 77, 122, 0.2), 0 0 80px rgba(45, 149, 97, 0.1)'
           }}
         >
           {/* Header avec logo et titre */}
+          {!isPublicAccess && (
           <div className="flex justify-center mb-4 sm:mb-6">
             <div className="relative inline-block">
               {/* Glow effect detrás del logo */}
@@ -1870,7 +2465,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 style={{ backgroundColor: branding.primaryColor }}
               />
               <div 
-                className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
+                className={`relative ${isPublicAccess ? 'h-12 w-12 sm:h-14 sm:w-14 border-2' : 'h-16 w-16 sm:h-20 sm:w-20 border-4'} rounded-full flex items-center justify-center overflow-hidden shadow-2xl bg-white`}
                 style={{ borderColor: branding.primaryColor }}
               >
                 {branding.logo ? (
@@ -1889,7 +2484,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     className="h-full w-full flex items-center justify-center text-white"
                     style={{ backgroundColor: branding.primaryColor }}
                   >
-                    <span className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <span className={`${isPublicAccess ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl'} font-bold`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       BA
                     </span>
                   </div>
@@ -1897,50 +2492,51 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               </div>
             </div>
           </div>
+          )}
 
           {/* Título con icono y effet Sparkles */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
-            <UserPlus 
-              className="w-6 h-6 sm:w-8 sm:h-8" 
-              style={{ color: branding.primaryColor }}
-            />
-            <h1 
-              className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight" 
-              style={{ 
-                fontFamily: 'Montserrat, sans-serif',
-                color: branding.primaryColor 
-              }}
-            >
-              {t('nav.recruitment')}
-            </h1>
-            <Sparkles 
-              className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" 
-              style={{ color: branding.secondaryColor }}
-            />
-          </div>
-
-          {isPublicAccess && (
-            <Card className="border-gray-200/60 shadow-sm mb-6 overflow-hidden">
-              <CardContent
-                className="p-5 sm:p-6"
-                style={{
-                  background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`
+          {!isPublicAccess && (
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
+              <UserPlus 
+                className="w-6 h-6 sm:w-8 sm:h-8"
+                style={{ color: branding.primaryColor }}
+              />
+              <h1 
+                className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight"
+                style={{ 
+                  fontFamily: 'Montserrat, sans-serif',
+                  color: branding.primaryColor 
                 }}
               >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                {t('nav.recruitment')}
+              </h1>
+              <Sparkles 
+                className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse"
+                style={{ color: branding.secondaryColor }}
+              />
+            </div>
+          )}
+
+          {isPublicAccess && (
+            <Card className="mb-1 overflow-hidden border-slate-200/90 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+              <CardContent
+                className="px-2 py-1.5"
+              >
+                <div className="flex items-center justify-between gap-3">
                   <div>
                     <p
-                      className="text-xl sm:text-2xl font-bold"
-                      style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                      className="text-xs sm:text-sm font-bold"
+                      style={{ fontFamily: 'Montserrat, sans-serif', color: '#0F172A' }}
                     >
                       Feuilles de temps - Accès public
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Les bénévoles peuvent uniquement enregistrer une entrée et une sortie automatiques depuis cette page.
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Entrée et sortie des bénévoles
                     </p>
                   </div>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => {
                       if (typeof window !== 'undefined') {
                         window.location.href = window.location.pathname;
@@ -2058,7 +2654,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
           </div>
           )}
 
-          <Tabs value={mainView} onValueChange={(value) => setMainView(value as RecruitmentMainView)} className="mb-6 gap-4">
+          <Tabs value={mainView} onValueChange={(value) => setMainView(value as RecruitmentMainView)} className={`${isPublicAccess ? 'flex-1 min-h-0' : 'mb-6 gap-4'}`}>
             {!isPublicAccess && (
               <TabsList className="app-compact-tabs-grid w-full bg-white border border-gray-200 shadow-sm p-1">
                 <TabsTrigger
@@ -2081,65 +2677,69 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             )}
 
             {!isPublicAccess && (
-            <TabsContent value="candidatures" className="space-y-6">
-              <Card className="border-gray-200/50 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 z-10" style={{ color: branding.primaryColor }} />
-                      <Input
-                        placeholder="Rechercher par nom, poste ou email..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 h-11 border-gray-300 focus:border-[#1a4d7a] focus:ring-[#1a4d7a]"
-                        style={{ fontFamily: 'Roboto, sans-serif' }}
-                      />
-                    </div>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger
-                        className="w-full sm:w-56 h-11 border-gray-300"
-                        style={{ fontFamily: 'Roboto, sans-serif' }}
-                      >
-                        <Filter className="w-4 h-4 mr-2" />
-                        <SelectValue placeholder="Filtrer par statut" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les statuts</SelectItem>
-                        <SelectItem value="pending">En attente</SelectItem>
-                        <SelectItem value="reviewed">Examiné</SelectItem>
-                        <SelectItem value="interview">Entretien</SelectItem>
-                        <SelectItem value="accepted">Accepté</SelectItem>
-                        <SelectItem value="rejected">Rejeté</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      className="h-11 px-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 relative overflow-hidden group"
-                      style={{
-                        background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                        fontFamily: 'Montserrat, sans-serif',
-                        boxShadow: `0 4px 15px ${branding.secondaryColor}40`
-                      }}
-                      onClick={handleAbrirNuevoCandidato}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                      <span className="relative flex items-center">
-                        <UserPlus className="w-5 h-5 mr-2" />
-                        Nouvelle candidature
-                      </span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="candidatures" className="space-y-4">
+              <div className={`grid grid-cols-1 ${candidatoParaPerfil ? 'xl:grid-cols-[minmax(360px,0.9fr)_minmax(420px,1.1fr)]' : ''} gap-4 items-start`}>
+                <div className="space-y-4 min-w-0">
+                  <Card className="border-gray-200/50 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                        <div className="flex-1 relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 z-10" style={{ color: branding.primaryColor }} />
+                          <Input
+                            placeholder="Rechercher par nom, poste ou email..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 h-11 border-gray-300 focus:border-[#1a4d7a] focus:ring-[#1a4d7a]"
+                            style={{ fontFamily: 'Roboto, sans-serif' }}
+                          />
+                        </div>
+                        <Select value={filterStatus} onValueChange={setFilterStatus}>
+                          <SelectTrigger
+                            className="w-full sm:w-56 h-11 border-gray-300"
+                            style={{ fontFamily: 'Roboto, sans-serif' }}
+                          >
+                            <Filter className="w-4 h-4 mr-2" />
+                            <SelectValue placeholder="Filtrer par statut" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tous les statuts</SelectItem>
+                            <SelectItem value="pending">En attente</SelectItem>
+                            <SelectItem value="reviewed">Examiné</SelectItem>
+                            <SelectItem value="interview">Entretien</SelectItem>
+                            <SelectItem value="accepted">Accepté</SelectItem>
+                            <SelectItem value="rejected">Rejeté</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          className="h-11 px-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 relative overflow-hidden group"
+                          style={{
+                            background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
+                            fontFamily: 'Montserrat, sans-serif',
+                            boxShadow: `0 4px 15px ${branding.secondaryColor}40`
+                          }}
+                          onClick={handleAbrirNuevoCandidato}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                          <span className="relative flex items-center">
+                            <UserPlus className="w-5 h-5 mr-2" />
+                            Nouvelle candidature
+                          </span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className={`grid grid-cols-1 ${candidatoParaPerfil ? 'gap-3' : 'lg:grid-cols-2 gap-4'}`}>
                 {filteredCandidates.map((candidate, index) => {
                   const cardColor = index % 2 === 0 ? branding.primaryColor : branding.secondaryColor;
                   const numeroArchivo = obtenerNumeroArchivoCandidato(candidate);
+                  const isSelected = candidatoParaPerfil?.id === candidate.id;
 
                   return (
                     <Card
                       key={candidate.id}
-                      className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-gray-200/50 overflow-hidden group"
+                      className={`hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-gray-200/50 overflow-hidden group ${isSelected ? 'ring-2 ring-offset-2' : ''}`}
+                      style={isSelected ? { borderColor: `${cardColor}55`, boxShadow: `0 0 0 1px ${cardColor}25` } : undefined}
                     >
                       <div
                         className="h-1.5 w-full"
@@ -2325,8 +2925,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               borderColor: `${cardColor}30`
                             }}
                             onClick={() => {
-                              setCandidatoParaPerfil(candidate);
-                              setDialogPerfilOpen(true);
+                              setCandidatoParaPerfil(prev => prev?.id === candidate.id ? null : candidate);
                             }}
                             title="Voir le profil détaillé"
                           >
@@ -2365,194 +2964,210 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     </Card>
                   );
                 })}
-              </div>
 
-              {filteredCandidates.length === 0 && (
-                <Card className="border-gray-200/50">
-                  <CardContent className="p-12 text-center">
-                    <div
-                      className="inline-flex p-6 rounded-full mb-4"
-                      style={{
-                        background: `linear-gradient(135deg, ${branding.primaryColor}20 0%, ${branding.secondaryColor}20 100%)`
-                      }}
-                    >
-                      <Users className="w-16 h-16" style={{ color: branding.primaryColor }} />
-                    </div>
-                    <p
-                      className="text-xl font-semibold mb-2"
-                      style={{
-                        fontFamily: 'Montserrat, sans-serif',
-                        color: branding.primaryColor
-                      }}
-                    >
-                      Aucun candidat trouvé
-                    </p>
-                    <p className="text-[#666666] text-sm">
-                      Essayez de modifier vos critères de recherche ou filtres
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+
+                  {filteredCandidates.length === 0 && (
+                    <Card className="border-gray-200/50">
+                      <CardContent className="p-12 text-center">
+                        <div
+                          className="inline-flex p-6 rounded-full mb-4"
+                          style={{
+                            background: `linear-gradient(135deg, ${branding.primaryColor}20 0%, ${branding.secondaryColor}20 100%)`
+                          }}
+                        >
+                          <Users className="w-16 h-16" style={{ color: branding.primaryColor }} />
+                        </div>
+                        <p
+                          className="text-xl font-semibold mb-2"
+                          style={{
+                            fontFamily: 'Montserrat, sans-serif',
+                            color: branding.primaryColor
+                          }}
+                        >
+                          Aucun candidat trouvé
+                        </p>
+                        <p className="text-[#666666] text-sm">
+                          Essayez de modifier vos critères de recherche ou filtres
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {candidatoParaPerfil && (
+                  <div className="min-w-0">
+                    {renderCandidateProfilePanel()}
+                  </div>
+                )}
+              </div>
             </TabsContent>
             )}
 
+            {isPublicAccess ? (
+              <TabsContent value="timesheets" className="mt-0">
+                {renderPublicTimesheetsLayout()}
+            </TabsContent>
+            ) : (
             <TabsContent value="timesheets" className="space-y-6">
               <div className={`grid grid-cols-1 ${heuresAccumuleesParDepartement.length > 0 ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]' : ''} gap-4`}>
-              <Card className="border-gray-200/50 shadow-sm overflow-hidden">
-                <CardContent className="p-0">
-                  <div
-                    className="p-4 sm:p-5"
-                    style={{
-                      background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`
-                    }}
-                  >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      <div>
-                        <h2
-                          className="text-xl font-bold flex items-center gap-2"
-                          style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
-                        >
-                          <Clock className="w-5 h-5" />
-                          {isPublicAccess ? 'Entrée et sortie des bénévoles' : 'Gestion des feuilles de temps'}
-                        </h2>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {isPublicAccess
-                            ? 'Sélectionnez un bénévole assigné puis utilisez uniquement les boutons Entrée et Sortie.'
-                            : 'Gérez les heures des bénévoles assignés à un département depuis la page principale.'}
-                        </p>
-                      </div>
-                      {!isPublicAccess && (
-                      <div className="flex flex-col gap-2 lg:items-end">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[460px]">
-                          <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
-                            <p className="text-xs text-gray-500 mb-1">Bénévoles disponibles</p>
-                            <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
-                              {candidatosFeuilleTemps.length}
-                            </p>
-                          </div>
-                          <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
-                            <p className="text-xs text-gray-500 mb-1">Entrées filtrées</p>
-                            <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
-                              {totalEntreesFeuilleTemps}
-                            </p>
-                          </div>
-                          <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
-                            <p className="text-xs text-gray-500 mb-1">Heures filtrées</p>
-                            <p className="text-xl font-semibold" style={{ color: branding.secondaryColor }}>
-                              {formatTimesheetHours(totalHeuresFeuilleTemps)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-2 lg:min-w-[460px]">
-                          <div className="flex-1">
-                            <Label htmlFor="recruit-timesheet-filter-department" className="text-xs font-semibold text-gray-600">Département</Label>
-                            <Select
-                              value={timesheetDepartmentFilter}
-                              onValueChange={(value) => setTimesheetDepartmentFilter(value)}
-                            >
-                              <SelectTrigger id="recruit-timesheet-filter-department" className="mt-1 bg-white/90">
-                                <SelectValue placeholder="Tous les départements" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Tous les départements</SelectItem>
-                                {departamentosDisponibles.map(department => (
-                                  <SelectItem key={department.id} value={department.id}>
-                                    {department.icono} {department.nombre}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex-1">
-                            <Label htmlFor="recruit-timesheet-filter-month" className="text-xs font-semibold text-gray-600">Mois</Label>
-                            <Select
-                              value={timesheetMonthFilter || 'all'}
-                              onValueChange={(value) => setTimesheetMonthFilter(value === 'all' ? '' : value)}
-                            >
-                              <SelectTrigger id="recruit-timesheet-filter-month" className="mt-1 bg-white/90">
-                                <SelectValue placeholder="Tous les mois" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Tous les mois</SelectItem>
-                                {timesheetMonthOptions.map(month => (
-                                  <SelectItem key={month} value={month}>
-                                    {month}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex items-end gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setTimesheetDepartmentFilter('all');
-                                setTimesheetMonthFilter('');
-                              }}
-                              style={{ fontFamily: 'Montserrat, sans-serif' }}
-                            >
-                              Réinitialiser
-                            </Button>
-                            <Button
-                              onClick={handleExportTimesheets}
-                              className="text-white"
-                              style={{
-                                backgroundColor: branding.primaryColor,
-                                fontFamily: 'Montserrat, sans-serif'
-                              }}
-                            >
-                              <Download className="w-4 h-4 mr-2" />
-                              Exporter CSV
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {heuresAccumuleesParDepartement.length > 0 && (
-                <Card className="border-gray-200/50 shadow-sm overflow-hidden self-stretch">
-                  <CardHeader className="pb-2">
-                    <CardTitle
-                      className="flex items-center gap-2 text-base"
-                      style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                  <CardContent className="p-0">
+                    <div
+                      className="p-4 sm:p-5"
+                      style={{
+                        background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`
+                      }}
                     >
-                      <BarChart3 className="w-4 h-4" />
-                      Heures accumulées par département
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
-                    <div className="h-[220px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={heuresAccumuleesParDepartement} margin={{ top: 6, right: 8, left: -12, bottom: 24 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis
-                            dataKey="departement"
-                            angle={-12}
-                            textAnchor="end"
-                            height={46}
-                            tick={{ fill: '#666666', fontSize: 11 }}
-                          />
-                          <YAxis width={36} tick={{ fill: '#666666', fontSize: 11 }} />
-                          <Tooltip
-                            formatter={(value: number) => [`${formatTimesheetHours(Number(value))}`, 'Heures']}
-                            contentStyle={{
-                              backgroundColor: '#FFFFFF',
-                              border: '1px solid #E5E7EB',
-                              borderRadius: '12px'
-                            }}
-                          />
-                          <Bar dataKey="heures" fill={branding.primaryColor} radius={[6, 6, 0, 0]} maxBarSize={42} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                          <h2
+                            className="text-xl font-bold flex items-center gap-2"
+                            style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                          >
+                            <Clock className="w-5 h-5" />
+                            Gestion des feuilles de temps
+                          </h2>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Gérez les heures des bénévoles assignés à un département depuis la page principale.
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 lg:items-end">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[460px]">
+                            <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
+                              <p className="text-xs text-gray-500 mb-1">Bénévoles disponibles</p>
+                              <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
+                                {candidatosFeuilleTemps.length}
+                              </p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
+                              <p className="text-xs text-gray-500 mb-1">Entrées filtrées</p>
+                              <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
+                                {totalEntreesFeuilleTemps}
+                              </p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
+                              <p className="text-xs text-gray-500 mb-1">Heures filtrées</p>
+                              <p className="text-xl font-semibold" style={{ color: branding.secondaryColor }}>
+                                {formatTimesheetHours(totalHeuresFeuilleTemps)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row gap-2 lg:min-w-[460px]">
+                            <div className="flex-1">
+                              <Label htmlFor="recruit-timesheet-filter-department" className="text-xs font-semibold text-gray-600">Département</Label>
+                              <Select
+                                value={timesheetDepartmentFilter}
+                                onValueChange={(value) => setTimesheetDepartmentFilter(value)}
+                              >
+                                <SelectTrigger id="recruit-timesheet-filter-department" className="mt-1 bg-white/90">
+                                  <SelectValue placeholder="Tous les départements" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tous les départements</SelectItem>
+                                  {departamentosDisponibles.map(department => (
+                                    <SelectItem key={department.id} value={department.id}>
+                                      {department.icono} {department.nombre}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex-1">
+                              <Label htmlFor="recruit-timesheet-filter-month" className="text-xs font-semibold text-gray-600">Mois</Label>
+                              <Select
+                                value={timesheetMonthFilter || 'all'}
+                                onValueChange={(value) => setTimesheetMonthFilter(value === 'all' ? '' : value)}
+                              >
+                                <SelectTrigger id="recruit-timesheet-filter-month" className="mt-1 bg-white/90">
+                                  <SelectValue placeholder="Tous les mois" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tous les mois</SelectItem>
+                                  {timesheetMonthOptions.map(month => (
+                                    <SelectItem key={month} value={month}>
+                                      {month}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex items-end gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setTimesheetDepartmentFilter('all');
+                                  setTimesheetMonthFilter('');
+                                }}
+                                style={{ fontFamily: 'Montserrat, sans-serif' }}
+                              >
+                                Réinitialiser
+                              </Button>
+                              <Button
+                                onClick={handleExportTimesheets}
+                                className="text-white"
+                                style={{
+                                  backgroundColor: branding.primaryColor,
+                                  fontFamily: 'Montserrat, sans-serif'
+                                }}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Exporter CSV
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              )}
+
+                {heuresAccumuleesParDepartement.length > 0 && (
+                  <Card className="border-gray-200/50 shadow-sm overflow-hidden self-stretch">
+                    <CardHeader className="pb-2">
+                      <CardTitle
+                        className="flex items-center gap-2 text-base"
+                        style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Heures accumulées par département
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 pb-3">
+                      <div className="h-[220px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={heuresAccumuleesParDepartement} margin={{ top: 6, right: 8, left: -12, bottom: 24 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                            <XAxis
+                              dataKey="departement"
+                              angle={-12}
+                              textAnchor="end"
+                              height={46}
+                              tick={{ fill: '#666666', fontSize: 11 }}
+                            />
+                            <YAxis width={36} tick={{ fill: '#666666', fontSize: 11 }} />
+                            <Tooltip
+                              formatter={(value: number) => [`${formatTimesheetHours(Number(value))}`, 'Heures']}
+                              contentStyle={{
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid #E5E7EB',
+                                borderRadius: '12px'
+                              }}
+                            />
+                            <Bar dataKey="heures" fill={branding.primaryColor} radius={[6, 6, 0, 0]} maxBarSize={42} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                        <span className="text-gray-600">Total accumulé:</span>{' '}
+                        <span className="font-semibold" style={{ color: branding.primaryColor }}>
+                          {formatTimesheetHours(totalHeuresFeuilleTemps)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               {candidatosFeuilleTemps.length === 0 ? (
@@ -2590,10 +3205,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             const isSelected = String(candidate.id) === selectedTimesheetCandidateId;
                             const totalCandidateHours = feuillesTempsGlobalesFiltradas
                               .filter(timesheet => timesheet.candidateId === candidate.id)
-                              .reduce(
-                              (sum, timesheet) => sum + timesheet.duree,
-                              0
-                            );
+                              .reduce((sum, timesheet) => sum + timesheet.duree, 0);
 
                             return (
                               <button
@@ -2693,17 +3305,15 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <CardTitle className="flex items-center gap-2" style={{ color: branding.primaryColor }}>
                               <Clock className="w-5 h-5" />
-                              {isPublicAccess ? 'Enregistrer une entrée' : (editingTimesheetId ? 'Modifier une entrée' : 'Enregistrer une nouvelle entrée')}
+                              {editingTimesheetId ? 'Modifier une entrée' : 'Enregistrer une nouvelle entrée'}
                             </CardTitle>
                             <p className="text-xs text-gray-500 mt-1">
-                              {isPublicAccess
-                                ? 'L’heure est capturée automatiquement avec le bouton Entrée. Aucune correction manuelle n’est disponible ici.'
-                                : (editingTimesheetId && feuillesTempsActivasSeleccionadas.some(timesheet => timesheet.id === editingTimesheetId)
-                                  ? 'Laissez l\'heure de fin vide pour corriger uniquement l\'entrée et conserver la session en cours.'
-                                  : 'Les heures sont enregistrées directement sur le bénévole sélectionné.')}
+                              {editingTimesheetId && feuillesTempsActivasSeleccionadas.some(timesheet => timesheet.id === editingTimesheetId)
+                                ? 'Laissez l\'heure de fin vide pour corriger uniquement l\'entrée et conserver la session en cours.'
+                                : 'Les heures sont enregistrées directement sur le bénévole sélectionné.'}
                             </p>
                           </div>
-                          {!isPublicAccess && editingTimesheetId && candidatoFeuilleTempsSeleccionado && (
+                          {editingTimesheetId && candidatoFeuilleTempsSeleccionado && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -2747,29 +3357,17 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               <Calendar className="w-3 h-3" />
                               Date
                             </Label>
-                            {isPublicAccess ? (
-                              <div className="h-11 px-4 rounded-lg flex items-center border bg-gray-50 text-sm text-gray-700">
-                                {timesheetForm.date}
-                              </div>
-                            ) : (
-                              <Input
-                                id="recruit-timesheet-date"
-                                type="date"
-                                className="h-11"
-                                value={timesheetForm.date}
-                                onChange={(event) => setTimesheetForm(prev => ({ ...prev, date: event.target.value }))}
-                              />
-                            )}
+                            <Input
+                              id="recruit-timesheet-date"
+                              type="date"
+                              className="h-11"
+                              value={timesheetForm.date}
+                              onChange={(event) => setTimesheetForm(prev => ({ ...prev, date: event.target.value }))}
+                            />
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mt-4">
-                          {isPublicAccess ? (
-                            <div className="md:col-span-3 rounded-xl border p-4 text-sm bg-amber-50 border-amber-200 text-amber-900">
-                              Les heures d’entrée et de sortie sont enregistrées automatiquement. Les corrections manuelles et les sessions complètes ne sont pas disponibles en accès public.
-                            </div>
-                          ) : (
-                            <>
                           <div>
                             <Label htmlFor="recruit-timesheet-start" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
@@ -2821,8 +3419,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               </p>
                             </div>
                           </div>
-                            </>
-                          )}
                           <div>
                             <Label htmlFor="recruit-timesheet-notes" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <FileText className="w-3 h-3" />
@@ -2839,7 +3435,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         </div>
 
                         <div className="flex justify-end gap-3 mt-4">
-                          {!isPublicAccess && editingTimesheetId ? (
+                          {editingTimesheetId ? (
                             <Button
                               onClick={handleSaveTimesheet}
                               style={{
@@ -2867,21 +3463,19 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 <LogIn className="w-4 h-4 mr-2" />
                                 Entrée
                               </Button>
-                              {!isPublicAccess && (
-                                <Button
-                                  onClick={handleSaveTimesheet}
-                                  style={{
-                                    backgroundColor: branding.primaryColor,
-                                    fontFamily: 'Montserrat, sans-serif'
-                                  }}
-                                  className="h-11 text-white shadow-lg hover:shadow-xl transition-all"
-                                  disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId || !timesheetForm.heureDebut || !timesheetForm.heureFin}
-                                  title="Enregistrer une session complète"
-                                >
-                                  <Check className="w-4 h-4 mr-2" />
-                                  Complet
-                                </Button>
-                              )}
+                              <Button
+                                onClick={handleSaveTimesheet}
+                                style={{
+                                  backgroundColor: branding.primaryColor,
+                                  fontFamily: 'Montserrat, sans-serif'
+                                }}
+                                className="h-11 text-white shadow-lg hover:shadow-xl transition-all"
+                                disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId || !timesheetForm.heureDebut || !timesheetForm.heureFin}
+                                title="Enregistrer une session complète"
+                              >
+                                <Check className="w-4 h-4 mr-2" />
+                                Complet
+                              </Button>
                             </>
                           )}
                         </div>
@@ -2958,7 +3552,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                       </div>
                                     </div>
                                     <div className="ml-4 flex items-center gap-3">
-                                      {!isPublicAccess && (
                                       <Button
                                         variant="outline"
                                         onClick={() => handleStartEditTimesheet(timesheet)}
@@ -2968,7 +3561,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                         <Edit className="w-4 h-4 mr-2" />
                                         Modifier
                                       </Button>
-                                      )}
                                       <Button
                                         onClick={() => handleRegisterTimesheetExit(timesheet.id)}
                                         className="h-12 px-6 text-white shadow-lg hover:shadow-xl transition-all"
@@ -3008,6 +3600,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 </div>
               )}
             </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
@@ -3251,257 +3844,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Profil Détaillé du Candidat */}
-      <Dialog open={dialogPerfilOpen} onOpenChange={setDialogPerfilOpen}>
-        <DialogContent className="app-dialog-comfort max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="perfil-candidato-description">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              <Users className="w-6 h-6" style={{ color: branding.primaryColor }} />
-              Profil du Candidat
-            </DialogTitle>
-            <DialogDescription id="perfil-candidato-description">
-              Détails complets de la candidature du candidat sélectionné
-            </DialogDescription>
-          </DialogHeader>
-
-          {candidatoParaPerfil && (() => {
-            const numeroArchivo = obtenerNumeroArchivoCandidato(candidatoParaPerfil);
-            const cardColor = branding.primaryColor;
-            
-            return (
-              <div className="space-y-6">
-                {/* En-tête du profil avec avatar */}
-                <div 
-                  className="p-6 rounded-xl relative overflow-hidden"
-                  style={{
-                    background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`
-                  }}
-                >
-                  <div className="flex flex-col sm:flex-row items-start gap-4">
-                    <div 
-                      className="w-20 h-20 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
-                      style={{ 
-                        background: `linear-gradient(135deg, ${cardColor} 0%, ${cardColor}dd 100%)`,
-                        boxShadow: `0 4px 12px ${cardColor}30`
-                      }}
-                    >
-                      <Users className="w-10 h-10" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 
-                        className="text-2xl font-bold mb-1"
-                        style={{ 
-                          fontFamily: 'Montserrat, sans-serif',
-                          color: branding.primaryColor
-                        }}
-                      >
-                        {candidatoParaPerfil.name}
-                      </h3>
-                      <p className="text-lg mb-2" style={{ color: branding.secondaryColor }}>
-                        {candidatoParaPerfil.position}
-                      </p>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {getStatusBadge(candidatoParaPerfil.status)}
-                        {numeroArchivo && (
-                          <div className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white/80">
-                            <FileText className="w-4 h-4" style={{ color: branding.primaryColor }} />
-                            <span 
-                              className="text-sm font-mono font-semibold tracking-wide"
-                              style={{ color: branding.primaryColor }}
-                            >
-                              {numeroArchivo}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Informations de contact */}
-                <div className="space-y-3">
-                  <h4 
-                    className="font-semibold text-lg flex items-center gap-2"
-                    style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
-                  >
-                    <Mail className="w-5 h-5" />
-                    Coordonnées
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
-                      <Mail className="w-5 h-5 flex-shrink-0" style={{ color: cardColor }} />
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Email</p>
-                        <p className="text-sm font-medium">{candidatoParaPerfil.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
-                      <Phone className="w-5 h-5 flex-shrink-0" style={{ color: cardColor }} />
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Téléphone</p>
-                        <p className="text-sm font-medium">{candidatoParaPerfil.phone}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Adresse (si disponible) */}
-                {(candidatoParaPerfil.adresse || candidatoParaPerfil.ville || candidatoParaPerfil.codePostal || candidatoParaPerfil.appartement) && (
-                  <div className="space-y-3">
-                    <h4 
-                      className="font-semibold text-lg flex items-center gap-2"
-                      style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
-                    >
-                      <MapPin className="w-5 h-5" />
-                      Adresse
-                    </h4>
-                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-                      <div className="space-y-2">
-                        {candidatoParaPerfil.adresse && (
-                          <p className="text-sm font-medium">{candidatoParaPerfil.adresse}</p>
-                        )}
-                        {candidatoParaPerfil.appartement && (
-                          <p className="text-sm text-gray-600">Apt/Unité: {candidatoParaPerfil.appartement}</p>
-                        )}
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          {candidatoParaPerfil.ville && <span>{candidatoParaPerfil.ville}</span>}
-                          {candidatoParaPerfil.ville && candidatoParaPerfil.codePostal && <span>•</span>}
-                          {candidatoParaPerfil.codePostal && <span>{candidatoParaPerfil.codePostal}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Détails de la candidature */}
-                <div className="space-y-3">
-                  <h4 
-                    className="font-semibold text-lg flex items-center gap-2"
-                    style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
-                  >
-                    <Briefcase className="w-5 h-5" />
-                    Détails de la candidature
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
-                      <Calendar className="w-5 h-5 flex-shrink-0 mt-1" style={{ color: cardColor }} />
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Date de candidature</p>
-                        <p className="text-sm font-medium">
-                          {new Date(candidatoParaPerfil.applicationDate).toLocaleDateString('fr-FR', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
-                      <Clock className="w-5 h-5 flex-shrink-0 mt-1" style={{ color: cardColor }} />
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Disponibilité</p>
-                        <p className="text-sm font-medium">{candidatoParaPerfil.availability}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expérience */}
-                <div className="space-y-3">
-                  <h4 
-                    className="font-semibold text-lg flex items-center gap-2"
-                    style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    Expérience
-                  </h4>
-                  <div 
-                    className="p-4 rounded-xl border-l-4"
-                    style={{ 
-                      backgroundColor: `${branding.secondaryColor}10`,
-                      borderLeftColor: branding.secondaryColor
-                    }}
-                  >
-                    <p className="text-sm leading-relaxed">{candidatoParaPerfil.experience}</p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 justify-between pt-4 border-t">
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setDialogPerfilOpen(false);
-                        setCandidatoParaPerfil(null);
-                      }}
-                      style={{ fontFamily: 'Montserrat, sans-serif' }}
-                    >
-                      Fermer
-                    </Button>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    {(() => {
-                      const tieneContacto = obtenerContactoCandidato(candidatoParaPerfil);
-                      
-                      if (tieneContacto) {
-                        return (
-                          <>
-                            <Button
-                              variant="outline"
-                              className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                              style={{
-                                fontFamily: 'Montserrat, sans-serif',
-                                color: branding.primaryColor,
-                                borderColor: `${branding.primaryColor}55`
-                              }}
-                              onClick={() => {
-                                setDialogPerfilOpen(false);
-                                abrirDialogoAssignacion(candidatoParaPerfil, 'modify');
-                              }}
-                            >
-                              <ArrowRightLeft className="w-4 h-4 mr-2" />
-                              Modifier l'assignation
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="border-red-500 text-red-600 hover:bg-red-50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                              style={{ fontFamily: 'Montserrat, sans-serif' }}
-                              onClick={() => handleEliminarContacto(candidatoParaPerfil)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Supprimer le contact
-                            </Button>
-                          </>
-                        );
-                      } else {
-                        return (
-                          <Button
-                            className="text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                            style={{
-                              background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                              fontFamily: 'Montserrat, sans-serif'
-                            }}
-                            onClick={() => {
-                              setDialogPerfilOpen(false);
-                              abrirDialogoAssignacion(candidatoParaPerfil, 'assign');
-                            }}
-                          >
-                            <Link className="w-4 h-4 mr-2" />
-                            Assigner au département
-                          </Button>
-                        );
-                      }
-                    })()}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

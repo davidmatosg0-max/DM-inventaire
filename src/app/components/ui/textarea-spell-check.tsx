@@ -127,6 +127,233 @@ const commonCorrections: Record<string, string> = {
   'mercis': 'merci'
 };
 
+const feminineSingularNouns = [
+  'demande',
+  'réponse',
+  'information',
+  'confirmation',
+  'livraison',
+  'quantité',
+  'priorité',
+  'disponibilité',
+  'annonce',
+  'équipe',
+  'personne',
+  'adresse',
+  'date'
+];
+
+const femininePluralNouns = [
+  'demandes',
+  'réponses',
+  'informations',
+  'confirmations',
+  'livraisons',
+  'quantités',
+  'priorités',
+  'disponibilités',
+  'annonces',
+  'équipes',
+  'personnes',
+  'adresses',
+  'dates'
+];
+
+const masculineSingularNouns = [
+  'message',
+  'besoin',
+  'transport',
+  'département',
+  'document',
+  'produit',
+  'courriel',
+  'suivi'
+];
+
+const masculinePluralNouns = [
+  'messages',
+  'besoins',
+  'transports',
+  'départements',
+  'documents',
+  'produits',
+  'courriels',
+  'suivis',
+  'bénévoles',
+  'volontaires',
+  'organismes'
+];
+
+const agreementAdjectives = [
+  { masculine: 'urgent', feminine: 'urgente' },
+  { masculine: 'important', feminine: 'importante' },
+  { masculine: 'complet', feminine: 'complète' },
+  { masculine: 'prêt', feminine: 'prête' }
+];
+
+const nounGroupPattern = (words: string[]) => words.join('|');
+
+const normalizeRestructuredText = (text: string) => {
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,;:!?])/g, '$1')
+    .replace(/([.,;:!?])([^\s\n])/g, '$1 $2')
+    .replace(/\s+'/g, "'")
+    .replace(/'\s+/g, "'")
+    .trim();
+};
+
+const applyFrenchAgreementCorrections = (text: string) => {
+  let rewritten = text;
+
+  const feminineSingularPattern = nounGroupPattern(feminineSingularNouns);
+  const femininePluralPattern = nounGroupPattern(femininePluralNouns);
+  const masculineSingularPattern = nounGroupPattern(masculineSingularNouns);
+  const masculinePluralPattern = nounGroupPattern(masculinePluralNouns);
+
+  rewritten = rewritten
+    .replace(new RegExp(`\\bce\\s+(${feminineSingularPattern})\\b`, 'gi'), 'cette $1')
+    .replace(new RegExp(`\\bcette\\s+(${masculineSingularPattern})\\b`, 'gi'), 'ce $1')
+    .replace(new RegExp(`\\bce\\s+(${femininePluralPattern}|${masculinePluralPattern})\\b`, 'gi'), 'ces $1')
+    .replace(new RegExp(`\\bcette\\s+(${femininePluralPattern}|${masculinePluralPattern})\\b`, 'gi'), 'ces $1')
+    .replace(new RegExp(`\\btout\\s+les\\s+(${femininePluralPattern})\\b`, 'gi'), 'toutes les $1')
+    .replace(new RegExp(`\\btout\\s+les\\s+(${masculinePluralPattern})\\b`, 'gi'), 'tous les $1')
+    .replace(new RegExp(`\\btous\\s+les\\s+(${femininePluralPattern})\\b`, 'gi'), 'toutes les $1')
+    .replace(new RegExp(`\\btoutes\\s+les\\s+(${masculinePluralPattern})\\b`, 'gi'), 'tous les $1');
+
+  agreementAdjectives.forEach(({ masculine, feminine }) => {
+    rewritten = rewritten
+      .replace(new RegExp(`\\b(${feminineSingularPattern})\\s+${masculine}\\b`, 'gi'), `$1 ${feminine}`)
+      .replace(new RegExp(`\\b(${masculineSingularPattern})\\s+${feminine}\\b`, 'gi'), `$1 ${masculine}`)
+      .replace(new RegExp(`\\b(${femininePluralPattern})\\s+${masculine}s?\\b`, 'gi'), `$1 ${feminine}s`)
+      .replace(new RegExp(`\\b(${masculinePluralPattern})\\s+${feminine}s\\b`, 'gi'), `$1 ${masculine}s`)
+      .replace(new RegExp(`\\b(${feminineSingularPattern})([^.!?]{0,40}?)\\best\\s+${masculine}\\b`, 'gi'), `$1$2est ${feminine}`)
+      .replace(new RegExp(`\\b(${masculineSingularPattern})([^.!?]{0,40}?)\\best\\s+${feminine}\\b`, 'gi'), `$1$2est ${masculine}`)
+      .replace(new RegExp(`\\b(${femininePluralPattern})([^.!?]{0,40}?)\\bsont\\s+${masculine}s\\b`, 'gi'), `$1$2sont ${feminine}s`)
+      .replace(new RegExp(`\\b(${masculinePluralPattern})([^.!?]{0,40}?)\\bsont\\s+${feminine}s\\b`, 'gi'), `$1$2sont ${masculine}s`);
+  });
+
+  return rewritten;
+};
+
+const applyFrenchFormalityCorrections = (text: string) => {
+  let rewritten = text;
+
+  const formalRules: Array<[RegExp, string]> = [
+    [/\bsalut\b/gi, 'bonjour'],
+    [/\bcoucou\b/gi, 'bonjour'],
+    [/\bstp\b/gi, "s'il vous plaît"],
+    [/\bsvp\b/gi, "s'il vous plaît"],
+    [/\bon\s+a\s+besoin\s+de\b/gi, 'nous avons besoin de'],
+    [/\bon\s+veut\b/gi, 'nous souhaitons'],
+    [/\bje\s+veux\s+savoir\b/gi, 'je souhaiterais savoir'],
+    [/\bje\s+veux\b/gi, 'je souhaite'],
+    [/\best[-\s]?ce\s+que\s+tu\s+peux\b/gi, 'pouvez-vous'],
+    [/\bpeux[-\s]?tu\b/gi, 'pouvez-vous'],
+    [/\btu\s+peux\b/gi, 'vous pouvez'],
+    [/\bdis[-\s]?moi\b/gi, 'merci de me dire'],
+    [/\bdit[-\s]?moi\b/gi, 'merci de me dire'],
+    [/\bré?ponds[-\s]?moi\b/gi, 'merci de me répondre'],
+    [/\benvoie[-\s]?moi\b/gi, "veuillez m'envoyer"],
+    [/\bconfirme[-\s]?moi\b/gi, 'merci de me confirmer'],
+    [/\bdonne[-\s]?moi\b/gi, 'merci de me transmettre'],
+    [/\bj'attends\s+ton\s+retour\b/gi, "dans l'attente de votre retour"],
+    [/\bj'attends\s+ta\s+réponse\b/gi, "dans l'attente de votre réponse"]
+  ];
+
+  formalRules.forEach(([pattern, replacement]) => {
+    rewritten = rewritten.replace(pattern, replacement);
+  });
+
+  return rewritten;
+};
+
+const splitOverlongFrenchSentence = (sentence: string) => {
+  let rewritten = sentence;
+
+  rewritten = rewritten
+    .replace(/;\s*/g, '. ')
+    .replace(/:\s+(?=(nous|je|vous|il|elle|ils|elles|cependant|néanmoins|par ailleurs|ensuite|puis|en outre|de plus)\b)/gi, '. ')
+    .replace(/,\s+(cependant|néanmoins|par ailleurs|ensuite|puis|en outre|de plus)\b/gi, '. $1');
+
+  if (rewritten.length > 140) {
+    rewritten = rewritten.replace(/,\s+(nous devons|nous avons|je souhaite|je voudrais|veuillez)\b/gi, '. $1');
+  }
+
+  return rewritten
+    .split(/(?<=[.!?])\s+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+    .join(' ');
+};
+
+const rewriteFrenchSentence = (text: string) => {
+  let rewritten = normalizeRestructuredText(text);
+
+  rewritten = rewritten.replace(/\b(je|me|te|se|ne|que|de|le)\s+([aeiouhàâäéèêëîïôöùûüÿœ])/gi, (_, prefix: string, vowel: string) => {
+    const stem = prefix.slice(0, -1);
+    const normalizedPrefix = prefix[0] === prefix[0].toUpperCase()
+      ? stem.charAt(0).toUpperCase() + stem.slice(1)
+      : stem;
+    return `${normalizedPrefix}'${vowel}`;
+  });
+
+  rewritten = applyFrenchFormalityCorrections(rewritten);
+  rewritten = applyFrenchAgreementCorrections(rewritten);
+
+  const rules: Array<[RegExp, string]> = [
+    [/\bje\s+peut\b/gi, 'je peux'],
+    [/\bnous\s+besoin\s+de\b/gi, 'nous avons besoin de'],
+    [/\bvous\s+besoin\s+de\b/gi, 'vous avez besoin de'],
+    [/\bje\s+ai\s+besoin\s+de\b/gi, "j'ai besoin de"],
+    [/\b(il|elle|on)\s+besoin\s+de\b/gi, '$1 a besoin de'],
+    [/\bils\s+besoin\s+de\b/gi, 'ils ont besoin de'],
+    [/\belles\s+besoin\s+de\b/gi, 'elles ont besoin de'],
+    [/\bsi\s+il\b/gi, "s'il"],
+    [/\bsi\s+ils\b/gi, "s'ils"],
+    [/\bque\s+il\b/gi, "qu'il"],
+    [/\bque\s+ils\b/gi, "qu'ils"],
+    [/\bque\s+elle\b/gi, "qu'elle"],
+    [/\bde\s+le\b/gi, 'du'],
+    [/\bde\s+les\b/gi, 'des'],
+    [/\bà\s+le\b/gi, 'au'],
+    [/\bà\s+les\b/gi, 'aux'],
+    [/\bmerci\s+de\s+confirmer\b/gi, 'merci de bien vouloir confirmer'],
+    [/\bmerci\s+de\s+envoyer\b/gi, 'merci de bien vouloir envoyer'],
+    [/\bbonjour\b(?!\s*,)/gi, 'Bonjour,'],
+    [/\bbonsoir\b(?!\s*,)/gi, 'Bonsoir,'],
+    [/\bcordialement\b(?!\s*,)/gi, 'Cordialement,'],
+  ];
+
+  rules.forEach(([pattern, replacement]) => {
+    rewritten = rewritten.replace(pattern, replacement);
+  });
+
+  rewritten = rewritten
+    .replace(/,\s+(merci|bonjour|bonsoir|afin|pour|puis|ensuite)\b/gi, '. $1')
+    .replace(/;\s*/g, '. ')
+    .replace(/\b(par ailleurs|cependant|néanmoins|ensuite|puis)\s+(?=[a-zà-ÿ])/gi, (_, connector: string) => `${connector.charAt(0).toUpperCase()}${connector.slice(1)}, `)
+    .replace(/\bque\s+que\b/gi, 'que')
+    .replace(/\bde\s+de\b/gi, 'de');
+
+  rewritten = rewritten.replace(/\b(S'il[^.!?]{0,120})\.\s+(Merci de me confirmer)\b/gi, (_, clause: string, followUp: string) => {
+    return `${clause}, ${followUp.toLowerCase()}`;
+  });
+
+  rewritten = normalizeRestructuredText(rewritten);
+  rewritten = splitOverlongFrenchSentence(rewritten);
+
+  if (rewritten.length > 0) {
+    rewritten = rewritten.charAt(0).toUpperCase() + rewritten.slice(1);
+  }
+
+  if (!/[.!?]$/.test(rewritten)) {
+    rewritten += '.';
+  }
+
+  return rewritten.replace(/([.!?])\s+([a-zà-ÿ])/g, (_, punctuation: string, letter: string) => `${punctuation} ${letter.toUpperCase()}`);
+};
+
 export function TextareaSpellCheck({
   value,
   onChange,
@@ -240,34 +467,24 @@ export function TextareaSpellCheck({
       });
     });
     
-    // Mejorar capitalización: primera letra de cada oración
-    restructuredText = restructuredText.replace(/(^|[.!?]\s+)([a-zà-ÿ])/g, (match, separator, letter) => {
-      return separator + letter.toUpperCase();
-    });
-    
-    // Asegurar capitalización al inicio si no hay
-    if (restructuredText.length > 0) {
-      restructuredText = restructuredText.charAt(0).toUpperCase() + restructuredText.slice(1);
+    if (language === 'fr') {
+      restructuredText = rewriteFrenchSentence(restructuredText);
+    } else {
+      restructuredText = normalizeRestructuredText(restructuredText);
+
+      restructuredText = restructuredText.replace(/(^|[.!?]\s+)([a-zà-ÿ])/g, (match, separator, letter) => {
+        return separator + letter.toUpperCase();
+      });
+
+      if (restructuredText.length > 0) {
+        restructuredText = restructuredText.charAt(0).toUpperCase() + restructuredText.slice(1);
+      }
+
+      const lastChar = restructuredText.trim().slice(-1);
+      if (lastChar && !['.', '!', '?'].includes(lastChar)) {
+        restructuredText = restructuredText.trim() + '.';
+      }
     }
-    
-    // Mejorar puntuación: agregar punto final si no existe
-    const lastChar = restructuredText.trim().slice(-1);
-    if (lastChar && !['.', '!', '?'].includes(lastChar)) {
-      restructuredText = restructuredText.trim() + '.';
-    }
-    
-    // Corregir espacios múltiples
-    restructuredText = restructuredText.replace(/\s+/g, ' ');
-    
-    // Corregir espacios antes de puntuación
-    restructuredText = restructuredText.replace(/\s+([.,;:!?])/g, '$1');
-    
-    // Asegurar espacio después de puntuación
-    restructuredText = restructuredText.replace(/([.,;:!?])([a-zA-ZÀ-ÿ])/g, '$1 $2');
-    
-    // Corregir comillas y apóstrofes
-    restructuredText = restructuredText.replace(/\s+'/g, "'");
-    restructuredText = restructuredText.replace(/'\s+/g, "' ");
     
     // Crear evento sintético
     const syntheticEvent = {
@@ -316,7 +533,7 @@ export function TextareaSpellCheck({
               title="Reestructurar y mejorar el texto"
             >
               <Sparkles className={cn("w-3 h-3 mr-1", isRestructuring && "animate-spin")} />
-              Reestructurer
+              Reformuler
             </Button>
           )}
           
