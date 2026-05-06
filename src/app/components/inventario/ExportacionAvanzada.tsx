@@ -13,6 +13,8 @@ import { Separator } from '../ui/separator';
 import { toast } from 'sonner';
 import { obtenerProductos } from '../../utils/productStorage';
 import { obtenerEntradas } from '../../utils/entradaInventarioStorage';
+import { exportarInventarioPDF } from '../../utils/exportarPDF';
+import { exportData, generateFilename, type TableColumn } from '../../utils/exportUtils';
 
 type ExportacionAvanzadaProps = {
   open: boolean;
@@ -60,7 +62,7 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
     }
   ];
 
-  const generarExportacion = () => {
+  const generarExportacion = async () => {
     const productos = obtenerProductos();
     const entradas = obtenerEntradas();
 
@@ -100,19 +102,71 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
         : entradasFiltradas;
     }
 
-    // Simular exportación
-    const nombreArchivo = `inventario_${tipoDatos}_${new Date().getTime()}.${formato}`;
-    
-    toast.success(
-      <div className="space-y-1">
-        <p className="font-bold">✅ Exportación completada</p>
-        <p className="text-sm">Archivo: {nombreArchivo}</p>
-        <p className="text-xs text-[#666666]">{datosExportar.length} registros exportados</p>
-      </div>,
-      { duration: 5000 }
-    );
+    const nombreArchivo = tipoDatos === 'productos' && formato === 'pdf'
+      ? generateFilename('Inventario_compacto', 'pdf')
+      : `inventario_${tipoDatos}_${new Date().getTime()}.${formato}`;
 
-    // En producción, aquí se generaría el archivo real
+    if (tipoDatos === 'productos') {
+      const filasProductos = datosExportar.map((producto) => ({
+        code: producto.codigo || 'N/A',
+        name: producto.nombre || 'Sans nom',
+        category: producto.categoria || 'N/A',
+        subcategory: producto.subcategoria || 'N/A',
+        stock: producto.stockActual ?? 0,
+        minStock: producto.stockMinimo ?? 0,
+        unit: producto.unidad || 'u',
+        weight: producto.pesoRegistrado ?? ((producto.pesoUnitario ?? producto.peso ?? 0) * (producto.stockActual ?? 0)),
+        location: producto.ubicacion || 'N/A',
+        batch: producto.lote || 'N/A',
+        expiration: producto.fechaVencimiento || 'N/A',
+        temperature: producto.temperaturaAlmacenamiento || producto.temperatura || 'N/A',
+        status: producto.estado || 'Disponible',
+        value: incluirValorMonetario ? (producto.valorTotal ?? 0) : '',
+      }));
+
+      if (formato === 'pdf') {
+        exportarInventarioPDF(datosExportar, nombreArchivo);
+      } else {
+        const columns: TableColumn[] = [
+          { header: 'Código', key: 'code' },
+          { header: 'Producto', key: 'name' },
+          { header: 'Categoría', key: 'category' },
+          { header: 'Subcategoría', key: 'subcategory' },
+          { header: 'Stock', key: 'stock' },
+          { header: 'Mínimo', key: 'minStock' },
+          { header: 'Unidad', key: 'unit' },
+          { header: 'Poids (kg)', key: 'weight' },
+          ...(incluirUbicacion ? [{ header: 'Ubicación', key: 'location' }] : []),
+          ...(incluirFechas ? [
+            { header: 'Lote', key: 'batch' },
+            { header: 'Fecha vencimiento', key: 'expiration' },
+            { header: 'Température', key: 'temperature' },
+          ] : []),
+          { header: 'État', key: 'status' },
+          ...(incluirValorMonetario ? [{ header: 'Valeur', key: 'value' }] : []),
+        ];
+
+        await exportData(formato, filasProductos, columns, {
+          filename: generateFilename(`inventario_${tipoDatos}`, formato === 'excel' ? 'xlsx' : formato),
+          title: 'Exportación Avanzada de Inventario',
+          subtitle: `${filasProductos.length} registros exportados`,
+          orientation: 'landscape',
+        });
+      }
+
+      toast.success(
+        <div className="space-y-1">
+          <p className="font-bold">✅ Exportación completada</p>
+          <p className="text-sm">Archivo: {nombreArchivo}</p>
+          <p className="text-xs text-[#666666]">{datosExportar.length} registros exportados</p>
+        </div>,
+        { duration: 5000 }
+      );
+
+      onOpenChange(false);
+      return;
+    }
+    
     console.log('Exportando:', {
       formato,
       tipoDatos,
@@ -126,6 +180,8 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
         categoriasSeleccionadas
       }
     });
+
+    toast.info('La exportation réelle des entrées et des jeux combinés sera ajoutée ensuite.');
 
     onOpenChange(false);
   };

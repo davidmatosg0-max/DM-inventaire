@@ -97,7 +97,7 @@ function formatCurrencyCompact(value: number): string {
 /**
  * Exportar reporte de inventario a PDF
  */
-export function exportarInventarioPDF(productos: any[]) {
+export function exportarInventarioPDF(productos: any[], nombreArchivo?: string) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const totalStock = productos.reduce((sum, producto) => sum + Number(producto?.stockActual || 0), 0);
   const totalPeso = productos.reduce((sum, producto) => sum + getInventarioPesoKg(producto), 0);
@@ -238,7 +238,7 @@ export function exportarInventarioPDF(productos: any[]) {
   });
 
   agregarPieDePagina(doc);
-  doc.save(`Inventario_compacto_${Date.now()}.pdf`);
+  doc.save(nombreArchivo || `Inventario_compacto_${Date.now()}.pdf`);
 }
 
 /**
