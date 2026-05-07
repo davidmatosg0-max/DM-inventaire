@@ -27,6 +27,7 @@ import {
   actualizarOrganismo,
   migrarClavesDeAcceso,
   type Organismo,
+  type ClasificacionOrganismo,
   type IdiomaContactoOrganismo
 } from '../../utils/organismosStorage';
 import { esAdministradorLiaison } from '../../utils/sesionStorage';
@@ -41,6 +42,7 @@ const getTiposOrganismo = (t: any) => [
   { id: '3', nombre: t('organisms.organismTypes.ngo'), icono: '🤝' },
   { id: '4', nombre: t('organisms.organismTypes.shelter'), icono: '🏠' },
   { id: '5', nombre: t('organisms.organismTypes.dayCenter'), icono: '☀️' },
+  { id: '21', nombre: 'Collation', icono: '🥪' },
   { id: '6', nombre: t('organisms.organismTypes.school'), icono: '🎓' },
   { id: '7', nombre: t('organisms.organismTypes.daycare'), icono: '👶' },
   { id: '8', nombre: t('organisms.organismTypes.childrensHome'), icono: '👨‍👩‍👧‍👦' },
@@ -57,6 +59,12 @@ const getTiposOrganismo = (t: any) => [
   { id: '19', nombre: t('organisms.organismTypes.foodBank'), icono: '🛒' },
   { id: '20', nombre: t('organisms.organismTypes.other'), icono: '📌' }
 ];
+
+const resolverClasificacionOrganismo = (organismo?: { clasificacionOrganismo?: ClasificacionOrganismo; regular?: boolean }) => (
+  organismo?.clasificacionOrganismo || (organismo?.regular === false ? 'eventual' : 'regular')
+);
+
+const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
 export function Organismos() {
   const { t } = useTranslation();
@@ -78,13 +86,6 @@ export function Organismos() {
     console.log('%c⚠️ SI NO VES EL CAMPO LOGO, PRESIONA: Ctrl+Shift+R (Windows) o Cmd+Shift+R (Mac)', `background: ${branding.dangerColor}; color: white; font-size: 14px; font-weight: bold; padding: 8px; border-radius: 4px;`);
     console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', `color: ${branding.primaryColor}; font-weight: bold;`);
     
-    // Mostrar toast de bienvenida a la nueva versión
-    setTimeout(() => {
-      toast.success(`🎨 ${t('organisms.version.toast.title')}`, {
-        description: t('organisms.version.toast.description'),
-        duration: 8000,
-      });
-    }, 1000);
   }, [branding, t]);
 
   // Verificar permisos del usuario
@@ -148,9 +149,11 @@ export function Organismos() {
         telefono: '',
         email: '',
         frecuenciaCita: '',
+        diaCita: '',
         horaCita: '',
         participantePRS: false,
         regular: true,
+        clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
         activo: true,
         personasServidas: 0,
         cantidadColaciones: 0,
@@ -224,9 +227,11 @@ export function Organismos() {
     telefono: '',
     email: '',
     frecuenciaCita: '',
+    diaCita: '',
     horaCita: '',
     participantePRS: false,
     regular: true,
+    clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
     activo: true,
     personasServidas: 0,
     cantidadColaciones: 0,
@@ -312,8 +317,10 @@ export function Organismos() {
         beneficiarios: formOrganismo.beneficiarios,
         activo: formOrganismo.activo,
         regular: formOrganismo.regular,
+        clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
         participantePRS: formOrganismo.participantePRS,
         frecuenciaCita: formOrganismo.frecuenciaCita,
+        diaCita: formOrganismo.diaCita,
         horaCita: formOrganismo.horaCita,
         personasServidas: formOrganismo.personasServidas,
         cantidadColaciones: formOrganismo.cantidadColaciones,
@@ -366,10 +373,12 @@ export function Organismos() {
       beneficiarios: organismo.beneficiarios,
       telefono: organismo.telefono,
       email: organismo.email,
-      frecuenciaCita: 'semanal',
-      horaCita: '10:00',
+      frecuenciaCita: organismo.frecuenciaCita || 'semanal',
+      diaCita: organismo.diaCita || '',
+      horaCita: organismo.horaCita || '10:00',
       participantePRS: false,
-      regular: true,
+      regular: organismo.regular,
+      clasificacionOrganismo: resolverClasificacionOrganismo(organismo),
       activo: organismo.activo,
       personasServidas: 120,
       cantidadColaciones: 80,
@@ -412,10 +421,12 @@ export function Organismos() {
       beneficiarios: organismo.beneficiarios,
       telefono: organismo.telefono,
       email: organismo.email,
-      frecuenciaCita: 'semanal',
-      horaCita: '10:00',
+      frecuenciaCita: organismo.frecuenciaCita || 'semanal',
+      diaCita: organismo.diaCita || '',
+      horaCita: organismo.horaCita || '10:00',
       participantePRS: false,
-      regular: true,
+      regular: organismo.regular,
+      clasificacionOrganismo: resolverClasificacionOrganismo(organismo),
       activo: organismo.activo,
       personasServidas: 120,
       cantidadColaciones: 80,
@@ -457,8 +468,10 @@ export function Organismos() {
           beneficiarios: formOrganismo.beneficiarios,
           activo: formOrganismo.activo,
           regular: formOrganismo.regular,
+          clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
           participantePRS: formOrganismo.participantePRS,
           frecuenciaCita: formOrganismo.frecuenciaCita,
+          diaCita: formOrganismo.diaCita,
           horaCita: formOrganismo.horaCita,
           personasServidas: formOrganismo.personasServidas,
           cantidadColaciones: formOrganismo.cantidadColaciones,
@@ -1051,6 +1064,22 @@ export function Organismos() {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label>Jour de rendez-vous</Label>
+                    <Select
+                      value={formOrganismo.diaCita}
+                      onValueChange={(value) => setFormOrganismo({ ...formOrganismo, diaCita: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le jour" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {diasCitaOptions.map((dia) => (
+                          <SelectItem key={dia} value={dia}>{dia}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label>{t('organisms.appointmentTime')}</Label>
                     <Input 
                       type="time" 
@@ -1062,14 +1091,19 @@ export function Organismos() {
                   <div className="space-y-2">
                     <Label>{t('organisms.organismType')}</Label>
                     <Select 
-                      value={formOrganismo.regular ? 'regular' : 'eventual'}
-                      onValueChange={(value) => setFormOrganismo({ ...formOrganismo, regular: value === 'regular' })}
+                      value={resolverClasificacionOrganismo(formOrganismo)}
+                      onValueChange={(value) => setFormOrganismo({
+                        ...formOrganismo,
+                        clasificacionOrganismo: value as ClasificacionOrganismo,
+                        regular: value !== 'eventual'
+                      })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('organisms.selectType')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="regular">{t('organisms.regular')}</SelectItem>
+                        <SelectItem value="collation">Collation</SelectItem>
                         <SelectItem value="eventual">{t('organisms.occasionalOrganism')}</SelectItem>
                       </SelectContent>
                     </Select>

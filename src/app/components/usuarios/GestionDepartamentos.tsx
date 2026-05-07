@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Edit, Trash2, MapPin, Users, Building2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Users, Building2, Power } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -64,6 +64,11 @@ const departamentosExtendidos: Record<string, { responsable: string; ubicacion: 
     responsable: 'Sophie Lavoie',
     ubicacion: 'Recursos Humanos',
     usuarios: 4
+  },
+  'ACHAT': {
+    responsable: 'Julie Marchand',
+    ubicacion: 'Achats et Approvisionnements',
+    usuarios: 2
   }
 };
 
@@ -199,6 +204,22 @@ export function GestionDepartamentos() {
       setDeleteDialogOpen(false);
       setDepartamentoAEliminar(null);
     }
+  };
+
+  const handleToggleActivo = (departamento: Departamento) => {
+    const actualizado = actualizarDepartamento(departamento.id, { activo: !departamento.activo });
+
+    if (!actualizado) {
+      toast.error(t('common.error') || 'Erreur lors de la mise a jour du departement');
+      return;
+    }
+
+    setDepartamentos(cargarDepartamentos());
+    toast.success(
+      departamento.activo
+        ? `${departamento.nombre} desactive`
+        : `${departamento.nombre} active`
+    );
   };
 
   const resetForm = () => {
@@ -465,6 +486,15 @@ export function GestionDepartamentos() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={departamento.activo ? 'Desactiver le departement' : 'Activer le departement'}
+                            onClick={() => handleToggleActivo(departamento)}
+                            className={departamento.activo ? 'text-amber-600 hover:text-amber-600' : 'text-emerald-600 hover:text-emerald-600'}
+                          >
+                            <Power className="w-4 h-4" />
+                          </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 

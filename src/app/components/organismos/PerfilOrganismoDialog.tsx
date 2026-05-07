@@ -28,6 +28,7 @@ const getTiposOrganismo = (t: any) => [
   { id: '3', nombre: t('organisms.organismTypes.ngo'), icono: '🤝' },
   { id: '4', nombre: t('organisms.organismTypes.shelter'), icono: '🏠' },
   { id: '5', nombre: t('organisms.organismTypes.dayCenter'), icono: '☀️' },
+  { id: '21', nombre: 'Collation', icono: '🥪' },
   { id: '6', nombre: t('organisms.organismTypes.school'), icono: '🎓' },
   { id: '7', nombre: t('organisms.organismTypes.daycare'), icono: '👶' },
   { id: '8', nombre: t('organisms.organismTypes.childrensHome'), icono: '👨‍👩‍👧‍👦' },
@@ -282,6 +283,8 @@ interface PerfilOrganismoDialogProps {
   historialPRS: any[];
   organismoId?: string;
 }
+
+const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
 export function PerfilOrganismoDialog({
   open,
@@ -779,7 +782,7 @@ export function PerfilOrganismoDialog({
                   <Calendar className="w-5 h-5 text-[#1E73BE]" />
                   {t('organisms.profileDialog.schedulingFrequency')}
                 </h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label>{t('organisms.profileDialog.appointmentFrequency')}</Label>
                     {enModoEdicion ? (
@@ -803,6 +806,27 @@ export function PerfilOrganismoDialog({
                   </div>
 
                   <div className="space-y-2">
+                    <Label>Jour de rendez-vous</Label>
+                    {enModoEdicion ? (
+                      <Select
+                        value={formOrganismo.diaCita || ''}
+                        onValueChange={(value) => setFormOrganismo({ ...formOrganismo, diaCita: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner le jour" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {diasCitaOptions.map((dia) => (
+                            <SelectItem key={dia} value={dia}>{dia}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="p-2 bg-gray-50 rounded">{formOrganismo.diaCita || t('organisms.profileDialog.notSpecified')}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>{t('organisms.profileDialog.appointmentTime')}</Label>
                     {enModoEdicion ? (
                       <Input 
@@ -822,20 +846,29 @@ export function PerfilOrganismoDialog({
                     <Label>{t('organisms.type')}</Label>
                     {enModoEdicion ? (
                       <Select 
-                        value={formOrganismo.regular ? 'regular' : 'eventual'}
-                        onValueChange={(value) => setFormOrganismo({ ...formOrganismo, regular: value === 'regular' })}
+                        value={formOrganismo.clasificacionOrganismo || (formOrganismo.regular ? 'regular' : 'eventual')}
+                        onValueChange={(value) => setFormOrganismo({
+                          ...formOrganismo,
+                          clasificacionOrganismo: value,
+                          regular: value !== 'eventual'
+                        })}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="regular">{t('organisms.regular')}</SelectItem>
+                          <SelectItem value="collation">Collation</SelectItem>
                           <SelectItem value="eventual">{t('organisms.profileDialog.occasionalOrganism')}</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
                       <p className="p-2 bg-gray-50 rounded">
-                        {formOrganismo.regular ? t('organisms.regular') : t('organisms.profileDialog.occasionalOrganism')}
+                        {formOrganismo.clasificacionOrganismo === 'collation'
+                          ? 'Collation'
+                          : formOrganismo.regular
+                            ? t('organisms.regular')
+                            : t('organisms.profileDialog.occasionalOrganism')}
                       </p>
                     )}
                   </div>

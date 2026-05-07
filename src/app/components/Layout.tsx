@@ -29,6 +29,7 @@ import {
   LogOut,
   Apple,
   UserPlus,
+  ShoppingCart,
   Scale,
   Plus,
   Warehouse,
@@ -416,6 +417,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       ]
     },
     { id: 'cuisine', label: t('common.cuisine'), icon: <ChefHat className="w-5 h-5" /> },
+    { id: 'achat', label: 'Achats', icon: <ShoppingCart className="w-5 h-5" /> },
     { id: 'id-digital', label: t('nav.digitalID'), icon: <Scale className="w-5 h-5" /> },
     { id: 'email-organismos', label: t('nav.liaison'), icon: <Users className="w-5 h-5" /> },
     { id: 'communication', label: 'Messagerie', icon: <MessageSquare className="w-5 h-5" /> },
@@ -440,7 +442,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
   const menuSections: MenuSection[] = [
     { id: 'overview', label: 'Vue d’ensemble', itemIds: ['dashboard'] },
-    { id: 'operations', label: 'Opérations', itemIds: ['entrepot', 'cuisine', 'id-digital'] },
+    { id: 'operations', label: 'Opérations', itemIds: ['entrepot', 'cuisine', 'achat', 'id-digital'] },
     { id: 'coordination', label: 'Coordination', itemIds: ['email-organismos', 'communication', 'recrutement'] },
     { id: 'administration', label: 'Administration', itemIds: ['usuarios', 'configuracion'] },
     { id: 'advanced', label: 'Outils avancés', itemIds: ['panel-marca', 'api-keys'] },

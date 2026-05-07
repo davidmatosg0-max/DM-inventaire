@@ -10,6 +10,7 @@ export interface JourDisponible {
 }
 
 export type IdiomaContactoOrganismo = 'es' | 'fr' | 'en' | 'ar';
+export type ClasificacionOrganismo = 'regular' | 'eventual' | 'collation';
 
 export interface ContactoNotificacion {
   nombre: string;
@@ -33,8 +34,10 @@ export interface Organismo {
   beneficiarios: number;
   activo: boolean;
   regular: boolean;
+  clasificacionOrganismo?: ClasificacionOrganismo;
   participantePRS: boolean;
   frecuenciaCita?: string;
+  diaCita?: string;
   horaCita?: string;
   personasServidas: number;
   cantidadColaciones: number;
@@ -71,8 +74,12 @@ function normalizarPorcentajeReparticion(valor: number | undefined): number {
 }
 
 function sanitizarOrganismo(organismo: Organismo): Organismo {
+  const clasificacionOrganismo = organismo.clasificacionOrganismo || (organismo.regular ? 'regular' : 'eventual');
+
   return {
     ...organismo,
+    regular: clasificacionOrganismo !== 'eventual',
+    clasificacionOrganismo,
     porcentajeReparticion: normalizarPorcentajeReparticion(organismo.porcentajeReparticion),
   };
 }

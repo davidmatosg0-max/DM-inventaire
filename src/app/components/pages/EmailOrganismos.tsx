@@ -32,6 +32,7 @@ import {
   actualizarOrganismo,
   migrarClavesDeAcceso,
   type Organismo,
+  type ClasificacionOrganismo,
   type IdiomaContactoOrganismo
 } from '../../utils/organismosStorage';
 import { 
@@ -48,6 +49,7 @@ const getTiposOrganismo = (t: any) => [
   { id: '3', nombre: t('organisms.organismTypes.ngo'), icono: '🤝' },
   { id: '4', nombre: t('organisms.organismTypes.shelter'), icono: '🏠' },
   { id: '5', nombre: t('organisms.organismTypes.dayCenter'), icono: '☀️' },
+  { id: '21', nombre: 'Collation', icono: '🥪' },
   { id: '6', nombre: t('organisms.organismTypes.school'), icono: '🎓' },
   { id: '7', nombre: t('organisms.organismTypes.daycare'), icono: '👶' },
   { id: '8', nombre: t('organisms.organismTypes.childrensHome'), icono: '👨‍👩‍👧‍👦' },
@@ -64,6 +66,12 @@ const getTiposOrganismo = (t: any) => [
   { id: '19', nombre: t('organisms.organismTypes.foodBank'), icono: '🛒' },
   { id: '20', nombre: t('organisms.organismTypes.other'), icono: '📌' }
 ];
+
+const resolverClasificacionOrganismo = (organismo?: { clasificacionOrganismo?: ClasificacionOrganismo; regular?: boolean }) => (
+  organismo?.clasificacionOrganismo || (organismo?.regular === false ? 'eventual' : 'regular')
+);
+
+const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
 export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { t } = useTranslation();
@@ -129,9 +137,11 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     telefono: '',
     email: '',
     frecuenciaCita: '',
+    diaCita: '',
     horaCita: '',
     participantePRS: false,
     regular: true,
+    clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
     activo: true,
     personasServidas: 0,
     cantidadColaciones: 0,
@@ -592,8 +602,10 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
         beneficiarios: formOrganismo.beneficiarios,
         activo: formOrganismo.activo,
         regular: formOrganismo.regular,
+        clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
         participantePRS: formOrganismo.participantePRS,
         frecuenciaCita: formOrganismo.frecuenciaCita,
+        diaCita: formOrganismo.diaCita,
         horaCita: formOrganismo.horaCita,
         personasServidas: formOrganismo.personasServidas,
         cantidadColaciones: formOrganismo.cantidadColaciones,
@@ -634,9 +646,11 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
         telefono: '',
         email: '',
         frecuenciaCita: '',
+        diaCita: '',
         horaCita: '',
         participantePRS: false,
         regular: true,
+        clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
         activo: true,
         personasServidas: 0,
         cantidadColaciones: 0,
@@ -671,8 +685,10 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
           beneficiarios: formOrganismo.beneficiarios,
           activo: formOrganismo.activo,
           regular: formOrganismo.regular,
+          clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
           participantePRS: formOrganismo.participantePRS,
           frecuenciaCita: formOrganismo.frecuenciaCita,
+          diaCita: formOrganismo.diaCita,
           horaCita: formOrganismo.horaCita,
           personasServidas: formOrganismo.personasServidas,
           cantidadColaciones: formOrganismo.cantidadColaciones,
@@ -844,9 +860,11 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
       claveAcceso: org.claveAcceso || '',
       zona: (org as any).zona || '',
       frecuenciaCita: (org as any).frecuenciaCita || '',
+      diaCita: (org as any).diaCita || '',
       horaCita: (org as any).horaCita || '',
       participantePRS: (org as any).participantePRS || false,
       regular: (org as any).regular !== undefined ? (org as any).regular : true,
+      clasificacionOrganismo: resolverClasificacionOrganismo(org as any),
       personasServidas: (org as any).personasServidas || 0,
       cantidadColaciones: (org as any).cantidadColaciones || 0,
       cantidadAlmuerzos: (org as any).cantidadAlmuerzos || 0,
@@ -1000,6 +1018,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                     telefono: '',
                     email: '',
                     frecuenciaCita: '',
+                    diaCita: '',
                     horaCita: '',
                     participantePRS: false,
                     regular: true,
@@ -1649,9 +1668,11 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                         telefono: org.telefono,
                         email: org.email,
                         frecuenciaCita: org.frecuenciaCita || '',
+                        diaCita: org.diaCita || '',
                         horaCita: org.horaCita || '',
                         participantePRS: org.participantePRS,
                         regular: org.regular,
+                        clasificacionOrganismo: resolverClasificacionOrganismo(org),
                         activo: org.activo,
                         personasServidas: org.personasServidas,
                         cantidadColaciones: org.cantidadColaciones,
@@ -2204,16 +2225,37 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                   />
                 </div>
                 <div className="col-span-2 space-y-2">
+                  <Label className="text-sm font-medium">Jour de rendez-vous</Label>
+                  <Select
+                    value={formOrganismo.diaCita}
+                    onValueChange={(value) => setFormOrganismo({ ...formOrganismo, diaCita: value })}
+                  >
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue placeholder="Sélectionner le jour" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {diasCitaOptions.map((dia) => (
+                        <SelectItem key={dia} value={dia} className="text-base">{dia}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 space-y-2">
                   <Label className="text-sm font-medium">{t('organisms.organismType')}</Label>
                   <Select 
-                    value={formOrganismo.regular ? 'regular' : 'eventual'}
-                    onValueChange={(value) => setFormOrganismo({ ...formOrganismo, regular: value === 'regular' })}
+                    value={resolverClasificacionOrganismo(formOrganismo)}
+                    onValueChange={(value) => setFormOrganismo({
+                      ...formOrganismo,
+                      clasificacionOrganismo: value as ClasificacionOrganismo,
+                      regular: value !== 'eventual'
+                    })}
                   >
                     <SelectTrigger className="h-11 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="regular" className="text-base">{t('organisms.regular')}</SelectItem>
+                      <SelectItem value="collation" className="text-base">Collation</SelectItem>
                       <SelectItem value="eventual" className="text-base">{t('organisms.occasionalOrganism')}</SelectItem>
                     </SelectContent>
                   </Select>

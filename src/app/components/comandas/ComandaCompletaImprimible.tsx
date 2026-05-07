@@ -5,6 +5,11 @@ import { mockProductos } from '../../data/mockData';
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { obtenerProductos } from '../../utils/productStorage';
+import {
+  resolverTemperaturaAlmacenamientoProducto,
+  resolverTemperaturaOriginalEntradaProducto,
+} from '../../utils/productTemperature';
+import { sortByTemperature } from '../../utils/temperatureSort';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 import { openPrintPopup, writeAutoPrintPopupContent, writePrintPopupPlaceholder } from '../../utils/printPopup';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
@@ -132,8 +137,44 @@ type PrintPayload = {
     peso: string;
     valor: string;
     observaciones: string;
+    grupoTemperatura: string;
   }>;
 };
+
+function resolveStorageTemperature(item: any, product?: any): string {
+  const temperaturaFuente = resolverTemperaturaAlmacenamientoProducto({
+    ...(product || {}),
+    categoria: product?.categoria || item?.categoria,
+    subcategoria: product?.subcategoria || item?.subcategoria,
+    nombre: product?.nombre || item?.nombreProducto || item?.productoNombre,
+    temperatura: product?.temperatura || item?.temperatura,
+    temperaturaAlmacenamiento: product?.temperaturaAlmacenamiento,
+  });
+
+  if (String(temperaturaFuente).toLowerCase().includes('congel')) {
+    return 'Congelado';
+  }
+
+  if (String(temperaturaFuente).toLowerCase().includes('refrig')) {
+    return 'Refrigerado';
+  }
+
+  return 'Temperatura Ambiente';
+}
+
+function resolveOriginalEntryTemperature(item: any, product?: any): string {
+  return resolverTemperaturaOriginalEntradaProducto({
+    ...(product || {}),
+    categoria: product?.categoria || item?.categoria,
+    subcategoria: product?.subcategoria || item?.subcategoria,
+    nombre: product?.nombre || item?.nombreProducto || item?.productoNombre,
+    temperatura: product?.temperatura || item?.temperatura,
+    temperaturaAlmacenamiento: product?.temperaturaAlmacenamiento,
+    temperaturaOriginalEntrada:
+      item?.temperaturaOriginalEntrada ||
+      product?.temperaturaOriginalEntrada,
+  });
+}
 
 async function generatePrintableComandaHtml(payload: PrintPayload): Promise<string> {
   let qrImage = '';
@@ -147,23 +188,30 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
     console.error('Error al generar QR de la comanda:', error);
   }
 
+  let previousTemperatureGroup = '';
   const rows = payload.items.length === 0
     ? `
       <tr>
         <td colspan="7" class="empty">Aucun produit enregistré dans cette commande.</td>
       </tr>
     `
-    : payload.items.map((item) => `
-      <tr>
-        <td>${escapeHtml(item.nombre)}</td>
-        <td>${escapeHtml(item.temperatura)}</td>
-        <td class="right">${escapeHtml(item.cantidad)}</td>
-        <td>${escapeHtml(item.unidad)}</td>
-        <td class="right">${escapeHtml(item.peso)}</td>
-        <td class="right">${escapeHtml(item.valor)}</td>
-        <td>${escapeHtml(item.observaciones)}</td>
-      </tr>
-    `).join('');
+    : payload.items.map((item) => {
+      const needsHeader = item.grupoTemperatura !== previousTemperatureGroup;
+      previousTemperatureGroup = item.grupoTemperatura;
+
+      return `
+        ${needsHeader ? `<tr class="group-row"><td colspan="7">${escapeHtml(item.grupoTemperatura)}</td></tr>` : ''}
+        <tr>
+          <td>${escapeHtml(item.nombre)}</td>
+          <td>${escapeHtml(item.temperatura)}</td>
+          <td class="right">${escapeHtml(item.cantidad)}</td>
+          <td>${escapeHtml(item.unidad)}</td>
+          <td class="right">${escapeHtml(item.peso)}</td>
+          <td class="right">${escapeHtml(item.valor)}</td>
+          <td>${escapeHtml(item.observaciones)}</td>
+        </tr>
+      `;
+    }).join('');
 
   return `
     <!DOCTYPE html>
@@ -334,6 +382,15 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
             font-weight: 700;
           }
 
+          .group-row td {
+            background: #eaf4ff;
+            color: #1E73BE;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
+
           td.right,
           th.right {
             text-align: right;
@@ -468,6 +525,344 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
   `;
 }
 
+async function generatePreparationWorksheetHtml(payload: PrintPayload): Promise<string> {
+  let qrImage = '';
+
+  try {
+    qrImage = await generateBrandedQrDataUrl(payload.qrData, {
+      width: 220,
+      ...COMANDA_QR_DATA_URL_OPTIONS,
+    });
+  } catch (error) {
+    console.error('Error al generar QR de la ficha de preparation:', error);
+  }
+
+  let previousTemperatureGroup = '';
+  const rows = payload.items.length === 0
+    ? `
+      <tr>
+        <td colspan="7" class="empty">Aucun produit enregistré dans cette commande.</td>
+      </tr>
+    `
+    : payload.items.map((item) => {
+      const needsHeader = item.grupoTemperatura !== previousTemperatureGroup;
+      previousTemperatureGroup = item.grupoTemperatura;
+
+      return `
+        ${needsHeader ? `<tr class="group-row"><td colspan="7">${escapeHtml(item.grupoTemperatura)}</td></tr>` : ''}
+        <tr>
+          <td>${escapeHtml(item.nombre)}</td>
+          <td>${escapeHtml(item.temperatura)}</td>
+          <td class="right">${escapeHtml(item.cantidad)}</td>
+          <td>${escapeHtml(item.unidad)}</td>
+          <td class="blank">&nbsp;</td>
+          <td class="check">[ ]</td>
+          <td class="blank">&nbsp;</td>
+        </tr>
+      `;
+    }).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>${escapeHtml(payload.title)}</title>
+        <style>
+          @page {
+            size: letter portrait;
+            margin: 0.45cm;
+          }
+
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #1f2937;
+            font-family: Arial, Helvetica, sans-serif;
+          }
+
+          body {
+            padding: 18px;
+          }
+
+          .sheet {
+            width: 100%;
+          }
+
+          .header {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            border-bottom: 4px solid #1E73BE;
+            padding-bottom: 14px;
+          }
+
+          .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #1E73BE;
+            margin-bottom: 6px;
+          }
+
+          h1 {
+            font-size: 28px;
+            margin: 0 0 10px;
+          }
+
+          .meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px 18px;
+            font-size: 13px;
+          }
+
+          .qr-box {
+            min-width: 148px;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            padding: 10px;
+            text-align: center;
+            background: white;
+          }
+
+          .qr-box img {
+            display: block;
+            width: 128px;
+            height: 128px;
+            margin: 0 auto 6px;
+          }
+
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+          }
+
+          .card {
+            border: 1px solid #dbe3ea;
+            border-radius: 14px;
+            padding: 14px;
+            page-break-inside: avoid;
+          }
+
+          .card-title,
+          .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #1E73BE;
+            margin: 0 0 10px;
+          }
+
+          .summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+          }
+
+          .summary-card {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 12px;
+            page-break-inside: avoid;
+          }
+
+          .summary-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+          }
+
+          .summary-value {
+            margin-top: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #dbe3ea;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-top: 10px;
+          }
+
+          th, td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 10px 12px;
+            font-size: 12px;
+            vertical-align: top;
+          }
+
+          th {
+            background: #f8fafc;
+            color: #475569;
+            text-align: left;
+            font-weight: 700;
+          }
+
+          .group-row td {
+            background: #eaf4ff;
+            color: #1E73BE;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
+
+          td.right,
+          th.right {
+            text-align: right;
+          }
+
+          .check {
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+          }
+
+          .blank {
+            min-width: 110px;
+          }
+
+          .empty {
+            text-align: center;
+            color: #64748b;
+            padding: 20px 12px;
+          }
+
+          .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+          }
+
+          .signature-line {
+            margin-top: 40px;
+            border-bottom: 1px solid #94a3b8;
+          }
+
+          .signature-name {
+            margin-top: 8px;
+            font-size: 12px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="sheet">
+          <div class="header">
+            <div>
+              <div class="eyebrow">Banque Alimentaire</div>
+              <h1>${escapeHtml(payload.title)}</h1>
+              <div class="meta">
+                <div><strong>N°:</strong> ${escapeHtml(payload.numeroComanda)}</div>
+                <div><strong>Statut:</strong> ${escapeHtml(payload.statusLabel)}</div>
+                <div><strong>Livraison:</strong> ${escapeHtml(payload.fechaEntrega)}</div>
+                <div><strong>Imprimé:</strong> ${escapeHtml(formatDate(new Date().toISOString(), payload.locale, true))}</div>
+              </div>
+            </div>
+            <div class="qr-box">
+              ${qrImage ? `<img src="${qrImage}" alt="QR de la comanda" />` : ''}
+              <strong>${escapeHtml(payload.numeroComanda)}</strong>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card">
+              <div class="card-title">Organisme</div>
+              <div><strong>Nom:</strong> ${escapeHtml(payload.organismoNombre)}</div>
+              <div><strong>Adresse:</strong> ${escapeHtml(payload.organismoDireccion)}</div>
+              <div><strong>Téléphone:</strong> ${escapeHtml(payload.organismoTelefono)}</div>
+              <div><strong>Responsable:</strong> ${escapeHtml(payload.responsableRecogida)}</div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">Consignes de préparation</div>
+              <div><strong>Créée:</strong> ${escapeHtml(payload.fechaCreacion)}</div>
+              <div><strong>Livraison:</strong> ${escapeHtml(payload.fechaEntrega)}</div>
+              <div><strong>Heure prévue:</strong> ${escapeHtml(payload.horaPrevista)}</div>
+              <div><strong>Préparée par:</strong> ${escapeHtml(payload.preparadoPor)}</div>
+              <div><strong>Priorité:</strong> ${escapeHtml(payload.prioridad)}</div>
+            </div>
+          </div>
+
+          <div class="summary">
+            <div class="summary-card">
+              <div class="summary-label">Articles</div>
+              <div class="summary-value">${escapeHtml(payload.totalItems)}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Unités</div>
+              <div class="summary-value">${escapeHtml(payload.totalUnidades)}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Poids estimé</div>
+              <div class="summary-value">${escapeHtml(payload.totalPeso)}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Heure prévue</div>
+              <div class="summary-value">${escapeHtml(payload.horaPrevista)}</div>
+            </div>
+          </div>
+
+          <div class="section-title">Fiche de préparation manuelle</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Temp.</th>
+                <th class="right">Qté demandée</th>
+                <th>Unité</th>
+                <th class="right">Qté préparée</th>
+                <th>Vérifié</th>
+                <th>Notes préparation</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+
+          <div class="footer-grid">
+            <div class="card">
+              <div class="card-title">Instructions et observations</div>
+              <div>${escapeHtml(payload.observaciones)}</div>
+              <div style="margin-top: 18px;"><strong>Rappel:</strong> inscrire manuellement les quantités réellement préparées et cocher chaque ligne vérifiée.</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Validation de préparation</div>
+              <div><strong>Préparée par</strong></div>
+              <div class="signature-line"></div>
+              <div class="signature-name">${escapeHtml(payload.preparadoPor)}</div>
+              <div style="margin-top: 18px;"><strong>Vérifiée par</strong></div>
+              <div class="signature-line"></div>
+              <div class="signature-name">______________________________</div>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
 export function ComandaCompletaImprimible({ comanda, organismo, onClose }: ComandaCompletaImprimibleProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language || 'fr-CA';
@@ -479,10 +874,32 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
       ...mockProductos.filter(mockProducto => !productosInventario.some(producto => producto.id === mockProducto.id)),
     ].map(producto => [producto.id, producto])
   ), [productosInventario]);
-  const printableItemsData = React.useMemo(() => items.map((item: any) => ({
-    item,
-    product: productosCatalogoMap.get(item?.productoId),
-  })), [items, productosCatalogoMap]);
+  const printableItemsData = React.useMemo(() => {
+    const enrichedItems = items.map((item: any) => {
+      const product = productosCatalogoMap.get(item?.productoId);
+      const temperatura = resolveStorageTemperature(item, product);
+      const temperaturaOriginalEntrada = resolveOriginalEntryTemperature(item, product);
+
+      return {
+        item,
+        product,
+        temperatura,
+        temperaturaOriginalEntrada,
+        grupoTemperatura: formatTemperature(temperatura),
+      };
+    });
+
+    return sortByTemperature(
+      enrichedItems,
+      (entry: any) => entry.temperatura,
+      (left: any, right: any) => String(
+        left.item?.nombreProducto || left.item?.productoNombre || left.product?.nombre || ''
+      ).localeCompare(
+        String(right.item?.nombreProducto || right.item?.productoNombre || right.product?.nombre || ''),
+        'fr',
+      ),
+    );
+  }, [items, productosCatalogoMap]);
   const numeroComanda = getFirstText(comanda?.numero, comanda?.numeroComanda, comanda?.id);
   const fechaEntrega = comanda?.fechaEntrega || comanda?.fecha;
   const fechaCreacion = comanda?.fechaCreacion || comanda?.fecha;
@@ -503,6 +920,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
     organismoId: organismo?.id,
     totalUnidades,
   });
+  const esPreparacionManual = comanda?.estado === 'en_preparacion';
 
   const handleImprimir = async () => {
     let printWindow: Window;
@@ -528,19 +946,20 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
 
         return {
           nombre: getFirstText(item?.nombreProducto, item?.productoNombre, product?.nombre),
-          temperatura: formatTemperature(item?.temperatura || item?.temperaturaOriginalEntrada),
+          temperatura: formatTemperature(entry.temperaturaOriginalEntrada || entry.temperatura),
           cantidad: formatQuantity(quantite),
           unidad: getFirstText(item?.unidad, 'u'),
           peso: poids > 0 ? `${formatQuantity(poids)} kg` : '-',
           valor: valorLinea > 0 ? `CAD$ ${formatMoney(valorLinea)}` : '-',
           observaciones: getFirstText(item?.observaciones),
+          grupoTemperatura: entry.grupoTemperatura,
         };
       });
 
-      const html = await generatePrintableComandaHtml({
+      const payload = {
         numeroComanda,
         locale,
-        title: `Comanda ${numeroComanda}`,
+        title: esPreparacionManual ? `Fiche de preparation ${numeroComanda}` : `Comanda ${numeroComanda}`,
         statusLabel: STATUS_LABELS[comanda?.estado] || getFirstText(comanda?.estado),
         organismoNombre: getFirstText(organismo?.nombre, comanda?.nombreOrganismo),
         organismoTipo: getFirstText(organismo?.tipo),
@@ -561,7 +980,11 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
         observaciones: getFirstText(comanda?.observaciones, 'Aucune observation supplémentaire.'),
         qrData,
         items: printableItems,
-      });
+      };
+
+      const html = esPreparacionManual
+        ? await generatePreparationWorksheetHtml(payload)
+        : await generatePrintableComandaHtml(payload);
 
       writeAutoPrintPopupContent(printWindow, html, { width: 1024, height: 768, printDelayMs: 350 });
     } catch (error) {
@@ -656,7 +1079,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#1E73BE]">Banque Alimentaire</p>
                     <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {t('orders.printOrder')}
+                      {esPreparacionManual ? 'Fiche de préparation manuelle' : t('orders.printOrder')}
                     </h1>
                   </div>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-700">
@@ -692,7 +1115,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
               <section className="detail-card rounded-xl border border-slate-200 p-4">
                 <div className="mb-3 flex items-center gap-2 text-[#2E7D32]">
                   <Calendar className="h-4 w-4" />
-                  <h2 className="text-sm font-bold uppercase tracking-wide">Détails de la commande</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-wide">{esPreparacionManual ? 'Consignes de préparation' : 'Détails de la commande'}</h2>
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-700">
                   <p><span className="font-semibold">Créée:</span> {formatDate(fechaCreacion, locale, true)}</p>
@@ -719,15 +1142,15 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                 <p className="mt-1 text-2xl font-bold text-slate-900">{formatQuantity(totalPeso)} kg</p>
               </div>
               <div className="summary-card rounded-xl bg-slate-50 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Valeur estimée</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">CAD$ {formatMoney(totalValor)}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{esPreparacionManual ? 'Heure prévue' : 'Valeur estimée'}</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{esPreparacionManual ? getFirstText(comanda?.horaRecogida, organismo?.horaCita, 'À convenir') : `CAD$ ${formatMoney(totalValor)}`}</p>
               </div>
             </div>
 
             <div className="px-5 pb-4">
               <div className="mb-2 flex items-center gap-2 text-[#1E73BE]">
                 <Package className="h-4 w-4" />
-                <h2 className="text-sm font-bold uppercase tracking-wide">Détail des produits</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wide">{esPreparacionManual ? 'Fiche de préparation manuelle' : 'Détail des produits'}</h2>
               </div>
               <div className="overflow-hidden rounded-xl border border-slate-200">
                 <table className="w-full border-collapse text-left text-sm">
@@ -737,9 +1160,19 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                       <th className="px-3 py-2 font-semibold">Temp.</th>
                       <th className="px-3 py-2 text-right font-semibold">Qté</th>
                       <th className="px-3 py-2 font-semibold">Unité</th>
-                      <th className="px-3 py-2 text-right font-semibold">Poids</th>
-                      <th className="px-3 py-2 text-right font-semibold">Valeur</th>
-                      <th className="px-3 py-2 font-semibold">Observations</th>
+                      {esPreparacionManual ? (
+                        <>
+                          <th className="px-3 py-2 text-right font-semibold">Qté préparée</th>
+                          <th className="px-3 py-2 font-semibold">Vérifié</th>
+                          <th className="px-3 py-2 font-semibold">Notes préparation</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="px-3 py-2 text-right font-semibold">Poids</th>
+                          <th className="px-3 py-2 text-right font-semibold">Valeur</th>
+                          <th className="px-3 py-2 font-semibold">Observations</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -756,17 +1189,38 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                         const poids = getSafeNumber(item?.peso);
                         const valorUnitario = getItemUnitValue(item, product);
                         const valorLinea = quantite * valorUnitario;
+                        const previousGroup = index > 0 ? printableItemsData[index - 1]?.grupoTemperatura : null;
+                        const showGroupHeader = entry.grupoTemperatura !== previousGroup;
 
                         return (
-                          <tr key={`${item?.productoId || item?.nombreProducto || 'item'}-${index}`} className="border-t border-slate-200 align-top">
-                            <td className="px-3 py-2 font-medium text-slate-900 print-table">{getFirstText(item?.nombreProducto, item?.productoNombre, product?.nombre)}</td>
-                            <td className="px-3 py-2 text-slate-600 print-table">{formatTemperature(item?.temperatura || item?.temperaturaOriginalEntrada)}</td>
-                            <td className="px-3 py-2 text-right text-slate-700 print-table">{formatQuantity(quantite)}</td>
-                            <td className="px-3 py-2 text-slate-700 print-table">{getFirstText(item?.unidad, 'u')}</td>
-                            <td className="px-3 py-2 text-right text-slate-700 print-table">{poids > 0 ? `${formatQuantity(poids)} kg` : '-'}</td>
-                            <td className="px-3 py-2 text-right text-slate-700 print-table">{valorLinea > 0 ? `CAD$ ${formatMoney(valorLinea)}` : '-'}</td>
-                            <td className="px-3 py-2 text-slate-600 print-table">{getFirstText(item?.observaciones)}</td>
-                          </tr>
+                          <React.Fragment key={`${item?.productoId || item?.nombreProducto || 'item'}-${index}`}>
+                            {showGroupHeader && (
+                              <tr className="border-t border-slate-200 bg-[#EAF4FF]">
+                                <td colSpan={7} className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#1E73BE] print-table">
+                                  {entry.grupoTemperatura}
+                                </td>
+                              </tr>
+                            )}
+                            <tr className="border-t border-slate-200 align-top">
+                              <td className="px-3 py-2 font-medium text-slate-900 print-table">{getFirstText(item?.nombreProducto, item?.productoNombre, product?.nombre)}</td>
+                              <td className="px-3 py-2 text-slate-600 print-table">{formatTemperature(entry.temperaturaOriginalEntrada || entry.temperatura)}</td>
+                              <td className="px-3 py-2 text-right text-slate-700 print-table">{formatQuantity(quantite)}</td>
+                              <td className="px-3 py-2 text-slate-700 print-table">{getFirstText(item?.unidad, 'u')}</td>
+                              {esPreparacionManual ? (
+                                <>
+                                  <td className="px-3 py-2 text-right text-slate-700 print-table">__________</td>
+                                  <td className="px-3 py-2 text-slate-700 print-table">[ ]</td>
+                                  <td className="px-3 py-2 text-slate-600 print-table">________________________</td>
+                                </>
+                              ) : (
+                                <>
+                                  <td className="px-3 py-2 text-right text-slate-700 print-table">{poids > 0 ? `${formatQuantity(poids)} kg` : '-'}</td>
+                                  <td className="px-3 py-2 text-right text-slate-700 print-table">{valorLinea > 0 ? `CAD$ ${formatMoney(valorLinea)}` : '-'}</td>
+                                  <td className="px-3 py-2 text-slate-600 print-table">{getFirstText(item?.observaciones)}</td>
+                                </>
+                              )}
+                            </tr>
+                          </React.Fragment>
                         );
                       })
                     )}
@@ -777,12 +1231,12 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
 
             <div className="grid gap-4 border-t border-slate-200 px-5 py-4 md:grid-cols-2">
               <section className="detail-card rounded-xl border border-slate-200 p-4">
-                <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-700">Observations générales</h2>
-                <p className="min-h-[72px] text-sm text-slate-700">{getFirstText(comanda?.observaciones, 'Aucune observation supplémentaire.')}</p>
+                <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-700">{esPreparacionManual ? 'Instructions et observations' : 'Observations générales'}</h2>
+                <p className="min-h-[72px] text-sm text-slate-700">{getFirstText(comanda?.observaciones, esPreparacionManual ? 'Inscrire manuellement les quantités preparées et noter toute substitution.' : 'Aucune observation supplémentaire.')}</p>
               </section>
 
               <section className="detail-card rounded-xl border border-slate-200 p-4">
-                <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-700">Validation et signatures</h2>
+                <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-700">{esPreparacionManual ? 'Validation de préparation' : 'Validation et signatures'}</h2>
                 <div className="grid grid-cols-2 gap-4 text-sm text-slate-700">
                   <div>
                     <p className="font-semibold">Préparée par</p>
@@ -790,9 +1244,9 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
                     <p className="mt-2">{preparadoPor}</p>
                   </div>
                   <div>
-                    <p className="font-semibold">Reçue par</p>
+                    <p className="font-semibold">{esPreparacionManual ? 'Vérifiée par' : 'Reçue par'}</p>
                     <div className="mt-6 border-b border-slate-300" />
-                    <p className="mt-2">{responsableRecogida}</p>
+                    <p className="mt-2">{esPreparacionManual ? '______________________________' : responsableRecogida}</p>
                   </div>
                 </div>
               </section>

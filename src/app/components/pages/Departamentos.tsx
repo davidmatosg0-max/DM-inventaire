@@ -211,6 +211,28 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
     }
   };
 
+  const handleToggleActivo = (departamento: Departamento) => {
+    actualizarDepartamento(departamento.id, {
+      ...departamento,
+      activo: !departamento.activo
+    });
+
+    registrarActividad(
+      'Départements',
+      'modificar',
+      `Département "${departamento.nombre}" ${departamento.activo ? 'désactivé' : 'activé'}`,
+      { departamentoId: departamento.id, codigo: departamento.codigo, activo: !departamento.activo }
+    );
+
+    toast.success(
+      departamento.activo
+        ? `Département ${departamento.nombre} désactivé`
+        : `Département ${departamento.nombre} activé`
+    );
+
+    cargarDepartamentos();
+  };
+
   const renderIcono = (nombreIcono: string, className?: string) => {
     const Icono = iconosDisponibles[nombreIcono] || Building2;
     return <Icono className={className} />;
@@ -297,7 +319,7 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
               const cardColor = index % 2 === 0 ? branding.primaryColor : branding.secondaryColor;
               
               return (
-                <Card key={departamento.id} className="p-3 sm:p-4 hover:shadow-lg transition-shadow">
+                <Card key={departamento.id} className={`p-3 sm:p-4 hover:shadow-lg transition-shadow ${departamento.activo ? '' : 'opacity-75'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                       <div 
@@ -312,12 +334,32 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
                       <div className="min-w-0 flex-1">
                         <h3 className="font-semibold text-sm sm:text-base text-[#333333] truncate">{departamento.nombre}</h3>
                         <p className="text-xs sm:text-sm text-[#666666] truncate">{departamento.codigo}</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span
+                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                            style={{
+                              backgroundColor: departamento.activo ? '#DCFCE7' : '#FEE2E2',
+                              color: departamento.activo ? '#166534' : '#991B1B'
+                            }}
+                          >
+                            {departamento.activo ? 'Actif' : 'Inactif'}
+                          </span>
+                        </div>
                         {departamento.descripcion && (
                           <p className="text-xs text-[#999999] truncate mt-0.5">{departamento.descripcion}</p>
                         )}
                       </div>
                     </div>
                     <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleActivo(departamento)}
+                        className="p-1.5 sm:p-2"
+                        title={departamento.activo ? 'Désactiver le département' : 'Activer le département'}
+                      >
+                        <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: departamento.activo ? '#D97706' : '#15803D' }} />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -672,25 +714,6 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
             boxShadow: '0 8px 32px 0 rgba(26, 77, 122, 0.2), 0 0 80px rgba(45, 149, 97, 0.1)'
           }}
         >
-          {/* Botón de gestión en la esquina superior derecha */}
-          <Button
-            onClick={() => setMostrarGestion(true)}
-            variant="ghost"
-            size="sm"
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-600 hover:text-white hover:bg-gradient-to-r p-2.5 sm:p-3 rounded-xl transition-all duration-300 hover:shadow-lg group"
-            style={{
-              background: 'transparent'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            <Settings className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-90 transition-transform duration-300" />
-          </Button>
-
           {/* Logo con efecto glow */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <div className="relative inline-block">
@@ -749,6 +772,12 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
             />
           </div>
 
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-center">
+            <p className="text-sm font-medium text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              La gestion des départements est disponible uniquement dans Utilisateurs/Rôles, onglet Départements.
+            </p>
+          </div>
+
           {/* Botones de departamentos organizados en filas - Con estilo moderno */}
           <div className="space-y-3 sm:space-y-4">
             {organizarEnFilas().map((fila, filaIndex) => (
@@ -761,13 +790,20 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
                                     departamento.codigo !== 'COMPTOIR' && 
                                     departamento.codigo !== 'RECRUTEMENT' && 
                                     departamento.codigo !== 'LIAISON' && 
-                                    departamento.codigo !== 'CUISINE';
+                                    departamento.codigo !== 'CUISINE' &&
+                                    departamento.codigo !== 'PTC' &&
+                                    departamento.codigo !== 'MAINTIEN' &&
+                                    departamento.codigo !== 'ACHAT';
                   
                   // Alternar entre colores primario y secundario del branding
                   const buttonColor = index % 2 === 0 ? branding.primaryColor : branding.secondaryColor;
                   
                   // Obtener nombre traducido del departamento
-                  const departmentName = t(`departments.names.${departamento.codigo}`) || departamento.nombre;
+                  const departmentNameKey = `departments.names.${departamento.codigo}`;
+                  const departmentNameTranslation = t(departmentNameKey);
+                  const departmentName = departmentNameTranslation === departmentNameKey
+                    ? departamento.nombre
+                    : departmentNameTranslation;
                   
                   // Obtener contador de contactos para este departamento
                   const contactosCount = obtenerContactosDepartamento(departamento.id).filter(c => c.activo).length;
@@ -818,6 +854,12 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
                           } else {
                             toast.success(`${t('common.navigating')} ${departmentName}`);
                           }
+                        } else if (departamento.codigo === 'ACHAT') {
+                          if (onNavigate) {
+                            onNavigate('achat');
+                          } else {
+                            toast.success(`${t('common.navigating')} ${departmentName}`);
+                          }
                         } else {
                           toast.info(t('departments.comingSoon'));
                         }
@@ -848,15 +890,9 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
             <div className="text-center py-8 sm:py-12">
               <Building2 className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
               <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{t('departments.noDepartments')}</p>
-              <Button
-                onClick={() => setMostrarGestion(true)}
-                className="text-white text-sm sm:text-base shadow-lg hover:shadow-xl transition-all duration-300"
-                style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
-                size="sm"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t('departments.addFirstDepartment')}
-              </Button>
+              <p className="text-xs sm:text-sm text-gray-500">
+                Utilisez le module Utilisateurs/Rôles, onglet Départements, pour créer ou administrer les départements.
+              </p>
             </div>
           )}
 

@@ -24,6 +24,7 @@ import { obtenerResumenReservasInventario } from '../../utils/inventoryReservati
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
 import { construirRutaAccesoOrganismo } from '../../utils/organismoAccessLinks';
+import { resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import {
   resolverTemperaturaProductoCanonica,
   resolverTemperaturaOriginalEntradaProducto,
@@ -56,6 +57,12 @@ type OrganismoConPorcentaje = {
   porcentaje: number;
 };
 
+function esOrganismoCollation(organismo: Organismo): boolean {
+  return organismo.clasificacionOrganismo === 'collation';
+}
+
+type ModalidadDistribucionAutomatica = 'regular' | 'collation';
+
 function normalizarPorcentajeEntero(valor: number): number {
   if (!Number.isFinite(valor)) {
     return 0;
@@ -72,18 +79,26 @@ function redondearPorcentajeTotal(valor: number): number {
   return Math.round(valor);
 }
 
-function obtenerOrganismosElegiblesParaDistribucion(organismos: Organismo[]): Organismo[] {
+function obtenerOrganismosElegiblesParaDistribucion(
+  organismos: Organismo[],
+  modalidad: ModalidadDistribucionAutomatica = 'regular'
+): Organismo[] {
   return organismos.filter(
     organismo =>
       organismo.activo &&
-      organismo.regular &&
+      (modalidad === 'collation'
+        ? esOrganismoCollation(organismo)
+        : organismo.regular && !esOrganismoCollation(organismo)) &&
       Number.isFinite(organismo.porcentajeReparticion) &&
       normalizarPorcentajeEntero(organismo.porcentajeReparticion) > 0
   );
 }
 
-function distribuirPorcentajesProporcionales(organismos: Organismo[]): OrganismoConPorcentaje[] {
-  const organismosConPeso = obtenerOrganismosElegiblesParaDistribucion(organismos)
+function distribuirPorcentajesProporcionales(
+  organismos: Organismo[],
+  modalidad: ModalidadDistribucionAutomatica = 'regular'
+): OrganismoConPorcentaje[] {
+  const organismosConPeso = obtenerOrganismosElegiblesParaDistribucion(organismos, modalidad)
     .map((organismo, index) => ({
       organismo,
       distribucionKey: `${organismo.id}-${index}`,
@@ -130,9 +145,10 @@ function distribuirPorcentajesProporcionales(organismos: Organismo[]): Organismo
 }
 
 function obtenerDistribucionAutomaticaOrganismos(
-  organismos: Organismo[]
+  organismos: Organismo[],
+  modalidad: ModalidadDistribucionAutomatica = 'regular'
 ): OrganismoConPorcentaje[] {
-  return distribuirPorcentajesProporcionales(organismos);
+  return distribuirPorcentajesProporcionales(organismos, modalidad);
 }
 
 function distribuirCantidadesEnteras(
@@ -195,7 +211,7 @@ export function DialogDistribuirProductos({
   
   // Estados principales
   const [paso, setPaso] = useState<'seleccion_tipo' | 'editar_cantidades' | 'seleccionar_organismo' | 'distribuir_grupo' | 'grupo_creado'>('seleccion_tipo');
-  const [tipoDistribucion, setTipoDistribucion] = useState<'individual' | 'grupo'>('individual');
+  const [tipoDistribucion, setTipoDistribucion] = useState<'individual' | 'grupo' | 'collation'>('individual');
   const [ultimaDistribucionGrupo, setUltimaDistribucionGrupo] = useState<{
     grupoDistribucionId: string;
     grupoDistribucionEtiqueta: string;
@@ -207,7 +223,6 @@ export function DialogDistribuirProductos({
   
   // Estados para distribución individual
   const [organismoSeleccionado, setOrganismoSeleccionado] = useState('');
-  const [fechaEntrega, setFechaEntrega] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [fechaCaducidadGrupo, setFechaCaducidadGrupo] = useState('');
   const [grupoDistribucionAnclada, setGrupoDistribucionAnclada] = useState(true);
@@ -225,18 +240,40 @@ export function DialogDistribuirProductos({
     () => organismosDisponibles.filter(organismo => organismo.activo),
     [organismosDisponibles]
   );
-  const organismosActivosRegulares = React.useMemo(
-    () => organismosActivos.filter(organismo => organismo.regular),
+  const organismosActivosCollation = React.useMemo(
+    () => organismosActivos.filter(esOrganismoCollation),
     [organismosActivos]
   );
+  const organismosActivosStandard = React.useMemo(
+    () => organismosActivos.filter(organismo => !esOrganismoCollation(organismo)),
+    [organismosActivos]
+  );
+  const organismosActivosRegulares = React.useMemo(
+    () => organismosActivosStandard.filter(organismo => organismo.regular),
+    [organismosActivosStandard]
+  );
+  const organismosActivosCollationConPorcentaje = React.useMemo(
+    () => obtenerOrganismosElegiblesParaDistribucion(organismosDisponibles, 'collation'),
+    [organismosDisponibles]
+  );
   const organismosActivosRegularesConPorcentaje = React.useMemo(
-    () => obtenerOrganismosElegiblesParaDistribucion(organismosDisponibles),
+    () => obtenerOrganismosElegiblesParaDistribucion(organismosDisponibles, 'regular'),
     [organismosDisponibles]
   );
+  const modalidadDistribucionAgrupada: ModalidadDistribucionAutomatica = tipoDistribucion === 'collation' ? 'collation' : 'regular';
+  const organismosBaseDistribucionAgrupada = tipoDistribucion === 'collation'
+    ? organismosActivosCollation
+    : organismosActivosRegulares;
+  const organismosElegiblesDistribucionAgrupada = tipoDistribucion === 'collation'
+    ? organismosActivosCollationConPorcentaje
+    : organismosActivosRegularesConPorcentaje;
   const organismosConPorcentajes = React.useMemo(
-    () => obtenerDistribucionAutomaticaOrganismos(organismosDisponibles),
-    [organismosDisponibles]
+    () => obtenerDistribucionAutomaticaOrganismos(organismosDisponibles, modalidadDistribucionAgrupada),
+    [organismosDisponibles, modalidadDistribucionAgrupada]
   );
+  const organismosSeleccionablesIndividuales = tipoDistribucion === 'collation'
+    ? organismosActivosCollation
+    : organismosActivosStandard;
 
   // Inicializar productos editables cuando se abre el diálogo y se va a editar cantidades
   React.useEffect(() => {
@@ -320,12 +357,16 @@ export function DialogDistribuirProductos({
   };
 
   const recalcularDistribucionAutomatica = () => {
-    if (organismosActivosRegularesConPorcentaje.length === 0) {
-      toast.error(t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare'));
+    if (organismosElegiblesDistribucionAgrupada.length === 0) {
+      toast.error(
+        tipoDistribucion === 'collation'
+          ? 'Aucun organisme Collation avec pourcentage de répartition n\'est disponible.'
+          : t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare')
+      );
       return;
     }
 
-    const nuevosOrganismos = obtenerDistribucionAutomaticaOrganismos(organismosDisponibles);
+    const nuevosOrganismos = obtenerDistribucionAutomaticaOrganismos(organismosDisponibles, modalidadDistribucionAgrupada);
     
     toast.success(
       <div>
@@ -361,26 +402,39 @@ export function DialogDistribuirProductos({
   };
 
   const crearComandaIndividual = () => {
-    if (!organismoSeleccionado || !fechaEntrega) {
-      toast.error(t('inventory.distributionDialog.errors.completeAllFields'));
+    if (!organismoSeleccionado || !fechaCaducidadGrupo) {
+      toast.error('Complétez l\'organisme et la date de péremption de la distribution.');
       return;
     }
 
     const { valorTotal, pesoTotal } = calcularTotales();
     const numeroComanda = generarNumeroComanda();
-    const organismoData = organismosDisponibles.find(organismo => organismo.id === organismoSeleccionado);
+    const organismoData = organismosSeleccionablesIndividuales.find(organismo => organismo.id === organismoSeleccionado);
+    const modalidadDistribucion = tipoDistribucion === 'collation' ? 'collation' : 'standard';
+    const observacionesComanda = modalidadDistribucion === 'collation'
+      ? `Distribution Collation${observaciones ? `\n${observaciones}` : ''}`
+      : observaciones;
+
+    if (!organismoData) {
+      toast.error(tipoDistribucion === 'collation'
+        ? 'Sélectionnez un organisme Collation valide.'
+        : 'Sélectionnez un organisme valide pour la distribution.');
+      return;
+    }
     
     const comanda: Comanda = {
       id: `comanda-${Date.now()}`,
       numero: numeroComanda,
       numeroComanda,
+      modalidadDistribucion,
       organismoId: organismoSeleccionado,
       nombreOrganismo: organismoData?.nombre || '',
       fecha: new Date().toISOString(),
       usuarioCreacion: usuarioActual,
       creadoPor: usuarioActual,
-      fechaEntrega: fechaEntrega,
-      observaciones: observaciones,
+      fechaEntrega: fechaCaducidadGrupo,
+      fechaCaducidadGrupo: fechaCaducidadGrupo || undefined,
+      observaciones: observacionesComanda,
       items: productosEditables.map(item => {
         const producto = productos.find(entry => entry.id === item.productoId);
         const temperatura = resolverTemperaturaProductoCanonica({
@@ -429,10 +483,10 @@ export function DialogDistribuirProductos({
       const resultadoEmail = enviarEmailAutomaticoNuevaComanda({
         organismo: organismoData,
         numeroComanda,
-        fechaEntrega,
+        fechaEntrega: fechaCaducidadGrupo,
         totalProductos: comanda.items.length,
         valorTotal: comanda.valorTotal,
-        observaciones,
+        observaciones: observacionesComanda,
       });
       if (resultadoEmail.enviado) {
         toast.success(t('inventory.distributionDialog.toasts.emailSent', { count: resultadoEmail.destinatarios.length }));
@@ -446,10 +500,14 @@ export function DialogDistribuirProductos({
   };
 
   const crearComandasGrupo = () => {
-    const distribucionActual = obtenerDistribucionAutomaticaOrganismos(organismosDisponibles);
+    const distribucionActual = obtenerDistribucionAutomaticaOrganismos(organismosDisponibles, modalidadDistribucionAgrupada);
 
     if (distribucionActual.length === 0) {
-      toast.error(t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare'));
+      toast.error(
+        tipoDistribucion === 'collation'
+          ? 'Aucun organisme Collation avec pourcentage de répartition n\'est disponible.'
+          : t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare')
+      );
       return;
     }
 
@@ -463,8 +521,8 @@ export function DialogDistribuirProductos({
       return;
     }
 
-    if (!fechaEntrega) {
-      toast.error(t('inventory.distributionDialog.errors.selectDeliveryDate'));
+    if (!fechaCaducidadGrupo) {
+      toast.error('Sélectionnez la date de péremption de la distribution.');
       return;
     }
 
@@ -486,7 +544,9 @@ export function DialogDistribuirProductos({
       ])
     );
     const grupoDistribucionId = `grp-${Date.now()}`;
-    const grupoDistribucionEtiqueta = `Distribution de groupe ${new Date().toLocaleDateString('fr-CA')}`;
+    const grupoDistribucionEtiqueta = tipoDistribucion === 'collation'
+      ? `Distribution Collation ${new Date().toLocaleDateString('fr-CA')}`
+      : `Distribution de groupe ${new Date().toLocaleDateString('fr-CA')}`;
 
     try {
       distribucionActual.forEach(orgInfo => {
@@ -551,6 +611,7 @@ export function DialogDistribuirProductos({
           id: `comanda-${Date.now()}-${orgInfo.id}`,
           numero: numeroComanda,
           numeroComanda,
+          modalidadDistribucion: tipoDistribucion === 'collation' ? 'collation' : 'grupo',
           grupoDistribucionId,
           grupoDistribucionEtiqueta,
           grupoDistribucionAnclada,
@@ -560,7 +621,7 @@ export function DialogDistribuirProductos({
           fecha: new Date().toISOString(),
           usuarioCreacion: usuarioActual,
           creadoPor: usuarioActual,
-          fechaEntrega: fechaEntrega,
+          fechaEntrega: fechaCaducidadGrupo,
           observaciones: `${t('inventory.distributionDialog.groupObservation', { percentage: normalizarPorcentajeEntero(orgInfo.porcentaje) })}${observaciones ? '\n' + observaciones : ''}`,
           items: itemsComanda,
           valorTotal: Math.round(valorTotalComanda),
@@ -583,7 +644,7 @@ export function DialogDistribuirProductos({
           const resultadoEmail = enviarEmailAutomaticoNuevaComanda({
             organismo: organismoDestino,
             numeroComanda,
-            fechaEntrega,
+            fechaEntrega: fechaCaducidadGrupo,
             totalProductos: comanda.items.length,
             valorTotal: comanda.valorTotal,
             observaciones: comanda.observaciones,
@@ -649,7 +710,6 @@ export function DialogDistribuirProductos({
       setTipoDistribucion('individual');
       setProductosEditables([]);
       setOrganismoSeleccionado('');
-      setFechaEntrega('');
       setObservaciones('');
       setFechaCaducidadGrupo('');
       setGrupoDistribucionAnclada(true);
@@ -668,6 +728,14 @@ export function DialogDistribuirProductos({
       if (tipoDistribucion === 'individual') {
         setPaso('seleccionar_organismo');
       } else {
+        if (organismosElegiblesDistribucionAgrupada.length === 0) {
+          toast.error(
+            tipoDistribucion === 'collation'
+              ? 'Aucun organisme Collation avec pourcentage de répartition n\'est disponible.'
+              : t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare')
+          );
+          return;
+        }
         setPaso('distribuir_grupo');
       }
     }
@@ -688,20 +756,20 @@ export function DialogDistribuirProductos({
   const porcentajeTotalGrupo = calcularPorcentajeTotal();
   const porcentajeTotalGrupoRedondeado = redondearPorcentajeTotal(porcentajeTotalGrupo);
   const porcentajeGrupoValido = Math.abs(porcentajeTotalGrupo - 100) < 0.01;
-  const porcentajeReparticionTotalConfigurado = organismosActivosRegularesConPorcentaje.reduce(
+  const porcentajeReparticionTotalConfigurado = organismosElegiblesDistribucionAgrupada.reduce(
     (sum, organismo) => sum + normalizarPorcentajeEntero(organismo.porcentajeReparticion),
     0
   );
-  const cantidadOrganismosElegibles = organismosActivosRegularesConPorcentaje.length;
+  const cantidadOrganismosElegibles = organismosElegiblesDistribucionAgrupada.length;
   const todosLosPesosIguales =
     cantidadOrganismosElegibles > 1 &&
-    organismosActivosRegularesConPorcentaje.every(
+    organismosElegiblesDistribucionAgrupada.every(
       organismo =>
         normalizarPorcentajeEntero(organismo.porcentajeReparticion) ===
-        normalizarPorcentajeEntero(organismosActivosRegularesConPorcentaje[0]?.porcentajeReparticion || 0)
+        normalizarPorcentajeEntero(organismosElegiblesDistribucionAgrupada[0]?.porcentajeReparticion || 0)
     );
-  const mensajeBloqueoDistribucionGrupo = !fechaEntrega
-    ? t('inventory.distributionDialog.blocked.selectDeliveryDate')
+  const mensajeBloqueoDistribucionGrupo = !fechaCaducidadGrupo
+    ? 'Sélectionnez la date de péremption de la distribution.'
     : organismosConPorcentajes.length === 0
         ? t('inventory.distributionDialog.blocked.noEligibleOrganizations')
         : !porcentajeGrupoValido
@@ -717,7 +785,8 @@ export function DialogDistribuirProductos({
         organismoId: organismoPreviewIndividual.id,
         nombreOrganismo: organismoPreviewIndividual.nombre,
         fecha: new Date().toISOString(),
-        fechaEntrega,
+        fechaEntrega: fechaCaducidadGrupo,
+        fechaCaducidadGrupo: fechaCaducidadGrupo || undefined,
         estado: 'pendiente',
         observaciones,
         items: productosEditables
@@ -780,13 +849,14 @@ export function DialogDistribuirProductos({
         id: `preview-group-${organismoPreviewGrupo.id}`,
         numero: `SIM-GRP-${organismoPreviewGrupo.id.toUpperCase().slice(0, 4)}`,
         grupoDistribucionId: 'preview-group',
-        grupoDistribucionEtiqueta: 'Distribution de groupe',
+        grupoDistribucionEtiqueta: tipoDistribucion === 'collation' ? 'Distribution Collation' : 'Distribution de groupe',
+        modalidadDistribucion: tipoDistribucion === 'collation' ? 'collation' : 'grupo',
         grupoDistribucionAnclada,
         fechaCaducidadGrupo: fechaCaducidadGrupo || undefined,
         organismoId: organismoPreviewGrupo.id,
         nombreOrganismo: organismoPreviewGrupo.nombre,
         fecha: new Date().toISOString(),
-        fechaEntrega,
+        fechaEntrega: fechaCaducidadGrupo,
         estado: 'pendiente',
         observaciones: `${t('inventory.distributionDialog.groupExampleFor', { organization: organismoPreviewGrupo.nombre })}${observaciones ? `\n${observaciones}` : ''}`,
         items: itemsPreviewGrupo,
@@ -805,17 +875,23 @@ export function DialogDistribuirProductos({
   const tituloPaso = {
     seleccion_tipo: t('inventory.distributionDialog.stepTitles.selectType'),
     editar_cantidades: t('inventory.distributionDialog.stepTitles.editQuantities'),
-    seleccionar_organismo: t('inventory.distributionDialog.stepTitles.selectOrganization'),
-    distribuir_grupo: t('inventory.distributionDialog.stepTitles.groupDistribution'),
-    grupo_creado: 'Distribution de groupe créée',
+    seleccionar_organismo: tipoDistribucion === 'collation' ? 'Distribution Collation' : t('inventory.distributionDialog.stepTitles.selectOrganization'),
+    distribuir_grupo: tipoDistribucion === 'collation' ? 'Distribution Collation' : t('inventory.distributionDialog.stepTitles.groupDistribution'),
+    grupo_creado: tipoDistribucion === 'collation' ? 'Distribution Collation créée' : 'Distribution de groupe créée',
   }[paso];
 
   const descripcionPaso = {
     seleccion_tipo: t('inventory.distributionDialog.stepDescriptions.selectType'),
     editar_cantidades: t('inventory.distributionDialog.stepDescriptions.editQuantities'),
-    seleccionar_organismo: t('inventory.distributionDialog.stepDescriptions.selectOrganization'),
-    distribuir_grupo: t('inventory.distributionDialog.stepDescriptions.groupDistribution'),
-    grupo_creado: 'Accès direct à la distribution créée et aux commandes générées.',
+    seleccionar_organismo: tipoDistribucion === 'collation'
+      ? 'Sélectionnez un organisme classé Collation pour créer une distribution dédiée.'
+      : t('inventory.distributionDialog.stepDescriptions.selectOrganization'),
+    distribuir_grupo: tipoDistribucion === 'collation'
+      ? 'Répartition automatique entre les organismes Collation selon leur pourcentage configuré.'
+      : t('inventory.distributionDialog.stepDescriptions.groupDistribution'),
+    grupo_creado: tipoDistribucion === 'collation'
+      ? 'Accès direct à la distribution Collation créée et aux commandes générées.'
+      : 'Accès direct à la distribution créée et aux commandes générées.',
   }[paso];
 
   return (
@@ -834,10 +910,13 @@ export function DialogDistribuirProductos({
           <div className="flex-1 overflow-auto py-4">
             {/* Paso 1: Selección de tipo de distribución */}
             {paso === 'seleccion_tipo' && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <Card 
                   className={`cursor-pointer transition-all hover:shadow-lg ${tipoDistribucion === 'individual' ? 'border-2 border-[#1E73BE] bg-[#E3F2FD]' : 'border-2 border-gray-200'}`}
-                  onClick={() => setTipoDistribucion('individual')}
+                  onClick={() => {
+                    setTipoDistribucion('individual');
+                    setOrganismoSeleccionado('');
+                  }}
                 >
                   <CardContent className="p-6 text-center">
                     <Building2 className={`w-16 h-16 mx-auto mb-4 ${tipoDistribucion === 'individual' ? 'text-[#1E73BE]' : 'text-gray-400'}`} />
@@ -858,7 +937,10 @@ export function DialogDistribuirProductos({
 
                 <Card 
                   className={`cursor-pointer transition-all hover:shadow-lg ${tipoDistribucion === 'grupo' ? 'border-2 border-[#4CAF50] bg-[#E8F5E9]' : 'border-2 border-gray-200'}`}
-                  onClick={() => setTipoDistribucion('grupo')}
+                  onClick={() => {
+                    setTipoDistribucion('grupo');
+                    setOrganismoSeleccionado('');
+                  }}
                 >
                   <CardContent className="p-6 text-center">
                     <Users className={`w-16 h-16 mx-auto mb-4 ${tipoDistribucion === 'grupo' ? 'text-[#4CAF50]' : 'text-gray-400'}`} />
@@ -870,6 +952,30 @@ export function DialogDistribuirProductos({
                     </p>
                     {tipoDistribucion === 'grupo' && (
                       <Badge className="mt-3 bg-[#4CAF50] text-white">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {t('inventory.distributionDialog.selected')}
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className={`cursor-pointer transition-all hover:shadow-lg ${tipoDistribucion === 'collation' ? 'border-2 border-[#F59E0B] bg-[#FFF7E6]' : 'border-2 border-gray-200'}`}
+                  onClick={() => {
+                    setTipoDistribucion('collation');
+                    setOrganismoSeleccionado('');
+                  }}
+                >
+                  <CardContent className="p-6 text-center">
+                    <Package className={`w-16 h-16 mx-auto mb-4 ${tipoDistribucion === 'collation' ? 'text-[#F59E0B]' : 'text-gray-400'}`} />
+                    <h3 className="font-semibold mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      Distribution Collation
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Utilise la même répartition automatique que la distribution régulière, limitée aux organismes Collation.
+                    </p>
+                    {tipoDistribucion === 'collation' && (
+                      <Badge className="mt-3 bg-[#F59E0B] text-white">
                         <CheckCircle2 className="w-3 h-3 mr-1" />
                         {t('inventory.distributionDialog.selected')}
                       </Badge>
@@ -1027,6 +1133,11 @@ export function DialogDistribuirProductos({
             {/* Paso 3: Seleccionar organismo (individual) */}
             {paso === 'seleccionar_organismo' && (
               <div className="space-y-4">
+                {tipoDistribucion === 'collation' && (
+                  <div className="rounded-lg border border-[#FCD34D] bg-[#FFF7E6] px-4 py-3 text-sm text-[#9A6700]">
+                    Cette distribution est réservée aux organismes dont le type d'organisme est Collation.
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>{t('inventory.distributionDialog.beneficiaryOrganization')}</Label>
                   <Select
@@ -1037,21 +1148,28 @@ export function DialogDistribuirProductos({
                       <SelectValue placeholder={t('inventory.distributionDialog.selectOrganizationPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {organismosActivos.map(org => (
+                      {organismosSeleccionablesIndividuales.map(org => (
                         <SelectItem key={org.id} value={org.id}>
                           {org.nombre}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {organismosSeleccionablesIndividuales.length === 0 && (
+                    <p className="text-xs text-gray-500">
+                      {tipoDistribucion === 'collation'
+                        ? 'Aucun organisme Collation actif n\'est disponible pour le moment.'
+                        : 'Aucun organisme actif n\'est disponible pour le moment.'}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>{t('inventory.distributionDialog.deliveryDate')}</Label>
+                  <Label>Date de péremption de la distribution</Label>
                   <Input
                     type="date"
-                    value={fechaEntrega}
-                    onChange={(e) => setFechaEntrega(e.target.value)}
+                    value={fechaCaducidadGrupo}
+                    onChange={(e) => setFechaCaducidadGrupo(e.target.value)}
                     className="w-full"
                   />
                 </div>
@@ -1097,9 +1215,15 @@ export function DialogDistribuirProductos({
                     <div className="flex items-start gap-2">
                       <AlertCircle className="w-5 h-5 text-[#1E73BE] flex-shrink-0 mt-0.5" />
                       <div className="text-sm">
-                        <p className="font-semibold text-[#1E73BE] mb-1">{t('inventory.distributionDialog.group.autoDistributionTitle')}</p>
+                        <p className="font-semibold text-[#1E73BE] mb-1">
+                          {tipoDistribucion === 'collation'
+                            ? 'Distribution automatique Collation'
+                            : t('inventory.distributionDialog.group.autoDistributionTitle')}
+                        </p>
                         <p className="text-gray-700">
-                          {t('inventory.distributionDialog.group.autoDistributionDescription')}
+                          {tipoDistribucion === 'collation'
+                            ? 'Les quantités seront réparties automatiquement entre les organismes Collation selon leur pourcentage de répartition.'
+                            : t('inventory.distributionDialog.group.autoDistributionDescription')}
                         </p>
                       </div>
                     </div>
@@ -1121,12 +1245,14 @@ export function DialogDistribuirProductos({
                   </Card>
                 )}
 
-                {organismosActivosRegulares.length > organismosActivosRegularesConPorcentaje.length && (
+                {organismosBaseDistribucionAgrupada.length > organismosElegiblesDistribucionAgrupada.length && (
                   <Card className="border-l-4 border-l-[#FFC107] bg-[#FFF8E1]">
                     <CardContent className="p-3 text-sm text-gray-700">
-                      {t('inventory.distributionDialog.group.excludedRegularOrganizations', {
-                        count: organismosActivosRegulares.length - organismosActivosRegularesConPorcentaje.length
-                      })}
+                      {tipoDistribucion === 'collation'
+                        ? `${organismosBaseDistribucionAgrupada.length - organismosElegiblesDistribucionAgrupada.length} organismes Collation sont exclus car leur pourcentage de répartition est nul ou invalide.`
+                        : t('inventory.distributionDialog.group.excludedRegularOrganizations', {
+                            count: organismosBaseDistribucionAgrupada.length - organismosElegiblesDistribucionAgrupada.length
+                          })}
                     </CardContent>
                   </Card>
                 )}
@@ -1148,12 +1274,16 @@ export function DialogDistribuirProductos({
                     <Label>{t('inventory.distributionDialog.group.organizationsAndPercentages')}</Label>
                   </div>
 
-                  {organismosActivosRegularesConPorcentaje.length > 0 && (
+                  {organismosElegiblesDistribucionAgrupada.length > 0 && (
                     <Card className="border border-[#90CAF9] bg-[#F4F9FF]">
                       <CardContent className="p-3 text-xs text-gray-700 space-y-2">
-                        <p className="font-semibold text-[#1E73BE]">{t('inventory.distributionDialog.group.eligibleDiagnosis')}</p>
+                        <p className="font-semibold text-[#1E73BE]">
+                          {tipoDistribucion === 'collation'
+                            ? 'Diagnostic des organismes Collation admissibles'
+                            : t('inventory.distributionDialog.group.eligibleDiagnosis')}
+                        </p>
                         <div className="space-y-1">
-                          {organismosActivosRegularesConPorcentaje.map((organismo) => (
+                          {organismosElegiblesDistribucionAgrupada.map((organismo) => (
                             <div key={`${organismo.id}-${organismo.nombre}`} className="flex flex-wrap gap-2">
                               <span>{organismo.nombre}</span>
                               <span className="text-gray-500">{t('inventory.distributionDialog.group.idPrefix')} {organismo.id}</span>
@@ -1280,19 +1410,6 @@ export function DialogDistribuirProductos({
                       </span>
                     </span>
                   </label>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t('inventory.distributionDialog.deliveryDate')}</Label>
-                  <Input
-                    type="date"
-                    value={fechaEntrega}
-                    onChange={(e) => setFechaEntrega(e.target.value)}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-gray-500">
-                    {t('inventory.distributionDialog.group.deliveryDateHelp')}
-                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -1428,7 +1545,7 @@ export function DialogDistribuirProductos({
                   <Button 
                     onClick={crearComandaIndividual} 
                     className="bg-[#4CAF50] hover:bg-[#45a049]"
-                    disabled={!organismoSeleccionado || !fechaEntrega}
+                    disabled={!organismoSeleccionado || !fechaCaducidadGrupo}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     {t('inventory.distributionDialog.createOrder')}
@@ -1438,7 +1555,7 @@ export function DialogDistribuirProductos({
                   <Button 
                     onClick={crearComandasGrupo} 
                     className="bg-[#4CAF50] hover:bg-[#45a049]"
-                    disabled={!fechaEntrega || !porcentajeGrupoValido || organismosConPorcentajes.length === 0}
+                    disabled={!fechaCaducidadGrupo || !porcentajeGrupoValido || organismosConPorcentajes.length === 0}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     {t('inventory.distributionDialog.createOrders', { count: organismosConPorcentajes.length })}

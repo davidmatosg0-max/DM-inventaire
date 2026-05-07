@@ -103,6 +103,7 @@ export interface Comanda {
   id: string;
   numero: string;
   numeroComanda?: string; // Alias
+  modalidadDistribucion?: 'standard' | 'collation' | 'grupo';
   organismoId: string;
   nombreOrganismo: string;
   fecha: string;

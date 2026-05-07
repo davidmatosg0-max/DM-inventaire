@@ -60,6 +60,11 @@ export const PERMISOS = {
   // Comptoir
   COMPTOIR_VER: 'comptoir.ver',
   COMPTOIR_EDITAR: 'comptoir.editar',
+
+  // Achat
+  ACHAT_VER: 'achat.ver',
+  ACHAT_CREAR: 'achat.crear',
+  ACHAT_AUTORISAR: 'achat.autorizar',
 } as const;
 
 // Mapeo de roles a permisos
@@ -105,6 +110,9 @@ export const PERMISOS_POR_ROL: Record<string, string[]> = {
     PERMISOS.CONFIGURACION_EDITAR,
     PERMISOS.COMPTOIR_VER,
     PERMISOS.COMPTOIR_EDITAR,
+    PERMISOS.ACHAT_VER,
+    PERMISOS.ACHAT_CREAR,
+    PERMISOS.ACHAT_AUTORISAR,
   ],
   
   // Administrador Liaison - Solo gestión de organismos y comandas
@@ -121,6 +129,8 @@ export const PERMISOS_POR_ROL: Record<string, string[]> = {
     PERMISOS.COMANDAS_APROBAR,
     PERMISOS.INVENTARIO_VER,
     PERMISOS.REPORTES_VER,
+    PERMISOS.ACHAT_VER,
+    PERMISOS.ACHAT_CREAR,
   ],
   
   // Coordinador - Solo lectura
@@ -132,6 +142,7 @@ export const PERMISOS_POR_ROL: Record<string, string[]> = {
     PERMISOS.ORGANISMOS_VER,
     PERMISOS.TRANSPORTE_VER,
     PERMISOS.REPORTES_VER,
+    PERMISOS.ACHAT_VER,
   ],
 };
 
@@ -269,6 +280,7 @@ export function moduloDisponible(moduloId: string): boolean {
     'usuarios': [PERMISOS.USUARIOS_VER],
     'roles': [PERMISOS.USUARIOS_VER],
     'configuracion': [PERMISOS.CONFIGURACION_VER],
+    'achat': [PERMISOS.ACHAT_VER],
     'branding': [PERMISOS.CONFIGURACION_VER],
     'categorias': [PERMISOS.CONFIGURACION_VER],
     'comptoir': [PERMISOS.COMPTOIR_VER],

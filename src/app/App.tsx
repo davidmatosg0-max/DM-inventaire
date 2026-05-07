@@ -46,6 +46,7 @@ const AccesoOrganismo = lazyNamed(() => import('./components/pages/AccesoOrganis
 const Departamentos = lazyNamed(() => import('./components/pages/Departamentos'), 'Departamentos');
 const Benevoles = lazyNamed(() => import('./components/pages/Benevoles'), 'Benevoles');
 const Recrutement = lazyNamed(() => import('./components/pages/Recrutement'), 'Recrutement');
+const AchatPage = lazyNamed(() => import('./components/pages/AchatPage'), 'AchatPage');
 const EmailOrganismos = lazyNamed(() => import('./components/pages/EmailOrganismos'), 'EmailOrganismos');
 const Contact = lazyNamed(() => import('./components/pages/Contact'), 'Contact');
 const Login = lazyNamed(() => import('./components/pages/Login'), 'Login');
@@ -150,6 +151,8 @@ function AppContent() {
         return renderWithSuspense(<Departamentos onNavigate={setCurrentPage} />);
       case 'recrutement':
         return renderWithSuspense(<Recrutement />);
+      case 'achat':
+        return renderWithSuspense(<AchatPage onNavigate={setCurrentPage} />);
       case 'benevoles':
         return renderWithSuspense(<Benevoles />);
       case 'liaison':

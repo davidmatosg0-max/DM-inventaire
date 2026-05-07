@@ -68,6 +68,11 @@ export const permisos: Permiso[] = [
   { id: 'reportes.generar', nombre: 'Generar Reportes', descripcion: 'Crear reportes personalizados', modulo: 'Reportes' },
   { id: 'reportes.exportar', nombre: 'Exportar Reportes', descripcion: 'Exportar reportes en PDF/Excel', modulo: 'Reportes' },
   { id: 'reportes.avanzados', nombre: 'Reportes Avanzados', descripcion: 'Acceso a reportes financieros y estadísticos', modulo: 'Reportes' },
+
+  // Achats
+  { id: 'achat.ver', nombre: 'Voir Achats', descripcion: 'Acceso al módulo de bons d\'achat y seguimiento de compras', modulo: 'Achats' },
+  { id: 'achat.crear', nombre: 'Créer Bons d\'Achat', descripcion: 'Crear y enviar bons d\'achat a aprobación', modulo: 'Achats' },
+  { id: 'achat.autorizar', nombre: 'Autoriser Achats', descripcion: 'Aprobar o rechazar bons d\'achat según la política interna', modulo: 'Achats' },
   
   // Usuarios y Roles
   { id: 'usuarios.ver', nombre: 'Ver Usuarios', descripcion: 'Visualizar usuarios del sistema', modulo: 'Usuarios' },
@@ -129,6 +134,8 @@ export const rolesPredeterminados: Rol[] = [
       'reportes.ver',
       'reportes.generar',
       'reportes.exportar',
+      'achat.ver',
+      'achat.crear',
       'iddigital.ver',
       'iddigital.crear',
       'config.ver'
@@ -157,6 +164,7 @@ export const rolesPredeterminados: Rol[] = [
       'organismos.ver',
       'reportes.ver',
       'reportes.generar',
+      'achat.ver',
       'config.ver'
     ],
     usuariosAsignados: 1,
@@ -200,6 +208,7 @@ export const rolesPredeterminados: Rol[] = [
       'reportes.generar',
       'reportes.exportar',
       'reportes.avanzados',
+      'achat.ver',
       'iddigital.ver'
     ],
     usuariosAsignados: 0,

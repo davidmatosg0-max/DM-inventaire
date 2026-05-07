@@ -62,6 +62,7 @@ export function exportarComandasExcel(comandas: any[]) {
   const resumenComandas = comandas.map((c) => ({
     'N° Comanda': c.numero,
     Organismo: c.organismo?.nombre || 'N/A',
+    Modalité: c.modalidadDistribucionLabel || 'Standard',
     Fecha: new Date(c.fecha).toLocaleDateString('es-ES'),
     'Total Productos': c.productos?.length || 0,
     'Valor Total': c.valorTotal ? `$${c.valorTotal.toFixed(2)}` : 'N/A',
@@ -79,6 +80,7 @@ export function exportarComandasExcel(comandas: any[]) {
       detalleProductos.push({
         'N° Comanda': c.numero,
         Organismo: c.organismo?.nombre || 'N/A',
+        Modalité: c.modalidadDistribucionLabel || 'Standard',
         Producto: p.nombre,
         Cantidad: p.cantidad,
         Unidad: p.unidad,

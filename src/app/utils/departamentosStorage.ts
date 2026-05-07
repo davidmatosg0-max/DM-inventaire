@@ -18,6 +18,17 @@ export interface Departamento {
 
 const STORAGE_KEY = 'departamentos_banco_alimentos';
 
+const departamentoAchatEjemplo: Departamento = {
+  id: '8',
+  codigo: 'ACHAT',
+  nombre: 'Achat',
+  descripcion: 'Gestion des achats et approvisionnements',
+  icono: 'ShoppingCart',
+  color: '#1E73BE',
+  activo: true,
+  orden: 8
+};
+
 // Departamentos de ejemplo basados en la imagen
 const departamentosEjemplo: Departamento[] = [
   {
@@ -89,27 +100,45 @@ const departamentosEjemplo: Departamento[] = [
     color: '#1E73BE',
     activo: true,
     orden: 7
-  }
+  },
+  departamentoAchatEjemplo
 ];
+
+function migrarDepartamentos(departamentos: Departamento[]): Departamento[] {
+  let needsUpdate = false;
+
+  const departamentosActualizados = departamentos.map((dep: Departamento) => {
+    if (dep.codigo === 'CUISINE' && dep.icono === 'Utensils') {
+      needsUpdate = true;
+      return { ...dep, icono: 'ChefHat' };
+    }
+    return dep;
+  });
+
+  const existeAchat = departamentosActualizados.some(dep => dep.codigo === 'ACHAT');
+  if (!existeAchat) {
+    needsUpdate = true;
+    departamentosActualizados.push({
+      ...departamentoAchatEjemplo,
+      id: `${Date.now()}-achat`,
+      orden: departamentosActualizados.length + 1
+    });
+  }
+
+  return needsUpdate
+    ? departamentosActualizados.sort((a, b) => a.orden - b.orden)
+    : departamentosActualizados;
+}
 
 export function inicializarDepartamentos(): void {
   const departamentosGuardados = localStorage.getItem(STORAGE_KEY);
   if (!departamentosGuardados) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(departamentosEjemplo));
   } else {
-    // Migración: Actualizar ícono de Cuisine si aún usa Utensils
     const departamentos = JSON.parse(departamentosGuardados);
-    let needsUpdate = false;
-    
-    const departamentosActualizados = departamentos.map((dep: Departamento) => {
-      if (dep.codigo === 'CUISINE' && dep.icono === 'Utensils') {
-        needsUpdate = true;
-        return { ...dep, icono: 'ChefHat' };
-      }
-      return dep;
-    });
-    
-    if (needsUpdate) {
+    const departamentosActualizados = migrarDepartamentos(departamentos);
+
+    if (JSON.stringify(departamentosActualizados) !== JSON.stringify(departamentos)) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(departamentosActualizados));
     }
   }
@@ -119,7 +148,13 @@ export function obtenerDepartamentos(): Departamento[] {
   const departamentosGuardados = localStorage.getItem(STORAGE_KEY);
   if (departamentosGuardados !== null) {
     const departamentos = JSON.parse(departamentosGuardados);
-    return departamentos.sort((a: Departamento, b: Departamento) => a.orden - b.orden);
+    const departamentosActualizados = migrarDepartamentos(departamentos);
+
+    if (JSON.stringify(departamentosActualizados) !== JSON.stringify(departamentos)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(departamentosActualizados));
+    }
+
+    return departamentosActualizados.sort((a: Departamento, b: Departamento) => a.orden - b.orden);
   } else {
     // Solo inicializar la primera vez
     inicializarDepartamentos();

@@ -79,7 +79,7 @@ export function ModeloComanda({
   };
 
   const itemsComanda = React.useMemo(() => Array.isArray(comanda.items) ? comanda.items : [], [comanda.items]);
-  const [pantallaCompleta, setPantallaCompleta] = useState(true); // Cambiado a true para abrir en pantalla completa por defecto
+  const [vistaCompacta, setVistaCompacta] = useState(true);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [cantidadesEditadas, setCantidadesEditadas] = useState<{[key: string]: number}>({});
   const [campoEditando, setCampoEditando] = useState<string | null>(null); // Para edición inline
@@ -92,15 +92,13 @@ export function ModeloComanda({
   // 🎯 NUEVO: Estado para marcar productos como completados durante la preparación
   const [productosCompletados, setProductosCompletados] = useState<{[key: string]: boolean}>({});
 
-  // 🎯 NUEVO: Función para alternar el estado de completado de un producto
   const toggleProductoCompletado = (itemKey: string) => {
-    setProductosCompletados(prev => ({
+    setProductosCompletados((prev) => ({
       ...prev,
-      [itemKey]: !prev[itemKey]
+      [itemKey]: !prev[itemKey],
     }));
   };
 
-  // Función para imprimir
   const handleImprimir = () => {
     if (onAbrirImpresionCompacta) {
       onCerrar();
@@ -108,20 +106,16 @@ export function ModeloComanda({
       return;
     }
 
-    console.log('🖨️ Imprimiendo comanda completa desde modal...');
     window.print();
-    
-    // Cerrar el modal después de que termine la impresión
+
     const handleAfterPrint = () => {
-      console.log('✅ Impresión completada - Cerrando modal...');
       onCerrar();
       window.removeEventListener('afterprint', handleAfterPrint);
     };
-    
+
     window.addEventListener('afterprint', handleAfterPrint);
   };
 
-  // Agrupar productos por temperatura
   const productosOrdenados = React.useMemo(() => {
     const todosLosProductos = obtenerProductos();
     const items = itemsComanda.map((item: any) => {
@@ -282,6 +276,7 @@ export function ModeloComanda({
   ];
 
   const estadoActual = estadosDisponibles.find(e => e.valor === comanda.estado);
+  const tamanoQr = vistaCompacta ? 104 : 144;
 
   // Inicializar cantidades editadas
   useEffect(() => {
@@ -400,17 +395,33 @@ export function ModeloComanda({
 
   return (
     <Dialog open={mostrar} onOpenChange={onCerrar}>
-      <DialogContent className="w-screen h-screen max-w-none max-h-none !top-0 !left-0 !translate-x-0 !translate-y-0 p-0 overflow-y-auto print:max-w-full print:max-h-full m-0 rounded-none" aria-describedby="modelo-comanda-description">
+      <DialogContent
+        className={`p-0 overflow-y-auto border border-slate-200 bg-white shadow-2xl print:max-w-full print:max-h-full ${
+          vistaCompacta
+            ? 'w-[calc(100vw-1rem)] sm:w-[min(96vw,1120px)] max-w-[1120px] h-[88vh] max-h-[88vh] rounded-2xl'
+            : 'w-[calc(100vw-1rem)] sm:w-[min(98vw,1380px)] max-w-[1380px] h-[94vh] max-h-[94vh] rounded-2xl'
+        }`}
+        aria-describedby="modelo-comanda-description"
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{t('orders.dialog.title', { number: comanda.numero })}</DialogTitle>
           <DialogDescription id="modelo-comanda-description">{t('orders.dialog.description')}</DialogDescription>
         </DialogHeader>
         {/* Botones de acción (no se imprimen) */}
-        <div className="sticky top-0 z-10 bg-white border-b shadow-sm flex flex-wrap justify-between items-center p-4 print:hidden gap-2">
+        <div className="sticky top-0 z-10 bg-white border-b shadow-sm flex flex-wrap justify-between items-center px-4 py-3 print:hidden gap-2">
           <h2 className="text-lg sm:text-xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
             Commande - {comanda.numero}
           </h2>
           <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={() => setVistaCompacta((prev) => !prev)}
+              variant="outline"
+              size="sm"
+              className="bg-white text-[#334155] hover:bg-slate-50 border-[#dbe4ee]"
+            >
+              {vistaCompacta ? <Maximize2 className="w-4 h-4 sm:mr-2" /> : <Minimize2 className="w-4 h-4 sm:mr-2" />}
+              <span className="hidden sm:inline">{vistaCompacta ? 'Vue étendue' : 'Vue compacte'}</span>
+            </Button>
             <Button
               onClick={handleImprimir}
               variant="outline"
@@ -434,8 +445,8 @@ export function ModeloComanda({
 
         {/* Cambiar Estado de Preparación (no se imprime) */}
         {onCambiarEstado && (
-          <div className="mx-4 mb-4 p-4 bg-gray-50 rounded-lg print:hidden">
-            <p className="font-medium text-[#333333] mb-3 text-sm sm:text-base" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <div className={`mx-4 mb-4 bg-gray-50 rounded-lg print:hidden ${vistaCompacta ? 'p-3' : 'p-4'}`}>
+            <p className={`font-medium text-[#333333] mb-3 ${vistaCompacta ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
               État de préparation
             </p>
             <div className="flex flex-wrap gap-2">
@@ -444,7 +455,7 @@ export function ModeloComanda({
                   key={estado.valor}
                   onClick={() => onCambiarEstado(estado.valor)}
                   size="sm"
-                  className={`${estado.color} text-white text-xs sm:text-sm ${
+                  className={`${estado.color} text-white ${vistaCompacta ? 'text-[11px] h-8 px-3' : 'text-xs sm:text-sm'} ${
                     comanda.estado === estado.valor ? 'ring-2 ring-offset-2 ring-[#333333]' : ''
                   }`}
                 >
@@ -457,7 +468,7 @@ export function ModeloComanda({
 
         {/* 🎯 NUEVO: Indicador de Progreso de Preparación (no se imprime) */}
         {comanda.estado === 'en_preparacion' && !modoOrganismo && (
-          <div className="mx-4 mb-4 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-[#FFC107] rounded-lg print:hidden">
+          <div className={`mx-4 mb-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-[#FFC107] rounded-lg print:hidden ${vistaCompacta ? 'p-3.5' : 'p-5'}`}>
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="font-bold text-[#F57C00] mb-1 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.1rem' }}>
@@ -502,7 +513,7 @@ export function ModeloComanda({
 
         {/* Notificación al Organismo (no se imprime) */}
         {!modoOrganismo && comanda.estado === 'completada' && organismo && (
-          <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-[#4CAF50] print:hidden">
+          <div className={`mb-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-[#4CAF50] print:hidden ${vistaCompacta ? 'p-3.5' : 'p-4'}`}>
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="font-bold text-[#4CAF50] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.1rem' }}>
@@ -519,7 +530,7 @@ export function ModeloComanda({
 
         {/* Acciones del Organismo (no se imprime) */}
         {modoOrganismo && comanda.estado !== 'anulada' && comanda.estado !== 'confirmada' && comanda.estado !== 'completada' && comanda.estado !== 'entregada' && (
-          <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-[#1E73BE] print:hidden">
+          <div className={`mb-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-[#1E73BE] print:hidden ${vistaCompacta ? 'p-4' : 'p-6'}`}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="font-bold text-[#1E73BE] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.2rem' }}>
@@ -578,28 +589,28 @@ export function ModeloComanda({
         )}
 
         {/* Modelo de Comanda (se imprime) */}
-        <div ref={comandaRef} className="bg-white p-8 print:p-0" data-comanda-print>
+        <div ref={comandaRef} className={`bg-white print:p-0 ${vistaCompacta ? 'p-4 sm:p-5' : 'p-8'}`} data-comanda-print>
           {/* Encabezado */}
-          <div className="border-b-4 border-[#1E73BE] pb-6 mb-6">
-            <div className="flex justify-between items-start">
+          <div className={`border-b-4 border-[#1E73BE] ${vistaCompacta ? 'pb-4 mb-4' : 'pb-6 mb-6'}`}>
+            <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
-                <h1 className="font-bold text-[#1E73BE] mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '2.5rem' }}>
+                <h1 className="font-bold text-[#1E73BE] mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1.9rem' : '2.5rem' }}>
                   BANQUE ALIMENTAIRE
                 </h1>
-                <p className="text-[#666666] mb-1" style={{ fontSize: '1.1rem' }}>Système de gestion des commandes</p>
-                <p className="text-[#666666]">Laval, Québec, Canada</p>
+                <p className="text-[#666666] mb-1" style={{ fontSize: vistaCompacta ? '0.95rem' : '1.1rem' }}>Système de gestion des commandes</p>
+                <p className="text-[#666666] text-sm">Laval, Québec, Canada</p>
               </div>
               <div className="flex flex-col items-end text-right">
-                <div className="mb-4 bg-white p-2 rounded-lg shadow-md qrcode-container">
+                <div className={`bg-white p-2 rounded-lg shadow-md qrcode-container ${vistaCompacta ? 'mb-2' : 'mb-4'}`}>
                   <BrandedQRCode
                     value={qrData}
-                    size={144}
+                    size={tamanoQr}
                     level={COMANDA_QR_SVG_LEVEL}
                     includeMargin={true}
                     data-testid="qr-code"
                   />
                 </div>
-                <p className="font-bold text-[#1E73BE]" style={{ fontSize: '1.3rem', fontFamily: 'Montserrat, sans-serif' }}>
+                <p className="font-bold text-[#1E73BE]" style={{ fontSize: vistaCompacta ? '1.05rem' : '1.3rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {comanda.numero}
                 </p>
                 {modoOrganismo && comanda.estado === 'pendiente' && (
@@ -636,33 +647,31 @@ export function ModeloComanda({
 
           </div>
 
-          {/* ORGANISMO EN GRANDE */}
-          <div className="mb-8 p-4 sm:p-6 bg-gradient-to-r from-[#E3F2FD] to-[#E8F5E9] border-4 border-[#1E73BE] rounded-xl shadow-lg">
-            <p className="text-xs sm:text-sm text-[#666666] mb-2 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-              Organisme destinataire
-            </p>
-            <h2 className="font-bold text-[#1E73BE] mb-3 text-xl sm:text-3xl lg:text-4xl" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1.2' }}>
-              {organismo?.nombre || 'Sans organisme'}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-[#666666]"><strong>Adresse :</strong> {organismo?.direccion || 'N/A'}</p>
-                <p className="text-[#666666]"><strong>Téléphone :</strong> {organismo?.telefono || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[#666666]"><strong>Responsable :</strong> {organismo?.responsable || 'N/A'}</p>
-                <p className="text-[#666666]"><strong>Courriel :</strong> {organismo?.email || 'N/A'}</p>
+          <div className={`grid grid-cols-1 ${vistaCompacta ? 'xl:grid-cols-[1.35fr_0.85fr_0.95fr] gap-3' : 'xl:grid-cols-1 gap-0'}`}>
+            <div className={`bg-gradient-to-r from-[#E3F2FD] to-[#E8F5E9] rounded-xl shadow-lg ${vistaCompacta ? 'mb-4 p-4 border-2' : 'mb-8 p-4 sm:p-6 border-4'} border-[#1E73BE]`}>
+              <p className="text-xs sm:text-sm text-[#666666] mb-2 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+                Organisme destinataire
+              </p>
+              <h2 className="font-bold text-[#1E73BE] mb-3" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1.2', fontSize: vistaCompacta ? '2rem' : 'clamp(1.25rem, 2.3vw, 2.5rem)' }}>
+                {organismo?.nombre || 'Sans organisme'}
+              </h2>
+              <div className={`grid ${vistaCompacta ? 'grid-cols-1 gap-2 text-[13px]' : 'grid-cols-1 sm:grid-cols-2 gap-4 text-sm'}`}>
+                <div>
+                  <p className="text-[#666666]"><strong>Adresse :</strong> {organismo?.direccion || 'N/A'}</p>
+                  <p className="text-[#666666]"><strong>Téléphone :</strong> {organismo?.telefono || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-[#666666]"><strong>Responsable :</strong> {organismo?.responsable || 'N/A'}</p>
+                  <p className="text-[#666666]"><strong>Courriel :</strong> {organismo?.email || 'N/A'}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Información de Cita y Preparación */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
-            <div className="bg-[#FFF8E1] border-2 border-[#FFC107] p-4 sm:p-5 rounded-lg">
-              <p className="font-bold text-[#FFC107] mb-3 flex items-center gap-2 text-base sm:text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <div className={`bg-[#FFF8E1] border-2 border-[#FFC107] rounded-lg ${vistaCompacta ? 'mb-4 p-3.5' : 'mb-8 p-4 sm:p-5'}`}>
+              <p className={`font-bold text-[#FFC107] mb-3 flex items-center gap-2 ${vistaCompacta ? 'text-sm' : 'text-base sm:text-lg'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 📅 Rendez-vous de collecte
               </p>
-              <div className="space-y-2 text-sm sm:text-base">
+              <div className={`space-y-1.5 ${vistaCompacta ? 'text-[13px]' : 'text-sm sm:text-base'}`}>
                 <p className="text-[#333333]">
                   <strong>Jour :</strong> {comanda.fechaEntrega ? 
                     new Date(comanda.fechaEntrega).toLocaleDateString(defaultLocale, { 
@@ -683,11 +692,11 @@ export function ModeloComanda({
               </div>
             </div>
             
-            <div className="bg-[#E8F5E9] border-2 border-[#4CAF50] p-4 sm:p-5 rounded-lg">
-              <p className="font-bold text-[#4CAF50] mb-3 flex items-center gap-2 text-base sm:text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <div className={`bg-[#E8F5E9] border-2 border-[#4CAF50] rounded-lg ${vistaCompacta ? 'mb-4 p-3.5' : 'mb-8 p-4 sm:p-5'}`}>
+              <p className={`font-bold text-[#4CAF50] mb-3 flex items-center gap-2 ${vistaCompacta ? 'text-sm' : 'text-base sm:text-lg'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 👤 Informations de préparation
               </p>
-              <div className="space-y-2 text-sm sm:text-base">
+              <div className={`space-y-1.5 ${vistaCompacta ? 'text-[13px]' : 'text-sm sm:text-base'}`}>
                 <p className="text-[#333333]">
                   <strong>Préparée par :</strong> {comanda.usuarioCreacion || 'Non attribué'}
                 </p>
@@ -708,7 +717,7 @@ export function ModeloComanda({
           </div>
 
           {(comanda.grupoDistribucionId || comanda.fechaCaducidadGrupo) && !modoOrganismo && (
-            <div ref={bloqueGrupoRef} className="mb-8 rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] p-4 sm:p-5">
+            <div ref={bloqueGrupoRef} className={`rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] ${vistaCompacta ? 'mb-4 p-3.5' : 'mb-8 p-4 sm:p-5'}`}>
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-[#666666]">Distribution de groupe</p>
@@ -798,10 +807,10 @@ export function ModeloComanda({
           )}
 
           {/* Productos organizados por temperatura */}
-          <div className="mb-6">
-            <h2 className="font-bold text-[#1E73BE] mb-4 pb-2 border-b-4 border-[#1E73BE] flex items-center gap-3" 
-                style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>
-              <Thermometer className="w-6 h-6" />
+          <div className={vistaCompacta ? 'mb-4' : 'mb-6'}>
+            <h2 className={`font-bold text-[#1E73BE] pb-2 border-b-4 border-[#1E73BE] flex items-center gap-3 ${vistaCompacta ? 'mb-3' : 'mb-4'}`} 
+                style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1.1rem' : '1.5rem' }}>
+              <Thermometer className={vistaCompacta ? 'w-5 h-5' : 'w-6 h-6'} />
               Produits par température d'entreposage
             </h2>
 
@@ -832,10 +841,10 @@ export function ModeloComanda({
               const config = colorConfig[temperatura as keyof typeof colorConfig];
               
               return (
-                <div key={temperatura} className="mb-8 break-inside-avoid">
-                  <div className={`flex items-center gap-3 mb-3 ${config.bg} border-2 ${config.border} p-4 rounded-lg`}>
+                <div key={temperatura} className={`${vistaCompacta ? 'mb-4' : 'mb-8'} break-inside-avoid`}>
+                  <div className={`flex items-center gap-3 mb-3 ${config.bg} border-2 ${config.border} ${vistaCompacta ? 'p-3' : 'p-4'} rounded-lg`}>
                     {config.icon}
-                    <h3 className={`font-bold ${config.text} text-base sm:text-lg lg:text-xl`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <h3 className={`font-bold ${config.text} ${vistaCompacta ? 'text-sm sm:text-base' : 'text-base sm:text-lg lg:text-xl'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {obtenerEtiquetaTemperatura(temperatura)}
                     </h3>
                     <Badge className="bg-[#4CAF50] ml-auto text-xs sm:text-sm" style={{ padding: '0.3rem 0.6rem' }}>
@@ -849,16 +858,16 @@ export function ModeloComanda({
                         <TableRow className="bg-gray-100">
                           {/* 🎯 NUEVO: Columna para checkbox de progreso */}
                           {comanda.estado === 'en_preparacion' && !modoOrganismo && (
-                            <TableHead className="font-bold text-center text-xs sm:text-sm w-16" style={{ fontFamily: 'Montserrat, sans-serif' }}>✓</TableHead>
+                            <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] w-12' : 'text-xs sm:text-sm w-16'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>✓</TableHead>
                           )}
-                          <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Icône</TableHead>
-                          <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Code</TableHead>
-                          <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Produit</TableHead>
-                          <TableHead className="font-bold text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Lot</TableHead>
-                          <TableHead className="font-bold text-center text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Quantité</TableHead>
-                          <TableHead className="font-bold text-center text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Unité</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Icône</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Code</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Produit</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Lot</TableHead>
+                          <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Quantité</TableHead>
+                          <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Unité</TableHead>
                           {comanda.estado === 'completada' && (
-                            <TableHead className="font-bold text-center text-xs sm:text-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>Livré</TableHead>
+                            <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Livré</TableHead>
                           )}
                         </TableRow>
                       </TableHeader>
@@ -869,47 +878,47 @@ export function ModeloComanda({
                             <TableRow key={itemKey} className="hover:bg-gray-50">
                               {/* 🎯 NUEVO: Checkbox para marcar producto como completado */}
                               {comanda.estado === 'en_preparacion' && !modoOrganismo && (
-                                <TableCell className="text-center">
+                                <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
                                   <input
                                     type="checkbox"
                                     checked={productosCompletados[itemKey] || false}
                                     onChange={() => toggleProductoCompletado(itemKey)}
-                                    className="w-5 h-5 cursor-pointer accent-[#4CAF50]"
+                                    className={`${vistaCompacta ? 'w-4 h-4' : 'w-5 h-5'} cursor-pointer accent-[#4CAF50]`}
                                     title="Marquer comme complété"
                                   />
                                 </TableCell>
                               )}
-                              <TableCell className="text-center">
+                              <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
                                 {item.producto?.icono ? (
-                                  <span className="text-3xl">{item.producto.icono}</span>
+                                  <span className={vistaCompacta ? 'text-2xl' : 'text-3xl'}>{item.producto.icono}</span>
                                 ) : (
-                                  <Box className="w-6 h-6 text-gray-400 mx-auto" />
+                                  <Box className={`${vistaCompacta ? 'w-5 h-5' : 'w-6 h-6'} text-gray-400 mx-auto`} />
                                 )}
                               </TableCell>
-                              <TableCell className="font-mono font-medium">{item.producto?.codigo || 'N/A'}</TableCell>
-                              <TableCell>
+                              <TableCell className={`font-mono font-medium ${vistaCompacta ? 'px-2 py-2 text-[11px]' : ''}`}>{item.producto?.codigo || 'N/A'}</TableCell>
+                              <TableCell className={vistaCompacta ? 'px-2 py-2' : ''}>
                                 <div className="flex flex-col">
-                                  <span className="font-medium text-[#333333]">
+                                  <span className={`font-medium text-[#333333] ${vistaCompacta ? 'text-[12px] leading-4' : ''}`}>
                                     {obtenerEtiquetaProducto(item.producto, item.nombreProducto)}
                                   </span>
-                                  <span className={`inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium mt-1 ${getTemperatureBadgeStyle(item.temperatura)}`}>
+                                  <span className={`inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 font-medium mt-1 ${vistaCompacta ? 'text-[10px]' : 'text-xs'} ${getTemperatureBadgeStyle(item.temperatura)}`}>
                                     {getTemperaturaIcon(item.temperatura)}
                                     {obtenerEtiquetaTemperatura(item.temperatura)}
                                   </span>
-                                  <span className="text-[11px] text-[#666666] mt-1">
+                                  <span className={`text-[#666666] mt-1 ${vistaCompacta ? 'text-[10px]' : 'text-[11px]'}`}>
                                     Entrée: {obtenerNombreOriginalTemperatura(item.temperaturaOriginalEntrada)}
                                   </span>
                                   {obtenerPoidsUnitaire(item.producto) && (
-                                    <span className="text-xs text-[#666666] mt-1">
+                                    <span className={`text-[#666666] mt-1 ${vistaCompacta ? 'text-[10px]' : 'text-xs'}`}>
                                       {obtenerPoidsUnitaire(item.producto)}
                                     </span>
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-sm text-[#666666]">
+                              <TableCell className={`text-[#666666] ${vistaCompacta ? 'px-2 py-2 text-[11px]' : 'text-sm'}`}>
                                 {item.producto?.lote || 'N/A'}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
                                 {modoEdicion || campoEditando === itemKey ? (
                                   <Input
                                     type="number"
@@ -922,7 +931,6 @@ export function ModeloComanda({
                                       if (e.key === 'Enter') {
                                         setCampoEditando(null);
                                       } else if (e.key === 'Escape') {
-                                        // Restaurar cantidad original
                                         setCantidadesEditadas(prev => ({
                                           ...prev,
                                           [itemKey]: item.cantidad
@@ -931,12 +939,12 @@ export function ModeloComanda({
                                       }
                                     }}
                                     autoFocus
-                                    className="w-20 text-center font-bold text-[#1E73BE]"
+                                    className={`${vistaCompacta ? 'w-16 h-8 text-sm' : 'w-20'} text-center font-bold text-[#1E73BE]`}
                                   />
                                 ) : (
-                                  <span 
+                                  <span
                                     className={`font-bold text-[#1E73BE] ${modoOrganismo && comanda.estado !== 'anulada' && comanda.estado !== 'completada' && comanda.estado !== 'entregada' ? 'cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition-colors' : ''}`}
-                                    style={{ fontSize: '1.2rem' }}
+                                    style={{ fontSize: vistaCompacta ? '1rem' : '1.2rem' }}
                                     onClick={() => {
                                       if (modoOrganismo && comanda.estado !== 'anulada' && comanda.estado !== 'completada' && comanda.estado !== 'entregada') {
                                         setCampoEditando(itemKey);
@@ -955,12 +963,12 @@ export function ModeloComanda({
                                   </span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-center text-[#666666] font-medium">
+                              <TableCell className={`text-center text-[#666666] font-medium ${vistaCompacta ? 'px-2 py-2 text-[11px]' : ''}`}>
                                 {item.producto?.unidad || 'N/A'}
                               </TableCell>
                               {comanda.estado === 'completada' && (
-                                <TableCell className="text-center">
-                                  <Badge className="bg-[#4CAF50]" style={{ fontSize: '1rem', padding: '0.4rem 0.8rem' }}>
+                                <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
+                                  <Badge className="bg-[#4CAF50]" style={{ fontSize: vistaCompacta ? '0.85rem' : '1rem', padding: vistaCompacta ? '0.25rem 0.55rem' : '0.4rem 0.8rem' }}>
                                     {formatQuantity(item.cantidadEntregada || item.cantidad)}
                                   </Badge>
                                 </TableCell>
@@ -977,41 +985,41 @@ export function ModeloComanda({
           </div>
 
           {/* Resumen */}
-          <div className="border-t-4 border-[#1E73BE] pt-6 mb-8">
-            <h3 className="font-bold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.3rem' }}>
+          <div className={`border-t-4 border-[#1E73BE] ${vistaCompacta ? 'pt-4 mb-4' : 'pt-6 mb-8'}`}>
+            <h3 className="font-bold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1.1rem' : '1.3rem' }}>
               Résumé de la commande
             </h3>
-            <div className="grid grid-cols-5 gap-4 text-center">
-              <div className="bg-blue-50 border-2 border-[#1E73BE] p-5 rounded-lg">
+            <div className={`grid text-center ${vistaCompacta ? 'grid-cols-2 lg:grid-cols-5 gap-2' : 'grid-cols-5 gap-4'}`}>
+              <div className={`bg-blue-50 border-2 border-[#1E73BE] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Total des produits</p>
-                <p className="font-bold text-[#1E73BE]" style={{ fontSize: '2rem', fontFamily: 'Montserrat, sans-serif' }}>
+                <p className="font-bold text-[#1E73BE]" style={{ fontSize: vistaCompacta ? '1.55rem' : '2rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {productosOrdenados.length}
                 </p>
               </div>
-              <div className="bg-green-50 border-2 border-[#4CAF50] p-5 rounded-lg">
+              <div className={`bg-green-50 border-2 border-[#4CAF50] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Poids total</p>
-                <p className="font-bold text-[#4CAF50]" style={{ fontSize: '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
+                <p className="font-bold text-[#4CAF50]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {formatQuantity(productosOrdenados.reduce((sum: number, item: any) => sum + (modoEdicion && cantidadesEditadas[item.productoId] !== undefined ? cantidadesEditadas[item.productoId] : item.cantidad), 0))} kg
                 </p>
               </div>
-              <div className="bg-orange-50 border-2 border-[#FF9800] p-5 rounded-lg">
+              <div className={`bg-orange-50 border-2 border-[#FF9800] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Valeur monétaire</p>
-                <p className="font-bold text-[#FF9800]" style={{ fontSize: '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
+                <p className="font-bold text-[#FF9800]" style={{ fontSize: vistaCompacta ? '1.05rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   CAD$ {formatMoney(productosOrdenados.reduce((sum: number, item: any) => {
                     const cantidad = modoEdicion && cantidadesEditadas[item.productoId] !== undefined ? cantidadesEditadas[item.productoId] : item.cantidad;
                     return sum + (cantidad * obtenerValorUnitario(item));
                   }, 0))}
                 </p>
               </div>
-              <div className="bg-yellow-50 border-2 border-[#FFC107] p-5 rounded-lg">
+              <div className={`bg-yellow-50 border-2 border-[#FFC107] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Ambiante</p>
-                <p className="font-bold text-[#FFC107]" style={{ fontSize: '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
+                <p className="font-bold text-[#FFC107]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {productosAgrupados['Temperatura Ambiente'].length}
                 </p>
               </div>
-              <div className="bg-blue-50 border-2 border-[#0288D1] p-5 rounded-lg">
+              <div className={`bg-blue-50 border-2 border-[#0288D1] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Réfrigéré/Congelé</p>
-                <p className="font-bold text-[#0288D1]" style={{ fontSize: '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
+                <p className="font-bold text-[#0288D1]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {productosAgrupados['Refrigerado'].length + productosAgrupados['Congelado'].length}
                 </p>
               </div>
@@ -1020,8 +1028,8 @@ export function ModeloComanda({
 
           {/* Observaciones */}
           {comanda.observaciones && (
-            <div className="mb-8 p-5 bg-yellow-50 border-l-4 border-[#FFC107] rounded-lg">
-              <p className="font-bold text-[#F57C00] mb-2 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.1rem' }}>
+            <div className={`bg-yellow-50 border-l-4 border-[#FFC107] rounded-lg ${vistaCompacta ? 'mb-4 p-3.5' : 'mb-8 p-5'}`}>
+              <p className="font-bold text-[#F57C00] mb-2 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1rem' : '1.1rem' }}>
                 📝 Observations importantes
               </p>
               <p className="text-[#333333]">{comanda.observaciones}</p>
@@ -1029,23 +1037,23 @@ export function ModeloComanda({
           )}
 
           {/* Firmas */}
-          <div className="grid grid-cols-2 gap-8 mt-8 pt-6 border-t-4 border-gray-300">
-            <div className="bg-[#E8F5E9] p-5 rounded-lg border-2 border-[#4CAF50]">
-              <p className="font-bold text-[#4CAF50] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.1rem' }}>
+          <div className={`grid ${vistaCompacta ? 'grid-cols-1 xl:grid-cols-2 gap-3 mt-4 pt-4' : 'grid-cols-2 gap-8 mt-8 pt-6'} border-t-4 border-gray-300`}>
+            <div className={`bg-[#E8F5E9] rounded-lg border-2 border-[#4CAF50] ${vistaCompacta ? 'p-3.5' : 'p-5'}`}>
+              <p className="font-bold text-[#4CAF50] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1rem' : '1.1rem' }}>
                 ✓ Préparée par
               </p>
-              <div className="border-b-2 border-gray-400 mb-3" style={{ height: '60px' }}></div>
+              <div className="border-b-2 border-gray-400 mb-3" style={{ height: vistaCompacta ? '44px' : '60px' }}></div>
               <div className="text-sm text-[#333333] space-y-1">
                 <p><strong>Nom :</strong> {comanda.usuarioCreacion || '_____________________'}</p>
                 <p><strong>Date :</strong> {new Date(comanda.fecha).toLocaleDateString(defaultLocale)}</p>
                 <p><strong>Heure :</strong> {new Date(comanda.fecha).toLocaleTimeString(defaultLocale, { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </div>
-            <div className="bg-[#E3F2FD] p-5 rounded-lg border-2 border-[#1E73BE]">
-              <p className="font-bold text-[#1E73BE] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.1rem' }}>
+            <div className={`bg-[#E3F2FD] rounded-lg border-2 border-[#1E73BE] ${vistaCompacta ? 'p-3.5' : 'p-5'}`}>
+              <p className="font-bold text-[#1E73BE] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1rem' : '1.1rem' }}>
                 ✓ Reçu par ({organismo?.nombre})
               </p>
-              <div className="border-b-2 border-gray-400 mb-3" style={{ height: '60px' }}></div>
+              <div className="border-b-2 border-gray-400 mb-3" style={{ height: vistaCompacta ? '44px' : '60px' }}></div>
               <div className="text-sm text-[#333333] space-y-1">
                 <p><strong>Nom :</strong> {personaAutorizada?.nombreCompleto || organismo?.responsable || '_____________________'}</p>
                 {personaAutorizada && (

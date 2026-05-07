@@ -13,6 +13,7 @@ import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage
 import { obtenerRecetas, obtenerTransformaciones, type Transformacion } from '../../utils/recetaStorage';
 import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
 import { obtenerLogs } from '../../utils/auditStorage';
+import { obtenerEtiquetaModalidadDistribucion, resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import { 
   exportarOrganismosPDF,
 } from '../../utils/exportarPDF';
@@ -36,6 +37,7 @@ type ComandaExportable = Comanda & {
   organismo?: {
     nombre?: string;
   };
+  modalidadDistribucionLabel?: string;
 };
 
 type DatePreset = 'today' | 'last7days' | 'last30days' | 'month';
@@ -577,6 +579,7 @@ export function Reportes() {
   const comandasExportables: ComandaExportable[] = comandasFiltradas.map((comanda) => ({
     ...comanda,
     organismo: (comanda as ComandaExportable).organismo ?? (comanda.organismoId ? { nombre: organismosPorId.get(comanda.organismoId)?.nombre || 'N/A' } : undefined),
+    modalidadDistribucionLabel: obtenerEtiquetaModalidadDistribucion(resolverModalidadDistribucionComanda(comanda)),
   }));
 
   const comandasExportablesFiltradas = selectedCategory === 'all'

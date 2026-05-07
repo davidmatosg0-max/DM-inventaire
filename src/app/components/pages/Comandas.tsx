@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, FileCheck, Search, Printer, Users, Bell, Tag, Package, Check, X, Edit2, Ban, Calendar, Clock } from 'lucide-react';
+import { Plus, Eye, FileCheck, Search, Printer, Users, Bell, Tag, Package, Check, X, Edit2, Ban, Calendar, Clock, Rows3, LayoutGrid } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -22,6 +22,7 @@ import { ComandaCompletaImprimible } from '../comandas/ComandaCompletaImprimible
 import { ListaProductosDistribuidosDialog } from '../comandas/ListaProductosDistribuidosDialog';
 import { printStandardOrderLabel, type EtiquetaComandaData } from '../comandas/EtiquetaComandaEstandarizada';
 import { printComandaYEtiquetaSeparadas } from '../comandas/ImpresionComandaEtiquetaSeparada';
+import { obtenerEtiquetaModalidadDistribucion, resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import { ProponerNuevaFecha } from '../comandas/ProponerNuevaFecha';
 import { EscanerQR } from '../comandas/EscanerQR';
 import { filterByThreeLettersMultiple } from '../../utils/searchUtils';
@@ -125,6 +126,7 @@ export function Comandas() {
   const [searchInventario, setSearchInventario] = useState('');
   const [cantidadesInventario, setCantidadesInventario] = useState<Record<string, number>>({});
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
+  const [vistaCompactaComandas, setVistaCompactaComandas] = useState(true);
   
   // Estados para proponer nueva fecha
   const [dialogProponerFechaOpen, setDialogProponerFechaOpen] = useState(false);
@@ -412,6 +414,19 @@ export function Comandas() {
     return (
       <Badge className={`${config.bg} hover:${config.bg}`}>
         {config.text}
+      </Badge>
+    );
+  };
+
+  const getModalidadDistribucionBadge = (comanda: Comanda) => {
+    const modalidad = resolverModalidadDistribucionComanda(comanda);
+    if (modalidad !== 'collation') {
+      return null;
+    }
+
+    return (
+      <Badge className="border border-[#F59E0B]/20 bg-[#FFF7E8] text-[#B45309] hover:bg-[#FFF7E8]">
+        {obtenerEtiquetaModalidadDistribucion(modalidad)}
       </Badge>
     );
   };
@@ -1334,7 +1349,29 @@ export function Comandas() {
                     Tous les états visibles dans une lecture plus dense, sans perdre les détails opérationnels.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex items-center rounded-full border border-[#dbe4ee] bg-white p-0.5 shadow-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setVistaCompactaComandas(true)}
+                      className={`h-7 rounded-full px-2.5 text-[11px] ${vistaCompactaComandas ? 'bg-[#1E73BE] text-white hover:bg-[#1E73BE] hover:text-white' : 'text-[#516071] hover:bg-[#f8fafc]'}`}
+                    >
+                      <Rows3 className="mr-1.5 h-3.5 w-3.5" />
+                      Compact
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setVistaCompactaComandas(false)}
+                      className={`h-7 rounded-full px-2.5 text-[11px] ${!vistaCompactaComandas ? 'bg-[#0f172a] text-white hover:bg-[#0f172a] hover:text-white' : 'text-[#516071] hover:bg-[#f8fafc]'}`}
+                    >
+                      <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+                      Confort
+                    </Button>
+                  </div>
                   {comandasAgrupadasPorEstado.map((grupo) => (
                     <div
                       key={`resume-${grupo.key}`}
@@ -1405,7 +1442,7 @@ export function Comandas() {
                               {grupo.metricas.totalCommandes}
                             </div>
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-1.5">
+                          <div className={`mt-3 grid ${vistaCompactaComandas ? 'grid-cols-4 gap-1' : 'grid-cols-2 gap-1.5'}`}>
                             <div className="rounded-lg bg-white/70 px-2.5 py-2">
                               <p className="text-[10px] uppercase tracking-[0.14em] text-[#6b7280]">Articles</p>
                               <p className="mt-0.5 text-xs font-semibold text-[#111827]">{formatNumberSimple(grupo.metricas.totalArticles)}</p>
@@ -1427,7 +1464,7 @@ export function Comandas() {
                           </div>
                         </div>
 
-                        <div className="max-h-[60vh] space-y-2 overflow-y-auto p-3">
+                        <div className={`max-h-[60vh] overflow-y-auto p-3 ${vistaCompactaComandas ? 'space-y-1.5' : 'space-y-2'}`}>
                           {grupo.comandas.length === 0 ? (
                             <div className="rounded-xl border border-dashed p-4 text-center text-xs text-[#7b8794]">
                               Aucun élément dans cet état.
@@ -1444,21 +1481,35 @@ export function Comandas() {
                               return (
                                 <div
                                   key={comanda.id}
-                                  className="rounded-xl border border-white/70 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                                  className={`rounded-xl border border-white/70 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${vistaCompactaComandas ? 'p-2.5' : 'p-3'}`}
                                   style={{ boxShadow: '0 6px 18px rgba(15, 23, 42, 0.05)' }}
                                 >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 space-y-0.5">
-                                      <p className="whitespace-normal break-words text-sm font-bold leading-5 text-[#0f172a]">
-                                        {organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism')}
-                                      </p>
-                                      <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
-                                        <span className="rounded-full bg-[#f1f5f9] px-2 py-0.5 font-semibold tracking-wide text-[#475569]">
-                                          {comanda.numero || comanda.id}
-                                        </span>
+                                  {vistaCompactaComandas ? (
+                                    <>
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex flex-wrap items-center gap-1.5">
+                                            <p className="truncate text-[13px] font-bold leading-5 text-[#0f172a]">
+                                              {organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism')}
+                                            </p>
+                                            <span className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#475569]">
+                                              {comanda.numero || comanda.id}
+                                            </span>
+                                          </div>
+                                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#64748b]">
+                                            <span>{rendezVousTexte}</span>
+                                            <span className="text-[#cbd5e1]">•</span>
+                                            <span>{comanda.items?.length || 0} {t('inventory.products')}</span>
+                                          </div>
+                                        </div>
+                                        <div className="shrink-0">
+                                          {getEstadoBadge(comanda.estado)}
+                                        </div>
                                       </div>
-                                      {(comanda.grupoDistribucionAnclada || comanda.fechaCaducidadGrupo) && (
-                                        <div className="mt-2 flex flex-wrap gap-1.5">
+
+                                      {(comanda.grupoDistribucionAnclada || comanda.fechaCaducidadGrupo || resolverModalidadDistribucionComanda(comanda) === 'collation') && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                          {getModalidadDistribucionBadge(comanda)}
                                           {comanda.grupoDistribucionAnclada && (
                                             <Badge className="border border-[#1E73BE]/20 bg-[#EAF4FF] text-[#1E73BE] hover:bg-[#EAF4FF]">
                                               Distribution ancrée
@@ -1471,63 +1522,129 @@ export function Comandas() {
                                           )}
                                         </div>
                                       )}
-                                    </div>
-                                    {getEstadoBadge(comanda.estado)}
-                                  </div>
 
-                                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                                    <div className="rounded-lg bg-[#f8fafc] px-2.5 py-2">
-                                      <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Rendez-vous</p>
-                                      <p className="mt-0.5 font-medium text-[#1e293b]">
-                                        {rendezVousTexte}
-                                      </p>
-                                    </div>
-                                    <div className="rounded-lg bg-[#f8fafc] px-2.5 py-2">
-                                      <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Produits</p>
-                                      <p className="mt-0.5 font-medium text-[#1e293b]">
-                                        {comanda.items?.length || 0} {t('inventory.products')}
-                                      </p>
-                                    </div>
-                                  </div>
+                                      <div className="mt-2 flex items-center justify-end gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => {
+                                            setComandaSeleccionada(comanda);
+                                            setMostrarModeloComanda(true);
+                                          }}
+                                          title={t('orders.viewOrder')}
+                                          className="h-7 px-2 text-[11px] text-[#334155] hover:bg-[#f8fafc]"
+                                        >
+                                          <Eye className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleAbrirImpresionCompacta(comanda)}
+                                          title={t('orders.printOrder')}
+                                          className="h-7 px-2 text-[11px] text-[#2E7D32] hover:bg-[#eef8ef] hover:text-[#2E7D32]"
+                                        >
+                                          <Printer className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => {
+                                            const organismo = resolverOrganismoComanda(comanda);
+                                            handleImprimirEtiquetaEstandarizada(comanda, organismo);
+                                          }}
+                                          title={t('orders.printLabelTitle')}
+                                          className="h-7 px-2 text-[11px] text-[#1E73BE] hover:bg-[#edf5ff] hover:text-[#1E73BE]"
+                                        >
+                                          <Tag className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 space-y-0.5">
+                                          <p className="whitespace-normal break-words text-sm font-bold leading-5 text-[#0f172a]">
+                                            {organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism')}
+                                          </p>
+                                          <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+                                            <span className="rounded-full bg-[#f1f5f9] px-2 py-0.5 font-semibold tracking-wide text-[#475569]">
+                                              {comanda.numero || comanda.id}
+                                            </span>
+                                          </div>
+                                          {(comanda.grupoDistribucionAnclada || comanda.fechaCaducidadGrupo || resolverModalidadDistribucionComanda(comanda) === 'collation') && (
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                              {getModalidadDistribucionBadge(comanda)}
+                                              {comanda.grupoDistribucionAnclada && (
+                                                <Badge className="border border-[#1E73BE]/20 bg-[#EAF4FF] text-[#1E73BE] hover:bg-[#EAF4FF]">
+                                                  Distribution ancrée
+                                                </Badge>
+                                              )}
+                                              {comanda.fechaCaducidadGrupo && (
+                                                <Badge className="border border-[#F59E0B]/20 bg-[#FFF7E8] text-[#B45309] hover:bg-[#FFF7E8]">
+                                                  Péremption: {formatLocalizedDate(comanda.fechaCaducidadGrupo)}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                        {getEstadoBadge(comanda.estado)}
+                                      </div>
 
-                                  <div className="mt-3 flex flex-wrap gap-1.5">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setComandaSeleccionada(comanda);
-                                        setMostrarModeloComanda(true);
-                                      }}
-                                      title={t('orders.viewOrder')}
-                                      className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] hover:bg-[#f8fafc]"
-                                    >
-                                      <Eye className="mr-1.5 h-3.5 w-3.5" />
-                                      Ouvrir
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleAbrirImpresionCompacta(comanda)}
-                                      title={t('orders.printOrder')}
-                                      className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#2E7D32] hover:bg-[#eef8ef] hover:text-[#2E7D32]"
-                                    >
-                                      <Printer className="mr-1.5 h-3.5 w-3.5" />
-                                      Imprimer
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        const organismo = resolverOrganismoComanda(comanda);
-                                        handleImprimirEtiquetaEstandarizada(comanda, organismo);
-                                      }}
-                                      title={t('orders.printLabelTitle')}
-                                      className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#1E73BE] hover:bg-[#edf5ff] hover:text-[#1E73BE]"
-                                    >
-                                      <Tag className="mr-1.5 h-3.5 w-3.5" />
-                                      Étiquette
-                                    </Button>
-                                  </div>
+                                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                        <div className="rounded-lg bg-[#f8fafc] px-2.5 py-2">
+                                          <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Rendez-vous</p>
+                                          <p className="mt-0.5 font-medium text-[#1e293b]">
+                                            {rendezVousTexte}
+                                          </p>
+                                        </div>
+                                        <div className="rounded-lg bg-[#f8fafc] px-2.5 py-2">
+                                          <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Produits</p>
+                                          <p className="mt-0.5 font-medium text-[#1e293b]">
+                                            {comanda.items?.length || 0} {t('inventory.products')}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      <div className="mt-3 flex flex-wrap gap-1.5">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setComandaSeleccionada(comanda);
+                                            setMostrarModeloComanda(true);
+                                          }}
+                                          title={t('orders.viewOrder')}
+                                          className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] hover:bg-[#f8fafc]"
+                                        >
+                                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                                          Ouvrir
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleAbrirImpresionCompacta(comanda)}
+                                          title={t('orders.printOrder')}
+                                          className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#2E7D32] hover:bg-[#eef8ef] hover:text-[#2E7D32]"
+                                        >
+                                          <Printer className="mr-1.5 h-3.5 w-3.5" />
+                                          Imprimer
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            const organismo = resolverOrganismoComanda(comanda);
+                                            handleImprimirEtiquetaEstandarizada(comanda, organismo);
+                                          }}
+                                          title={t('orders.printLabelTitle')}
+                                          className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#1E73BE] hover:bg-[#edf5ff] hover:text-[#1E73BE]"
+                                        >
+                                          <Tag className="mr-1.5 h-3.5 w-3.5" />
+                                          Étiquette
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
                                 </div>
                               );
                             })
@@ -1935,6 +2052,7 @@ export function Comandas() {
                     <div className="flex-1">
                       <p className="font-medium">{comanda.id}</p>
                       <p className="text-sm text-[#666666]">{organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism')}</p>
+                      {getModalidadDistribucionBadge(comanda)}
                     </div>
                     {getEstadoBadge(comanda.estado)}
                   </div>

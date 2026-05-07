@@ -68,7 +68,7 @@ import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 type Candidate = Candidato;
 type CandidateContactForm = Omit<ContactoDepartamento, 'id'>;
 type AssignationMode = 'assign' | 'modify';
-type RecruitmentMainView = 'candidatures' | 'timesheets';
+type RecruitmentMainView = 'candidatures' | 'reports' | 'timesheets';
 type TimesheetDepartmentFilter = 'all' | string;
 type CandidateTimesheetForm = {
   departamentoId: string;
@@ -325,6 +325,11 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   const [mainView, setMainView] = useState<RecruitmentMainView>(isPublicAccess ? 'timesheets' : 'candidatures');
   const [timesheetDepartmentFilter, setTimesheetDepartmentFilter] = useState<TimesheetDepartmentFilter>('all');
   const [timesheetMonthFilter, setTimesheetMonthFilter] = useState('');
+  const [reportYearFilter, setReportYearFilter] = useState('all');
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [reportVolunteerFilter, setReportVolunteerFilter] = useState('all');
+  const [reportDepartmentFilter, setReportDepartmentFilter] = useState('all');
   const [timesheetCandidateSearch, setTimesheetCandidateSearch] = useState('');
   const [selectedTimesheetCandidateId, setSelectedTimesheetCandidateId] = useState('');
   const [timesheetForm, setTimesheetForm] = useState<CandidateTimesheetForm>(createInitialTimesheetForm);
@@ -532,6 +537,207 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     interview: candidates.filter(c => c.status === 'interview').length,
     accepted: candidates.filter(c => c.status === 'accepted').length
   };
+  const candidatsAssignes = candidates.filter(candidate => (candidate.departamentoIds || []).length > 0);
+  const candidatsAvecFeuilles = candidates.filter(candidate => (candidate.feuillesTemps || []).length > 0);
+  const candidatsSansAssignation = candidates.filter(candidate => !(candidate.departamentoIds || []).length);
+  const recentCandidates = candidates
+    .slice()
+    .sort((left, right) => new Date(right.applicationDate).getTime() - new Date(left.applicationDate).getTime())
+    .slice(0, 5);
+  const reportVolunteerOptions = Array.from(
+    new Map(
+      feuillesTempsGlobalesFiltradas.map(timesheet => [
+        String(timesheet.candidateId),
+        {
+          id: String(timesheet.candidateId),
+          nom: timesheet.candidateName,
+          email: timesheet.candidateEmail
+        }
+      ])
+    ).values()
+  ).sort((left, right) => left.nom.localeCompare(right.nom, 'fr'));
+  const reportDepartmentOptions = departamentosDisponibles.filter(department =>
+    feuillesTempsGlobalesFiltradas.some(timesheet => timesheet.departamentoId === department.id)
+  );
+  const reportTimesheets = feuillesTempsGlobalesFiltradas.filter(timesheet => {
+    const matchesYear = reportYearFilter === 'all' ? true : timesheet.date.startsWith(reportYearFilter);
+    const matchesStartDate = reportStartDate ? timesheet.date >= reportStartDate : true;
+    const matchesEndDate = reportEndDate ? timesheet.date <= reportEndDate : true;
+    const matchesVolunteer = reportVolunteerFilter === 'all'
+      ? true
+      : String(timesheet.candidateId) === reportVolunteerFilter;
+    const matchesDepartment = reportDepartmentFilter === 'all'
+      ? true
+      : timesheet.departamentoId === reportDepartmentFilter;
+
+    return matchesYear && matchesStartDate && matchesEndDate && matchesVolunteer && matchesDepartment;
+  });
+  const reportYearStats = Array.from(
+    reportTimesheets.reduce((map, timesheet) => {
+      const year = /^\d{4}/.test(timesheet.date) ? timesheet.date.slice(0, 4) : 'Sans année';
+      const current = map.get(year) || {
+        annee: year,
+        heures: 0,
+        feuilles: 0,
+        benevoles: new Set<string>(),
+        departements: new Set<string>()
+      };
+
+      current.heures += timesheet.duree;
+      current.feuilles += 1;
+      current.benevoles.add(timesheet.candidateName);
+      current.departements.add(timesheet.departement);
+      map.set(year, current);
+
+      return map;
+    }, new Map<string, {
+      annee: string;
+      heures: number;
+      feuilles: number;
+      benevoles: Set<string>;
+      departements: Set<string>;
+    }>()).values()
+  )
+    .map(item => ({
+      annee: item.annee,
+      heures: item.heures,
+      feuilles: item.feuilles,
+      benevoles: item.benevoles.size,
+      departements: item.departements.size
+    }))
+    .sort((left, right) => right.annee.localeCompare(left.annee));
+  const reportYearOptions = Array.from(
+    new Set(
+      feuillesTempsGlobalesFiltradas
+        .filter(timesheet => /^\d{4}/.test(timesheet.date))
+        .map(timesheet => timesheet.date.slice(0, 4))
+    )
+  ).sort((left, right) => right.localeCompare(left));
+  const recentTimesheetEntries = reportTimesheets
+    .slice()
+    .sort((left, right) => `${right.date}-${right.heureDebut}`.localeCompare(`${left.date}-${left.heureDebut}`))
+    .slice(0, 6);
+  const reportDepartmentStats = departamentosDisponibles
+    .map(department => {
+      const feuilles = reportTimesheets.filter(timesheet => timesheet.departamentoId === department.id);
+      const heures = feuilles.reduce((sum, timesheet) => sum + timesheet.duree, 0);
+      const benevoles = new Set(feuilles.map(timesheet => String(timesheet.candidateId))).size;
+
+      return {
+        id: department.id,
+        nom: department.nombre,
+        icono: department.icono,
+        color: department.color,
+        benevoles,
+        feuilles: feuilles.length,
+        heures
+      };
+    })
+    .filter(item => item.benevoles > 0 || item.feuilles > 0 || item.heures > 0)
+    .sort((left, right) => {
+      if (right.heures !== left.heures) {
+        return right.heures - left.heures;
+      }
+
+      return right.benevoles - left.benevoles;
+    });
+  const reportVolunteerStats = Array.from(
+    reportTimesheets.reduce((map, timesheet) => {
+      const key = String(timesheet.candidateId);
+      const current = map.get(key) || {
+        id: key,
+        nom: timesheet.candidateName,
+        email: timesheet.candidateEmail,
+        heures: 0,
+        feuilles: 0,
+        departements: new Set<string>()
+      };
+
+      current.heures += timesheet.duree;
+      current.feuilles += 1;
+      current.departements.add(timesheet.departement);
+      map.set(key, current);
+
+      return map;
+    }, new Map<string, {
+      id: string;
+      nom: string;
+      email: string;
+      heures: number;
+      feuilles: number;
+      departements: Set<string>;
+    }>()).values()
+  )
+    .map(item => ({
+      id: item.id,
+      nom: item.nom,
+      email: item.email,
+      heures: item.heures,
+      feuilles: item.feuilles,
+      departements: item.departements.size
+    }))
+    .sort((left, right) => {
+      if (right.heures !== left.heures) {
+        return right.heures - left.heures;
+      }
+
+      return left.nom.localeCompare(right.nom);
+    });
+  const reportHeuresTotales = reportTimesheets.reduce((sum, timesheet) => sum + timesheet.duree, 0);
+  const reportEntreesTotales = reportTimesheets.length;
+  const reportVolunteerActifs = reportVolunteerStats.length;
+  const reportDepartmentChartData = reportDepartmentStats.slice(0, 6).map(item => ({
+    nom: item.nom,
+    heures: Number(item.heures.toFixed(2))
+  }));
+  const reportVolunteerChartData = reportVolunteerStats.slice(0, 6).map(item => ({
+    nom: item.nom.split(' ').slice(0, 2).join(' '),
+    heures: Number(item.heures.toFixed(2))
+  }));
+  const reportExportRows = [
+    ...reportYearStats.map(item => ({
+      axe: 'Année',
+      libelle: item.annee,
+      heures: item.heures,
+      entrees: item.feuilles,
+      benevoles: item.benevoles,
+      departements: item.departements
+    })),
+    ...reportDepartmentStats.map(item => ({
+      axe: 'Département',
+      libelle: item.nom,
+      heures: item.heures,
+      entrees: item.feuilles,
+      benevoles: item.benevoles,
+      departements: 1
+    })),
+    ...reportVolunteerStats.map(item => ({
+      axe: 'Bénévole',
+      libelle: item.nom,
+      heures: item.heures,
+      entrees: item.feuilles,
+      benevoles: 1,
+      departements: item.departements
+    }))
+  ];
+
+  useEffect(() => {
+    if (reportYearFilter !== 'all' && !reportYearOptions.includes(reportYearFilter)) {
+      setReportYearFilter('all');
+    }
+  }, [reportYearFilter, reportYearOptions]);
+
+  useEffect(() => {
+    if (reportVolunteerFilter !== 'all' && !reportVolunteerOptions.some(option => option.id === reportVolunteerFilter)) {
+      setReportVolunteerFilter('all');
+    }
+  }, [reportVolunteerFilter, reportVolunteerOptions]);
+
+  useEffect(() => {
+    if (reportDepartmentFilter !== 'all' && !reportDepartmentOptions.some(option => option.id === reportDepartmentFilter)) {
+      setReportDepartmentFilter('all');
+    }
+  }, [reportDepartmentFilter, reportDepartmentOptions]);
 
   const persistCandidateChanges = (candidateId: number, changes: Partial<Candidate>) => {
     const candidatoActualizado = actualizarCandidato(candidateId, changes);
@@ -1639,6 +1845,30 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     toast.success(`Export CSV généré avec ${feuillesTempsGlobalesFiltradas.length} entrée(s)`);
   };
 
+  const handleExportRecruitmentReport = async () => {
+    if (reportExportRows.length === 0) {
+      toast.error('Aucune donnée de rapport disponible à exporter');
+      return;
+    }
+
+    const exportColumns: TableColumn[] = [
+      { header: 'Axe', key: 'axe' },
+      { header: 'Libellé', key: 'libelle' },
+      { header: 'Entrées feuille de temps', key: 'entrees' },
+      { header: 'Bénévoles', key: 'benevoles' },
+      { header: 'Départements', key: 'departements' },
+      { header: 'Heures cumulées', key: 'heures', format: (value) => formatTimesheetHours(Number(value) || 0) }
+    ];
+
+    await exportToCSV(reportExportRows, exportColumns, {
+      filename: `recrutement_rapport_${getTodayLocalDate()}`,
+      includeDate: true,
+      title: 'Rapport Recrutement'
+    });
+
+    toast.success(`Rapport CSV généré avec ${reportExportRows.length} ligne(s) de synthèse`);
+  };
+
   const handleStatusChange = (candidateId: number, newStatus: string) => {
     // Buscar el candidat pour obtener sus datos
     const candidate = candidates.find(c => c.id === candidateId);
@@ -2666,6 +2896,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   Candidatures
                 </TabsTrigger>
                 <TabsTrigger
+                  value="reports"
+                  className="app-compact-tab-trigger py-3"
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Rapport
+                </TabsTrigger>
+                <TabsTrigger
                   value="timesheets"
                   className="app-compact-tab-trigger py-3"
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
@@ -2729,7 +2967,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     </CardContent>
                   </Card>
 
-                  <div className={`grid grid-cols-1 ${candidatoParaPerfil ? 'gap-3' : 'lg:grid-cols-2 gap-4'}`}>
+                  <div className={`grid grid-cols-1 ${candidatoParaPerfil ? 'gap-3' : 'md:grid-cols-2 2xl:grid-cols-3 gap-3'}`}>
                 {filteredCandidates.map((candidate, index) => {
                   const cardColor = index % 2 === 0 ? branding.primaryColor : branding.secondaryColor;
                   const numeroArchivo = obtenerNumeroArchivoCandidato(candidate);
@@ -2738,31 +2976,31 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   return (
                     <Card
                       key={candidate.id}
-                      className={`hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-gray-200/50 overflow-hidden group ${isSelected ? 'ring-2 ring-offset-2' : ''}`}
+                      className={`hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border-gray-200/50 overflow-hidden group ${isSelected ? 'ring-2 ring-offset-2' : ''}`}
                       style={isSelected ? { borderColor: `${cardColor}55`, boxShadow: `0 0 0 1px ${cardColor}25` } : undefined}
                     >
                       <div
-                        className="h-1.5 w-full"
+                        className="h-1 w-full"
                         style={{
                           background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}dd 100%)`
                         }}
                       />
 
-                      <CardHeader className="pb-3">
+                      <CardHeader className="px-4 pb-2 pt-4">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3 flex-1">
                             <div
-                              className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+                              className="h-10 w-10 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform duration-300"
                               style={{
                                 background: `linear-gradient(135deg, ${cardColor} 0%, ${cardColor}dd 100%)`,
                                 boxShadow: `0 4px 12px ${cardColor}30`
                               }}
                             >
-                              <Users className="w-6 h-6" />
+                              <Users className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <CardTitle
-                                className="text-base sm:text-lg truncate"
+                                className="text-[15px] sm:text-base truncate leading-tight"
                                 style={{
                                   fontFamily: 'Montserrat, sans-serif',
                                   color: '#333333'
@@ -2770,49 +3008,52 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               >
                                 {candidate.name}
                               </CardTitle>
-                              <p className="text-sm text-[#666666] truncate">{candidate.position}</p>
-                              {numeroArchivo && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <FileText className="w-3 h-3" style={{ color: branding.primaryColor }} />
+                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#666666]">
+                                <span className="truncate font-medium">{candidate.position}</span>
+                                {numeroArchivo && (
                                   <span
-                                    className="text-xs font-mono font-semibold tracking-wide"
+                                    className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 font-mono font-semibold tracking-wide"
                                     style={{ color: branding.primaryColor }}
                                   >
+                                    <FileText className="w-3 h-3" style={{ color: branding.primaryColor }} />
                                     {numeroArchivo}
                                   </span>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
                           {getStatusBadge(candidate.status)}
                         </div>
                       </CardHeader>
 
-                      <CardContent className="space-y-2.5">
-                        <div className="flex items-center gap-2 text-sm text-[#666666] p-2 rounded-lg bg-gray-50/50">
-                          <Mail className="w-4 h-4 flex-shrink-0" style={{ color: cardColor }} />
-                          <span className="truncate">{candidate.email}</span>
+                      <CardContent className="space-y-3 px-4 pb-4 pt-0">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                            <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
+                            <span className="truncate">{candidate.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                            <Phone className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
+                            <span className="truncate">{candidate.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                            <Calendar className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
+                            <span className="truncate">{new Date(candidate.applicationDate).toLocaleDateString('fr-FR')}</span>
+                          </div>
+                          <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                            <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
+                            <span className="truncate">{candidate.availability}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-[#666666] p-2 rounded-lg bg-gray-50/50">
-                          <Phone className="w-4 h-4 flex-shrink-0" style={{ color: cardColor }} />
-                          <span>{candidate.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-[#666666] p-2 rounded-lg bg-gray-50/50">
-                          <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: cardColor }} />
-                          <span>Candidature: {new Date(candidate.applicationDate).toLocaleDateString('fr-FR')}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-[#666666] p-2 rounded-lg bg-gray-50/50">
-                          <Clock className="w-4 h-4 flex-shrink-0" style={{ color: cardColor }} />
-                          <span>{candidate.availability}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-[#666666] p-2 rounded-lg bg-gray-50/50">
-                          <Briefcase className="w-4 h-4 flex-shrink-0" style={{ color: cardColor }} />
-                          <span className="line-clamp-1">{candidate.experience}</span>
+
+                        <div className="flex items-start gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                          <Briefcase className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: cardColor }} />
+                          <span className="line-clamp-2 leading-5">{candidate.experience}</span>
                         </div>
 
                         {candidate.departamentoIds && candidate.departamentoIds.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 p-2 rounded-lg bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200/50">
-                            <span className="text-xs font-medium text-[#666666] flex items-center gap-1">
+                          <div className="flex flex-wrap gap-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200/50 px-2.5 py-2">
+                            <span className="text-[11px] font-medium text-[#666666] flex items-center gap-1">
                               <Users className="w-3 h-3" style={{ color: branding.primaryColor }} />
                               Département{candidate.departamentoIds.length > 1 ? 's' : ''}:
                             </span>
@@ -2822,7 +3063,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               return (
                                 <Badge
                                   key={deptId}
-                                  className="text-xs px-2 py-0.5 border-0 shadow-sm"
+                                  className="text-[11px] px-2 py-0.5 border-0 shadow-sm"
                                   style={{
                                     backgroundColor: `${dept.color}15`,
                                     color: dept.color,
@@ -2838,127 +3079,133 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           </div>
                         )}
 
-                        <div className="flex gap-2 pt-3 border-t border-gray-200">
-                          {(() => {
-                            const tieneContacto = obtenerContactoCandidato(candidate);
+                        <div className="space-y-2 pt-2 border-t border-gray-200">
+                          <div className="flex gap-2">
+                            {(() => {
+                              const tieneContacto = obtenerContactoCandidato(candidate);
 
-                            if (tieneContacto) {
+                              if (tieneContacto) {
+                                return (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 px-2.5 hover:scale-105 transition-all duration-300"
+                                      style={{
+                                        fontFamily: 'Montserrat, sans-serif',
+                                        color: branding.primaryColor,
+                                        borderColor: `${branding.primaryColor}40`,
+                                        backgroundColor: `${branding.primaryColor}10`
+                                      }}
+                                      onClick={() => abrirDialogoAssignacion(candidate, 'modify')}
+                                      title="Modifier l'assignation de département"
+                                    >
+                                      <ArrowRightLeft className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 px-2.5 hover:scale-105 transition-all duration-300 hover:bg-orange-50 border-2"
+                                      style={{
+                                        fontFamily: 'Montserrat, sans-serif',
+                                        color: '#ff6b35',
+                                        borderColor: '#ff6b35'
+                                      }}
+                                      onClick={() => handleEliminarContacto(candidate)}
+                                      title="Supprimer le contact du département"
+                                    >
+                                      <UserMinus className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                );
+                              }
+
                               return (
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="hover:scale-105 transition-all duration-300"
-                                    style={{
-                                      fontFamily: 'Montserrat, sans-serif',
-                                      color: branding.primaryColor,
-                                      borderColor: `${branding.primaryColor}40`,
-                                      backgroundColor: `${branding.primaryColor}10`
-                                    }}
-                                    onClick={() => abrirDialogoAssignacion(candidate, 'modify')}
-                                    title="Modifier l'assignation de département"
-                                  >
-                                    <ArrowRightLeft className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="hover:scale-105 transition-all duration-300 hover:bg-orange-50 border-2"
-                                    style={{
-                                      fontFamily: 'Montserrat, sans-serif',
-                                      color: '#ff6b35',
-                                      borderColor: '#ff6b35'
-                                    }}
-                                    onClick={() => handleEliminarContacto(candidate)}
-                                    title="Supprimer le contact du département"
-                                  >
-                                    <UserMinus className="w-4 h-4" />
-                                  </Button>
-                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-2.5 hover:scale-105 transition-all duration-300"
+                                  style={{
+                                    fontFamily: 'Montserrat, sans-serif',
+                                    color: branding.secondaryColor,
+                                    borderColor: `${branding.secondaryColor}40`,
+                                    backgroundColor: `${branding.secondaryColor}10`
+                                  }}
+                                  onClick={() => abrirDialogoAssignacion(candidate, 'assign')}
+                                  title="Assigner au département"
+                                >
+                                  <Link className="w-3.5 h-3.5" />
+                                </Button>
                               );
-                            }
+                            })()}
 
-                            return (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="hover:scale-105 transition-all duration-300"
-                                style={{
-                                  fontFamily: 'Montserrat, sans-serif',
-                                  color: branding.secondaryColor,
-                                  borderColor: `${branding.secondaryColor}40`,
-                                  backgroundColor: `${branding.secondaryColor}10`
-                                }}
-                                onClick={() => abrirDialogoAssignacion(candidate, 'assign')}
-                                title="Assigner au département"
-                              >
-                                <Link className="w-4 h-4" />
-                              </Button>
-                            );
-                          })()}
-
-                          <Select
-                            value={candidate.status}
-                            onValueChange={(value) => handleStatusChange(candidate.id, value)}
-                          >
-                            <SelectTrigger
-                              className="flex-1 h-9 text-sm border-gray-300"
-                              style={{ fontFamily: 'Roboto, sans-serif' }}
+                            <Select
+                              value={candidate.status}
+                              onValueChange={(value) => handleStatusChange(candidate.id, value)}
                             >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">En attente</SelectItem>
-                              <SelectItem value="reviewed">Examiné</SelectItem>
-                              <SelectItem value="interview">Entretien</SelectItem>
-                              <SelectItem value="accepted">Accepté</SelectItem>
-                              <SelectItem value="rejected">Rejeté</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="hover:scale-105 transition-all duration-300"
-                            style={{
-                              fontFamily: 'Montserrat, sans-serif',
-                              color: cardColor,
-                              borderColor: `${cardColor}30`
-                            }}
-                            onClick={() => {
-                              setCandidatoParaPerfil(prev => prev?.id === candidate.id ? null : candidate);
-                            }}
-                            title="Voir le profil détaillé"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="hover:scale-105 transition-all duration-300 hover:bg-blue-50 border-2"
-                            style={{
-                              fontFamily: 'Montserrat, sans-serif',
-                              color: '#1a4d7a',
-                              borderColor: '#1a4d7a'
-                            }}
-                            onClick={() => handleAbrirEdicion(candidate)}
-                            title="Éditer le candidat"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="hover:scale-105 transition-all duration-300 hover:bg-red-50 border-2"
-                            style={{
-                              fontFamily: 'Montserrat, sans-serif',
-                              color: '#DC3545',
-                              borderColor: '#DC3545'
-                            }}
-                            onClick={() => handleDeleteCandidate(candidate.id, candidate.name)}
-                            title="Supprimer la candidature"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                              <SelectTrigger
+                                className="flex-1 h-8 text-xs border-gray-300"
+                                style={{ fontFamily: 'Roboto, sans-serif' }}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">En attente</SelectItem>
+                                <SelectItem value="reviewed">Examiné</SelectItem>
+                                <SelectItem value="interview">Entretien</SelectItem>
+                                <SelectItem value="accepted">Accepté</SelectItem>
+                                <SelectItem value="rejected">Rejeté</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 flex-1 hover:scale-[1.01] transition-all duration-300"
+                              style={{
+                                fontFamily: 'Montserrat, sans-serif',
+                                color: cardColor,
+                                borderColor: `${cardColor}30`
+                              }}
+                              onClick={() => {
+                                setCandidatoParaPerfil(prev => prev?.id === candidate.id ? null : candidate);
+                              }}
+                              title="Voir le profil détaillé"
+                            >
+                              <FileText className="w-3.5 h-3.5 mr-1.5" />
+                              Profil
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2.5 hover:scale-105 transition-all duration-300 hover:bg-blue-50 border-2"
+                              style={{
+                                fontFamily: 'Montserrat, sans-serif',
+                                color: '#1a4d7a',
+                                borderColor: '#1a4d7a'
+                              }}
+                              onClick={() => handleAbrirEdicion(candidate)}
+                              title="Éditer le candidat"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2.5 hover:scale-105 transition-all duration-300 hover:bg-red-50 border-2"
+                              style={{
+                                fontFamily: 'Montserrat, sans-serif',
+                                color: '#DC3545',
+                                borderColor: '#DC3545'
+                              }}
+                              onClick={() => handleDeleteCandidate(candidate.id, candidate.name)}
+                              title="Supprimer la candidature"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -3004,13 +3251,470 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             </TabsContent>
             )}
 
+            {!isPublicAccess && (
+            <TabsContent value="reports" className="space-y-4">
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
+                <div className="space-y-4 min-w-0">
+                  <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                    <CardContent className="p-0">
+                      <div
+                        className="p-4 sm:p-5"
+                        style={{
+                          background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`
+                        }}
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                          <div>
+                            <h2
+                              className="text-xl font-bold flex items-center gap-2"
+                              style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                            >
+                              <BarChart3 className="w-5 h-5" />
+                              Rapport de recrutement
+                            </h2>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Vue synthétique des candidatures, affectations et feuilles de temps du module.
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-3 lg:items-end">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 w-full lg:w-auto">
+                            <Select value={reportYearFilter} onValueChange={setReportYearFilter}>
+                              <SelectTrigger className="w-full sm:w-52 bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                                <Calendar className="w-4 h-4 mr-2" />
+                                <SelectValue placeholder="Filtrer par année" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Toutes les années</SelectItem>
+                                {reportYearOptions.map(year => (
+                                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="date"
+                              value={reportStartDate}
+                              onChange={(e) => setReportStartDate(e.target.value)}
+                              max={reportEndDate || undefined}
+                              className="w-full bg-white/90 border-white/70"
+                              style={{ fontFamily: 'Roboto, sans-serif' }}
+                            />
+                            <Input
+                              type="date"
+                              value={reportEndDate}
+                              onChange={(e) => setReportEndDate(e.target.value)}
+                              min={reportStartDate || undefined}
+                              className="w-full bg-white/90 border-white/70"
+                              style={{ fontFamily: 'Roboto, sans-serif' }}
+                            />
+                            <Select value={reportVolunteerFilter} onValueChange={setReportVolunteerFilter}>
+                              <SelectTrigger className="w-full bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                                <Users className="w-4 h-4 mr-2" />
+                                <SelectValue placeholder="Filtrer par bénévole" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Tous les bénévoles</SelectItem>
+                                {reportVolunteerOptions.map(option => (
+                                  <SelectItem key={option.id} value={option.id}>{option.nom}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select value={reportDepartmentFilter} onValueChange={setReportDepartmentFilter}>
+                              <SelectTrigger className="w-full bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                                <Filter className="w-4 h-4 mr-2" />
+                                <SelectValue placeholder="Filtrer par département" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Tous les départements</SelectItem>
+                                {reportDepartmentOptions.map(option => (
+                                  <SelectItem key={option.id} value={option.id}>{option.nombre}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3 lg:justify-end">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setReportYearFilter('all');
+                                setReportStartDate('');
+                                setReportEndDate('');
+                                setReportVolunteerFilter('all');
+                                setReportDepartmentFilter('all');
+                              }}
+                              className="bg-white/90 border-white/70"
+                              style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                            >
+                              Réinitialiser
+                            </Button>
+                            <Button
+                              onClick={handleExportRecruitmentReport}
+                              className="text-white"
+                              style={{
+                                backgroundColor: branding.primaryColor,
+                                fontFamily: 'Montserrat, sans-serif'
+                              }}
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Exporter le rapport
+                            </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <Card className="border-gray-200/50 shadow-sm">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-500 mb-1">Candidatures totales</p>
+                        <p className="text-3xl font-bold" style={{ color: branding.primaryColor }}>{stats.total}</p>
+                        <p className="text-sm text-gray-500 mt-2">Toutes les entrées enregistrées</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-200/50 shadow-sm">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-500 mb-1">Affectées</p>
+                        <p className="text-3xl font-bold" style={{ color: branding.secondaryColor }}>{candidatsAssignes.length}</p>
+                        <p className="text-sm text-gray-500 mt-2">Avec au moins un département</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-200/50 shadow-sm">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-500 mb-1">Feuilles de temps</p>
+                        <p className="text-3xl font-bold text-amber-600">{reportEntreesTotales}</p>
+                        <p className="text-sm text-gray-500 mt-2">Entrées selon les filtres actifs</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-200/50 shadow-sm">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-500 mb-1">Heures cumulées</p>
+                        <p className="text-3xl font-bold text-emerald-600">{formatTimesheetHours(reportHeuresTotales)}</p>
+                        <p className="text-sm text-gray-500 mt-2">Volume selon les filtres actifs</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] gap-4">
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          Heures par année
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-4">
+                        {reportYearStats.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                            Aucune donnée annuelle disponible pour le rapport.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="h-[180px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={reportYearStats} margin={{ top: 4, right: 4, left: -20, bottom: 18 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                  <XAxis dataKey="annee" tick={{ fill: '#666666', fontSize: 10 }} height={26} />
+                                  <YAxis width={26} tick={{ fill: '#666666', fontSize: 10 }} />
+                                  <Tooltip
+                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), 'Heures']}
+                                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px' }}
+                                  />
+                                  <Bar dataKey="heures" fill={branding.primaryColor} radius={[8, 8, 0, 0]} maxBarSize={38} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="space-y-3">
+                            {reportYearStats.map(item => (
+                              <div
+                                key={item.annee}
+                                className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+                                style={reportYearFilter === item.annee ? { boxShadow: `0 0 0 1px ${branding.primaryColor}30`, borderColor: `${branding.primaryColor}55` } : undefined}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-[#333333] truncate" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                      {item.annee}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {item.feuilles} entrée(s) • {item.benevoles} bénévole(s) • {item.departements} département(s)
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-500">Heures</p>
+                                    <p className="font-semibold" style={{ color: branding.primaryColor }}>
+                                      {formatTimesheetHours(item.heures)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                                  <div className="rounded-lg bg-white/80 px-2 py-2">
+                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Entrées</p>
+                                    <p className="text-sm font-semibold text-gray-700">{item.feuilles}</p>
+                                  </div>
+                                  <div className="rounded-lg bg-white/80 px-2 py-2">
+                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Bénévoles</p>
+                                    <p className="text-sm font-semibold text-gray-700">{item.benevoles}</p>
+                                  </div>
+                                  <div className="rounded-lg bg-white/80 px-2 py-2">
+                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Départements</p>
+                                    <p className="text-sm font-semibold text-gray-700">{item.departements}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          État global
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
+                          <p className="text-xs text-gray-500">En attente</p>
+                          <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
+                          <p className="text-xs text-gray-500">En entretien</p>
+                          <p className="text-2xl font-bold text-sky-600">{stats.interview}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
+                          <p className="text-xs text-gray-500">Acceptés</p>
+                          <p className="text-2xl font-bold text-emerald-600">{stats.accepted}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
+                          <p className="text-xs text-gray-500">Sans affectation</p>
+                          <p className="text-2xl font-bold text-rose-600">{candidatsSansAssignation.length}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
+                          <p className="text-xs text-gray-500">Avec feuilles de temps</p>
+                          <p className="text-2xl font-bold" style={{ color: branding.primaryColor }}>{reportVolunteerActifs}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          Heures par département
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-4">
+                        {reportDepartmentStats.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                            Aucune donnée départementale disponible pour le rapport.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="h-[180px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={reportDepartmentChartData} margin={{ top: 4, right: 4, left: -20, bottom: 34 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                  <XAxis dataKey="nom" tick={{ fill: '#666666', fontSize: 10 }} angle={-18} textAnchor="end" height={46} interval={0} />
+                                  <YAxis width={26} tick={{ fill: '#666666', fontSize: 10 }} />
+                                  <Tooltip
+                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), 'Heures']}
+                                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px' }}
+                                  />
+                                  <Bar dataKey="heures" fill={branding.secondaryColor} radius={[8, 8, 0, 0]} maxBarSize={34} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="space-y-3">
+                            {reportDepartmentStats.map(item => (
+                              <div
+                                key={item.id}
+                                className="rounded-xl border px-4 py-3"
+                                style={{ borderColor: `${item.color}35`, backgroundColor: `${item.color}08` }}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-[#333333] truncate" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                      <span className="mr-2">{item.icono}</span>
+                                      {item.nom}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {item.feuilles} entrée(s) • {item.benevoles} bénévole(s) actif(s)
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-500">Heures</p>
+                                    <p className="font-semibold" style={{ color: item.color }}>
+                                      {formatTimesheetHours(item.heures)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          Heures par bénévole
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-4">
+                        {reportVolunteerStats.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                            Aucune donnée bénévole disponible pour le rapport.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="h-[180px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={reportVolunteerChartData} margin={{ top: 4, right: 4, left: -20, bottom: 34 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                  <XAxis dataKey="nom" tick={{ fill: '#666666', fontSize: 10 }} angle={-18} textAnchor="end" height={46} interval={0} />
+                                  <YAxis width={26} tick={{ fill: '#666666', fontSize: 10 }} />
+                                  <Tooltip
+                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), 'Heures']}
+                                    contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px' }}
+                                  />
+                                  <Bar dataKey="heures" fill="#D97706" radius={[8, 8, 0, 0]} maxBarSize={34} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="space-y-3">
+                            {reportVolunteerStats.map(item => (
+                              <div key={item.id} className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-[#333333] truncate">{item.nom}</p>
+                                    <p className="text-xs text-gray-500 truncate">{item.email || 'Sans email'} • {item.feuilles} entrée(s) • {item.departements} département(s)</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-500">Heures</p>
+                                    <p className="text-sm font-semibold" style={{ color: branding.primaryColor }}>
+                                      {formatTimesheetHours(item.heures)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          Candidatures récentes
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        {recentCandidates.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                            Aucune candidature récente.
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {recentCandidates.map(candidate => (
+                              <div key={candidate.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-sm text-[#333333] truncate">{candidate.name}</p>
+                                  <p className="text-xs text-gray-500 truncate">{candidate.position} • {new Date(candidate.applicationDate).toLocaleDateString('fr-FR')}</p>
+                                </div>
+                                {getStatusBadge(candidate.status)}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          Dernières feuilles de temps
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        {recentTimesheetEntries.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                            Aucune entrée de feuille de temps enregistrée.
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {recentTimesheetEntries.map(timesheet => (
+                              <div key={timesheet.id} className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-[#333333] truncate">{timesheet.candidateName}</p>
+                                    <p className="text-xs text-gray-500 truncate">{timesheet.departement} • {timesheet.date}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-500">Durée</p>
+                                    <p className="text-sm font-semibold" style={{ color: branding.primaryColor }}>
+                                      {formatTimesheetHours(timesheet.duree)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                <div className="space-y-4 min-w-0">
+                  <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                        Points de contrôle
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 space-y-3">
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        <p className="text-xs text-gray-500">Taux d'affectation</p>
+                        <p className="text-2xl font-bold" style={{ color: branding.primaryColor }}>
+                          {stats.total > 0 ? `${Math.round((candidatsAssignes.length / stats.total) * 100)}%` : '0%'}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        <p className="text-xs text-gray-500">Taux d'acceptation</p>
+                        <p className="text-2xl font-bold text-emerald-600">
+                          {stats.total > 0 ? `${Math.round((stats.accepted / stats.total) * 100)}%` : '0%'}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        <p className="text-xs text-gray-500">Moyenne heures / entrée</p>
+                        <p className="text-2xl font-bold text-amber-600">
+                          {reportEntreesTotales > 0 ? formatTimesheetHours(reportHeuresTotales / reportEntreesTotales) : '0h 00m'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+            )}
+
             {isPublicAccess ? (
               <TabsContent value="timesheets" className="mt-0">
                 {renderPublicTimesheetsLayout()}
             </TabsContent>
             ) : (
             <TabsContent value="timesheets" className="space-y-6">
-              <div className={`grid grid-cols-1 ${heuresAccumuleesParDepartement.length > 0 ? 'xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]' : ''} gap-4`}>
+              <div className="grid grid-cols-1 gap-4">
                 <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                   <CardContent className="p-0">
                     <div
@@ -3122,52 +3826,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     </div>
                   </CardContent>
                 </Card>
-
-                {heuresAccumuleesParDepartement.length > 0 && (
-                  <Card className="border-gray-200/50 shadow-sm overflow-hidden self-stretch">
-                    <CardHeader className="pb-2">
-                      <CardTitle
-                        className="flex items-center gap-2 text-base"
-                        style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
-                      >
-                        <BarChart3 className="w-4 h-4" />
-                        Heures accumulées par département
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 pb-3">
-                      <div className="h-[220px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={heuresAccumuleesParDepartement} margin={{ top: 6, right: 8, left: -12, bottom: 24 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                            <XAxis
-                              dataKey="departement"
-                              angle={-12}
-                              textAnchor="end"
-                              height={46}
-                              tick={{ fill: '#666666', fontSize: 11 }}
-                            />
-                            <YAxis width={36} tick={{ fill: '#666666', fontSize: 11 }} />
-                            <Tooltip
-                              formatter={(value: number) => [`${formatTimesheetHours(Number(value))}`, 'Heures']}
-                              contentStyle={{
-                                backgroundColor: '#FFFFFF',
-                                border: '1px solid #E5E7EB',
-                                borderRadius: '12px'
-                              }}
-                            />
-                            <Bar dataKey="heures" fill={branding.primaryColor} radius={[6, 6, 0, 0]} maxBarSize={42} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
-                        <span className="text-gray-600">Total accumulé:</span>{' '}
-                        <span className="font-semibold" style={{ color: branding.primaryColor }}>
-                          {formatTimesheetHours(totalHeuresFeuilleTemps)}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
 
               {candidatosFeuilleTemps.length === 0 ? (

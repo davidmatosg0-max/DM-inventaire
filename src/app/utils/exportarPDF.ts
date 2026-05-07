@@ -254,6 +254,7 @@ export function exportarComandasPDF(comandas: any[]) {
   const datos = comandas.map((c) => [
     c.numero,
     c.organismo?.nombre || 'N/A',
+    c.modalidadDistribucionLabel || 'Standard',
     new Date(c.fecha).toLocaleDateString('es-ES'),
     `${c.productos?.length || 0} items`,
     c.valorTotal ? `$${c.valorTotal.toFixed(2)}` : 'N/A',
@@ -261,7 +262,7 @@ export function exportarComandasPDF(comandas: any[]) {
   ]);
 
   autoTable(doc, {
-    head: [['N° Comanda', 'Organismo', 'Fecha', 'Productos', 'Valor', 'Estado']],
+    head: [['N° Comanda', 'Organismo', 'Modalité', 'Fecha', 'Productos', 'Valor', 'Estado']],
     body: datos,
     startY: 55,
     theme: 'grid',
@@ -276,11 +277,12 @@ export function exportarComandasPDF(comandas: any[]) {
     },
     columnStyles: {
       0: { cellWidth: 25 },
-      1: { cellWidth: 50 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 25, halign: 'center' },
-      4: { cellWidth: 25, halign: 'right' },
-      5: { cellWidth: 30, halign: 'center' },
+      1: { cellWidth: 40 },
+      2: { cellWidth: 24, halign: 'center' },
+      3: { cellWidth: 26 },
+      4: { cellWidth: 22, halign: 'center' },
+      5: { cellWidth: 24, halign: 'right' },
+      6: { cellWidth: 28, halign: 'center' },
     },
   });
 

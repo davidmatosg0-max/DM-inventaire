@@ -55,6 +55,7 @@ import { obtenerTransformaciones, type Transformacion } from '../../utils/receta
 import { obtenerRutas, obtenerVehiculos, obtenerChoferes, type Ruta, type Vehiculo, type Chofer } from '../../utils/transporteLogic';
 import { exportarComandasPDF, exportarInventarioPDF, exportarOrganismosPDF, exportarReportePersonalizado } from '../../utils/exportarPDF';
 import { exportarComandasExcel, exportarDatosPersonalizados, exportarInventarioExcel, exportarOrganismosExcel } from '../../utils/exportarExcel';
+import { obtenerEtiquetaModalidadDistribucion, resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import type { Comanda } from '../../types';
 
 type TipoReporte = 'general' | 'inventario' | 'comandas' | 'prs' | 'organismos' | 'transporte';
@@ -70,6 +71,7 @@ type ComandaExportable = Comanda & {
   organismo?: {
     nombre?: string;
   };
+  modalidadDistribucionLabel?: string;
 };
 
 const REPORT_OPTIONS: Array<{ value: TipoReporte; label: string; description: string }> = [
@@ -444,6 +446,7 @@ export function ReportesAvanzado() {
   const comandasExportables: ComandaExportable[] = comandasFiltradas.map((comanda) => ({
     ...comanda,
     organismo: (comanda as ComandaExportable).organismo ?? (comanda.organismoId ? { nombre: organismosPorId.get(comanda.organismoId)?.nombre || 'N/A' } : undefined),
+    modalidadDistribucionLabel: obtenerEtiquetaModalidadDistribucion(resolverModalidadDistribucionComanda(comanda)),
   }));
 
   const organismosReportados = organismoIdsServidos
