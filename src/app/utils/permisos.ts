@@ -1,4 +1,5 @@
 // Sistema de permisos y control de acceso
+import { rolesPredeterminados } from '../data/rolesPermisos';
 import { obtenerUsuarioSesion } from './sesionStorage';
 
 // Definición de todos los permisos del sistema
@@ -52,6 +53,11 @@ export const PERMISOS = {
   USUARIOS_CREAR: 'usuarios.crear',
   USUARIOS_EDITAR: 'usuarios.editar',
   USUARIOS_ELIMINAR: 'usuarios.eliminar',
+  USUARIOS_ROLES: 'usuarios.roles',
+  USUARIOS_PERMISOS: 'usuarios.permisos',
+
+  // ID Digital
+  IDDIGITAL_VER: 'iddigital.ver',
   
   // Configuración
   CONFIGURACION_VER: 'configuracion.ver',
@@ -67,84 +73,72 @@ export const PERMISOS = {
   ACHAT_AUTORISAR: 'achat.autorizar',
 } as const;
 
-// Mapeo de roles a permisos
-export const PERMISOS_POR_ROL: Record<string, string[]> = {
-  // Desarrollador - Acceso total
-  desarrollador: [
-    PERMISOS.DESARROLLADOR,
-    PERMISOS.ACCESO_TOTAL,
-    PERMISOS.ADMINISTRADOR_GENERAL,
-    PERMISOS.ADMINISTRADOR_LIAISON,
-    ...Object.values(PERMISOS)
-  ],
-  
-  // Administrador General - Todos los módulos excepto desarrollo
-  administrador_general: [
-    PERMISOS.ADMINISTRADOR_GENERAL,
-    PERMISOS.DASHBOARD_VER,
-    PERMISOS.DASHBOARD_METRICAS,
-    PERMISOS.INVENTARIO_VER,
-    PERMISOS.INVENTARIO_CREAR,
-    PERMISOS.INVENTARIO_EDITAR,
-    PERMISOS.INVENTARIO_ELIMINAR,
-    PERMISOS.COMANDAS_VER,
-    PERMISOS.COMANDAS_CREAR,
-    PERMISOS.COMANDAS_EDITAR,
-    PERMISOS.COMANDAS_APROBAR,
-    PERMISOS.COMANDAS_ELIMINAR,
-    PERMISOS.ORGANISMOS_VER,
-    PERMISOS.ORGANISMOS_CREAR,
-    PERMISOS.ORGANISMOS_EDITAR,
-    PERMISOS.ORGANISMOS_ELIMINAR,
-    PERMISOS.TRANSPORTE_VER,
-    PERMISOS.TRANSPORTE_EDITAR,
-    PERMISOS.TRANSPORTE_ENTREGAR,
-    PERMISOS.TRANSPORTE_VEHICULOS,
-    PERMISOS.REPORTES_VER,
-    PERMISOS.REPORTES_EXPORTAR,
-    PERMISOS.USUARIOS_VER,
-    PERMISOS.USUARIOS_CREAR,
-    PERMISOS.USUARIOS_EDITAR,
-    PERMISOS.USUARIOS_ELIMINAR,
-    PERMISOS.CONFIGURACION_VER,
-    PERMISOS.CONFIGURACION_EDITAR,
-    PERMISOS.COMPTOIR_VER,
-    PERMISOS.COMPTOIR_EDITAR,
-    PERMISOS.ACHAT_VER,
-    PERMISOS.ACHAT_CREAR,
-    PERMISOS.ACHAT_AUTORISAR,
-  ],
-  
-  // Administrador Liaison - Solo gestión de organismos y comandas
-  administrador_liaison: [
-    PERMISOS.ADMINISTRADOR_LIAISON,
-    PERMISOS.DASHBOARD_VER,
-    PERMISOS.ORGANISMOS_VER,
-    PERMISOS.ORGANISMOS_CREAR,
-    PERMISOS.ORGANISMOS_EDITAR,
-    PERMISOS.ORGANISMOS_ELIMINAR,
-    PERMISOS.COMANDAS_VER,
-    PERMISOS.COMANDAS_CREAR,
-    PERMISOS.COMANDAS_EDITAR,
-    PERMISOS.COMANDAS_APROBAR,
-    PERMISOS.INVENTARIO_VER,
-    PERMISOS.REPORTES_VER,
-    PERMISOS.ACHAT_VER,
-    PERMISOS.ACHAT_CREAR,
-  ],
-  
-  // Coordinador - Solo lectura
-  coordinador: [
-    PERMISOS.COORDINADOR,
-    PERMISOS.DASHBOARD_VER,
-    PERMISOS.INVENTARIO_VER,
-    PERMISOS.COMANDAS_VER,
-    PERMISOS.ORGANISMOS_VER,
-    PERMISOS.TRANSPORTE_VER,
-    PERMISOS.REPORTES_VER,
-    PERMISOS.ACHAT_VER,
-  ],
+const ALIAS_ROLES: Record<string, string> = {
+  admin: 'administrador',
+  administrador: 'administrador',
+  administrador_general: 'administrador',
+  desarrollador: 'desarrollador',
+  coordinador: 'coordinador',
+  responsable_entrepot: 'responsable_entrepot',
+  almacenista: 'responsable_entrepot',
+  responsable_comptoir: 'responsable_comptoir',
+  responsable_transport: 'responsable_transport',
+  transportista: 'responsable_transport',
+  liaison_organisme: 'liaison_organisme',
+  administrador_liaison: 'liaison_organisme',
+  benevole_comptoir: 'benevole_comptoir',
+  benevole_entrepot: 'benevole_entrepot',
+  voluntario: 'benevole_comptoir',
+  employe: 'employe',
+  usuario: 'visualizador',
+  visualizador: 'visualizador',
 };
+
+const PERMISOS_CANONICOS_POR_ROL = rolesPredeterminados.reduce((acc, rol) => {
+  acc[rol.id] = rol.permisos;
+  return acc;
+}, {} as Record<string, string[]>);
+
+const TODOS_LOS_PERMISOS_CANONICOS = new Set(
+  rolesPredeterminados.flatMap((rol) => rol.permisos)
+);
+
+function obtenerPermisosDerivados(clave: string): string[] {
+  const rolNormalizado = ALIAS_ROLES[clave] || clave;
+  return PERMISOS_CANONICOS_POR_ROL[rolNormalizado] || [];
+}
+
+function obtenerPermisosExpandidos(usuario: ReturnType<typeof obtenerUsuarioSesion>): string[] {
+  if (!usuario) {
+    return [];
+  }
+
+  const permisosExpandidos = new Set<string>(usuario.permisos || []);
+  if (usuario.rol) {
+    permisosExpandidos.add(usuario.rol);
+  }
+
+  if (
+    permisosExpandidos.has(PERMISOS.ACCESO_TOTAL)
+    || permisosExpandidos.has(PERMISOS.DESARROLLADOR)
+  ) {
+    Object.values(PERMISOS).forEach((permiso) => permisosExpandidos.add(permiso));
+    TODOS_LOS_PERMISOS_CANONICOS.forEach((permiso) => permisosExpandidos.add(permiso));
+  }
+
+  const clavesDerivadas = new Set<string>([
+    usuario.rol || '',
+    ...(usuario.permisos || []),
+  ].filter(Boolean));
+
+  clavesDerivadas.forEach((clave) => {
+    const rolNormalizado = ALIAS_ROLES[clave] || clave;
+    permisosExpandidos.add(rolNormalizado);
+    obtenerPermisosDerivados(clave).forEach((permiso) => permisosExpandidos.add(permiso));
+  });
+
+  return Array.from(permisosExpandidos);
+}
 
 /**
  * Verifica si el usuario actual tiene un permiso específico
@@ -155,36 +149,21 @@ export function tienePermiso(permiso: string): boolean {
   if (!usuario) {
     return false;
   }
+
+  const permisosExpandidos = obtenerPermisosExpandidos(usuario);
   
   // Debug: Log para verificar
   if (permiso === 'transporte.ver') {
     console.log('🔍 Verificando permiso transporte.ver:', {
       usuario: usuario.username,
+      rol: usuario.rol,
       permisos: usuario.permisos,
-      tienePermisoDirecto: usuario.permisos?.includes(permiso)
+      permisosExpandidos,
+      tienePermisoDirecto: permisosExpandidos.includes(permiso)
     });
   }
-  
-  // Si el usuario tiene acceso total o es desarrollador, permitir todo
-  if (usuario.permisos?.includes(PERMISOS.ACCESO_TOTAL) || 
-      usuario.permisos?.includes(PERMISOS.DESARROLLADOR)) {
-    return true;
-  }
-  
-  // Verificar si tiene el permiso específico
-  if (usuario.permisos?.includes(permiso)) {
-    return true;
-  }
-  
-  // Verificar permisos derivados del rol
-  for (const permisoUsuario of usuario.permisos || []) {
-    const permisosDerivados = PERMISOS_POR_ROL[permisoUsuario] || [];
-    if (permisosDerivados.includes(permiso)) {
-      return true;
-    }
-  }
-  
-  return false;
+
+  return permisosExpandidos.includes(permiso);
 }
 
 /**
@@ -235,13 +214,15 @@ export function soloLectura(): boolean {
   
   // Coordinadores solo tienen lectura
   if (esCoordinador()) return true;
+
+  const permisosExpandidos = obtenerPermisosExpandidos(usuario);
   
   // Si no puede crear, editar o eliminar nada, es solo lectura
   const permisosEscritura = [
     'crear', 'editar', 'eliminar', 'aprobar', 'entregar'
   ];
   
-  return !usuario.permisos?.some(p => 
+  return !permisosExpandidos.some(p => 
     permisosEscritura.some(pe => p.includes(pe))
   );
 }
@@ -253,9 +234,17 @@ export function obtenerNombreRol(rol: string): string {
   const traducciones: Record<string, string> = {
     'administrador': 'Administrateur',
     'coordinador': 'Coordinateur',
-    'usuario': 'Utilisateur',
-    'almacenista': 'Magasinier',
-    'transportista': 'Transporteur',
+    'usuario': 'Visualiseur',
+    'visualizador': 'Visualiseur',
+    'almacenista': 'Responsable Entrepôt',
+    'responsable_entrepot': 'Responsable Entrepôt',
+    'responsable_comptoir': 'Responsable Comptoir',
+    'transportista': 'Responsable Transport',
+    'responsable_transport': 'Responsable Transport',
+    'liaison_organisme': 'Liaison Organisme',
+    'benevole_comptoir': 'Bénévole Comptoir',
+    'benevole_entrepot': 'Bénévole Entrepôt',
+    'employe': 'Employé',
     'desarrollador': 'Développeur',
   };
   
@@ -276,21 +265,22 @@ export function moduloDisponible(moduloId: string): boolean {
     'ofertas-organismo': [PERMISOS.ORGANISMOS_VER],
     'transporte': [PERMISOS.TRANSPORTE_VER],
     'reportes': [PERMISOS.REPORTES_VER],
+    'donateurs-fournisseurs': [PERMISOS.ORGANISMOS_VER, PERMISOS.ACHAT_VER],
     'contactos-almacen': [PERMISOS.ORGANISMOS_VER],
     'usuarios': [PERMISOS.USUARIOS_VER],
-    'roles': [PERMISOS.USUARIOS_VER],
+    'roles': [PERMISOS.USUARIOS_ROLES, PERMISOS.USUARIOS_VER],
     'configuracion': [PERMISOS.CONFIGURACION_VER],
     'achat': [PERMISOS.ACHAT_VER],
     'branding': [PERMISOS.CONFIGURACION_VER],
     'categorias': [PERMISOS.CONFIGURACION_VER],
     'comptoir': [PERMISOS.COMPTOIR_VER],
+    'id-digital': [PERMISOS.IDDIGITAL_VER],
     'guia-completa': [PERMISOS.ACCESO_TOTAL, PERMISOS.DESARROLLADOR],
-    // Módulos sin permisos específicos - solo para desarrolladores
-    'cuisine': [PERMISOS.DESARROLLADOR, PERMISOS.ADMINISTRADOR_GENERAL],
-    'email-organismos': [PERMISOS.ADMINISTRADOR_LIAISON, PERMISOS.ADMINISTRADOR_GENERAL, PERMISOS.DESARROLLADOR],
-    'communication': [PERMISOS.DESARROLLADOR, PERMISOS.ADMINISTRADOR_GENERAL],
-    'recrutement': [PERMISOS.DESARROLLADOR, PERMISOS.ADMINISTRADOR_GENERAL],
-    'id-digital': [PERMISOS.DESARROLLADOR, PERMISOS.ADMINISTRADOR_GENERAL],
+    // Módulos sin permiso canónico dedicado: se controlan por rol
+    'cuisine': ['administrador', 'coordinador', 'desarrollador'],
+    'email-organismos': ['liaison_organisme', 'administrador', 'desarrollador'],
+    'communication': ['administrador', 'desarrollador'],
+    'recrutement': ['administrador', 'desarrollador'],
     'panel-marca': [PERMISOS.DESARROLLADOR],
   };
   
@@ -313,18 +303,12 @@ export function obtenerInfoUsuarioConPermisos() {
   if (!usuario) {
     return null;
   }
-  
-  // Expandir permisos basados en rol
-  const permisosExpandidos = new Set<string>(usuario.permisos || []);
-  
-  for (const permisoUsuario of usuario.permisos || []) {
-    const permisosDerivados = PERMISOS_POR_ROL[permisoUsuario] || [];
-    permisosDerivados.forEach(p => permisosExpandidos.add(p));
-  }
+
+  const permisosExpandidos = obtenerPermisosExpandidos(usuario);
   
   return {
     ...usuario,
-    permisosExpandidos: Array.from(permisosExpandidos),
+    permisosExpandidos,
     esDesarrollador: esDesarrollador(),
     esAdministrador: esAdministrador(),
     esCoordinador: esCoordinador(),
