@@ -9,6 +9,24 @@ export type IconoAlimento = {
   categoria: string;
 };
 
+export type SeccionIconos = {
+  id: string;
+  labelKey: string;
+  commonLabelKey: string;
+  iconos: string[];
+};
+
+export const CATEGORIAS_NO_ALIMENTARIAS = [
+  'Higiene Personal',
+  'Limpieza del Hogar',
+  'Bebé y Cuidado Infantil',
+  'Ropa y Textiles',
+  'Escolares y Educación',
+  'Hogar y Cocina',
+  'Mascotas',
+  'Varios',
+];
+
 // Iconos principales de categorías
 export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   // Granos y Cereales
@@ -17,9 +35,14 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   { emoji: '🍞', nombre: 'Pan', categoria: 'Granos y Cereales' },
   { emoji: '🥖', nombre: 'Baguette', categoria: 'Granos y Cereales' },
   { emoji: '🥣', nombre: 'Cereales', categoria: 'Granos y Cereales' },
+  { emoji: '🥣', nombre: 'Céréales déjeuner', categoria: 'Granos y Cereales' },
+  { emoji: '🥣', nombre: 'Granola/Muesli', categoria: 'Granos y Cereales' },
+  { emoji: '🥣', nombre: 'Porridge', categoria: 'Granos y Cereales' },
   { emoji: '🥐', nombre: 'Croissant', categoria: 'Granos y Cereales' },
+  { emoji: '🥐', nombre: 'Viennoiseries', categoria: 'Granos y Cereales' },
   { emoji: '🥯', nombre: 'Bagel', categoria: 'Granos y Cereales' },
   { emoji: '🥨', nombre: 'Pretzel', categoria: 'Granos y Cereales' },
+  { emoji: '🫓', nombre: 'Wraps et tortillas', categoria: 'Granos y Cereales' },
   { emoji: '🧇', nombre: 'Waffle', categoria: 'Granos y Cereales' },
   { emoji: '🥞', nombre: 'Pancakes', categoria: 'Granos y Cereales' },
   { emoji: '🌾', nombre: 'Granos/Trigo', categoria: 'Granos y Cereales' },
@@ -90,11 +113,24 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   
   // Bebidas
   { emoji: '☕', nombre: 'Café', categoria: 'Bebidas' },
+  { emoji: '☕', nombre: 'Espresso/Latte', categoria: 'Bebidas' },
   { emoji: '🧃', nombre: 'Jugo en Caja', categoria: 'Bebidas' },
+  { emoji: '🧃', nombre: 'Jus', categoria: 'Bebidas' },
   { emoji: '🧊', nombre: 'Agua/Bebidas frías', categoria: 'Bebidas' },
+  { emoji: '💧', nombre: 'Agua', categoria: 'Bebidas' },
   { emoji: '🥤', nombre: 'Bebida con sorbete', categoria: 'Bebidas' },
+  { emoji: '🥤', nombre: 'Boissons gazeuses', categoria: 'Bebidas' },
+  { emoji: '🥤', nombre: 'Limonade', categoria: 'Bebidas' },
+  { emoji: '☕', nombre: 'Boissons chaudes', categoria: 'Bebidas' },
+  { emoji: '🧊', nombre: 'Boissons froides', categoria: 'Bebidas' },
+  { emoji: '🫖', nombre: 'Tisane/Infusion', categoria: 'Bebidas' },
+  { emoji: '☕', nombre: 'Chocolat chaud', categoria: 'Bebidas' },
+  { emoji: '🧃', nombre: 'Smoothie', categoria: 'Bebidas' },
+  { emoji: '🥤', nombre: 'Eau pétillante', categoria: 'Bebidas' },
+  { emoji: '🧃', nombre: 'Kombucha/Boisson fonctionnelle', categoria: 'Bebidas' },
   { emoji: '🍵', nombre: 'Té', categoria: 'Bebidas' },
   { emoji: '🧋', nombre: 'Té de Burbujas', categoria: 'Bebidas' },
+  { emoji: '🧉', nombre: 'Mate/Infusión', categoria: 'Bebidas' },
   { emoji: '🍶', nombre: 'Sake/Botella', categoria: 'Bebidas' },
   { emoji: '🍾', nombre: 'Champagne/Botella', categoria: 'Bebidas' },
   { emoji: '🍷', nombre: 'Copa de Vino', categoria: 'Bebidas' },
@@ -106,23 +142,41 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   
   // Condimentos y Salsas
   { emoji: '🍯', nombre: 'Miel', categoria: 'Condimentos y Salsas' },
+  { emoji: '🍯', nombre: 'Sirop', categoria: 'Condimentos y Salsas' },
   { emoji: '🧂', nombre: 'Sal', categoria: 'Condimentos y Salsas' },
   { emoji: '🫙', nombre: 'Frasco/Condimento', categoria: 'Condimentos y Salsas' },
+  { emoji: '🫙', nombre: 'Tartinades', categoria: 'Condimentos y Salsas' },
+  { emoji: '🍓', nombre: 'Confiture', categoria: 'Condimentos y Salsas' },
+  { emoji: '🍇', nombre: 'Gelée', categoria: 'Condimentos y Salsas' },
+  { emoji: '🍫', nombre: 'Tartinade sucrée', categoria: 'Condimentos y Salsas' },
+  { emoji: '🍯', nombre: 'Sirop d’érable', categoria: 'Condimentos y Salsas' },
   { emoji: '🧈', nombre: 'Mantequilla/Margarina', categoria: 'Condimentos y Salsas' },
+  { emoji: '🧀', nombre: 'Fromage à tartiner', categoria: 'Condimentos y Salsas' },
   { emoji: '🥫', nombre: 'Salsa en Lata', categoria: 'Condimentos y Salsas' },
   { emoji: '🌶️', nombre: 'Salsa Picante', categoria: 'Condimentos y Salsas' },
   { emoji: '🧄', nombre: 'Ajo en Polvo', categoria: 'Condimentos y Salsas' },
+  { emoji: '🥜', nombre: 'Beurre d’arachide', categoria: 'Condimentos y Salsas' },
+  { emoji: '🥜', nombre: 'Beurre de noix', categoria: 'Condimentos y Salsas' },
+  { emoji: '🧆', nombre: 'Houmous/Trempette', categoria: 'Condimentos y Salsas' },
+  { emoji: '🫙', nombre: 'Tahini', categoria: 'Condimentos y Salsas' },
+  { emoji: '🍫', nombre: 'Pâte à tartiner', categoria: 'Condimentos y Salsas' },
   
   // Dulces y Postres
   { emoji: '🍫', nombre: 'Chocolate', categoria: 'Dulces y Postres' },
+  { emoji: '🍬', nombre: 'Sucre', categoria: 'Dulces y Postres' },
+  { emoji: '🍬', nombre: 'Cassonade', categoria: 'Dulces y Postres' },
   { emoji: '🍬', nombre: 'Dulces', categoria: 'Dulces y Postres' },
   { emoji: '🍪', nombre: 'Galletas', categoria: 'Dulces y Postres' },
+  { emoji: '🍪', nombre: 'Biscuits', categoria: 'Dulces y Postres' },
   { emoji: '🍩', nombre: 'Donas', categoria: 'Dulces y Postres' },
   { emoji: '🍰', nombre: 'Pastel', categoria: 'Dulces y Postres' },
   { emoji: '🎂', nombre: 'Torta', categoria: 'Dulces y Postres' },
   { emoji: '🧁', nombre: 'Cupcake', categoria: 'Dulces y Postres' },
+  { emoji: '🧁', nombre: 'Muffin', categoria: 'Dulces y Postres' },
   { emoji: '🥧', nombre: 'Pie', categoria: 'Dulces y Postres' },
   { emoji: '🍮', nombre: 'Flan', categoria: 'Dulces y Postres' },
+  { emoji: '🍮', nombre: 'Pouding', categoria: 'Dulces y Postres' },
+  { emoji: '🍫', nombre: 'Barres tendres', categoria: 'Dulces y Postres' },
   { emoji: '🍭', nombre: 'Paleta', categoria: 'Dulces y Postres' },
   { emoji: '🍡', nombre: 'Dulces Japoneses', categoria: 'Dulces y Postres' },
   
@@ -130,12 +184,17 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   { emoji: '🥗', nombre: 'Ensalada', categoria: 'Comidas Preparadas' },
   { emoji: '🍲', nombre: 'Sopa/Guiso', categoria: 'Comidas Preparadas' },
   { emoji: '🌮', nombre: 'Tacos', categoria: 'Comidas Preparadas' },
+  { emoji: '🌯', nombre: 'Wrap/Burrito', categoria: 'Comidas Preparadas' },
   { emoji: '🍕', nombre: 'Pizza', categoria: 'Comidas Preparadas' },
   { emoji: '🍱', nombre: 'Comida Preparada', categoria: 'Comidas Preparadas' },
+  { emoji: '🍜', nombre: 'Nouilles/Ramen', categoria: 'Comidas Preparadas' },
+  { emoji: '🍛', nombre: 'Curry/Plat en sauce', categoria: 'Comidas Preparadas' },
   
   // Snacks
   { emoji: '🥜', nombre: 'Nueces/Maní', categoria: 'Snacks' },
   { emoji: '🍿', nombre: 'Palomitas', categoria: 'Snacks' },
+  { emoji: '🍟', nombre: 'Chips/Frites', categoria: 'Snacks' },
+  { emoji: '🍘', nombre: 'Craquelins', categoria: 'Snacks' },
   
   // Genéricos Alimentarios
   { emoji: '📦', nombre: 'Paquete Genérico', categoria: 'Genérico Alimentario' },
@@ -211,6 +270,107 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   { emoji: '🌡️', nombre: 'Termómetro', categoria: 'Varios' },
 ];
 
+function uniqueIcons(iconos: string[]): string[] {
+  return Array.from(new Set(iconos));
+}
+
+export const ICONOS_SECCIONES_ALIMENTARIAS: SeccionIconos[] = [
+  {
+    id: 'boissons-froides',
+    labelKey: 'configuration.coldDrinksIcons',
+    commonLabelKey: 'common.iconCategories.coldDrinks',
+    iconos: ['🧃', '🥤', '🧋', '🧊', '💧'],
+  },
+  {
+    id: 'boissons-chaudes',
+    labelKey: 'configuration.hotDrinksIcons',
+    commonLabelKey: 'common.iconCategories.hotDrinks',
+    iconos: ['☕', '🫖', '🍵', '🧉'],
+  },
+  {
+    id: 'boissons-fonctionnelles',
+    labelKey: 'configuration.functionalDrinksIcons',
+    commonLabelKey: 'common.iconCategories.functionalDrinks',
+    iconos: ['🧉', '🫖', '🧃', '☕'],
+  },
+  {
+    id: 'tartinables-sucres',
+    labelKey: 'configuration.sweetSpreadsIcons',
+    commonLabelKey: 'common.iconCategories.sweetSpreads',
+    iconos: ['🍯', '🍓', '🍇', '🍫', '🧀'],
+  },
+  {
+    id: 'condiments-trempettes',
+    labelKey: 'configuration.condimentsDipsIcons',
+    commonLabelKey: 'common.iconCategories.condimentsDips',
+    iconos: ['🧂', '🫒', '🌻', '🧴', '🥜', '🍅', '🌶️', '🧄', '🫙', '🧆'],
+  },
+  {
+    id: 'sucre-desserts',
+    labelKey: 'configuration.sweetsDessertsIcons',
+    commonLabelKey: 'common.iconCategories.sweetsDesserts',
+    iconos: ['🍫', '🍬', '🍪', '🍩', '🍰', '🎂', '🥧', '🍮', '🍭', '🍡'],
+  },
+  {
+    id: 'petit-dejeuner-boulangerie',
+    labelKey: 'configuration.breakfastBakeryIcons',
+    commonLabelKey: 'common.iconCategories.breakfastBakery',
+    iconos: ['🍞', '🥖', '🥣', '🥐', '🥯', '🥨', '🫓', '🧇', '🥞'],
+  },
+  {
+    id: 'epicerie-seche',
+    labelKey: 'configuration.dryGroceryIcons',
+    commonLabelKey: 'common.iconCategories.dryGrocery',
+    iconos: ['🍚', '🍝', '🌾', '🫘', '🥫'],
+  },
+  {
+    id: 'fruits',
+    labelKey: 'configuration.fruitsIcons',
+    commonLabelKey: 'common.iconCategories.fruits',
+    iconos: ['🍎', '🍊', '🍌', '🍇', '🍓', '🍋', '🍉', '🍍', '🥝', '🥭', '🍏', '🍐', '🥥'],
+  },
+  {
+    id: 'legumes',
+    labelKey: 'configuration.vegetablesIcons',
+    commonLabelKey: 'common.iconCategories.vegetables',
+    iconos: ['🥬', '🥕', '🥔', '🌽', '🥦', '🍅', '🫑', '🥒', '🧅', '🧄', '🍆', '🥑', '🌶️', '🫛', '🍄'],
+  },
+  {
+    id: 'proteines',
+    labelKey: 'configuration.proteinsIcons',
+    commonLabelKey: 'common.iconCategories.proteins',
+    iconos: ['🥩', '🍗', '🐟', '🍤', '🥚', '🍖', '🥓', '🌭', '🍔'],
+  },
+  {
+    id: 'produits-laitiers',
+    labelKey: 'configuration.dairyIcons',
+    commonLabelKey: 'common.iconCategories.dairy',
+    iconos: ['🥛', '🧀', '🧈', '🍦', '🧁'],
+  },
+  {
+    id: 'plats-prepares-collations',
+    labelKey: 'configuration.preparedMealsSnacksIcons',
+    commonLabelKey: 'common.iconCategories.preparedSnacks',
+    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍿', '🍟', '🍘'],
+  },
+  {
+    id: 'generiques-alimentaires',
+    labelKey: 'configuration.foodGenericIcons',
+    commonLabelKey: 'common.iconCategories.foodGeneric',
+    iconos: ['📦', '🛒', '🍽️', '🥘', '🍴'],
+  },
+];
+
+export const ICONOS_NO_ALIMENTARIOS = uniqueIcons([
+  '🧴', '🧼', '🪥', '🧻', '🪒', '💊', '🩹', '🧹', '🧺', '🪣', '🧽', '🍼', '👶', '🧸',
+  '👕', '👖', '🧥', '👟', '🧦', '🎒', '📚', '📓', '✏️', '🖊️', '📏', '✂️', '🖍️',
+  '🐕', '🐈', '🦴', '🎁', '💝', '🔋', '💡', '🏥', '🕯️', '🧰', '🌡️'
+]);
+
+export const ICONOS_ALIMENTARIOS = uniqueIcons(
+  ICONOS_SECCIONES_ALIMENTARIAS.flatMap((seccion) => seccion.iconos)
+);
+
 // Exportar solo los emojis para uso rápido
 export const TODOS_LOS_ICONOS = ICONOS_CATEGORIAS.map(icono => icono.emoji);
 
@@ -235,7 +395,7 @@ export function buscarIconoPorNombre(nombre: string): string | undefined {
 export const ICONOS_PRINCIPALES = [
   // Alimentarios
   '🍚', '🍝', '🥫', '🥛', '🥬', '🫒', '🍞', '🥩', '🐟', '🧀', 
-  '🥚', '🍎', '🥕', '🥔', '玉米', '🥤', '☕', '🍯', '🧈', '🥗', 
+  '🥚', '🍎', '🥕', '🥔', '🌽', '🥤', '☕', '🍯', '🧈', '🥗', 
   '🌮', '📦', '🛒', '🍽️', '🍲', '🥘',
   // No Alimentarios - Higiene
   '🧴', '🧼', '🪥', '🧻', '🪒', '💊', '🩹',

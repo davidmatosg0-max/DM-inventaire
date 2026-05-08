@@ -1,7 +1,69 @@
 // Utilidades para gestionar categorías en localStorage
 import { categoriasIniciales, type Categoria, type Subcategoria } from '../data/configuracionData';
+import { generarIconoProducto } from './iconoUtils';
 
 const STORAGE_KEY = 'banco_alimentos_categorias';
+
+function necesitaIconoAutomatico(icono?: string): boolean {
+  const iconoNormalizado = icono?.trim();
+  return !iconoNormalizado || iconoNormalizado === '📦' || iconoNormalizado === '🏷️';
+}
+
+function normalizarCategoriasConIconos(categorias: Categoria[]): { categorias: Categoria[]; changed: boolean } {
+  let changed = false;
+
+  const categoriasNormalizadas = categorias.map((cat) => {
+    const iconoCategoria = necesitaIconoAutomatico(cat.icono)
+      ? generarIconoProducto(cat.nombre, cat.nombre)
+      : cat.icono;
+
+    if (iconoCategoria !== cat.icono) {
+      changed = true;
+    }
+
+    const subcategoriasNormalizadas = cat.subcategorias?.map((sub) => {
+      const iconoSubcategoria = necesitaIconoAutomatico(sub.icono)
+        ? generarIconoProducto(sub.nombre, cat.nombre, sub.nombre)
+        : sub.icono;
+
+      const variantesNormalizadas = sub.variantes?.map((variante) => {
+        const iconoVariante = necesitaIconoAutomatico(variante.icono)
+          ? generarIconoProducto(variante.nombre, cat.nombre, sub.nombre)
+          : variante.icono;
+
+        if (iconoVariante !== variante.icono) {
+          changed = true;
+        }
+
+        return {
+          ...variante,
+          icono: iconoVariante,
+        };
+      });
+
+      if (iconoSubcategoria !== sub.icono) {
+        changed = true;
+      }
+
+      return {
+        ...sub,
+        icono: iconoSubcategoria,
+        variantes: variantesNormalizadas,
+      };
+    });
+
+    return {
+      ...cat,
+      icono: iconoCategoria,
+      subcategorias: subcategoriasNormalizadas,
+    };
+  });
+
+  return {
+    categorias: categoriasNormalizadas,
+    changed,
+  };
+}
 
 /**
  * Obtener categorías del localStorage, o las iniciales si no existen
@@ -11,12 +73,19 @@ export function obtenerCategorias(): Categoria[] {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored !== null) {
       const categorias: Categoria[] = JSON.parse(stored);
-      // Asegurar que valorMonetario y valorPorKg sean números válidos
-      return categorias.map(cat => ({
+      const categoriasConValores = categorias.map(cat => ({
         ...cat,
         valorMonetario: typeof cat.valorMonetario === 'number' ? cat.valorMonetario : parseFloat(cat.valorMonetario as any) || 0,
         valorPorKg: cat.valorMonetario || cat.valorPorKg || 0 // Sincronizar ambos campos
       }));
+
+      const { categorias: categoriasNormalizadas, changed } = normalizarCategoriasConIconos(categoriasConValores);
+
+      if (changed) {
+        guardarCategorias(categoriasNormalizadas);
+      }
+
+      return categoriasNormalizadas;
     } else {
       // Solo inicializar la primera vez
       guardarCategorias(categoriasIniciales);
@@ -34,11 +103,13 @@ export function obtenerCategorias(): Categoria[] {
 export function guardarCategorias(categorias: Categoria[]): void {
   try {
     // Sincronizar valorMonetario con valorPorKg antes de guardar
-    const categoriasNormalizadas = categorias.map(cat => ({
+    const categoriasConValores = categorias.map(cat => ({
       ...cat,
       valorPorKg: cat.valorMonetario || cat.valorPorKg || 0,
       valorMonetario: cat.valorMonetario || cat.valorPorKg || 0
     }));
+
+    const { categorias: categoriasNormalizadas } = normalizarCategoriasConIconos(categoriasConValores);
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(categoriasNormalizadas));
     // ELIMINADO: window.dispatchEvent para evitar actualizaciones de estado durante render

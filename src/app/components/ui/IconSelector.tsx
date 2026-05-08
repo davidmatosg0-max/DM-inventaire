@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { Input } from './input';
 import { Label } from './label';
-import { ICONOS_CATEGORIAS, ICONOS_POR_CATEGORIA } from '../../data/iconosAlimentos';
+import { CATEGORIAS_NO_ALIMENTARIAS, ICONOS_CATEGORIAS, ICONOS_SECCIONES_ALIMENTARIAS } from '../../data/iconosAlimentos';
 
 interface IconSelectorProps {
   value: string;
@@ -22,44 +22,51 @@ export function IconSelector({
 }: IconSelectorProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Mapeo de categorías a claves de traducción
-  const categoryMapping: Record<string, string> = {
-    'Todos': 'all',
-    'Granos y Cereales': 'grainsAndCereals',
-    'Legumbres': 'legumes',
-    'Conservas': 'canned',
-    'Lácteos': 'dairy',
-    'Frutas': 'fruits',
-    'Verduras': 'vegetables',
-    'Aceites': 'oils',
-    'Carnes': 'meat',
-    'Pescados y Mariscos': 'fish',
-    'Snacks': 'snacks',
-    'Dulces': 'sweets',
-    'Bebidas': 'drinks',
-    'Condimentos y Salsas': 'condiments',
-    'Panadería': 'bakery',
-    'Platos Preparados': 'prepared',
-    'Alimentos para Bebés': 'babyFood',
-    'Higiene Personal': 'hygiene',
-    'Limpieza': 'cleaning',
-    'General': 'general',
-    'Varios': 'various'
+  const categoryOptions = [
+    { id: 'all', label: t('common.iconCategories.all') },
+    ...ICONOS_SECCIONES_ALIMENTARIAS.map(section => ({
+      id: section.id,
+      label: t(section.commonLabelKey),
+    })),
+    { id: 'non-food', label: t('common.iconCategories.nonFood') },
+  ];
+
+  const matchesSection = (emoji: string, categoria: string) => {
+    if (selectedCategory === 'all') {
+      return true;
+    }
+
+    if (selectedCategory === 'non-food') {
+      return CATEGORIAS_NO_ALIMENTARIAS.includes(categoria);
+    }
+
+    const selectedSection = ICONOS_SECCIONES_ALIMENTARIAS.find(section => section.id === selectedCategory);
+    return selectedSection ? selectedSection.iconos.includes(emoji) : false;
   };
 
-  const categorias = ['Todos', ...Object.keys(ICONOS_POR_CATEGORIA)];
+  const iconosFiltrados = (() => {
+    const filteredEntries = ICONOS_CATEGORIAS.filter(icono => {
+      const matchSearch = searchTerm === '' || 
+        icono.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        icono.categoria.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const iconosFiltrados = searchTerm || selectedCategory !== 'Todos'
-    ? ICONOS_CATEGORIAS.filter(icono => {
-        const matchSearch = searchTerm === '' || 
-          icono.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          icono.categoria.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchCategory = selectedCategory === 'Todos' || icono.categoria === selectedCategory;
-        return matchSearch && matchCategory;
-      })
-    : ICONOS_CATEGORIAS;
+      return matchSearch && matchesSection(icono.emoji, icono.categoria);
+    });
+
+    const uniqueEntries = new Map<string, { emoji: string; title: string }>();
+    filteredEntries.forEach((icono) => {
+      const existing = uniqueEntries.get(icono.emoji);
+      if (existing) {
+        existing.title = `${existing.title} • ${icono.nombre}`;
+      } else {
+        uniqueEntries.set(icono.emoji, { emoji: icono.emoji, title: icono.nombre });
+      }
+    });
+
+    return Array.from(uniqueEntries.values());
+  })();
 
   return (
     <div className="space-y-2">
@@ -79,33 +86,33 @@ export function IconSelector({
 
       {/* Filtro por categoría */}
       <div className="flex flex-wrap gap-2">
-        {categorias.map(cat => (
+        {categoryOptions.map(cat => (
           <button
-            key={cat}
+            key={cat.id}
             type="button"
-            onClick={() => setSelectedCategory(cat)}
+            onClick={() => setSelectedCategory(cat.id)}
             className={`px-3 py-1 text-xs rounded-full transition-colors ${
-              selectedCategory === cat 
+              selectedCategory === cat.id 
                 ? 'bg-[#1E73BE] text-white' 
                 : 'bg-gray-100 text-[#666666] hover:bg-gray-200'
             }`}
           >
-            {t(`common.iconCategories.${categoryMapping[cat] || 'all'}`)}
+            {cat.label}
           </button>
         ))}
       </div>
 
       {/* Grid de iconos */}
       <div className={`grid grid-cols-${gridCols} gap-2 p-4 border rounded-lg ${maxHeight} overflow-y-auto`}>
-        {iconosFiltrados.map(icono => (
+        {iconosFiltrados.map((icono, index) => (
           <button
-            key={icono.emoji}
+            key={`${icono.emoji}-${index}`}
             type="button"
             onClick={() => onChange(icono.emoji)}
             className={`text-2xl p-2 rounded hover:bg-gray-100 transition-all ${
               value === icono.emoji ? 'bg-blue-100 ring-2 ring-blue-500 scale-110' : ''
             }`}
-            title={icono.nombre}
+            title={icono.title}
           >
             {icono.emoji}
           </button>
