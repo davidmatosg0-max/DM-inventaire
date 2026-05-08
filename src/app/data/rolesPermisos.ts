@@ -211,14 +211,7 @@ const permisosPorRolSistema: Record<RolUsuario, string[]> = {
   ],
   visualizador: [
     'dashboard.ver',
-    'inventario.ver',
-    'comandas.ver',
-    'prs.ver',
-    'organismos.ver',
-    'transporte.ver',
     'reportes.ver',
-    'achat.ver',
-    'iddigital.ver'
   ]
 };
 
