@@ -6,7 +6,8 @@ import {
   moduloDisponible, 
   esDesarrollador,
   tienePermiso,
-  PERMISOS
+  PERMISOS,
+  obtenerNombreRol,
 } from '../utils/permisos';
 import { 
   LayoutDashboard, 
@@ -103,9 +104,9 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const esDesarrollador = usuarioActual?.permisos?.includes('desarrollador' as any) || false;
 
   // Obtener datos del usuario para mostrar en el header
-  const nombreCompleto = usuarioActual 
-    ? `${usuarioActual.nombre} ${usuarioActual.apellido}` 
-    : 'Usuario';
+  const nombreCompleto = usuarioActual
+    ? [usuarioActual.nombre, usuarioActual.apellido].filter(Boolean).join(' ')
+    : 'Utilisateur';
   
   // Usar el nombre de la empresa (branding.systemName) para mostrar en el header
   const nombreMostrar = branding.systemName || nombreCompleto;
@@ -113,18 +114,9 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const iniciales = usuarioActual 
     ? `${usuarioActual.nombre[0]}${usuarioActual.apellido?.[0] || ''}`.toUpperCase() 
     : 'U';
-  
-  // Mapeo de roles a francés
-  const rolesTraduccion: Record<string, string> = {
-    'administrador': 'Administrateur',
-    'coordinador': 'Coordinateur',
-    'usuario': 'Utilisateur',
-    'almacenista': 'Magasinier',
-    'transportista': 'Transporteur'
-  };
-  
-  const rolTraducido = usuarioActual?.rol 
-    ? rolesTraduccion[usuarioActual.rol] || usuarioActual.rol 
+
+  const rolTraducido = usuarioActual?.rol
+    ? obtenerNombreRol(usuarioActual.rol)
     : 'Utilisateur';
   
   // Funciones para drag del botón Guide Complet
@@ -641,10 +633,10 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               <GlobalSearch onNavigate={onNavigate} />
               <CentroNotificaciones />
               <LanguageSelector />
-              <div className="hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2">
+              <div className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 max-w-[220px] sm:max-w-[260px]">
                 <div className="text-right">
                   <p className="text-xs sm:text-sm text-white font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    {branding.systemName}
+                    {nombreCompleto}
                   </p>
                   <p className="text-xs text-white/80">{rolTraducido}</p>
                 </div>
@@ -655,12 +647,23 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                   {iniciales}
                 </div>
               </div>
-              {/* Avatar móvil (sin nombre) */}
-              <div 
-                className="md:hidden w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-lg"
-                style={{ backgroundColor: branding.secondaryColor }}
-              >
-                {iniciales}
+              {/* Usuario móvil compacto */}
+              <div className="sm:hidden flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-2 py-1.5 max-w-[150px]">
+                <div className="text-right min-w-0">
+                  <p
+                    className="text-[11px] text-white font-semibold truncate"
+                    style={{ fontFamily: 'Montserrat, sans-serif' }}
+                  >
+                    {nombreCompleto}
+                  </p>
+                  <p className="text-[10px] text-white/80 truncate">{rolTraducido}</p>
+                </div>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-lg"
+                  style={{ backgroundColor: branding.secondaryColor }}
+                >
+                  {iniciales}
+                </div>
               </div>
               {onLogout && (
                 <button
