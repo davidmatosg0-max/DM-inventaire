@@ -3887,7 +3887,7 @@ export function Inventario() {
                 {/* Unidad */}
                 <div className="space-y-2">
                   <Label htmlFor="varianteUnidad" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-                    Unidad de Medida
+                    {t('inventory.unit')}
                   </Label>
                   <Input
                     id="varianteUnidad"
