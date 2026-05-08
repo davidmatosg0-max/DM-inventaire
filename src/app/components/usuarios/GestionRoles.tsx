@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit, Trash2, Shield, Check, X, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -10,12 +10,13 @@ import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { rolesPredeterminados, permisosPorModulo, iconosModulos, coloresModulos, Rol } from '../../data/rolesPermisos';
+import { permisosPorModulo, iconosModulos, coloresModulos, Rol } from '../../data/rolesPermisos';
 import { Textarea } from '../ui/textarea';
+import { eliminarRolPersonalizado, obtenerRoles, guardarRolPersonalizado } from '../../utils/rolesStorage';
 
 export function GestionRoles() {
   const { t } = useTranslation();
-  const [roles, setRoles] = useState(rolesPredeterminados);
+  const [roles, setRoles] = useState<Rol[]>([]);
   const [rolDialogOpen, setRolDialogOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [rolSeleccionado, setRolSeleccionado] = useState<Rol | null>(null);
@@ -23,6 +24,10 @@ export function GestionRoles() {
   const [rolAEliminar, setRolAEliminar] = useState<Rol | null>(null);
   const [verPermisosDialogOpen, setVerPermisosDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    cargarRoles();
+  }, []);
 
   const [formRol, setFormRol] = useState({
     nombre: '',
@@ -45,6 +50,10 @@ export function GestionRoles() {
   ];
 
   const iconosDisponibles = ['👤', '👑', '📋', '📦', '🚚', '🤝', '📊', '⚙️', '🔧', '💼', '🎯', '⭐'];
+
+  const cargarRoles = () => {
+    setRoles(obtenerRoles());
+  };
 
   const handleAbrirCreacion = () => {
     setFormRol({
@@ -85,6 +94,21 @@ export function GestionRoles() {
       return;
     }
 
+    const rolGuardado = guardarRolPersonalizado(
+      {
+        nombre: formRol.nombre.trim(),
+        descripcion: formRol.descripcion.trim(),
+        color: formRol.color,
+        icono: formRol.icono,
+        permisos: formRol.permisos,
+        activo: formRol.activo,
+      },
+      modoEdicion ? rolSeleccionado?.id : undefined
+    );
+
+    setRolSeleccionado(rolGuardado);
+    cargarRoles();
+
     if (modoEdicion && rolSeleccionado) {
       toast.success(`${t('users.roleUpdated')}: "${formRol.nombre}"`);
     } else {
@@ -95,6 +119,8 @@ export function GestionRoles() {
 
   const handleEliminarRol = () => {
     if (rolAEliminar) {
+      eliminarRolPersonalizado(rolAEliminar.id);
+      cargarRoles();
       toast.success(`${t('users.roleDeleted')}: "${rolAEliminar.nombre}"`);
       setDeleteDialogOpen(false);
       setRolAEliminar(null);
@@ -143,13 +169,13 @@ export function GestionRoles() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '1.5rem', color: '#333333' }}>
-            Gestión de Roles y Permisos
+            {t('users.rolesManagement')}
           </h2>
-          <p className="text-[#666666]">Administración de roles del sistema y sus permisos</p>
+          <p className="text-[#666666]">{t('users.rolesSubtitle')}</p>
         </div>
         <Button onClick={handleAbrirCreacion} className="bg-[#4CAF50] hover:bg-[#45a049]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
           <Plus className="w-4 h-4 mr-2" />
-          Nuevo Rol
+          {t('users.newRole')}
         </Button>
       </div>
 
@@ -157,7 +183,7 @@ export function GestionRoles() {
       <Card>
         <CardContent className="pt-6">
           <Input
-            placeholder="Buscar roles..."
+            placeholder={t('users.searchRoles')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -185,13 +211,13 @@ export function GestionRoles() {
                       {rol.predeterminado && (
                         <Badge variant="outline" className="text-xs">
                           <Shield className="w-3 h-3 mr-1" />
-                          Sistema
+                          {t('users.system')}
                         </Badge>
                       )}
                       {rol.activo ? (
-                        <Badge className="bg-[#4CAF50] hover:bg-[#45a049] text-xs">Activo</Badge>
+                        <Badge className="bg-[#4CAF50] hover:bg-[#45a049] text-xs">Actif</Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-xs">Inactivo</Badge>
+                        <Badge variant="secondary" className="text-xs">Inactif</Badge>
                       )}
                     </div>
                   </div>
@@ -203,11 +229,11 @@ export function GestionRoles() {
               
               <div className="flex items-center gap-2 text-sm text-[#666666]">
                 <Users className="w-4 h-4" />
-                <span>{rol.usuariosAsignados} usuario{rol.usuariosAsignados !== 1 ? 's' : ''} asignado{rol.usuariosAsignados !== 1 ? 's' : ''}</span>
+                <span>{rol.usuariosAsignados} {t('users.assignedUsers')}</span>
               </div>
 
               <div className="pt-2 border-t">
-                <p className="text-xs text-[#666666] mb-2">Permisos: {rol.permisos.length}</p>
+                <p className="text-xs text-[#666666] mb-2">{t('users.permissions')}: {rol.permisos.length}</p>
                 <div className="flex flex-wrap gap-1">
                   {Object.keys(permisosPorModulo).slice(0, 4).map(modulo => {
                     const permisosModulo = permisosPorModulo[modulo].map(p => p.id);
@@ -237,7 +263,7 @@ export function GestionRoles() {
                       +{Object.keys(permisosPorModulo).filter(modulo => {
                         const permisosModulo = permisosPorModulo[modulo].map(p => p.id);
                         return permisosModulo.some(p => rol.permisos.includes(p));
-                      }).length - 4} más
+                      }).length - 4} plus
                     </Badge>
                   )}
                 </div>
@@ -251,7 +277,7 @@ export function GestionRoles() {
                   onClick={() => handleVerPermisos(rol)}
                 >
                   <Shield className="w-4 h-4 mr-1" />
-                  Ver Permisos
+                  {t('users.viewPermissions')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -284,21 +310,21 @@ export function GestionRoles() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="gestion-rol-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              {modoEdicion ? 'Editar Rol' : 'Nuevo Rol'}
+              {modoEdicion ? t('users.editRole') : t('users.newRole')}
             </DialogTitle>
             <DialogDescription id="gestion-rol-description">
-              Configure el rol y sus permisos asociados
+              {t('users.configureRole')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Información Básica */}
             <div className="space-y-4">
               <h3 className="font-medium" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Información del Rol
+                {t('users.roleInfo')}
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
-                  <Label>Nombre del Rol *</Label>
+                  <Label>{t('users.roleName')} *</Label>
                   <Input
                     placeholder="Ej: Supervisor"
                     value={formRol.nombre}
@@ -306,16 +332,16 @@ export function GestionRoles() {
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
-                  <Label>Descripción *</Label>
+                  <Label>{t('users.description')} *</Label>
                   <Textarea
-                    placeholder="Describe las responsabilidades de este rol..."
+                    placeholder="Décrivez les responsabilités de ce rôle..."
                     value={formRol.descripcion}
                     onChange={(e) => setFormRol({ ...formRol, descripcion: e.target.value })}
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Color</Label>
+                  <Label>{t('users.color')}</Label>
                   <div className="grid grid-cols-4 gap-2">
                     {coloresDisponibles.map(c => (
                       <button
@@ -331,7 +357,7 @@ export function GestionRoles() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Icono</Label>
+                  <Label>{t('users.icon')}</Label>
                   <div className="grid grid-cols-6 gap-2">
                     {iconosDisponibles.map(icono => (
                       <button
@@ -353,7 +379,7 @@ export function GestionRoles() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  Permisos ({formRol.permisos.length} seleccionados)
+                  {t('users.permissions')} ({formRol.permisos.length} {t('users.selected')})
                 </h3>
                 <Badge variant="outline">
                   {formRol.permisos.length} de {Object.values(permisosPorModulo).flat().length}
@@ -381,7 +407,7 @@ export function GestionRoles() {
                               <CardTitle className="text-base" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                                 {modulo}
                               </CardTitle>
-                              <p className="text-xs text-[#666666]">{permisos.length} permisos</p>
+                              <p className="text-xs text-[#666666]">{permisos.length} autorisations</p>
                             </div>
                           </div>
                           <Button
@@ -392,12 +418,12 @@ export function GestionRoles() {
                             {todosSeleccionados ? (
                               <>
                                 <X className="w-4 h-4 mr-1" />
-                                Deseleccionar
+                                {t('users.deselect')}
                               </>
                             ) : (
                               <>
                                 <Check className="w-4 h-4 mr-1" />
-                                Seleccionar Todo
+                                {t('users.selectAll')}
                               </>
                             )}
                           </Button>
@@ -428,10 +454,10 @@ export function GestionRoles() {
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setRolDialogOpen(false)}>
-                Cancelar
+                Annuler
               </Button>
               <Button onClick={handleGuardarRol} className="bg-[#4CAF50] hover:bg-[#45a049]">
-                {modoEdicion ? 'Actualizar Rol' : 'Crear Rol'}
+                {modoEdicion ? t('users.updateRole') : t('users.createRole')}
               </Button>
             </div>
           </div>
@@ -443,7 +469,7 @@ export function GestionRoles() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="ver-permisos-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              Permisos de {rolSeleccionado?.nombre}
+              {t('users.permissionsOf')} {rolSeleccionado?.nombre}
             </DialogTitle>
             <DialogDescription id="ver-permisos-description">
               {rolSeleccionado?.descripcion}
@@ -468,7 +494,7 @@ export function GestionRoles() {
                       <CardTitle className="text-base" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                         {modulo}
                       </CardTitle>
-                      <Badge variant="outline">{permisosDelRol.length} permisos</Badge>
+                      <Badge variant="outline">{permisosDelRol.length} autorisations</Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -496,15 +522,15 @@ export function GestionRoles() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              ¿Eliminar Rol?
+              {t('users.deleteRole')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {rolAEliminar && (
                 <div className="space-y-3">
-                  <p>¿Está seguro de que desea eliminar el rol <strong>{rolAEliminar.nombre}</strong>?</p>
+                  <p>Êtes-vous sûr de vouloir supprimer le rôle <strong>{rolAEliminar.nombre}</strong> ?</p>
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <p className="text-sm text-red-800">
-                      ⚠️ Esta acción no se puede deshacer.
+                      ⚠️ {t('users.cannotUndo')}
                     </p>
                   </div>
                 </div>
@@ -512,13 +538,13 @@ export function GestionRoles() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleEliminarRol}
               className="bg-[#DC3545] hover:bg-[#c82333]"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Eliminar Rol
+              Supprimer le rôle
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -12,15 +12,13 @@ import {
   obtenerAccessToken,
   obtenerRefreshToken,
   cerrarSesion as cerrarSesionJWT,
-  obtenerUsuarioDesdeToken,
   estaAutenticado as verificarAutenticacion,
-  tienePermiso as verificarPermiso,
   generarTokenOrganismo,
   type JWTPayload,
-  type AuthTokens,
 } from '../app/utils/jwtManager';
 import { validarCredenciales } from '../app/utils/usuarios';
 import { guardarUsuarioSesion } from '../app/utils/sesionStorage';
+import { tienePermiso as verificarPermisoSistema } from '../app/utils/permisos';
 
 interface AuthContextType {
   // Estado de autenticación
@@ -280,21 +278,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const tienePermiso = (permiso: string): boolean => {
     if (!usuario) return false;
-    return verificarPermiso(permiso);
+    return verificarPermisoSistema(permiso);
   };
 
   /**
    * Verificar si es administrador
    */
   const esAdmin = (): boolean => {
-    return usuario?.role === 'Administrador';
+    const role = (usuario?.role || usuario?.rol || '').toLowerCase();
+    return role === 'administrador' || role === 'admin';
   };
 
   /**
    * Verificar si es desarrollador
    */
   const esDeveloper = (): boolean => {
-    return usuario?.role === 'Desarrollador';
+    const role = (usuario?.role || usuario?.rol || '').toLowerCase();
+    return role === 'desarrollador';
   };
 
   const value: AuthContextType = {

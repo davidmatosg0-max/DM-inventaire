@@ -16,11 +16,11 @@ import { GestionRoles } from '../usuarios/GestionRoles';
 import { GestionDepartamentos } from '../usuarios/GestionDepartamentos';
 import { agregarUsuario, actualizarUsuario, obtenerUsuarios, eliminarUsuario } from '../../utils/usuarios';
 import { esRolValido, tienePermiso } from '../../utils/permisos';
-import { obtenerRoles } from '../../utils/rolesStorage';
+import { obtenerRoles, ROLES_UPDATED_EVENT } from '../../utils/rolesStorage';
 import { useBranding } from '../../../hooks/useBranding';
 import { obtenerDepartamentos } from '../../utils/departamentosStorage';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
-import { rolesPredeterminados } from '../../data/rolesPermisos';
+import { Rol } from '../../data/rolesPermisos';
 import { registrarActividad } from '../../utils/actividadLogger';
 
 export function Usuarios() {
@@ -33,6 +33,7 @@ export function Usuarios() {
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<Usuario | null>(null);
+  const [rolesDisponibles, setRolesDisponibles] = useState<Rol[]>([]);
   
   // Estados para contraseñas
   const [mostrarPassword, setMostrarPassword] = useState(false);
@@ -44,7 +45,7 @@ export function Usuarios() {
     nombre: '',
     apellido: '',
     email: '',
-    rol: 'usuario' as 'administrador' | 'usuario' | 'coordinador',
+    rol: 'visualizador',
     password: '',
     confirmPassword: '',
     permisos: [] as string[],
@@ -54,6 +55,16 @@ export function Usuarios() {
   // Cargar usuarios al montar el componente
   useEffect(() => {
     cargarUsuarios();
+    cargarRoles();
+  }, []);
+
+  useEffect(() => {
+    const handleRolesUpdated = () => {
+      cargarRoles();
+    };
+
+    window.addEventListener(ROLES_UPDATED_EVENT, handleRolesUpdated);
+    return () => window.removeEventListener(ROLES_UPDATED_EVENT, handleRolesUpdated);
   }, []);
 
   // Resetear formulario cuando se cierra el diálogo
@@ -67,6 +78,11 @@ export function Usuarios() {
     const usuariosStorage = obtenerUsuarios();
     setUsuarios(usuariosStorage);
     console.log('✅ Usuarios cargados:', usuariosStorage.length);
+  };
+
+  const cargarRoles = () => {
+    const roles = obtenerRoles().filter((rol) => rol.activo);
+    setRolesDisponibles(roles);
   };
 
   const usuariosFiltrados = usuarios.filter(u =>
@@ -235,7 +251,7 @@ export function Usuarios() {
       nombre: '',
       apellido: '',
       email: '',
-      rol: 'usuario',
+      rol: 'visualizador',
       password: '',
       confirmPassword: '',
       permisos: [],
@@ -265,16 +281,12 @@ export function Usuarios() {
   };
 
   const getPermisosSegunRol = (rol: string): string[] => {
-    const permisosPorRol: Record<string, string[]> = {
-      administrador: ['administrador_general', 'administrador_liaison'],
-      coordinador: ['coordinador'],
-      usuario: ['dashboard.ver']
-    };
-    return permisosPorRol[rol] || ['dashboard.ver'];
+    const rolSistema = rolesDisponibles.find((item) => item.id === rol);
+    return rolSistema?.permisos || ['dashboard.ver'];
   };
 
   const getRolBadge = (rol: string) => {
-    const predefinedRole = rolesPredeterminados.find((item) => item.id === rol);
+    const predefinedRole = rolesDisponibles.find((item) => item.id === rol);
     const fallbackConfig: Record<string, { bg: string; text: string }> = {
       desarrollador: { bg: 'bg-black', text: 'Développeur' },
       administrador: { bg: 'bg-[#DC3545]', text: t('users.administrator') },
@@ -296,7 +308,7 @@ export function Usuarios() {
   const usuariosPorRol = {
     administrador: usuarios.filter(u => u.rol === 'administrador').length,
     coordinador: usuarios.filter(u => u.rol === 'coordinador').length,
-    usuario: usuarios.filter(u => u.rol === 'usuario').length
+    operativo: usuarios.filter(u => u.rol !== 'administrador' && u.rol !== 'coordinador').length
   };
 
   return (
@@ -373,7 +385,7 @@ export function Usuarios() {
             <div>
               <p className="text-sm text-[#666666]">Utilisateurs</p>
               <p className="font-bold" style={{ fontSize: '1.5rem', color: branding.secondaryColor }}>
-                {usuariosPorRol.usuario}
+                {usuariosPorRol.operativo}
               </p>
             </div>
           </div>
@@ -513,7 +525,7 @@ export function Usuarios() {
                       <SelectValue placeholder="Sélectionner un rôle" />
                     </SelectTrigger>
                     <SelectContent>
-                      {rolesPredeterminados.filter(rol => rol.activo).map(rol => (
+                      {rolesDisponibles.map(rol => (
                         <SelectItem key={rol.id} value={rol.id}>
                           <div className="flex items-center gap-2">
                             <span>{rol.icono}</span>

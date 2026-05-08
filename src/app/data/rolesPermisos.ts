@@ -1,5 +1,7 @@
 // Sistema de Roles y Permisos del Banco de Alimentos
 
+import { ROLES_CONFIG, type RolUsuario } from '../utils/usuarios';
+
 export interface Permiso {
   id: string;
   nombre: string;
@@ -90,149 +92,148 @@ export const permisos: Permiso[] = [
   { id: 'iddigital.imprimir', nombre: 'Imprimir IDs', descripcion: 'Generar PDFs para impresión', modulo: 'ID Digital' },
   
   // Configuración
-  { id: 'config.ver', nombre: 'Ver Configuración', descripcion: 'Acceso a configuración del sistema', modulo: 'Configuración' },
-  { id: 'config.editar', nombre: 'Editar Configuración', descripcion: 'Modificar configuración general', modulo: 'Configuración' },
-  { id: 'config.marca', nombre: 'Gestionar Marca', descripcion: 'Personalizar marca y apariencia', modulo: 'Configuración' },
-  { id: 'config.idioma', nombre: 'Configurar Idioma', descripcion: 'Cambiar idioma del sistema', modulo: 'Configuración' },
+  { id: 'configuracion.ver', nombre: 'Ver Configuración', descripcion: 'Acceso a configuración del sistema', modulo: 'Configuración' },
+  { id: 'configuracion.editar', nombre: 'Editar Configuración', descripcion: 'Modificar configuración general', modulo: 'Configuración' },
+  { id: 'configuracion.marca', nombre: 'Gestionar Marca', descripcion: 'Personalizar marca y apariencia', modulo: 'Configuración' },
+  { id: 'configuracion.idioma', nombre: 'Configurar Idioma', descripcion: 'Cambiar idioma del sistema', modulo: 'Configuración' },
 ];
 
+const permisosDisponibles = new Set(permisos.map((permiso) => permiso.id));
+
+const iconosRol: Record<RolUsuario, string> = {
+  desarrollador: '💻',
+  administrador: '👑',
+  coordinador: '📋',
+  responsable_entrepot: '📦',
+  responsable_comptoir: '🛒',
+  responsable_transport: '🚚',
+  liaison_organisme: '🏛️',
+  benevole_comptoir: '🤝',
+  benevole_entrepot: '🧺',
+  employe: '🧑‍💼',
+  visualizador: '👁️'
+};
+
+const permisosPorRolSistema: Record<RolUsuario, string[]> = {
+  desarrollador: permisos.map((permiso) => permiso.id),
+  administrador: permisos.map((permiso) => permiso.id),
+  coordinador: [
+    'dashboard.ver',
+    'inventario.ver',
+    'inventario.editar',
+    'inventario.movimientos',
+    'comandas.ver',
+    'comandas.crear',
+    'comandas.editar',
+    'comandas.aprobar',
+    'prs.ver',
+    'prs.registrar',
+    'organismos.ver',
+    'organismos.crear',
+    'organismos.editar',
+    'organismos.perfil',
+    'transporte.ver',
+    'reportes.ver',
+    'reportes.generar',
+    'reportes.exportar',
+    'reportes.avanzados',
+    'achat.ver',
+    'achat.crear'
+  ],
+  responsable_entrepot: [
+    'dashboard.ver',
+    'inventario.ver',
+    'inventario.crear',
+    'inventario.editar',
+    'inventario.movimientos',
+    'inventario.ajustes',
+    'comandas.ver',
+    'comandas.completar',
+    'prs.ver',
+    'prs.registrar',
+    'prs.editar',
+    'organismos.ver',
+    'reportes.ver',
+    'achat.ver'
+  ],
+  responsable_comptoir: [
+    'dashboard.ver',
+    'comandas.ver',
+    'comandas.crear',
+    'comandas.editar',
+    'organismos.ver',
+    'reportes.ver',
+    'achat.ver'
+  ],
+  responsable_transport: [
+    'dashboard.ver',
+    'comandas.ver',
+    'organismos.ver',
+    'transporte.ver',
+    'transporte.crear',
+    'transporte.editar',
+    'transporte.entregar',
+    'transporte.vehiculos',
+    'reportes.ver'
+  ],
+  liaison_organisme: [
+    'dashboard.ver',
+    'organismos.ver',
+    'organismos.crear',
+    'organismos.editar',
+    'organismos.eliminar',
+    'organismos.perfil',
+    'organismos.documentos',
+    'comandas.ver',
+    'comandas.crear',
+    'comandas.editar',
+    'comandas.aprobar',
+    'reportes.ver',
+    'achat.ver',
+    'achat.crear'
+  ],
+  benevole_comptoir: [
+    'dashboard.ver',
+    'comandas.ver',
+    'organismos.ver'
+  ],
+  benevole_entrepot: [
+    'dashboard.ver',
+    'inventario.ver',
+    'prs.ver'
+  ],
+  employe: [
+    'dashboard.ver',
+    'inventario.ver',
+    'comandas.ver',
+    'organismos.ver',
+    'reportes.ver'
+  ],
+  visualizador: [
+    'dashboard.ver',
+    'inventario.ver',
+    'comandas.ver',
+    'prs.ver',
+    'organismos.ver',
+    'transporte.ver',
+    'reportes.ver',
+    'achat.ver',
+    'iddigital.ver'
+  ]
+};
+
 // Roles predeterminados del sistema
-export const rolesPredeterminados: Rol[] = [
-  {
-    id: 'admin',
-    nombre: 'Administrateur',
-    descripcion: 'Accès complet à toutes les fonctions du système',
-    color: '#DC3545',
-    icono: '👑',
-    permisos: permisos.map(p => p.id), // Todos los permisos
-    usuariosAsignados: 1,
-    activo: true,
-    predeterminado: true
-  },
-  {
-    id: 'coordinador',
-    nombre: 'Coordinateur',
-    descripcion: 'Gestion des opérations, commandes et organismes',
-    color: '#1E73BE',
-    icono: '📋',
-    permisos: [
-      'dashboard.ver',
-      'inventario.ver',
-      'comandas.ver',
-      'comandas.crear',
-      'comandas.editar',
-      'comandas.aprobar',
-      'comandas.completar',
-      'prs.ver',
-      'prs.registrar',
-      'organismos.ver',
-      'organismos.crear',
-      'organismos.editar',
-      'organismos.perfil',
-      'transporte.ver',
-      'transporte.crear',
-      'reportes.ver',
-      'reportes.generar',
-      'reportes.exportar',
-      'achat.ver',
-      'achat.crear',
-      'iddigital.ver',
-      'iddigital.crear',
-      'config.ver'
-    ],
-    usuariosAsignados: 0,
-    activo: true,
-    predeterminado: true
-  },
-  {
-    id: 'almacenista',
-    nombre: 'Magasinier',
-    descripcion: 'Gestion de l\'inventaire et mouvements de produits',
-    color: '#4CAF50',
-    icono: '📦',
-    permisos: [
-      'dashboard.ver',
-      'inventario.ver',
-      'inventario.crear',
-      'inventario.editar',
-      'inventario.movimientos',
-      'inventario.ajustes',
-      'comandas.ver',
-      'comandas.completar',
-      'prs.ver',
-      'prs.registrar',
-      'organismos.ver',
-      'reportes.ver',
-      'reportes.generar',
-      'achat.ver',
-      'config.ver'
-    ],
-    usuariosAsignados: 1,
-    activo: true,
-    predeterminado: true
-  },
-  {
-    id: 'transportista',
-    nombre: 'Transporteur',
-    descripcion: 'Gestion des itinéraires, livraisons et transport',
-    color: '#FFC107',
-    icono: '🚚',
-    permisos: [
-      'dashboard.ver',
-      'comandas.ver',
-      'organismos.ver',
-      'transporte.ver',
-      'transporte.editar',
-      'transporte.entregar',
-      'reportes.ver',
-      'config.ver'
-    ],
-    usuariosAsignados: 1,
-    activo: true,
-    predeterminado: true
-  },
-  {
-    id: 'auditor',
-    nombre: 'Auditeur',
-    descripcion: 'Lecture seule - Accès aux rapports et visualisation',
-    color: '#9C27B0',
-    icono: '📊',
-    permisos: [
-      'dashboard.ver',
-      'inventario.ver',
-      'comandas.ver',
-      'prs.ver',
-      'organismos.ver',
-      'transporte.ver',
-      'reportes.ver',
-      'reportes.generar',
-      'reportes.exportar',
-      'reportes.avanzados',
-      'achat.ver',
-      'iddigital.ver'
-    ],
-    usuariosAsignados: 0,
-    activo: true,
-    predeterminado: false
-  },
-  {
-    id: 'voluntario',
-    nombre: 'Bénévole',
-    descripcion: 'Accès limité pour les bénévoles',
-    color: '#FF9800',
-    icono: '🤝',
-    permisos: [
-      'dashboard.ver',
-      'inventario.ver',
-      'comandas.ver',
-      'organismos.ver',
-      'config.ver'
-    ],
-    usuariosAsignados: 0,
-    activo: true,
-    predeterminado: false
-  }
-];
+export const rolesPredeterminados: Rol[] = (Object.entries(ROLES_CONFIG) as Array<[RolUsuario, typeof ROLES_CONFIG[RolUsuario]]>).map(([id, config], index) => ({
+  id,
+  nombre: config.nombre,
+  descripcion: config.descripcion,
+  color: config.color,
+  icono: iconosRol[id],
+  permisos: (permisosPorRolSistema[id] || []).filter((permisoId) => permisosDisponibles.has(permisoId)),
+  usuariosAsignados: index < 2 ? 1 : 0,
+  activo: true,
+  predeterminado: true
+}));
 
 // Agrupar permisos por módulo
 export const permisosPorModulo = permisos.reduce((acc, permiso) => {
@@ -265,6 +266,7 @@ export const iconosModulos: Record<string, string> = {
   'Organismos': '🏛️',
   'Transporte': '🚚',
   'Reportes': '📈',
+  'Achats': '🧾',
   'Usuarios': '👥',
   'ID Digital': '🪪',
   'Configuración': '⚙️'
@@ -279,6 +281,7 @@ export const coloresModulos: Record<string, string> = {
   'Organismos': '#1E73BE',
   'Transporte': '#FFC107',
   'Reportes': '#9C27B0',
+  'Achats': '#8B5CF6',
   'Usuarios': '#DC3545',
   'ID Digital': '#00BCD4',
   'Configuración': '#607D8B'

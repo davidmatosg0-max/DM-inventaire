@@ -260,7 +260,7 @@ export interface Usuario {
   nombre: string;
   apellido: string;
   email: string;
-  rol: RolUsuario;
+  rol: string;
   permisos: string[];
   foto?: string;
   descripcion?: string;
@@ -269,6 +269,14 @@ export interface Usuario {
   telefono?: string;
   fechaCreacion?: string;
   ultimoAcceso?: string;
+}
+
+export function esRolSistema(rol: string): rol is RolUsuario {
+  return rol in ROLES_CONFIG;
+}
+
+export function obtenerEtiquetaRol(rol: string): string {
+  return esRolSistema(rol) ? ROLES_CONFIG[rol].nombre : rol;
 }
 
 // Lista de usuarios predefinidos - MODO PRODUCCIÓN
@@ -424,11 +432,11 @@ export function agregarUsuario(usuario: Omit<Usuario, 'id'>): Usuario {
   console.log('✅ Usuario agregado:', nuevoUsuario.username);
   
   // Registrar actividad
-  const rolConfig = ROLES_CONFIG[nuevoUsuario.rol];
+  const nombreRol = obtenerEtiquetaRol(nuevoUsuario.rol);
   registrarActividad(
     'Utilisateurs',
     'crear',
-    `Utilisateur "${nuevoUsuario.username}" créé - Rôle: ${rolConfig?.nombre || nuevoUsuario.rol}`,
+    `Utilisateur "${nuevoUsuario.username}" créé - Rôle: ${nombreRol}`,
     { usuarioId: nuevoUsuario.id, username: nuevoUsuario.username, rol: nuevoUsuario.rol }
   );
   
@@ -449,9 +457,9 @@ export function actualizarUsuario(id: string, datosActualizados: Partial<Usuario
     // Registrar actividad
     const cambios = [];
     if (datosActualizados.rol && datosActualizados.rol !== usuarioAnterior.rol) {
-      const rolAnteriorConfig = ROLES_CONFIG[usuarioAnterior.rol];
-      const rolNuevoConfig = ROLES_CONFIG[datosActualizados.rol];
-      cambios.push(`Rôle: ${rolAnteriorConfig?.nombre} → ${rolNuevoConfig?.nombre}`);
+      const rolAnteriorNombre = obtenerEtiquetaRol(usuarioAnterior.rol);
+      const rolNuevoNombre = obtenerEtiquetaRol(datosActualizados.rol);
+      cambios.push(`Rôle: ${rolAnteriorNombre} → ${rolNuevoNombre}`);
     }
     if (datosActualizados.nombre || datosActualizados.apellido) {
       cambios.push('Profil mis à jour');
@@ -491,11 +499,11 @@ export function eliminarUsuario(id: string): boolean {
     
     // Registrar actividad
     if (usuarioEliminar) {
-      const rolConfig = ROLES_CONFIG[usuarioEliminar.rol];
+      const nombreRol = obtenerEtiquetaRol(usuarioEliminar.rol);
       registrarActividad(
         'Utilisateurs',
         'eliminar',
-        `Utilisateur "${usuarioEliminar.username}" supprimé - Rôle: ${rolConfig?.nombre || usuarioEliminar.rol}`,
+        `Utilisateur "${usuarioEliminar.username}" supprimé - Rôle: ${nombreRol}`,
         { usuarioId: id, username: usuarioEliminar.username }
       );
     }
