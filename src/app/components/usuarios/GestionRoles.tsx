@@ -283,7 +283,6 @@ export function GestionRoles() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleAbrirEdicion(rol)}
-                  disabled={rol.predeterminado}
                 >
                   <Edit className="w-4 h-4" />
                 </Button>

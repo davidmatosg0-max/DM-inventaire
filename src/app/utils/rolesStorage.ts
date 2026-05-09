@@ -58,10 +58,26 @@ function hidratarRoles(roles: Rol[]): Rol[] {
 }
 
 export function obtenerRoles(): Rol[] {
-  return hidratarRoles([
-    ...rolesPredeterminados.map((rol) => ({ ...rol })),
-    ...leerRolesPersonalizados(),
-  ]);
+  const rolesPredeterminadosMap = new Map(
+    rolesPredeterminados.map((rol) => [rol.id, { ...rol }])
+  );
+
+  for (const rolPersonalizado of leerRolesPersonalizados()) {
+    const rolBase = rolesPredeterminadosMap.get(rolPersonalizado.id);
+
+    if (rolBase) {
+      rolesPredeterminadosMap.set(rolPersonalizado.id, {
+        ...rolBase,
+        ...rolPersonalizado,
+        predeterminado: true,
+      });
+      continue;
+    }
+
+    rolesPredeterminadosMap.set(rolPersonalizado.id, rolPersonalizado);
+  }
+
+  return hidratarRoles(Array.from(rolesPredeterminadosMap.values()));
 }
 
 export function guardarRolPersonalizado(
