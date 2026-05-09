@@ -26,6 +26,7 @@ import { JWTSessionInfo } from '../JWTSessionInfo';
 import { useAuth } from '../../../contexts/AuthContext';
 import { obtenerEstadisticasJWT } from '../../utils/jwtManager';
 import { obtenerEstadisticasAPI } from '../../utils/apiKeyManager';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 export function GestionAutenticacion() {
   const { t } = useTranslation();
@@ -71,20 +72,24 @@ export function GestionAutenticacion() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto">
-          <TabsTrigger value="overview" className="gap-2">
-            <Activity className="w-4 h-4" />
-            <span className="hidden sm:inline">Vue d'ensemble</span>
-          </TabsTrigger>
-          <TabsTrigger value="jwt" className="gap-2">
-            <Shield className="w-4 h-4" />
-            <span className="hidden sm:inline">JWT Sessions</span>
-          </TabsTrigger>
-          <TabsTrigger value="api-keys" className="gap-2">
-            <Key className="w-4 h-4" />
-            <span className="hidden sm:inline">API Keys</span>
-          </TabsTrigger>
-        </TabsList>
+        <ModuleControlSurface>
+          <ModuleControlSurfaceTabs>
+            <TabsList className="app-compact-tabs-grid w-full gap-1 bg-transparent p-0 lg:w-auto" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <TabsTrigger value="overview" className="app-compact-tab-trigger gap-2">
+                <Activity className="w-4 h-4" />
+                <span className="hidden sm:inline">Vue d'ensemble</span>
+              </TabsTrigger>
+              <TabsTrigger value="jwt" className="app-compact-tab-trigger gap-2">
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">JWT Sessions</span>
+              </TabsTrigger>
+              <TabsTrigger value="api-keys" className="app-compact-tab-trigger gap-2">
+                <Key className="w-4 h-4" />
+                <span className="hidden sm:inline">API Keys</span>
+              </TabsTrigger>
+            </TabsList>
+          </ModuleControlSurfaceTabs>
+        </ModuleControlSurface>
 
         {/* Vue d'ensemble */}
         <TabsContent value="overview" className="space-y-6">

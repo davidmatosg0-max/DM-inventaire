@@ -39,6 +39,7 @@ import { EtiquetaReceta } from '../cuisine/EtiquetaReceta';
 import { GestionContactosDepartamento } from '../departamentos/GestionContactosDepartamento';
 import { BoutonRetourHeader } from '../shared/BoutonRetour';
 import { formatQuantity } from '../../utils/formatUtils';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 
 interface CuisinePageProps {
   onNavigate?: (page: string) => void;
@@ -80,22 +81,15 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
   };
 
   // Renderizar header común
-  const renderHeader = (titulo: string, icono: React.ReactNode) => (
-    <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60 mb-4 sm:mb-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3">
-            {icono}
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                {titulo}
-              </h1>
-              <p className="text-sm text-gray-700">Département Cuisine - Transformation</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  const renderHeader = (titulo: string, icono: React.ReactNode, accentColor = branding.primaryColor) => (
+    <ModulePageHeader
+      title={titulo}
+      subtitle="Département Cuisine - Transformation"
+      icon={icono}
+      accentColor={accentColor}
+      secondaryColor={branding.secondaryColor}
+      className="mb-4 sm:mb-6"
+    />
   );
 
   // ==================== MODAL RECETA ====================
@@ -819,100 +813,42 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
   // Dashboard principal
   const renderDashboard = () => (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Fondo degradado con colores del branding */}
-      <div 
-        className="fixed inset-0 -z-10"
-        style={{
-          background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`
-        }}
-      />
-      
-      {/* Formas decorativas animadas */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute w-96 h-96 rounded-full opacity-20 animate-pulse"
-          style={{
-            top: '-10%',
-            right: '-10%',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%)',
-            animation: 'pulse 4s ease-in-out infinite'
-          }}
+    <div className="space-y-4 sm:space-y-6">
+      {renderHeader('Cuisine et Transformation', <ChefHat className="h-6 w-6 text-white sm:h-7 sm:w-7" />)}
+
+      <ModuleStatsGrid defaultLayout="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ModuleStatCard
+          label="Recettes Actives"
+          value={estadisticas?.recetasActives || estadisticas?.recetasActivas || 0}
+          icon={<BookOpen className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+          accentColor="#4CAF50"
+          valueColor="#4CAF50"
+          helper={<p className="text-xs text-gray-600">sur {estadisticas?.totalRecetas || 0} recettes totales</p>}
         />
-        <div 
-          className="absolute w-80 h-80 rounded-full opacity-20 animate-pulse"
-          style={{
-            bottom: '-15%',
-            left: '-10%',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.6) 0%, transparent 70%)',
-            animation: 'pulse 5s ease-in-out infinite',
-            animationDelay: '1s'
-          }}
+        <ModuleStatCard
+          label="Transformations ce mois"
+          value={estadisticas?.transformacionesMes || 0}
+          icon={<ClipboardList className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+          accentColor="#FF6B35"
+          valueColor="#FF6B35"
+          helper={<p className="text-xs text-gray-600">{estadisticas?.transformacionesCompletadas || 0} terminées</p>}
         />
-        <div 
-          className="absolute w-64 h-64 rounded-full opacity-10"
-          style={{
-            top: '50%',
-            right: '20%',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 70%)',
-            animation: 'pulse 6s ease-in-out infinite',
-            animationDelay: '2s'
-          }}
+        <ModuleStatCard
+          label="En Production"
+          value={estadisticas?.transformacionesEnCurso || 0}
+          icon={<PlayCircle className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+          accentColor={branding.primaryColor}
+          helper={<p className="text-xs text-gray-600">transformations en cours</p>}
         />
-      </div>
-
-      {/* Contenido con z-index superior */}
-      <div className="relative z-10 p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {renderHeader('Cuisine et Transformation', <ChefHat className="w-8 h-8" style={{ color: branding.primaryColor }} />)}
-
-        {/* Estadísticas principales con glassmorphism */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4" style={{ borderLeftColor: '#4CAF50' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="w-5 h-5 text-[#4CAF50]" />
-              <p className="text-sm font-medium text-gray-700">Recettes Actives</p>
-            </div>
-            <div className="text-3xl font-bold text-[#4CAF50]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              {estadisticas?.recetasActivas || 0}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">sur {estadisticas?.totalRecetas || 0} recettes totales</p>
-          </div>
-
-          <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#FF6B35]">
-            <div className="flex items-center gap-2 mb-2">
-              <ClipboardList className="w-5 h-5 text-[#FF6B35]" />
-              <p className="text-sm font-medium text-gray-700">Transformations ce mois</p>
-            </div>
-            <div className="text-3xl font-bold text-[#FF6B35]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              {estadisticas?.transformacionesMes || 0}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              {estadisticas?.transformacionesCompletadas || 0} terminées
-            </p>
-          </div>
-
-          <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
-            <div className="flex items-center gap-2 mb-2">
-              <PlayCircle className="w-5 h-5" style={{ color: branding.primaryColor }} />
-              <p className="text-sm font-medium text-gray-700">En Production</p>
-            </div>
-            <div className="text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-              {estadisticas?.transformacionesEnCurso || 0}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">transformations en cours</p>
-          </div>
-
-          <div className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-l-[#9C27B0]">
-            <div className="flex items-center gap-2 mb-2">
-              <Scale className="w-5 h-5 text-[#9C27B0]" />
-              <p className="text-sm font-medium text-gray-700">Production (kg)</p>
-            </div>
-            <div className="text-3xl font-bold text-[#9C27B0]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              {estadisticas?.totalKgElaborados?.toFixed(1) || '0.0'}
-            </div>
-            <p className="text-xs text-gray-600 mt-1">kg élaborés ce mois</p>
-          </div>
-        </div>
+        <ModuleStatCard
+          label="Production (kg)"
+          value={estadisticas?.totalKgElaborados?.toFixed(1) || '0.0'}
+          icon={<Scale className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+          accentColor="#9C27B0"
+          valueColor="#9C27B0"
+          helper={<p className="text-xs text-gray-600">kg élaborés ce mois</p>}
+        />
+      </ModuleStatsGrid>
 
         {/* Menú de acciones principales con glassmorphism */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1049,7 +985,6 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
             </Button>
           </div>
         )}
-      </div>
     </div>
   );
 
@@ -1068,7 +1003,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           onClick={() => setVistaActual('dashboard')} 
           titre="Gestion des Recettes"
         />
-        {renderHeader('Gestion des Recettes', <BookOpen className="w-8 h-8 text-[#4CAF50]" />)}
+        {renderHeader('Gestion des Recettes', <BookOpen className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#4CAF50')}
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -1248,7 +1183,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           onClick={() => setVistaActual('dashboard')} 
           titre="Registre des Transformations"
         />
-        {renderHeader('Registre des Transformations', <ClipboardList className="w-8 h-8 text-[#FF6B35]" />)}
+        {renderHeader('Registre des Transformations', <ClipboardList className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#FF6B35')}
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -1474,7 +1409,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           onClick={() => setVistaActual('dashboard')} 
           titre="Planification de Production"
         />
-        {renderHeader('Planification de Production', <Calendar className="w-8 h-8 text-[#1E73BE]" />)}
+        {renderHeader('Planification de Production', <Calendar className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#1E73BE')}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="border-l-4 border-l-[#4CAF50]">
@@ -1581,7 +1516,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
         onClick={() => setVistaActual('dashboard')} 
         titre="Inventaire Cuisine"
       />
-      {renderHeader('Inventaire Cuisine', <Package className="w-8 h-8 text-[#9C27B0]" />)}
+      {renderHeader('Inventaire Cuisine', <Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#9C27B0')}
       <InventarioCocina />
     </div>
   );
@@ -1615,7 +1550,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           onClick={() => setVistaActual('dashboard')} 
           titre="Statistiques de Production"
         />
-        {renderHeader('Statistiques de Production', <BarChart3 className="w-8 h-8 text-[#FFC107]" />)}
+        {renderHeader('Statistiques de Production', <BarChart3 className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#C89200')}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
@@ -1716,7 +1651,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           onClick={() => setVistaActual('dashboard')} 
           titre="Gestion des Pertes et Mermas"
         />
-        {renderHeader('Gestion des Pertes et Mermas', <AlertTriangle className="w-8 h-8 text-[#DC3545]" />)}
+        {renderHeader('Gestion des Pertes et Mermas', <AlertTriangle className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#DC3545')}
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="border-l-4 border-l-[#DC3545]">

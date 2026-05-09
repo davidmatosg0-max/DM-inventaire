@@ -43,6 +43,7 @@ import {
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { exportToCSV, type TableColumn } from '../../utils/exportUtils';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import {
   guardarContacto,
   obtenerContactosPorDepartamento,
@@ -2886,32 +2887,36 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
           <Tabs value={mainView} onValueChange={(value) => setMainView(value as RecruitmentMainView)} className={`${isPublicAccess ? 'flex-1 min-h-0' : 'mb-6 gap-4'}`}>
             {!isPublicAccess && (
-              <TabsList className="app-compact-tabs-grid w-full bg-white border border-gray-200 shadow-sm p-1">
-                <TabsTrigger
-                  value="candidatures"
-                  className="app-compact-tab-trigger py-3"
-                  style={{ fontFamily: 'Montserrat, sans-serif' }}
-                >
-                  <Users className="w-4 h-4" />
-                  Candidatures
-                </TabsTrigger>
-                <TabsTrigger
-                  value="reports"
-                  className="app-compact-tab-trigger py-3"
-                  style={{ fontFamily: 'Montserrat, sans-serif' }}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Rapport
-                </TabsTrigger>
-                <TabsTrigger
-                  value="timesheets"
-                  className="app-compact-tab-trigger py-3"
-                  style={{ fontFamily: 'Montserrat, sans-serif' }}
-                >
-                  <Clock className="w-4 h-4" />
-                  Feuille de temps
-                </TabsTrigger>
-              </TabsList>
+              <ModuleControlSurface>
+                <ModuleControlSurfaceTabs>
+                  <TabsList className="app-compact-tabs-grid w-full bg-transparent p-0">
+                    <TabsTrigger
+                      value="candidatures"
+                      className="app-compact-tab-trigger py-3"
+                      style={{ fontFamily: 'Montserrat, sans-serif' }}
+                    >
+                      <Users className="w-4 h-4" />
+                      Candidatures
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="reports"
+                      className="app-compact-tab-trigger py-3"
+                      style={{ fontFamily: 'Montserrat, sans-serif' }}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Rapport
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="timesheets"
+                      className="app-compact-tab-trigger py-3"
+                      style={{ fontFamily: 'Montserrat, sans-serif' }}
+                    >
+                      <Clock className="w-4 h-4" />
+                      Feuille de temps
+                    </TabsTrigger>
+                  </TabsList>
+                </ModuleControlSurfaceTabs>
+              </ModuleControlSurface>
             )}
 
             {!isPublicAccess && (

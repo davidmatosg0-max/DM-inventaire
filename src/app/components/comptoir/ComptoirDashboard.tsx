@@ -4,6 +4,7 @@ import { Users, Calendar, Package, TrendingUp, Clock, AlertCircle } from 'lucide
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { useBranding } from '../../../hooks/useBranding';
+import { ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import {
   obtenirRendezVousComptoir,
   comptoirStorageEvents,
@@ -128,76 +129,56 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Ligne 1 — Cartes statistiques */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="border-l-4 hover:shadow-lg transition-shadow cursor-pointer" 
-          style={{ borderLeftColor: '#1E73BE' }}
-          onClick={() => onNavigate('beneficiaires')}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#666666] mb-1">{t('comptoir.activeBeneficiaries')}</p>
-                <p className="text-3xl font-bold" style={{ color: '#1E73BE', fontFamily: 'Montserrat, sans-serif' }}>
-                  {stats.beneficiairesActifs}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="w-3 h-3 text-[#4CAF50]" />
-                  <span className="text-xs text-[#4CAF50]">{beneficiaries.length} dossiers au total</span>
-                </div>
+      <ModuleStatsGrid defaultLayout="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+        <button type="button" onClick={() => onNavigate('beneficiaires')} className="text-left">
+          <ModuleStatCard
+            label={t('comptoir.activeBeneficiaries')}
+            value={stats.beneficiairesActifs}
+            icon={<Users className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor="#1E73BE"
+            valueColor="#1E73BE"
+            helper={(
+              <div className="flex items-center gap-1 text-xs text-[#4CAF50]">
+                <TrendingUp className="h-3 w-3" />
+                <span>{beneficiaries.length} dossiers au total</span>
               </div>
-              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#E3F2FD' }}>
-                <Users className="w-6 h-6" style={{ color: '#1E73BE' }} />
+            )}
+            className="cursor-pointer"
+          />
+        </button>
+        <button type="button" onClick={() => onNavigate('rendez-vous')} className="text-left">
+          <ModuleStatCard
+            label={t('comptoir.appointmentsToday')}
+            value={stats.rdvAujourdhui}
+            icon={<Calendar className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor="#4CAF50"
+            valueColor="#4CAF50"
+            helper={(
+              <div className="flex items-center gap-1 text-xs text-[#666666]">
+                <Clock className="h-3 w-3" />
+                <span>{pendingRequests} en attente</span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 hover:shadow-lg transition-shadow cursor-pointer" 
-          style={{ borderLeftColor: '#4CAF50' }}
-          onClick={() => onNavigate('rendez-vous')}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#666666] mb-1">{t('comptoir.appointmentsToday')}</p>
-                <p className="text-3xl font-bold" style={{ color: '#4CAF50', fontFamily: 'Montserrat, sans-serif' }}>
-                  {stats.rdvAujourdhui}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  <Clock className="w-3 h-3 text-[#666666]" />
-                  <span className="text-xs text-[#666666]">{pendingRequests} en attente</span>
-                </div>
+            )}
+            className="cursor-pointer"
+          />
+        </button>
+        <button type="button" onClick={() => onNavigate('aide-alimentaire')} className="text-left">
+          <ModuleStatCard
+            label={t('comptoir.aidsDistributed')}
+            value={stats.aidesDistribuees}
+            icon={<Package className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor="#FFC107"
+            valueColor="#FFC107"
+            helper={(
+              <div className="flex items-center gap-1 text-xs text-[#4CAF50]">
+                <TrendingUp className="h-3 w-3" />
+                <span>{distributions.filter((distribution) => distribution.date === today).length} aujourd'hui</span>
               </div>
-              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#E8F5E9' }}>
-                <Calendar className="w-6 h-6" style={{ color: '#4CAF50' }} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 hover:shadow-lg transition-shadow cursor-pointer" 
-          style={{ borderLeftColor: '#FFC107' }}
-          onClick={() => onNavigate('aide-alimentaire')}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#666666] mb-1">{t('comptoir.aidsDistributed')}</p>
-                <p className="text-3xl font-bold" style={{ color: '#FFC107', fontFamily: 'Montserrat, sans-serif' }}>
-                  {stats.aidesDistribuees}
-                </p>
-                <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="w-3 h-3 text-[#4CAF50]" />
-                  <span className="text-xs text-[#4CAF50]">{distributions.filter((distribution) => distribution.date === today).length} aujourd'hui</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFF9E6' }}>
-                <Package className="w-6 h-6" style={{ color: '#FFC107' }} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            )}
+            className="cursor-pointer"
+          />
+        </button>
+      </ModuleStatsGrid>
 
       {/* Ligne 2 — Activités récentes */}
       <Card>

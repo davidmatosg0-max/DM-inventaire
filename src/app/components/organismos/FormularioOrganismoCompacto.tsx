@@ -1,81 +1,61 @@
-import React, { useRef } from 'react';
-import { useBranding } from '../../../hooks/useBranding';
+﻿import React, { useRef } from 'react';
 import {
+  Bell,
   Building2,
+  Calendar,
   Camera,
-  User,
-  Phone,
+  Clock,
+  FileText,
+  FileUp,
   Mail,
   MapPin,
-  Calendar,
-  FileUp,
+  Phone,
   Settings,
   Users,
-  Bell,
-  Clock,
-  Package,
-  FileText
+  X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useBranding } from '../../../hooks/useBranding';
 import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Checkbox } from '../ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { AddressAutocomplete } from '../ui/address-autocomplete';
-import { Checkbox } from '../ui/checkbox';
-import { useTranslation } from 'react-i18next';
-import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
-
-interface ContactoNotificacion {
-  nombre: string;
-  email: string;
-  cargo: string;
-  joursDisponibles: JourDisponible[];
-}
-
-interface FormOrganismoData {
-  nombre: string;
-  tipo: string;
-  codigoPostal: string;
-  direccion: string;
-  quartier: string;
-  responsable: string;
-  beneficiarios: number;
-  telefono: string;
-  email: string;
-  frecuenciaCita: string;
-  horaCita: string;
-  participantePRS: boolean;
-  regular: boolean;
-  activo: boolean;
-  personasServidas: number;
-  cantidadColaciones: number;
-  cantidadAlmuerzos: number;
-  porcentajeReparticion: number;
-  notas: string;
-  notificaciones: boolean;
-  logo: string | null;
-  documentoPDF: string | null;
-  contactosNotificacion: ContactoNotificacion[];
-  fechaInicioInactividad: string;
-  fechaFinInactividad: string;
-  contactoCargo: string;
-  contactoTelefono: string;
-  contactoEmail: string;
-  contactoJoursDisponibles: JourDisponible[];
-}
+import { SelecteurJoursDisponibles } from '../shared/SelecteurJoursDisponibles';
 
 interface FormularioOrganismoCompactoProps {
   abierto: boolean;
   onCerrar: () => void;
-  formulario: FormOrganismoData;
-  setFormulario: React.Dispatch<React.SetStateAction<FormOrganismoData>>;
+  formulario: any;
+  setFormulario: React.Dispatch<React.SetStateAction<any>>;
   modoEdicion: boolean;
+  modoVisualizacion?: boolean;
   onGuardar: () => void;
-  tiposOrganismo: { id: string; nombre: string; icono: string; }[];
+  tiposOrganismo: { id: string; nombre: string; icono: string }[];
 }
+
+const quartiersLaval = [
+  'Auteuil',
+  'Chomedey',
+  'Duvernay',
+  'Fabreville',
+  'Laval-des-Rapides',
+  'Laval-Ouest',
+  'Laval-sur-le-Lac',
+  'Pont-Viau',
+  'Sainte-Dorothee',
+  'Sainte-Rose',
+  'Saint-Francois',
+  'Saint-Vincent-de-Paul',
+  'Vimont',
+  'Iles-Laval',
+];
+
+const joursCita = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
 export function FormularioOrganismoCompacto({
   abierto,
@@ -83,651 +63,443 @@ export function FormularioOrganismoCompacto({
   formulario,
   setFormulario,
   modoEdicion,
+  modoVisualizacion = false,
   onGuardar,
-  tiposOrganismo
+  tiposOrganismo,
 }: FormularioOrganismoCompactoProps) {
   const branding = useBranding();
   const { t } = useTranslation();
-  const fileInputLogoRef = useRef<HTMLInputElement>(null);
-  const fileInputDocRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const esConsulta = modoVisualizacion;
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormulario({ ...formulario, logo: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
+  const tipoSeleccionado = tiposOrganismo.find((tipo) => tipo.nombre === formulario.tipo);
+
+  const actualizarFormulario = (cambios: Record<string, unknown>) => {
+    setFormulario((prev: any) => ({ ...prev, ...cambios }));
   };
 
-  const getTipoConfig = (tipoId: string) => {
-    const tipo = tiposOrganismo.find(t => t.id === tipoId);
-    if (!tipo) return { icono: '📌', nombre: t('organisms.organismTypes.other') };
-    return tipo;
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      actualizarFormulario({ logo: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePdfChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    actualizarFormulario({ documentoPDF: file.name });
+  };
+
+  const updateNotificationContact = (index: number, cambios: Record<string, unknown>) => {
+    const contactos = [...(formulario.contactosNotificacion || [])];
+    contactos[index] = { ...contactos[index], ...cambios };
+    actualizarFormulario({ contactosNotificacion: contactos });
+  };
+
+  const addNotificationContact = () => {
+    actualizarFormulario({
+      contactosNotificacion: [
+        ...(formulario.contactosNotificacion || []),
+        { nombre: '', email: '', cargo: '', joursDisponibles: [] },
+      ],
+    });
+  };
+
+  const removeNotificationContact = (index: number) => {
+    const contactos = (formulario.contactosNotificacion || []).filter((_: unknown, contactoIndex: number) => contactoIndex !== index);
+    actualizarFormulario({
+      contactosNotificacion: contactos.length > 0 ? contactos : [{ nombre: '', email: '', cargo: '', joursDisponibles: [] }],
+    });
   };
 
   return (
-    <Dialog open={abierto} onOpenChange={onCerrar}>
-      <DialogContent 
-        className="!max-w-none !w-[95vw] !max-h-[95vh] !h-[95vh] overflow-hidden p-0 m-0 rounded-xl"
-        aria-describedby="organism-form-description"
-      >
-        <div className="h-full flex flex-col">
-          <DialogHeader className="sticky top-0 z-10 bg-white border-b-2 border-[#E0E0E0] px-6 py-3 shadow-sm">
-            <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, fontSize: '1.25rem' }}>
-              <Building2 className="w-5 h-5 inline mr-2" />
-              {modoEdicion ? t('organisms.editOrganism') : t('organisms.newOrganism')}
-            </DialogTitle>
-            <DialogDescription id="organism-form-description" className="sr-only">
-              {modoEdicion ? t('organisms.editOrganismDescription') : t('organisms.newOrganismDescription')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex-1 overflow-hidden flex">
-            {/* Sidebar izquierda: Logo y Tipo */}
-            <div className="w-64 border-r-2 border-[#E0E0E0] bg-[#F9FAFB] p-4 overflow-y-auto scrollbar-thin">
-              {/* Logo */}
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-[#666666] mb-3 uppercase tracking-wide">
-                  {t('organisms.logo')}
-                </h4>
-                <div className="flex justify-center">
-                  <div className="relative">
-                    <div 
-                      className="w-28 h-28 rounded-lg border-4 overflow-hidden bg-white flex items-center justify-center"
-                      style={{ borderColor: branding.primaryColor }}
-                    >
-                      {formulario.logo ? (
-                        <img src={formulario.logo} alt="Logo" className="w-full h-full object-contain p-2" />
-                      ) : (
-                        <Building2 className="w-14 h-14 text-gray-400" />
-                      )}
-                    </div>
-                    <Button
-                      size="icon"
-                      type="button"
-                      className="absolute bottom-0 right-0 rounded-full text-white h-8 w-8"
-                      style={{ backgroundColor: branding.primaryColor }}
-                      onClick={() => fileInputLogoRef.current?.click()}
-                    >
-                      <Camera className="w-4 h-4" />
-                    </Button>
-                    <input
-                      ref={fileInputLogoRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleLogoChange}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Type d'Organisme */}
+    <Dialog open={abierto} onOpenChange={(open) => { if (!open) onCerrar(); }}>
+      <DialogContent className="!max-w-none !w-[96vw] !h-[95vh] overflow-hidden rounded-[28px] border-0 p-0 shadow-2xl">
+        <div className="flex h-full flex-col bg-[linear-gradient(180deg,#f7fbff_0%,#edf5fb_100%)]">
+          <DialogHeader
+            className="border-b border-white/20 px-5 py-5 text-white sm:px-6"
+            style={{ background: `linear-gradient(120deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h4 className="text-sm font-semibold text-[#666666] mb-3 uppercase tracking-wide">
-                  {t('organisms.type')}
-                </h4>
-                <div className="space-y-2">
-                  {tiposOrganismo.slice(0, 10).map((tipo) => {
-                    const isSelected = formulario.tipo === tipo.id;
-                    return (
-                      <div
-                        key={tipo.id}
-                        onClick={() => setFormulario({ ...formulario, tipo: tipo.id })}
-                        className={`p-2 rounded-lg border-2 cursor-pointer transition-all hover:shadow-sm ${
-                          isSelected ? 'ring-2' : ''
-                        }`}
-                        style={{
-                          borderColor: isSelected ? branding.primaryColor : '#E0E0E0',
-                          backgroundColor: isSelected ? `${branding.primaryColor}15` : 'white',
-                          ringColor: branding.primaryColor
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="text-xl">
-                            {tipo.icono}
-                          </div>
-                          <span className="text-xs font-medium text-[#333333] leading-tight">
-                            {tipo.nombre}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <DialogTitle className="text-xl sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                  {esConsulta ? 'Fiche organisme' : modoEdicion ? t('organisms.editOrganism') : t('organisms.newOrganism')}
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-sm text-white/90">
+                  {esConsulta
+                    ? 'Consultation en lecture seule de la fiche organisme dans la meme vue compacte.'
+                    : 'Vue compacte pour saisir rapidement la fiche organisme avec une presentation plus nette.'}
+                </DialogDescription>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                <div className="rounded-2xl bg-white/15 px-3 py-2 backdrop-blur-sm">
+                  <div className="opacity-80">Etat</div>
+                  <div className="font-semibold">{formulario.activo ? t('organisms.active') : t('organisms.inactive')}</div>
+                </div>
+                <div className="rounded-2xl bg-white/15 px-3 py-2 backdrop-blur-sm">
+                  <div className="opacity-80">Type</div>
+                  <div className="truncate font-semibold">{tipoSeleccionado?.nombre || 'A definir'}</div>
+                </div>
+                <div className="rounded-2xl bg-white/15 px-3 py-2 backdrop-blur-sm">
+                  <div className="opacity-80">PRS</div>
+                  <div className="font-semibold">{formulario.participantePRS ? 'Oui' : 'Non'}</div>
                 </div>
               </div>
             </div>
+          </DialogHeader>
 
-            {/* Contenido principal con Tabs */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <Tabs defaultValue="base" className="flex-1 flex flex-col">
-                <TabsList className="w-full justify-start rounded-none border-b bg-[#F9FAFB] px-6 py-0 h-12">
-                  <TabsTrigger value="base" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
-                    <Building2 className="w-4 h-4 mr-2" />
-                    {t('organisms.basicInfo')}
-                  </TabsTrigger>
-                  <TabsTrigger value="contact" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
-                    <Phone className="w-4 h-4 mr-2" />
-                    {t('organisms.contact')}
-                  </TabsTrigger>
-                  <TabsTrigger value="services" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
-                    <Users className="w-4 h-4 mr-2" />
-                    {t('organisms.services')}
-                  </TabsTrigger>
-                  <TabsTrigger value="notifications" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
-                    <Bell className="w-4 h-4 mr-2" />
-                    {t('organisms.notifications')}
-                  </TabsTrigger>
-                  <TabsTrigger value="autres" className="data-[state=active]:border-b-2" style={{ borderColor: branding.primaryColor }}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    {t('organisms.other')}
-                  </TabsTrigger>
-                </TabsList>
+          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+            <aside className="overflow-y-auto border-b border-[#dbe6f0] bg-white/80 p-5 backdrop-blur-md lg:w-[320px] lg:border-b-0 lg:border-r">
+              <div className={`space-y-5 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                <section className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a7c8d]">Logo</h3>
+                    {formulario.logo ? (
+                      <button type="button" onClick={() => actualizarFormulario({ logo: null })} className="rounded-full p-1 text-[#6a7c8d] hover:bg-[#eef5fb]">
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-3xl border-4 bg-[#f7fafc]" style={{ borderColor: `${branding.primaryColor}30` }}>
+                      {formulario.logo ? (
+                        <img src={formulario.logo} alt="Logo" className="h-full w-full object-contain p-3" />
+                      ) : (
+                        <Building2 className="h-14 w-14 text-[#9cb0c3]" />
+                      )}
+                    </div>
+                    <Button type="button" variant="outline" className="w-full rounded-2xl" onClick={() => logoInputRef.current?.click()}>
+                      <Camera className="mr-2 h-4 w-4" />
+                      {formulario.logo ? 'Changer le logo' : 'Ajouter un logo'}
+                    </Button>
+                    <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                  </div>
+                </section>
 
-                {/* Tab: Información Base */}
-                <TabsContent value="base" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
-                  <div className="max-w-4xl space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2">
-                        <Label htmlFor="nombre" className="text-xs">{t('organisms.name')} *</Label>
-                        <Input
-                          id="nombre"
-                          value={formulario.nombre}
-                          onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })}
-                          placeholder={t('organisms.namePlaceholder')}
-                          className="h-9"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="codigoPostal" className="text-xs">{t('organisms.postalCode')}</Label>
-                        <Input
-                          id="codigoPostal"
-                          value={formulario.codigoPostal}
-                          onChange={(e) => setFormulario({ ...formulario, codigoPostal: e.target.value })}
-                          placeholder="H1A 1B2"
-                          className="h-9"
-                        />
-                      </div>
+                <section className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-4">
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a7c8d]">Type</Label>
+                    <Select value={formulario.tipo} onValueChange={(value) => actualizarFormulario({ tipo: value })} disabled={esConsulta}>
+                      <SelectTrigger className="mt-2 h-11 rounded-2xl border-[#dbe6f0] bg-[#f8fbff]">
+                        <SelectValue placeholder={t('organisms.selectType')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tiposOrganismo.map((tipo) => (
+                          <SelectItem key={tipo.id} value={tipo.nombre}>
+                            {tipo.icono} {tipo.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#f8fbff] px-3 py-3 text-sm text-[#42566b]">
+                    <div className="font-semibold text-[#16324f]">{tipoSeleccionado ? `${tipoSeleccionado.icono} ${tipoSeleccionado.nombre}` : 'Selectionnez le type d organisme'}</div>
+                    <p className="mt-1 text-xs text-[#6a7c8d]">Les informations principales sont groupees en onglets pour garder une fiche compacte.</p>
+                  </div>
+
+                  <div className="grid gap-2 text-sm">
+                    <div className="rounded-2xl bg-[#f8fbff] px-3 py-2">
+                      <div className="text-[#6a7c8d]">Quartier</div>
+                      <div className="font-semibold text-[#16324f]">{formulario.quartier || 'A definir'}</div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="quartier" className="text-xs">{t('organisms.neighborhood')} *</Label>
-                        <Input
-                          id="quartier"
-                          value={formulario.quartier}
-                          onChange={(e) => setFormulario({ ...formulario, quartier: e.target.value })}
-                          placeholder={t('organisms.neighborhoodPlaceholder')}
-                          className="h-9"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="responsable" className="text-xs">{t('organisms.responsible')}</Label>
-                        <Input
-                          id="responsable"
-                          value={formulario.responsable}
-                          onChange={(e) => setFormulario({ ...formulario, responsable: e.target.value })}
-                          placeholder={t('organisms.responsiblePlaceholder')}
-                          className="h-9"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="direccion" className="text-xs">
-                        <MapPin className="w-3 h-3 inline mr-1" />
-                        {t('organisms.address')}
-                      </Label>
-                      <AddressAutocomplete
-                        value={formulario.direccion}
-                        onChange={(value) => setFormulario({ ...formulario, direccion: value })}
-                        placeholder={t('organisms.addressPlaceholder')}
-                      />
+                    <div className="rounded-2xl bg-[#f8fbff] px-3 py-2">
+                      <div className="text-[#6a7c8d]">Contact</div>
+                      <div className="font-semibold text-[#16324f]">{formulario.responsable || 'Non renseigne'}</div>
                     </div>
                   </div>
-                </TabsContent>
+                </section>
+              </div>
+            </aside>
 
-                {/* Tab: Contact */}
-                <TabsContent value="contact" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
-                  <div className="max-w-4xl space-y-6">
-                    {/* Información General de Contacto */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                        <Phone className="w-4 h-4 text-[#1a4d7a]" />
-                        <h4 className="font-semibold text-sm text-[#333333]">
-                          {t('organisms.generalContact') || 'Contact Général'}
-                        </h4>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <Tabs defaultValue="base" className="flex min-h-0 flex-1 flex-col">
+                <TabsList className="h-auto justify-start gap-1 overflow-x-auto rounded-none border-b border-[#dbe6f0] bg-white/75 px-3 py-2 sm:px-6">
+                  <TabsTrigger value="base" className="rounded-xl"><Building2 className="mr-2 h-4 w-4" />{t('organisms.basicInfo')}</TabsTrigger>
+                  <TabsTrigger value="contact" className="rounded-xl"><Phone className="mr-2 h-4 w-4" />{t('organisms.contact')}</TabsTrigger>
+                  <TabsTrigger value="services" className="rounded-xl"><Users className="mr-2 h-4 w-4" />{t('organisms.services')}</TabsTrigger>
+                  <TabsTrigger value="notifications" className="rounded-xl"><Bell className="mr-2 h-4 w-4" />{t('organisms.notifications')}</TabsTrigger>
+                  <TabsTrigger value="notes" className="rounded-xl"><Settings className="mr-2 h-4 w-4" />{t('organisms.other')}</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="base" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                  <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm lg:col-span-2">
+                        <Label htmlFor="organismo-nombre" className="text-xs">{t('organisms.name')} *</Label>
+                        <Input id="organismo-nombre" value={formulario.nombre} onChange={(event) => actualizarFormulario({ nombre: event.target.value })} placeholder={t('organisms.namePlaceholder')} className="mt-2 h-11 rounded-2xl border-[#dbe6f0]" />
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="telefono" className="text-xs">
-                            <Phone className="w-3 h-3 inline mr-1" />
-                            {t('organisms.phone')}
-                          </Label>
-                          <Input
-                            id="telefono"
-                            type="tel"
-                            value={formulario.telefono}
-                            onChange={(e) => setFormulario({ ...formulario, telefono: e.target.value })}
-                            placeholder="+1 (514) 123-4567"
-                            className="h-9"
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label htmlFor="organismo-cp" className="text-xs">{t('organisms.postalCode')}</Label>
+                        <Input id="organismo-cp" value={formulario.codigoPostal} onChange={(event) => actualizarFormulario({ codigoPostal: event.target.value })} placeholder="H1A 1B2" className="mt-2 h-11 rounded-2xl border-[#dbe6f0]" />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label className="text-xs">{t('organisms.neighborhood')} *</Label>
+                        <Select value={formulario.quartier || ''} onValueChange={(value) => actualizarFormulario({ quartier: value })}>
+                          <SelectTrigger className="mt-2 h-11 rounded-2xl border-[#dbe6f0]">
+                            <SelectValue placeholder="Selectionnez un quartier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {quartiersLaval.map((quartier) => (
+                              <SelectItem key={quartier} value={quartier}>{quartier}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label htmlFor="organismo-responsable" className="text-xs">{t('organisms.responsible')}</Label>
+                        <Input id="organismo-responsable" value={formulario.responsable} onChange={(event) => actualizarFormulario({ responsable: event.target.value })} placeholder={t('organisms.responsiblePlaceholder')} className="mt-2 h-11 rounded-2xl border-[#dbe6f0]" />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label className="text-xs"><MapPin className="mr-1 inline h-3 w-3" />{t('organisms.address')}</Label>
+                        <div className="mt-2">
+                          <AddressAutocomplete
+                            value={formulario.direccion}
+                            disabled={esConsulta}
+                            initialQuartier={formulario.quartier || ''}
+                            initialPostalCode={formulario.codigoPostal || ''}
+                            onChange={(value, details) => actualizarFormulario({
+                              direccion: value,
+                              codigoPostal: details?.postalCode || formulario.codigoPostal,
+                              quartier: details?.quartier || formulario.quartier,
+                            })}
+                            onAddressSelect={(address) => actualizarFormulario({
+                              direccion: address.street,
+                              codigoPostal: address.postalCode,
+                              quartier: address.quartier || formulario.quartier,
+                            })}
+                            placeholder={t('organisms.addressPlaceholder')}
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="email" className="text-xs">
-                            <Mail className="w-3 h-3 inline mr-1" />
-                            {t('organisms.emailLabel')}
-                          </Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={formulario.email}
-                            onChange={(e) => setFormulario({ ...formulario, email: e.target.value })}
-                            placeholder="contact@organisme.org"
-                            className="h-9"
-                          />
-                        </div>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
+
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-4">
                         <div>
-                          <Label htmlFor="frecuenciaCita" className="text-xs">
-                            <Calendar className="w-3 h-3 inline mr-1" />
-                            {t('organisms.appointmentFrequency')}
-                          </Label>
-                          <Select value={formulario.frecuenciaCita} onValueChange={(value) => setFormulario({ ...formulario, frecuenciaCita: value })}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder={t('organisms.selectFrequency')} />
+                          <Label className="text-xs">Classification</Label>
+                          <Select value={formulario.clasificacionOrganismo || 'regular'} onValueChange={(value) => actualizarFormulario({ clasificacionOrganismo: value, regular: value !== 'eventual' })} disabled={esConsulta}>
+                            <SelectTrigger className="mt-2 h-11 rounded-2xl border-[#dbe6f0]">
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="lundi">{t('common.days.monday')}</SelectItem>
-                              <SelectItem value="mardi">{t('common.days.tuesday')}</SelectItem>
-                              <SelectItem value="mercredi">{t('common.days.wednesday')}</SelectItem>
-                              <SelectItem value="jeudi">{t('common.days.thursday')}</SelectItem>
-                              <SelectItem value="vendredi">{t('common.days.friday')}</SelectItem>
+                              <SelectItem value="regular">Regulier</SelectItem>
+                              <SelectItem value="eventual">Eventuel</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="horaCita" className="text-xs">
-                            <Clock className="w-3 h-3 inline mr-1" />
-                            {t('organisms.appointmentTime')}
-                          </Label>
-                          <Input
-                            id="horaCita"
-                            type="time"
-                            value={formulario.horaCita}
-                            onChange={(e) => setFormulario({ ...formulario, horaCita: e.target.value })}
-                            className="h-9"
-                          />
+                          <Label className="text-xs">Etat</Label>
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            <Button type="button" variant={formulario.activo ? 'default' : 'outline'} className="rounded-2xl" onClick={() => actualizarFormulario({ activo: true })} style={formulario.activo ? { backgroundColor: branding.secondaryColor } : undefined}>Actif</Button>
+                            <Button type="button" variant={!formulario.activo ? 'default' : 'outline'} className="rounded-2xl" onClick={() => actualizarFormulario({ activo: false })} style={!formulario.activo ? { backgroundColor: branding.primaryColor } : undefined}>Inactif</Button>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Persona de Contacto Principal */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                        <User className="w-4 h-4 text-[#2d9561]" />
-                        <h4 className="font-semibold text-sm text-[#333333]">
-                          Personne de Contact Principal
-                        </h4>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="contactNombre" className="text-xs">
-                            <User className="w-3 h-3 inline mr-1" />
-                            Nom complet
-                          </Label>
-                          <Input
-                            id="contactNombre"
-                            type="text"
-                            value={formulario.responsable}
-                            onChange={(e) => setFormulario({ ...formulario, responsable: e.target.value })}
-                            placeholder="Jean Dupont"
-                            className="h-9"
-                          />
+                    {!formulario.activo ? (
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                          <Label htmlFor="organismo-inicio" className="text-xs">{t('organisms.inactivityStartDate')}</Label>
+                          <Input id="organismo-inicio" type="date" value={formulario.fechaInicioInactividad || ''} onChange={(event) => actualizarFormulario({ fechaInicioInactividad: event.target.value })} className="mt-2 h-11 rounded-2xl border-[#dbe6f0]" />
                         </div>
-                        <div>
-                          <Label htmlFor="contactCargo" className="text-xs">
-                            <Building2 className="w-3 h-3 inline mr-1" />
-                            Poste / Rôle
-                          </Label>
-                          <Input
-                            id="contactCargo"
-                            type="text"
-                            value={formulario.contactoCargo || ''}
-                            onChange={(e) => setFormulario({ ...formulario, contactoCargo: e.target.value })}
-                            placeholder="Directeur"
-                            className="h-9"
-                          />
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                          <Label htmlFor="organismo-fin" className="text-xs">{t('organisms.inactivityEndDate')}</Label>
+                          <Input id="organismo-fin" type="date" value={formulario.fechaFinInactividad || ''} onChange={(event) => actualizarFormulario({ fechaFinInactividad: event.target.value })} className="mt-2 h-11 rounded-2xl border-[#dbe6f0]" />
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
+                    ) : null}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="contact" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                  <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                    <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-4">
+                      <div className="grid gap-4 lg:grid-cols-2">
                         <div>
-                          <Label htmlFor="contactTelefono" className="text-xs">
-                            <Phone className="w-3 h-3 inline mr-1" />
-                            Téléphone direct
-                          </Label>
-                          <Input
-                            id="contactTelefono"
-                            type="tel"
-                            value={formulario.contactoTelefono || ''}
-                            onChange={(e) => setFormulario({ ...formulario, contactoTelefono: e.target.value })}
-                            placeholder="+1 (514) 123-4567"
-                            className="h-9"
-                          />
+                          <Label htmlFor="organismo-telephone" className="text-xs"><Phone className="mr-1 inline h-3 w-3" />{t('organisms.phone')}</Label>
+                          <Input id="organismo-telephone" value={formulario.telefono} onChange={(event) => actualizarFormulario({ telefono: event.target.value })} placeholder="+1 (514) 123-4567" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                         </div>
                         <div>
-                          <Label htmlFor="contactEmail" className="text-xs">
-                            <Mail className="w-3 h-3 inline mr-1" />
-                            Email direct
-                          </Label>
-                          <Input
-                            id="contactEmail"
-                            type="email"
-                            value={formulario.contactoEmail || ''}
-                            onChange={(e) => setFormulario({ ...formulario, contactoEmail: e.target.value })}
-                            placeholder="jean.dupont@organisme.org"
-                            className="h-9"
-                          />
+                          <Label htmlFor="organismo-email" className="text-xs"><Mail className="mr-1 inline h-3 w-3" />{t('organisms.emailLabel')}</Label>
+                          <Input id="organismo-email" type="email" value={formulario.email} onChange={(event) => actualizarFormulario({ email: event.target.value })} placeholder="contact@organisme.org" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                         </div>
                       </div>
-                      
-                      {/* Días disponibles de la persona de contacto */}
-                      <div className="pt-3">
-                        <SelecteurJoursDisponibles
-                          joursDisponibles={formulario.contactoJoursDisponibles || []}
-                          onChange={(jours) => {
-                            setFormulario({ ...formulario, contactoJoursDisponibles: jours });
-                          }}
-                          showIcon={false}
-                        />
+
+                      <div className="grid gap-4 lg:grid-cols-3">
+                        <div>
+                          <Label className="text-xs"><Calendar className="mr-1 inline h-3 w-3" />{t('organisms.appointmentFrequency')}</Label>
+                          <Select value={formulario.frecuenciaCita || ''} onValueChange={(value) => actualizarFormulario({ frecuenciaCita: value })} disabled={esConsulta}>
+                            <SelectTrigger className="mt-2 h-10 rounded-2xl border-[#dbe6f0]">
+                              <SelectValue placeholder={t('organisms.selectFrequency')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hebdomadaire">Hebdomadaire</SelectItem>
+                              <SelectItem value="bihebdomadaire">Aux deux semaines</SelectItem>
+                              <SelectItem value="mensuelle">Mensuelle</SelectItem>
+                              <SelectItem value="ponctuelle">Ponctuelle</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Jour de rendez vous</Label>
+                          <Select value={formulario.diaCita || ''} onValueChange={(value) => actualizarFormulario({ diaCita: value })} disabled={esConsulta}>
+                            <SelectTrigger className="mt-2 h-10 rounded-2xl border-[#dbe6f0]">
+                              <SelectValue placeholder="Selectionnez un jour" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {joursCita.map((jour) => (
+                                <SelectItem key={jour} value={jour}>{jour}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="organismo-heure" className="text-xs"><Clock className="mr-1 inline h-3 w-3" />{t('organisms.appointmentTime')}</Label>
+                          <Input id="organismo-heure" type="time" value={formulario.horaCita || ''} onChange={(event) => actualizarFormulario({ horaCita: event.target.value })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-4">
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div>
+                          <Label htmlFor="contact-cargo" className="text-xs">Poste / role</Label>
+                          <Input id="contact-cargo" value={formulario.contactoCargo || ''} onChange={(event) => actualizarFormulario({ contactoCargo: event.target.value })} placeholder="Direction" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        </div>
+                        <div>
+                          <Label htmlFor="contact-telephone" className="text-xs">Telephone direct</Label>
+                          <Input id="contact-telephone" value={formulario.contactoTelefono || ''} onChange={(event) => actualizarFormulario({ contactoTelefono: event.target.value })} placeholder="+1 (514) 123-4567" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="contact-email" className="text-xs">Email direct</Label>
+                        <Input id="contact-email" type="email" value={formulario.contactoEmail || ''} onChange={(event) => actualizarFormulario({ contactoEmail: event.target.value })} placeholder="jean.dupont@organisme.org" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                      </div>
+                      <div className="rounded-2xl bg-[#f8fbff] p-3">
+                        <SelecteurJoursDisponibles joursDisponibles={formulario.contactoJoursDisponibles || []} onChange={(jours) => actualizarFormulario({ contactoJoursDisponibles: jours })} showIcon={false} />
                       </div>
                     </div>
                   </div>
                 </TabsContent>
 
-                {/* Tab: Services */}
-                <TabsContent value="services" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
-                  <div className="max-w-4xl space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="beneficiarios" className="text-xs">
-                          <Users className="w-3 h-3 inline mr-1" />
-                          {t('organisms.beneficiaries')}
-                        </Label>
-                        <Input
-                          id="beneficiarios"
-                          type="number"
-                          value={formulario.beneficiarios}
-                          onChange={(e) => setFormulario({ ...formulario, beneficiarios: parseInt(e.target.value) || 0 })}
-                          placeholder="0"
-                          className="h-9"
-                        />
+                <TabsContent value="services" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                  <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label htmlFor="beneficiarios" className="text-xs">{t('organisms.beneficiaries')}</Label>
+                        <Input id="beneficiarios" type="number" value={formulario.beneficiarios || 0} onChange={(event) => actualizarFormulario({ beneficiarios: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                       </div>
-                      <div>
-                        <Label htmlFor="personasServidas" className="text-xs">
-                          {t('organisms.peopleServed')}
-                        </Label>
-                        <Input
-                          id="personasServidas"
-                          type="number"
-                          value={formulario.personasServidas}
-                          onChange={(e) => setFormulario({ ...formulario, personasServidas: parseInt(e.target.value) || 0 })}
-                          placeholder="0"
-                          className="h-9"
-                        />
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label htmlFor="personas-servidas" className="text-xs">{t('organisms.peopleServed')}</Label>
+                        <Input id="personas-servidas" type="number" value={formulario.personasServidas || 0} onChange={(event) => actualizarFormulario({ personasServidas: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                       </div>
-                      <div>
-                        <Label htmlFor="porcentajeReparticion" className="text-xs">
-                          {t('organisms.distributionPercentage')}
-                        </Label>
-                        <Input
-                          id="porcentajeReparticion"
-                          type="number"
-                          value={formulario.porcentajeReparticion}
-                          onChange={(e) => setFormulario({
-                            ...formulario,
-                            porcentajeReparticion: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))
-                          })}
-                          placeholder="0"
-                          className="h-9"
-                          min="0"
-                          max="100"
-                        />
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label htmlFor="porcentaje" className="text-xs">{t('organisms.distributionPercentage')}</Label>
+                        <Input id="porcentaje" type="number" min="0" max="100" value={formulario.porcentajeReparticion || 0} onChange={(event) => actualizarFormulario({ porcentajeReparticion: Math.max(0, Math.min(100, parseInt(event.target.value, 10) || 0)) })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="cantidadColaciones" className="text-xs">
-                          {t('organisms.snacks')}
-                        </Label>
-                        <Input
-                          id="cantidadColaciones"
-                          type="number"
-                          value={formulario.cantidadColaciones}
-                          onChange={(e) => setFormulario({ ...formulario, cantidadColaciones: parseInt(e.target.value) || 0 })}
-                          placeholder="0"
-                          className="h-9"
-                        />
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label htmlFor="colaciones" className="text-xs">{t('organisms.snacks')}</Label>
+                        <Input id="colaciones" type="number" value={formulario.cantidadColaciones || 0} onChange={(event) => actualizarFormulario({ cantidadColaciones: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                       </div>
-                      <div>
-                        <Label htmlFor="cantidadAlmuerzos" className="text-xs">
-                          {t('organisms.lunches')}
-                        </Label>
-                        <Input
-                          id="cantidadAlmuerzos"
-                          type="number"
-                          value={formulario.cantidadAlmuerzos}
-                          onChange={(e) => setFormulario({ ...formulario, cantidadAlmuerzos: parseInt(e.target.value) || 0 })}
-                          placeholder="0"
-                          className="h-9"
-                        />
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <Label htmlFor="almuerzos" className="text-xs">{t('organisms.lunches')}</Label>
+                        <Input id="almuerzos" type="number" value={formulario.cantidadAlmuerzos || 0} onChange={(event) => actualizarFormulario({ cantidadAlmuerzos: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="participantePRS"
-                          checked={formulario.participantePRS}
-                          onCheckedChange={(checked) => setFormulario({ ...formulario, participantePRS: checked as boolean })}
-                        />
-                        <Label htmlFor="participantePRS" className="text-xs cursor-pointer">
-                          {t('organisms.prsParticipant')}
-                        </Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="regular"
-                          checked={formulario.regular}
-                          onCheckedChange={(checked) => setFormulario({ ...formulario, regular: checked as boolean })}
-                        />
-                        <Label htmlFor="regular" className="text-xs cursor-pointer">
-                          {t('organisms.regularClient')}
-                        </Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="activo"
-                          checked={formulario.activo}
-                          onCheckedChange={(checked) => setFormulario({ ...formulario, activo: checked as boolean })}
-                        />
-                        <Label htmlFor="activo" className="text-xs cursor-pointer">
-                          {t('organisms.active')}
-                        </Label>
+
+                    <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                      <div className="flex items-center gap-3 rounded-2xl bg-[#f8fbff] px-3 py-3">
+                        <Checkbox id="prs-participant" checked={!!formulario.participantePRS} onCheckedChange={(checked) => actualizarFormulario({ participantePRS: checked as boolean })} />
+                        <Label htmlFor="prs-participant" className="cursor-pointer text-sm">{t('organisms.prsParticipant')}</Label>
                       </div>
                     </div>
                   </div>
                 </TabsContent>
 
-                {/* Tab: Notifications */}
-                <TabsContent value="notifications" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
-                  <div className="max-w-4xl space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Checkbox
-                        id="notificaciones"
-                        checked={formulario.notificaciones}
-                        onCheckedChange={(checked) => setFormulario({ ...formulario, notificaciones: checked as boolean })}
-                      />
-                      <Label htmlFor="notificaciones" className="text-sm cursor-pointer">
-                        {t('organisms.enableNotifications')}
-                      </Label>
+                <TabsContent value="notifications" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                  <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                    <div className="flex items-center gap-2 rounded-3xl border border-[#e7eef5] bg-white px-4 py-4 shadow-sm">
+                      <Checkbox id="notifications-enabled" checked={!!formulario.notificaciones} onCheckedChange={(checked) => actualizarFormulario({ notificaciones: checked as boolean })} />
+                      <Label htmlFor="notifications-enabled" className="cursor-pointer text-sm">{t('organisms.enableNotifications')}</Label>
                     </div>
-                    {formulario.contactosNotificacion.map((contacto, index) => (
-                      <div key={index} className="p-4 border-2 rounded-lg space-y-3">
-                        <h4 className="font-semibold text-sm">{t('organisms.contact')} {index + 1}</h4>
-                        <div className="grid grid-cols-3 gap-3">
-                          <Input
-                            value={contacto.nombre}
-                            onChange={(e) => {
-                              const nuevos = [...formulario.contactosNotificacion];
-                              nuevos[index].nombre = e.target.value;
-                              setFormulario({ ...formulario, contactosNotificacion: nuevos });
-                            }}
-                            placeholder={t('organisms.contactName')}
-                            className="h-9"
-                          />
-                          <Input
-                            type="email"
-                            value={contacto.email}
-                            onChange={(e) => {
-                              const nuevos = [...formulario.contactosNotificacion];
-                              nuevos[index].email = e.target.value;
-                              setFormulario({ ...formulario, contactosNotificacion: nuevos });
-                            }}
-                            placeholder={t('organisms.contactEmail')}
-                            className="h-9"
-                          />
-                          <Input
-                            value={contacto.cargo}
-                            onChange={(e) => {
-                              const nuevos = [...formulario.contactosNotificacion];
-                              nuevos[index].cargo = e.target.value;
-                              setFormulario({ ...formulario, contactosNotificacion: nuevos });
-                            }}
-                            placeholder={t('organisms.contactPosition')}
-                            className="h-9"
-                          />
+
+                    {(formulario.contactosNotificacion || []).map((contacto: any, index: number) => (
+                      <div key={`${contacto.email || 'contact'}-${index}`} className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-semibold">{t('organisms.contact')} {index + 1}</h4>
+                          {(formulario.contactosNotificacion || []).length > 1 ? (
+                            <Button type="button" variant="ghost" size="sm" onClick={() => removeNotificationContact(index)}>Retirer</Button>
+                          ) : null}
                         </div>
-                        <SelecteurJoursDisponibles
-                          joursDisponibles={contacto.joursDisponibles}
-                          onChange={(jours) => {
-                            const nuevos = [...formulario.contactosNotificacion];
-                            nuevos[index].joursDisponibles = jours;
-                            setFormulario({ ...formulario, contactosNotificacion: nuevos });
-                          }}
-                          showIcon={true}
-                        />
+                        <div className="grid gap-3 lg:grid-cols-3">
+                          <Input value={contacto.nombre || ''} onChange={(event) => updateNotificationContact(index, { nombre: event.target.value })} placeholder={t('organisms.contactName')} className="h-10 rounded-2xl border-[#dbe6f0]" />
+                          <Input type="email" value={contacto.email || ''} onChange={(event) => updateNotificationContact(index, { email: event.target.value })} placeholder={t('organisms.contactEmail')} className="h-10 rounded-2xl border-[#dbe6f0]" />
+                          <Input value={contacto.cargo || ''} onChange={(event) => updateNotificationContact(index, { cargo: event.target.value })} placeholder={t('organisms.contactPosition')} className="h-10 rounded-2xl border-[#dbe6f0]" />
+                        </div>
+                        <div className="rounded-2xl bg-[#f8fbff] p-3">
+                          <SelecteurJoursDisponibles joursDisponibles={contacto.joursDisponibles || []} onChange={(jours) => updateNotificationContact(index, { joursDisponibles: jours })} showIcon />
+                        </div>
                       </div>
                     ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setFormulario({
-                          ...formulario,
-                          contactosNotificacion: [
-                            ...formulario.contactosNotificacion,
-                            { nombre: '', email: '', cargo: '', joursDisponibles: [] }
-                          ]
-                        });
-                      }}
-                      className="w-full"
-                    >
+
+                    <Button type="button" variant="outline" className="w-full rounded-2xl border-dashed" onClick={addNotificationContact}>
                       + {t('organisms.addContact')}
                     </Button>
                   </div>
                 </TabsContent>
 
-                {/* Tab: Autres */}
-                <TabsContent value="autres" className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin m-0">
-                  <div className="max-w-4xl space-y-4">
-                    <div>
-                      <Label htmlFor="notas" className="text-xs">
-                        <FileText className="w-3 h-3 inline mr-1" />
-                        {t('organisms.notes')}
-                      </Label>
-                      <Textarea
-                        id="notas"
-                        value={formulario.notas}
-                        onChange={(e) => setFormulario({ ...formulario, notas: e.target.value })}
-                        placeholder={t('organisms.notesPlaceholder')}
-                        rows={6}
-                      />
+                <TabsContent value="notes" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                  <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                    <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                      <Label htmlFor="organismo-notes" className="text-xs"><FileText className="mr-1 inline h-3 w-3" />{t('organisms.notes')}</Label>
+                      <Textarea id="organismo-notes" value={formulario.notas || ''} onChange={(event) => actualizarFormulario({ notas: event.target.value })} placeholder={t('organisms.notesPlaceholder')} rows={6} className="mt-2 rounded-2xl border-[#dbe6f0]" />
                     </div>
-                    <div>
-                      <Label htmlFor="documentoPDF" className="text-xs">
-                        <FileUp className="w-3 h-3 inline mr-1" />
-                        {t('organisms.document')}
-                      </Label>
-                      <Input
-                        ref={fileInputDocRef}
-                        id="documentoPDF"
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setFormulario({ ...formulario, documentoPDF: file.name });
-                          }
-                        }}
-                        className="h-9"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="fechaInicioInactividad" className="text-xs">
-                          {t('organisms.inactivityStartDate')}
-                        </Label>
-                        <Input
-                          id="fechaInicioInactividad"
-                          type="date"
-                          value={formulario.fechaInicioInactividad}
-                          onChange={(e) => setFormulario({ ...formulario, fechaInicioInactividad: e.target.value })}
-                          className="h-9"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="fechaFinInactividad" className="text-xs">
-                          {t('organisms.inactivityEndDate')}
-                        </Label>
-                        <Input
-                          id="fechaFinInactividad"
-                          type="date"
-                          value={formulario.fechaFinInactividad}
-                          onChange={(e) => setFormulario({ ...formulario, fechaFinInactividad: e.target.value })}
-                          className="h-9"
-                        />
+                    <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                      <Label className="text-xs"><FileUp className="mr-1 inline h-3 w-3" />{t('organisms.document')}</Label>
+                      <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+                        <Input value={formulario.documentoPDF || ''} readOnly placeholder="Aucun document selectionne" className="h-10 rounded-2xl border-[#dbe6f0]" />
+                        <Button type="button" variant="outline" className="rounded-2xl" onClick={() => pdfInputRef.current?.click()}>
+                          Choisir un PDF
+                        </Button>
+                        <input ref={pdfInputRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfChange} />
                       </div>
                     </div>
                   </div>
                 </TabsContent>
               </Tabs>
 
-              {/* Footer con botones de acción */}
-              <div className="sticky bottom-0 bg-white border-t-2 border-[#E0E0E0] px-6 py-3 shadow-sm flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={onCerrar}
-                  style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  onClick={onGuardar}
-                  className="text-white"
-                  style={{ 
-                    backgroundColor: branding.primaryColor,
-                    fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: 600
-                  }}
-                >
-                  {modoEdicion ? t('common.save') : t('common.create')}
-                </Button>
+              <div className="border-t border-[#dbe6f0] bg-white/90 px-4 py-4 backdrop-blur-md sm:px-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-[#5d7185]">{esConsulta ? 'Consultation en lecture seule de la fiche organisme.' : 'Fiche compacte preservee sur la logique existante de creation des organismes.'}</p>
+                  <div className="flex justify-end gap-3">
+                    <Button variant="outline" className="rounded-2xl" onClick={onCerrar}>{esConsulta ? 'Fermer' : t('common.cancel')}</Button>
+                    {!esConsulta ? (
+                      <Button className="rounded-2xl text-white" style={{ backgroundColor: branding.primaryColor }} onClick={onGuardar}>
+                        {modoEdicion ? t('common.save') : t('common.create')}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

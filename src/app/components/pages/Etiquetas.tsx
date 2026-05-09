@@ -45,6 +45,7 @@ import {
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 import { openAutoPrintPopup } from '../../utils/printPopup';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 type LabelSize = 'pequena' | 'mediana' | 'grande';
 type CodeFormat = 'EAN13' | 'CODE128' | 'CODE39';
@@ -1072,20 +1073,24 @@ export function Etiquetas() {
         </div>
 
         <Tabs value={activeLabelTab} onValueChange={(value) => setActiveLabelTab(value as LabelTab)} className="space-y-3 sm:space-y-4">
-          <TabsList className="grid w-full grid-cols-3 gap-1 bg-white shadow-md">
-            <TabsTrigger value="ubicaciones" className="min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
-              <MapPin className="mr-2 h-4 w-4" />
-              {t('labels.locations')}
-            </TabsTrigger>
-            <TabsTrigger value="productos" className="min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
-              <Package className="mr-2 h-4 w-4" />
-              {t('labels.products')}
-            </TabsTrigger>
-            <TabsTrigger value="cola" className="min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
-              <Printer className="mr-2 h-4 w-4" />
-              {t('labels.createdLabels')}
-            </TabsTrigger>
-          </TabsList>
+          <ModuleControlSurface>
+            <ModuleControlSurfaceTabs>
+              <TabsList className="app-compact-tabs-grid w-full gap-1 bg-transparent p-0" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                <TabsTrigger value="ubicaciones" className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {t('labels.locations')}
+                </TabsTrigger>
+                <TabsTrigger value="productos" className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
+                  <Package className="mr-2 h-4 w-4" />
+                  {t('labels.products')}
+                </TabsTrigger>
+                <TabsTrigger value="cola" className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px] sm:text-xs">
+                  <Printer className="mr-2 h-4 w-4" />
+                  {t('labels.createdLabels')}
+                </TabsTrigger>
+              </TabsList>
+            </ModuleControlSurfaceTabs>
+          </ModuleControlSurface>
 
           <TabsContent value="ubicaciones" className="space-y-3 sm:space-y-4">
             {showCompactLocationOverview ? (

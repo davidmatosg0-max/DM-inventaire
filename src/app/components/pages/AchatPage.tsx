@@ -33,6 +33,8 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { obtenerContactosDepartamento, type ContactoDepartamento } from '../../utils/contactosDepartamentoStorage';
 import {
   actualizarBonAchat,
@@ -643,69 +645,56 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
 
   return (
     <div className="space-y-6">
-      <div
-        className="rounded-3xl border p-6 shadow-sm"
-        style={{
-          borderColor: `${branding.primaryColor}22`,
-          background: `linear-gradient(135deg, ${branding.primaryColor}12 0%, white 52%, ${branding.secondaryColor}10 100%)`
-        }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700">
-              <ShoppingCart className="h-4 w-4" />
-              Achats et approvisionnements
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Module Achat professionnel
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Gérez les bons d'achat, pilotez les autorisations internes et exploitez directement la base fournisseurs pour générer des demandes d'achat conformes.
-              </p>
-            </div>
-          </div>
+      <ModulePageHeader
+        title="Module Achat professionnel"
+        subtitle="Gérez les bons d'achat, pilotez les autorisations internes et exploitez directement la base fournisseurs pour générer des demandes d'achat conformes."
+        icon={<ShoppingCart className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+        accentColor={branding.primaryColor}
+        secondaryColor={branding.secondaryColor}
+      />
 
-          <div className="grid grid-cols-2 gap-3 lg:min-w-[320px]">
-            <Card className="border-slate-200 bg-white/90">
-              <CardContent className="p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Fournisseurs actifs</p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">{fournisseurs.length}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-slate-200 bg-white/90">
-              <CardContent className="p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Autorisations en attente</p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">{resumen.enAttente}</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+      <ModuleStatsGrid defaultLayout="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-[32rem]">
+        <ModuleStatCard
+          label="Fournisseurs actifs"
+          value={fournisseurs.length}
+          icon={<Building2 className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+          accentColor={branding.primaryColor}
+        />
+        <ModuleStatCard
+          label="Autorisations en attente"
+          value={resumen.enAttente}
+          icon={<ShieldCheck className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+          accentColor={branding.secondaryColor}
+        />
+      </ModuleStatsGrid>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 rounded-2xl border border-slate-200 bg-white p-2">
-          <TabsTrigger value="overview" className="gap-2 rounded-xl px-4 py-2">
-            <Receipt className="h-4 w-4" />
-            Tableau de bord
-          </TabsTrigger>
-          <TabsTrigger value="bons" className="gap-2 rounded-xl px-4 py-2">
-            <FileSignature className="h-4 w-4" />
-            Bons d'achat
-          </TabsTrigger>
-          <TabsTrigger value="fournisseurs" className="gap-2 rounded-xl px-4 py-2">
-            <Building2 className="h-4 w-4" />
-            Base fournisseurs
-          </TabsTrigger>
-          <TabsTrigger value="programmes" className="gap-2 rounded-xl px-4 py-2">
-            <ClipboardCheck className="h-4 w-4" />
-            Programmes d'achat
-          </TabsTrigger>
-          <TabsTrigger value="autorisations" className="gap-2 rounded-xl px-4 py-2">
-            <ShieldCheck className="h-4 w-4" />
-            Autorisations
-          </TabsTrigger>
-        </TabsList>
+        <ModuleControlSurface>
+          <ModuleControlSurfaceTabs>
+            <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+              <TabsTrigger value="overview" className="gap-2 rounded-xl px-4 py-2">
+                <Receipt className="h-4 w-4" />
+                Tableau de bord
+              </TabsTrigger>
+              <TabsTrigger value="bons" className="gap-2 rounded-xl px-4 py-2">
+                <FileSignature className="h-4 w-4" />
+                Bons d'achat
+              </TabsTrigger>
+              <TabsTrigger value="fournisseurs" className="gap-2 rounded-xl px-4 py-2">
+                <Building2 className="h-4 w-4" />
+                Base fournisseurs
+              </TabsTrigger>
+              <TabsTrigger value="programmes" className="gap-2 rounded-xl px-4 py-2">
+                <ClipboardCheck className="h-4 w-4" />
+                Programmes d'achat
+              </TabsTrigger>
+              <TabsTrigger value="autorisations" className="gap-2 rounded-xl px-4 py-2">
+                <ShieldCheck className="h-4 w-4" />
+                Autorisations
+              </TabsTrigger>
+            </TabsList>
+          </ModuleControlSurfaceTabs>
+        </ModuleControlSurface>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

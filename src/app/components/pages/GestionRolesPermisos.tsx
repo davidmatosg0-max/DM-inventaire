@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { obtenerUsuarios } from '../../utils/usuarios';
 import { GestionPasswordDialog } from '../GestionPasswordDialog';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 // Tipos de permisos granulares
 type Permiso = {
@@ -422,20 +423,24 @@ export function GestionRolesPermisos() {
 
       {/* Tabs principales */}
       <Tabs value={tabActual} onValueChange={(v: any) => setTabActual(v)} className="space-y-4">
-        <TabsList className="bg-white border">
-          <TabsTrigger value="roles" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <Shield className="w-4 h-4 mr-2" />
-            Roles
-          </TabsTrigger>
-          <TabsTrigger value="usuarios" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <Users className="w-4 h-4 mr-2" />
-            Utilisateurs
-          </TabsTrigger>
-          <TabsTrigger value="permisos" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <Lock className="w-4 h-4 mr-2" />
-            Permissions
-          </TabsTrigger>
-        </TabsList>
+        <ModuleControlSurface>
+          <ModuleControlSurfaceTabs>
+            <TabsList className="app-compact-tabs-grid w-full max-w-2xl gap-1 bg-transparent p-0" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <TabsTrigger value="roles" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Shield className="w-4 h-4 mr-2" />
+                Roles
+              </TabsTrigger>
+              <TabsTrigger value="usuarios" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Users className="w-4 h-4 mr-2" />
+                Utilisateurs
+              </TabsTrigger>
+              <TabsTrigger value="permisos" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Lock className="w-4 h-4 mr-2" />
+                Permissions
+              </TabsTrigger>
+            </TabsList>
+          </ModuleControlSurfaceTabs>
+        </ModuleControlSurface>
 
         {/* Tab: Roles */}
         <TabsContent value="roles" className="space-y-4">

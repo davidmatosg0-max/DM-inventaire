@@ -85,6 +85,8 @@ import {
   clearPendingEntrepotQuickAction,
   readPendingEntrepotQuickAction,
 } from '../../utils/pendingEntrepotQuickAction';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
+import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 type CarritoItem = {
   productoId: string;
@@ -2161,129 +2163,63 @@ export function Inventario() {
       className="app-compact-page relative min-h-[calc(100vh-56px)] sm:min-h-[calc(100vh-64px)] flex flex-col overflow-visible -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6"
       style={inventoryViewportZoom < 1 ? { zoom: inventoryViewportZoom } : undefined}
     >
-      {/* Fondo degradado fijo con glassmorphism */}
-      <div 
-        className="fixed inset-0 -z-10"
-        style={{
-          background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 50%, ${branding.primaryColor}08 100%)`
-        }}
-      />
-      
-      {/* Formas decorativas animadas */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
-          style={{ background: `radial-gradient(circle, ${branding.secondaryColor} 0%, transparent 70%)` }}
-        />
-        <div 
-          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
-          style={{ 
-            background: `radial-gradient(circle, ${branding.primaryColor} 0%, transparent 70%)`,
-            animationDelay: '1s'
-          }}
-        />
-      </div>
-
-      <Card className="border-none shadow-none flex flex-col overflow-visible rounded-none w-full relative z-10">
-        <CardHeader className="border-b backdrop-blur-xl bg-white/90 flex-shrink-0 py-2.5 sm:py-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
+      <Card className="border-none bg-transparent shadow-none flex flex-col overflow-visible rounded-none w-full relative z-10">
+        <div className="px-3 pt-3 sm:px-4 sm:pt-4 lg:px-6">
+          <ModulePageHeader
+            title={t('inventory.title')}
+            subtitle={t('inventory.subtitle')}
+            icon={<Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+            accentColor={branding.primaryColor}
+            secondaryColor={branding.secondaryColor}
+            actions={(
+              <Button
+                variant="outline"
+                onClick={() => navigateToModule('reportes')}
+                className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 shrink-0 w-full sm:w-auto"
+                title="Ouvrir le module Rapports"
               >
-                <Package className="h-5 w-5 text-white" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <CardTitle className="text-base sm:text-lg break-words" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: branding.primaryColor }}>
-                    {t('inventory.title')}
-                  </CardTitle>
-                  <Sparkles className="w-4 h-4 animate-pulse" style={{ color: branding.secondaryColor }} />
-                </div>
-                <CardDescription className="text-[#666666] text-xs mt-0.5">
-                  {t('inventory.subtitle')}
-                </CardDescription>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => navigateToModule('reportes')}
-              className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 shrink-0 w-full sm:w-auto"
-              title="Ouvrir le module Rapports"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Module Rapports</span>
-              <span className="sm:hidden">Rapports</span>
-            </Button>
-          </div>
-        </CardHeader>
+                <FileText className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Module Rapports</span>
+                <span className="sm:hidden">Rapports</span>
+              </Button>
+            )}
+          />
+        </div>
 
-        <CardContent className="pt-2.5 sm:pt-3 flex flex-col overflow-visible space-y-2.5">
-          {/* Stats Cards */}
-          <div className={`${isCompactInventoryViewport ? 'grid grid-cols-4 gap-1.5' : 'grid grid-cols-2 gap-2 md:grid-cols-4'} flex-shrink-0`}>
-            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.totalProducts')}</p>
-                  <p className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>{todosLosProductos.length}</p>
-                </div>
-                <div 
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
-                  style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
-                >
-                  <Package className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Sous-catégories</p>
-                  <p className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>{subcategoriasInventario.length}</p>
-                </div>
-                <div 
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
-                  style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
-                >
-                  <Grid3x3 className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4 border-l-[#e8a419]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.totalStock')}</p>
-                  <p className="text-lg font-bold text-[#e8a419]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    {todosLosProductos.reduce((sum, p) => sum + p.stockActual, 0)}
-                  </p>
-                </div>
-                <div 
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #e8a419 0%, #d19316 100%)' }}
-                >
-                  <FileText className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card-glass rounded-xl p-3 hover-lift cursor-pointer border-l-4 border-l-[#c23934]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('inventory.inCart')}</p>
-                  <p className="text-lg font-bold text-[#c23934]" style={{ fontFamily: 'Montserrat, sans-serif' }}>{calcularTotalItems()}</p>
-                </div>
-                <div 
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #c23934 0%, #a82f2a 100%)' }}
-                >
-                  <ShoppingCart className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
+        <CardContent className="pt-3 sm:pt-4 flex flex-col overflow-visible space-y-3">
+          <ModuleStatsGrid
+            compact={isCompactInventoryViewport}
+            compactLayout="grid grid-cols-4 gap-1.5"
+            defaultLayout="grid grid-cols-2 gap-2 md:grid-cols-4"
+            className="flex-shrink-0"
+          >
+            <ModuleStatCard
+              label={t('inventory.totalProducts')}
+              value={todosLosProductos.length}
+              icon={<Package className="h-4 w-4 text-white" />}
+              accentColor={branding.primaryColor}
+            />
+            <ModuleStatCard
+              label="Sous-catégories"
+              value={subcategoriasInventario.length}
+              icon={<Grid3x3 className="h-4 w-4 text-white" />}
+              accentColor={branding.secondaryColor}
+            />
+            <ModuleStatCard
+              label={t('inventory.totalStock')}
+              value={todosLosProductos.reduce((sum, p) => sum + p.stockActual, 0)}
+              icon={<FileText className="h-4 w-4 text-white" />}
+              accentColor="#e8a419"
+              valueColor="#e8a419"
+            />
+            <ModuleStatCard
+              label={t('inventory.inCart')}
+              value={calcularTotalItems()}
+              icon={<ShoppingCart className="h-4 w-4 text-white" />}
+              accentColor="#c23934"
+              valueColor="#c23934"
+            />
+          </ModuleStatsGrid>
 
       {ultimaDistribucionGrupoCreada && (
         <Card className="mx-3 mb-3 border-2 border-[#4CAF50] bg-[#E8F5E9] shadow-sm sm:mx-4 lg:mx-6">
@@ -2338,209 +2274,217 @@ export function Inventario() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col overflow-visible">
-        <TabsList
-          className="app-compact-tabs-grid flex-shrink-0 gap-1"
-          style={isCompactInventoryViewport ? { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' } : undefined}
-        >
-          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="productos">{t('inventory.products')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="movimientos">{t('inventory.movements')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
-          <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
-        </TabsList>
+        <ModuleControlSurface>
+          <ModuleControlSurfaceTabs>
+            <TabsList
+              className="app-compact-tabs-grid flex-shrink-0 gap-1 bg-transparent p-0"
+              style={isCompactInventoryViewport ? { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' } : undefined}
+            >
+              <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="productos">{t('inventory.products')}</TabsTrigger>
+              <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="movimientos">{t('inventory.movements')}</TabsTrigger>
+              <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="conversions">🔄 {t('inventory.conversionsTab')}</TabsTrigger>
+              <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="entradas">{t('inventory.entryHistory')}</TabsTrigger>
+              <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="validacion">✅ {t('inventory.validationTab')}</TabsTrigger>
+              <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="prediccion">🔮 {t('inventory.predictionTab')}</TabsTrigger>
+            </TabsList>
+          </ModuleControlSurfaceTabs>
+        </ModuleControlSurface>
 
         {/* Productos Tab */}
         <TabsContent value="productos" className={`flex flex-col overflow-visible ${showCompactProductsOverview ? 'space-y-2 mt-2' : 'space-y-3 mt-3'}`}>
-          {/* Toolbar */}
-          <div className={`flex flex-col ${showCompactProductsOverview ? 'gap-1.5' : 'gap-2'} lg:flex-row lg:items-center lg:justify-between flex-shrink-0`}>
-            <div className="flex-1 flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
-                <Input
-                  placeholder={t('inventory.searchPlaceholder', { defaultValue: t('inventory.searchByNameOrCode') })}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-9 text-xs"
-                />
-              </div>
-
-              <div className="relative flex-1 max-w-xs">
-                <Package className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
-                <Input
-                  placeholder={t('inventory.searchByLotNumber')}
-                  value={searchLote}
-                  onChange={(e) => setSearchLote(e.target.value)}
-                  className="pl-10 h-9 text-xs"
-                />
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="gap-2 h-9 text-xs"
-              >
-                <Filter className="h-4 w-4" />
-                {t('common.filter')}
-              </Button>
-
-              <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
-                <SelectTrigger className="w-[160px] h-9 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nombre">{t('inventory.productName')}</SelectItem>
-                  <SelectItem value="stock">{t('inventory.stock')}</SelectItem>
-                  <SelectItem value="categoria">Sous-catégorie</SelectItem>
-                  <SelectItem value="valor">{t('inventory.monetaryValue')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex gap-2">
-              {!isCompactInventoryViewport && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setVistaMode(vistaMode === 'grid' ? 'list' : 'grid')}
-                  title={vistaMode === 'grid' ? t('inventory.viewList') : t('inventory.viewGrid')}
-                  className="h-9 w-9"
-                >
-                  {vistaMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
-                </Button>
-              )}
-
-              <Button
-                size="icon"
-                onClick={() => setCompartirDialogOpen(true)}
-                className="bg-[#2d9561] hover:bg-[#267a4f] h-9 w-9"
-                title={t('inventory.shareProductList')}
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-
-              <Button
-                size="icon"
-                onClick={() => setExportacionOpen(true)}
-                variant="outline"
-                className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 h-9 w-9"
-                title={t('common.export')}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-
-              <Button
-                size="icon"
-                onClick={() => openInventoryScanner()}
-                variant="outline"
-                className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50 h-9 w-9"
-                title={t('inventory.scanQrTitle')}
-              >
-                <QrCode className="h-4 w-4" />
-              </Button>
-
-              <Button
-                size="icon"
-                onClick={() => openInventoryScanner('agregar_carrito_rapido')}
-                variant="outline"
-                className="border-[#2d9561] text-[#2d9561] hover:bg-green-50 h-9 w-9"
-                title="Scanner QR et saisir la quantité pour le panier"
-              >
-                <ShoppingCart className="h-4 w-4" />
-              </Button>
-
-              <Button
-                size="icon"
-                onClick={() => setCarritoOpen(true)}
-                variant="outline"
-                className="relative h-9 w-9"
-                title={t('inventory.cart')}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {carrito.length > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-[#c23934]">
-                    {carrito.length}
-                  </Badge>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Filters */}
-          {showFilters && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="mb-2">Sous-catégorie</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {subcategoriasInventario.map(subcategoria => (
-                        <Button
-                          key={subcategoria.label}
-                          variant={selectedCategories.includes(subcategoria.label) ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => toggleCategoria(subcategoria.label)}
-                          className={selectedCategories.includes(subcategoria.label) ? 'bg-[#1a4d7a]' : ''}
-                        >
-                          <span className="emoji-icon">{subcategoria.icon}</span> {subcategoria.label}
-                        </Button>
-                      ))}
-                    </div>
+          <ModuleControlSurface>
+            <ModuleControlSurfaceBody className={showCompactProductsOverview ? 'space-y-2 pt-3 sm:pt-4' : 'space-y-3 pt-3 sm:pt-4'}>
+              {/* Toolbar */}
+              <div className={`flex flex-col ${showCompactProductsOverview ? 'gap-1.5' : 'gap-2'} lg:flex-row lg:items-center lg:justify-between flex-shrink-0`}>
+                <div className="flex-1 flex flex-col gap-2 sm:flex-row">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
+                    <Input
+                      placeholder={t('inventory.searchPlaceholder', { defaultValue: t('inventory.searchByNameOrCode') })}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9 text-xs"
+                    />
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={limpiarFiltros}>
-                      {t('common.clear')} {t('common.filter')}
-                    </Button>
+                  <div className="relative flex-1 max-w-xs">
+                    <Package className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
+                    <Input
+                      placeholder={t('inventory.searchByLotNumber')}
+                      value={searchLote}
+                      onChange={(e) => setSearchLote(e.target.value)}
+                      className="pl-10 h-9 text-xs"
+                    />
                   </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="gap-2 h-9 text-xs"
+                  >
+                    <Filter className="h-4 w-4" />
+                    {t('common.filter')}
+                  </Button>
+
+                  <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
+                    <SelectTrigger className="w-[160px] h-9 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nombre">{t('inventory.productName')}</SelectItem>
+                      <SelectItem value="stock">{t('inventory.stock')}</SelectItem>
+                      <SelectItem value="categoria">Sous-catégorie</SelectItem>
+                      <SelectItem value="valor">{t('inventory.monetaryValue')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Indicador de Filtros Activos */}
-          {(searchLote || searchUbicacion || selectedCategories.length > 0) && (
-            <div className="flex flex-wrap gap-2 items-center flex-shrink-0">
-              <span className="text-sm text-[#666666]">{t('inventory.activeFilters')}</span>
-              {searchUbicacion && (
-                <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
-                  📍 Emplacement: {searchUbicacion}
-                  <button
-                    onClick={() => setSearchUbicacion('')}
-                    className="ml-2 hover:text-[#c23934]"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {searchLote && (
-                <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
-                  📦 Lot: {searchLote}
-                  <button
-                    onClick={() => setSearchLote('')}
-                    className="ml-2 hover:text-[#c23934]"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {selectedCategories.map(cat => {
-                const subcategoria = subcategoriasInventario.find(item => item.label === cat);
-
-                return (
-                  <Badge key={cat} variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
-                    {subcategoria?.icon || '📦'} {cat}
-                    <button
-                      onClick={() => toggleCategoria(cat)}
-                      className="ml-2 hover:text-[#c23934]"
+                <div className="flex gap-2">
+                  {!isCompactInventoryViewport && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setVistaMode(vistaMode === 'grid' ? 'list' : 'grid')}
+                      title={vistaMode === 'grid' ? t('inventory.viewList') : t('inventory.viewGrid')}
+                      className="h-9 w-9"
                     >
-                      ×
-                    </button>
-                  </Badge>
-                );
-              })}
-            </div>
-          )}
+                      {vistaMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
+                    </Button>
+                  )}
+
+                  <Button
+                    size="icon"
+                    onClick={() => setCompartirDialogOpen(true)}
+                    className="bg-[#2d9561] hover:bg-[#267a4f] h-9 w-9"
+                    title={t('inventory.shareProductList')}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    onClick={() => setExportacionOpen(true)}
+                    variant="outline"
+                    className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 h-9 w-9"
+                    title={t('common.export')}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    onClick={() => openInventoryScanner()}
+                    variant="outline"
+                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50 h-9 w-9"
+                    title={t('inventory.scanQrTitle')}
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    onClick={() => openInventoryScanner('agregar_carrito_rapido')}
+                    variant="outline"
+                    className="border-[#2d9561] text-[#2d9561] hover:bg-green-50 h-9 w-9"
+                    title="Scanner QR et saisir la quantité pour le panier"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    onClick={() => setCarritoOpen(true)}
+                    variant="outline"
+                    className="relative h-9 w-9"
+                    title={t('inventory.cart')}
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    {carrito.length > 0 && (
+                      <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-[#c23934]">
+                        {carrito.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Filters */}
+              {showFilters && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="mb-2">Sous-catégorie</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {subcategoriasInventario.map(subcategoria => (
+                            <Button
+                              key={subcategoria.label}
+                              variant={selectedCategories.includes(subcategoria.label) ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => toggleCategoria(subcategoria.label)}
+                              className={selectedCategories.includes(subcategoria.label) ? 'bg-[#1a4d7a]' : ''}
+                            >
+                              <span className="emoji-icon">{subcategoria.icon}</span> {subcategoria.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={limpiarFiltros}>
+                          {t('common.clear')} {t('common.filter')}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Indicador de Filtros Activos */}
+              {(searchLote || searchUbicacion || selectedCategories.length > 0) && (
+                <div className="flex flex-wrap gap-2 items-center flex-shrink-0">
+                  <span className="text-sm text-[#666666]">{t('inventory.activeFilters')}</span>
+                  {searchUbicacion && (
+                    <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
+                      📍 Emplacement: {searchUbicacion}
+                      <button
+                        onClick={() => setSearchUbicacion('')}
+                        className="ml-2 hover:text-[#c23934]"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  )}
+                  {searchLote && (
+                    <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
+                      📦 Lot: {searchLote}
+                      <button
+                        onClick={() => setSearchLote('')}
+                        className="ml-2 hover:text-[#c23934]"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  )}
+                  {selectedCategories.map(cat => {
+                    const subcategoria = subcategoriasInventario.find(item => item.label === cat);
+
+                    return (
+                      <Badge key={cat} variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
+                        {subcategoria?.icon || '📦'} {cat}
+                        <button
+                          onClick={() => toggleCategoria(cat)}
+                          className="ml-2 hover:text-[#c23934]"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+            </ModuleControlSurfaceBody>
+          </ModuleControlSurface>
 
           {/* Products List */}
           {showCompactProductsOverview ? (

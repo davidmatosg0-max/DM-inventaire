@@ -39,9 +39,7 @@ import {
   MessageSquare,
   ChefHat,
   Sparkles,
-  Activity,
   BookOpen,
-  Brain,
   Zap
 } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
@@ -382,16 +380,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   }, [currentPage]);
 
   const menuItems: MenuItem[] = [
-    { 
-      id: 'dashboard', 
-      label: t('nav.mainDashboard'), 
-      icon: <LayoutDashboard className="w-5 h-5" />,
-      children: [
-        { id: 'dashboard', label: 'Vue exécutive', icon: <LayoutDashboard className="w-4 h-4" /> },
-        { id: 'dashboard-metricas', label: 'Suivi en temps réel', icon: <Activity className="w-4 h-4" /> },
-        { id: 'dashboard-predictivo', label: 'Prévisions & IA', icon: <Brain className="w-4 h-4" /> },
-      ]
-    },
+    { id: 'dashboard', label: t('nav.mainDashboard'), icon: <LayoutDashboard className="w-5 h-5" /> },
     { 
       id: 'entrepot', 
       label: t('nav.warehouse'), 
@@ -682,7 +671,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Sidebar con glassmorphism */}
       {!hideSidebar && (
         <aside
-          className={`fixed top-[56px] sm:top-[64px] left-0 bottom-0 w-64 sm:w-72 shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
+          className={`fixed top-[56px] sm:top-[72px] left-0 bottom-0 w-64 sm:w-72 shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
           style={{ 
@@ -723,8 +712,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Main content */}
-      <main className={`pt-[56px] sm:pt-[64px] ${!hideSidebar ? 'lg:pl-64 xl:pl-72' : ''} min-h-screen relative z-10`}>
-        <div data-app-shell className="px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5">
+      <main className={`app-main-stage pt-[56px] sm:pt-[72px] ${!hideSidebar ? 'lg:pl-64 xl:pl-72' : ''} min-h-screen relative z-10`}>
+        <div data-app-shell className="app-shell-content px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5">
           {children}
         </div>
       </main>

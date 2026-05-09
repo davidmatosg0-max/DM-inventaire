@@ -58,6 +58,7 @@ import { exportarComandasExcel, exportarDatosPersonalizados, exportarInventarioE
 import { obtenerEtiquetaModalidadDistribucion, resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import { obtenerReportePRSRemoto } from '../../utils/remoteReports';
 import type { Comanda } from '../../types';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 type TipoReporte = 'general' | 'inventario' | 'comandas' | 'prs' | 'organismos' | 'transporte';
 type PeriodoComparacion = 'dia' | 'semana' | 'mes' | 'anio';
@@ -1028,32 +1029,36 @@ export function ReportesAvanzado() {
       </div>
 
       <Tabs value={tipoReporte} onValueChange={(value) => setTipoReporte(value as TipoReporte)} className="space-y-4">
-        <TabsList className="app-compact-tabs-grid bg-white border h-auto">
-          <TabsTrigger value="general" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Général
-          </TabsTrigger>
-          <TabsTrigger value="inventario" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <Package className="w-4 h-4 mr-2" />
-            Inventaire
-          </TabsTrigger>
-          <TabsTrigger value="comandas" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <FileText className="w-4 h-4 mr-2" />
-            Commandes
-          </TabsTrigger>
-          <TabsTrigger value="prs" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <TrendingUp className="w-4 h-4 mr-2" />
-            PRS
-          </TabsTrigger>
-          <TabsTrigger value="organismos" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <Users className="w-4 h-4 mr-2" />
-            Organismes
-          </TabsTrigger>
-          <TabsTrigger value="transporte" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <Truck className="w-4 h-4 mr-2" />
-            Transport
-          </TabsTrigger>
-        </TabsList>
+        <ModuleControlSurface>
+          <ModuleControlSurfaceTabs>
+            <TabsList className="app-compact-tabs-grid w-full gap-1 bg-transparent p-0">
+              <TabsTrigger value="general" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Général
+              </TabsTrigger>
+              <TabsTrigger value="inventario" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Package className="w-4 h-4 mr-2" />
+                Inventaire
+              </TabsTrigger>
+              <TabsTrigger value="comandas" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <FileText className="w-4 h-4 mr-2" />
+                Commandes
+              </TabsTrigger>
+              <TabsTrigger value="prs" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <TrendingUp className="w-4 h-4 mr-2" />
+                PRS
+              </TabsTrigger>
+              <TabsTrigger value="organismos" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Users className="w-4 h-4 mr-2" />
+                Organismes
+              </TabsTrigger>
+              <TabsTrigger value="transporte" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Truck className="w-4 h-4 mr-2" />
+                Transport
+              </TabsTrigger>
+            </TabsList>
+          </ModuleControlSurfaceTabs>
+        </ModuleControlSurface>
 
         <TabsContent value="general" className="space-y-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

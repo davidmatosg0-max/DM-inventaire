@@ -24,6 +24,7 @@ import { TypesAide } from '../comptoir/TypesAide';
 import { Rapports } from '../comptoir/Rapports';
 import { GestionContactosDepartamento } from '../departamentos/GestionContactosDepartamento';
 import { BoutonRetourHeader } from '../shared/BoutonRetour';
+import { ModulePageHeader } from '../shared/ModulePageHeader';
 import {
   comptoirStorageEvents,
   comptoirStorageKeys,
@@ -253,6 +254,29 @@ export function IDDigital() {
     }
   };
 
+  const getCurrentHeaderIcon = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return <LayoutDashboard className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+      case 'beneficiaires':
+      case 'contactos':
+      case 'fiche-beneficiaire':
+        return <Users className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+      case 'rendez-vous':
+        return <Calendar className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+      case 'aide-alimentaire':
+        return <Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+      case 'demandes-aide':
+        return <ClipboardList className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+      case 'types-aide':
+        return <Settings className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+      case 'rapports':
+        return <FileText className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+      default:
+        return <LayoutDashboard className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
+    }
+  };
+
   return (
     <div className="flex h-full">
       {/* Sidebar Desktop */}
@@ -376,58 +400,38 @@ export function IDDigital() {
       {/* Main Content */}
       <main className="flex-1 min-h-screen bg-[#F4F4F4]">
         {/* Header */}
-        <div className="bg-white border-b sticky top-0 z-30">
+        <div className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur-xl">
           <div className="p-4 lg:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="lg:hidden"
-                  onClick={() => setSidebarOpen(true)}
-                >
-                  <Menu className="w-5 h-5" />
-                </Button>
-                
-                {currentView !== 'dashboard' && (
+            <ModulePageHeader
+              title={getCurrentTitle()}
+              subtitle={currentView === 'dashboard' ? t('comptoir.welcomeMessage') : t('comptoir.managementSystem')}
+              icon={getCurrentHeaderIcon()}
+              accentColor={branding.primaryColor}
+              secondaryColor={branding.secondaryColor}
+              className="border-none bg-transparent px-0 py-0 shadow-none"
+              actions={(
+                <>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleNavigate('dashboard')}
-                    className="hidden sm:flex"
+                    className="lg:hidden"
+                    onClick={() => setSidebarOpen(true)}
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    {t('common.back')}
+                    <Menu className="w-5 h-5" />
                   </Button>
-                )}
-
-                <div>
-                  <h1 
-                    className="text-xl sm:text-2xl font-bold text-[#333333]"
-                    style={{ fontFamily: 'Montserrat, sans-serif' }}
-                  >
-                    {getCurrentTitle()}
-                  </h1>
-                  {currentView === 'dashboard' && (
-                    <p className="text-sm text-[#666666] mt-1 hidden sm:block">
-                      {t('comptoir.welcomeMessage')}
-                    </p>
+                  {currentView !== 'dashboard' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleNavigate('dashboard')}
+                    >
+                      <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">{t('common.back')}</span>
+                    </Button>
                   )}
-                </div>
-              </div>
-
-              {/* Breadcrumb mobile */}
-              {currentView !== 'dashboard' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleNavigate('dashboard')}
-                  className="sm:hidden"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </Button>
+                </>
               )}
-            </div>
+            />
           </div>
         </div>
 

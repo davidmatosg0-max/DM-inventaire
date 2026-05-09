@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Truck, MapPin, Clock, CheckCircle, Sparkles } from 'lucide-react';
+import { Truck, MapPin, Clock, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GestionVehiculos } from '../transporte/GestionVehiculos';
@@ -10,6 +10,8 @@ import { GestionChoferes } from '../transporte/GestionChoferes';
 import { useBranding } from '../../../hooks/useBranding';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { obtenerEstadisticasTransporte, TRANSPORTE_MODULE_EVENT } from '../../utils/transporteLogic';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
+import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 export function Transporte() {
   const { t } = useTranslation();
@@ -93,142 +95,68 @@ export function Transporte() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-56px)] relative" style={transportViewportZoom < 1 ? { zoom: transportViewportZoom } : undefined}>
-      {/* Fondo degradado fijo con glassmorphism */}
-      <div 
-        className="fixed inset-0 -z-10"
-        style={{
-          background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 50%, ${branding.primaryColor}08 100%)`
-        }}
+    <div className="min-h-[calc(100vh-56px)] space-y-3 sm:space-y-4" style={transportViewportZoom < 1 ? { zoom: transportViewportZoom } : undefined}>
+      <ModulePageHeader
+        title={t('transport.title')}
+        subtitle={t('transport.subtitle')}
+        icon={<Truck className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+        accentColor={branding.primaryColor}
+        secondaryColor={branding.secondaryColor}
       />
-      
-      {/* Formas decorativas animadas */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
-          style={{ background: `radial-gradient(circle, ${branding.secondaryColor} 0%, transparent 70%)` }}
+
+      <ModuleStatsGrid
+        compact={isCompactTransportViewport}
+        compactLayout="grid grid-cols-4 gap-2"
+        defaultLayout="grid grid-cols-1 md:grid-cols-4 gap-4"
+      >
+        <ModuleStatCard
+          label={t('transport.pending')}
+          value={resumen.rutasPlanificadas}
+          icon={<Clock className="h-4 w-4 text-white" />}
+          accentColor="#FFC107"
+          valueColor="#FFC107"
         />
-        <div 
-          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
-          style={{ 
-            background: `radial-gradient(circle, ${branding.primaryColor} 0%, transparent 70%)`,
-            animationDelay: '1s'
-          }}
+        <ModuleStatCard
+          label={t('transport.onRoute')}
+          value={resumen.rutasEnCurso}
+          icon={<Truck className="h-4 w-4 text-white" />}
+          accentColor={branding.primaryColor}
         />
-      </div>
+        <ModuleStatCard
+          label={t('transport.delivered')}
+          value={resumen.rutasCompletadas}
+          icon={<CheckCircle className="h-4 w-4 text-white" />}
+          accentColor={branding.secondaryColor}
+        />
+        <ModuleStatCard
+          label={t('transport.totalVehicles')}
+          value={resumen.totalVehiculos}
+          icon={<Truck className="h-4 w-4 text-white" />}
+          accentColor="#333333"
+          valueColor="#333333"
+        />
+      </ModuleStatsGrid>
 
-      {/* Contenedor principal con glassmorphism */}
-      <div className="relative z-10 p-3 sm:p-4 space-y-3 sm:space-y-4">
-        {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60">
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
-              style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
-            >
-              <Truck className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '1.5rem', color: branding.primaryColor }}>
-                  {t('transport.title')}
-                </h1>
-                <Sparkles className="w-4 h-4 animate-pulse" style={{ color: branding.secondaryColor }} />
-              </div>
-              <p className="text-xs text-[#666666]">{t('transport.subtitle')}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className={`${isCompactTransportViewport ? 'grid grid-cols-4 gap-2' : 'grid grid-cols-1 md:grid-cols-4 gap-4'}`}>
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 border-l-4 border-l-[#FFC107] transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('transport.pending')}</p>
-                <p className="text-lg font-bold text-[#FFC107]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {resumen.rutasPlanificadas}
-                </p>
-              </div>
-              <div 
-                className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #FFC107 0%, #FFB300 100%)' }}
-              >
-                <Clock className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer" style={{ borderLeftColor: branding.primaryColor }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('transport.onRoute')}</p>
-                <p className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                  {resumen.rutasEnCurso}
-                </p>
-              </div>
-              <div 
-                className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
-              >
-                <Truck className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer" style={{ borderLeftColor: branding.secondaryColor }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('transport.delivered')}</p>
-                <p className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>
-                  {resumen.rutasCompletadas}
-                </p>
-              </div>
-              <div 
-                className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
-              >
-                <CheckCircle className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 border-l-4 border-l-[#333333] transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666] mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('transport.totalVehicles')}</p>
-                <p className="text-lg font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {resumen.totalVehiculos}
-                </p>
-              </div>
-              <div 
-                className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #333333 0%, #555555 100%)' }}
-              >
-                <Truck className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
-          <Tabs value={activeTransportTab} onValueChange={setActiveTransportTab} className="p-3 sm:p-4">
-            <TabsList className="grid w-full max-w-4xl grid-cols-4 gap-1">
-              <TabsTrigger value="rutas" className="min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+      <Tabs value={activeTransportTab} onValueChange={setActiveTransportTab} className="overflow-visible">
+        <ModuleControlSurface>
+          <ModuleControlSurfaceTabs>
+            <TabsList className="app-compact-tabs-grid w-full max-w-4xl gap-1 bg-transparent p-0" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+              <TabsTrigger value="rutas" className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                 🗺️ {t('transport.routePlanning')}
               </TabsTrigger>
-              <TabsTrigger value="vehiculos" className="min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+              <TabsTrigger value="vehiculos" className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                 🚛 {t('transport.vehicleManagement')}
               </TabsTrigger>
-              <TabsTrigger value="choferes" className="min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+              <TabsTrigger value="choferes" className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                 👨‍✈️ {t('transport.drivers')}
               </TabsTrigger>
-              <TabsTrigger value="verificacion" className="min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+              <TabsTrigger value="verificacion" className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                 🔍 {t('transport.saaqVerification.title')}
               </TabsTrigger>
             </TabsList>
+          </ModuleControlSurfaceTabs>
 
+          <ModuleControlSurfaceBody>
             <TabsContent value="rutas">
               {showCompactRouteOverview ? (
                 <div className="space-y-3 pt-3">
@@ -301,9 +229,9 @@ export function Transporte() {
             <TabsContent value="verificacion">
               <VerificacionVehiculo />
             </TabsContent>
-          </Tabs>
-        </div>
-      </div>
+          </ModuleControlSurfaceBody>
+        </ModuleControlSurface>
+      </Tabs>
     </div>
   );
 }

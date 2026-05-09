@@ -33,6 +33,8 @@ import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerReportePRSRemoto } from '../../utils/remoteReports';
 import type { Comanda } from '../../types';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
+import { ModulePageHeader } from '../shared/ModulePageHeader';
+import { ModuleControlSurface, ModuleControlSurfaceHeader } from '../shared/ModuleControlSurface';
 
 type ComandaExportable = Comanda & {
   organismo?: {
@@ -1611,19 +1613,20 @@ export function Reportes() {
       <div className={`relative z-10 ${showCompactReportsOverview ? 'space-y-2 p-2.5' : 'space-y-3 sm:space-y-4 p-3 sm:p-4'}`}>
         {/* Header con glassmorphism */}
         {!showCompactReportsOverview && (
-          <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60 p-3 sm:p-4">
-            <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-              {t('reports.title')}
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-700">{t('reports.subtitle')}</p>
-          </div>
+          <ModulePageHeader
+            title={t('reports.title')}
+            subtitle={t('reports.subtitle')}
+            icon={<BarChart3 className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+            accentColor={branding.primaryColor}
+            secondaryColor={branding.secondaryColor}
+          />
         )}
 
       {/* Tabs de Reportes con glassmorphism */}
-      <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
+      <ModuleControlSurface>
         <Tabs value={activeReportTab} onValueChange={handleReportTabChange} className="space-y-3">
           {exportableReportType && (
-            <div className="border-b border-white/60 px-3 pt-3 sm:px-4 sm:pt-4 pb-3">
+            <ModuleControlSurfaceHeader>
               <div className={`flex flex-col ${showCompactReportsOverview ? 'gap-2' : 'gap-4'} xl:flex-row xl:items-end xl:justify-between`}>
                 <div className={`flex flex-col ${showCompactReportsOverview ? 'gap-2' : 'gap-3'}`}>
                   <div>
@@ -1805,7 +1808,7 @@ export function Reportes() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </ModuleControlSurfaceHeader>
           )}
 
           <TabsList className={`app-compact-tabs-grid w-full bg-transparent border-b rounded-none gap-1 ${showCompactReportsOverview ? 'flex-nowrap overflow-x-auto justify-start' : ''}`}>
@@ -2636,7 +2639,7 @@ export function Reportes() {
             </div>
           )}
         </div>
-      </div>
+      </ModuleControlSurface>
       </div>
     </div>
   );

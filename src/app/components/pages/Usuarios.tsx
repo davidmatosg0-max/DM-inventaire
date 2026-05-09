@@ -22,6 +22,7 @@ import { obtenerDepartamentos } from '../../utils/departamentosStorage';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { Rol } from '../../data/rolesPermisos';
 import { registrarActividad } from '../../utils/actividadLogger';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 export function Usuarios() {
   const { t } = useTranslation();
@@ -397,17 +398,21 @@ export function Usuarios() {
 
         {/* Tabs */}
         <Tabs defaultValue="usuarios" className="space-y-6">
-          <TabsList className="app-compact-tabs-grid w-full max-w-2xl">
-            <TabsTrigger value="usuarios" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-              👥 {t('common.users')}
-            </TabsTrigger>
-            <TabsTrigger value="roles" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-              🛡️ {t('users.roles')}
-            </TabsTrigger>
-            <TabsTrigger value="departamentos" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-              🏢 {t('users.departments')}
-            </TabsTrigger>
-          </TabsList>
+          <ModuleControlSurface>
+            <ModuleControlSurfaceTabs>
+              <TabsList className="app-compact-tabs-grid w-full max-w-2xl bg-transparent p-0">
+                <TabsTrigger value="usuarios" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+                  👥 {t('common.users')}
+                </TabsTrigger>
+                <TabsTrigger value="roles" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+                  🛡️ {t('users.roles')}
+                </TabsTrigger>
+                <TabsTrigger value="departamentos" className="app-compact-tab-trigger" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+                  🏢 {t('users.departments')}
+                </TabsTrigger>
+              </TabsList>
+            </ModuleControlSurfaceTabs>
+          </ModuleControlSurface>
 
           <TabsContent value="usuarios" className="space-y-6">
             {/* Search */}

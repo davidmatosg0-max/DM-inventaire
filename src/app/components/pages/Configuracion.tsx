@@ -45,6 +45,7 @@ import { GestionAdressesQuartiers } from '../GestionAdressesQuartiers';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 import { BackupManager } from '../BackupManager';
 import { RegistroActividades } from '../RegistroActividades';
+import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import {
   limpiarEjemplosFuncionalesPrueba,
   sembrarEjemplosFuncionalesPrueba,
@@ -1648,103 +1649,107 @@ export function Configuracion() {
 
       {/* Tabs con diseño moderno y elegante */}
       <Tabs defaultValue="categorias" className="space-y-6">
-        <TabsList className="app-compact-tabs-grid inline-flex backdrop-blur-xl bg-white/70 border-2 border-white/60 shadow-2xl rounded-2xl flex-wrap h-auto gap-2 p-2">
-          <TabsTrigger 
-            value="categorias" 
-            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ 
-              fontFamily: 'Montserrat, sans-serif',
-              fontWeight: 600
-            }}
-          >
-            <FolderTree className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span className="hidden sm:inline">{t('configuration.categoriesAndSubcategories')}</span>
-            <span className="sm:hidden">{t('configuration.categories')}</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="programas" 
-            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-          >
-            <Inbox className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span className="hidden sm:inline">{t('configuration.entryPrograms')}</span>
-            <span className="sm:hidden">{t('configuration.programs')}</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="productos-prs" 
-            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-          >
-            <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span className="hidden sm:inline">{t('configuration.prsProductsTab')}</span>
-            <span className="sm:hidden">{t('configuration.prsShort')}</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="sauvegardes" 
-            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-          >
-            <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span>{t('configuration.backupsTab')}</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="unidades" 
-            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-          >
-            <Ruler className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span>{t('configuration.units')}</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="balance" 
-            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-          >
-            <Scale className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span>{t('configuration.balanceTab')}</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="versions" 
-            className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-          >
-            <Info className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span className="hidden sm:inline">{t('configuration.versionsTab')}</span>
-            <span className="sm:hidden">{t('configuration.versionsShort')}</span>
-          </TabsTrigger>
-          {esDesarrollador && (
-            <TabsTrigger 
-              value="demos"
-              className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-            >
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              <span className="hidden lg:inline">{t('configuration.qaExamplesTab')}</span>
-              <span className="lg:hidden">{t('configuration.qaShort')}</span>
-            </TabsTrigger>
-          )}
-          {esDesarrollador && (
-            <TabsTrigger 
-              value="adresses" 
-              className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-            >
-              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              <span className="hidden lg:inline">{t('configuration.addressesAndDistrictsTab')}</span>
-              <span className="lg:hidden">{t('configuration.addressesShort')}</span>
-            </TabsTrigger>
-          )}
+        <ModuleControlSurface>
+          <ModuleControlSurfaceTabs>
+            <TabsList className="app-compact-tabs-grid flex h-auto w-full flex-wrap gap-2 bg-transparent p-0">
+              <TabsTrigger 
+                value="categorias" 
+                className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ 
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 600
+                }}
+              >
+                <FolderTree className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span className="hidden sm:inline">{t('configuration.categoriesAndSubcategories')}</span>
+                <span className="sm:hidden">{t('configuration.categories')}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="programas" 
+                className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+              >
+                <Inbox className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span className="hidden sm:inline">{t('configuration.entryPrograms')}</span>
+                <span className="sm:hidden">{t('configuration.programs')}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="productos-prs" 
+                className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+              >
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span className="hidden sm:inline">{t('configuration.prsProductsTab')}</span>
+                <span className="sm:hidden">{t('configuration.prsShort')}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="sauvegardes" 
+                className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+              >
+                <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span>{t('configuration.backupsTab')}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="unidades" 
+                className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+              >
+                <Ruler className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span>{t('configuration.units')}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="balance" 
+                className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+              >
+                <Scale className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span>{t('configuration.balanceTab')}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="versions" 
+                className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+              >
+                <Info className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span className="hidden sm:inline">{t('configuration.versionsTab')}</span>
+                <span className="sm:hidden">{t('configuration.versionsShort')}</span>
+              </TabsTrigger>
+              {esDesarrollador && (
+                <TabsTrigger 
+                  value="demos"
+                  className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+                >
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  <span className="hidden lg:inline">{t('configuration.qaExamplesTab')}</span>
+                  <span className="lg:hidden">{t('configuration.qaShort')}</span>
+                </TabsTrigger>
+              )}
+              {esDesarrollador && (
+                <TabsTrigger 
+                  value="adresses" 
+                  className="app-compact-tab-trigger data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+                >
+                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  <span className="hidden lg:inline">{t('configuration.addressesAndDistrictsTab')}</span>
+                  <span className="lg:hidden">{t('configuration.addressesShort')}</span>
+                </TabsTrigger>
+              )}
 
-          <TabsTrigger 
-            value="actividades" 
-            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-          >
-            <Activity className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            <span className="hidden lg:inline">{t('configuration.activityLogTab')}</span>
-            <span className="lg:hidden">{t('configuration.activityLogShort')}</span>
-          </TabsTrigger>
-        </TabsList>
+              <TabsTrigger 
+                value="actividades" 
+                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#1a4d7a] data-[state=active]:to-[#2d9561] data-[state=active]:text-white data-[state=active]:shadow-xl rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+              >
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span className="hidden lg:inline">{t('configuration.activityLogTab')}</span>
+                <span className="lg:hidden">{t('configuration.activityLogShort')}</span>
+              </TabsTrigger>
+            </TabsList>
+          </ModuleControlSurfaceTabs>
+        </ModuleControlSurface>
 
         {/* Tab: Categorías y Subcategorías */}
         <TabsContent value="categorias" className="fade-in">

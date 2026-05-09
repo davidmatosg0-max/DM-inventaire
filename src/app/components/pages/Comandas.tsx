@@ -37,7 +37,6 @@ import {
 } from '../../utils/ofertaStorage';
 import { useBranding } from '../../../hooks/useBranding';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
-import { Sparkles } from 'lucide-react';
 import type { Comanda, ItemComanda, Organismo, ProductoOferta, Oferta as OfertaTipo, Solicitud, ProductoAceptado, DatosQR } from '../../types';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerOrganismos as obtenerOrganismosReales } from '../../utils/organismosStorage';
@@ -51,6 +50,8 @@ import {
 } from '../../utils/pendingQrNavigation';
 import { formatNumberSimple } from '../../utils/formatUtils';
 import { sortByTemperature } from '../../utils/temperatureSort';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
+import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
 export function Comandas() {
   const { t, i18n } = useTranslation();
@@ -1078,6 +1079,20 @@ export function Comandas() {
       ...grupo,
       metricas: calcularMetricasEstado(grupo.comandas)
     }));
+  const ofertasFiltradas = ofertas.filter(oferta => {
+    if (estadoFiltroOferta === 'todos') return true;
+    if (estadoFiltroOferta === 'pendientes') return (oferta.solicitudes?.length || 0) === 0 && oferta.activa;
+    if (estadoFiltroOferta === 'con_solicitudes') return (oferta.solicitudes?.length || 0) > 0;
+    if (estadoFiltroOferta === 'entregadas') {
+      return (oferta.solicitudes || []).some(solicitud => solicitud.estado === 'entregada');
+    }
+    if (estadoFiltroOferta === 'activas') return oferta.activa && new Date(oferta.fechaExpiracion) > new Date();
+    if (estadoFiltroOferta === 'expiradas') return !oferta.activa || new Date(oferta.fechaExpiracion) < new Date();
+    return true;
+  });
+  const ofertasConSolicitudes = ofertasFiltradas.filter(oferta => (oferta.solicitudes?.length || 0) > 0).length;
+  const ofertasExpiradasCount = ofertasFiltradas.filter(oferta => !oferta.activa || new Date(oferta.fechaExpiracion) < new Date()).length;
+  const solicitudesOfertaCount = ofertasFiltradas.reduce((sum, oferta) => sum + (oferta.solicitudes?.length || 0), 0);
 
   if (mostrarImpresionCompacta && comandaSeleccionada) {
     const organismo = resolverOrganismoComanda(comandaSeleccionada);
@@ -1141,152 +1156,73 @@ export function Comandas() {
         {/* Alerta de comandas urgentes */}
         <AlertaComandasUrgentes />
 
-        {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3">
-              {branding.logo ? (
-                <div 
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center overflow-hidden shadow-lg border-2"
-                  style={{ borderColor: branding.primaryColor }}
-                >
-                  <img 
-                    src={branding.logo} 
-                    alt="Logo" 
-                    className="h-full w-full"
-                    style={{ objectFit: 'cover', objectPosition: 'center' }}
-                  />
-                </div>
-              ) : (
-                <div 
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center text-white shadow-lg"
-                  style={{ backgroundColor: branding.primaryColor }}
-                >
-                  <FileCheck className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-              )}
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 
-                    className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight"
-                    style={{ 
-                      fontFamily: 'Montserrat, sans-serif',
-                      color: branding.primaryColor 
-                    }}
-                  >
-                    {t('orders.title')}
-                  </h1>
-                  <Sparkles 
-                    className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" 
-                    style={{ color: branding.secondaryColor }}
-                  />
-                </div>
-                <p className="text-xs text-[#666666] mt-1">{t('orders.subtitle')}</p>
-              </div>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                onClick={() => setDialogNotificacionOpen(true)}
-                size="icon"
-                title={t('orders.notifyPendingOrders')}
-                className="text-[#333333] transition-all duration-300 hover:scale-105"
-                style={{ 
-                  background: 'linear-gradient(135deg, #FFC107 0%, #E6AC00 100%)',
-                  boxShadow: '0 4px 15px rgba(255, 193, 7, 0.4)'
-                }}
-              >
-                <Bell className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ModulePageHeader
+          title={t('orders.title')}
+          subtitle={t('orders.subtitle')}
+          icon={<FileCheck className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          actions={(
+            <Button
+              onClick={() => setDialogNotificacionOpen(true)}
+              size="icon"
+              title={t('orders.notifyPendingOrders')}
+              className="text-[#333333] transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #FFC107 0%, #E6AC00 100%)',
+                boxShadow: '0 4px 15px rgba(255, 193, 7, 0.4)'
+              }}
+            >
+              <Bell className="w-4 h-4" />
+            </Button>
+          )}
+        />
 
-        {/* Stats con glassmorphism */}
-        <div className={`${isCompactOrdersViewport ? 'grid grid-cols-5 gap-2' : 'grid grid-cols-1 md:grid-cols-5 gap-4'}`}>
-          <div 
-            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-            style={{ 
-              borderLeftColor: branding.primaryColor,
-              boxShadow: `0 4px 15px ${branding.primaryColor}20`
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666]">{t('orders.totalOrders')}</p>
-                <p 
-                  className="font-bold text-lg sm:text-xl"
-                  style={{ color: branding.primaryColor }}
-                >
-                  {totalComandas}
-                </p>
-              </div>
-              <FileCheck 
-                className="w-7 h-7 sm:w-9 sm:h-9 opacity-20" 
-                style={{ color: branding.primaryColor }}
-              />
-            </div>
-          </div>
-
-          <div 
-            className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-            style={{ 
-              borderLeftColor: branding.secondaryColor,
-              boxShadow: `0 4px 15px ${branding.secondaryColor}20`
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666]">{t('orders.activeOrders')}</p>
-                <p 
-                  className="font-bold text-lg sm:text-xl"
-                  style={{ color: branding.secondaryColor }}
-                >
-                  {comandasActivas}
-                </p>
-              </div>
-              <Eye 
-                className="w-7 h-7 sm:w-9 sm:h-9 opacity-20" 
-                style={{ color: branding.secondaryColor }}
-              />
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 border-l-[#FFC107] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666]">{t('orders.pendingOrders')}</p>
-                <p className="font-bold text-lg sm:text-xl text-[#FFC107]">{comandasPendientesCount}</p>
-              </div>
-              <Printer className="w-7 h-7 sm:w-9 sm:h-9 text-[#FFC107] opacity-20" />
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 border-l-[#7E57C2] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666]">Commandes acceptées</p>
-                <p className="font-bold text-lg sm:text-xl text-[#7E57C2]">{comandasAceptadasCount}</p>
-              </div>
-              <Check className="w-7 h-7 sm:w-9 sm:h-9 text-[#7E57C2] opacity-20" />
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-3 sm:p-4 border-l-4 border-l-[#2E7D32] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-[#666666]">{t('orders.completedOrders')}</p>
-                <p className="font-bold text-lg sm:text-xl text-[#2E7D32]">{comandasCompletadas}</p>
-              </div>
-              <FileCheck className="w-7 h-7 sm:w-9 sm:h-9 text-[#2E7D32] opacity-20" />
-            </div>
-          </div>
-      </div>
+        <ModuleStatsGrid
+          compact={isCompactOrdersViewport}
+          compactLayout="grid grid-cols-5 gap-2"
+          defaultLayout="grid grid-cols-1 md:grid-cols-5 gap-4"
+        >
+          <ModuleStatCard
+            label={t('orders.totalOrders')}
+            value={totalComandas}
+            icon={<FileCheck className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor={branding.primaryColor}
+          />
+          <ModuleStatCard
+            label={t('orders.activeOrders')}
+            value={comandasActivas}
+            icon={<Eye className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor={branding.secondaryColor}
+          />
+          <ModuleStatCard
+            label={t('orders.pendingOrders')}
+            value={comandasPendientesCount}
+            icon={<Printer className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor="#FFC107"
+            valueColor="#FFC107"
+          />
+          <ModuleStatCard
+            label="Commandes acceptées"
+            value={comandasAceptadasCount}
+            icon={<Check className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor="#7E57C2"
+            valueColor="#7E57C2"
+          />
+          <ModuleStatCard
+            label={t('orders.completedOrders')}
+            value={comandasCompletadas}
+            icon={<FileCheck className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
+            accentColor="#2E7D32"
+            valueColor="#2E7D32"
+          />
+        </ModuleStatsGrid>
 
         {/* Tabs: Comandas y Ofertas - Con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl border border-white/60">
+        <ModuleControlSurface>
           <Tabs value={tabActual} onValueChange={setTabActual}>
-            <div className="p-3 sm:p-4">
-              <TabsList className="app-compact-tabs-grid w-full gap-1">
+            <ModuleControlSurfaceTabs>
+              <TabsList className="app-compact-tabs-grid w-full gap-1 bg-transparent p-0">
                 <TabsTrigger value="comandas" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
                   <Package className="w-4 h-4" />
                   {t('orders.title')}
@@ -1296,10 +1232,11 @@ export function Comandas() {
                   {t('orders.offersRequestsTab')}
                 </TabsTrigger>
               </TabsList>
-            </div>
+            </ModuleControlSurfaceTabs>
 
           {/* TAB: COMANDAS */}
-          <TabsContent value="comandas" className="p-3 sm:p-4 pt-0 space-y-3">
+          <TabsContent value="comandas" className="mt-0">
+            <ModuleControlSurfaceBody className="space-y-3">
             {/* Búsqueda y filtros */}
           <div className="app-compact-filters">
             <div className="flex-1">
@@ -1657,50 +1594,71 @@ export function Comandas() {
               )}
             </CardContent>
           </Card>
+            </ModuleControlSurfaceBody>
         </TabsContent>
 
         {/* TAB: OFERTAS */}
-        <TabsContent value="ofertas" className="p-4 sm:p-6 pt-0 space-y-4">
-          {/* Filtro de ofertas por estado */}
-          <div className="app-compact-filters">
-            <Select value={estadoFiltroOferta} onValueChange={setEstadoFiltroOferta}>
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder={t('orders.offerStatusFilter')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">{t('orders.allOffers')}</SelectItem>
-                <SelectItem value="pendientes">{t('orders.pending')}</SelectItem>
-                <SelectItem value="con_solicitudes">{t('orders.withRequests')}</SelectItem>
-                <SelectItem value="entregadas">{t('orders.deliveredOffers')}</SelectItem>
-                <SelectItem value="activas">{t('orders.activeOffers')}</SelectItem>
-                <SelectItem value="expiradas">{t('orders.expiredOffers')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <TabsContent value="ofertas" className="mt-0">
+          <ModuleControlSurfaceBody className="space-y-4">
+          <Card className="border-white/60 bg-white/75 shadow-lg backdrop-blur-xl">
+            <CardContent className="pt-4 space-y-3">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <h2
+                    className="text-base sm:text-lg font-semibold"
+                    style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                  >
+                    Vue compacte des offres et demandes
+                  </h2>
+                  <p className="text-xs sm:text-sm text-[#666666]">
+                    Suivi harmonisé des offres actives, des demandes reçues et des échéances sans changer de contexte.
+                  </p>
+                </div>
+                <div className="app-compact-filters">
+                  <Select value={estadoFiltroOferta} onValueChange={setEstadoFiltroOferta}>
+                    <SelectTrigger className="w-[250px] h-9 text-xs">
+                      <SelectValue placeholder={t('orders.offerStatusFilter')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">{t('orders.allOffers')}</SelectItem>
+                      <SelectItem value="pendientes">{t('orders.pending')}</SelectItem>
+                      <SelectItem value="con_solicitudes">{t('orders.withRequests')}</SelectItem>
+                      <SelectItem value="entregadas">{t('orders.deliveredOffers')}</SelectItem>
+                      <SelectItem value="activas">{t('orders.activeOffers')}</SelectItem>
+                      <SelectItem value="expiradas">{t('orders.expiredOffers')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <div className="rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm" style={{ color: branding.primaryColor, background: `${branding.primaryColor}15`, border: `1px solid ${branding.primaryColor}30` }}>
+                  Offres visibles: {ofertasFiltradas.length}
+                </div>
+                <div className="rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm" style={{ color: branding.secondaryColor, background: `${branding.secondaryColor}15`, border: `1px solid ${branding.secondaryColor}30` }}>
+                  Avec demandes: {ofertasConSolicitudes}
+                </div>
+                <div className="rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm" style={{ color: '#b45309', background: '#fff7e8', border: '1px solid #fcd34d' }}>
+                  Sollicitudes: {solicitudesOfertaCount}
+                </div>
+                <div className="rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm" style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca' }}>
+                  Expirées: {ofertasExpiradasCount}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Lista de ofertas con sus solicitudes */}
           <div className="space-y-4">
-            {ofertas
-              .filter(oferta => {
-                if (estadoFiltroOferta === 'todos') return true;
-                if (estadoFiltroOferta === 'pendientes') return (oferta.solicitudes?.length || 0) === 0 && oferta.activa;
-                if (estadoFiltroOferta === 'con_solicitudes') return (oferta.solicitudes?.length || 0) > 0;
-                if (estadoFiltroOferta === 'entregadas') {
-                  return (oferta.solicitudes || []).some(solicitud => solicitud.estado === 'entregada');
-                }
-                if (estadoFiltroOferta === 'activas') return oferta.activa && new Date(oferta.fechaExpiracion) > new Date();
-                if (estadoFiltroOferta === 'expiradas') return !oferta.activa || new Date(oferta.fechaExpiracion) < new Date();
-                return true;
-              })
-              .map(oferta => {
+            {ofertasFiltradas.map(oferta => {
                 const totalSolicitudes = oferta.solicitudes?.length || 0;
                 const fechaExpiracion = new Date(oferta.fechaExpiracion);
                 const estaExpirada = fechaExpiracion < new Date();
                 const diasRestantes = Math.ceil((fechaExpiracion.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                 
                 return (
-                  <Card key={oferta.id} className={estaExpirada ? 'opacity-60' : ''}>
-                    <CardContent className="pt-6">
+                  <Card key={oferta.id} className={`border-white/60 bg-white/75 shadow-lg backdrop-blur-xl ${estaExpirada ? 'opacity-70' : ''}`}>
+                    <CardContent className="pt-5">
                       <div className="space-y-4">
                         {/* Header de la oferta */}
                         <div className="flex items-start justify-between">
@@ -1731,7 +1689,7 @@ export function Comandas() {
                         </div>
 
                         {/* Productos de la oferta */}
-                        <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbff] p-4">
                           <h4 className="font-semibold text-[#333333] mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                             {t('orders.offeredProducts')}
                           </h4>
@@ -1751,7 +1709,7 @@ export function Comandas() {
                               const porcentajeDisponible = (producto.cantidadDisponible / producto.cantidadOfrecida) * 100;
                               
                               return (
-                                <div key={`${oferta.id}-producto-${producto.productoId}-${idx}`} className="bg-white border rounded-lg p-3">
+                                <div key={`${oferta.id}-producto-${producto.productoId}-${idx}`} className="rounded-xl border border-white bg-white p-3 shadow-sm">
                                   <div className="flex items-center gap-2 mb-2">
                                     <span className="text-2xl">{producto.icono}</span>
                                     <div className="flex-1">
@@ -1792,7 +1750,7 @@ export function Comandas() {
 
                         {/* Solicitudes de la oferta */}
                         {totalSolicitudes > 0 && (
-                          <div className="border-t pt-4">
+                          <div className="border-t border-[#e5edf5] pt-4">
                             <h4 className="font-semibold text-[#333333] mb-3 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                               <Users className="w-4 h-4 text-[#1E73BE]" />
                               {t('orders.requestsReceived')} ({totalSolicitudes})
@@ -1811,7 +1769,7 @@ export function Comandas() {
                                 }, 0);
 
                                 return (
-                                  <div key={`${oferta.id}-solicitud-${solicitud.id}`} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                  <div key={`${oferta.id}-solicitud-${solicitud.id}`} className="rounded-xl border border-[#cfe2ff] bg-[#eff6ff] p-4 shadow-sm">
                                     <div className="flex items-start justify-between mb-3">
                                       <div className="flex-1">
                                         <p className="font-semibold text-[#333333]">{solicitud.organismoNombre}</p>
@@ -1940,7 +1898,7 @@ export function Comandas() {
                                     )}
 
                                     {/* Productos solicitados */}
-                                    <div className="bg-white rounded-lg p-3 mb-3">
+                                    <div className="rounded-lg border border-white/80 bg-white p-3 mb-3">
                                       <p className="text-xs font-semibold text-[#666666] mb-2">{t('orders.requestedProducts')}</p>
                                       <div className="space-y-1">
                                         {solicitud.productosAceptados.map((prodAceptado, pIdx) => {
@@ -1962,15 +1920,15 @@ export function Comandas() {
 
                                     {/* Totales */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-                                      <div className="bg-white rounded p-2 text-center">
+                                      <div className="rounded-lg bg-white p-2 text-center shadow-sm">
                                         <p className="text-xs text-[#666666]">{t('orders.products')}</p>
                                         <p className="font-bold text-[#1E73BE]">{solicitud.productosAceptados.length}</p>
                                       </div>
-                                      <div className="bg-white rounded p-2 text-center">
+                                      <div className="rounded-lg bg-white p-2 text-center shadow-sm">
                                         <p className="text-xs text-[#666666]">{t('orders.totalWeight')}</p>
                                         <p className="font-bold text-[#4CAF50]">{Math.round(totalKilos)} kg</p>
                                       </div>
-                                      <div className="bg-white rounded p-2 text-center">
+                                      <div className="rounded-lg bg-white p-2 text-center shadow-sm">
                                         <p className="text-xs text-[#666666]">{t('orders.value')}</p>
                                         <p className="font-bold text-[#FFC107]">CAD$ {formatNumberSimple(totalValor)}</p>
                                       </div>
@@ -2003,22 +1961,23 @@ export function Comandas() {
               })}
 
             {/* Mensaje si no hay ofertas */}
-            {ofertas.length === 0 && (
-              <Card>
+            {ofertasFiltradas.length === 0 && (
+              <Card className="border-white/60 bg-white/75 shadow-lg backdrop-blur-xl">
                 <CardContent className="pt-6">
                   <div className="text-center py-8 text-[#666666]">
                     <Tag className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="font-semibold mb-2">{t('orders.noOffersCreated')}</p>
-                    <p className="text-sm">{t('orders.specialOffersAppearHere')}</p>
+                    <p className="font-semibold mb-2">Aucune offre ne correspond au filtre actuel.</p>
+                    <p className="text-sm">Changez le statut sélectionné ou créez une nouvelle offre pour alimenter cette vue.</p>
                   </div>
                 </CardContent>
               </Card>
             )}
           </div>
+          </ModuleControlSurfaceBody>
         </TabsContent>
 
         </Tabs>
-      </div>
+        </ModuleControlSurface>
 
       {/* Dialog de notificaciones */}
       <Dialog open={dialogNotificacionOpen} onOpenChange={setDialogNotificacionOpen}>

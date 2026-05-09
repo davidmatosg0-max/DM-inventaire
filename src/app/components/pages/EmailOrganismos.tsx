@@ -15,17 +15,16 @@ import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { PerfilOrganismoDialog } from '../organismos/PerfilOrganismoDialog';
+import { FormularioOrganismoCompacto } from '../organismos/FormularioOrganismoCompacto';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { AddressAutocomplete } from '../ui/address-autocomplete';
 import { generarClaveAcceso } from '../../utils/claveAcceso';
 import { MapLink } from '../ui/map-link';
 import { GestionDemandes } from '../liaison/GestionDemandes';
 import { obtenirNombreNouvellesDemandes } from '../../utils/demandesStorage';
-import { obtenerPersonasPorOrganismo } from '../../utils/personasResponsablesStorage';
-import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
+import { type JourDisponible } from '../shared/SelecteurJoursDisponibles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GestionContactosDepartamento } from '../departamentos/GestionContactosDepartamento';
+import { useBranding } from '../../../hooks/useBranding';
 import { 
   obtenerOrganismos, 
   crearOrganismo, 
@@ -41,6 +40,8 @@ import {
 } from '../../utils/emailConfig';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { obtenerUsuarioSesion, esAdministradorLiaison } from '../../utils/sesionStorage';
+import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 
 // Tipos de organismos predefinidos
 const getTiposOrganismo = (t: any) => [
@@ -75,6 +76,7 @@ const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Sam
 
 export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { t } = useTranslation();
+  const branding = useBranding();
   const tiposOrganismo = getTiposOrganismo(t);
   
   // Cargar organismos desde el storage
@@ -90,8 +92,8 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
 
   // Estados para funcionalidades adicionales
   const [organismoDialogOpen, setOrganismoDialogOpen] = useState(false);
-  const [perfilDialogOpen, setPerfilDialogOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [modoVisualizacion, setModoVisualizacion] = useState(false);
   const [organismoSeleccionado, setOrganismoSeleccionado] = useState<any>(null);
   const [claveGeneradaDialog, setClaveGeneradaDialog] = useState(false);
   const [claveGenerada, setClaveGenerada] = useState('');
@@ -633,6 +635,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
       
       // Mostrar diálogo con la clave generada
       setClaveGeneradaDialog(true);
+      setModoVisualizacion(false);
       
       // Resetear formulario
       setFormOrganismo({
@@ -714,6 +717,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     toast.success(t('organisms.changesSaved'));
     setOrganismoDialogOpen(false);
     setModoEdicion(false);
+    setModoVisualizacion(false);
   };
 
   // Estadísticas
@@ -845,7 +849,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     closeEmailModal();
   };
 
-  // Función para convertir organismo a formato compatible con PerfilOrganismoDialog
+  // Función para convertir organismo al formato del formulario compacto
   const convertirOrganismoAFormulario = (org: Organismo) => {
     return {
       nombre: org.nombre,
@@ -877,6 +881,22 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
       fechaInicioInactividad: (org as any).fechaInicioInactividad || '',
       fechaFinInactividad: (org as any).fechaFinInactividad || ''
     };
+  };
+
+  const handleVerPerfil = (organismo: Organismo) => {
+    setOrganismoSeleccionado(organismo);
+    setFormOrganismo(convertirOrganismoAFormulario(organismo));
+    setModoEdicion(false);
+    setModoVisualizacion(true);
+    setOrganismoDialogOpen(true);
+  };
+
+  const handleEditarPerfil = (organismo: Organismo) => {
+    setOrganismoSeleccionado(organismo);
+    setFormOrganismo(convertirOrganismoAFormulario(organismo));
+    setModoEdicion(true);
+    setModoVisualizacion(false);
+    setOrganismoDialogOpen(true);
   };
 
   // Validar botón de envío
@@ -918,88 +938,40 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Fondo degradado moderno */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[#1a4d7a] via-[#2d5f8d] to-[#2d9561] -z-10" />
-      
-      {/* Patrón de puntos decorativo */}
-      <div 
-        className="fixed inset-0 opacity-10 -z-10"
-        style={{
-          backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-          backgroundSize: '30px 30px'
-        }}
-      />
-
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-2xl border border-white/20 p-8 mb-6 relative overflow-hidden">
-          {/* Efecto de brillo sutil */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1a4d7a] via-[#2d9561] to-[#1a4d7a]" />
-          
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-[#1a4d7a] mb-2 flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl flex items-center justify-center text-white text-2xl shadow-lg">
-                  📋
-                </div>
-                {t('liaison.title')}
-              </h1>
-              <p className="text-gray-600 text-lg ml-[60px]">{t('liaison.subtitle')}</p>
-              
-              {/* Indicador de usuario conectado y permisos */}
-              <div className="mt-4 flex flex-wrap gap-2 ml-[60px]">
-                {usuarioSesion ? (
-                  <>
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50 text-green-700 px-4 py-2 rounded-xl text-sm shadow-sm backdrop-blur-sm">
-                      <Mail className="w-4 h-4" />
-                      <span className="font-medium">
-                        {usuarioSesion.email}
-                      </span>
-                    </div>
-                    {puedeGestionarOrganismos ? (
-                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/50 text-blue-700 px-4 py-2 rounded-xl text-sm shadow-sm backdrop-blur-sm">
-                        <span className="font-medium">✓ Administrateur Liaison</span>
-                      </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/50 text-orange-700 px-4 py-2 rounded-xl text-sm shadow-sm backdrop-blur-sm">
-                        <span className="font-medium">👁️ Accès lecture seule</span>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200/50 text-yellow-700 px-4 py-2 rounded-xl text-sm shadow-sm backdrop-blur-sm">
-                    <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                    <span className="font-medium">
-                      Aucun utilisateur connecté
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <ModulePageHeader
+          title={t('liaison.title')}
+          subtitle={t('liaison.subtitle')}
+          icon={<Building2 className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          actions={(
+            <>
+              <Button
                 onClick={() => setMostrarGestionDemandes(true)}
-                className="group relative bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 overflow-hidden"
+                className="relative gap-2 rounded-xl text-white shadow-lg hover:shadow-xl"
+                style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' }}
               >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <MessageSquare className="w-5 h-5 relative z-10" />
-                <span className="relative z-10">Demandes des Organismes</span>
+                <MessageSquare className="h-4 w-4" />
+                <span>Demandes des Organismes</span>
                 {nombreNouvellesDemandes > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse shadow-lg">
+                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg">
                     {nombreNouvellesDemandes}
                   </span>
                 )}
-              </button>
-              <button
+              </Button>
+
+              <Button
                 onClick={() => openEmailModal('group')}
-                className="group relative bg-gradient-to-r from-[#2d9561] to-green-700 hover:from-green-700 hover:to-[#2d9561] text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 overflow-hidden"
+                className="gap-2 rounded-xl text-white shadow-lg hover:shadow-xl"
+                style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
               >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <span className="text-xl relative z-10">✉️</span>
-                <span className="relative z-10">{t('liaison.sendGroupEmail')}</span>
-              </button>
-              <button
+                <Mail className="h-4 w-4" />
+                <span>{t('liaison.sendGroupEmail')}</span>
+              </Button>
+
+              <Button
                 onClick={() => {
                   if (!puedeGestionarOrganismos) {
                     toast.error('⚠️ Accès refusé', {
@@ -1007,7 +979,6 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                     });
                     return;
                   }
-                  // Resetear formulario para nuevo organismo
                   setFormOrganismo({
                     nombre: '',
                     tipo: '',
@@ -1036,95 +1007,113 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                     fechaFinInactividad: ''
                   });
                   setModoEdicion(false);
+                  setModoVisualizacion(false);
                   setOrganismoSeleccionado(null);
                   setOrganismoDialogOpen(true);
                 }}
                 disabled={!puedeGestionarOrganismos}
-                className={`group relative px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg overflow-hidden ${
-                  puedeGestionarOrganismos 
-                    ? 'bg-gradient-to-r from-[#1a4d7a] to-blue-700 hover:from-blue-700 hover:to-[#1a4d7a] text-white hover:shadow-xl hover:scale-105 cursor-pointer' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
-                }`}
+                className="gap-2 rounded-xl shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
+                style={puedeGestionarOrganismos ? { background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`, color: '#ffffff' } : undefined}
                 title={!puedeGestionarOrganismos ? 'Seuls les administrateurs de Liaison peuvent créer des organismes' : ''}
               >
-                {puedeGestionarOrganismos && (
-                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                )}
-                <span className="text-xl relative z-10">➕</span>
-                <span className="relative z-10">{t('liaison.newOrganism')}</span>
-              </button>
+                <Plus className="h-4 w-4" />
+                <span>{t('liaison.newOrganism')}</span>
+              </Button>
+            </>
+          )}
+        />
+
+        <div className="flex flex-wrap gap-2">
+          {usuarioSesion ? (
+            <>
+              <div className="inline-flex items-center gap-2 rounded-xl border border-green-200/60 bg-green-50/90 px-4 py-2 text-sm text-green-700 shadow-sm">
+                <Mail className="h-4 w-4" />
+                <span className="font-medium">{usuarioSesion.email}</span>
+              </div>
+              {puedeGestionarOrganismos ? (
+                <div className="inline-flex items-center gap-2 rounded-xl border border-blue-200/60 bg-blue-50/90 px-4 py-2 text-sm text-blue-700 shadow-sm">
+                  <span className="font-medium">Administrateur Liaison</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 rounded-xl border border-orange-200/60 bg-orange-50/90 px-4 py-2 text-sm text-orange-700 shadow-sm">
+                  <span className="font-medium">Accès lecture seule</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200/60 bg-yellow-50/90 px-4 py-2 text-sm text-yellow-700 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+              <span className="font-medium">Aucun utilisateur connecté</span>
             </div>
-          </div>
+          )}
         </div>
+
+        <ModuleStatsGrid defaultLayout="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <ModuleStatCard
+            label={t('liaison.totalOrganisms')}
+            value={totalOrganismos}
+            icon={<Building2 className="h-4 w-4 text-white" />}
+            accentColor={branding.primaryColor}
+          />
+          <ModuleStatCard
+            label={t('liaison.activeOrganisms')}
+            value={organismosActivos}
+            icon={<Check className="h-4 w-4 text-white" />}
+            accentColor={branding.secondaryColor}
+          />
+          <ModuleStatCard
+            label={t('liaison.totalBeneficiaries')}
+            value={totalBeneficiarios}
+            icon={<Users className="h-4 w-4 text-white" />}
+            accentColor="#f97316"
+            valueColor="#f97316"
+          />
+        </ModuleStatsGrid>
 
         {/* Tabs para Liaison y Contactos */}
-        <Tabs value={tabActual} onValueChange={(value) => setTabActual(value as 'liaison' | 'contactos')} className="space-y-6">
-          <div className="card-glass rounded-2xl p-4 shadow-xl">
-            <TabsList className="w-full grid grid-cols-2 bg-gray-100">
-              <TabsTrigger value="liaison" className="flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                Liaison avec Organismes
-              </TabsTrigger>
-              <TabsTrigger value="contactos" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Gestion des Contacts
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        <Tabs value={tabActual} onValueChange={(value) => setTabActual(value as 'liaison' | 'contactos')} className="overflow-visible">
+          <ModuleControlSurface>
+            <ModuleControlSurfaceTabs>
+              <TabsList className="app-compact-tabs-grid w-full gap-1 bg-transparent p-0" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+                <TabsTrigger value="liaison" className="app-compact-tab-trigger flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Liaison avec Organismes
+                </TabsTrigger>
+                <TabsTrigger value="contactos" className="app-compact-tab-trigger flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Gestion des Contacts
+                </TabsTrigger>
+              </TabsList>
+            </ModuleControlSurfaceTabs>
+            <ModuleControlSurfaceBody className="space-y-6">
 
-          <TabsContent value="liaison" className="space-y-6">
-        {/* Estadísticas con glassmorphism */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="group backdrop-blur-xl bg-white/90 rounded-2xl shadow-lg hover:shadow-2xl border border-white/20 p-6 transition-all duration-300 hover:scale-105 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#1a4d7a] to-blue-400" />
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#1a4d7a]/10 rounded-full blur-2xl group-hover:bg-[#1a4d7a]/20 transition-all duration-300" />
-            <div className="relative">
-              <div className="text-gray-600 text-sm mb-2 font-medium">{t('liaison.totalOrganisms')}</div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#1a4d7a] to-blue-600 bg-clip-text text-transparent">
-                {totalOrganismos}
-              </div>
-            </div>
-          </div>
-          <div className="group backdrop-blur-xl bg-white/90 rounded-2xl shadow-lg hover:shadow-2xl border border-white/20 p-6 transition-all duration-300 hover:scale-105 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#2d9561] to-green-400" />
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#2d9561]/10 rounded-full blur-2xl group-hover:bg-[#2d9561]/20 transition-all duration-300" />
-            <div className="relative">
-              <div className="text-gray-600 text-sm mb-2 font-medium">{t('liaison.activeOrganisms')}</div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#2d9561] to-green-600 bg-clip-text text-transparent">
-                {organismosActivos}
-              </div>
-            </div>
-          </div>
-          <div className="group backdrop-blur-xl bg-white/90 rounded-2xl shadow-lg hover:shadow-2xl border border-white/20 p-6 transition-all duration-300 hover:scale-105 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-orange-500 to-orange-400" />
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all duration-300" />
-            <div className="relative">
-              <div className="text-gray-600 text-sm mb-2 font-medium">{t('liaison.totalBeneficiaries')}</div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                {totalBeneficiarios}
-              </div>
-            </div>
-          </div>
-        </div>
+              <TabsContent value="liaison" className="space-y-6">
+                <div className="card-glass rounded-2xl border border-white/60 p-4 shadow-lg">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-[#1f2937]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                        Statistiques et rapports
+                      </p>
+                      <p className="text-xs text-[#5d7185]">
+                        Accédez à la vue détaillée des tendances, exports et indicateurs de croissance de Liaison.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => setMostrarEstadisticas(!mostrarEstadisticas)}
+                      className="gap-2 rounded-xl text-white shadow-lg hover:shadow-xl"
+                      style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                      <span>
+                        {mostrarEstadisticas ? 'Masquer les statistiques détaillées' : 'Voir les statistiques détaillées'}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
 
-        {/* Bouton Statistiques Détaillées con glassmorphism */}
-        <div className="mb-6">
-          <button
-            onClick={() => setMostrarEstadisticas(!mostrarEstadisticas)}
-            className="group relative w-full backdrop-blur-xl bg-gradient-to-r from-[#1a4d7a] via-purple-600 to-[#2d9561] hover:from-blue-700 hover:via-purple-700 hover:to-green-700 text-white px-6 py-5 rounded-2xl font-medium transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-2xl hover:scale-[1.02] overflow-hidden"
-            style={{ fontFamily: 'Montserrat, sans-serif' }}
-          >
-            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            <TrendingUp className="w-6 h-6 relative z-10" />
-            <span className="relative z-10">
-              {mostrarEstadisticas ? '📊 Masquer les Statistiques Détaillées' : '📊 Voir les Statistiques Détaillées & Rapports'}
-            </span>
-          </button>
-        </div>
-
-        {/* Section Statistiques Détaillées con glassmorphism */}
-        {mostrarEstadisticas && (
-          <div className="mb-6 backdrop-blur-xl bg-white/95 rounded-2xl shadow-2xl border border-white/20 p-8" ref={estadisticasRef}>
+                {mostrarEstadisticas && (
+                  <div className="card-glass rounded-2xl border border-white/60 p-6 shadow-xl sm:p-8" ref={estadisticasRef}>
             {/* Header avec boutons d'actions */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -1639,8 +1628,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                   </button>
                   <button
                     onClick={() => {
-                      setOrganismoSeleccionado(org);
-                      setPerfilDialogOpen(true);
+                      handleVerPerfil(org);
                     }}
                     className="flex-1 border border-gray-300/50 hover:bg-white/80 backdrop-blur-sm text-gray-700 hover:text-[#1a4d7a] px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 hover:border-[#1a4d7a]/30"
                   >
@@ -1655,46 +1643,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                         });
                         return;
                       }
-                      setOrganismoSeleccionado(org);
-                      // Cargar datos del organismo en el formulario
-                      setFormOrganismo({
-                        nombre: org.nombre,
-                        tipo: org.tipo,
-                        codigoPostal: org.codigoPostal || '',
-                        direccion: org.direccion,
-                        quartier: org.quartier || '',
-                        responsable: org.responsable,
-                        beneficiarios: org.beneficiarios,
-                        telefono: org.telefono,
-                        email: org.email,
-                        frecuenciaCita: org.frecuenciaCita || '',
-                        diaCita: org.diaCita || '',
-                        horaCita: org.horaCita || '',
-                        participantePRS: org.participantePRS,
-                        regular: org.regular,
-                        clasificacionOrganismo: resolverClasificacionOrganismo(org),
-                        activo: org.activo,
-                        personasServidas: org.personasServidas,
-                        cantidadColaciones: org.cantidadColaciones,
-                        cantidadAlmuerzos: org.cantidadAlmuerzos,
-                        porcentajeReparticion: org.porcentajeReparticion,
-                        notas: org.notas || '',
-                        notificaciones: org.notificaciones,
-                        logo: org.logo || null,
-                        documentoPDF: org.documentoPDF || null,
-                        contactosNotificacion: org.contactosNotificacion && org.contactosNotificacion.length > 0 
-                          ? org.contactosNotificacion.map(c => ({
-                              nombre: c.nombre,
-                              email: c.email,
-                              cargo: c.cargo,
-                              joursDisponibles: c.joursDisponibles || []
-                            }))
-                          : [{ nombre: '', email: '', cargo: '', joursDisponibles: [] }],
-                        fechaInicioInactividad: '',
-                        fechaFinInactividad: ''
-                      });
-                      setModoEdicion(true);
-                      setOrganismoDialogOpen(true);
+                      handleEditarPerfil(org);
                     }}
                     disabled={!puedeGestionarOrganismos}
                     className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
@@ -1710,17 +1659,19 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                 </div>
               </div>
             ))}
-          </div>
-        )}
-      </TabsContent>
+                  </div>
+                )}
+              </TabsContent>
 
-      <TabsContent value="contactos" className="space-y-6">
-        <GestionContactosDepartamento 
-          departamentoId="4"
-          departamentoNombre="Liaison"
-        />
-      </TabsContent>
-    </Tabs>
+              <TabsContent value="contactos" className="space-y-6">
+                <GestionContactosDepartamento 
+                  departamentoId="4"
+                  departamentoNombre="Liaison"
+                />
+              </TabsContent>
+            </ModuleControlSurfaceBody>
+          </ModuleControlSurface>
+        </Tabs>
       </div>
 
       {/* Modal */}
@@ -1856,760 +1807,20 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
       </Dialog>
 
       {/* Dialogo de Organismo */}
-      <Dialog open={organismoDialogOpen} onOpenChange={setOrganismoDialogOpen}>
-        <DialogContent 
-          className="!max-w-none !w-screen !h-screen !top-0 !left-0 !translate-x-0 !translate-y-0 !rounded-none overflow-y-auto p-0 m-0"
-          aria-describedby="organismo-dialog-description"
-        >
-          <DialogHeader className="sticky top-0 z-10 bg-white border-b px-6 py-4 shadow-sm">
-            <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, fontSize: '1.5rem' }}>
-              {t('organisms.newOrganismForm')}
-            </DialogTitle>
-            <DialogDescription id="organismo-dialog-description">
-              {t('organisms.formDescription')}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-5 py-4 px-8">
-            {/* Información Básica */}
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold text-[#333333] pb-2 border-b-2 border-[#1E73BE] flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                <Building2 className="w-5 h-5 text-[#1E73BE]" />
-                {t('organisms.basicInfo')}
-              </h3>
-              <div className="grid grid-cols-6 gap-4">
-                {/* Campo de Logo */}
-                <div className="col-span-6 space-y-3" style={{ 
-                  backgroundColor: '#FFF0F0', 
-                  padding: '20px', 
-                  borderRadius: '12px', 
-                  border: '3px solid #DC3545',
-                  marginBottom: '12px'
-                }}>
-                  <Label className="text-[#DC3545] font-bold text-2xl flex items-center gap-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    🎨 {t('organisms.version.form.logoField.title')}
-                    <Badge className="bg-[#DC3545] text-white text-sm px-3 py-1">
-                      {t('organisms.version.form.logoField.badge')}
-                    </Badge>
-                  </Label>
-                  
-                  <div className="flex items-start gap-4">
-                    {/* Vista previa del logo */}
-                    <div className="flex-shrink-0">
-                      {formOrganismo.logo ? (
-                        <div className="relative w-32 h-32 border-2 border-[#1E73BE] rounded-lg overflow-hidden bg-white">
-                          <img 
-                            src={formOrganismo.logo} 
-                            alt="Logo" 
-                            className="w-full h-full object-contain p-2"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFormOrganismo({ ...formOrganismo, logo: null })}
-                            className="absolute top-1 right-1 bg-[#DC3545] text-white rounded-full p-1 hover:bg-[#c82333] transition-colors"
-                            title="Supprimer le logo"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-32 h-32 border-2 border-dashed border-[#1E73BE] rounded-lg flex items-center justify-center bg-white">
-                          <Upload className="w-8 h-8 text-[#1E73BE] opacity-50" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Botón de carga */}
-                    <div className="flex-1 space-y-3">
-                      <div>
-                        <input
-                          type="file"
-                          id="logo-upload"
-                          accept="image/png,image/jpeg,image/jpg,image/svg+xml"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                setFormOrganismo({ ...formOrganismo, logo: reader.result as string });
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="border-[#1E73BE] text-[#1E73BE] hover:bg-[#1E73BE] hover:text-white"
-                          onClick={() => document.getElementById('logo-upload')?.click()}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          {formOrganismo.logo ? 'Changer le logo' : 'Télécharger le logo'}
-                        </Button>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm text-[#666666]">
-                          📁 Formats acceptés: PNG, JPG, SVG
-                        </p>
-                        <p className="text-sm text-[#666666]">
-                          📏 Taille recommandée: 500x500 pixels
-                        </p>
-                        <p className="text-xs text-[#1E73BE]">
-                          💡 Le logo sera affiché sur les documents et rapports de l'organisme
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-span-3 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.organismName')} *</Label>
-                  <Input 
-                    placeholder={t('organisms.organismNamePlaceholder')} 
-                    value={formOrganismo.nombre}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, nombre: e.target.value })}
-                    className="h-11 text-base"
-                  />
-                </div>
-                
-                <div className="col-span-3 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.type')} *</Label>
-                  <Select 
-                    value={formOrganismo.tipo}
-                    onValueChange={(value) => setFormOrganismo({ ...formOrganismo, tipo: value })}
-                  >
-                    <SelectTrigger className="h-11 text-base">
-                      <SelectValue placeholder={t('organisms.selectType')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tiposOrganismo.map(tipo => (
-                        <SelectItem key={tipo.id} value={tipo.nombre} className="text-base">
-                          {tipo.icono} {tipo.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* ⭐ CAMPO QUARTIER - ULTRA VISIBLE ⭐ */}
-                <div className="col-span-6 space-y-3" style={{ 
-                  backgroundColor: '#FFF9E6', 
-                  padding: '20px', 
-                  borderRadius: '12px', 
-                  border: '4px solid #FFC107', 
-                  boxShadow: '0 4px 20px rgba(255, 193, 7, 0.4)',
-                  marginBottom: '8px'
-                }}>
-                  <Label className="text-[#333333] font-bold text-xl flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    🏘️ Quartier de Laval *
-                    <Badge className="bg-[#FFC107] text-black">REQUIS</Badge>
-                  </Label>
-                  <Select 
-                    value={formOrganismo.quartier || ''}
-                    onValueChange={(value) => setFormOrganismo({ ...formOrganismo, quartier: value })}
-                  >
-                    <SelectTrigger className="bg-white h-14 text-lg border-2 border-[#FFC107]">
-                      <SelectValue placeholder="⚠️ Sélectionnez un quartier de Laval" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Auteuil">Auteuil</SelectItem>
-                      <SelectItem value="Chomedey">Chomedey</SelectItem>
-                      <SelectItem value="Duvernay">Duvernay</SelectItem>
-                      <SelectItem value="Fabreville">Fabreville</SelectItem>
-                      <SelectItem value="Laval-des-Rapides">Laval-des-Rapides</SelectItem>
-                      <SelectItem value="Laval-Ouest">Laval-Ouest</SelectItem>
-                      <SelectItem value="Laval-sur-le-Lac">Laval-sur-le-Lac</SelectItem>
-                      <SelectItem value="Pont-Viau">Pont-Viau</SelectItem>
-                      <SelectItem value="Sainte-Dorothée">Sainte-Dorothée</SelectItem>
-                      <SelectItem value="Sainte-Rose">Sainte-Rose</SelectItem>
-                      <SelectItem value="Saint-François">Saint-François</SelectItem>
-                      <SelectItem value="Saint-Vincent-de-Paul">Saint-Vincent-de-Paul</SelectItem>
-                      <SelectItem value="Vimont">Vimont</SelectItem>
-                      <SelectItem value="Îles-Laval">Îles-Laval</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-[#666666] font-medium">
-                    📍 Sélectionnez le quartier de Laval où se trouve l'organisme
-                  </p>
-                </div>
-
-                <div className="col-span-4 space-y-2 relative">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Label>{t('organisms.fullAddress')} *</Label>
-                    <Badge className="bg-gradient-to-r from-[#1E73BE] to-[#4CAF50] text-white text-xs">
-                      🔍 Auto-complétion intelligente
-                    </Badge>
-                  </div>
-                  <AddressAutocomplete
-                    onAddressSelect={(address) => {
-                      setFormOrganismo({
-                        ...formOrganismo,
-                        direccion: address.street,
-                        codigoPostal: address.postalCode,
-                        quartier: address.quartier || ''
-                      });
-                      toast.success('📍 Adresse complétée automatiquement', {
-                        description: `Code postal: ${address.postalCode} • Ville: ${address.city}${address.quartier ? ` • Quartier: ${address.quartier}` : ''}`
-                      });
-                    }}
-                    disabled={false}
-                    initialValue={formOrganismo.direccion}
-                    initialQuartier={formOrganismo.quartier || ''}
-                    label=""
-                    placeholder="💡 Tapez le numéro civique et la rue (ex: 123 Boulevard Saint-Martin Est)"
-                    required={true}
-                  />
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-                    <p className="text-xs text-[#1E73BE] font-medium flex items-center gap-2">
-                      <span className="text-base">ℹ️</span>
-                      <span>
-                        {t('organisms.addressHelp')} Le code postal sera automatiquement rempli lors de la sélection.
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    {t('organisms.postalCode')} *
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-[#1E73BE] border-[#1E73BE]">
-                      Auto
-                    </Badge>
-                  </Label>
-                  <div className="relative">
-                    <Input 
-                      placeholder={t('organisms.postalCodePlaceholder')}
-                      value={formOrganismo.codigoPostal}
-                      onChange={(e) => setFormOrganismo({ ...formOrganismo, codigoPostal: e.target.value })}
-                      readOnly
-                      className="bg-blue-50 border-blue-200 font-medium h-11 text-base"
-                    />
-                    {formOrganismo.codigoPostal && (
-                      <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4CAF50]" />
-                    )}
-                  </div>
-                  <p className="text-xs text-[#1E73BE] font-medium flex items-center gap-1">
-                    ✨ {t('organisms.postalCodeAutoFill')}
-                  </p>
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.responsible')} *</Label>
-                  {personasAutorizadas.length > 0 ? (
-                    <Select 
-                      value={formOrganismo.responsable}
-                      onValueChange={(value) => setFormOrganismo({ ...formOrganismo, responsable: value })}
-                    >
-                      <SelectTrigger className="h-11 text-base">
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px] overflow-y-auto">
-                        {personasAutorizadas.map(persona => (
-                          <SelectItem key={persona.id} value={persona.nombreCompleto} className="text-base">
-                            {persona.nombreCompleto}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input 
-                      placeholder={t('organisms.responsablePlaceholder')} 
-                      value={formOrganismo.responsable}
-                      onChange={(e) => setFormOrganismo({ ...formOrganismo, responsable: e.target.value })}
-                      className="h-11 text-base"
-                    />
-                  )}
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.beneficiariesNumber')} *</Label>
-                  <Input 
-                    type="number" 
-                    placeholder="0" 
-                    value={formOrganismo.beneficiarios || ''}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, beneficiarios: parseInt(e.target.value) || 0 })}
-                    className="h-11 text-base"
-                  />
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.phone')} *</Label>
-                  <Input 
-                    placeholder="(514) 555-0100" 
-                    value={formOrganismo.telefono}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, telefono: e.target.value })}
-                    className="h-11 text-base"
-                  />
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.emailLabel')} *</Label>
-                  <Input 
-                    type="email" 
-                    placeholder="contact@organisme.ca" 
-                    value={formOrganismo.email}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, email: e.target.value })}
-                    className="h-11 text-base"
-                  />
-                </div>
-
-                {/* Campo de Clave de Acceso */}
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    🔑 {t('organisms.accessKey')}
-                  </Label>
-                  {modoEdicion ? (
-                    <div className="relative">
-                      <Input 
-                        value={organismoSeleccionado?.claveAcceso || 'No disponible'}
-                        readOnly
-                        className="h-11 text-base font-mono font-bold bg-green-50 border-green-300 text-green-700 pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (organismoSeleccionado?.claveAcceso) {
-                            const exito = await copiarAlPortapapeles(organismoSeleccionado.claveAcceso);
-                            if (exito) toast.success('✅ Clé copiée!');
-                          }
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-green-100 rounded transition-colors"
-                        title="Copier la clé"
-                      >
-                        <Copy className="w-4 h-4 text-green-700" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="h-11 flex items-center px-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <span className="text-sm text-blue-700 flex items-center gap-2">
-                        <span className="animate-pulse">✨</span>
-                        {t('organisms.accessKeyAutoGenerated')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Programación y Frecuencia */}
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold text-[#333333] pb-2 border-b-2 border-[#1E73BE] flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                <Calendar className="w-5 h-5 text-[#1E73BE]" />
-                {t('organisms.scheduling')}
-              </h3>
-              <div className="grid grid-cols-6 gap-4">
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.appointmentFrequency')} *</Label>
-                  <Select 
-                    value={formOrganismo.frecuenciaCita}
-                    onValueChange={(value) => setFormOrganismo({ ...formOrganismo, frecuenciaCita: value })}
-                  >
-                    <SelectTrigger className="h-11 text-base">
-                      <SelectValue placeholder={t('organisms.selectFrequency')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="semanal" className="text-base">{t('organisms.weekly')}</SelectItem>
-                      <SelectItem value="cada-dos-semanas" className="text-base">{t('organisms.biweekly')}</SelectItem>
-                      <SelectItem value="mensual" className="text-base">{t('organisms.monthly')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.appointmentTime')}</Label>
-                  <Input 
-                    type="time" 
-                    value={formOrganismo.horaCita}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, horaCita: e.target.value })}
-                    className="h-11 text-base"
-                  />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">Jour de rendez-vous</Label>
-                  <Select
-                    value={formOrganismo.diaCita}
-                    onValueChange={(value) => setFormOrganismo({ ...formOrganismo, diaCita: value })}
-                  >
-                    <SelectTrigger className="h-11 text-base">
-                      <SelectValue placeholder="Sélectionner le jour" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {diasCitaOptions.map((dia) => (
-                        <SelectItem key={dia} value={dia} className="text-base">{dia}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">{t('organisms.organismType')}</Label>
-                  <Select 
-                    value={resolverClasificacionOrganismo(formOrganismo)}
-                    onValueChange={(value) => setFormOrganismo({
-                      ...formOrganismo,
-                      clasificacionOrganismo: value as ClasificacionOrganismo,
-                      regular: value !== 'eventual'
-                    })}
-                  >
-                    <SelectTrigger className="h-11 text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="regular" className="text-base">{t('organisms.regular')}</SelectItem>
-                      <SelectItem value="collation" className="text-base">Collation</SelectItem>
-                      <SelectItem value="eventual" className="text-base">{t('organisms.occasionalOrganism')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    onClick={() => setFormOrganismo({ ...formOrganismo, participantePRS: !formOrganismo.participantePRS })}
-                    className={`h-8 text-xs w-full ${formOrganismo.participantePRS 
-                      ? 'bg-[#4CAF50] hover:bg-[#45a049]' 
-                      : 'bg-gray-400 hover:bg-gray-500'}`}
-                  >
-                    PRS: {formOrganismo.participantePRS ? '✓' : '✕'}
-                  </Button>
-                </div>
-              </div>
-              
-              {/* Estado activo/inactivo y PRS */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg bg-gray-50">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#333333]">
-                      État: <span className={`font-semibold ${formOrganismo.activo ? 'text-[#4CAF50]' : 'text-[#DC3545]'}`}>
-                        {formOrganismo.activo ? 'Actif' : 'Inactif'}
-                      </span>
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => setFormOrganismo({ ...formOrganismo, activo: !formOrganismo.activo })}
-                    className={`h-10 text-sm px-4 ${formOrganismo.activo 
-                      ? 'bg-[#4CAF50] hover:bg-[#45a049]' 
-                      : 'bg-[#DC3545] hover:bg-[#c82333]'}`}
-                  >
-                    {formOrganismo.activo ? '✓ Actif' : '✕ Inactif'}
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg bg-gray-50">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#333333]">
-                      Participant PRS: <span className={`font-semibold ${formOrganismo.participantePRS ? 'text-[#4CAF50]' : 'text-gray-500'}`}>
-                        {formOrganismo.participantePRS ? 'Oui' : 'Non'}
-                      </span>
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => setFormOrganismo({ ...formOrganismo, participantePRS: !formOrganismo.participantePRS })}
-                    className={`h-10 text-sm px-4 ${formOrganismo.participantePRS 
-                      ? 'bg-[#4CAF50] hover:bg-[#45a049]' 
-                      : 'bg-gray-400 hover:bg-gray-500'}`}
-                  >
-                    {formOrganismo.participantePRS ? '✓ Oui' : '✕ Non'}
-                  </Button>
-                </div>
-              </div>
-
-              {!formOrganismo.activo && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-red-700">{t('organisms.inactivityStartDate')} *</Label>
-                    <Input 
-                      type="date"
-                      value={formOrganismo.fechaInicioInactividad || ''}
-                      onChange={(e) => setFormOrganismo({ ...formOrganismo, fechaInicioInactividad: e.target.value })}
-                      className="h-11 text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-red-700">{t('organisms.inactivityEndDate')}</Label>
-                    <Input 
-                      type="date"
-                      value={formOrganismo.fechaFinInactividad || ''}
-                      onChange={(e) => setFormOrganismo({ ...formOrganismo, fechaFinInactividad: e.target.value })}
-                      min={formOrganismo.fechaInicioInactividad || ''}
-                      className="h-11 text-base"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Capacidad y Servicios */}
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold text-[#333333] pb-2 border-b-2 border-[#1E73BE] flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                <UserCheck className="w-5 h-5 text-[#1E73BE]" />
-                {t('organisms.capacity')}
-              </h3>
-              <div className="grid grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#1E73BE]" />
-                    {t('organisms.peopleServed')}
-                  </Label>
-                  <Input 
-                    type="number" 
-                    placeholder="0" 
-                    value={formOrganismo.personasServidas || ''}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, personasServidas: parseInt(e.target.value) || 0 })}
-                    onBlur={calcularPorcentajeAutomatico}
-                    className="h-11 text-base font-medium"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Coffee className="w-4 h-4 text-[#FFC107]" />
-                    Collations
-                  </Label>
-                  <Input 
-                    type="number" 
-                    placeholder="0" 
-                    value={formOrganismo.cantidadColaciones || ''}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, cantidadColaciones: parseInt(e.target.value) || 0 })}
-                    onBlur={calcularPorcentajeAutomatico}
-                    className="h-11 text-base font-medium"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <UtensilsCrossed className="w-4 h-4 text-[#4CAF50]" />
-                    Repas
-                  </Label>
-                  <Input 
-                    type="number" 
-                    placeholder="0" 
-                    value={formOrganismo.cantidadAlmuerzos || ''}
-                    onChange={(e) => setFormOrganismo({ ...formOrganismo, cantidadAlmuerzos: parseInt(e.target.value) || 0 })}
-                    onBlur={calcularPorcentajeAutomatico}
-                    className="h-11 text-base font-medium"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <div className="w-full bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-3 text-center">
-                    <p className="text-xs font-medium text-[#666666] mb-1">{t('organisms.distributionPercentage')}</p>
-                    <div className="text-2xl font-bold text-[#1E73BE]">
-                      {(formOrganismo.porcentajeReparticion || 0).toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Notas y Notificaciones */}
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold text-[#333333] pb-2 border-b-2 border-[#1E73BE] flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                <FileText className="w-5 h-5 text-[#1E73BE]" />
-                Notes et Observations
-              </h3>
-              <Textarea 
-                placeholder={t('organisms.notesPlaceholder')}
-                rows={3}
-                value={formOrganismo.notas}
-                onChange={(e) => setFormOrganismo({ ...formOrganismo, notas: e.target.value })}
-                className="text-base resize-none"
-              />
-              <div className="flex items-center gap-3 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                <input 
-                  type="checkbox"
-                  id="notificaciones"
-                  checked={formOrganismo.notificaciones}
-                  onChange={(e) => setFormOrganismo({ ...formOrganismo, notificaciones: e.target.checked })}
-                  className="w-5 h-5"
-                />
-                <Label htmlFor="notificaciones" className="mb-0 cursor-pointer text-sm font-medium flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-[#FFC107]" />
-                  {t('organisms.enableNotifications')}
-                </Label>
-              </div>
-            </div>
-
-            {/* Contactos de notificación */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b-2 border-[#1E73BE]">
-                <h3 className="text-base font-semibold text-[#333333] flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  <Bell className="w-5 h-5 text-[#1E73BE]" />
-                  Contacts de notification
-                </h3>
-                <Button 
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={agregarContacto}
-                  className="h-9 text-sm px-3 text-[#4CAF50] border-[#4CAF50] hover:bg-[#4CAF50] hover:text-white"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Ajouter Contact
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {(formOrganismo.contactosNotificacion || []).map((contacto, index) => (
-                  <div key={index} className="border-2 border-gray-300 rounded-lg p-3 bg-[#FAFAFA]">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge className="bg-[#1E73BE] hover:bg-[#1E73BE] text-sm h-6 px-3">
-                        Contact {index + 1}
-                      </Badge>
-                      {formOrganismo.contactosNotificacion && formOrganismo.contactosNotificacion.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => eliminarContacto(index)}
-                          className="h-8 px-2 text-[#DC3545] hover:text-white hover:bg-[#DC3545]"
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Supprimer
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Nom Complet</Label>
-                        <Input 
-                          placeholder="Jean Dupont" 
-                          value={contacto.nombre}
-                          onChange={(e) => actualizarContacto(index, 'nombre', e.target.value)}
-                          className="h-10 text-base"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Email</Label>
-                        <Input 
-                          type="email"
-                          placeholder="jean@example.com" 
-                          value={contacto.email}
-                          onChange={(e) => actualizarContacto(index, 'email', e.target.value)}
-                          className="h-10 text-base"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Poste</Label>
-                        <Select
-                          value={contacto.cargo || ''}
-                          onValueChange={(value) => actualizarContacto(index, 'cargo', value)}
-                        >
-                          <SelectTrigger className="h-10 text-base">
-                            <SelectValue placeholder="Directeur" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Directeur">Directeur</SelectItem>
-                            <SelectItem value="Coordinateur">Coordinateur</SelectItem>
-                            <SelectItem value="Responsable">Responsable</SelectItem>
-                            <SelectItem value="Chef d'équipe">Chef d'équipe</SelectItem>
-                            <SelectItem value="Superviseur">Superviseur</SelectItem>
-                            <SelectItem value="Assistant">Assistant</SelectItem>
-                            <SelectItem value="Gestionnaire">Gestionnaire</SelectItem>
-                            <SelectItem value="Administrateur">Administrateur</SelectItem>
-                            <SelectItem value="Bénévole">Bénévole</SelectItem>
-                            <SelectItem value="Volontaire">Volontaire</SelectItem>
-                            <SelectItem value="Stagiaire">Stagiaire</SelectItem>
-                            <SelectItem value="Conseiller">Conseiller</SelectItem>
-                            <SelectItem value="Technicien">Technicien</SelectItem>
-                            <SelectItem value="Spécialiste">Spécialiste</SelectItem>
-                            <SelectItem value="Analyste">Analyste</SelectItem>
-                            <SelectItem value="Autre">Autre</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    {/* Selección múltiple de idiomas */}
-                    <div className="mt-3 space-y-2">
-                      <Label className="flex items-center gap-2 text-sm font-medium">
-                        <Languages className="w-4 h-4 text-[#1E73BE]" />
-                        Langues parlées
-                      </Label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {[
-                          { code: 'fr' as IdiomaContactoOrganismo, label: '🇫🇷 FR', color: '#1a4d7a' },
-                          { code: 'en' as IdiomaContactoOrganismo, label: '🇬🇧 EN', color: '#2d9561' },
-                          { code: 'es' as IdiomaContactoOrganismo, label: '🇪🇸 ES', color: '#8B5CF6' },
-                          { code: 'ar' as IdiomaContactoOrganismo, label: '🇸🇦 AR', color: '#F59E0B' }
-                        ].map((idioma) => (
-                          <label
-                            key={idioma.code}
-                            className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50 transition-colors"
-                            style={{
-                              borderColor: contacto.idiomas?.includes(idioma.code) ? idioma.color : '#e5e7eb',
-                              backgroundColor: contacto.idiomas?.includes(idioma.code) ? `${idioma.color}10` : 'transparent'
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={contacto.idiomas?.includes(idioma.code) || false}
-                              onChange={(e) => {
-                                const currentIdiomas = contacto.idiomas || [];
-                                const newIdiomas = e.target.checked
-                                  ? [...currentIdiomas, idioma.code]
-                                  : currentIdiomas.filter(i => i !== idioma.code);
-                                actualizarContacto(index, 'idiomas', newIdiomas);
-                              }}
-                              className="w-3 h-3 rounded"
-                              style={{ accentColor: idioma.color }}
-                            />
-                            <span className="text-xs font-medium">{idioma.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <SelecteurJoursDisponibles
-                        joursSelectionnes={contacto.joursDisponibles || []}
-                        onChange={(jours) => actualizarContacto(index, 'joursDisponibles', jours)}
-                        showIcon={true}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Botones de acción */}
-            <div className="flex justify-end gap-3 pt-4 border-t-2">
-              <Button variant="outline" onClick={() => {
-                setOrganismoDialogOpen(false);
-              }} className="h-10 text-base px-5">
-                {t('liaison.cancel')}
-              </Button>
-              <Button
-                onClick={() => {
-                  if (modoEdicion) {
-                    handleGuardarCambios();
-                  } else {
-                    handleCrearOrganismo();
-                  }
-                }}
-                className="bg-[#4CAF50] hover:bg-[#45a049] text-white h-10 text-base px-5"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                {modoEdicion ? t('liaison.updateOrganism') : t('liaison.createOrganism')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialogo de Perfil */}
-      {organismoSeleccionado && (
-        <PerfilOrganismoDialog
-          open={perfilDialogOpen}
-          onOpenChange={setPerfilDialogOpen}
-          modoEdicion={false}
-          setModoEdicion={() => {}}
-          formOrganismo={convertirOrganismoAFormulario(organismoSeleccionado)}
-          setFormOrganismo={() => {}}
-          onGuardar={() => {}}
-          calcularPorcentajeAutomatico={() => {}}
-          agregarContacto={() => {}}
-          eliminarContacto={() => {}}
-          actualizarContacto={() => {}}
-          historialDonaciones={historialDonaciones}
-          historialPRS={historialPRS}
-          organismoId={organismoSeleccionado.id.toString()}
-        />
-      )}
+      <FormularioOrganismoCompacto
+        abierto={organismoDialogOpen}
+        onCerrar={() => {
+          setOrganismoDialogOpen(false);
+          setModoEdicion(false);
+          setModoVisualizacion(false);
+        }}
+        formulario={formOrganismo}
+        setFormulario={setFormOrganismo}
+        modoEdicion={modoEdicion}
+        modoVisualizacion={modoVisualizacion}
+        onGuardar={modoEdicion ? handleGuardarCambios : handleCrearOrganismo}
+        tiposOrganismo={tiposOrganismo}
+      />
 
       {/* Diálogo de Clave Generada */}
       <Dialog open={claveGeneradaDialog} onOpenChange={setClaveGeneradaDialog}>

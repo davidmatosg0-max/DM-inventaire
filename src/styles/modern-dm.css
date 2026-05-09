@@ -396,3 +396,141 @@
   font-weight: 500;
   font-family: 'Montserrat', sans-serif;
 }
+
+/* ===== Shell Visual Global ===== */
+.app-main-stage {
+  background:
+    radial-gradient(circle at top left, rgba(26, 77, 122, 0.16) 0%, transparent 28%),
+    radial-gradient(circle at top right, rgba(45, 149, 97, 0.14) 0%, transparent 24%),
+    linear-gradient(180deg, #f4f8fb 0%, #edf3f8 48%, #f7fafc 100%);
+}
+
+.app-main-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+  background-size: 36px 36px;
+  opacity: 0.4;
+}
+
+.app-shell-content {
+  position: relative;
+  min-height: calc(100vh - 64px);
+  isolation: isolate;
+}
+
+.app-shell-content::before {
+  content: '';
+  position: absolute;
+  inset: 0.5rem;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.16) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  z-index: -1;
+}
+
+[data-app-shell] > * {
+  position: relative;
+  animation: fadeInKeyframes 0.35s ease-out;
+}
+
+[data-app-shell] [data-slot="card"] {
+  border-radius: 24px;
+  border-color: rgba(255, 255, 255, 0.72);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(247, 250, 252, 0.9) 100%);
+  box-shadow: 0 20px 45px rgba(17, 37, 63, 0.08), 0 8px 20px rgba(17, 37, 63, 0.05);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+[data-app-shell] [data-slot="card"]:hover {
+  box-shadow: 0 24px 54px rgba(17, 37, 63, 0.12), 0 10px 24px rgba(17, 37, 63, 0.08);
+}
+
+[data-app-shell] [data-slot="card-title"],
+[data-app-shell] [data-slot="dialog-title"] {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #16324f;
+}
+
+[data-app-shell] [data-slot="card-description"],
+[data-app-shell] [data-slot="dialog-description"] {
+  color: #5d7185;
+}
+
+[data-app-shell] [data-slot="button"] {
+  border-radius: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-app-shell] [data-slot="button"]:not(:disabled) {
+  box-shadow: 0 10px 24px rgba(17, 37, 63, 0.08);
+}
+
+[data-app-shell] [data-slot="button"]:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+[data-app-shell] [data-slot="tabs-list"] {
+  border: 1px solid rgba(22, 50, 79, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 18px rgba(17, 37, 63, 0.05);
+}
+
+[data-app-shell] [data-slot="tabs-trigger"][data-state="active"] {
+  box-shadow: 0 10px 24px rgba(17, 37, 63, 0.08);
+}
+
+[data-app-shell] [data-slot="table-container"] {
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(22, 50, 79, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 18px 36px rgba(17, 37, 63, 0.07);
+}
+
+[data-app-shell] [data-slot="table"] thead tr {
+  background: linear-gradient(135deg, #16324f 0%, #1a4d7a 52%, #2d9561 100%);
+}
+
+[data-app-shell] [data-slot="table"] thead th {
+  color: #ffffff;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+[data-app-shell] [data-slot="table-row"] {
+  border-color: rgba(22, 50, 79, 0.08);
+}
+
+[data-app-shell] [data-slot="table-row"]:hover {
+  background: rgba(26, 77, 122, 0.04);
+}
+
+[data-slot="dialog-overlay"] {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(17, 24, 39, 0.45);
+}
+
+[data-slot="dialog-content"] {
+  border-radius: 24px;
+  border-color: rgba(255, 255, 255, 0.68);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 249, 252, 0.95) 100%);
+  box-shadow: 0 32px 80px rgba(17, 37, 63, 0.22);
+}
