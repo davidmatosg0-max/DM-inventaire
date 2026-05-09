@@ -7,6 +7,7 @@ import { PWAFloatingButton } from '../PWAInstallButton';
 import { toast } from 'sonner';
 import { useAuth } from '../../../contexts/AuthContext';
 import { inicializarUsuarios } from '../../utils/usuarios';
+import { isSupabaseAuthEnabled } from '../../utils/supabaseClient';
 
 interface LoginProps {
   onLogin: () => void;
@@ -22,6 +23,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   const [recordarme, setRecordarme] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const authRemotaActiva = isSupabaseAuthEnabled();
 
   // Inicializar usuarios al montar el componente
   React.useEffect(() => {
@@ -45,7 +47,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
     
     // Validación simple
     if (!usuario || !contrasena) {
-      setError('Veuillez entrer un nom d\'utilisateur et un mot de passe');
+    setError(`Veuillez entrer ${authRemotaActiva ? 'un nom d\'utilisateur ou email' : 'un nom d\'utilisateur'} et un mot de passe`);
       toast.error('Champs requis');
       setIsLoading(false);
       return;
@@ -188,7 +190,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                   color: '#333333' 
                 }}
               >
-                {t('login.username')}
+                {authRemotaActiva ? 'Nom d\'utilisateur ou email' : t('login.username')}
               </label>
               <div className="relative group">
                 <div 
@@ -206,7 +208,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                   style={{ 
                     borderColor: usuario ? branding.primaryColor : undefined,
                   }}
-                  placeholder={t('login.usernamePlaceholder')}
+                  placeholder={authRemotaActiva ? 'Nom d\'utilisateur ou email' : t('login.usernamePlaceholder')}
                 />
               </div>
             </div>

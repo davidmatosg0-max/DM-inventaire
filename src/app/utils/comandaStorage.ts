@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { registrarActividad } from './actividadLogger';
 import { descontarInventarioReservado, validarReservaInventario } from './inventoryReservations';
 import { obtenerProductos } from './productStorage';
+import { queueStorageSync } from './cloudPersistence';
 import {
   resolverTemperaturaProductoCanonica,
   resolverTemperaturaOriginalEntradaProducto,
@@ -112,6 +113,7 @@ export function obtenerComandas(): Comanda[] {
 
       if (JSON.stringify(comandasPersistidas) !== JSON.stringify(comandasNormalizadas)) {
         localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasNormalizadas));
+        queueStorageSync(COMANDAS_KEY);
       }
 
       return comandasNormalizadas;
@@ -140,6 +142,7 @@ export function guardarComanda(comanda: Comanda): void {
     const comandas = obtenerComandas();
     comandas.push(comandaNormalizada);
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
+    queueStorageSync(COMANDAS_KEY);
     
     // Registrar actividad
     registrarActividad(
@@ -193,6 +196,7 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
 
       comandas[index] = comandaNormalizada;
       localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
+      queueStorageSync(COMANDAS_KEY);
       
       // Registrar actividad con cambios
       const cambios = [];
@@ -229,6 +233,7 @@ export function actualizarComandasGrupo(grupoDistribucionId: string, cambios: Pa
     });
 
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasActualizadas));
+    queueStorageSync(COMANDAS_KEY);
 
     registrarActividad(
       'Commandes',
@@ -266,6 +271,7 @@ export function actualizarComandasDistribucion(
     });
 
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasActualizadas));
+    queueStorageSync(COMANDAS_KEY);
 
     registrarActividad(
       'Commandes',
@@ -288,6 +294,7 @@ export function eliminarComanda(comandaId: string): void {
     const comandaEliminar = comandas.find(c => c.id === comandaId);
     const comandasFiltradas = comandas.filter(c => c.id !== comandaId);
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasFiltradas));
+    queueStorageSync(COMANDAS_KEY);
     
     // Registrar actividad
     if (comandaEliminar) {

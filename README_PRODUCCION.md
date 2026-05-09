@@ -1,5 +1,14 @@
 # 🚀 BANQUE ALIMENTAIRE - SISTEMA EN PRODUCCIÓN
 
+> Note de mise à jour
+>
+> Ce document décrit un état historique du projet.
+> Pour le déploiement et la production actuels avec Supabase et GitHub Actions, utiliser en priorité:
+> - GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+> - SUPABASE_AUTH_SETUP.md
+> - DEPLOYMENT_GUIDE.md
+> - DEPLOY.md
+
 **Versión:** 5.0-production  
 **Estado:** ✅ LISTO PARA PRODUCCIÓN  
 **Fecha:** Martes, 10 de marzo de 2026

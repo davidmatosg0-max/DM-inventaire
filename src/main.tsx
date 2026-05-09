@@ -10,10 +10,21 @@ if (!root) {
   throw new Error('Root element not found');
 }
 
-ReactDOM.createRoot(root).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+async function bootstrapAndRender() {
+  try {
+    const { runAppBootstrap } = await import('./app/utils/appBootstrap');
+    await runAppBootstrap();
+  } catch (error) {
+    console.error('Error durante el bootstrap inicial de la aplicación:', error);
+  }
+
+  ReactDOM.createRoot(root).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
+}
+
+void bootstrapAndRender();

@@ -1,6 +1,7 @@
 // Sistema de almacenamiento y registro de movimientos de inventario
 
 import { MovimientoInventario } from '../types';
+import { queueStorageSync } from './cloudPersistence';
 
 const STORAGE_KEY = 'banco_alimentos_movimientos';
 
@@ -72,6 +73,7 @@ export function actualizarMovimientoEntrada(documentoReferencia: string, datos: 
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(movimientos));
+    queueStorageSync(STORAGE_KEY);
     return true;
   } catch (error) {
     console.error('Error al actualizar movimiento de entrada:', error);
@@ -92,6 +94,7 @@ export function eliminarMovimientosPorDocumento(documentoReferencia: string): nu
 
     if (eliminados > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(movimientosFiltrados));
+      queueStorageSync(STORAGE_KEY);
     }
 
     return eliminados;
@@ -124,6 +127,7 @@ export function reasignarProductoEnMovimientos(productoIdAnterior: string, produ
 
     if (actualizados > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(movimientosActualizados));
+      queueStorageSync(STORAGE_KEY);
     }
 
     return actualizados;
@@ -148,6 +152,7 @@ export function registrarMovimiento(movimiento: Omit<MovimientoExtendido, 'id' |
     
     movimientos.push(nuevoMovimiento);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(movimientos));
+    queueStorageSync(STORAGE_KEY);
     
     console.log('✅ Movimiento registrado:', nuevoMovimiento);
     return nuevoMovimiento;
@@ -426,6 +431,7 @@ export function obtenerMovimientosPorFecha(
 export function limpiarMovimientos(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    queueStorageSync(STORAGE_KEY);
     console.log('✅ Movimientos limpiados');
   } catch (error) {
     console.error('Error al limpiar movimientos:', error);

@@ -2,6 +2,12 @@
 // Usuarios predefinidos del sistema
 
 import { registrarActividad } from './actividadLogger';
+import { queueStorageSync } from './cloudPersistence';
+import {
+  desactivarUsuarioRemotoAdmin,
+  guardarUsuarioRemotoAdmin,
+  listarUsuariosRemotosAdmin,
+} from './remoteUserAdmin';
 
 // 🎭 ROLES DEL SISTEMA
 export type RolUsuario = 
@@ -314,14 +320,18 @@ const CURRENT_VERSION = '5.0-production'; // Versión producción - Solo David
 export function migrarUsuarios(): void {
   try {
     const version = localStorage.getItem(VERSION_KEY);
-    if (version === CURRENT_VERSION) {
+    const storedUsers = localStorage.getItem(STORAGE_KEY);
+    const usuariosActuales = storedUsers ? (JSON.parse(storedUsers) as Usuario[]) : [];
+
+    if (version === CURRENT_VERSION && usuariosActuales.length > 0) {
       return; // Ya está actualizado
     }
 
-    // MODO PRODUCCIÓN: Limpiar todos los usuarios y mantener solo David
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
+    const usuariosNormalizados = usuariosActuales.length > 0 ? usuariosActuales : USUARIOS_PREDEFINIDOS;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(usuariosNormalizados));
+    queueStorageSync(STORAGE_KEY);
     localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
-    console.log('✅ Modo Producción - Solo usuario David (développeur)');
+    console.log(`✅ Usuarios migrados para producción: ${usuariosNormalizados.length} usuario(s)`);
   } catch (error) {
     console.error('Error al migrar usuarios:', error);
   }
@@ -333,10 +343,19 @@ export function inicializarUsuarios(): void {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
+      queueStorageSync(STORAGE_KEY);
       localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
       console.log('✅ Usuarios inicializados:', USUARIOS_PREDEFINIDOS.length, 'usuarios');
     } else {
-      // Si ya existen usuarios, ejecutar migración
+      const usuarios = JSON.parse(stored) as Usuario[];
+      if (usuarios.length === 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
+        queueStorageSync(STORAGE_KEY);
+        localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+        console.log('✅ Usuario administrador inicial restaurado');
+        return;
+      }
+
       migrarUsuarios();
     }
   } catch (error) {
@@ -389,6 +408,7 @@ export function obtenerUsuariosTransporte(): Usuario[] {
 export function guardarUsuarios(usuarios: Usuario[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
+    queueStorageSync(STORAGE_KEY);
     console.log('✅ Usuarios guardados:', usuarios.length, 'usuarios');
   } catch (error) {
     console.error('Error al guardar usuarios:', error);
@@ -419,6 +439,107 @@ export function obtenerUsuarioPorUsername(username: string): Usuario | null {
   return usuarios.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
 }
 
+function mezclarUsuariosConCacheLocal(usuariosRemotos: Usuario[]): Usuario[] {
+  const usuariosLocales = obtenerUsuarios();
+
+  return usuariosRemotos.map((usuarioRemoto) => {
+    const usuarioLocal = usuariosLocales.find((usuario) =>
+      usuario.id === usuarioRemoto.id
+      || usuario.username.toLowerCase() === usuarioRemoto.username.toLowerCase()
+      || usuario.email.toLowerCase() === usuarioRemoto.email.toLowerCase()
+    );
+
+    return {
+      ...usuarioRemoto,
+      password: usuarioLocal?.password || usuarioRemoto.password || '',
+      ultimoAcceso: usuarioLocal?.ultimoAcceso || usuarioRemoto.ultimoAcceso,
+      fechaCreacion: usuarioLocal?.fechaCreacion || usuarioRemoto.fechaCreacion,
+    };
+  });
+}
+
+export async function sincronizarUsuariosConProveedor(): Promise<Usuario[]> {
+  try {
+    const usuariosRemotos = await listarUsuariosRemotosAdmin();
+    if (!usuariosRemotos) {
+      return obtenerUsuarios();
+    }
+
+    const usuariosFusionados = mezclarUsuariosConCacheLocal(usuariosRemotos);
+    guardarUsuarios(usuariosFusionados);
+    return usuariosFusionados;
+  } catch (error) {
+    console.error('Error al sincronizar usuarios remotos:', error);
+    return obtenerUsuarios();
+  }
+}
+
+export async function guardarUsuarioEnProveedor(
+  usuario: Omit<Usuario, 'id'>,
+  usuarioId?: string
+): Promise<Usuario> {
+  try {
+    const resultadoRemoto = await guardarUsuarioRemotoAdmin({
+      userId: usuarioId,
+      email: usuario.email,
+      password: usuario.password || undefined,
+      username: usuario.username,
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      roleId: usuario.rol,
+      descripcion: usuario.descripcion,
+      telefono: usuario.telefono,
+      departamentoId: usuario.departamentoId,
+      activo: usuario.activo,
+    });
+
+    if (resultadoRemoto?.userId) {
+      const usuariosActualizados = await sincronizarUsuariosConProveedor();
+      const usuarioGuardado = usuariosActualizados.find((item) => item.id === resultadoRemoto.userId)
+        || usuariosActualizados.find((item) => item.username.toLowerCase() === usuario.username.toLowerCase());
+
+      if (usuarioGuardado) {
+        return {
+          ...usuarioGuardado,
+          password: usuario.password || usuarioGuardado.password,
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error al guardar usuario remoto:', error);
+  }
+
+  if (usuarioId) {
+    const actualizado = actualizarUsuario(usuarioId, usuario);
+    if (!actualizado) {
+      throw new Error('No se pudo actualizar el usuario');
+    }
+
+    const usuarioActualizado = obtenerUsuarios().find((item) => item.id === usuarioId);
+    if (!usuarioActualizado) {
+      throw new Error('Usuario actualizado no encontrado');
+    }
+
+    return usuarioActualizado;
+  }
+
+  return agregarUsuario(usuario);
+}
+
+export async function eliminarUsuarioEnProveedor(usuarioId: string): Promise<boolean> {
+  try {
+    const eliminadoRemoto = await desactivarUsuarioRemotoAdmin(usuarioId);
+    if (eliminadoRemoto) {
+      await sincronizarUsuariosConProveedor();
+      return true;
+    }
+  } catch (error) {
+    console.error('Error al eliminar usuario remoto:', error);
+  }
+
+  return eliminarUsuario(usuarioId);
+}
+
 // Agregar nuevo usuario
 export function agregarUsuario(usuario: Omit<Usuario, 'id'>): Usuario {
   const usuarios = obtenerUsuarios();
@@ -429,6 +550,7 @@ export function agregarUsuario(usuario: Omit<Usuario, 'id'>): Usuario {
   
   usuarios.push(nuevoUsuario);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
+  queueStorageSync(STORAGE_KEY);
   console.log('✅ Usuario agregado:', nuevoUsuario.username);
   
   // Registrar actividad
@@ -452,6 +574,7 @@ export function actualizarUsuario(id: string, datosActualizados: Partial<Usuario
     const usuarioAnterior = { ...usuarios[index] };
     usuarios[index] = { ...usuarios[index], ...datosActualizados };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
+    queueStorageSync(STORAGE_KEY);
     console.log('✅ Usuario actualizado:', usuarios[index].username);
     
     // Registrar actividad
@@ -495,6 +618,7 @@ export function eliminarUsuario(id: string): boolean {
   
   if (usuariosFiltrados.length < usuarios.length) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuariosFiltrados));
+    queueStorageSync(STORAGE_KEY);
     console.log('✅ Usuario eliminado');
     
     // Registrar actividad
@@ -519,6 +643,7 @@ export function eliminarUsuario(id: string): boolean {
 export function eliminarTodosLosUsuarios(): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    queueStorageSync(STORAGE_KEY);
     console.log('✅ Todos los usuarios eliminados');
     return true;
   } catch (error) {
@@ -530,6 +655,7 @@ export function eliminarTodosLosUsuarios(): boolean {
 // Resetear a usuarios predefinidos
 export function resetearUsuarios(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
+  queueStorageSync(STORAGE_KEY);
   console.log('✅ Usuarios reseteados a valores predefinidos');
 }
 

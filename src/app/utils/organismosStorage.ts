@@ -3,6 +3,7 @@
 
 import { notificarCambioOrganismo } from './organismoEvents';
 import { registrarActividad } from './actividadLogger';
+import { queueStorageSync } from './cloudPersistence';
 
 export interface JourDisponible {
   jour: string;
@@ -114,6 +115,7 @@ export function inicializarOrganismos(): void {
   if (!localStorage.getItem(STORAGE_KEY)) {
     // En producción, inicializar con array vacío
     localStorage.setItem(STORAGE_KEY, JSON.stringify(organismosIniciales));
+    queueStorageSync(STORAGE_KEY);
     console.log('✅ Sistema de organismos inicializado (vacío - listo para producción)');
   }
 }
@@ -128,6 +130,7 @@ export function obtenerOrganismos(): Organismo[] {
 
     if (JSON.stringify(organismosSanitizados) !== JSON.stringify(organismos)) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(organismosSanitizados));
+      queueStorageSync(STORAGE_KEY);
     }
 
     return organismosSanitizados;
@@ -156,6 +159,7 @@ export function crearOrganismo(organismo: Omit<Organismo, 'id' | 'fechaCreacion'
   });
   organismos.push(nuevoOrganismo);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(organismos));
+  queueStorageSync(STORAGE_KEY);
   notificarCambioOrganismo('CREATED', nuevoOrganismo.id);
   
   // Registrar actividad
@@ -190,6 +194,7 @@ export function actualizarOrganismo(id: string, datos: Partial<Organismo>): Orga
   organismos[index] = organismoActualizado;
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(organismos));
+  queueStorageSync(STORAGE_KEY);
   notificarCambioOrganismo('UPDATED', organismos[index].id);
   
   // Registrar actividad con cambios
@@ -222,6 +227,7 @@ export function eliminarOrganismo(id: string): boolean {
   }
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevosOrganismos));
+  queueStorageSync(STORAGE_KEY);
   notificarCambioOrganismo('DELETED', id);
   
   // Registrar actividad
@@ -322,6 +328,7 @@ export function migrarClavesDeAcceso(): void {
   
   if (actualizados > 0) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(organismosActualizados));
+    queueStorageSync(STORAGE_KEY);
     console.log(`✅ Migración completada: ${actualizados} organismos actualizados avec claves de acceso`);
   }
 }

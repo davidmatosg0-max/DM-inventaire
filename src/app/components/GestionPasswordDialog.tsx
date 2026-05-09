@@ -7,7 +7,7 @@ import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { toast } from 'sonner';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
-import { obtenerUsuarios, guardarUsuarios } from '../../utils/usuarios';
+import { guardarUsuarioEnProveedor, obtenerUsuarios, sincronizarUsuariosConProveedor, type Usuario } from '../../utils/usuarios';
 
 interface GestionPasswordDialogProps {
   open: boolean;
@@ -32,13 +32,17 @@ export function GestionPasswordDialog({
 
   // Cargar la contraseña actual cuando se abre el diálogo
   React.useEffect(() => {
-    if (open) {
-      const usuarios = obtenerUsuarios();
+    if (!open) {
+      return;
+    }
+
+    void (async () => {
+      const usuarios = await sincronizarUsuariosConProveedor();
       const usuario = usuarios.find(u => u.id === usuarioId);
       if (usuario) {
-        setPasswordActual(usuario.password);
+        setPasswordActual(usuario.password || '');
       }
-    }
+    })();
   }, [open, usuarioId]);
 
   const handleCopy = async (text: string) => {
@@ -64,7 +68,7 @@ export function GestionPasswordDialog({
     toast.success('Mot de passe généré automatiquement');
   };
 
-  const handleCambiarPassword = () => {
+  const handleCambiarPassword = async () => {
     if (!nuevaPassword) {
       toast.error('Veuillez entrer un nouveau mot de passe');
       return;
@@ -80,21 +84,28 @@ export function GestionPasswordDialog({
       return;
     }
 
-    // Actualizar la contraseña en localStorage
     const usuarios = obtenerUsuarios();
-    const usuarioIndex = usuarios.findIndex(u => u.id === usuarioId);
-    
-    if (usuarioIndex !== -1) {
-      usuarios[usuarioIndex].password = nuevaPassword;
-      guardarUsuarios(usuarios);
-      
+    const usuario = usuarios.find((item) => item.id === usuarioId);
+
+    if (!usuario) {
+      toast.error('Utilisateur non trouvé');
+      return;
+    }
+
+    try {
+      const usuarioActualizado: Usuario = await guardarUsuarioEnProveedor({
+        ...usuario,
+        password: nuevaPassword,
+      }, usuarioId);
+
       toast.success(`Mot de passe de ${nombreUsuario} mis à jour avec succès`);
-      setPasswordActual(nuevaPassword);
+      setPasswordActual(usuarioActualizado.password || nuevaPassword);
       setNuevaPassword('');
       setConfirmarPassword('');
       onOpenChange(false);
-    } else {
-      toast.error('Utilisateur non trouvé');
+    } catch (error) {
+      console.error('Error al cambiar contraseña:', error);
+      toast.error('Erreur lors de la mise à jour du mot de passe');
     }
   };
 
@@ -118,7 +129,7 @@ export function GestionPasswordDialog({
             <div className="relative">
               <Input
                 type={mostrarPassword ? 'text' : 'password'}
-                value={passwordActual}
+                value={passwordActual || 'Non disponible en mode sécurisé'}
                 readOnly
                 className="pr-20 bg-gray-50"
               />

@@ -20,9 +20,9 @@ nano .env.production
 
 **Configuración mínima:**
 ```env
-VITE_APP_MODE=production
-VITE_ENABLE_SAMPLE_DATA=false
-VITE_ENABLE_CONSOLE_LOGS=false
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key
+VITE_ENABLE_SUPABASE_AUTH=true
 ```
 
 ### 2. Build de Producción
@@ -76,10 +76,9 @@ vercel --prod
 
 **Variables de Entorno en Vercel:**
 ```
-VITE_APP_MODE=production
-VITE_ENABLE_SAMPLE_DATA=false
-VITE_ENABLE_CONSOLE_LOGS=false
-VITE_BASE_URL=/
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key
+VITE_ENABLE_SUPABASE_AUTH=true
 ```
 
 ### Opción 2: Netlify
@@ -128,21 +127,22 @@ netlify deploy --prod
 
 ### Opción 3: GitHub Pages
 
-```bash
-# Build y deploy
-npm run deploy
-```
+GitHub Pages ya está preparado con GitHub Actions.
 
 **Configuración manual:**
 1. Ir a Settings → Pages del repositorio
-2. Source: Deploy from a branch
-3. Branch: `gh-pages` → `/root`
-4. Save
+2. Source: GitHub Actions
+3. Crear en GitHub los secrets VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY y VITE_ENABLE_SUPABASE_AUTH
+4. Hacer push a main para ejecutar .github/workflows/deploy-pages.yml
 
 **IMPORTANTE:** En `vite.config.ts`, asegurar:
 ```typescript
 base: './' // Para GitHub Pages
 ```
+
+**Referencias:**
+- GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+- SUPABASE_AUTH_SETUP.md
 
 ### Opción 4: Servidor Propio
 
@@ -229,6 +229,7 @@ nano dist/.htaccess
 - [ ] Datos de ejemplo están deshabilitados (si es producción real)
 - [ ] Navegación funciona correctamente
 - [ ] Login funciona con credenciales
+- [ ] La persistencia Supabase sincroniza organismos, productos, entradas, movimientos y comandas
 - [ ] Exportación de PDFs funciona
 - [ ] Cambio de idiomas funciona (FR/ES/EN/AR)
 - [ ] Estilos glassmorphism se ven correctos
@@ -255,9 +256,8 @@ git add .
 git commit -m "Descripción de cambios"
 git push
 
-# Para Vercel/Netlify: Deploy automático
-# Para GitHub Pages:
-npm run deploy
+# Para Vercel/Netlify/GitHub Pages: Deploy automático
+# GitHub Pages usa .github/workflows/deploy-pages.yml
 
 # Para servidor propio:
 npm run build
@@ -306,8 +306,8 @@ npm run build
 
 - **Caché del navegador:** Usuarios pueden necesitar Ctrl+F5 para ver cambios
 - **CDN:** Considerar Cloudflare para mejor rendimiento global
-- **Base de datos:** Si necesitas persistencia real, integrar backend (Supabase, Firebase, etc.)
-- **Backups:** Configurar backups regulares de localStorage si usas datos reales
+- **Base de datos:** La persistencia real ya puede apoyarse en Supabase para los datos operativos del sistema.
+- **Backups:** Mantener exports o respaldos periódicos sigue siendo recomendable antes de cambios masivos.
 
 ---
 

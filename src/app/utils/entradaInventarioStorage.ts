@@ -20,6 +20,7 @@ import {
   eliminarMovimientosPorDocumento,
   reasignarProductoEnMovimientos
 } from './movimientoStorage';
+import { queueStorageSync } from './cloudPersistence';
 
 export type EntradaInventario = {
   id: string;
@@ -257,6 +258,7 @@ export function migrarProductosDuplicadosInventario(): {
 
     if (entradasModificadas) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entradas));
+      queueStorageSync(STORAGE_KEY);
     }
 
     productosCanonicosActualizados.forEach(productoId => {
@@ -360,6 +362,7 @@ export function guardarEntrada(entrada: Omit<EntradaInventario, 'id' | 'fechaCre
   const entradas = obtenerTodasLasEntradas();
   entradas.push(nuevaEntrada);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entradas));
+  queueStorageSync(STORAGE_KEY);
   
   return nuevaEntrada;
 }
@@ -590,6 +593,7 @@ export function actualizarEntrada(id: string, datos: Partial<EntradaInventario>)
   entradas[index] = entradaActualizada;
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entradas));
+  queueStorageSync(STORAGE_KEY);
 
   recalcularProductoDesdeEntradas(entradaActualizada.productoId);
 
@@ -631,6 +635,7 @@ export function eliminarEntradaPermanente(id: string): boolean {
   if (nuevasEntradas.length === entradas.length) return false;
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevasEntradas));
+  queueStorageSync(STORAGE_KEY);
   return true;
 }
 
@@ -703,6 +708,7 @@ export function importarEntradasJSON(json: string): boolean {
     if (!Array.isArray(entradas)) return false;
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entradas));
+    queueStorageSync(STORAGE_KEY);
     return true;
   } catch (error) {
     console.error('Error al importar entradas:', error);
@@ -715,5 +721,6 @@ export function importarEntradasJSON(json: string): boolean {
  */
 export function limpiarTodasLasEntradas(): boolean {
   localStorage.removeItem(STORAGE_KEY);
+  queueStorageSync(STORAGE_KEY);
   return true;
 }

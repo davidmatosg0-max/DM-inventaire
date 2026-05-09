@@ -53,14 +53,11 @@ Bienvenido al Sistema de Gestión Banque Alimentaire. Esta guía te ayudará a n
 **Tamaño:** ~200 líneas  
 **Tiempo de lectura:** 5 minutos  
 **Contenido:**
-- Deploy rápido en Vercel (1 minuto)
-- Deploy rápido en Netlify (2 minutos)
-- Deploy rápido en GitHub Pages (1 minuto)
-- Deploy en servidor propio (5 minutos)
-- Verificación post-deploy
-- Troubleshooting rápido
+- Guía rápida histórica de despliegue
+- Referencia breve de hosting general
+- Requiere contraste con las guías vigentes de Supabase y GitHub Actions
 
-**Cuándo leer:** Cuando necesitas hacer deploy YA
+**Cuándo leer:** Solo como apoyo rápido; para producción actual priorizar SUPABASE_AUTH_SETUP.md y GUIA_FRONTEND_SUPABASE_PRODUCCION.md
 
 ---
 
@@ -74,7 +71,7 @@ Bienvenido al Sistema de Gestión Banque Alimentaire. Esta guía te ayudará a n
 - Guías detalladas por plataforma:
   - Vercel (con CLI y Git)
   - Netlify (con CLI y Git)
-  - GitHub Pages
+   - GitHub Pages con GitHub Actions
   - Servidor propio (Nginx/Apache)
 - Configuración de headers de seguridad
 - Troubleshooting avanzado
@@ -238,9 +235,13 @@ Bienvenido al Sistema de Gestión Banque Alimentaire. Esta guía te ayudará a n
 **Contenido:** Configuración para Apache  
 **Uso:** Servidor Apache
 
-#### ⚙️ `.github/workflows/deploy.yml`
-**Contenido:** GitHub Actions workflow  
-**Uso:** CI/CD automático
+#### ⚙️ `.github/workflows/deploy-pages.yml`
+**Contenido:** Workflow GitHub Pages con variables VITE_* desde secrets  
+**Uso:** Build y publicación del frontend en GitHub Pages
+
+#### ⚙️ `.github/workflows/deploy-supabase.yml`
+**Contenido:** Workflow manual de despliegue Supabase  
+**Uso:** Migraciones SQL y despliegue de la Edge Function admin-users
 
 ---
 
@@ -252,14 +253,14 @@ Bienvenido al Sistema de Gestión Banque Alimentaire. Esta guía te ayudará a n
 1. README.md
    └─> Entender el proyecto
    
-2. QUICK_START.md
-   └─> Deploy rápido
+2. GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+   └─> Configurar frontend y hosting
    
-3. PRODUCTION_CHECKLIST.md
-   └─> Verificar todo funciona
+3. SUPABASE_AUTH_SETUP.md
+   └─> Configurar Supabase, auth y roles
    
-4. STATUS.md
-   └─> Confirmar estado
+4. DEPLOYMENT_GUIDE.md
+   └─> Validar estrategia de despliegue
 ```
 
 ### Para Deploy Producción Completo
@@ -268,20 +269,20 @@ Bienvenido al Sistema de Gestión Banque Alimentaire. Esta guía te ayudará a n
 1. README.md
    └─> Documentación técnica
    
-2. SECURITY.md
-   └─> Revisar seguridad
+2. GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+   └─> Configuración frontend y variables VITE_*
    
-3. DEPLOY.md
-   └─> Configuración detallada
+3. SUPABASE_AUTH_SETUP.md
+   └─> Configuración backend, roles y admin-users
    
-4. PRODUCTION_CHECKLIST.md
+4. DEPLOY.md
+   └─> Resumen operativo de despliegue
+   
+5. DEPLOYMENT_GUIDE.md
+   └─> Validar hosting y persistencia
+   
+6. PRODUCTION_CHECKLIST.md
    └─> Verificar paso a paso
-   
-5. LANZAMIENTO.md
-   └─> Ejecutar lanzamiento
-   
-6. STATUS.md
-   └─> Confirmar estado final
 ```
 
 ### Para Desarrollo

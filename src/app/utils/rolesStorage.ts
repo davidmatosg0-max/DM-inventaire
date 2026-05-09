@@ -1,5 +1,6 @@
 import { rolesPredeterminados, type Rol } from '../data/rolesPermisos';
 import { obtenerUsuarios } from './usuarios';
+import { queueStorageSync } from './cloudPersistence';
 
 const STORAGE_KEY = 'banque_alimentaire_roles_personnalises';
 export const ROLES_UPDATED_EVENT = 'roles-updated';
@@ -38,6 +39,7 @@ function leerRolesPersonalizados(): Rol[] {
 function guardarRolesPersonalizados(roles: Rol[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(roles.filter((rol) => !rol.predeterminado)));
+    queueStorageSync(STORAGE_KEY);
     emitirActualizacionRoles();
   } catch (error) {
     console.error('Error al guardar roles personalizados:', error);

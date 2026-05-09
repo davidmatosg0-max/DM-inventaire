@@ -1,6 +1,6 @@
 # Banque Alimentaire - Sistema de Gestión Integral
 
-> 🚀 **Estado:** ✅ Listo para Producción | **Versión:** 2.1.0 | **Última actualización:** Febrero 2026
+> 🚀 **Estado:** ✅ Listo para Producción | **Arquitectura actual:** Vite + Supabase + GitHub Actions
 
 ---
 
@@ -9,6 +9,9 @@
 **¿Primera vez aquí?** → Ver [Índice de Documentación Completo](./DOCS_INDEX.md)
 
 **Guías Rápidas:**
+- 🔐 [Supabase Auth y roles](./SUPABASE_AUTH_SETUP.md)
+- 🌐 [Frontend + Supabase en producción](./GUIA_FRONTEND_SUPABASE_PRODUCCION.md)
+- 🚢 [Despliegue detallado](./DEPLOYMENT_GUIDE.md)
 - 🚀 [Deploy en 5 minutos](./QUICK_START.md)
 - 📖 [Guía de Lanzamiento](./LANZAMIENTO.md)
 - ✅ [Checklist de Producción](./PRODUCTION_CHECKLIST.md)
@@ -75,9 +78,9 @@ cp .env.example .env.local
 \`\`\`
 
 Configuraciones importantes para producción:
-- `VITE_APP_MODE=production`
-- `VITE_ENABLE_SAMPLE_DATA=false`
-- `VITE_ENABLE_CONSOLE_LOGS=false`
+- `VITE_SUPABASE_URL=https://tu-proyecto.supabase.co`
+- `VITE_SUPABASE_ANON_KEY=tu-anon-key`
+- `VITE_ENABLE_SUPABASE_AUTH=true`
 
 ## 📦 Build para Producción
 
@@ -109,9 +112,11 @@ npm run preview
 
 ### GitHub Pages
 
-\`\`\`bash
-npm run deploy
-\`\`\`
+GitHub Pages usa ahora GitHub Actions con build de Vite en CI.
+
+1. Configurar en GitHub los secrets `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `VITE_ENABLE_SUPABASE_AUTH`
+2. Verificar que Settings → Pages → Source esté en GitHub Actions
+3. Hacer push a `main` para ejecutar `.github/workflows/deploy-pages.yml`
 
 ### Vercel
 
@@ -210,21 +215,22 @@ add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
 ## 👥 Acceso al Sistema
 
-### Usuarios de Prueba
+### Usuarios y autenticación
 
-El sistema incluye datos de ejemplo para pruebas:
+El sistema soporta dos modos:
 
-**Usuario Administrador:**
-- Usuario: `David` / `Admin`
-- Contraseña: `Lettycia26`
+- Auth local de compatibilidad cuando Supabase Auth no está configurado
+- Auth remota con Supabase Auth, perfiles, roles y Edge Function `admin-users`
 
-**Portal Público (Organismos):**
-- Clave de Acceso: `CAC-456ABC`
-- Organismo: Centre d'Aide Communautaire Exemple
+Para la configuración actual de producción, usar estas guías:
 
-### Limpiar Datos de Ejemplo
+- `SUPABASE_AUTH_SETUP.md`
+- `GUIA_FRONTEND_SUPABASE_PRODUCCION.md`
 
-Para empezar con datos limpios en producción:
+### Limpiar caché local de pruebas
+
+Este proyecto ya está orientado a datos reales.
+Si se necesita un entorno limpio para pruebas locales, hacerlo solo en un navegador o entorno de desarrollo controlado:
 
 \`\`\`javascript
 // En la consola del navegador:
@@ -232,16 +238,12 @@ localStorage.clear();
 location.reload();
 \`\`\`
 
-O cambiar la variable de entorno:
-\`\`\`
-VITE_ENABLE_SAMPLE_DATA=false
-\`\`\`
-
 ## 📊 Monitoreo
 
 ### Logs de Consola
 
-En producción, los logs están deshabilitados por defecto. Para habilitar:
+La configuración principal de producción está documentada en `SUPABASE_AUTH_SETUP.md` y `GUIA_FRONTEND_SUPABASE_PRODUCCION.md`.
+Si necesitas habilitar logs para diagnóstico puntual:
 
 \`\`\`
 VITE_ENABLE_CONSOLE_LOGS=true
@@ -316,7 +318,7 @@ npm run build
 ### Assets No Cargan
 
 Verificar `base` en `vite.config.ts`:
-- GitHub Pages: `base: './'`
+- GitHub Pages: `base: './'` con `.github/workflows/deploy-pages.yml`
 - Dominio propio: `base: '/'`
 
 ### Errores de Chunk

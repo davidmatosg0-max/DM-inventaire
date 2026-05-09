@@ -14,8 +14,9 @@
 - [ ] Tests unitarios pasando (si aplica)
 
 ### Configuración
-- [x] ✅ .env.production creado y configurado
 - [x] ✅ .env.example actualizado con todas las variables
+- [x] ✅ .env.local.example actualizado con variables frontend Supabase
+- [x] ✅ .env.deploy.example actualizado con variables backend Supabase
 - [x] ✅ vite.config.ts optimizado para producción
 - [x] ✅ package.json con scripts de deploy
 - [x] ✅ .gitignore configurado correctamente
@@ -26,6 +27,7 @@
 - [x] ✅ Headers de seguridad documentados
 - [x] ✅ No hay credenciales hardcodeadas
 - [x] ✅ Variables sensibles en .env
+- [x] ✅ Supabase Auth y Edge Function admin-users documentados
 - [ ] HTTPS configurado en servidor
 - [ ] CORS configurado correctamente
 - [ ] Rate limiting implementado (si aplica)
@@ -58,9 +60,12 @@
 - [ ] `npm run preview` y probar localmente
 
 ### Deploy
-- [ ] Variables de entorno configuradas en plataforma
+- [ ] Variables VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY y VITE_ENABLE_SUPABASE_AUTH configuradas en el hosting/frontend
+- [ ] Secrets SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD, SUPABASE_ACCESS_TOKEN y SUPABASE_SERVICE_ROLE_KEY configurados si se usa GitHub Actions para backend
 - [ ] Build command correcto: `npm run build`
 - [ ] Output directory correcto: `dist`
+- [ ] Workflow `.github/workflows/deploy-pages.yml` validado
+- [ ] Workflow `.github/workflows/deploy-supabase.yml` ejecutado en dry-run antes del despliegue real
 - [ ] Deploy ejecutado exitosamente
 - [ ] URL de producción accesible
 
@@ -68,9 +73,9 @@
 
 ### Funcionalidad Core
 - [ ] ✅ Página de login carga correctamente
-- [ ] ✅ Login funciona (usuario: David / Lettycia26)
+- [ ] ✅ Login funciona con Supabase Auth o fallback local según configuración
 - [ ] ✅ Navegación entre módulos funciona
-- [ ] ✅ Portal público accesible (CAC-456ABC)
+- [ ] ✅ Los datos operativos cargan después de la hidratación inicial desde Supabase
 - [ ] ✅ Cambio de idiomas funciona (FR/ES/EN/AR)
 - [ ] ✅ RTL funciona correctamente para árabe
 - [ ] ✅ Logout funciona
@@ -82,7 +87,7 @@
 - [ ] **Organismos**: Gestión completa funciona
 - [ ] **Transporte**: Vehículos y rutas funcionan
 - [ ] **Reportes**: Exportación PDF/Excel funciona
-- [ ] **Usuarios**: Gestión de roles funciona
+- [ ] **Usuarios**: Gestión de usuarios y roles funciona con proveedor remoto o fallback local
 - [ ] **Mensajería**: Sistema de mensajes y corrección funciona
 - [ ] **Bénévoles**: Gestión de voluntarios funciona
 - [ ] **Cuisine**: Recetas y producción funciona
@@ -155,6 +160,8 @@ Verificar en https://securityheaders.com:
 ### Para el Cliente
 - [x] ✅ README.md completo
 - [x] ✅ DEPLOY.md con instrucciones
+- [x] ✅ SUPABASE_AUTH_SETUP.md con auth, roles y despliegue backend
+- [x] ✅ GUIA_FRONTEND_SUPABASE_PRODUCCION.md con frontend y GitHub Pages
 - [ ] Credenciales de acceso enviadas
 - [ ] URLs de producción documentadas
 - [ ] Proceso de actualización explicado
@@ -219,6 +226,6 @@ Verificar en https://securityheaders.com:
 
 ---
 
-**Estado Actual:** 🟢 Listo para Deploy  
-**Última Revisión:** Febrero 2026  
-**Versión:** 2.1
+**Estado Actual:** 🟢 Listo para Deploy con Supabase + GitHub Actions  
+**Última Revisión:** Mayo 2026  
+**Versión:** 2.5.16

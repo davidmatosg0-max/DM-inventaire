@@ -93,26 +93,19 @@ vercel --prod
 
 ### 📘 Option C: GitHub Pages (Gratuit)
 
-1. **Installer gh-pages:**
-   ```bash
-   npm install --save-dev gh-pages
-   ```
+Le dépôt utilise maintenant GitHub Actions pour GitHub Pages.
 
-2. **Ajouter dans package.json:**
-   ```json
-   {
-     "scripts": {
-       "predeploy": "npm run build",
-       "deploy": "gh-pages -d dist"
-     },
-     "homepage": "https://votre-username.github.io/nom-repo"
-   }
-   ```
+1. Définir dans GitHub les secrets frontend:
+  - VITE_SUPABASE_URL
+  - VITE_SUPABASE_ANON_KEY
+  - VITE_ENABLE_SUPABASE_AUTH
+2. Vérifier que Settings → Pages → Source est configuré sur GitHub Actions.
+3. Pousser sur main pour déclencher .github/workflows/deploy-pages.yml.
 
-3. **Déployer:**
-   ```bash
-   npm run deploy
-   ```
+Références utiles:
+
+- GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+- SUPABASE_AUTH_SETUP.md
 
 ---
 
@@ -151,12 +144,16 @@ location / {
 
 ### Variables d'Environnement (si nécessaire)
 
-Si vous utilisez des APIs externes, créez `.env.production`:
+Pour le frontend Supabase, utilisez au minimum:
 
 ```env
-VITE_API_URL=https://votre-api.com
-VITE_APP_NAME=Banque Alimentaire
+VITE_SUPABASE_URL=https://votre-projet.supabase.co
+VITE_SUPABASE_ANON_KEY=votre-anon-key
+VITE_ENABLE_SUPABASE_AUTH=true
 ```
+
+Pour un poste local, partir de .env.local.example.
+Pour GitHub Pages, injecter ces variables via les secrets GitHub Actions.
 
 ### Domaine Personnalisé
 
@@ -178,7 +175,8 @@ VITE_APP_NAME=Banque Alimentaire
 
 - [ ] ✅ L'application charge correctement
 - [ ] ✅ Navigation entre pages fonctionne
-- [ ] ✅ localStorage fonctionne (inventaire, organismes)
+- [ ] ✅ La persistance Supabase fonctionne pour organismes, produits, entrées, mouvements et commandes
+- [ ] ✅ Le login accepte nom d'utilisateur ou email si Supabase Auth est activé
 - [ ] ✅ Toutes les images se chargent
 - [ ] ✅ Les 4 langues fonctionnent (FR, ES, EN, AR)
 - [ ] ✅ Le mode RTL fonctionne en arabe
@@ -200,23 +198,20 @@ VITE_APP_NAME=Banque Alimentaire
 
 ## 🔒 5. Sécurité et Bonnes Pratiques
 
-### LocalStorage - Important! ⚠️
+### Persistance et authentification - Important! ⚠️
 
-Votre application utilise localStorage pour stocker:
-- Inventaire de produits
-- Organismes
-- Comandas
-- Utilisateurs
+Le projet supporte maintenant deux couches distinctes:
+- Une persistance opérationnelle partagée via Supabase pour organismes, produits, entrées, mouvements et commandes.
+- Une authentification distante optionnelle via Supabase Auth avec profils, rôles et Edge Function d'administration.
 
-**⚠️ ATTENTION:** 
-- localStorage est local au navigateur
-- Les données ne sont PAS synchronisées entre appareils
-- Sauvegardez régulièrement via Export Excel
+**À retenir:**
+- localStorage reste utilisé comme cache de compatibilité côté navigateur.
+- Les données opérationnelles critiques peuvent être synchronisées entre navigateurs quand Supabase est configuré.
+- Les utilisateurs et rôles sécurisés dépendent du schéma Supabase et de l'Edge Function admin-users.
 
-**Pour un système multi-utilisateurs en production:**
-- Considérez migrer vers une base de données (Supabase, Firebase)
-- Implémenter authentification réelle
-- Synchronisation en temps réel
+Références:
+- GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+- SUPABASE_AUTH_SETUP.md
 
 ### HTTPS
 

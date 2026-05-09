@@ -85,11 +85,6 @@ function AppContent() {
   // 🔄 Verificar versión de la aplicación y mostrar notificación de actualización
   useVersionCheck();
 
-  // Crear ofertas de ejemplo e inicializar unidades al cargar la app
-  useEffect(() => {
-    void import('./utils/appBootstrap').then(({ runAppBootstrap }) => runAppBootstrap());
-  }, []);
-
   // Inicializar dirección RTL si el idioma es árabe
   useEffect(() => {
     if (i18n.language === 'ar') {

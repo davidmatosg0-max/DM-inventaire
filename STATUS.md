@@ -2,8 +2,8 @@
 
 ## 🎯 Estado General: ✅ LISTO PARA PRODUCCIÓN
 
-**Versión:** 2.1.0  
-**Fecha:** 27 Febrero 2026  
+**Versión:** 2.5.16  
+**Fecha:** 09 Mayo 2026  
 **Build Status:** ✅ Passing  
 **Deploy Ready:** ✅ Yes  
 
@@ -69,7 +69,8 @@
 
 ### Estado y Storage
 - [x] ✅ Zustand (state management)
-- [x] ✅ LocalStorage (persistencia)
+- [x] ✅ LocalStorage (cache de compatibilidad)
+- [x] ✅ Supabase app_storage (persistencia operativa compartida)
 - [x] ✅ Context API
 
 ### UI Components
@@ -103,14 +104,16 @@
 ### Configuración
 - [x] ✅ Vercel (`vercel.json`)
 - [x] ✅ Netlify (`netlify.toml`)
-- [x] ✅ GitHub Pages (script deploy)
+- [x] ✅ GitHub Pages (`.github/workflows/deploy-pages.yml`)
 - [x] ✅ Apache (`.htaccess`)
 - [x] ✅ Nginx (documentado)
-- [x] ✅ GitHub Actions (`.github/workflows/deploy.yml`)
+- [x] ✅ GitHub Actions frontend (`.github/workflows/deploy-pages.yml`)
+- [x] ✅ GitHub Actions backend (`.github/workflows/deploy-supabase.yml`)
 
 ### Variables de Entorno
 - [x] ✅ `.env.example`
-- [x] ✅ `.env.production`
+- [x] ✅ `.env.local.example`
+- [x] ✅ `.env.deploy.example`
 - [x] ✅ Sistema de logger condicional
 
 ---
@@ -127,6 +130,8 @@
 - [x] ✅ Error Boundary global
 - [x] ✅ Variables sensibles en .env
 - [x] ✅ .gitignore configurado
+- [x] ✅ Supabase Auth con fallback local
+- [x] ✅ Edge Function `admin-users` para gestión segura de usuarios
 
 ### Recomendado (Opcional)
 - [ ] ⏳ HTTPS (automático en Vercel/Netlify)
@@ -140,15 +145,17 @@
 
 | Documento | Estado | Páginas | Actualizado |
 |-----------|--------|---------|-------------|
-| README.md | ✅ | ~200 líneas | 2026-02-27 |
-| DEPLOY.md | ✅ | ~350 líneas | 2026-02-27 |
+| README.md | ✅ | ~200 líneas | 2026-05-09 |
+| DEPLOY.md | ✅ | ~350 líneas | 2026-05-09 |
 | LANZAMIENTO.md | ✅ | ~400 líneas | 2026-02-27 |
-| PRODUCTION_CHECKLIST.md | ✅ | ~300 líneas | 2026-02-27 |
+| PRODUCTION_CHECKLIST.md | ✅ | ~300 líneas | 2026-05-09 |
 | SECURITY.md | ✅ | ~450 líneas | 2026-02-27 |
 | RESUMEN_PRODUCCION.md | ✅ | ~250 líneas | 2026-02-27 |
 | CHANGELOG.md | ✅ | ~150 líneas | 2026-02-27 |
 | CONTRIBUTING.md | ✅ | ~350 líneas | 2026-02-27 |
-| QUICK_START.md | ✅ | ~200 líneas | 2026-02-27 |
+| QUICK_START.md | ✅ | ~200 líneas | 2026-05-09 |
+| SUPABASE_AUTH_SETUP.md | ✅ | ~100 líneas | 2026-05-09 |
+| GUIA_FRONTEND_SUPABASE_PRODUCCION.md | ✅ | ~90 líneas | 2026-05-09 |
 
 **Total Documentación:** ~2,650 líneas | **Estado:** ✅ Completa
 
@@ -210,12 +217,20 @@ Tests:         TBD (v3.0)
 
 ## 📅 Roadmap
 
-### v2.1.0 (Actual) ✅
+### v2.1.0 ✅
 - [x] Sistema completo de 13 módulos
 - [x] Multilingüe (4 idiomas)
 - [x] Glassmorphism
 - [x] Optimización producción
 - [x] Documentación completa
+
+### v2.5.16 (Actual) ✅
+- [x] Persistencia operativa compartida con Supabase
+- [x] Hidratación remota antes del primer render
+- [x] Supabase Auth opcional con fallback local
+- [x] Edge Function admin-users para gestión segura de usuarios
+- [x] GitHub Pages con GitHub Actions y secrets VITE_*
+- [x] Workflow manual para despliegue Supabase
 
 ### v2.2.0 (Marzo 2026)
 - [ ] Tests unitarios
@@ -224,8 +239,6 @@ Tests:         TBD (v3.0)
 - [ ] Google Analytics
 
 ### v3.0.0 (Q2 2026)
-- [ ] Backend real (Supabase/Firebase)
-- [ ] Autenticación robusta
 - [ ] Dark mode
 - [ ] Dashboard BI avanzado
 

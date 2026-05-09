@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { GestionRoles } from '../usuarios/GestionRoles';
 import { GestionDepartamentos } from '../usuarios/GestionDepartamentos';
-import { agregarUsuario, actualizarUsuario, obtenerUsuarios, eliminarUsuario } from '../../utils/usuarios';
+import { guardarUsuarioEnProveedor, eliminarUsuarioEnProveedor, sincronizarUsuariosConProveedor, type Usuario } from '../../utils/usuarios';
 import { esRolValido, tienePermiso } from '../../utils/permisos';
 import { obtenerRoles, ROLES_UPDATED_EVENT } from '../../utils/rolesStorage';
 import { useBranding } from '../../../hooks/useBranding';
@@ -54,7 +54,7 @@ export function Usuarios() {
 
   // Cargar usuarios al montar el componente
   useEffect(() => {
-    cargarUsuarios();
+    void cargarUsuarios();
     cargarRoles();
   }, []);
 
@@ -74,8 +74,8 @@ export function Usuarios() {
     }
   }, [usuarioDialogOpen]);
 
-  const cargarUsuarios = () => {
-    const usuariosStorage = obtenerUsuarios();
+  const cargarUsuarios = async () => {
+    const usuariosStorage = await sincronizarUsuariosConProveedor();
     setUsuarios(usuariosStorage);
     console.log('✅ Usuarios cargados:', usuariosStorage.length);
   };
@@ -115,7 +115,7 @@ export function Usuarios() {
     setUsuarioDialogOpen(true);
   };
 
-  const handleGuardarUsuario = () => {
+  const handleGuardarUsuario = async () => {
     // Validaciones
     if (!formUsuario.username.trim()) {
       toast.error('Le nom d\'utilisateur est requis');
@@ -168,8 +168,12 @@ export function Usuarios() {
           console.log('🔐 Manteniendo password anterior (no se proporcionó nuevo)');
         }
 
-        const success = actualizarUsuario(usuarioSeleccionado.id, datosActualizados);
-        if (success) {
+        const usuarioActualizado = await guardarUsuarioEnProveedor({
+          ...usuarioSeleccionado,
+          ...datosActualizados,
+          password: datosActualizados.password || usuarioSeleccionado.password,
+        }, usuarioSeleccionado.id);
+        if (usuarioActualizado) {
           // 📝 REGISTRAR ACTIVIDAD
           registrarActividad(
             'Utilisateurs',
@@ -179,7 +183,7 @@ export function Usuarios() {
           );
           
           toast.success('Utilisateur mis à jour avec succès');
-          cargarUsuarios();
+          await cargarUsuarios();
           setUsuarioDialogOpen(false);
           resetForm();
         } else {
@@ -188,7 +192,7 @@ export function Usuarios() {
       } else {
         // Crear nuevo usuario
         console.log('🆕 Creando nuevo usuario con password');
-        const nuevoUsuario = agregarUsuario({
+        const nuevoUsuario = await guardarUsuarioEnProveedor({
           username: formUsuario.username,
           nombre: formUsuario.nombre,
           apellido: formUsuario.apellido,
@@ -208,7 +212,7 @@ export function Usuarios() {
         );
         
         toast.success(`Utilisateur créé: ${nuevoUsuario.username}`);
-        cargarUsuarios();
+        await cargarUsuarios();
         setUsuarioDialogOpen(false);
         resetForm();
       }
@@ -218,11 +222,11 @@ export function Usuarios() {
     }
   };
 
-  const handleEliminarUsuario = () => {
+  const handleEliminarUsuario = async () => {
     if (!usuarioAEliminar) return;
 
     try {
-      const success = eliminarUsuario(usuarioAEliminar.id);
+      const success = await eliminarUsuarioEnProveedor(usuarioAEliminar.id);
       if (success) {
         // 📝 REGISTRAR ACTIVIDAD
         registrarActividad(
@@ -233,7 +237,7 @@ export function Usuarios() {
         );
         
         toast.success(`Utilisateur supprimé: ${usuarioAEliminar.username}`);
-        cargarUsuarios();
+        await cargarUsuarios();
         setDeleteDialogOpen(false);
         setUsuarioAEliminar(null);
       } else {

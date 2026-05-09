@@ -2,6 +2,7 @@
 
 import { registrarActividad } from './actividadLogger';
 import { buildLocationOptions, loadLocationZones, resolveLegacyLocation } from './locationZones';
+import { queueStorageSync } from './cloudPersistence';
 import {
   aplicarTemperaturaProducto,
   type TemperaturaProductoCanonica,
@@ -200,6 +201,7 @@ export function obtenerProductos(): ProductoCreado[] {
       }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(productosNormalizados));
+      queueStorageSync(STORAGE_KEY);
     }
     
     return productosNormalizados;
@@ -239,6 +241,7 @@ export function guardarProducto(
         const productoFusionado = fusionarProductoCanonico(productoCanonicoExistente, productoNormalizado, standardLocations);
         const productosActualizados = productos.map(p => p.id === productoCanonicoExistente.id ? productoFusionado : p);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(productosActualizados));
+        queueStorageSync(STORAGE_KEY);
         console.log('✅ Producto fusionado con existente en localStorage:', productoFusionado.nombre);
         return productoFusionado;
       }
@@ -255,6 +258,7 @@ export function guardarProducto(
     
     productos.push(productoNormalizado);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
+    queueStorageSync(STORAGE_KEY);
     console.log('✅ Producto guardado exitosamente en localStorage:', productoNormalizado.nombre);
     
     // Registrar actividad
@@ -284,6 +288,7 @@ export function actualizarProducto(id: string, productoActualizado: Partial<Prod
       const productoAnterior = { ...productos[index] };
       productos[index] = aplicarTemperaturaProducto(normalizeStoredProduct({ ...productos[index], ...productoActualizado }, standardLocations));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
+      queueStorageSync(STORAGE_KEY);
       
       // Registrar actividad solo si hay cambios significativos
       const cambiosSignificativos = [];
@@ -317,6 +322,7 @@ export function eliminarProducto(id: string): void {
     const productoAEliminar = productos.find(p => p.id === id);
     const productosFiltrados = productos.filter(p => p.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(productosFiltrados));
+    queueStorageSync(STORAGE_KEY);
     
     // Registrar actividad
     if (productoAEliminar) {
@@ -425,6 +431,7 @@ export function migrarPesoUnitarioProductos(): number {
 export function limpiarProductos(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    queueStorageSync(STORAGE_KEY);
   } catch (error) {
     console.error('Error al limpiar productos:', error);
   }

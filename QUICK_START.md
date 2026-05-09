@@ -1,5 +1,13 @@
 # ⚡ Quick Start - Deploy en 5 Minutos
 
+> Nota de actualización
+>
+> Esta guía resume un flujo rápido histórico.
+> Para la ruta vigente de producción con Supabase y GitHub Actions, usar primero:
+> - GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+> - SUPABASE_AUTH_SETUP.md
+> - DEPLOYMENT_GUIDE.md
+
 ## 🎯 Objetivo
 
 Tener tu Sistema de Gestión Banque Alimentaire funcionando en producción en menos de 5 minutos.

@@ -17,6 +17,7 @@ import {
   type JWTPayload,
 } from '../app/utils/jwtManager';
 import { validarCredenciales } from '../app/utils/usuarios';
+import { loginWithRemoteAuth, logoutFromRemoteAuth } from '../app/utils/remoteAuth';
 import { guardarUsuarioSesion } from '../app/utils/sesionStorage';
 import { tienePermiso as verificarPermisoSistema } from '../app/utils/permisos';
 
@@ -139,8 +140,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
 
-      // Validar credenciales
-      const usuarioValidado = validarCredenciales(username, password);
+      let usuarioValidado = null;
+
+      const remoteAuth = await loginWithRemoteAuth(username, password);
+      if (remoteAuth.status === 'success') {
+        usuarioValidado = remoteAuth.usuario;
+      } else if (remoteAuth.status === 'invalid-credentials') {
+        return false;
+      } else {
+        usuarioValidado = validarCredenciales(username, password);
+      }
       
       if (!usuarioValidado) {
         return false;
@@ -233,6 +242,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Cerrar sesión
    */
   const logout = () => {
+    void logoutFromRemoteAuth();
     cerrarSesionJWT();
     setIsAuthenticated(false);
     setUsuario(null);

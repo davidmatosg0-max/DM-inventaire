@@ -1,3 +1,13 @@
+# Nota de actualización
+
+Este documento describe un flujo de lanzamiento histórico.
+Para la ruta vigente de producción con Supabase y GitHub Actions, usar en prioridad:
+
+- GUIA_FRONTEND_SUPABASE_PRODUCCION.md
+- SUPABASE_AUTH_SETUP.md
+- DEPLOYMENT_GUIDE.md
+- DEPLOY.md
+
 # 🚀 Guía de Lanzamiento a Producción
 
 ## Sistema: Banque Alimentaire v2.1
