@@ -1,5 +1,5 @@
 // Sistema de permisos y control de acceso
-import { rolesPredeterminados } from '../data/rolesPermisos';
+import { obtenerRoles } from './rolesStorage';
 import { obtenerUsuarioSesion } from './sesionStorage';
 
 // Definición de todos los permisos del sistema
@@ -94,18 +94,22 @@ const ALIAS_ROLES: Record<string, string> = {
   visualizador: 'visualizador',
 };
 
-const PERMISOS_CANONICOS_POR_ROL = rolesPredeterminados.reduce((acc, rol) => {
-  acc[rol.id] = rol.permisos;
-  return acc;
-}, {} as Record<string, string[]>);
+function obtenerPermisosCanonicosPorRol(): Record<string, string[]> {
+  return obtenerRoles().reduce((acc, rol) => {
+    acc[rol.id] = rol.permisos;
+    return acc;
+  }, {} as Record<string, string[]>);
+}
 
-const TODOS_LOS_PERMISOS_CANONICOS = new Set(
-  rolesPredeterminados.flatMap((rol) => rol.permisos)
-);
+function obtenerTodosLosPermisosCanonicos(): Set<string> {
+  return new Set(
+    obtenerRoles().flatMap((rol) => rol.permisos)
+  );
+}
 
 function obtenerPermisosDerivados(clave: string): string[] {
   const rolNormalizado = ALIAS_ROLES[clave] || clave;
-  return PERMISOS_CANONICOS_POR_ROL[rolNormalizado] || [];
+  return obtenerPermisosCanonicosPorRol()[rolNormalizado] || [];
 }
 
 function obtenerPermisosExpandidos(usuario: ReturnType<typeof obtenerUsuarioSesion>): string[] {
@@ -122,8 +126,9 @@ function obtenerPermisosExpandidos(usuario: ReturnType<typeof obtenerUsuarioSesi
     permisosExpandidos.has(PERMISOS.ACCESO_TOTAL)
     || permisosExpandidos.has(PERMISOS.DESARROLLADOR)
   ) {
+    const todosLosPermisosCanonicos = obtenerTodosLosPermisosCanonicos();
     Object.values(PERMISOS).forEach((permiso) => permisosExpandidos.add(permiso));
-    TODOS_LOS_PERMISOS_CANONICOS.forEach((permiso) => permisosExpandidos.add(permiso));
+    todosLosPermisosCanonicos.forEach((permiso) => permisosExpandidos.add(permiso));
   }
 
   const clavesDerivadas = new Set<string>([

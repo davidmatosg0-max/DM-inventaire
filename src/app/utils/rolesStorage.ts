@@ -1,5 +1,6 @@
 import { rolesPredeterminados, type Rol } from '../data/rolesPermisos';
-import { obtenerUsuarios } from './usuarios';
+import { actualizarUsuarioSesion, obtenerUsuarioSesion } from './sesionStorage';
+import { guardarUsuarios, obtenerUsuarios } from './usuarios';
 import { queueStorageSync } from './cloudPersistence';
 
 const STORAGE_KEY = 'banque_alimentaire_roles_personnalises';
@@ -55,6 +56,41 @@ function hidratarRoles(roles: Rol[]): Rol[] {
     ...rol,
     usuariosAsignados: contarUsuariosAsignados(rol.id),
   }));
+}
+
+function sincronizarPermisosUsuariosConRol(rolId: string, permisos: string[]): void {
+  const permisosNormalizados = [...new Set(permisos)];
+  const usuarios = obtenerUsuarios();
+  let huboCambios = false;
+
+  const usuariosActualizados = usuarios.map((usuario) => {
+    if (usuario.rol !== rolId) {
+      return usuario;
+    }
+
+    const permisosActuales = [...new Set(usuario.permisos || [])];
+    const mismosPermisos = permisosActuales.length === permisosNormalizados.length
+      && permisosActuales.every((permiso) => permisosNormalizados.includes(permiso));
+
+    if (mismosPermisos) {
+      return usuario;
+    }
+
+    huboCambios = true;
+    return {
+      ...usuario,
+      permisos: permisosNormalizados,
+    };
+  });
+
+  if (huboCambios) {
+    guardarUsuarios(usuariosActualizados);
+  }
+
+  const usuarioSesion = obtenerUsuarioSesion();
+  if (usuarioSesion?.rol === rolId) {
+    actualizarUsuarioSesion({ permisos: permisosNormalizados as any });
+  }
 }
 
 export function obtenerRoles(): Rol[] {
@@ -117,6 +153,7 @@ export function guardarRolPersonalizado(
   }
 
   guardarRolesPersonalizados(rolesPersonalizados);
+  sincronizarPermisosUsuariosConRol(rolId, rolGuardado.permisos);
   return rolGuardado;
 }
 
