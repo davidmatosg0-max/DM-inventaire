@@ -21,6 +21,27 @@ Configurer ces variables dans l'hébergement et en local:
 
 Pour GitHub Pages, ces variables doivent exister comme secrets GitHub Actions afin que le build Vite puisse les injecter au moment de la compilation.
 
+## 1.1. Où récupérer les secrets
+
+Secrets frontend à définir dans GitHub Actions:
+
+- VITE_SUPABASE_URL: dans Supabase, ouvrir Settings > API > Project URL
+- VITE_SUPABASE_ANON_KEY: dans Supabase, ouvrir Settings > API > anon public
+- VITE_ENABLE_SUPABASE_AUTH: valeur manuelle, généralement true si l'authentification Supabase doit être active
+
+Secrets backend à définir pour le déploiement SQL et Edge Function:
+
+- SUPABASE_PROJECT_REF: identifiant du projet visible dans l'URL Supabase ou dans Project Settings > General
+- SUPABASE_DB_PASSWORD: mot de passe PostgreSQL choisi à la création du projet; s'il a été perdu, il faut le réinitialiser dans Supabase
+- SUPABASE_ACCESS_TOKEN: token personnel à générer dans le compte Supabase via Account > Access Tokens
+- SUPABASE_SERVICE_ROLE_KEY: dans Supabase, ouvrir Settings > API > service_role
+
+Important:
+
+- Ne jamais exposer SUPABASE_SERVICE_ROLE_KEY dans le frontend
+- Les secrets GitHub se configurent dans GitHub > dépôt > Settings > Secrets and variables > Actions
+- Pour publier seulement le frontend, VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sont les minimums requis
+
 ## 2. SQL à exécuter
 
 Exécuter dans cet ordre dans l'éditeur SQL de Supabase:
@@ -77,7 +98,8 @@ Exemple de role_id:
 
 La gestion sécurisée des utilisateurs en production passe maintenant par l'Edge Function admin-users.
 Cette fonction permet de lister, créer, mettre à jour le profil et désactiver des utilisateurs via le service role côté serveur.
-La limite restante est surtout opérationnelle: il faut déployer cette fonction et définir SUPABASE_SERVICE_ROLE_KEY dans les secrets Supabase avant d'utiliser l'administration distante.
+Le rapport PRS distant passe maintenant aussi par l'Edge Function reports-prs, qui lit les entrées opérationnelles depuis public.app_storage après vérification des permissions de rapport de l'utilisateur connecté.
+La limite restante est surtout opérationnelle: il faut déployer ces fonctions et définir SUPABASE_SERVICE_ROLE_KEY dans les secrets Supabase avant d'utiliser l'administration distante et l'API PRS distante.
 
 ## 6. GitHub Pages
 

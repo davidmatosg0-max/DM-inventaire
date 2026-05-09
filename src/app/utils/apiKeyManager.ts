@@ -3,6 +3,18 @@
  * Versión: 5.0-PRO
  */
 
+import {
+  exportarReporteCSV,
+  exportarReporteJSON,
+  exportarReportePRSCSV,
+  generarReporteComandas,
+  generarReporteGeneral,
+  generarReporteInventario,
+  generarReporteOrganismos,
+  generarReportePRS,
+  generarReporteTransporte,
+} from './reportesLogic';
+
 export interface APIKey {
   id: string;
   key: string;
@@ -263,6 +275,173 @@ export function obtenerEstadisticasAPI(): {
   };
 }
 
+export interface APIRequestOptions {
+  apiKey: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  path: string;
+  query?: Record<string, string | number | boolean | undefined>;
+  body?: Record<string, any>;
+}
+
+export interface APIResponse<T = unknown> {
+  ok: boolean;
+  status: number;
+  data?: T;
+  error?: string;
+  rateLimit?: {
+    remaining: number;
+    resetIn: number;
+  };
+}
+
+function tienePermisoAPI(key: APIKey, permission: APIPermission): boolean {
+  return key.permissions.includes('admin:all') || key.permissions.includes(permission);
+}
+
+function normalizarPathAPI(path: string): string {
+  return path
+    .replace(/^https?:\/\/[^/]+/i, '')
+    .replace(/^\/api\/v1/i, '')
+    .split('?')[0] || '/';
+}
+
+function respuestaAPI<T>(status: number, data?: T, error?: string, rateLimit?: APIResponse['rateLimit']): APIResponse<T> {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    data,
+    error,
+    rateLimit,
+  };
+}
+
+function extraerFechas(request: APIRequestOptions): { startDate?: string; endDate?: string } {
+  return {
+    startDate: String(request.query?.startDate || request.body?.startDate || '') || undefined,
+    endDate: String(request.query?.endDate || request.body?.endDate || '') || undefined,
+  };
+}
+
+export function ejecutarSolicitudAPI(request: APIRequestOptions): APIResponse<unknown> {
+  const validation = validarAPIKey(request.apiKey);
+
+  if (!validation.isValid || !validation.key) {
+    return respuestaAPI(401, undefined, validation.error || 'API Key inválida');
+  }
+
+  const rateLimit = verificarRateLimit(request.apiKey);
+  if (!rateLimit.allowed) {
+    return respuestaAPI(429, undefined, 'Rate limit excedido', {
+      remaining: rateLimit.remaining,
+      resetIn: rateLimit.resetIn,
+    });
+  }
+
+  const path = normalizarPathAPI(request.path);
+  const permission: APIPermission = 'read:reports';
+
+  if (!tienePermisoAPI(validation.key, permission)) {
+    return respuestaAPI(403, undefined, 'Permiso insuficiente', {
+      remaining: rateLimit.remaining,
+      resetIn: rateLimit.resetIn,
+    });
+  }
+
+  const { startDate, endDate } = extraerFechas(request);
+  const format = String(request.query?.format || request.body?.format || 'json').toLowerCase();
+
+  const serializarReporte = (type: string, payload: unknown): APIResponse<unknown> => {
+    registrarUsoAPIKey(request.apiKey);
+
+    if (format === 'json') {
+      return respuestaAPI(200, payload, undefined, {
+        remaining: rateLimit.remaining - 1,
+        resetIn: rateLimit.resetIn,
+      });
+    }
+
+    if (format === 'csv') {
+      if (type === 'general') {
+        return respuestaAPI(200, exportarReporteCSV(payload as ReturnType<typeof generarReporteGeneral>), undefined, {
+          remaining: rateLimit.remaining - 1,
+          resetIn: rateLimit.resetIn,
+        });
+      }
+
+      if (type === 'prs') {
+        return respuestaAPI(200, exportarReportePRSCSV(payload as ReturnType<typeof generarReportePRS>), undefined, {
+          remaining: rateLimit.remaining - 1,
+          resetIn: rateLimit.resetIn,
+        });
+      }
+
+      return respuestaAPI(400, undefined, `Formato CSV no soportado para el reporte ${type}`, {
+        remaining: rateLimit.remaining,
+        resetIn: rateLimit.resetIn,
+      });
+    }
+
+    return respuestaAPI(400, undefined, `Formato no soportado: ${format}`, {
+      remaining: rateLimit.remaining,
+      resetIn: rateLimit.resetIn,
+    });
+  };
+
+  if (request.method === 'GET' && path === '/reports/types') {
+    registrarUsoAPIKey(request.apiKey);
+
+    return respuestaAPI(200, {
+      types: ['inventory', 'comandas', 'organisms', 'transport', 'general', 'prs'],
+    }, undefined, {
+      remaining: rateLimit.remaining - 1,
+      resetIn: rateLimit.resetIn,
+    });
+  }
+
+  if (request.method === 'GET' && path === '/reports/prs') {
+    const reporte = generarReportePRS(startDate, endDate, {
+      organismoId: request.query?.organismId ? String(request.query.organismId) : undefined,
+      participantPRSId: request.query?.participantPRSId ? String(request.query.participantPRSId) : undefined,
+      donorId: request.query?.donorId ? String(request.query.donorId) : undefined,
+    });
+
+    return serializarReporte('prs', reporte);
+  }
+
+  if (request.method === 'POST' && path === '/reports/generate') {
+    const type = String(request.body?.type || '').toLowerCase();
+
+    switch (type) {
+      case 'inventory':
+        return serializarReporte(type, generarReporteInventario(startDate, endDate));
+      case 'comandas':
+        return serializarReporte(type, generarReporteComandas(startDate, endDate));
+      case 'organisms':
+        return serializarReporte(type, generarReporteOrganismos());
+      case 'transport':
+        return serializarReporte(type, generarReporteTransporte(startDate, endDate));
+      case 'general':
+        return serializarReporte(type, generarReporteGeneral(startDate, endDate));
+      case 'prs':
+        return serializarReporte(type, generarReportePRS(startDate, endDate, {
+          organismoId: request.body?.filters?.organismId ? String(request.body.filters.organismId) : undefined,
+          participantPRSId: request.body?.filters?.participantPRSId ? String(request.body.filters.participantPRSId) : undefined,
+          donorId: request.body?.filters?.donorId ? String(request.body.filters.donorId) : undefined,
+        }));
+      default:
+        return respuestaAPI(400, undefined, `Tipo de reporte no soportado: ${type || 'vacío'}`, {
+          remaining: rateLimit.remaining,
+          resetIn: rateLimit.resetIn,
+        });
+    }
+  }
+
+  return respuestaAPI(404, undefined, `Endpoint no implementado: ${request.method} ${path}`, {
+    remaining: rateLimit.remaining,
+    resetIn: rateLimit.resetIn,
+  });
+}
+
 /**
  * Exporta documentación de API
  */
@@ -292,7 +471,83 @@ export function exportarDocumentacionAPI(): string {
         create: { method: 'POST', path: '/organisms', permission: 'write:organisms' },
       },
       reports: {
-        generate: { method: 'POST', path: '/reports/generate', permission: 'read:reports' },
+        listTypes: {
+          method: 'GET',
+          path: '/reports/types',
+          permission: 'read:reports',
+          description: 'Lista los tipos de reportes disponibles en la API.',
+          response: {
+            types: ['inventory', 'comandas', 'organisms', 'transport', 'general', 'prs'],
+          },
+        },
+        generate: {
+          method: 'POST',
+          path: '/reports/generate',
+          permission: 'read:reports',
+          description: 'Genera un reporte bajo demanda, incluyendo el reporte PRS.',
+          requestBody: {
+            type: 'inventory | comandas | organisms | transport | general | prs',
+            startDate: 'YYYY-MM-DD (opcional)',
+            endDate: 'YYYY-MM-DD (opcional)',
+            format: 'json | csv (opcional)',
+            filters: {
+              organismId: 'string (opcional)',
+              participantPRSId: 'string (opcional)',
+              donorId: 'string (opcional)',
+            },
+          },
+        },
+        prs: {
+          method: 'GET',
+          path: '/reports/prs',
+          permission: 'read:reports',
+          description: 'Devuelve el reporte del Programa PRS usando entradas con programaCodigo PRS y relaciones con participante PRS.',
+          query: {
+            startDate: 'YYYY-MM-DD (opcional)',
+            endDate: 'YYYY-MM-DD (opcional)',
+            organismId: 'string (opcional)',
+            participantPRSId: 'string (opcional)',
+            donorId: 'string (opcional)',
+          },
+          response: {
+            summary: {
+              totalEntries: 'number',
+              totalQuantity: 'number',
+              totalWeightKg: 'number',
+              totalEstimatedValue: 'number',
+              uniqueDonors: 'number',
+              uniqueProducts: 'number',
+              uniqueOrganisms: 'number',
+            },
+            byOrganism: [
+              {
+                organismId: 'string',
+                organismName: 'string',
+                totalEntries: 'number',
+                totalQuantity: 'number',
+                totalWeightKg: 'number',
+              },
+            ],
+            byDonor: [
+              {
+                donorId: 'string',
+                donorName: 'string',
+                totalEntries: 'number',
+                totalQuantity: 'number',
+                totalWeightKg: 'number',
+              },
+            ],
+            byProduct: [
+              {
+                productId: 'string',
+                productName: 'string',
+                totalEntries: 'number',
+                totalQuantity: 'number',
+                totalWeightKg: 'number',
+              },
+            ],
+          },
+        },
       },
     },
     rateLimits: {

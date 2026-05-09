@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Download, BarChart3, Shield } from 'lucide-react';
+import { FileText, Download, BarChart3, Shield, RefreshCcw } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -30,6 +30,7 @@ import { AuditLogViewer } from '../auditoria/AuditLogViewer';
 import { obtenerComandasReporte } from '../reports/reportComandas';
 import { isActiveReportComanda } from '../reports/reportComandaStatus';
 import { registrarActividad } from '../../utils/actividadLogger';
+import { obtenerReportePRSRemoto } from '../../utils/remoteReports';
 import type { Comanda } from '../../types';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
 
@@ -44,6 +45,51 @@ type DatePreset = 'today' | 'last7days' | 'last30days' | 'month';
 type ReportTab = 'general' | 'operaciones' | 'inventario' | 'comandas' | 'prs' | 'auditoria';
 type ExportableReportType = 'general' | 'operaciones' | 'inventario' | 'comandas' | 'prs' | 'auditoria' | 'organismos';
 type ReportExportFormat = 'pdf' | 'excel' | 'csv' | 'json';
+type RemotePRSReport = {
+  resumen: {
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstime: number;
+    donadoresUnicos: number;
+    productosUnicos: number;
+    organismosUnicos: number;
+    participantesPRSUnicos: number;
+  };
+  porOrganismo: Array<{
+    organismoId: string;
+    organismoNombre: string;
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstime: number;
+  }>;
+  porDonador: Array<{
+    donadorId: string;
+    donadorNombre: string;
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstime: number;
+  }>;
+  detalles: Array<{
+    id: string;
+    fecha: string;
+    organismoNombre: string;
+    donadorNombre: string;
+    participantePRSNombre: string;
+    productoNombre: string;
+    cantidad: number;
+    unidad: string;
+    pesoTotal: number;
+    valorTotalEstime: number;
+  }>;
+  periodo: {
+    inicio: string;
+    fin: string;
+  };
+  generadoEn: string;
+};
 
 const REPORT_TAB_TO_TYPE: Partial<Record<ReportTab, ExportableReportType>> = {
   general: 'general',
@@ -457,6 +503,10 @@ export function Reportes() {
   const [organismos, setOrganismos] = useState<Organismo[]>([]);
   const [recetas, setRecetas] = useState(obtenerRecetas());
   const [transformaciones, setTransformaciones] = useState<Transformacion[]>([]);
+  const [remotePrsReport, setRemotePrsReport] = useState<RemotePRSReport | null>(null);
+  const [remotePrsStatus, setRemotePrsStatus] = useState<'idle' | 'loading' | 'ready' | 'unavailable' | 'error'>('idle');
+  const [remotePrsError, setRemotePrsError] = useState('');
+  const [isDownloadingRemotePrs, setIsDownloadingRemotePrs] = useState(false);
 
   const cargarDatos = () => {
     setProductos(obtenerProductos());
@@ -622,9 +672,102 @@ export function Reportes() {
     setFechaFin(rango.end);
   };
 
+  const cargarReportePRSRemoto = async (notifyResult = false) => {
+    if (!rangoValido) {
+      setRemotePrsStatus('idle');
+      setRemotePrsReport(null);
+      setRemotePrsError('');
+      return;
+    }
+
+    setRemotePrsStatus('loading');
+    setRemotePrsError('');
+
+    try {
+      const reporte = await obtenerReportePRSRemoto({
+        startDate: fechaInicio,
+        endDate: fechaFin,
+        format: 'json',
+      });
+
+      if (!reporte || typeof reporte === 'string') {
+        const message = 'Rapport PRS distant indisponible. Déployez reports-prs et ouvrez une session Supabase.';
+        setRemotePrsReport(null);
+        setRemotePrsStatus('unavailable');
+        setRemotePrsError(message);
+
+        if (notifyResult) {
+          toast.info(message);
+        }
+        return;
+      }
+
+      setRemotePrsReport(reporte as RemotePRSReport);
+      setRemotePrsStatus('ready');
+
+      if (notifyResult) {
+        toast.success('Rapport PRS distant actualisé');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Impossible de charger le rapport PRS distant.';
+      setRemotePrsReport(null);
+      setRemotePrsStatus('error');
+      setRemotePrsError(message);
+
+      if (notifyResult) {
+        toast.error('Erreur de rapport PRS distant', { description: message });
+      }
+    }
+  };
+
+  const handleDescargarReportePRSRemoto = async () => {
+    if (!rangoValido) {
+      toast.error('Définissez une plage de dates valide avant le téléchargement.');
+      return;
+    }
+
+    setIsDownloadingRemotePrs(true);
+
+    try {
+      const csv = await obtenerReportePRSRemoto({
+        startDate: fechaInicio,
+        endDate: fechaFin,
+        format: 'csv',
+      });
+
+      if (typeof csv !== 'string' || csv.length === 0) {
+        toast.info('Rapport PRS distant indisponible.');
+        return;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = generateFilename('rapport-prs-distant', 'csv');
+      anchor.click();
+      URL.revokeObjectURL(url);
+
+      toast.success('Rapport PRS distant téléchargé');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Impossible de télécharger le rapport PRS distant.';
+      toast.error('Erreur de téléchargement', { description: message });
+    } finally {
+      setIsDownloadingRemotePrs(false);
+    }
+  };
+
   const handleReportTabChange = (value: string) => {
     setActiveReportTab(value as ReportTab);
   };
+
+  useEffect(() => {
+    if (activeReportTab !== 'prs' || !rangoValido) {
+      return;
+    }
+
+    void cargarReportePRSRemoto(false);
+  }, [activeReportTab, fechaInicio, fechaFin, rangoValido]);
 
   const handleGenerarReporte = async (formato: ReportExportFormat) => {
     if (!exportableReportType) {
@@ -1298,6 +1441,20 @@ export function Reportes() {
   const latestTransformations = [...transformacionesTerminadas]
     .sort((left, right) => new Date(right.fecha).getTime() - new Date(left.fecha).getTime())
     .slice(0, 5);
+  const remotePrsTopOrganism = remotePrsReport?.porOrganismo?.[0];
+  const remotePrsTopDonor = remotePrsReport?.porDonador?.[0];
+  const remotePrsUpdatedAt = remotePrsReport?.generadoEn
+    ? new Date(remotePrsReport.generadoEn).toLocaleString('fr-CA')
+    : null;
+  const remotePrsStatusMessage = remotePrsStatus === 'loading'
+    ? 'Chargement du rapport PRS distant en cours...'
+    : remotePrsStatus === 'unavailable'
+      ? (remotePrsError || 'Le rapport PRS distant n’est pas disponible pour cette session.')
+      : remotePrsStatus === 'error'
+        ? (remotePrsError || 'Erreur lors du chargement du rapport PRS distant.')
+        : remotePrsStatus === 'idle'
+          ? 'Sélectionnez l’onglet PRS avec une plage valide pour charger le rapport distant.'
+          : '';
   const auditLogs = obtenerLogs();
   const auditSuccessCount = auditLogs.filter((log) => log.exito).length;
   const auditErrorCount = auditLogs.filter((log) => !log.exito).length;
@@ -2053,6 +2210,26 @@ export function Reportes() {
                   <ReportStatCard label="Transformations" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
                 </div>
                 <ReportDetailPanel title="Dernières transformations" description="Résumé PRS en petit format." items={compactPrsItems} compact />
+                <div className={LEGACY_PANEL_CLASSNAME}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>API PRS distante</h3>
+                      <p className="text-[11px] text-gray-600">Synthèse Supabase live sur la période visible.</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="h-8 px-2 text-[11px]" onClick={() => { void cargarReportePRSRemoto(true); }} disabled={remotePrsStatus === 'loading' || !rangoValido}>
+                      <RefreshCcw className="w-3.5 h-3.5 mr-1" />
+                      Actualiser
+                    </Button>
+                  </div>
+                  {remotePrsReport && remotePrsStatus === 'ready' ? (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <ReportStatCard label="Entrées distantes" value={remotePrsReport.resumen.totalEntradas} accentColor="#1E73BE" valueColor="#1E73BE" compact />
+                      <ReportStatCard label="Poids distant" value={`${formatQuantity(remotePrsReport.resumen.totalPesoKg)} kg`} accentColor="#2d9561" valueColor="#2d9561" compact />
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-[11px] text-gray-500">{remotePrsStatusMessage}</p>
+                  )}
+                </div>
                 <ReportChartCard chartId="report-chart-prs-category-compact" title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={160}>
                     <ResponsiveContainer width="100%" height={160} key="barchart-prs-category-compact">
                       <BarChart data={datosPrsCategoria}>
@@ -2080,6 +2257,84 @@ export function Reportes() {
               <ReportStatCard label="Production totale" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" />
               <ReportStatCard label="Organismes PRS" value={participatingPrsCount} accentColor="#e8a419" valueColor="#e8a419" />
               <ReportStatCard label="Moyenne par transformation" value={`${transformacionesTerminadas.length > 0 ? (totalPrsKg / transformacionesTerminadas.length).toFixed(1) : '0.0'} kg`} accentColor="#c23934" valueColor="#c23934" />
+            </div>
+
+            <div className={LEGACY_PANEL_CLASSNAME}>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                    API PRS distante
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Cette section consomme la fonction Supabase reports-prs pour afficher les entrées PRS distantes sur la période sélectionnée.
+                  </p>
+                  {remotePrsUpdatedAt && remotePrsStatus === 'ready' ? (
+                    <p className="text-xs text-gray-500 mt-1">Dernière synchronisation: {remotePrsUpdatedAt}</p>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" onClick={() => { void cargarReportePRSRemoto(true); }} disabled={remotePrsStatus === 'loading' || !rangoValido}>
+                    <RefreshCcw className="w-4 h-4 mr-2" />
+                    Actualiser
+                  </Button>
+                  <Button type="button" variant="outline" onClick={handleDescargarReportePRSRemoto} disabled={isDownloadingRemotePrs || remotePrsStatus !== 'ready'}>
+                    <Download className="w-4 h-4 mr-2" />
+                    CSV distant
+                  </Button>
+                </div>
+              </div>
+
+              {remotePrsReport && remotePrsStatus === 'ready' ? (
+                <>
+                  <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-xl bg-gray-50/90 p-4 border border-gray-100">
+                      <p className="text-xs text-gray-500">Entrées distantes</p>
+                      <p className="text-2xl font-bold" style={{ color: branding.primaryColor }}>{remotePrsReport.resumen.totalEntradas}</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50/90 p-4 border border-gray-100">
+                      <p className="text-xs text-gray-500">Poids total distant</p>
+                      <p className="text-2xl font-bold text-[#2d9561]">{formatQuantity(remotePrsReport.resumen.totalPesoKg)} kg</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50/90 p-4 border border-gray-100">
+                      <p className="text-xs text-gray-500">Organismes couverts</p>
+                      <p className="text-2xl font-bold text-[#e8a419]">{remotePrsReport.resumen.organismosUnicos}</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50/90 p-4 border border-gray-100">
+                      <p className="text-xs text-gray-500">Donateurs PRS</p>
+                      <p className="text-2xl font-bold text-[#c23934]">{remotePrsReport.resumen.donadoresUnicos}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-3">
+                    <ReportDetailPanel
+                      title="Organisme principal à distance"
+                      description="Organisme avec le plus grand volume PRS dans les données distantes."
+                      items={remotePrsTopOrganism ? [
+                        {
+                          label: remotePrsTopOrganism.organismoNombre,
+                          value: `${formatQuantity(remotePrsTopOrganism.totalPesoKg)} kg`,
+                          helper: `${remotePrsTopOrganism.totalEntradas} entrées • ${formatQuantity(remotePrsTopOrganism.totalCantidad)} unités`,
+                        },
+                      ] : [{ label: 'Aucune donnée', value: '-', helper: 'Le rapport distant ne retourne pas encore d’organisme dominant.' }]}
+                    />
+                    <ReportDetailPanel
+                      title="Donateur principal à distance"
+                      description="Donateur PRS le plus actif dans les données distantes."
+                      items={remotePrsTopDonor ? [
+                        {
+                          label: remotePrsTopDonor.donadorNombre,
+                          value: `${formatQuantity(remotePrsTopDonor.totalPesoKg)} kg`,
+                          helper: `${remotePrsTopDonor.totalEntradas} entrées • ${formatQuantity(remotePrsTopDonor.totalCantidad)} unités`,
+                        },
+                      ] : [{ label: 'Aucune donnée', value: '-', helper: 'Le rapport distant ne retourne pas encore de donateur dominant.' }]}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50/80 p-4 text-sm text-gray-500">
+                  {remotePrsStatusMessage}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">

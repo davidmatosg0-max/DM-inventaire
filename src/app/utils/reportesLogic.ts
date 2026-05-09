@@ -8,7 +8,7 @@ import { obtenerCategorias } from './categoriaStorage';
 import { obtenerComandas } from './comandaStorage';
 import { obtenerOrganismos, obtenerEstadisticasOrganismos } from './organismosLogic';
 import { obtenerRutas, obtenerVehiculos, obtenerEstadisticasTransporte } from './transporteLogic';
-import { obtenerEntradas } from './entradaInventarioStorage';
+import { obtenerEntradas, type EntradaInventario } from './entradaInventarioStorage';
 
 // ==================== TIPOS DE REPORTES ====================
 
@@ -94,6 +94,71 @@ export interface ReporteGeneral {
   generadoEn: string;
 }
 
+export interface ReportePRS {
+  resumen: {
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstimado: number;
+    donadoresUnicos: number;
+    productosUnicos: number;
+    organismosUnicos: number;
+    participantesPRSUnicos: number;
+  };
+  porOrganismo: Array<{
+    organismoId: string;
+    organismoNombre: string;
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstimado: number;
+  }>;
+  porDonador: Array<{
+    donadorId: string;
+    donadorNombre: string;
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstimado: number;
+  }>;
+  porProducto: Array<{
+    productoId: string;
+    productoNombre: string;
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstimado: number;
+  }>;
+  porMes: Array<{
+    mes: string;
+    totalEntradas: number;
+    totalCantidad: number;
+    totalPesoKg: number;
+    valorTotalEstimado: number;
+  }>;
+  detalles: Array<{
+    id: string;
+    fecha: string;
+    organismoId: string;
+    organismoNombre: string;
+    donadorId: string;
+    donadorNombre: string;
+    participantePRSId: string;
+    participantePRSNombre: string;
+    productoId: string;
+    productoNombre: string;
+    cantidad: number;
+    unidad: string;
+    pesoTotal: number;
+    valorTotalEstimado: number;
+  }>;
+  periodo: {
+    inicio: string;
+    fin: string;
+  };
+  generadoEn: string;
+}
+
 function esComandaAnulada(estado?: string): boolean {
   return estado === 'anulada' || estado === 'cancelada';
 }
@@ -161,6 +226,29 @@ function obtenerPesoTotalComanda(comanda: any): number {
 
 function obtenerNombreOrganismoComanda(comanda: any): string {
   return comanda?.nombreOrganismo || comanda?.organismoNombre || 'Sin organismo';
+}
+
+function esEntradaPRS(entrada: EntradaInventario): boolean {
+  const codigo = String(entrada.programaCodigo || '').trim().toLowerCase();
+  const nombre = String(entrada.programaNombre || '').trim().toLowerCase();
+
+  return codigo === 'prs'
+    || nombre.includes('prs')
+    || nombre.includes('ramassage de surplus')
+    || nombre.includes('recuperation en supermarches')
+    || nombre.includes('récupération en supermarchés');
+}
+
+function calcularValorEntrada(entrada: EntradaInventario): number {
+  if (typeof entrada.valorTotal === 'number') {
+    return entrada.valorTotal;
+  }
+
+  if (typeof entrada.valorUnitario === 'number') {
+    return entrada.valorUnitario * entrada.cantidad;
+  }
+
+  return 0;
 }
 
 // ==================== GENERADORES DE REPORTES ====================
@@ -439,6 +527,164 @@ export function generarReporteGeneral(
   };
 }
 
+export function generarReportePRS(
+  fechaInicio?: string,
+  fechaFin?: string,
+  filtros?: {
+    organismoId?: string;
+    participantPRSId?: string;
+    donorId?: string;
+  }
+): ReportePRS {
+  let entradas = obtenerEntradas().filter((entrada) => entrada.activo && esEntradaPRS(entrada));
+  const organismos = new Map(obtenerOrganismos().map((organismo) => [organismo.id, organismo.nombre]));
+
+  if (fechaInicio && fechaFin) {
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+    fin.setHours(23, 59, 59, 999);
+
+    entradas = entradas.filter((entrada) => {
+      const fecha = new Date(entrada.fecha);
+      return fecha >= inicio && fecha <= fin;
+    });
+  }
+
+  if (filtros?.organismoId) {
+    entradas = entradas.filter((entrada) => entrada.organismoId === filtros.organismoId);
+  }
+
+  if (filtros?.participantPRSId) {
+    entradas = entradas.filter((entrada) => entrada.participantePRSId === filtros.participantPRSId);
+  }
+
+  if (filtros?.donorId) {
+    entradas = entradas.filter((entrada) => entrada.donadorId === filtros.donorId);
+  }
+
+  const porOrganismoMap = new Map<string, ReportePRS['porOrganismo'][number]>();
+  const porDonadorMap = new Map<string, ReportePRS['porDonador'][number]>();
+  const porProductoMap = new Map<string, ReportePRS['porProducto'][number]>();
+  const porMesMap = new Map<string, ReportePRS['porMes'][number]>();
+
+  const donadoresUnicos = new Set<string>();
+  const productosUnicos = new Set<string>();
+  const organismosUnicos = new Set<string>();
+  const participantesPRSUnicos = new Set<string>();
+
+  const detalles = entradas
+    .map((entrada) => {
+      const organismoId = entrada.organismoId || '';
+      const organismoNombre = entrada.registradoPor || organismos.get(organismoId) || 'Sin organismo';
+      const valorTotalEstimado = calcularValorEntrada(entrada);
+      const mes = `${new Date(entrada.fecha).getFullYear()}-${String(new Date(entrada.fecha).getMonth() + 1).padStart(2, '0')}`;
+
+      donadoresUnicos.add(entrada.donadorId || entrada.donadorNombre);
+      productosUnicos.add(entrada.productoId || entrada.nombreProducto);
+      organismosUnicos.add(organismoId || organismoNombre);
+
+      if (entrada.participantePRSId || entrada.participantePRSNombre) {
+        participantesPRSUnicos.add(entrada.participantePRSId || entrada.participantePRSNombre || '');
+      }
+
+      const organismoActual = porOrganismoMap.get(organismoId || organismoNombre) || {
+        organismoId,
+        organismoNombre,
+        totalEntradas: 0,
+        totalCantidad: 0,
+        totalPesoKg: 0,
+        valorTotalEstimado: 0,
+      };
+      organismoActual.totalEntradas += 1;
+      organismoActual.totalCantidad += entrada.cantidad;
+      organismoActual.totalPesoKg += entrada.pesoTotal || 0;
+      organismoActual.valorTotalEstimado += valorTotalEstimado;
+      porOrganismoMap.set(organismoId || organismoNombre, organismoActual);
+
+      const donadorActual = porDonadorMap.get(entrada.donadorId || entrada.donadorNombre) || {
+        donadorId: entrada.donadorId || '',
+        donadorNombre: entrada.donadorNombre || 'Sin donador',
+        totalEntradas: 0,
+        totalCantidad: 0,
+        totalPesoKg: 0,
+        valorTotalEstimado: 0,
+      };
+      donadorActual.totalEntradas += 1;
+      donadorActual.totalCantidad += entrada.cantidad;
+      donadorActual.totalPesoKg += entrada.pesoTotal || 0;
+      donadorActual.valorTotalEstimado += valorTotalEstimado;
+      porDonadorMap.set(entrada.donadorId || entrada.donadorNombre, donadorActual);
+
+      const productoActual = porProductoMap.get(entrada.productoId || entrada.nombreProducto) || {
+        productoId: entrada.productoId || '',
+        productoNombre: entrada.nombreProducto || 'Sin producto',
+        totalEntradas: 0,
+        totalCantidad: 0,
+        totalPesoKg: 0,
+        valorTotalEstimado: 0,
+      };
+      productoActual.totalEntradas += 1;
+      productoActual.totalCantidad += entrada.cantidad;
+      productoActual.totalPesoKg += entrada.pesoTotal || 0;
+      productoActual.valorTotalEstimado += valorTotalEstimado;
+      porProductoMap.set(entrada.productoId || entrada.nombreProducto, productoActual);
+
+      const mesActual = porMesMap.get(mes) || {
+        mes,
+        totalEntradas: 0,
+        totalCantidad: 0,
+        totalPesoKg: 0,
+        valorTotalEstimado: 0,
+      };
+      mesActual.totalEntradas += 1;
+      mesActual.totalCantidad += entrada.cantidad;
+      mesActual.totalPesoKg += entrada.pesoTotal || 0;
+      mesActual.valorTotalEstimado += valorTotalEstimado;
+      porMesMap.set(mes, mesActual);
+
+      return {
+        id: entrada.id,
+        fecha: entrada.fecha,
+        organismoId,
+        organismoNombre,
+        donadorId: entrada.donadorId || '',
+        donadorNombre: entrada.donadorNombre || 'Sin donador',
+        participantePRSId: entrada.participantePRSId || '',
+        participantePRSNombre: entrada.participantePRSNombre || '',
+        productoId: entrada.productoId || '',
+        productoNombre: entrada.nombreProducto || 'Sin producto',
+        cantidad: entrada.cantidad,
+        unidad: entrada.unidad,
+        pesoTotal: entrada.pesoTotal || 0,
+        valorTotalEstimado,
+      };
+    })
+    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+  return {
+    resumen: {
+      totalEntradas: entradas.length,
+      totalCantidad: entradas.reduce((total, entrada) => total + entrada.cantidad, 0),
+      totalPesoKg: entradas.reduce((total, entrada) => total + (entrada.pesoTotal || 0), 0),
+      valorTotalEstimado: entradas.reduce((total, entrada) => total + calcularValorEntrada(entrada), 0),
+      donadoresUnicos: donadoresUnicos.size,
+      productosUnicos: productosUnicos.size,
+      organismosUnicos: organismosUnicos.size,
+      participantesPRSUnicos: participantesPRSUnicos.size,
+    },
+    porOrganismo: Array.from(porOrganismoMap.values()).sort((a, b) => b.valorTotalEstimado - a.valorTotalEstimado),
+    porDonador: Array.from(porDonadorMap.values()).sort((a, b) => b.valorTotalEstimado - a.valorTotalEstimado),
+    porProducto: Array.from(porProductoMap.values()).sort((a, b) => b.valorTotalEstimado - a.valorTotalEstimado),
+    porMes: Array.from(porMesMap.values()).sort((a, b) => a.mes.localeCompare(b.mes)),
+    detalles,
+    periodo: {
+      inicio: fechaInicio || 'Inicio de registros',
+      fin: fechaFin || 'Hoy',
+    },
+    generadoEn: new Date().toISOString(),
+  };
+}
+
 // ==================== EXPORTACIÓN ====================
 
 export function exportarReporteJSON(reporte: any): string {
@@ -490,6 +736,42 @@ export function exportarReporteCSV(reporte: ReporteGeneral): string {
   lineas.push(`Rutas Completadas,${reporte.transporte.rutasCompletadas}`);
   lineas.push(`Km Totales,${reporte.transporte.kmTotales}`);
   lineas.push(`Eficiencia Entrega,${reporte.transporte.eficienciaEntrega}%`);
+
+  return lineas.join('\n');
+}
+
+export function exportarReportePRSCSV(reporte: ReportePRS): string {
+  const lineas: string[] = [];
+
+  lineas.push('REPORTE PRS - BANCO DE ALIMENTOS');
+  lineas.push(`Periodo,${reporte.periodo.inicio} - ${reporte.periodo.fin}`);
+  lineas.push(`Generado,${new Date(reporte.generadoEn).toLocaleString()}`);
+  lineas.push('');
+  lineas.push('=== RESUMEN ===');
+  lineas.push(`Total Entradas,${reporte.resumen.totalEntradas}`);
+  lineas.push(`Total Cantidad,${reporte.resumen.totalCantidad}`);
+  lineas.push(`Total Peso Kg,${reporte.resumen.totalPesoKg}`);
+  lineas.push(`Valor Total Estimado,${reporte.resumen.valorTotalEstimado}`);
+  lineas.push(`Donadores Unicos,${reporte.resumen.donadoresUnicos}`);
+  lineas.push(`Productos Unicos,${reporte.resumen.productosUnicos}`);
+  lineas.push(`Organismos Unicos,${reporte.resumen.organismosUnicos}`);
+  lineas.push('');
+  lineas.push('=== DETALLES ===');
+  lineas.push('Fecha,Organismo,Donador,Participante PRS,Producto,Cantidad,Unidad,Peso Kg,Valor Estimado');
+
+  reporte.detalles.forEach((detalle) => {
+    lineas.push([
+      detalle.fecha,
+      detalle.organismoNombre,
+      detalle.donadorNombre,
+      detalle.participantePRSNombre,
+      detalle.productoNombre,
+      detalle.cantidad,
+      detalle.unidad,
+      detalle.pesoTotal,
+      detalle.valorTotalEstimado,
+    ].join(','));
+  });
 
   return lineas.join('\n');
 }

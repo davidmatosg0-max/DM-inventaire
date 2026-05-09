@@ -65,6 +65,7 @@ Invoke-Step -Description 'Vincular el proyecto Supabase' -Command "$supabaseComm
 Invoke-Step -Description 'Aplicar migraciones de base de datos' -Command "$supabaseCommand db push"
 Invoke-Step -Description 'Configurar secretos de la Edge Function' -Command "$supabaseCommand secrets set SUPABASE_URL=`"$projectUrl`" SUPABASE_SERVICE_ROLE_KEY=`"$ServiceRoleKey`""
 Invoke-Step -Description 'Desplegar la Edge Function admin-users' -Command "$supabaseCommand functions deploy admin-users"
+Invoke-Step -Description 'Desplegar la Edge Function reports-prs' -Command "$supabaseCommand functions deploy reports-prs"
 
 if ($DryRun) {
   Write-Host "`nModo simulación completado. No se ejecutó ningún despliegue real." -ForegroundColor Yellow

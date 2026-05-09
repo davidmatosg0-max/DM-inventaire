@@ -78,6 +78,8 @@ export type EntradaInventario = {
   
   // Metadata
   creadoPor?: string;
+  registradoPor?: string;
+  organismoId?: string;
   fechaCreacion: string;
   activo: boolean;
 };
