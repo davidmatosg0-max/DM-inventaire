@@ -21,6 +21,7 @@
 import { openAutoPrintPopup, waitForPrintPopupToClose } from '../../utils/printPopup';
 
 import { generarDatosQR } from '../../utils/barcode';
+import { formatBrandingContactLine, getStoredBrandingPrintConfig } from '../../utils/brandingPrint';
 import { formatQuantity } from '../../utils/formatUtils';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 
@@ -92,10 +93,13 @@ export async function generateStandardProductLabel(
 ): Promise<string> {
   const dateLocale = data.locale || 'fr-CA';
   const htmlLang = dateLocale.split('-')[0] || 'fr';
+  const brandingPrint = getStoredBrandingPrintConfig();
+  const nombreSistemaImpresion = data.systemName || brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
 
   // Traducciones por defecto (español)
   const t = {
-    foodBank: data.translations?.foodBank || 'BANCO DE ALIMENTOS',
+    foodBank: data.translations?.foodBank || nombreSistemaImpresion,
     productLabel: data.translations?.productLabel || 'Etiqueta del producto',
     quantity: data.translations?.quantity || 'CANTIDAD',
     temperature: data.translations?.temperature || 'TEMPERATURA',
@@ -248,6 +252,20 @@ export async function generateStandardProductLabel(
       margin: 0;
       letter-spacing: 0.8px;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .etiqueta-header-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .etiqueta-header-contact {
+      margin-top: 4px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.92);
+      font-weight: 500;
     }
     
     /* QR SECTION */
@@ -526,7 +544,10 @@ export async function generateStandardProductLabel(
     <!-- HEADER -->
     <div class="etiqueta-header">
       ${data.systemLogo ? `<img src="${data.systemLogo}" alt="Logo" class="etiqueta-header-logo">` : '🏦'}
-      <h1>${data.systemName || t.foodBank}</h1>
+      <div class="etiqueta-header-text">
+        <h1>${nombreSistemaImpresion || t.foodBank}</h1>
+        ${brandingContactLine ? `<div class="etiqueta-header-contact">${brandingContactLine}</div>` : ''}
+      </div>
     </div>
     
     <!-- QR SECTION -->

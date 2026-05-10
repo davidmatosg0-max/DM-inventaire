@@ -8,6 +8,22 @@ import { printStandardLabel, type ProductLabelData } from './etiquetas/StandardP
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+function getStoredSystemName(): string {
+  try {
+    const savedConfig = localStorage.getItem('brandingConfig_permanent');
+    if (!savedConfig) {
+      return 'Banque Alimentaire';
+    }
+
+    const parsed = JSON.parse(savedConfig);
+    return typeof parsed?.systemName === 'string' && parsed.systemName.trim() !== ''
+      ? parsed.systemName.trim()
+      : 'Banque Alimentaire';
+  } catch {
+    return 'Banque Alimentaire';
+  }
+}
+
 /**
  * EJEMPLO 1: Uso Básico (sin traducciones)
  */
@@ -62,7 +78,7 @@ export function EjemploConTraduciones() {
       donadorNombre: 'Walmart Supercentre',
       fechaEntrada: new Date().toISOString(),
       translations: {
-        foodBank: t('common.foodBank'),
+        foodBank: getStoredSystemName(),
         productLabel: t('common.productLabel'),
         quantity: t('common.amount'),
         temperature: t('common.temperature'),
@@ -124,7 +140,7 @@ export function EjemploFormularioEntrada() {
         donadorNombre: formData.donadorNombre,
         fechaEntrada: new Date().toISOString(),
         translations: {
-          foodBank: t('common.foodBank'),
+          foodBank: getStoredSystemName(),
           productLabel: t('common.productLabel'),
           quantity: t('common.amount'),
           temperature: t('common.temperature'),
@@ -175,7 +191,7 @@ export function EjemploReimpresion() {
       donadorNombre: entrada.donadorNombre,
       fechaEntrada: entrada.fechaEntrada,
       translations: {
-        foodBank: 'BANQUE ALIMENTAIRE',
+        foodBank: getStoredSystemName(),
         productLabel: 'Étiquette du Produit',
         quantity: 'QUANTITÉ',
         temperature: 'TEMPÉRATURE',
@@ -229,7 +245,7 @@ export async function imprimirEtiquetasLote(entradas: any[]) {
       programa: entrada.programaNombre,
       donadorNombre: entrada.donadorNombre,
       translations: {
-        foodBank: t('common.foodBank'),
+        foodBank: getStoredSystemName(),
         productLabel: t('common.productLabel'),
         quantity: t('common.amount'),
         temperature: t('common.temperature'),

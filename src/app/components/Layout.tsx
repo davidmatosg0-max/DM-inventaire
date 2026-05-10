@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
+import { AdaptiveBrandLogo } from './shared/AdaptiveBrandLogo';
 import { obtenerUsuarioSesion } from '../utils/sesionStorage';
 import { 
   moduloDisponible, 
@@ -592,23 +593,19 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               </button>
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 {branding.logo && (
-                  <div className="relative">
-                    <div 
-                      className="absolute inset-0 rounded-full blur-md opacity-50"
-                      style={{ backgroundColor: branding.secondaryColor }}
-                    />
-                    <img 
-                      src={branding.logo} 
-                      alt={t('common.logo')}
-                      className="h-7 sm:h-9 w-7 sm:w-9 flex-shrink-0 relative z-10 rounded-full"
-                      style={{ 
-                        objectFit: 'cover',
-                        objectPosition: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                        border: '2px solid rgba(255,255,255,0.9)'
-                      }}
-                    />
-                  </div>
+                  <AdaptiveBrandLogo
+                    src={branding.logo}
+                    alt={t('common.logo')}
+                    wrapperClassName="h-7 w-7 flex-shrink-0 sm:h-9 sm:w-9"
+                    glowColor={branding.secondaryColor}
+                    glowClassName="blur-md opacity-50"
+                    containerClassName="relative z-10"
+                    borderWidthClassName="border-2"
+                    containerStyle={{
+                      borderColor: 'rgba(255,255,255,0.9)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    }}
+                  />
                 )}
                 <div className="flex items-center gap-2">
                   <h1 className="font-bold truncate text-sm sm:text-base md:text-xl lg:text-2xl text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>

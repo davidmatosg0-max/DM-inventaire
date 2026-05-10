@@ -2,7 +2,9 @@ import React from 'react';
 import { Package, MapPin, Phone, Calendar, User } from 'lucide-react';
 import JsBarcode from 'jsbarcode';
 import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
+import { useBranding } from '../../../hooks/useBranding';
 
 interface EtiquetaComandaProps {
   comanda: any;
@@ -10,6 +12,10 @@ interface EtiquetaComandaProps {
 }
 
 export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [barcodeUrl, setBarcodeUrl] = React.useState<string>('');
   const recibidoPor = organismo?.responsable || comanda?.organismoResponsable || 'Organisme';
 
@@ -126,11 +132,14 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
             {/* ENCABEZADO */}
             <div className="text-center border-b-4 border-[#1E73BE] pb-3 mb-4">
               <h1 className="font-black text-[#1E73BE] text-4xl mb-1" style={{ fontFamily: 'Montserrat', fontWeight: 900 }}>
-                BANQUE ALIMENTAIRE
+                {nombreSistemaImpresion}
               </h1>
               <p className="font-semibold text-[#666666] text-base">
                 Étiquette de Commande
               </p>
+              {brandingContactLine && (
+                <p className="text-sm text-[#666666] mt-1">{brandingContactLine}</p>
+              )}
             </div>
 
             {/* Grid superior - QR + Productos */}

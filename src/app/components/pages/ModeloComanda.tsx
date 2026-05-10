@@ -20,7 +20,9 @@ import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr'
 import { useTranslation } from 'react-i18next';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
 import { actualizarComanda, actualizarComandasGrupo } from '../../utils/comandaStorage';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { obtenerReservaInventarioProducto } from '../../utils/inventoryReservations';
+import { useBranding } from '../../../hooks/useBranding';
 import { toast } from 'sonner';
 
 interface ModeloComandaProps {
@@ -50,10 +52,14 @@ export function ModeloComanda({
   onComandaActualizada,
   abrirEdicionGrupoInicial = false,
 }: ModeloComandaProps) {
+  const branding = useBranding();
   const { t } = useTranslation();
   const defaultLocale = 'fr-CA';
   const comandaRef = useRef<HTMLDivElement>(null);
   const bloqueGrupoRef = useRef<HTMLDivElement>(null);
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
 
   const formatearCantidadProducto = (valor: number) => {
     return new Intl.NumberFormat(defaultLocale, {
@@ -440,6 +446,14 @@ export function ModeloComanda({
 
   const estadoActual = estadosDisponibles.find(e => e.valor === comanda.estado);
   const tamanoQr = vistaCompacta ? 104 : 144;
+  const estiloContenedorComanda = vistaCompacta
+    ? 'rounded-[28px] border border-[#d7e3ef] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] p-4 shadow-[0_28px_70px_-42px_rgba(15,45,71,0.34)] sm:p-5'
+    : 'bg-white p-8';
+  const estiloTarjetaCompacta = vistaCompacta
+    ? 'rounded-[22px] border border-[#d9e5f0] bg-white/96 p-4 shadow-[0_20px_40px_-34px_rgba(15,45,71,0.32)]'
+    : '';
+  const estiloEtiquetaCompacta = vistaCompacta ? 'text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500' : 'text-xs sm:text-sm text-[#666666] mb-2 uppercase tracking-wide';
+  const estiloValorCompacto = vistaCompacta ? 'text-[13px] leading-5 text-slate-700' : 'text-sm sm:text-base';
 
   // Inicializar cantidades editadas
   useEffect(() => {
@@ -993,19 +1007,45 @@ export function ModeloComanda({
         )}
 
         {/* Modelo de Comanda (se imprime) */}
-        <div ref={comandaRef} className={`bg-white print:p-0 ${vistaCompacta ? 'p-4 sm:p-5' : 'p-8'}`} data-comanda-print>
+        <div ref={comandaRef} className={`print:p-0 ${estiloContenedorComanda}`} data-comanda-print>
           {/* Encabezado */}
-          <div className={`border-b-4 border-[#1E73BE] ${vistaCompacta ? 'pb-4 mb-4' : 'pb-6 mb-6'}`}>
+          <div className={`${vistaCompacta ? 'mb-5 rounded-[24px] border border-[#d7e3ef] bg-[linear-gradient(135deg,#f7fbff_0%,#eef6fb_48%,#f6fbf7_100%)] p-4 shadow-[0_18px_42px_-36px_rgba(15,45,71,0.35)]' : 'border-b-4 border-[#1E73BE] pb-6 mb-6'}`}>
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
-                <h1 className="font-bold text-[#1E73BE] mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1.9rem' : '2.5rem' }}>
-                  BANQUE ALIMENTAIRE
+                {vistaCompacta && (
+                  <span className="mb-2 inline-flex rounded-full border border-[#cfe0ee] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1E73BE] shadow-sm">
+                    Recu de commande
+                  </span>
+                )}
+                <h1 className="font-bold text-[#1E73BE] mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1.75rem' : '2.5rem', letterSpacing: vistaCompacta ? '-0.03em' : undefined }}>
+                  {nombreSistemaImpresion}
                 </h1>
-                <p className="text-[#666666] mb-1" style={{ fontSize: vistaCompacta ? '0.95rem' : '1.1rem' }}>Système de gestion des commandes</p>
-                <p className="text-[#666666] text-sm">Laval, Québec, Canada</p>
+                <p className="text-[#475569] mb-1" style={{ fontSize: vistaCompacta ? '0.95rem' : '1.1rem', fontWeight: vistaCompacta ? 500 : undefined }}>Système de gestion des commandes</p>
+                <p className="text-[#64748b] text-sm">{brandingPrint.address || 'Laval, Québec, Canada'}</p>
+                {brandingPrint.phone && <p className="text-[#64748b] text-sm">{brandingPrint.phone}</p>}
+                {vistaCompacta && (
+                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-[#dbe7f1] bg-white/90 px-3 py-2 shadow-sm">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Commande</p>
+                      <p className="mt-1 font-semibold text-slate-800">{comanda.numero}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[#dbe7f1] bg-white/90 px-3 py-2 shadow-sm">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Créée le</p>
+                      <p className="mt-1 font-semibold text-slate-800">{new Date(comanda.fecha).toLocaleDateString(defaultLocale)}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[#dbe7f1] bg-white/90 px-3 py-2 shadow-sm">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Statut</p>
+                      <div className="mt-1">
+                        <Badge className={`${estadoActual?.color || 'bg-slate-500'} border-0 shadow-sm`}>
+                          {estadoActual?.label}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex flex-col items-end text-right">
-                <div className={`bg-white p-2 rounded-lg shadow-md qrcode-container ${vistaCompacta ? 'mb-2' : 'mb-4'}`}>
+              <div className={`flex flex-col items-end text-right ${vistaCompacta ? 'rounded-[22px] border border-[#d4e1ec] bg-white/92 p-3 shadow-[0_18px_40px_-34px_rgba(15,45,71,0.3)]' : ''}`}>
+                <div className={`bg-white p-2 rounded-lg shadow-md qrcode-container ${vistaCompacta ? 'mb-2 border border-[#e2ebf3]' : 'mb-4'}`}>
                   <BrandedQRCode
                     value={qrData}
                     size={tamanoQr}
@@ -1014,9 +1054,11 @@ export function ModeloComanda({
                     data-testid="qr-code"
                   />
                 </div>
-                <p className="font-bold text-[#1E73BE]" style={{ fontSize: vistaCompacta ? '1.05rem' : '1.3rem', fontFamily: 'Montserrat, sans-serif' }}>
-                  {comanda.numero}
-                </p>
+                {!vistaCompacta && (
+                  <p className="font-bold text-[#1E73BE]" style={{ fontSize: '1.3rem', fontFamily: 'Montserrat, sans-serif' }}>
+                    {comanda.numero}
+                  </p>
+                )}
                 {modoOrganismo && comanda.estado === 'pendiente' && (
                   <div className="mt-3 w-[20rem] max-w-full rounded-lg border-l-4 border-t border-r border-b border-[#F6C26B] border-l-[#C27A00] bg-gradient-to-r from-[#FFF3D6] to-[#FFE7B8] p-3 text-left shadow-sm print:hidden">
                     <div className="flex items-start gap-2">
@@ -1051,32 +1093,32 @@ export function ModeloComanda({
 
           </div>
 
-          <div className={`grid grid-cols-1 ${vistaCompacta ? 'xl:grid-cols-[1.35fr_0.85fr_0.95fr] gap-3' : 'xl:grid-cols-1 gap-0'}`}>
-            <div className={`bg-gradient-to-r from-[#E3F2FD] to-[#E8F5E9] rounded-xl shadow-lg ${vistaCompacta ? 'mb-4 p-4 border-2' : 'mb-8 p-4 sm:p-6 border-4'} border-[#1E73BE]`}>
-              <p className="text-xs sm:text-sm text-[#666666] mb-2 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
+          <div className={`grid grid-cols-1 ${vistaCompacta ? 'xl:grid-cols-[1.45fr_0.8fr_0.85fr] gap-3' : 'xl:grid-cols-1 gap-0'}`}>
+            <div className={`${vistaCompacta ? estiloTarjetaCompacta : 'bg-gradient-to-r from-[#E3F2FD] to-[#E8F5E9] rounded-xl shadow-lg mb-8 p-4 sm:p-6 border-4 border-[#1E73BE]'}`}>
+              <p className={estiloEtiquetaCompacta} style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                 Organisme destinataire
               </p>
-              <h2 className="font-bold text-[#1E73BE] mb-3" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1.2', fontSize: vistaCompacta ? '2rem' : 'clamp(1.25rem, 2.3vw, 2.5rem)' }}>
+              <h2 className="font-bold text-[#1E73BE] mb-3" style={{ fontFamily: 'Montserrat, sans-serif', lineHeight: '1.1', fontSize: vistaCompacta ? '1.7rem' : 'clamp(1.25rem, 2.3vw, 2.5rem)' }}>
                 {organismo?.nombre || 'Sans organisme'}
               </h2>
-              <div className={`grid ${vistaCompacta ? 'grid-cols-1 gap-2 text-[13px]' : 'grid-cols-1 sm:grid-cols-2 gap-4 text-sm'}`}>
-                <div>
-                  <p className="text-[#666666]"><strong>Adresse :</strong> {organismo?.direccion || 'N/A'}</p>
-                  <p className="text-[#666666]"><strong>Téléphone :</strong> {organismo?.telefono || 'N/A'}</p>
+              <div className={`grid ${vistaCompacta ? 'grid-cols-1 gap-2.5' : 'grid-cols-1 sm:grid-cols-2 gap-4 text-sm'}`}>
+                <div className={vistaCompacta ? 'rounded-2xl bg-[#f8fbff] px-3 py-2.5' : ''}>
+                  <p className={vistaCompacta ? estiloValorCompacto : 'text-[#666666]'}><strong>Adresse :</strong> {organismo?.direccion || 'N/A'}</p>
+                  <p className={vistaCompacta ? estiloValorCompacto : 'text-[#666666]'}><strong>Téléphone :</strong> {organismo?.telefono || 'N/A'}</p>
                 </div>
-                <div>
-                  <p className="text-[#666666]"><strong>Responsable :</strong> {organismo?.responsable || 'N/A'}</p>
-                  <p className="text-[#666666]"><strong>Courriel :</strong> {organismo?.email || 'N/A'}</p>
+                <div className={vistaCompacta ? 'rounded-2xl bg-[#f8fbff] px-3 py-2.5' : ''}>
+                  <p className={vistaCompacta ? estiloValorCompacto : 'text-[#666666]'}><strong>Responsable :</strong> {organismo?.responsable || 'N/A'}</p>
+                  <p className={vistaCompacta ? estiloValorCompacto : 'text-[#666666]'}><strong>Courriel :</strong> {organismo?.email || 'N/A'}</p>
                 </div>
               </div>
             </div>
 
-            <div className={`bg-[#FFF8E1] border-2 border-[#FFC107] rounded-lg ${vistaCompacta ? 'mb-4 p-3.5' : 'mb-8 p-4 sm:p-5'}`}>
-              <p className={`font-bold text-[#FFC107] mb-3 flex items-center gap-2 ${vistaCompacta ? 'text-sm' : 'text-base sm:text-lg'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <div className={`${vistaCompacta ? `${estiloTarjetaCompacta} border-[#f3dfb1] bg-[linear-gradient(180deg,#fffef9_0%,#fff8e7_100%)]` : 'bg-[#FFF8E1] border-2 border-[#FFC107] rounded-lg mb-8 p-4 sm:p-5'}`}>
+              <p className={`font-bold text-[#C98800] mb-3 flex items-center gap-2 ${vistaCompacta ? 'text-sm' : 'text-base sm:text-lg'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 📅 Rendez-vous de collecte
               </p>
               <div className={`space-y-1.5 ${vistaCompacta ? 'text-[13px]' : 'text-sm sm:text-base'}`}>
-                <p className="text-[#333333]">
+                <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Jour :</strong> {comanda.fechaEntrega ? 
                     new Date(comanda.fechaEntrega).toLocaleDateString(defaultLocale, { 
                       weekday: 'long', 
@@ -1085,37 +1127,39 @@ export function ModeloComanda({
                       day: 'numeric' 
                     }) : dia}
                 </p>
-                <p className="text-[#333333]">
+                <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Heure :</strong> {comanda.horaRecogida || hora}
                 </p>
                 {comanda.fechaLimiteRespuesta && (
-                  <p className="text-xs sm:text-sm text-[#DC3545] mt-2 font-medium">
+                  <p className="text-xs sm:text-sm text-[#DC3545] mt-2 font-medium rounded-xl bg-white/80 px-2.5 py-2 border border-[#f6d0d0]">
                     ⚠️ À confirmer avant le : {new Date(comanda.fechaLimiteRespuesta).toLocaleDateString(defaultLocale)}
                   </p>
                 )}
               </div>
             </div>
             
-            <div className={`bg-[#E8F5E9] border-2 border-[#4CAF50] rounded-lg ${vistaCompacta ? 'mb-4 p-3.5' : 'mb-8 p-4 sm:p-5'}`}>
-              <p className={`font-bold text-[#4CAF50] mb-3 flex items-center gap-2 ${vistaCompacta ? 'text-sm' : 'text-base sm:text-lg'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <div className={`${vistaCompacta ? `${estiloTarjetaCompacta} border-[#d5e8db] bg-[linear-gradient(180deg,#fbfefc_0%,#eef8f2_100%)]` : 'bg-[#E8F5E9] border-2 border-[#4CAF50] rounded-lg mb-8 p-4 sm:p-5'}`}>
+              <p className={`font-bold text-[#2D9561] mb-3 flex items-center gap-2 ${vistaCompacta ? 'text-sm' : 'text-base sm:text-lg'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 👤 Informations de préparation
               </p>
               <div className={`space-y-1.5 ${vistaCompacta ? 'text-[13px]' : 'text-sm sm:text-base'}`}>
-                <p className="text-[#333333]">
+                <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Préparée par :</strong> {comanda.usuarioCreacion || 'Non attribué'}
                 </p>
-                <p className="text-[#333333]">
+                <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Date de création :</strong> {new Date(comanda.fecha).toLocaleDateString(defaultLocale)}
                 </p>
-                <p className="text-[#333333]">
+                <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Heure de création :</strong> {new Date(comanda.fecha).toLocaleTimeString(defaultLocale, { hour: '2-digit', minute: '2-digit' })}
                 </p>
+                {!vistaCompacta && (
                 <p className="text-[#333333]">
                   <strong>État :</strong>{' '}
                   <Badge className={estadoActual?.color}>
                     {estadoActual?.label}
                   </Badge>
                 </p>
+                )}
               </div>
             </div>
           </div>
@@ -1211,8 +1255,8 @@ export function ModeloComanda({
           )}
 
           {/* Productos organizados por temperatura */}
-          <div className={vistaCompacta ? 'mb-4' : 'mb-6'}>
-            <h2 className={`font-bold text-[#1E73BE] pb-2 border-b-4 border-[#1E73BE] flex items-center gap-3 ${vistaCompacta ? 'mb-3' : 'mb-4'}`} 
+          <div className={vistaCompacta ? 'mb-5 rounded-[24px] border border-[#dce6f0] bg-white/96 p-4 shadow-[0_20px_40px_-34px_rgba(15,45,71,0.28)]' : 'mb-6'}>
+            <h2 className={`font-bold text-[#1E73BE] pb-2 flex items-center gap-3 ${vistaCompacta ? 'mb-4 border-b border-[#dce6f0]' : 'mb-4 border-b-4 border-[#1E73BE]'}`} 
                 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1.1rem' : '1.5rem' }}>
               <Thermometer className={vistaCompacta ? 'w-5 h-5' : 'w-6 h-6'} />
               Produits par température d'entreposage
@@ -1246,32 +1290,32 @@ export function ModeloComanda({
               
               return (
                 <div key={temperatura} className={`${vistaCompacta ? 'mb-4' : 'mb-8'} break-inside-avoid`}>
-                  <div className={`flex items-center gap-3 mb-3 ${config.bg} border-2 ${config.border} ${vistaCompacta ? 'p-3' : 'p-4'} rounded-lg`}>
+                  <div className={`flex items-center gap-3 mb-3 ${config.bg} border ${config.border} ${vistaCompacta ? 'rounded-2xl p-3 shadow-sm' : 'p-4 rounded-lg border-2'}`}>
                     {config.icon}
                     <h3 className={`font-bold ${config.text} ${vistaCompacta ? 'text-sm sm:text-base' : 'text-base sm:text-lg lg:text-xl'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {obtenerEtiquetaTemperatura(temperatura)}
                     </h3>
-                    <Badge className="bg-[#4CAF50] ml-auto text-xs sm:text-sm" style={{ padding: '0.3rem 0.6rem' }}>
+                    <Badge className="bg-[#4CAF50] ml-auto text-xs sm:text-sm border-0 shadow-sm" style={{ padding: '0.3rem 0.6rem' }}>
                       {items.length} produit{items.length > 1 ? 's' : ''}
                     </Badge>
                   </div>
 
-                  <div className="overflow-x-auto">
-                    <Table className="border-2 border-gray-300">
+                  <div className={`overflow-x-auto ${vistaCompacta ? 'rounded-[20px] border border-[#deE7ef] bg-white shadow-sm' : ''}`}>
+                    <Table className={vistaCompacta ? 'border-0' : 'border-2 border-gray-300'}>
                       <TableHeader>
-                        <TableRow className="bg-gray-100">
+                        <TableRow className={vistaCompacta ? 'bg-[#f5f8fb]' : 'bg-gray-100'}>
                           {/* 🎯 NUEVO: Columna para checkbox de progreso */}
                           {comanda.estado === 'en_preparacion' && !modoOrganismo && (
-                            <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] w-12' : 'text-xs sm:text-sm w-16'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>✓</TableHead>
+                            <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] w-12 text-slate-500' : 'text-xs sm:text-sm w-16'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>✓</TableHead>
                           )}
-                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Icône</TableHead>
-                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Code</TableHead>
-                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Produit</TableHead>
-                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Lot</TableHead>
-                          <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Quantité</TableHead>
-                          <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Unité</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-3 py-3 text-slate-500' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Icône</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-3 py-3 text-slate-500' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Code</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-3 py-3 text-slate-500' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Produit</TableHead>
+                          <TableHead className={`font-bold ${vistaCompacta ? 'text-[11px] px-3 py-3 text-slate-500' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Lot</TableHead>
+                          <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-3 py-3 text-slate-500' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Quantité</TableHead>
+                          <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-3 py-3 text-slate-500' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Unité</TableHead>
                           {comanda.estado === 'completada' && (
-                            <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-2 py-2' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Livré</TableHead>
+                            <TableHead className={`font-bold text-center ${vistaCompacta ? 'text-[11px] px-3 py-3 text-slate-500' : 'text-xs sm:text-sm'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>Livré</TableHead>
                           )}
                         </TableRow>
                       </TableHeader>
@@ -1279,7 +1323,7 @@ export function ModeloComanda({
                         {items.map((item: any, index: number) => {
                                   const itemKey = getItemKey(item, index);
                           return (
-                            <TableRow key={itemKey} className="hover:bg-gray-50">
+                            <TableRow key={itemKey} className={vistaCompacta ? 'border-b border-[#edf2f7] last:border-b-0 hover:bg-[#f8fbff]' : 'hover:bg-gray-50'}>
                               {/* 🎯 NUEVO: Checkbox para marcar producto como completado */}
                               {comanda.estado === 'en_preparacion' && !modoOrganismo && (
                                 <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
@@ -1292,17 +1336,17 @@ export function ModeloComanda({
                                   />
                                 </TableCell>
                               )}
-                              <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
+                              <TableCell className={`text-center ${vistaCompacta ? 'px-3 py-3' : ''}`}>
                                 {item.producto?.icono ? (
                                   <span className={vistaCompacta ? 'text-2xl' : 'text-3xl'}>{item.producto.icono}</span>
                                 ) : (
                                   <Box className={`${vistaCompacta ? 'w-5 h-5' : 'w-6 h-6'} text-gray-400 mx-auto`} />
                                 )}
                               </TableCell>
-                              <TableCell className={`font-mono font-medium ${vistaCompacta ? 'px-2 py-2 text-[11px]' : ''}`}>{item.producto?.codigo || 'N/A'}</TableCell>
-                              <TableCell className={vistaCompacta ? 'px-2 py-2' : ''}>
+                              <TableCell className={`font-mono font-medium ${vistaCompacta ? 'px-3 py-3 text-[11px] text-slate-600' : ''}`}>{item.producto?.codigo || 'N/A'}</TableCell>
+                              <TableCell className={vistaCompacta ? 'px-3 py-3' : ''}>
                                 <div className="flex flex-col">
-                                  <span className={`font-medium text-[#333333] ${vistaCompacta ? 'text-[12px] leading-4' : ''}`}>
+                                  <span className={`font-medium text-[#1f2937] ${vistaCompacta ? 'text-[12px] leading-4' : ''}`}>
                                     {obtenerEtiquetaProducto(item.producto, item.nombreProducto)}
                                   </span>
                                   <span className={`inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 font-medium mt-1 ${vistaCompacta ? 'text-[10px]' : 'text-xs'} ${getTemperatureBadgeStyle(item.temperatura)}`}>
@@ -1319,10 +1363,10 @@ export function ModeloComanda({
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className={`text-[#666666] ${vistaCompacta ? 'px-2 py-2 text-[11px]' : 'text-sm'}`}>
+                              <TableCell className={`text-[#666666] ${vistaCompacta ? 'px-3 py-3 text-[11px] text-slate-500' : 'text-sm'}`}>
                                 {item.producto?.lote || 'N/A'}
                               </TableCell>
-                              <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
+                              <TableCell className={`text-center ${vistaCompacta ? 'px-3 py-3' : ''}`}>
                                 {modoEdicionInterna || modoEdicion || campoEditando === itemKey ? (
                                   <Input
                                     type="number"
@@ -1376,7 +1420,7 @@ export function ModeloComanda({
                                   </span>
                                 )}
                               </TableCell>
-                              <TableCell className={`text-center text-[#666666] font-medium ${vistaCompacta ? 'px-2 py-2 text-[11px]' : ''}`}>
+                              <TableCell className={`text-center text-[#666666] font-medium ${vistaCompacta ? 'px-3 py-3 text-[11px] text-slate-500' : ''}`}>
                                 {item.producto?.unidad || 'N/A'}
                               </TableCell>
                               {comanda.estado === 'completada' && (
@@ -1398,24 +1442,24 @@ export function ModeloComanda({
           </div>
 
           {/* Resumen */}
-          <div className={`border-t-4 border-[#1E73BE] ${vistaCompacta ? 'pt-4 mb-4' : 'pt-6 mb-8'}`}>
+          <div className={`${vistaCompacta ? 'mb-5 rounded-[24px] border border-[#dce6f0] bg-white/96 p-4 shadow-[0_20px_40px_-34px_rgba(15,45,71,0.28)]' : 'border-t-4 border-[#1E73BE] pt-6 mb-8'}`}>
             <h3 className="font-bold text-[#333333] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1.1rem' : '1.3rem' }}>
               Résumé de la commande
             </h3>
-            <div className={`grid text-center ${vistaCompacta ? 'grid-cols-2 lg:grid-cols-5 gap-2' : 'grid-cols-5 gap-4'}`}>
-              <div className={`bg-blue-50 border-2 border-[#1E73BE] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
+            <div className={`grid text-center ${vistaCompacta ? 'grid-cols-2 lg:grid-cols-5 gap-2.5' : 'grid-cols-5 gap-4'}`}>
+              <div className={`${vistaCompacta ? 'rounded-2xl border border-[#d5e4f0] bg-[#f7fbff] p-3 shadow-sm' : 'bg-blue-50 border-2 border-[#1E73BE] rounded-lg p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Total des produits</p>
                 <p className="font-bold text-[#1E73BE]" style={{ fontSize: vistaCompacta ? '1.55rem' : '2rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {productosOrdenados.length}
                 </p>
               </div>
-              <div className={`bg-green-50 border-2 border-[#4CAF50] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
+              <div className={`${vistaCompacta ? 'rounded-2xl border border-[#d8e9dc] bg-[#f6fcf8] p-3 shadow-sm' : 'bg-green-50 border-2 border-[#4CAF50] rounded-lg p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Poids total</p>
                 <p className="font-bold text-[#4CAF50]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {formatQuantity(productosOrdenados.reduce((sum: number, item: any, index: number) => sum + getCantidadVisible(item, index), 0))} kg
                 </p>
               </div>
-              <div className={`bg-orange-50 border-2 border-[#FF9800] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
+              <div className={`${vistaCompacta ? 'rounded-2xl border border-[#f0dec5] bg-[#fff8ef] p-3 shadow-sm' : 'bg-orange-50 border-2 border-[#FF9800] rounded-lg p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Valeur monétaire</p>
                 <p className="font-bold text-[#FF9800]" style={{ fontSize: vistaCompacta ? '1.05rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   CAD$ {formatMoney(productosOrdenados.reduce((sum: number, item: any) => {
@@ -1425,13 +1469,13 @@ export function ModeloComanda({
                   }, 0))}
                 </p>
               </div>
-              <div className={`bg-yellow-50 border-2 border-[#FFC107] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
+              <div className={`${vistaCompacta ? 'rounded-2xl border border-[#f2e2b4] bg-[#fffbed] p-3 shadow-sm' : 'bg-yellow-50 border-2 border-[#FFC107] rounded-lg p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Ambiante</p>
                 <p className="font-bold text-[#FFC107]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {productosAgrupados['Température ambiante'].length}
                 </p>
               </div>
-              <div className={`bg-blue-50 border-2 border-[#0288D1] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
+              <div className={`${vistaCompacta ? 'rounded-2xl border border-[#d6e6f3] bg-[#f2f9ff] p-3 shadow-sm' : 'bg-blue-50 border-2 border-[#0288D1] rounded-lg p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Réfrigéré/Congelé</p>
                 <p className="font-bold text-[#0288D1]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   {productosAgrupados['Réfrigéré'].length + productosAgrupados['Congelé'].length}
@@ -1442,7 +1486,7 @@ export function ModeloComanda({
 
           {/* Observaciones */}
           {comanda.observaciones && (
-            <div className={`bg-yellow-50 border-l-4 border-[#FFC107] rounded-lg ${vistaCompacta ? 'mb-4 p-3.5' : 'mb-8 p-5'}`}>
+            <div className={`${vistaCompacta ? 'mb-5 rounded-[22px] border border-[#f0dfb0] bg-[#fffaf0] p-4 shadow-sm' : 'bg-yellow-50 border-l-4 border-[#FFC107] rounded-lg mb-8 p-5'}`}>
               <p className="font-bold text-[#F57C00] mb-2 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1rem' : '1.1rem' }}>
                 📝 Observations importantes
               </p>
@@ -1451,8 +1495,8 @@ export function ModeloComanda({
           )}
 
           {/* Firmas */}
-          <div className={`grid ${vistaCompacta ? 'grid-cols-1 xl:grid-cols-2 gap-3 mt-4 pt-4' : 'grid-cols-2 gap-8 mt-8 pt-6'} border-t-4 border-gray-300`}>
-            <div className={`bg-[#E8F5E9] rounded-lg border-2 border-[#4CAF50] ${vistaCompacta ? 'p-3.5' : 'p-5'}`}>
+          <div className={`grid ${vistaCompacta ? 'grid-cols-1 xl:grid-cols-2 gap-3 mt-4 pt-0' : 'grid-cols-2 gap-8 mt-8 pt-6'} ${vistaCompacta ? '' : 'border-t-4 border-gray-300'}`}>
+            <div className={`${vistaCompacta ? 'rounded-[22px] border border-[#d8e9dc] bg-[#f8fcf9] p-4 shadow-sm' : 'bg-[#E8F5E9] rounded-lg border-2 border-[#4CAF50] p-5'}`}>
               <p className="font-bold text-[#4CAF50] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1rem' : '1.1rem' }}>
                 ✓ Préparée par
               </p>
@@ -1463,7 +1507,7 @@ export function ModeloComanda({
                 <p><strong>Heure :</strong> {new Date(comanda.fecha).toLocaleTimeString(defaultLocale, { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </div>
-            <div className={`bg-[#E3F2FD] rounded-lg border-2 border-[#1E73BE] ${vistaCompacta ? 'p-3.5' : 'p-5'}`}>
+            <div className={`${vistaCompacta ? 'rounded-[22px] border border-[#d7e4f0] bg-[#f7fbff] p-4 shadow-sm' : 'bg-[#E3F2FD] rounded-lg border-2 border-[#1E73BE] p-5'}`}>
               <p className="font-bold text-[#1E73BE] mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: vistaCompacta ? '1rem' : '1.1rem' }}>
                 ✓ Reçu par ({organismo?.nombre})
               </p>
@@ -1483,10 +1527,14 @@ export function ModeloComanda({
           </div>
 
           {/* Footer */}
-          <div className="mt-8 pt-4 border-t-2 text-center text-xs text-[#666666]">
-            <p className="font-medium">Ce document est un reçu officiel de la Banque Alimentaire</p>
-            <p className="mt-1">Pour toute question, scannez le code QR ou contactez-nous au (514) 555-0100</p>
-            <p className="mt-1">© 2026 Banque Alimentaire - Système de gestion intégral</p>
+          <div className={`${vistaCompacta ? 'rounded-[20px] border border-[#dbe5ef] bg-[#f8fbfe] px-4 py-3 text-left' : 'mt-8 pt-4 border-t-2 text-center'} text-xs text-[#666666]`}>
+            <p className="font-medium">Ce document est un reçu officiel de {nombreSistemaImpresion}</p>
+            <p className="mt-1">
+              {brandingContactLine
+                ? `Pour toute question, scannez le code QR ou contactez-nous : ${brandingContactLine}`
+                : 'Pour toute question, scannez le code QR pour retrouver les informations de la commande.'}
+            </p>
+            <p className="mt-1">© 2026 {nombreSistemaImpresion} - Système de gestion intégral</p>
           </div>
         </div>
       </DialogContent>

@@ -1230,7 +1230,7 @@ export function GestionDonateursFournisseurs() {
                         id="nomEntreprise"
                         value={formulaire.nomEntreprise}
                         onChange={(e) => setFormulaire({ ...formulaire, nomEntreprise: e.target.value })}
-                        placeholder="Ex: Banque Alimentaire Laval"
+                        placeholder="Ex: Épicerie solidaire Laval"
                         className="h-12 text-base border-2 focus:ring-2"
                         style={{ 
                           borderColor: formulaire.nomEntreprise ? branding.secondaryColor : '#e5e7eb',

@@ -14,10 +14,16 @@ import { toast } from 'sonner';
 import { checklistSAAQ, type VerificacionVehiculo, type ItemVerificacion, type EstadoVerificacion, type CategoriaVerificacion } from '../../types/verificacion';
 import { guardarVerificacion, generarIdVerificacion, obtenerVerificaciones } from '../../utils/verificacionStorage';
 import { limpiarEjemplosFuncionalesPrueba, obtenerResumenEjemplosFuncionalesPrueba, sembrarEjemplosFuncionalesPrueba, type ResumenEjemplos } from '../../utils/ejemplosFuncionalesPrueba';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { obtenerChoferes, obtenerVehiculos, TRANSPORTE_MODULE_EVENT, type Chofer, type Vehiculo } from '../../utils/transporteLogic';
+import { useBranding } from '../../../hooks/useBranding';
 
 export function VerificacionVehiculo() {
   const { t } = useTranslation();
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>(() => obtenerVehiculos());
   const [choferes, setChoferes] = useState<Chofer[]>(() => obtenerChoferes());
@@ -370,7 +376,10 @@ export function VerificacionVehiculo() {
         <div className="print-verificacion-documento">
           <div className="print-verificacion-documento-header">
             <div>
-              <p className="print-verificacion-documento-kicker">Banque Alimentaire</p>
+              <p className="print-verificacion-documento-kicker">{nombreSistemaImpresion}</p>
+              {brandingContactLine && (
+                <p className="print-verificacion-documento-subtitulo">{brandingContactLine}</p>
+              )}
               <h1 className="print-verificacion-documento-encabezado">Détail de la Vérification SAAQ</h1>
               <p className="print-verificacion-documento-subtitulo">Format compact complet pour impression</p>
               <h2 className="print-verificacion-documento-titulo">

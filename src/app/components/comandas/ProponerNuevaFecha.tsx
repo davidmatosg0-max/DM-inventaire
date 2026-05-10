@@ -6,6 +6,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { toast } from 'sonner';
+import { useBranding } from '../../../hooks/useBranding';
 
 interface ProponerNuevaFechaProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function ProponerNuevaFecha({
   organismo,
   onConfirmar 
 }: ProponerNuevaFechaProps) {
+  const branding = useBranding();
   const [nuevaFecha, setNuevaFecha] = useState('');
   const [nuevaHora, setNuevaHora] = useState('');
   const [motivo, setMotivo] = useState('');
@@ -159,7 +161,7 @@ export function ProponerNuevaFecha({
               <span className="text-[#FFC107] font-bold">ℹ️</span>
               <span>
                 L'organisme recevra une notification avec la nouvelle date proposée et pourra l'accepter ou contacter 
-                la Banque Alimentaire pour coordonner une autre date. La commande restera en attente jusqu'à 
+                {branding.systemName} pour coordonner une autre date. La commande restera en attente jusqu'à 
                 la confirmation de la nouvelle date.
               </span>
             </p>

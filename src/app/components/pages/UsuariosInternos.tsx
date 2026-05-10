@@ -39,7 +39,7 @@ const categoriaConfig = {
     label: 'Voluntario', 
     color: '#4CAF50', 
     icon: '🤝',
-    description: 'Bénévole de la Banque Alimentaire'
+    description: 'Bénévole du réseau'
   },
   empleado: { 
     label: 'Empleado', 

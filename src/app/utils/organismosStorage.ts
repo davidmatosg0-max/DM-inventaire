@@ -4,6 +4,7 @@
 import { notificarCambioOrganismo } from './organismoEvents';
 import { registrarActividad } from './actividadLogger';
 import { queueStorageSync } from './cloudPersistence';
+import { generarClaveAccesoUnica, normalizarClaveAcceso } from './claveAcceso';
 
 export interface JourDisponible {
   jour: string;
@@ -21,12 +22,24 @@ export interface ContactoNotificacion {
   joursDisponibles?: JourDisponible[];
 }
 
+export interface DocumentoPdfOrganismo {
+  id: string;
+  nombre: string;
+  contenido: string;
+  tamanoBytes: number;
+}
+
 export interface Organismo {
   id: string;
   nombre: string;
   tipo: string;
   email: string;
   telefono: string;
+  contactoCargo?: string;
+  contactoTelefono?: string;
+  contactoCellulaire?: string;
+  contactoEmail?: string;
+  contactoJoursDisponibles?: JourDisponible[];
   direccion: string;
   codigoPostal?: string;
   quartier?: string;
@@ -47,6 +60,7 @@ export interface Organismo {
   notas?: string;
   notificaciones: boolean;
   logo?: string | null;
+  documentosPDF?: DocumentoPdfOrganismo[];
   documentoPDF?: string | null;
   claveAcceso?: string;
   contactosNotificacion: ContactoNotificacion[];
@@ -74,15 +88,112 @@ function normalizarPorcentajeReparticion(valor: number | undefined): number {
   return Math.max(0, Math.min(100, Math.round(valor)));
 }
 
+function generarIdDocumentoPdf(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `pdf-${crypto.randomUUID()}`;
+  }
+
+  return `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function construirNombreDocumentoPdf(valor: string, index: number, nombreOrganismo?: string): string {
+  const nombreLimpio = String(valor || '').trim();
+
+  if (nombreLimpio && !nombreLimpio.startsWith('data:')) {
+    return nombreLimpio.toLowerCase().endsWith('.pdf') ? nombreLimpio : `${nombreLimpio}.pdf`;
+  }
+
+  const baseNombre = String(nombreOrganismo || 'document-organisme')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return `${baseNombre || 'document-organisme'}-${index + 1}.pdf`;
+}
+
+function normalizarDocumentosPdf(
+  documentosPDF: DocumentoPdfOrganismo[] | undefined,
+  documentoPDFLegado: string | null | undefined,
+  nombreOrganismo?: string,
+): DocumentoPdfOrganismo[] {
+  const documentosNormalizados = (documentosPDF || [])
+    .map((documento, index) => {
+      const contenido = String(documento?.contenido || '').trim();
+
+      if (!contenido) {
+        return null;
+      }
+
+      return {
+        id: String(documento?.id || '').trim() || generarIdDocumentoPdf(),
+        nombre: construirNombreDocumentoPdf(String(documento?.nombre || '').trim(), index, nombreOrganismo),
+        contenido,
+        tamanoBytes: Number.isFinite(documento?.tamanoBytes) ? Math.max(0, Math.round(documento.tamanoBytes)) : 0,
+      };
+    })
+    .filter((documento): documento is DocumentoPdfOrganismo => Boolean(documento));
+
+  if (documentosNormalizados.length > 0) {
+    return documentosNormalizados;
+  }
+
+  const legado = String(documentoPDFLegado || '').trim();
+  if (!legado) {
+    return [];
+  }
+
+  return [
+    {
+      id: generarIdDocumentoPdf(),
+      nombre: construirNombreDocumentoPdf(legado, 0, nombreOrganismo),
+      contenido: legado,
+      tamanoBytes: 0,
+    },
+  ];
+}
+
 function sanitizarOrganismo(organismo: Organismo): Organismo {
   const clasificacionOrganismo = organismo.clasificacionOrganismo || (organismo.regular ? 'regular' : 'eventual');
+  const claveAcceso = normalizarClaveAcceso(organismo.claveAcceso || '');
+  const contactoCargo = String(organismo.contactoCargo || '').trim();
+  const contactoTelefono = String(organismo.contactoTelefono || '').trim();
+  const contactoCellulaire = String(organismo.contactoCellulaire || '').trim();
+  const contactoEmail = String(organismo.contactoEmail || '').trim();
+  const documentosPDF = normalizarDocumentosPdf(organismo.documentosPDF, organismo.documentoPDF, organismo.nombre);
 
   return {
     ...organismo,
     regular: clasificacionOrganismo !== 'eventual',
     clasificacionOrganismo,
     porcentajeReparticion: normalizarPorcentajeReparticion(organismo.porcentajeReparticion),
+    contactoCargo: contactoCargo || undefined,
+    contactoTelefono: contactoTelefono || undefined,
+    contactoCellulaire: contactoCellulaire || undefined,
+    contactoEmail: contactoEmail || undefined,
+    contactoJoursDisponibles: organismo.contactoJoursDisponibles || [],
+    documentosPDF,
+    documentoPDF: documentosPDF[0]?.contenido || null,
+    claveAcceso: claveAcceso || undefined,
   };
+}
+
+function tieneClaveAccesoDuplicada(organismos: Organismo[], claveAcceso?: string, organismoId?: string): boolean {
+  const claveNormalizada = normalizarClaveAcceso(claveAcceso || '');
+
+  if (!claveNormalizada) {
+    return false;
+  }
+
+  return organismos.some((organismo) => {
+    if (organismoId && organismo.id === organismoId) {
+      return false;
+    }
+
+    return normalizarClaveAcceso(organismo.claveAcceso || '') === claveNormalizada;
+  });
 }
 
 function asegurarIdsUnicosOrganismos(organismos: Organismo[]): Organismo[] {
@@ -157,6 +268,11 @@ export function crearOrganismo(organismo: Omit<Organismo, 'id' | 'fechaCreacion'
     fechaCreacion: new Date().toISOString(),
     fechaModificacion: new Date().toISOString()
   });
+
+  if (tieneClaveAccesoDuplicada(organismos, nuevoOrganismo.claveAcceso)) {
+    throw new Error("La clé d'accès existe déjà pour un autre organisme");
+  }
+
   organismos.push(nuevoOrganismo);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(organismos));
   queueStorageSync(STORAGE_KEY);
@@ -189,6 +305,11 @@ export function actualizarOrganismo(id: string, datos: Partial<Organismo>): Orga
     id, // Mantener el ID original
     fechaModificacion: new Date().toISOString()
   });
+
+  if (tieneClaveAccesoDuplicada(organismos, organismoActualizado.claveAcceso, id)) {
+    throw new Error("La clé d'accès existe déjà pour un autre organisme");
+  }
+
   const organismosActualizados = [...organismos];
   organismosActualizados[index] = organismoActualizado;
   organismos[index] = organismoActualizado;
@@ -292,35 +413,21 @@ export function obtenerEstadisticasOrganismos() {
 export function migrarClavesDeAcceso(): void {
   const organismos = obtenerOrganismos();
   let actualizados = 0;
+  const clavesExistentes = new Set(
+    organismos
+      .map(org => normalizarClaveAcceso(org.claveAcceso || ''))
+      .filter(Boolean)
+  );
   
   const organismosActualizados = organismos.map(org => {
     if (!org.claveAcceso) {
       actualizados++;
-      // Generar clave basada en iniciales du nombre
-      const palabras = org.nombre
-        .toUpperCase()
-        .split(' ')
-        .filter(p => p.length > 2);
-      
-      let iniciales = '';
-      if (palabras.length >= 3) {
-        iniciales = palabras[0][0] + palabras[1][0] + palabras[2][0];
-      } else if (palabras.length === 2) {
-        iniciales = palabras[0][0] + palabras[1][0] + palabras[1][1];
-      } else if (palabras.length === 1) {
-        iniciales = palabras[0].substring(0, 3);
-      }
-      
-      // Generar código aleatorio
-      const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let codigo = '';
-      for (let i = 0; i < 6; i++) {
-        codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-      }
+      const nuevaClave = generarClaveAccesoUnica(org.nombre, Array.from(clavesExistentes));
+      clavesExistentes.add(normalizarClaveAcceso(nuevaClave));
       
       return {
         ...org,
-        claveAcceso: `${iniciales}-${codigo}`
+        claveAcceso: nuevaClave
       };
     }
     return org;

@@ -20,6 +20,8 @@ import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 import { MapLink } from '../ui/map-link';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
+import { useBranding } from '../../../hooks/useBranding';
 
 // Tipos de organismos predefinidos
 const getTiposOrganismo = (t: any) => [
@@ -49,6 +51,10 @@ const getTiposOrganismo = (t: any) => [
 // Componente para mostrar la clave de acceso
 function ClaveAccesoSection({ claveAcceso, organismo }: { claveAcceso?: string; organismo: any }) {
   const { t } = useTranslation();
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [copiado, setCopiado] = useState(false);
   const [enviandoEmail, setEnviandoEmail] = useState(false);
 
@@ -120,54 +126,57 @@ function ClaveAccesoSection({ claveAcceso, organismo }: { claveAcceso?: string; 
     const linkAcceso = construirUrlAccesoOrganismo(claveAcceso);
 
     // Crear el mensaje del email
-    const asunto = `🔑 Vos identifiants d'accès - Banque Alimentaire`;
+    const asunto = `🔑 Vos identifiants d'accès - ${nombreSistemaImpresion}`;
     
-    const mensaje = `Bonjour ${organismo.nombre || organismo.responsable},
-
-Nous vous transmettons vos identifiants d'accès à votre espace personnel sur le système de gestion de la Banque Alimentaire.
-
-🔑 VOS IDENTIFIANTS D'ACCÈS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Clé d'accès : ${claveAcceso}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🌐 ACCÈS DIRECT À VOTRE ESPACE
-Cliquez sur le lien suivant pour accéder directement à votre profil :
-${linkAcceso}
-
-ℹ️ COMMENT UTILISER VOS IDENTIFIANTS ?
-
-1. Rendez-vous sur notre portail web
-2. Utilisez votre clé d'accès ci-dessus
-3. Accédez à votre profil et consultez vos commandes
-
-📋 CE QUE VOUS POUVEZ FAIRE SUR VOTRE ESPACE :
-• Consulter vos informations de profil
-• Voir l'historique de vos commandes
-• Consulter les détails de vos livraisons
-• Confirmer la réception de vos commandes
-• Voir les statistiques de votre organisme
-
-🔒 SÉCURITÉ
-Cette clé d'accès est personnelle et confidentielle. Ne la partagez qu'avec les personnes autorisées de votre organisme.
-
-📞 BESOIN D'AIDE ?
-Si vous rencontrez des difficultés ou avez des questions, n'hésitez pas à nous contacter.
-
-────────────────────────────────
-Banque Alimentaire
-Système de Gestion
-Date d'envoi : ${new Date().toLocaleDateString('fr-FR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}
-────────────────────────────────
-
-Ce message a été généré automatiquement. Merci de ne pas y répondre directement.`;
+    const mensaje = [
+      `Bonjour ${organismo.nombre || organismo.responsable},`,
+      '',
+      `Nous vous transmettons vos identifiants d'accès à votre espace personnel sur le système de gestion de ${nombreSistemaImpresion}.`,
+      '',
+      `🔑 VOS IDENTIFIANTS D'ACCÈS`,
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `Clé d'accès : ${claveAcceso}`,
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      `🌐 ACCÈS DIRECT À VOTRE ESPACE`,
+      `Cliquez sur le lien suivant pour accéder directement à votre profil :`,
+      linkAcceso,
+      '',
+      `ℹ️ COMMENT UTILISER VOS IDENTIFIANTS ?`,
+      '',
+      '1. Rendez-vous sur notre portail web',
+      '2. Utilisez votre clé d\'accès ci-dessus',
+      '3. Accédez à votre profil et consultez vos commandes',
+      '',
+      `📋 CE QUE VOUS POUVEZ FAIRE SUR VOTRE ESPACE :`,
+      '• Consulter vos informations de profil',
+      '• Voir l\'historique de vos commandes',
+      '• Consulter les détails de vos livraisons',
+      '• Confirmer la réception de vos commandes',
+      '• Voir les statistiques de votre organisme',
+      '',
+      `🔒 SÉCURITÉ`,
+      'Cette clé d\'accès est personnelle et confidentielle. Ne la partagez qu\'avec les personnes autorisées de votre organisme.',
+      '',
+      `📞 BESOIN D'AIDE ?`,
+      'Si vous rencontrez des difficultés ou avez des questions, n\'hésitez pas à nous contacter.',
+      '',
+      '────────────────────────────────',
+      nombreSistemaImpresion,
+      'Système de Gestion',
+      brandingContactLine,
+      `Date d'envoi : ${new Date().toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`,
+      '────────────────────────────────',
+      '',
+      'Ce message a été généré automatiquement. Merci de ne pas y répondre directement.',
+    ].filter(Boolean).join('\n');
 
     try {
       const usuarioSesion = obtenerUsuarioSesion();

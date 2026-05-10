@@ -15,7 +15,10 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useBranding } from '../../../hooks/useBranding';
+import { obtenerErroresFormularioOrganismo } from '../../utils/organismoForm';
+import type { DocumentoPdfOrganismo } from '../../utils/organismosStorage';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -56,6 +59,69 @@ const quartiersLaval = [
 ];
 
 const joursCita = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const MAX_PDF_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_TOTAL_PDF_SIZE_BYTES = 3 * 1024 * 1024;
+const optionsPosteContact = [
+  'Direction',
+  'Coordination',
+  'Accueil',
+  'Administration',
+  'Intervenant(e)',
+  'Responsable logistique',
+  'Responsable distribution',
+  'Responsable cuisine',
+  'Benevole responsable',
+  'Autre',
+];
+
+function generarIdDocumentoPdf(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `pdf-${crypto.randomUUID()}`;
+  }
+
+  return `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function esDocumentoPdfIntegrado(documento: DocumentoPdfOrganismo): boolean {
+  return typeof documento.contenido === 'string' && documento.contenido.startsWith('data:application/pdf');
+}
+
+function convertirDataUrlPdfABlob(dataUrl: string): Blob {
+  const [metadata, data] = dataUrl.split(',', 2);
+
+  if (!metadata || !data || !metadata.startsWith('data:application/pdf')) {
+    throw new Error('PDF invalide');
+  }
+
+  if (metadata.includes(';base64')) {
+    const binary = atob(data);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
+
+  return new Blob([decodeURIComponent(data)], { type: 'application/pdf' });
+}
+
+function crearBlobUrlPdf(documento: DocumentoPdfOrganismo): string {
+  return URL.createObjectURL(convertirDataUrlPdfABlob(documento.contenido));
+}
+
+function formatearTamanoArchivo(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return '0 Ko';
+  }
+
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+}
 
 export function FormularioOrganismoCompacto({
   abierto,
@@ -74,6 +140,29 @@ export function FormularioOrganismoCompacto({
   const esConsulta = modoVisualizacion;
 
   const tipoSeleccionado = tiposOrganismo.find((tipo) => tipo.nombre === formulario.tipo);
+  const erroresValidacion = obtenerErroresFormularioOrganismo(formulario);
+  const formularioValido = erroresValidacion.length === 0;
+  const documentosPDF = Array.isArray(formulario.documentosPDF) ? formulario.documentosPDF : [];
+  const totalTamanoPdf = documentosPDF.reduce((total: number, documento: DocumentoPdfOrganismo) => {
+    return total + (Number.isFinite(documento.tamanoBytes) ? documento.tamanoBytes : 0);
+  }, 0);
+
+  const construirNombreArchivoPdf = (documento: DocumentoPdfOrganismo, index: number) => {
+    const nombreLimpio = String(documento.nombre || '').trim();
+    if (nombreLimpio) {
+      return nombreLimpio.toLowerCase().endsWith('.pdf') ? nombreLimpio : `${nombreLimpio}.pdf`;
+    }
+
+    const baseName = String(formulario.nombre || 'document-organisme')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    return `${baseName || 'document-organisme'}-${index + 1}.pdf`;
+  };
 
   const actualizarFormulario = (cambios: Record<string, unknown>) => {
     setFormulario((prev: any) => ({ ...prev, ...cambios }));
@@ -93,12 +182,127 @@ export function FormularioOrganismoCompacto({
   };
 
   const handlePdfChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) {
       return;
     }
 
-    actualizarFormulario({ documentoPDF: file.name });
+    const archivosValides: File[] = [];
+    let tailleCumulee = totalTamanoPdf;
+
+    files.forEach((file) => {
+      if (file.type !== 'application/pdf') {
+        toast.error('Veuillez selectionner uniquement des fichiers PDF valides.');
+        return;
+      }
+
+      if (file.size > MAX_PDF_SIZE_BYTES) {
+        toast.error(`Le fichier ${file.name} est trop volumineux.`, {
+          description: 'La taille maximale autorisee est de 2 Mo par PDF.',
+        });
+        return;
+      }
+
+      if (tailleCumulee + file.size > MAX_TOTAL_PDF_SIZE_BYTES) {
+        toast.error('La limite totale des PDF serait depassee.', {
+          description: 'La taille cumulee des PDF ne peut pas depasser 3 Mo pour le stockage local.',
+        });
+        return;
+      }
+
+      tailleCumulee += file.size;
+      archivosValides.push(file);
+    });
+
+    if (archivosValides.length === 0) {
+      event.target.value = '';
+      return;
+    }
+
+    Promise.all(
+      archivosValides.map(
+        (file): Promise<DocumentoPdfOrganismo> =>
+          new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                id: generarIdDocumentoPdf(),
+                nombre: file.name,
+                contenido: reader.result as string,
+                tamanoBytes: file.size,
+              });
+            };
+            reader.onerror = () => reject(new Error(file.name));
+            reader.readAsDataURL(file);
+          }),
+      ),
+    )
+      .then((nuevosDocumentos) => {
+        actualizarFormulario({
+          documentosPDF: [...documentosPDF, ...nuevosDocumentos],
+        });
+      })
+      .catch(() => {
+        toast.error('Impossible de charger un ou plusieurs documents PDF.');
+      })
+      .finally(() => {
+        event.target.value = '';
+      });
+  };
+
+  const handleAbrirPdf = (documento: DocumentoPdfOrganismo) => {
+    if (!esDocumentoPdfIntegrado(documento)) {
+      toast.error('Aucun PDF integre disponible pour l\'ouverture.');
+      return;
+    }
+
+    let blobUrl = '';
+
+    try {
+      blobUrl = crearBlobUrlPdf(documento);
+    } catch {
+      toast.error('Impossible de preparer le PDF pour l\'ouverture.');
+      return;
+    }
+
+    const nuevaVentana = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+    if (!nuevaVentana) {
+      URL.revokeObjectURL(blobUrl);
+      toast.error('Le navigateur a bloque l\'ouverture du PDF.');
+      return;
+    }
+
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+  };
+
+  const handleDescargarPdf = (documento: DocumentoPdfOrganismo, index: number) => {
+    if (!esDocumentoPdfIntegrado(documento)) {
+      toast.error('Aucun PDF integre disponible pour le telechargement.');
+      return;
+    }
+
+    let blobUrl = '';
+
+    try {
+      blobUrl = crearBlobUrlPdf(documento);
+    } catch {
+      toast.error('Impossible de preparer le PDF pour le telechargement.');
+      return;
+    }
+
+    const enlace = document.createElement('a');
+    enlace.href = blobUrl;
+    enlace.download = construirNombreArchivoPdf(documento, index);
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1_000);
+  };
+
+  const handleRetirerPdf = (documentoId: string) => {
+    actualizarFormulario({
+      documentosPDF: documentosPDF.filter((documento: DocumentoPdfOrganismo) => documento.id !== documentoId),
+    });
   };
 
   const updateNotificationContact = (index: number, cambios: Record<string, unknown>) => {
@@ -379,14 +583,27 @@ export function FormularioOrganismoCompacto({
                     </div>
 
                     <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-4">
-                      <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="grid gap-4 lg:grid-cols-3">
                         <div>
                           <Label htmlFor="contact-cargo" className="text-xs">Poste / role</Label>
-                          <Input id="contact-cargo" value={formulario.contactoCargo || ''} onChange={(event) => actualizarFormulario({ contactoCargo: event.target.value })} placeholder="Direction" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                          <Select value={formulario.contactoCargo || ''} onValueChange={(value) => actualizarFormulario({ contactoCargo: value })} disabled={esConsulta}>
+                            <SelectTrigger id="contact-cargo" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]">
+                              <SelectValue placeholder="Selectionnez un poste" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {optionsPosteContact.map((poste) => (
+                                <SelectItem key={poste} value={poste}>{poste}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label htmlFor="contact-telephone" className="text-xs">Telephone direct</Label>
                           <Input id="contact-telephone" value={formulario.contactoTelefono || ''} onChange={(event) => actualizarFormulario({ contactoTelefono: event.target.value })} placeholder="+1 (514) 123-4567" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        </div>
+                        <div>
+                          <Label htmlFor="contact-cellulaire" className="text-xs">Cellulaire</Label>
+                          <Input id="contact-cellulaire" value={formulario.contactoCellulaire || ''} onChange={(event) => actualizarFormulario({ contactoCellulaire: event.target.value })} placeholder="+1 (438) 123-4567" className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
                         </div>
                       </div>
                       <div>
@@ -455,7 +672,16 @@ export function FormularioOrganismoCompacto({
                         <div className="grid gap-3 lg:grid-cols-3">
                           <Input value={contacto.nombre || ''} onChange={(event) => updateNotificationContact(index, { nombre: event.target.value })} placeholder={t('organisms.contactName')} className="h-10 rounded-2xl border-[#dbe6f0]" />
                           <Input type="email" value={contacto.email || ''} onChange={(event) => updateNotificationContact(index, { email: event.target.value })} placeholder={t('organisms.contactEmail')} className="h-10 rounded-2xl border-[#dbe6f0]" />
-                          <Input value={contacto.cargo || ''} onChange={(event) => updateNotificationContact(index, { cargo: event.target.value })} placeholder={t('organisms.contactPosition')} className="h-10 rounded-2xl border-[#dbe6f0]" />
+                          <Select value={contacto.cargo || ''} onValueChange={(value) => updateNotificationContact(index, { cargo: value })} disabled={esConsulta}>
+                            <SelectTrigger className="h-10 rounded-2xl border-[#dbe6f0]">
+                              <SelectValue placeholder={t('organisms.contactPosition')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {optionsPosteContact.map((poste) => (
+                                <SelectItem key={poste} value={poste}>{poste}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="rounded-2xl bg-[#f8fbff] p-3">
                           <SelecteurJoursDisponibles joursDisponibles={contacto.joursDisponibles || []} onChange={(jours) => updateNotificationContact(index, { joursDisponibles: jours })} showIcon />
@@ -470,20 +696,70 @@ export function FormularioOrganismoCompacto({
                 </TabsContent>
 
                 <TabsContent value="notes" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-                  <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                  <div className="max-w-5xl space-y-4">
                     <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
                       <Label htmlFor="organismo-notes" className="text-xs"><FileText className="mr-1 inline h-3 w-3" />{t('organisms.notes')}</Label>
-                      <Textarea id="organismo-notes" value={formulario.notas || ''} onChange={(event) => actualizarFormulario({ notas: event.target.value })} placeholder={t('organisms.notesPlaceholder')} rows={6} className="mt-2 rounded-2xl border-[#dbe6f0]" />
+                      <Textarea id="organismo-notes" value={formulario.notas || ''} onChange={(event) => actualizarFormulario({ notas: event.target.value })} placeholder={t('organisms.notesPlaceholder')} rows={6} className="mt-2 rounded-2xl border-[#dbe6f0]" readOnly={esConsulta} />
                     </div>
                     <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
                       <Label className="text-xs"><FileUp className="mr-1 inline h-3 w-3" />{t('organisms.document')}</Label>
-                      <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-                        <Input value={formulario.documentoPDF || ''} readOnly placeholder="Aucun document selectionne" className="h-10 rounded-2xl border-[#dbe6f0]" />
-                        <Button type="button" variant="outline" className="rounded-2xl" onClick={() => pdfInputRef.current?.click()}>
-                          Choisir un PDF
-                        </Button>
-                        <input ref={pdfInputRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfChange} />
+                      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-[#5d7185]">
+                          {documentosPDF.length > 0
+                            ? `${documentosPDF.length} PDF ajoute(s) • ${formatearTamanoArchivo(totalTamanoPdf)} utilises`
+                            : 'Aucun PDF ajoute pour cette fiche.'}
+                        </p>
+                        {!esConsulta ? (
+                          <Button type="button" variant="outline" className="rounded-2xl" onClick={() => pdfInputRef.current?.click()}>
+                            Ajouter des PDF
+                          </Button>
+                        ) : null}
+                        <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" multiple className="hidden" onChange={handlePdfChange} />
                       </div>
+                      <div className="mt-3 space-y-3">
+                        {documentosPDF.length > 0 ? (
+                          documentosPDF.map((documento: DocumentoPdfOrganismo, index: number) => {
+                            const documentoIntegre = esDocumentoPdfIntegrado(documento);
+                            const documentoHeredado = Boolean(documento.contenido) && !documentoIntegre;
+
+                            return (
+                              <div key={documento.id || `${documento.nombre}-${index}`} className="rounded-2xl border border-[#dbe6f0] bg-[#f8fbff] p-3">
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                                  <Input value={construirNombreArchivoPdf(documento, index)} readOnly className="h-10 rounded-2xl border-[#dbe6f0] bg-white" />
+                                  <div className="flex flex-wrap gap-2">
+                                    {documentoIntegre ? (
+                                      <Button type="button" variant="outline" className="rounded-2xl" onClick={() => handleAbrirPdf(documento)}>
+                                        Ouvrir
+                                      </Button>
+                                    ) : null}
+                                    {documentoIntegre ? (
+                                      <Button type="button" variant="outline" className="rounded-2xl" onClick={() => handleDescargarPdf(documento, index)}>
+                                        Telecharger
+                                      </Button>
+                                    ) : null}
+                                    {!esConsulta ? (
+                                      <Button type="button" variant="ghost" className="rounded-2xl" onClick={() => handleRetirerPdf(documento.id)}>
+                                        Retirer
+                                      </Button>
+                                    ) : null}
+                                  </div>
+                                </div>
+                                {documentoIntegre ? (
+                                  <p className="mt-2 text-xs text-[#5d7185]">
+                                    PDF conserve localement avec la fiche organisme{documento.tamanoBytes > 0 ? ` • ${formatearTamanoArchivo(documento.tamanoBytes)}` : ''}.
+                                  </p>
+                                ) : null}
+                                {documentoHeredado ? (
+                                  <p className="mt-2 text-xs text-[#b45309]">Ce document provient d\'une ancienne fiche et doit etre recharge pour pouvoir etre ouvert ou telecharge.</p>
+                                ) : null}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <Input value="" readOnly placeholder="Aucun document selectionne" className="h-10 rounded-2xl border-[#dbe6f0] bg-white" />
+                        )}
+                      </div>
+                      <p className="mt-3 text-xs text-[#5d7185]">Taille maximale recommandee: 2 Mo par PDF et 3 Mo au total pour le stockage local.</p>
                     </div>
                   </div>
                 </TabsContent>
@@ -491,12 +767,17 @@ export function FormularioOrganismoCompacto({
 
               <div className="border-t border-[#dbe6f0] bg-white/90 px-4 py-4 backdrop-blur-md sm:px-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-[#5d7185]">{esConsulta ? 'Consultation en lecture seule de la fiche organisme.' : 'Fiche compacte preservee sur la logique existante de creation des organismes.'}</p>
+                  <div>
+                    <p className="text-sm text-[#5d7185]">{esConsulta ? 'Consultation en lecture seule de la fiche organisme.' : 'Fiche compacte preservee sur la logique existante de creation des organismes.'}</p>
+                    {!esConsulta && !formularioValido ? (
+                      <p className="mt-1 text-xs font-medium text-[#b45309]">{erroresValidacion[0]}</p>
+                    ) : null}
+                  </div>
                   <div className="flex justify-end gap-3">
                     <Button variant="outline" className="rounded-2xl" onClick={onCerrar}>{esConsulta ? 'Fermer' : t('common.cancel')}</Button>
                     {!esConsulta ? (
-                      <Button className="rounded-2xl text-white" style={{ backgroundColor: branding.primaryColor }} onClick={onGuardar}>
-                        {modoEdicion ? t('common.save') : t('common.create')}
+                      <Button className="rounded-2xl text-white disabled:cursor-not-allowed disabled:opacity-55" style={{ backgroundColor: branding.primaryColor }} onClick={onGuardar} disabled={!formularioValido}>
+                        {modoEdicion ? t('common.save') : t('organisms.createOrganism')}
                       </Button>
                     ) : null}
                   </div>

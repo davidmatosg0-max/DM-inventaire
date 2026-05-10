@@ -251,7 +251,7 @@ async function exportReportRowsToPdf(
   });
 }
 
-const LEGACY_PANEL_CLASSNAME = 'backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40';
+const LEGACY_PANEL_CLASSNAME = 'overflow-hidden rounded-[26px] border border-white/75 bg-white/92 p-4 sm:p-6 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl';
 const REPORT_EXPORT_CANVAS_STYLE: React.CSSProperties = {
   position: 'fixed',
   left: '-10000px',
@@ -274,12 +274,20 @@ type ReportStatCardProps = {
 
 function ReportStatCard({ label, value, accentColor, valueColor, helper, compact = false }: ReportStatCardProps) {
   return (
-    <div className={`backdrop-blur-lg bg-white/80 rounded-xl shadow-lg border-l-4 ${compact ? 'p-3' : 'p-4 sm:p-6'}`} style={{ borderLeftColor: accentColor }}>
-      <p className={`${compact ? 'text-[11px]' : 'text-xs sm:text-sm'} text-gray-600`}>{label}</p>
-      <div className={`${compact ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl'} font-bold mt-1`} style={{ fontFamily: 'Montserrat, sans-serif', color: valueColor }}>
+    <div
+      className={`rounded-[24px] border border-white/78 bg-white/92 ${compact ? 'p-3' : 'p-4 sm:p-6'} shadow-[0_18px_40px_-34px_rgba(15,45,71,0.22)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_50px_-34px_rgba(15,45,71,0.28)]`}
+      style={{
+        borderLeft: `4px solid ${accentColor}`,
+        background: `linear-gradient(145deg, rgba(255,255,255,0.98) 0%, ${accentColor}10 100%)`,
+      }}
+    >
+      <div className="mb-2 inline-flex items-center rounded-full border border-white/85 bg-white/80 px-2.5 py-1 shadow-sm">
+        <p className={`${compact ? 'text-[11px]' : 'text-xs sm:text-sm'} font-semibold uppercase tracking-[0.16em] text-gray-500`}>{label}</p>
+      </div>
+      <div className={`${compact ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl'} font-bold mt-1 tracking-[-0.02em]`} style={{ fontFamily: 'Montserrat, sans-serif', color: valueColor }}>
         {value}
       </div>
-      {helper ? <p className={`${compact ? 'text-[10px]' : 'text-xs'} mt-1 text-gray-500`}>{helper}</p> : null}
+      {helper ? <p className={`${compact ? 'text-[10px]' : 'text-xs'} mt-2 text-gray-500 leading-5`}>{helper}</p> : null}
     </div>
   );
 }
@@ -296,13 +304,21 @@ type ReportChartCardProps = {
 function ReportChartCard({ title, titleColor, hasData, emptyHeight = 300, chartId, children }: ReportChartCardProps) {
   return (
     <div id={chartId} className={LEGACY_PANEL_CLASSNAME}>
-      <h3 className="text-base sm:text-lg font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', color: titleColor }}>
-        {title}
-      </h3>
+      <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/70 pb-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Analyse visuelle</p>
+          <h3 className="mt-1 text-base sm:text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: titleColor }}>
+            {title}
+          </h3>
+        </div>
+        <div className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-[11px] font-semibold text-gray-500 shadow-sm">
+          {hasData ? 'Données disponibles' : 'En attente de données'}
+        </div>
+      </div>
       {hasData ? (
         children
       ) : (
-        <div className="flex items-center justify-center text-gray-400" style={{ height: `${emptyHeight}px` }}>
+        <div className="flex items-center justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50/80 text-gray-400" style={{ height: `${emptyHeight}px` }}>
           <p className="text-center">Aucune donnée disponible</p>
         </div>
       )}
@@ -353,7 +369,8 @@ type ReportDetailPanelProps = {
 function ReportDetailPanel({ title, description, items, emptyMessage = 'Aucune donnée disponible.', compact = false }: ReportDetailPanelProps) {
   return (
     <div className={LEGACY_PANEL_CLASSNAME}>
-      <div className={`${compact ? 'mb-3' : 'mb-4'} space-y-1`}>
+      <div className={`${compact ? 'mb-3' : 'mb-4'} space-y-1 border-b border-white/70 pb-3`}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Synthèse métier</p>
         <h3 className={`${compact ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-bold`} style={{ fontFamily: 'Montserrat, sans-serif', color: '#1a4d7a' }}>
           {title}
         </h3>
@@ -363,17 +380,17 @@ function ReportDetailPanel({ title, description, items, emptyMessage = 'Aucune d
       {items.length > 0 ? (
         <div className={`${compact ? 'space-y-2' : 'space-y-3'}`}>
           {items.map((item) => (
-            <div key={item.label} className={`rounded-xl bg-gray-50/90 ${compact ? 'px-2.5 py-2.5' : 'px-3 py-3'}`}>
+            <div key={item.label} className={`rounded-[20px] border border-white/75 bg-slate-50/88 ${compact ? 'px-2.5 py-2.5' : 'px-3 py-3'} shadow-[0_12px_28px_-28px_rgba(15,45,71,0.18)]`}>
               <div className="flex items-start justify-between gap-3">
-                <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold uppercase tracking-wide text-gray-500`}>{item.label}</span>
+                <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold uppercase tracking-[0.16em] text-gray-500`}>{item.label}</span>
                 <span className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-gray-900 text-right`}>{item.value}</span>
               </div>
-              {item.helper && <div className={`${compact ? 'mt-1 text-[11px]' : 'mt-1.5 text-xs'} text-gray-600`}>{item.helper}</div>}
+              {item.helper && <div className={`${compact ? 'mt-1 text-[11px]' : 'mt-1.5 text-xs'} text-gray-600 leading-5`}>{item.helper}</div>}
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-xl bg-gray-50/90 px-3 py-6 text-sm text-gray-500">
+        <div className="rounded-[20px] border border-dashed border-slate-200 bg-slate-50/90 px-3 py-6 text-sm text-gray-500">
           {emptyMessage}
         </div>
       )}

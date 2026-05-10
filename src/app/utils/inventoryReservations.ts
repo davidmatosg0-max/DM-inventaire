@@ -1,4 +1,4 @@
-import { actualizarProducto, obtenerProductos } from './productStorage';
+import { descontarStockProductosAtomico, obtenerProductos } from './productStorage';
 
 const OFERTAS_KEY = 'ofertas_sistema';
 const COMANDAS_KEY = 'banco_alimentos_comandas';
@@ -301,33 +301,5 @@ export function validarReservaInventario(items: ProductoCantidad[], scope: Reser
 }
 
 export function descontarInventarioReservado(items: ProductoCantidad[]) {
-  const productos = obtenerProductos();
-  const cantidades = sumarCantidades(items);
-
-  for (const item of cantidades) {
-    const producto = productos.find(entry => entry.id === item.productoId);
-    if (!producto) {
-      return { ok: false, error: `Producto no encontrado: ${item.productoId}` };
-    }
-
-    if (normalizarCantidad(producto.stockActual) < item.cantidad) {
-      return {
-        ok: false,
-        error: `Stock insuficiente para expedir ${producto.nombre}. Disponible: ${normalizarCantidad(producto.stockActual)} ${producto.unidad}.`
-      };
-    }
-  }
-
-  for (const item of cantidades) {
-    const producto = productos.find(entry => entry.id === item.productoId);
-    if (!producto) {
-      continue;
-    }
-
-    actualizarProducto(producto.id, {
-      stockActual: normalizarCantidad(normalizarCantidad(producto.stockActual) - item.cantidad)
-    });
-  }
-
-  return { ok: true };
+  return descontarStockProductosAtomico(sumarCantidades(items));
 }

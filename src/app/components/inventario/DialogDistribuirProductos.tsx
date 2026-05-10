@@ -79,6 +79,14 @@ function redondearPorcentajeTotal(valor: number): number {
   return Math.round(valor);
 }
 
+function redondearTotalDistribucion(valor: number): number {
+  if (!Number.isFinite(valor)) {
+    return 0;
+  }
+
+  return parseFloat(valor.toFixed(2));
+}
+
 function obtenerOrganismosElegiblesParaDistribucion(
   organismos: Organismo[],
   modalidad: ModalidadDistribucionAutomatica = 'regular'
@@ -184,6 +192,29 @@ function distribuirCantidadesEnteras(
   });
 }
 
+function obtenerOrganismosConProductosAsignados(
+  productosEditables: ProductoEditableItem[],
+  organismos: OrganismoConPorcentaje[]
+): OrganismoConPorcentaje[] {
+  if (organismos.length === 0) {
+    return [];
+  }
+
+  const distribucionKeysConProductos = new Set<string>();
+
+  productosEditables
+    .filter(item => item.cantidad > 0)
+    .forEach(item => {
+      distribuirCantidadesEnteras(item.cantidad, organismos).forEach(distribucion => {
+        if (distribucion.cantidad > 0) {
+          distribucionKeysConProductos.add(distribucion.distribucionKey);
+        }
+      });
+    });
+
+  return organismos.filter(organismo => distribucionKeysConProductos.has(organismo.distribucionKey));
+}
+
 interface DialogDistribuirProductosProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -270,6 +301,10 @@ export function DialogDistribuirProductos({
   const organismosConPorcentajes = React.useMemo(
     () => obtenerDistribucionAutomaticaOrganismos(organismosDisponibles, modalidadDistribucionAgrupada),
     [organismosDisponibles, modalidadDistribucionAgrupada]
+  );
+  const organismosConAsignacionGrupo = React.useMemo(
+    () => obtenerOrganismosConProductosAsignados(productosEditables, organismosConPorcentajes),
+    [productosEditables, organismosConPorcentajes]
   );
   const organismosSeleccionablesIndividuales = tipoDistribucion === 'collation'
     ? organismosActivosCollation
@@ -402,8 +437,8 @@ export function DialogDistribuirProductos({
   };
 
   const crearComandaIndividual = () => {
-    if (!organismoSeleccionado || !fechaCaducidadGrupo) {
-      toast.error('Complétez l\'organisme et la date de péremption de la distribution.');
+    if (!organismoSeleccionado) {
+      toast.error('Sélectionnez un organisme pour créer la distribution.');
       return;
     }
 
@@ -432,7 +467,7 @@ export function DialogDistribuirProductos({
       fecha: new Date().toISOString(),
       usuarioCreacion: usuarioActual,
       creadoPor: usuarioActual,
-      fechaEntrega: fechaCaducidadGrupo,
+      fechaEntrega: fechaCaducidadGrupo || undefined,
       fechaCaducidadGrupo: fechaCaducidadGrupo || undefined,
       observaciones: observacionesComanda,
       items: productosEditables.map(item => {
@@ -464,8 +499,8 @@ export function DialogDistribuirProductos({
           temperaturaOriginalEntrada,
         };
       }),
-      valorTotal: Math.round(valorTotal),
-      pesoTotal: Math.round(pesoTotal),
+      valorTotal: redondearTotalDistribucion(valorTotal),
+      pesoTotal: redondearTotalDistribucion(pesoTotal),
       estado: 'pendiente'
     };
 
@@ -518,11 +553,6 @@ export function DialogDistribuirProductos({
       } else {
         toast.error(t('inventory.distributionDialog.errors.completeAllFieldsCorrectly'));
       }
-      return;
-    }
-
-    if (!fechaCaducidadGrupo) {
-      toast.error('Sélectionnez la date de péremption de la distribution.');
       return;
     }
 
@@ -589,6 +619,7 @@ export function DialogDistribuirProductos({
               temperatura,
               temperaturaOriginalEntrada,
               valorUnitario: valorDistribucion.valorUnitario,
+              valorTotal: valorDistribucion.valorTotal,
               peso: valorDistribucion.pesoTotal,
             };
           })
@@ -599,7 +630,7 @@ export function DialogDistribuirProductos({
         }
 
         const valorTotalComanda = itemsComanda.reduce(
-          (sum, item) => sum + (item.valorUnitario || 0) * item.cantidad,
+          (sum, item) => sum + ((item as { valorTotal?: number }).valorTotal || 0),
           0
         );
         const pesoTotalComanda = itemsComanda.reduce(
@@ -621,11 +652,11 @@ export function DialogDistribuirProductos({
           fecha: new Date().toISOString(),
           usuarioCreacion: usuarioActual,
           creadoPor: usuarioActual,
-          fechaEntrega: fechaCaducidadGrupo,
+          fechaEntrega: fechaCaducidadGrupo || undefined,
           observaciones: `${t('inventory.distributionDialog.groupObservation', { percentage: normalizarPorcentajeEntero(orgInfo.porcentaje) })}${observaciones ? '\n' + observaciones : ''}`,
           items: itemsComanda,
-          valorTotal: Math.round(valorTotalComanda),
-          pesoTotal: Math.round(pesoTotalComanda),
+          valorTotal: redondearTotalDistribucion(valorTotalComanda),
+          pesoTotal: redondearTotalDistribucion(pesoTotalComanda),
           estado: 'pendiente'
         };
 
@@ -768,12 +799,12 @@ export function DialogDistribuirProductos({
         normalizarPorcentajeEntero(organismo.porcentajeReparticion) ===
         normalizarPorcentajeEntero(organismosElegiblesDistribucionAgrupada[0]?.porcentajeReparticion || 0)
     );
-  const mensajeBloqueoDistribucionGrupo = !fechaCaducidadGrupo
-    ? 'Sélectionnez la date de péremption de la distribution.'
-    : organismosConPorcentajes.length === 0
+  const mensajeBloqueoDistribucionGrupo = organismosConPorcentajes.length === 0
         ? t('inventory.distributionDialog.blocked.noEligibleOrganizations')
         : !porcentajeGrupoValido
           ? t('inventory.distributionDialog.blocked.totalNot100')
+          : organismosConAsignacionGrupo.length === 0
+            ? t('inventory.distributionDialog.errors.noAssignedProducts')
           : null;
   const organismoPreviewIndividual = organismosDisponibles.find(
     organismo => organismo.id === organismoSeleccionado
@@ -785,7 +816,7 @@ export function DialogDistribuirProductos({
         organismoId: organismoPreviewIndividual.id,
         nombreOrganismo: organismoPreviewIndividual.nombre,
         fecha: new Date().toISOString(),
-        fechaEntrega: fechaCaducidadGrupo,
+        fechaEntrega: fechaCaducidadGrupo || undefined,
         fechaCaducidadGrupo: fechaCaducidadGrupo || undefined,
         estado: 'pendiente',
         observaciones,
@@ -800,7 +831,7 @@ export function DialogDistribuirProductos({
             icono: item.icono,
             valorUnitario: item.valorUnitario,
           })),
-        valorTotal: Math.round(totales.valorTotal),
+        valorTotal: redondearTotalDistribucion(totales.valorTotal),
       } as Comanda)
     : null;
   const notificacionPreviewIndividual = comandaPreviewIndividual
@@ -812,14 +843,14 @@ export function DialogDistribuirProductos({
       }
     : null;
   const organismoPreviewGrupo = organismosDisponibles.find(
-    organismo => organismo.id === organismosConPorcentajes[0]?.id
+    organismo => organismo.id === organismosConAsignacionGrupo[0]?.id
   );
   const itemsPreviewGrupo = organismoPreviewGrupo
     ? productosEditables
         .filter(item => item.cantidad > 0)
         .map(item => {
           const cantidadAsignada = distribuirCantidadesEnteras(item.cantidad, organismosConPorcentajes)
-            .find(distribucion => distribucion.distribucionKey === organismosConPorcentajes[0]?.distribucionKey)?.cantidad || 0;
+            .find(distribucion => distribucion.distribucionKey === organismosConAsignacionGrupo[0]?.distribucionKey)?.cantidad || 0;
 
           if (cantidadAsignada <= 0) {
             return null;
@@ -836,12 +867,13 @@ export function DialogDistribuirProductos({
             unidad: item.unidad,
             icono: item.icono,
             valorUnitario: valorDistribucion.valorUnitario,
+            valorTotal: valorDistribucion.valorTotal,
           };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
     : [];
   const valorPreviewGrupo = itemsPreviewGrupo.reduce(
-    (sum, item) => sum + (item.valorUnitario || 0) * item.cantidad,
+    (sum, item) => sum + ((item as { valorTotal?: number }).valorTotal || 0),
     0
   );
   const comandaPreviewGrupo = organismoPreviewGrupo && itemsPreviewGrupo.length > 0
@@ -856,11 +888,11 @@ export function DialogDistribuirProductos({
         organismoId: organismoPreviewGrupo.id,
         nombreOrganismo: organismoPreviewGrupo.nombre,
         fecha: new Date().toISOString(),
-        fechaEntrega: fechaCaducidadGrupo,
+        fechaEntrega: fechaCaducidadGrupo || undefined,
         estado: 'pendiente',
         observaciones: `${t('inventory.distributionDialog.groupExampleFor', { organization: organismoPreviewGrupo.nombre })}${observaciones ? `\n${observaciones}` : ''}`,
         items: itemsPreviewGrupo,
-        valorTotal: Math.round(valorPreviewGrupo),
+        valorTotal: redondearTotalDistribucion(valorPreviewGrupo),
       } as Comanda)
     : null;
   const notificacionPreviewGrupo = comandaPreviewGrupo
@@ -1172,6 +1204,9 @@ export function DialogDistribuirProductos({
                     onChange={(e) => setFechaCaducidadGrupo(e.target.value)}
                     className="w-full"
                   />
+                  <p className="text-xs text-gray-500">
+                    Option facultative. Elle restera modifiable après la création de la distribution.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -1545,7 +1580,7 @@ export function DialogDistribuirProductos({
                   <Button 
                     onClick={crearComandaIndividual} 
                     className="bg-[#4CAF50] hover:bg-[#45a049]"
-                    disabled={!organismoSeleccionado || !fechaCaducidadGrupo}
+                    disabled={!organismoSeleccionado}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     {t('inventory.distributionDialog.createOrder')}
@@ -1555,10 +1590,10 @@ export function DialogDistribuirProductos({
                   <Button 
                     onClick={crearComandasGrupo} 
                     className="bg-[#4CAF50] hover:bg-[#45a049]"
-                    disabled={!fechaCaducidadGrupo || !porcentajeGrupoValido || organismosConPorcentajes.length === 0}
+                    disabled={!porcentajeGrupoValido || organismosConPorcentajes.length === 0 || organismosConAsignacionGrupo.length === 0}
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    {t('inventory.distributionDialog.createOrders', { count: organismosConPorcentajes.length })}
+                    {t('inventory.distributionDialog.createOrders', { count: organismosConAsignacionGrupo.length })}
                   </Button>
                 )}
               </div>

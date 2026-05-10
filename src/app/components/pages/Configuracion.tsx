@@ -14,6 +14,7 @@ import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/select';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { mockProductos } from '../../data/mockData';
 import { ICONOS_NO_ALIMENTARIOS, ICONOS_PRINCIPALES, ICONOS_SECCIONES_ALIMENTARIAS, ICONOS_SUBCATEGORIAS } from '../../data/iconosAlimentos';
@@ -191,7 +192,7 @@ const programasEntradaIniciales: ProgramaEntrada[] = [
     id: '1',
     nombre: 'Achat',
     codigo: 'ACH',
-    descripcion: 'Achat de produits pour la banque alimentaire',
+    descripcion: 'Achat de produits pour le stock alimentaire',
     color: '#1E73BE',
     activo: true
   },
@@ -1586,36 +1587,38 @@ export function Configuracion() {
           <div className="flex justify-center mb-4 sm:mb-6">
             <div className="relative inline-block">
               {/* Glow effect detrás del logo */}
-              <div 
-                className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
-                style={{ backgroundColor: branding.primaryColor }}
-              />
-              <div 
-                className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
-                style={{ borderColor: branding.primaryColor }}
-              >
-                {branding.logo ? (
-                  <img 
-                    src={branding.logo} 
-                    alt="Logo" 
-                    className="h-full w-full rounded-full"
-                    style={{ 
-                      objectFit: 'cover',
-                      objectPosition: 'center',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset'
-                    }}
-                  />
-                ) : (
+              {branding.logo ? (
+                <AdaptiveBrandLogo
+                  src={branding.logo}
+                  alt="Logo"
+                  wrapperClassName="h-16 w-16 sm:h-20 sm:w-20"
+                  glowColor={branding.primaryColor}
+                  glowClassName="blur-2xl opacity-30 animate-pulse"
+                  containerClassName="border-4 bg-white shadow-2xl"
+                  containerStyle={{ borderColor: branding.primaryColor }}
+                  imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
+                />
+              ) : (
+                <>
                   <div 
-                    className="h-full w-full flex items-center justify-center text-white"
+                    className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
                     style={{ backgroundColor: branding.primaryColor }}
+                  />
+                  <div 
+                    className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
+                    style={{ borderColor: branding.primaryColor }}
                   >
-                    <span className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      BA
-                    </span>
+                    <div 
+                      className="h-full w-full flex items-center justify-center text-white"
+                      style={{ backgroundColor: branding.primaryColor }}
+                    >
+                      <span className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                        BA
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
 

@@ -943,7 +943,7 @@ export function Comandas() {
       organismoTelefono: organismo?.telefono,
       horaCita: organismo?.horaCita,
       translations: {
-        foodBank: t('common.foodBank') || 'BANQUE ALIMENTAIRE',
+        foodBank: branding.systemName?.trim() || t('common.foodBank') || 'BANQUE ALIMENTAIRE',
         orderLabel: t('commands.orderLabel') || 'Étiquette de Commande',
         orderNumber: t('commands.orderNumber') || 'N° Commande',
         deliveryDate: t('commands.deliveryDate') || 'Livraison',
@@ -1275,7 +1275,7 @@ export function Comandas() {
             </Button>
           </div>
 
-          <Card className="border-white/60 bg-white/75 shadow-lg backdrop-blur-xl">
+          <Card className="overflow-hidden border-white/75 bg-white/88 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl">
             <CardContent className="pt-4 space-y-3">
               <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
                 <div>
@@ -1329,7 +1329,7 @@ export function Comandas() {
               </div>
 
               {comandasFiltradas.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#d0d7de] bg-[#f8fafc] p-5 text-center">
+                <div className="rounded-[24px] border border-dashed border-[#d0d7de] bg-[#f8fafc]/90 p-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                   <Package className="mx-auto mb-3 h-10 w-10 text-[#9aa4b2]" />
                   <p className="text-sm font-medium text-[#334155]">Aucune commande ne correspond aux filtres actuels.</p>
                   <p className="mt-1 text-xs text-[#64748b]">Essayez une autre recherche ou changez le statut sélectionné.</p>
@@ -1345,11 +1345,11 @@ export function Comandas() {
                     return (
                       <div
                         key={grupo.key}
-                        className="overflow-hidden rounded-2xl border shadow-lg backdrop-blur-xl"
+                        className="overflow-hidden rounded-[26px] border border-white/75 shadow-[0_24px_56px_-38px_rgba(15,45,71,0.24)] backdrop-blur-xl"
                         style={{
                           background: 'rgba(255, 255, 255, 0.92)',
                           borderColor: grupo.border,
-                          boxShadow: `0 12px 30px ${grupo.accent}10`
+                          boxShadow: `0 24px 56px -38px ${grupo.accent}35`
                         }}
                       >
                         <div
@@ -1421,8 +1421,8 @@ export function Comandas() {
                               return (
                                 <div
                                   key={comanda.id}
-                                  className={`rounded-xl border border-white/70 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${vistaCompactaComandas ? 'p-2.5' : 'p-3'}`}
-                                  style={{ boxShadow: '0 6px 18px rgba(15, 23, 42, 0.05)' }}
+                                  className={`rounded-[22px] border border-white/75 bg-white/92 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_42px_-30px_rgba(15,23,42,0.18)] ${vistaCompactaComandas ? 'p-2.5' : 'p-3'}`}
+                                  style={{ boxShadow: '0 14px 30px -28px rgba(15, 23, 42, 0.16)' }}
                                 >
                                   {vistaCompactaComandas ? (
                                     <>
@@ -1603,7 +1603,7 @@ export function Comandas() {
         {/* TAB: OFERTAS */}
         <TabsContent value="ofertas" className="mt-0">
           <ModuleControlSurfaceBody className="space-y-4">
-          <Card className="border-white/60 bg-white/75 shadow-lg backdrop-blur-xl">
+          <Card className="overflow-hidden border-white/75 bg-white/88 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl">
             <CardContent className="pt-4 space-y-3">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
@@ -1660,7 +1660,7 @@ export function Comandas() {
                 const diasRestantes = Math.ceil((fechaExpiracion.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                 
                 return (
-                  <Card key={oferta.id} className={`border-white/60 bg-white/75 shadow-lg backdrop-blur-xl ${estaExpirada ? 'opacity-70' : ''}`}>
+                  <Card key={oferta.id} className={`overflow-hidden border-white/75 bg-white/88 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl ${estaExpirada ? 'opacity-70' : ''}`}>
                     <CardContent className="pt-5">
                       <div className="space-y-4">
                         {/* Header de la oferta */}
@@ -1692,7 +1692,7 @@ export function Comandas() {
                         </div>
 
                         {/* Productos de la oferta */}
-                        <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbff] p-4">
+                        <div className="rounded-[22px] border border-white/75 bg-[#f8fbff]/92 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.16)]">
                           <h4 className="font-semibold text-[#333333] mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                             {t('orders.offeredProducts')}
                           </h4>
@@ -1712,7 +1712,7 @@ export function Comandas() {
                               const porcentajeDisponible = (producto.cantidadDisponible / producto.cantidadOfrecida) * 100;
                               
                               return (
-                                <div key={`${oferta.id}-producto-${producto.productoId}-${idx}`} className="rounded-xl border border-white bg-white p-3 shadow-sm">
+                                <div key={`${oferta.id}-producto-${producto.productoId}-${idx}`} className="rounded-[20px] border border-white/80 bg-white/92 p-3 shadow-[0_14px_30px_-26px_rgba(15,45,71,0.14)]">
                                   <div className="flex items-center gap-2 mb-2">
                                     <span className="text-2xl">{producto.icono}</span>
                                     <div className="flex-1">
@@ -1965,7 +1965,7 @@ export function Comandas() {
 
             {/* Mensaje si no hay ofertas */}
             {ofertasFiltradas.length === 0 && (
-              <Card className="border-white/60 bg-white/75 shadow-lg backdrop-blur-xl">
+              <Card className="overflow-hidden border-white/75 bg-white/88 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl">
                 <CardContent className="pt-6">
                   <div className="text-center py-8 text-[#666666]">
                     <Tag className="w-16 h-16 mx-auto mb-4 opacity-20" />

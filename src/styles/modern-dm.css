@@ -421,6 +421,9 @@
   position: relative;
   min-height: calc(100vh - 64px);
   isolation: isolate;
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
 }
 
 .app-shell-content::before {
@@ -438,6 +441,10 @@
 [data-app-shell] > * {
   position: relative;
   animation: fadeInKeyframes 0.35s ease-out;
+}
+
+[data-app-shell] > * + * {
+  margin-top: 0.95rem;
 }
 
 [data-app-shell] [data-slot="card"] {
@@ -479,6 +486,15 @@
 
 [data-app-shell] [data-slot="button"]:not(:disabled):hover {
   transform: translateY(-1px);
+}
+
+[data-app-shell] [data-slot="input"] {
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+[data-app-shell] [data-slot="input"]:focus-visible {
+  background: #ffffff;
 }
 
 [data-app-shell] [data-slot="tabs-list"] {
@@ -533,4 +549,21 @@
   border-color: rgba(255, 255, 255, 0.68);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 249, 252, 0.95) 100%);
   box-shadow: 0 32px 80px rgba(17, 37, 63, 0.22);
+}
+
+@media (max-width: 1023px) {
+  .app-shell-content::before {
+    inset: 0.25rem;
+    border-radius: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell-content {
+    min-height: calc(100vh - 56px);
+  }
+
+  [data-app-shell] > * + * {
+    margin-top: 0.75rem;
+  }
 }

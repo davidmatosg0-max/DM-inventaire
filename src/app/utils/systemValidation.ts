@@ -1,12 +1,13 @@
 /**
  * SISTEMA DE VALIDACIÓN Y ESTABILIZACIÓN
- * Banque Alimentaire - Sistema Integral
+ * Sistema Integral de Gestion
  * 
  * Este archivo contiene todas las funciones de validación, verificación
  * y estabilización del sistema para garantizar integridad de datos.
  */
 
 import { logger } from './logger';
+import { getStoredBrandingPrintConfig } from './brandingPrint';
 
 // ============================================================================
 // CONSTANTES DE VALIDACIÓN
@@ -499,10 +500,11 @@ export function repararDatosCorruptos(): {
  */
 export function generarReporteSalud(): string {
   const { ok, errores, advertencias } = verificarIntegridadSistema();
+  const systemName = getStoredBrandingPrintConfig().systemName;
   
   let reporte = '═══════════════════════════════════════════════\n';
   reporte += '   REPORTE DE SALUD DEL SISTEMA\n';
-  reporte += '   Banque Alimentaire - Sistema Integral\n';
+  reporte += `   ${systemName} - Sistema Integral\n`;
   reporte += '═══════════════════════════════════════════════\n\n';
   
   reporte += `Estado General: ${ok ? '✅ SALUDABLE' : '⚠️ REQUIERE ATENCIÓN'}\n\n`;

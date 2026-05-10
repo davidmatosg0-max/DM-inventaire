@@ -17,6 +17,7 @@ import {
 } from '../../utils/demandesStorage';
 import { obtenerOfertas, type Oferta, type SolicitudOferta } from '../../utils/ofertaStorage';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { useBranding } from '../../../hooks/useBranding';
 
 interface MesDemandesProps {
   organismeId: string;
@@ -25,6 +26,7 @@ interface MesDemandesProps {
 }
 
 export const MesDemandes: React.FC<MesDemandesProps> = ({ organismeId, organismeNom, onRetour }) => {
+  const branding = useBranding();
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [demandeSelectionnee, setDemandeSelectionnee] = useState<Demande | null>(null);
   const [dialogNouvelledemAnde, setDialogNouvelledemAnde] = useState(false);
@@ -447,7 +449,7 @@ export const MesDemandes: React.FC<MesDemandesProps> = ({ organismeId, organisme
                 🏷️ Réclamations d'offres
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                Suivi de vos demandes d'offres spéciales envoyées à la Banque Alimentaire
+                Suivi de vos demandes d'offres spéciales envoyées à {branding.systemName}
               </p>
             </div>
             <Badge className="bg-[#1E73BE] text-white">{reclamosOfertas.length}</Badge>

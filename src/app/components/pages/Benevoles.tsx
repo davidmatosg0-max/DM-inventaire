@@ -26,8 +26,10 @@ import { obtenerUsuarioSesion, tienePermiso } from '../../utils/sesionStorage';
 import { guardarContacto, type ContactoDepartamento, sincronizarDesdeBenevole, obtenerContactosDepartamento, eliminarContacto, actualizarContacto } from '../../utils/contactosDepartamentoStorage';
 import { sincronizarVoluntariosEntrepot } from '../../utils/sincronizarVoluntariosEntrepot';
 import { registrarActividad } from '../../utils/actividadLogger';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { openAutoPrintPopup } from '../../utils/printPopup';
 import { BoutonRetourHeader } from '../shared/BoutonRetour';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 // 🔧 Importar utilidades de debugging
 import '../../utils/debugBenevoles';
 import { 
@@ -209,6 +211,9 @@ interface BenevolesProps {
 export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
   const { t } = useTranslation();
   const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [currentView, setCurrentView] = useState<BenevoleView>(isPublicAccess ? 'feuilles-temps' : 'liste');
   const [selectedBenevoleId, setSelectedBenevoleId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -505,19 +510,19 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
     custom: { subject: '', message: '' },
     invitation: {
       subject: 'Invitation à un événement spécial',
-      message: 'Bonjour,\n\nNous avons le plaisir de vous inviter à participer à notre prochain événement.\n\nDate: [À compléter]\nLieu: [À compléter]\n\nNous comptons sur votre présence!\n\nCordialement,\nL\'équipe de la Banque Alimentaire'
+      message: `Bonjour,\n\nNous avons le plaisir de vous inviter à participer à notre prochain événement.\n\nDate: [À compléter]\nLieu: [À compléter]\n\nNous comptons sur votre présence!\n\nCordialement,\nL'équipe de ${nombreSistemaImpresion}`
     },
     rappel: {
       subject: 'Rappel - Votre prochaine session de bénévolat',
-      message: 'Bonjour,\n\nCeci est un rappel concernant votre prochaine session de bénévolat.\n\nDate: [À compléter]\nHoraire: [À compléter]\nDépartement: [À compléter]\n\nMerci de confirmer votre présence.\n\nCordialement,\nL\'équipe de la Banque Alimentaire'
+      message: `Bonjour,\n\nCeci est un rappel concernant votre prochaine session de bénévolat.\n\nDate: [À compléter]\nHoraire: [À compléter]\nDépartement: [À compléter]\n\nMerci de confirmer votre présence.\n\nCordialement,\nL'équipe de ${nombreSistemaImpresion}`
     },
     remerciement: {
       subject: 'Merci pour votre engagement!',
-      message: 'Cher(e) bénévole,\n\nNous tenons à vous remercier chaleureusement pour votre précieux engagement et le temps que vous consacrez à notre mission.\n\nVotre contribution fait une réelle différence dans notre communauté.\n\nMerci encore!\n\nCordialement,\nL\'équipe de la Banque Alimentaire'
+      message: `Cher(e) bénévole,\n\nNous tenons à vous remercier chaleureusement pour votre précieux engagement et le temps que vous consacrez à notre mission.\n\nVotre contribution fait une réelle différence dans notre communauté.\n\nMerci encore!\n\nCordialement,\nL'équipe de ${nombreSistemaImpresion}`
     },
     annonce: {
       subject: 'Annonce importante',
-      message: 'Bonjour,\n\nNous souhaitons vous informer d\'une annonce importante concernant nos activités.\n\n[Votre message ici]\n\nN\'hésitez pas à nous contacter pour toute question.\n\nCordialement,\nL\'équipe de la Banque Alimentaire'
+      message: `Bonjour,\n\nNous souhaitons vous informer d'une annonce importante concernant nos activités.\n\n[Votre message ici]\n\nN'hésitez pas à nous contacter pour toute question.\n\nCordialement,\nL'équipe de ${nombreSistemaImpresion}`
     }
   };
 
@@ -2828,7 +2833,8 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
         ` : ''}
 
         <div class="footer">
-          Banque Alimentaire - Système de Gestion des Bénévoles
+          ${nombreSistemaImpresion} - Système de Gestion des Bénévoles
+          ${brandingContactLine ? `<div style="margin-top: 4px; font-size: 9px; opacity: 0.9;">${brandingContactLine}</div>` : ''}
         </div>
       </body>
       </html>
@@ -4353,7 +4359,8 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
       <div className="space-y-6">
         {/* Encabezado de impresión (solo visible al imprimir) */}
         <div className="hidden print:block border-b-2 border-[#1E73BE] pb-3 mb-4">
-          <h1 className="text-2xl font-bold text-[#1E73BE] mb-1">Banque Alimentaire - Statistiques démographiques</h1>
+          <h1 className="text-2xl font-bold text-[#1E73BE] mb-1">{nombreSistemaImpresion} - Statistiques démographiques</h1>
+          {brandingContactLine && <p className="text-sm text-[#666666] mb-2">{brandingContactLine}</p>}
           <div className="flex justify-between text-sm text-[#666666]">
             <span>Répartition des bénévoles par sexe et par âge</span>
             <span>Date: {new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -4705,7 +4712,8 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
         <div className="space-y-6">
           {/* Encabezado de impresión (solo visible al imprimir) */}
           <div className="hidden print:block border-b-2 border-[#1E73BE] pb-3 mb-4">
-            <h1 className="text-2xl font-bold text-[#1E73BE] mb-1">Banque Alimentaire - Répartition des heures</h1>
+            <h1 className="text-2xl font-bold text-[#1E73BE] mb-1">{nombreSistemaImpresion} - Répartition des heures</h1>
+          {brandingContactLine && <p className="text-sm text-[#666666] mb-2">{brandingContactLine}</p>}
           <div className="flex justify-between text-sm text-[#666666]">
             <span>Distribution des heures par département et par bénévole</span>
             <span>Date: {new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -4943,7 +4951,8 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
         </div>
         {/* Encabezado de impresión (solo visible al imprimir) */}
         <div className="hidden print:block border-b-2 border-[#1E73BE] pb-3 mb-4">
-          <h1 className="text-2xl font-bold text-[#1E73BE] mb-1">Banque Alimentaire - Rapport d'activités</h1>
+          <h1 className="text-2xl font-bold text-[#1E73BE] mb-1">{nombreSistemaImpresion} - Rapport d'activités</h1>
+          {brandingContactLine && <p className="text-sm text-[#666666] mb-2">{brandingContactLine}</p>}
           <div className="flex justify-between text-sm text-[#666666]">
             <span>Rapport détaillé des activités des bénévoles</span>
             <span>Date: {new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -5342,14 +5351,12 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                   style={{ borderColor: branding.primaryColor }}
                 >
                   {branding.logo ? (
-                    <img 
-                      src={branding.logo} 
-                      alt="Logo" 
-                      className="h-full w-full rounded-full"
-                      style={{ 
-                        objectFit: 'cover',
-                        objectPosition: 'center'
-                      }}
+                    <AdaptiveBrandLogo
+                      src={branding.logo}
+                      alt="Logo"
+                      wrapperClassName="h-full w-full"
+                      borderWidthClassName="border-0"
+                      shadowClassName=""
                     />
                   ) : (
                     <div 
@@ -5490,15 +5497,13 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                 style={{ borderColor: branding.primaryColor }}
               >
                 {branding.logo ? (
-                  <img 
-                    src={branding.logo} 
-                    alt="Logo" 
-                    className="h-full w-full rounded-full"
-                    style={{ 
-                      objectFit: 'cover',
-                      objectPosition: 'center',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset'
-                    }}
+                  <AdaptiveBrandLogo
+                    src={branding.logo}
+                    alt="Logo"
+                    wrapperClassName="h-full w-full"
+                    borderWidthClassName="border-0"
+                    shadowClassName=""
+                    imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
                   />
                 ) : (
                   <div 

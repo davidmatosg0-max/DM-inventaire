@@ -241,7 +241,7 @@ export function Dashboard() {
     <div className="space-y-4 sm:space-y-6">
       <ModulePageHeader
         title={`${t('dashboard.title')} - Entrepôt`}
-        subtitle={t('dashboard.viewOverview') || 'Vue d\'ensemble du système de la Banque Alimentaire'}
+        subtitle={t('dashboard.viewOverview') || `Vue d'ensemble du système de ${branding.systemName}`}
         icon={<LayoutDashboard className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}

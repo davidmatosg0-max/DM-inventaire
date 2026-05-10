@@ -9,6 +9,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
 import { obtenerTodasLasEntradas, type EntradaInventario } from '../utils/entradaInventarioStorage';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../utils/brandingPrint';
 import { printStandardLabel, type ProductLabelData } from './etiquetas/StandardProductLabel';
 import { obtenerValorPorKg } from '../utils/categoriaStorage';
 import { formatMoney, formatQuantity } from '../utils/formatUtils';
@@ -16,6 +17,9 @@ import { formatMoney, formatQuantity } from '../utils/formatUtils';
 export function VerificacionesRecientes() {
   const { t } = useTranslation();
   const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [open, setOpen] = useState(false);
   const [entradas, setEntradas] = useState<EntradaInventario[]>([]);
   const [filteredEntradas, setFilteredEntradas] = useState<EntradaInventario[]>([]);
@@ -140,7 +144,7 @@ export function VerificacionesRecientes() {
       donadorNombre: entrada.donadorNombre,
       fechaEntrada: entrada.fecha,
       translations: {
-        foodBank: 'BANQUE ALIMENTAIRE',
+        foodBank: nombreSistemaImpresion,
         productLabel: 'Étiquette du Produit',
         quantity: 'QUANTITÉ',
         temperature: 'TEMPÉRATURE',
@@ -342,8 +346,9 @@ export function VerificacionesRecientes() {
             <div className="hidden print:block mb-6">
               <div className="text-center border-b-2 border-[#1E73BE] pb-4 mb-4">
                 <h1 className="text-2xl font-bold text-[#1E73BE] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  BANQUE ALIMENTAIRE
+                  {nombreSistemaImpresion}
                 </h1>
+                {brandingContactLine && <p className="text-sm text-[#666666] mb-2">{brandingContactLine}</p>}
                 <h2 className="text-xl font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   Vérifications des Entrées d'Inventaire
                 </h2>

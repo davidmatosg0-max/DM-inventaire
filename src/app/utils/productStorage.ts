@@ -39,6 +39,11 @@ export type ProductoCreado = {
   valorTotal?: number; // Valor monetario total en CAD$ (valorUnitario × stockActual)
 };
 
+type ProductoCantidadOperacion = {
+  productoId: string;
+  cantidad: number;
+};
+
 type ProductoInventarioComparable = Pick<ProductoCreado, 'categoria' | 'subcategoria' | 'varianteNombre' | 'peso' | 'pesoUnitario'> & {
   varianteId?: string;
 };
@@ -110,6 +115,26 @@ function calcularPesoRegistrado(producto: Pick<ProductoCreado, 'pesoRegistrado' 
   return pesoUnitario * stockActual;
 }
 
+function redondearValorMonetario(valor: number): number {
+  if (!Number.isFinite(valor)) {
+    return 0;
+  }
+
+  return parseFloat(valor.toFixed(2));
+}
+
+function calcularValorInventarioProducto(producto: Pick<ProductoCreado, 'valorTotal' | 'valorUnitario' | 'stockActual'>): number {
+  if (typeof producto.valorTotal === 'number' && Number.isFinite(producto.valorTotal) && producto.valorTotal > 0) {
+    return redondearValorMonetario(producto.valorTotal);
+  }
+
+  if (typeof producto.valorUnitario === 'number' && Number.isFinite(producto.valorUnitario) && producto.valorUnitario > 0) {
+    return redondearValorMonetario(producto.valorUnitario * (producto.stockActual ?? 0));
+  }
+
+  return 0;
+}
+
 function fusionarProductoCanonico(
   productoExistente: ProductoCreado,
   productoEntrante: ProductoCreado,
@@ -117,16 +142,23 @@ function fusionarProductoCanonico(
 ): ProductoCreado {
   const stockExistente = productoExistente.stockActual ?? 0;
   const stockEntrante = productoEntrante.stockActual ?? 0;
+  const stockFusionado = stockExistente + stockEntrante;
   const pesoRegistradoExistente = calcularPesoRegistrado(productoExistente);
   const pesoRegistradoEntrante = calcularPesoRegistrado(productoEntrante);
+  const valorInventarioExistente = calcularValorInventarioProducto(productoExistente);
+  const valorInventarioEntrante = calcularValorInventarioProducto(productoEntrante);
+  const valorTotalFusionado = redondearValorMonetario(valorInventarioExistente + valorInventarioEntrante);
+  const valorUnitarioFusionado = stockFusionado > 0 && valorTotalFusionado > 0
+    ? redondearValorMonetario(valorTotalFusionado / stockFusionado)
+    : (productoEntrante.valorUnitario ?? productoExistente.valorUnitario);
 
   return aplicarTemperaturaProducto(normalizeStoredProduct({
     ...productoExistente,
-    stockActual: stockExistente + stockEntrante,
+    stockActual: stockFusionado,
     stockMinimo: Math.max(productoExistente.stockMinimo ?? 0, productoEntrante.stockMinimo ?? 0),
     pesoRegistrado: pesoRegistradoExistente + pesoRegistradoEntrante,
-    valorTotal: (productoExistente.valorTotal ?? 0) + (productoEntrante.valorTotal ?? 0),
-    valorUnitario: productoEntrante.valorUnitario ?? productoExistente.valorUnitario,
+    valorTotal: valorTotalFusionado,
+    valorUnitario: valorUnitarioFusionado,
     icono: productoExistente.icono || productoEntrante.icono,
     ubicacion: productoExistente.ubicacion || productoEntrante.ubicacion,
     lote: productoExistente.lote || productoEntrante.lote,
@@ -169,6 +201,15 @@ function normalizeStoredProduct<T extends Pick<ProductoCreado, 'nombre' | 'categ
     nombre: nombreNormalizado,
     ubicacion: ubicacionNormalizada,
   };
+}
+
+function normalizarCantidadOperacion(valor: unknown): number {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero) || numero <= 0) {
+    return 0;
+  }
+
+  return Number(numero.toFixed(4));
 }
 
 /**
@@ -310,6 +351,75 @@ export function actualizarProducto(id: string, productoActualizado: Partial<Prod
     }
   } catch (error) {
     console.error('Error al actualizar producto:', error);
+  }
+}
+
+export function descontarStockProductosAtomico(items: ProductoCantidadOperacion[]): { ok: boolean; error?: string } {
+  try {
+    const cantidades = new Map<string, number>();
+
+    for (const item of items) {
+      const cantidad = normalizarCantidadOperacion(item.cantidad);
+      if (!item.productoId || cantidad <= 0) {
+        continue;
+      }
+
+      cantidades.set(item.productoId, normalizarCantidadOperacion((cantidades.get(item.productoId) || 0) + cantidad));
+    }
+
+    if (cantidades.size === 0) {
+      return { ok: true };
+    }
+
+    const productos = obtenerProductos();
+    const standardLocations = getCurrentStandardLocations();
+    const productosActualizados = [...productos];
+    const cambiosStock: Array<{ productoAnterior: ProductoCreado; productoActualizado: ProductoCreado }> = [];
+
+    for (const [productoId, cantidad] of cantidades.entries()) {
+      const index = productosActualizados.findIndex(producto => producto.id === productoId);
+      if (index === -1) {
+        return { ok: false, error: `Producto no encontrado: ${productoId}` };
+      }
+
+      const productoAnterior = productosActualizados[index];
+      const stockActual = normalizarCantidadOperacion(productoAnterior.stockActual);
+      if (stockActual < cantidad) {
+        return {
+          ok: false,
+          error: `Stock insuficiente para expedir ${productoAnterior.nombre}. Disponible: ${stockActual} ${productoAnterior.unidad}.`
+        };
+      }
+
+      const productoActualizado = aplicarTemperaturaProducto(normalizeStoredProduct({
+        ...productoAnterior,
+        stockActual: normalizarCantidadOperacion(stockActual - cantidad)
+      }, standardLocations));
+
+      productosActualizados[index] = productoActualizado;
+      cambiosStock.push({ productoAnterior, productoActualizado });
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(productosActualizados));
+    queueStorageSync(STORAGE_KEY);
+
+    cambiosStock.forEach(({ productoAnterior, productoActualizado }) => {
+      if (productoAnterior.stockActual === productoActualizado.stockActual) {
+        return;
+      }
+
+      registrarActividad(
+        'Inventaire',
+        'modificar',
+        `Produit "${productoActualizado.nombre}" modifié - Stock: ${productoAnterior.stockActual} → ${productoActualizado.stockActual}`,
+        { productoId: productoActualizado.id, cambios: { stockActual: productoActualizado.stockActual } }
+      );
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Error al descontar stock de productos:', error);
+    return { ok: false, error: 'No fue posible descontar el inventario reservado' };
   }
 }
 

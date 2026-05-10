@@ -5,6 +5,8 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useBranding } from '../../../hooks/useBranding';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { formatMoney } from '../../utils/formatUtils';
 import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
 import type { Comanda } from '../../types';
@@ -46,6 +48,10 @@ export function SimulacionRecepcionNotificacion({
   notificacion,
   destacada = false,
 }: SimulacionRecepcionNotificacionProps) {
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [open, setOpen] = useState(false);
 
   const destinatariosEmail = useMemo(() => {
@@ -75,7 +81,7 @@ export function SimulacionRecepcionNotificacion({
   const mensajeEmail = [
     `Bonjour ${organismo?.nombre || 'organisme'},`,
     '',
-    'Une nouvelle distribution a été enregistrée pour votre organisme.',
+    `Une nouvelle distribution a été enregistrée par ${nombreSistemaImpresion} pour votre organisme.`,
     '',
     `Commande : ${comanda.numero}`,
     `Livraison : ${comanda.fechaEntrega ? formatearFecha(comanda.fechaEntrega) : 'À confirmer'}`,
@@ -222,9 +228,10 @@ export function SimulacionRecepcionNotificacion({
                     </CardHeader>
                     <CardContent className="space-y-4 pt-4">
                       <div className="flex items-center justify-between text-xs text-[#6B7280]">
-                        <span>De: Banque Alimentaire</span>
+                        <span>De: {nombreSistemaImpresion}</span>
                         <span>{formatearFecha(notificacion?.fecha)}</span>
                       </div>
+                      {brandingContactLine && <p className="text-xs text-[#6B7280]">Coordonnées: {brandingContactLine}</p>}
                       <pre className="whitespace-pre-wrap rounded-lg bg-[#F9FAFB] p-4 text-sm text-[#111827]" style={{ fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
                         {mensajeEmail}
                       </pre>

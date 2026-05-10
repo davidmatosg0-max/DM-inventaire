@@ -60,10 +60,21 @@ interface VistaPublicaOrganismoProps {
 export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublicaOrganismoProps) {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
+  const portalSectionCardClassName = 'overflow-hidden border border-white/78 bg-white/94 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.28)]';
+  const portalSubCardClassName = 'border border-white/78 bg-white/88 shadow-[0_18px_40px_-34px_rgba(15,45,71,0.22)]';
+  const portalSoftPanelClassName = 'rounded-[22px] border border-white/78 bg-slate-50/88 shadow-[0_16px_36px_-32px_rgba(15,45,71,0.18)]';
+
+  const getPortalSectionStyle = (accentColor: string) => ({
+    borderLeft: `4px solid ${accentColor}`,
+  });
+
+  const getPortalHeaderStyle = (startColor: string, endColor = startColor) => ({
+    background: `linear-gradient(135deg, ${startColor}14 0%, ${endColor}08 100%)`,
+  });
 
   const contactoGeneralAyuda = {
-    nombre: 'Banque Alimentaire',
-    telefono: '(514) 555-0100',
+    nombre: branding.systemName,
+    telefono: branding.phone?.trim() || '(514) 555-0100',
     email: 'info@bancoalimentos.org'
   };
 
@@ -547,7 +558,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     
     if (exito) {
       toast.success('Solicitud de oferta confirmada', {
-        description: `${totales.totalProductos} productos • ${formatQuantity(totales.totalKilos)} kg • Valor: CAD$ ${formatMoney(totales.totalValor)} • Fecha de recogida: ${new Date(fechaRecogida).toLocaleDateString(i18n.language)} • Recogerá: ${personaRecogida}. La solicitud fue enviada a la Banque Alimentaire para validación.`,
+        description: `${totales.totalProductos} productos • ${formatQuantity(totales.totalKilos)} kg • Valor: CAD$ ${formatMoney(totales.totalValor)} • Fecha de recogida: ${new Date(fechaRecogida).toLocaleDateString(i18n.language)} • Recogerá: ${personaRecogida}. La solicitud fue enviada a ${branding.systemName} para validación.`,
         duration: 6000
       });
       
@@ -951,7 +962,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
         />
       ) : (
         <div 
-          className="min-h-screen relative overflow-hidden"
+          className="app-main-stage relative min-h-screen overflow-hidden"
           style={{ 
             fontFamily: 'Roboto, sans-serif',
             background: 'linear-gradient(135deg, #1a4d7a08 0%, #2d956108 100%)',
@@ -968,95 +979,114 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
               style={{ backgroundColor: branding.secondaryColor }}
             />
           </div>
-
       {/* Header du portail */}
-      <header 
-        className="relative text-white border-b border-white/10"
-        style={{ 
-          background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
-          boxShadow: `0 12px 30px -20px ${branding.primaryColor}70`
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-              <div className="relative">
-                {/* Glow effect detrás del icono */}
-                <div 
-                  className="absolute inset-0 rounded-full blur-xl opacity-50"
-                  style={{ backgroundColor: 'white' }}
-                />
-                <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-full flex items-center justify-center text-2xl sm:text-4xl shadow-lg border-2 border-white/50">
-                  {/* Icono del tipo de organismo */}
+      <header className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/72 backdrop-blur-xl">
+        <div className="px-4 py-4 sm:px-6 sm:py-5">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-start">
+            <div className="rounded-[28px] border border-white/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(247,250,252,0.92)_100%)] p-4 shadow-[0_24px_54px_-38px_rgba(15,45,71,0.34)] sm:p-5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border border-white/80 bg-white text-2xl shadow-[0_16px_34px_-28px_rgba(15,45,71,0.4)] sm:h-14 sm:w-14 sm:text-3xl">
                   {organismo.tipo === 'Comedor' ? '🍽️' :
                    organismo.tipo === 'Fundación' ? '🏛️' :
                    organismo.tipo === 'Hogar' ? '🏠' : '🏘️'}
                 </div>
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
-                  <h1 className="break-words text-xl sm:text-[1.75rem] leading-tight" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Portail privé</p>
+                    {organismo.participaPRS && (
+                      <Badge className="border-0 bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                        ✓ PRS
+                      </Badge>
+                    )}
+                  </div>
+                  <h1 className="mt-2 break-words text-[1.45rem] font-bold leading-tight text-slate-900 sm:text-[1.8rem]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     {organismo.nombre}
                   </h1>
-                  {organismo.participaPRS && (
-                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30">
-                      ✓ PRS
-                    </Badge>
-                  )}
+                  <p className="mt-2 text-sm text-slate-600 sm:text-[0.98rem]">
+                    {organismo.tipo} • {t('organismPortal.registeredSince')} {formatearFechaRegistroOrganismo()}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
+                    {organismo.direccion && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4" style={{ color: branding.primaryColor }} />
+                        <span>{organismo.direccion}</span>
+                      </span>
+                    )}
+                    {organismo.telefono && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Phone className="h-4 w-4" style={{ color: branding.primaryColor }} />
+                        <span>{organismo.telefono}</span>
+                      </span>
+                    )}
+                    {organismo.email && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Mail className="h-4 w-4" style={{ color: branding.primaryColor }} />
+                        <span>{organismo.email}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-white/90" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                  {organismo.tipo} • {t('organismPortal.registeredSince')} {formatearFechaRegistroOrganismo()}
-                </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-stretch gap-2 sm:gap-3">
-              <LanguageSelector />
-              {organismo.participaPRS && (
+
+            <div className="rounded-[28px] border border-white/80 bg-white/92 p-4 shadow-[0_24px_54px_-38px_rgba(15,45,71,0.3)] sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Actions rapides</p>
+                  <p className="mt-1 text-sm text-slate-600">Accédez directement aux fonctions utiles du portail.</p>
+                </div>
+                <LanguageSelector />
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                {organismo.participaPRS && (
+                  <Button
+                    onClick={() => setDialogNuevaEntradaOpen(true)}
+                    className="h-11 justify-start rounded-2xl px-4 text-white shadow-[0_18px_32px_-24px_rgba(26,77,122,0.45)]"
+                    style={{
+                      background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
+                      fontFamily: 'Montserrat, sans-serif',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouvelle Entrée PRS
+                  </Button>
+                )}
                 <Button
-                  onClick={() => setDialogNuevaEntradaOpen(true)}
-                  className="h-11 sm:h-12 px-4 sm:px-5 text-white border border-white/20 shadow-sm hover:shadow-md"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
+                  onClick={() => setMostrarDemandes(true)}
+                  variant="outline"
+                  className="h-11 justify-start rounded-2xl border-slate-200 bg-slate-50/90 px-4 shadow-none hover:bg-slate-100"
+                  style={{
+                    color: branding.primaryColor,
                     fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: 600,
-                    fontSize: '0.95rem'
+                    fontWeight: 500,
                   }}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvelle Entrée PRS
+                  <Package className="mr-2 h-4 w-4" />
+                  Mes Demandes
                 </Button>
-              )}
-              <Button
-                onClick={() => setMostrarDemandes(true)}
-                variant="outline"
-                className="bg-white/95 hover:bg-white border-0 shadow-sm"
-                style={{ 
-                  color: branding.primaryColor,
-                  fontFamily: 'Montserrat, sans-serif',
-                  fontWeight: 500
-                }}
-              >
-                Mes Demandes
-              </Button>
-              <Button
-                onClick={onCerrarSesion}
-                variant="outline"
-                className="bg-white/95 hover:bg-white border-0 shadow-sm"
-                style={{ 
-                  color: branding.primaryColor,
-                  fontFamily: 'Montserrat, sans-serif',
-                  fontWeight: 500
-                }}
-              >
-                {t('organismPortal.logout')}
-              </Button>
+                <Button
+                  onClick={onCerrarSesion}
+                  variant="outline"
+                  className="h-11 justify-start rounded-2xl border-slate-200 bg-slate-50/90 px-4 shadow-none hover:bg-slate-100"
+                  style={{
+                    color: branding.primaryColor,
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 500,
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {t('organismPortal.logout')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
+      <div className="app-shell-content relative z-10 max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8" data-app-shell>
         {/* Comandas Pendientes de Confirmación */}
         <ConfirmacionComanda organismoId={organismo.id} organismo={organismo} />
 
@@ -1088,84 +1118,70 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
         )}
 
         {/* Indicateurs principaux */}
-        <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
-          <Card 
-            className="border-l-4 bg-white/92 shadow-sm"
-            style={{ borderColor: branding.primaryColor }}
-          >
-            <CardContent className="pt-5">
-              <div className="flex items-center justify-between">
+        <section className="mb-6 rounded-[28px] border border-white/80 bg-white/92 p-4 shadow-[0_24px_54px_-40px_rgba(15,45,71,0.28)] sm:p-5">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Vue synthèse</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                Tableau de bord organisme
+              </h2>
+            </div>
+            <p className="text-sm text-slate-500">Aperçu rapide de votre activité et de vos demandes.</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-[22px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fbfd_100%)] p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-[#666666]">{t('organismPortal.beneficiaries')}</p>
-                  <p 
-                    className="font-bold" 
-                    style={{ fontSize: '1.65rem', color: branding.primaryColor }}
-                  >
+                  <p className="text-sm text-slate-500">{t('organismPortal.beneficiaries')}</p>
+                  <p className="mt-1 text-[1.75rem] font-bold" style={{ color: branding.primaryColor, fontFamily: 'Montserrat, sans-serif' }}>
                     {organismo.beneficiarios}
                   </p>
                 </div>
-                <Users 
-                  className="w-7 h-7 opacity-20" 
-                  style={{ color: branding.primaryColor }}
-                />
+                <div className="rounded-2xl p-3" style={{ backgroundColor: `${branding.primaryColor}12` }}>
+                  <Users className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card 
-            className="border-l-4 bg-white/92 shadow-sm"
-            style={{ borderColor: branding.secondaryColor }}
-          >
-            <CardContent className="pt-5">
-              <div className="flex items-center justify-between">
+            <div className="rounded-[22px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f7fbf8_100%)] p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-[#666666]">{t('organismPortal.orders')}</p>
-                  <p 
-                    className="font-bold" 
-                    style={{ fontSize: '1.65rem', color: branding.secondaryColor }}
-                  >
+                  <p className="text-sm text-slate-500">{t('organismPortal.orders')}</p>
+                  <p className="mt-1 text-[1.75rem] font-bold" style={{ color: branding.secondaryColor, fontFamily: 'Montserrat, sans-serif' }}>
                     {totalComandas}
                   </p>
                 </div>
-                <Package 
-                  className="w-7 h-7 opacity-20" 
-                  style={{ color: branding.secondaryColor }}
-                />
+                <div className="rounded-2xl p-3" style={{ backgroundColor: `${branding.secondaryColor}12` }}>
+                  <Package className="h-5 w-5" style={{ color: branding.secondaryColor }} />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card 
-            className="border-l-4 bg-white/92 shadow-sm"
-            style={{ borderColor: '#e8a419' }}
-          >
-            <CardContent className="pt-5">
-              <div className="flex items-center justify-between">
+            <div className="rounded-[22px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#fffaf1_100%)] p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-[#666666]">{t('organismPortal.completed')}</p>
-                  <p 
-                    className="font-bold text-[#e8a419]" 
-                    style={{ fontSize: '1.65rem' }}
-                  >
+                  <p className="text-sm text-slate-500">{t('organismPortal.completed')}</p>
+                  <p className="mt-1 text-[1.75rem] font-bold text-[#e8a419]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     {comandasCompletadas}
                   </p>
                 </div>
-                <CheckCircle className="w-7 h-7 text-[#e8a419] opacity-20" />
+                <div className="rounded-2xl bg-[#e8a41914] p-3">
+                  <CheckCircle className="h-5 w-5 text-[#e8a419]" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
+        </section>
 
         {/* Sección de Personas Responsables */}
         <Card 
-          className="mb-6 border-l-4 bg-white/92 shadow-sm"
-          style={{ borderColor: branding.secondaryColor }}
+          className={`mb-6 ${portalSectionCardClassName}`}
+          style={getPortalSectionStyle(branding.secondaryColor)}
         >
           <CardHeader 
-            className="rounded-t-lg"
-            style={{ 
-              background: `linear-gradient(135deg, ${branding.secondaryColor}15 0%, ${branding.secondaryColor}08 100%)`
-            }}
+            className="rounded-t-[inherit] border-b border-white/75"
+            style={getPortalHeaderStyle(branding.secondaryColor)}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -1200,7 +1216,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 {personasResponsables.map(persona => (
                   <Card 
                     key={persona.id} 
-                    className={`border transition-colors ${persona.esPrincipal ? 'bg-green-50/50' : 'bg-white'}`}
+                    className={`${portalSubCardClassName} transition-colors ${persona.esPrincipal ? 'bg-green-50/60' : 'bg-white/90'}`}
                     style={{ 
                       borderColor: persona.esPrincipal ? branding.secondaryColor : '#e0e0e0' 
                     }}
@@ -1244,7 +1260,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                           <span className="text-[#333333]">{persona.email}</span>
                         </div>
                         {persona.notas && (
-                          <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-[#666666]">
+                          <div className="mt-2 rounded-xl border border-white/70 bg-slate-50/90 p-3 text-xs text-[#666666]">
                             {persona.notas}
                           </div>
                         )}
@@ -1332,7 +1348,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <div className={`text-center py-8 ${portalSoftPanelClassName}`}>
                 <UserPlus className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                 <p className="text-[#666666] mb-4">{t('organisms.profileDialog.authorizedPersons.noPersonsRegistered')}</p>
                 <Button 
@@ -1352,12 +1368,12 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         {/* Sección de Reportes de Donaciones */}
         <Card 
-          className="mb-6 border-l-4 bg-white/92 shadow-sm"
-          style={{ borderColor: '#e8a419' }}
+          className={`mb-6 ${portalSectionCardClassName}`}
+          style={getPortalSectionStyle('#e8a419')}
         >
           <CardHeader 
-            className="rounded-t-lg"
-            style={{ background: 'linear-gradient(135deg, #e8a41915 0%, #e8a41908 100%)' }}
+            className="rounded-t-[inherit] border-b border-white/75"
+            style={getPortalHeaderStyle('#e8a419')}
           >
             <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <FileText className="w-6 h-6 text-[#e8a419]" />
@@ -1433,7 +1449,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
             </div>
 
             <div 
-              className="rounded-lg p-4 border-2"
+              className="rounded-[22px] p-4 border border-white/75 shadow-[0_16px_36px_-32px_rgba(15,45,71,0.18)]"
               style={{
                 backgroundColor: `${branding.primaryColor}08`,
                 borderColor: `${branding.primaryColor}30`
@@ -1459,8 +1475,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Información del Organismo */}
-          <Card className="bg-white/92 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between rounded-t-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor}08 0%, ${branding.secondaryColor}08 100%)` }}>
+          <Card className={portalSectionCardClassName}>
+            <CardHeader className="flex flex-row items-center justify-between rounded-t-[inherit] border-b border-white/75" style={getPortalHeaderStyle(branding.primaryColor, branding.secondaryColor)}>
               <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 {t('organismPortal.organisInfo')}
               </CardTitle>
@@ -1560,8 +1576,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
           </Card>
 
           {/* Historial de Comandas */}
-          <Card className="bg-white/92 shadow-sm">
-            <CardHeader className="rounded-t-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor}08 0%, ${branding.secondaryColor}08 100%)` }}>
+          <Card className={portalSectionCardClassName}>
+            <CardHeader className="rounded-t-[inherit] border-b border-white/75" style={getPortalHeaderStyle(branding.primaryColor, branding.secondaryColor)}>
               <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <History className="w-5 h-5" />
                 {t('organismPortal.ordersHistory')}
@@ -1599,7 +1615,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                     }, 0);
                     
                     return (
-                    <div key={comanda.id} className="border rounded-lg p-3 bg-gray-50 hover:shadow-md transition-shadow duration-200">
+                    <div key={comanda.id} className="rounded-[22px] border border-white/75 bg-slate-50/88 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.16)] hover:shadow-[0_20px_40px_-30px_rgba(15,45,71,0.22)] transition-shadow duration-200">
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium text-[#333333]">{comanda.numero}</p>
                         <Badge 
@@ -1666,12 +1682,10 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         {/* Nueva Sección: Ofertas Disponibles */}
         {ofertasDelOrganismo.length > 0 && (
-          <Card className="mt-6 border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
+          <Card className={`mt-6 ${portalSectionCardClassName}`} style={getPortalSectionStyle(branding.secondaryColor)}>
             <CardHeader 
-              className="bg-gradient-to-r"
-              style={{
-                backgroundImage: `linear-gradient(to right, ${branding.secondaryColor}10, ${branding.primaryColor}05)`
-              }}
+              className="rounded-t-[inherit] border-b border-white/75"
+              style={getPortalHeaderStyle(branding.secondaryColor, branding.primaryColor)}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -1964,8 +1978,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         {/* Historial de Ofertas Solicitadas */}
         {ofertasDelOrganismo.filter(o => o.aceptaciones.some(a => a.organismoId === organismo.id)).length > 0 && (
-          <Card className="mt-6 border-l-4 border-l-[#1E73BE]">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+          <Card className={`mt-6 ${portalSectionCardClassName}`} style={getPortalSectionStyle('#1E73BE')}>
+            <CardHeader className="rounded-t-[inherit] border-b border-white/75" style={getPortalHeaderStyle('#1E73BE', '#4f46e5')}>
               <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <History className="w-6 h-6 text-[#1E73BE]" />
                 📋 Historial de Ofertas Solicitadas
@@ -1993,7 +2007,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                     }, 0);
 
                     return (
-                      <div key={oferta.id} className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <div key={oferta.id} className="rounded-[24px] border border-white/75 bg-[linear-gradient(135deg,rgba(239,246,255,0.96)_0%,rgba(238,242,255,0.92)_100%)] p-4 shadow-[0_18px_36px_-30px_rgba(15,45,71,0.18)]">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
@@ -2077,8 +2091,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         {/* Gráfico de Donaciones por Categoría */}
         {datosCategorias.length > 0 && (
-          <Card className="mt-6 border-l-4 border-l-[#1E73BE]">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+          <Card className={`mt-6 ${portalSectionCardClassName}`} style={getPortalSectionStyle('#1E73BE')}>
+            <CardHeader className="rounded-t-[inherit] border-b border-white/75" style={getPortalHeaderStyle('#1E73BE', '#4f46e5')}>
               <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <TrendingUp className="w-6 h-6 text-[#1E73BE]" />
                 Donaciones Recibidas por Categoría
@@ -2149,7 +2163,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 {datosCategorias.slice(0, 4).map((cat, index) => (
                   <div 
                     key={cat.categoria}
-                    className="bg-gray-50 rounded-lg p-3 border-l-4"
+                    className="rounded-[20px] border border-white/75 bg-slate-50/88 p-3 shadow-[0_14px_30px_-28px_rgba(15,45,71,0.16)]"
                     style={{ borderLeftColor: coloresGrafico[index % coloresGrafico.length] }}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -2168,7 +2182,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
         )}
 
         {/* Mensaje de Ayuda */}
-        <Card className="mt-6 border-l-4 border-l-[#1E73BE]">
+        <Card className={`mt-6 ${portalSectionCardClassName}`} style={getPortalSectionStyle('#1E73BE')}>
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -2199,8 +2213,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-12 py-6">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-[#666666]">
+      <footer className="mt-12 px-4 pb-8 sm:px-6">
+        <div className="max-w-7xl mx-auto rounded-[24px] border border-white/75 bg-white/88 px-6 py-6 text-center text-sm text-[#666666] shadow-[0_20px_44px_-34px_rgba(15,45,71,0.2)]">
           <p>{t('organismPortal.copyright')}</p>
           <p className="mt-1">{t('organismPortal.thankYou')}</p>
         </div>
@@ -2665,7 +2679,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   <div>
                     <p className="font-medium text-[#333333] mb-1">Importante</p>
                     <p className="text-sm text-[#666666]">
-                      <strong>La fecha de recogida indicada es una propuesta del organismo, pero la Banque Alimentaire 
+                      <strong>La fecha de recogida indicada es une proposition de l'organisme, mais ${branding.systemName} 
                       se reserva el derecho de modificarla</strong> según disponibilidad y logística. Las cantidades 
                       solicitadas están sujetas a disponibilidad final.
                     </p>
@@ -3564,7 +3578,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                       
                       <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
                         <p className="text-xs text-gray-700 mb-2">
-                          Ce portail fait partie d'un système intégral de gestion de la Banque Alimentaire qui permet à l'équipe interne de gérer efficacement tous les aspects des opérations:
+                          Ce portail fait partie du système intégral de gestion de ${branding.systemName} qui permet à l'équipe interne de gérer efficacement tous les aspects des opérations:
                         </p>
                         <ul className="text-xs text-gray-600 space-y-1 ml-4">
                           <li>• Gestion complète de l'inventaire et des stocks</li>
@@ -3661,7 +3675,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                     {/* Footer */}
                     <div className="text-center pt-2 border-t" style={{ borderColor: `${branding.primaryColor}20` }}>
                       <p className="text-xs text-gray-500">
-                        Banque Alimentaire • Système Intégral de Gestion v2.0
+                        {branding.systemName} • Système Intégral de Gestion v2.0
                       </p>
                     </div>
                   </div>

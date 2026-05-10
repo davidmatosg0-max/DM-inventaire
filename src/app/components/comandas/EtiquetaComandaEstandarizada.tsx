@@ -10,6 +10,7 @@
 import React from 'react';
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
+import { formatBrandingContactLine, getStoredBrandingPrintConfig } from '../../utils/brandingPrint';
 import { openAutoPrintPopup } from '../../utils/printPopup';
 
 interface EtiquetaComandaData {
@@ -73,9 +74,11 @@ interface EtiquetaComandaData {
 export async function generateStandardOrderLabel(
   data: EtiquetaComandaData
 ): Promise<string> {
+  const brandingPrint = getStoredBrandingPrintConfig();
+  const nombreSistemaImpresion = brandingPrint.systemName;
   // Traducciones por defecto (francés)
   const t = {
-    foodBank: data.translations?.foodBank || 'BANQUE ALIMENTAIRE',
+    foodBank: data.translations?.foodBank || nombreSistemaImpresion,
     orderLabel: data.translations?.orderLabel || 'Étiquette de Commande',
     orderNumber: data.translations?.orderNumber || 'N° Commande',
     deliveryDate: data.translations?.deliveryDate || 'Livraison',
@@ -199,25 +202,49 @@ export async function generateStandardOrderLabel(
     /* HEADER */
     .etiqueta-header {
       background: white;
-      padding: 12px 16px;
-      text-align: center;
+      padding: 14px 16px;
       border-bottom: 3px solid #1E73BE;
+    }
+
+    .brand-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 14px 16px;
+      border: 1px solid #d7e3ef;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #f7fbff 0%, #eef6fb 48%, #f6fbf7 100%);
+      box-shadow: 0 12px 30px rgba(15, 45, 71, 0.08);
+      text-align: left;
     }
     
     .etiqueta-header h1 {
       font-family: 'Montserrat', sans-serif;
       font-weight: 700;
-      font-size: 24px;
+      font-size: 32px;
       color: #1E73BE;
-      margin: 0 0 2px 0;
-      letter-spacing: 0.5px;
+      margin: 0;
+      letter-spacing: 0;
     }
     
     .etiqueta-header p {
       font-family: 'Roboto', sans-serif;
-      font-size: 12px;
-      color: #666666;
+      font-size: 15px;
+      color: #64748b;
       margin: 0;
+    }
+
+    .etiqueta-header .brand-subtitle {
+      font-size: 18px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .etiqueta-header .document-label {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #7c8a99;
+      font-weight: 600;
     }
     
     /* GRID SUPERIOR - QR + PRODUCTOS */
@@ -593,8 +620,13 @@ export async function generateStandardOrderLabel(
   <div class="etiqueta-container">
     <!-- HEADER -->
     <div class="etiqueta-header">
-      <h1>🏦 ${t.foodBank}</h1>
-      <p>${t.orderLabel}</p>
+      <div class="brand-panel">
+        <h1>${t.foodBank}</h1>
+        <p class="brand-subtitle">Système de gestion des commandes</p>
+        ${brandingPrint.address ? `<p>${brandingPrint.address}</p>` : ''}
+        ${brandingPrint.phone ? `<p>${brandingPrint.phone}</p>` : ''}
+      </div>
+      <p class="document-label">${t.orderLabel}</p>
     </div>
     
     <!-- GRID SUPERIOR: QR + PRODUCTOS -->
@@ -694,6 +726,7 @@ export async function generateStandardOrderLabel(
     <!-- FOOTER -->
     <div class="etiqueta-footer">
       <p>${t.systemFooter}</p>
+      ${formatBrandingContactLine(brandingPrint) ? `<p>${formatBrandingContactLine(brandingPrint)}</p>` : ''}
       <p class="timestamp">${t.printedOn}: ${formatDateTime(new Date())}</p>
     </div>
   </div>

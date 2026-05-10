@@ -119,7 +119,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl mb-4">
               <BookOpen className="w-12 h-12 mb-2" />
               <h3 className="font-bold text-lg">Guide Complet</h3>
-              <p className="text-xs text-blue-100">Banque Alimentaire</p>
+              <p className="text-xs text-blue-100">Réseau solidaire</p>
               <p className="text-xs text-blue-200 mt-1">Tous les Modules</p>
             </div>
           </div>
@@ -157,7 +157,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                 <h2 className="text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   Guide Complet du Système
                 </h2>
-                <p className="text-blue-100 text-sm">Système de Gestion - Banque Alimentaire</p>
+                <p className="text-blue-100 text-sm">Système de Gestion - Réseau solidaire</p>
               </div>
             </div>
             
@@ -193,11 +193,11 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <Award className="w-16 h-16 flex-shrink-0" />
                     <div>
                       <h3 className="text-3xl font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        Bienvenue dans le Système Banque Alimentaire
+                        Bienvenue dans le système de gestion
                       </h3>
                       <p className="text-blue-50 mb-4 text-lg">
                         Une solution complète et intégrée pour gérer efficacement tous les aspects 
-                        de votre banque alimentaire, de l'inventaire à la distribution.
+                        de votre réseau alimentaire, de l'inventaire à la distribution.
                       </p>
                       <div className="grid grid-cols-3 gap-4 mt-6">
                         <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
@@ -466,7 +466,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Tableau de bord</h3>
                       <p className="text-blue-50 text-lg">
-                        Vue d'ensemble complète de toutes les activités de la banque alimentaire.
+                        Vue d'ensemble complète de toutes les activités du réseau alimentaire.
                       </p>
                     </div>
                   </div>
@@ -1380,7 +1380,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                   </h4>
                   <p className="text-gray-700 mb-4">
                     Le Comptoir permet de gérer les distributions en face à face avec les bénéficiaires 
-                    qui viennent chercher des produits directement à la banque alimentaire.
+                    qui viennent chercher des produits directement au point de distribution.
                   </p>
                   <div className="bg-emerald-50 p-5 rounded-lg border-2 border-emerald-200">
                     <h5 className="font-bold mb-3 flex items-center gap-2">
@@ -1501,7 +1501,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Module Messagerie Interne</h3>
                       <p className="text-blue-50 text-lg">
-                        Communication professionnelle entre tous les départements de la banque alimentaire.
+                        Communication professionnelle entre tous les départements du réseau.
                       </p>
                     </div>
                   </div>

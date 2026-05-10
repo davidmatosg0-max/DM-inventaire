@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../../hooks/useBranding';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { 
   Building2, 
   Plus, 
@@ -727,15 +728,13 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
                 style={{ borderColor: branding.primaryColor }}
               >
                 {branding.logo ? (
-                  <ImageWithFallback 
-                    src={branding.logo} 
-                    alt="Logo" 
-                    className="h-full w-full rounded-full"
-                    style={{ 
-                      objectFit: 'cover',
-                      objectPosition: 'center',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset'
-                    }}
+                  <AdaptiveBrandLogo
+                    src={branding.logo}
+                    alt="Logo"
+                    wrapperClassName="h-full w-full"
+                    borderWidthClassName="border-0"
+                    shadowClassName=""
+                    imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
                   />
                 ) : (
                   <div 

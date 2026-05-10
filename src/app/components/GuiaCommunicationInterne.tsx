@@ -59,7 +59,7 @@ export function GuiaCommunicationInterne({ onClose }: GuiaCommunicationInternePr
                   <h3 className="font-bold text-blue-900 mb-1">Bienvenue!</h3>
                   <p className="text-sm text-blue-800">
                     Ce système permet une communication efficace entre tous les départements 
-                    de la Banque Alimentaire. Envoyez des messages, créez des demandes et suivez 
+                    de l'organisation. Envoyez des messages, créez des demandes et suivez 
                     leur statut en temps réel.
                   </p>
                 </div>

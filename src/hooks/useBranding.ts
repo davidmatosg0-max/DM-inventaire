@@ -8,6 +8,8 @@ interface BrandingConfig {
   warningColor: string;
   logo: string | null;
   systemName: string;
+  phone: string;
+  address: string;
 }
 
 /**
@@ -70,7 +72,9 @@ const DEFAULT_BRANDING: BrandingConfig = {
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
   logo: null,  // Se puede personalizar desde el módulo de Personalización
-  systemName: 'Banque Alimentaire'
+  systemName: 'Banque Alimentaire',
+  phone: '',
+  address: ''
 };
 
 export function useBranding() {
@@ -94,6 +98,7 @@ export function useBranding() {
             : null;
           
           const finalConfig = {
+            ...DEFAULT_BRANDING,
             ...parsed,
             logo: finalLogo
           };
@@ -126,7 +131,10 @@ export function useBranding() {
 
     // Escuchar cambios en la configuración
     const handleBrandingUpdate = (event: CustomEvent<BrandingConfig>) => {
-      const updatedConfig = event.detail;
+      const updatedConfig = {
+        ...DEFAULT_BRANDING,
+        ...event.detail,
+      };
       
       // Si el logo es null o no es Base64, no guardarlo (se usará el predeterminado)
       // Si el logo es Base64, guardarlo

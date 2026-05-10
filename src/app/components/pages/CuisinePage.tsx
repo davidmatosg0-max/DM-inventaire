@@ -50,6 +50,7 @@ type VistaActual = 'dashboard' | 'recetas' | 'transformaciones' | 'produccion' |
 export function CuisinePage({ onNavigate }: CuisinePageProps) {
   const { t } = useTranslation();
   const branding = useBranding();
+  const cuisineDashboardCardClassName = 'backdrop-blur-xl bg-white/90 rounded-[24px] shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] p-4 sm:p-6 border border-white/75 hover:shadow-[0_30px_64px_-38px_rgba(15,45,71,0.3)] transition-all cursor-pointer hover:scale-[1.02]';
   const [vistaActual, setVistaActual] = useState<VistaActual>('dashboard');
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [transformaciones, setTransformaciones] = useState<Transformacion[]>([]);
@@ -226,12 +227,15 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     if (!modalRecetaAbierto) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-[#333333]">
-              {recetaEditando ? 'Modifier la Recette' : 'Nouvelle Recette'}
-            </h2>
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/45 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[28px] border border-white/70 bg-white/96 shadow-[0_36px_90px_-46px_rgba(15,45,71,0.35)]">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/75 bg-[linear-gradient(135deg,rgba(26,77,122,0.08)_0%,rgba(45,149,97,0.06)_100%)] p-6 backdrop-blur-xl">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Cuisine</p>
+              <h2 className="mt-1 text-2xl font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                {recetaEditando ? 'Modifier la Recette' : 'Nouvelle Recette'}
+              </h2>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -327,7 +331,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
               </div>
 
               {/* Formulario agregar ingrediente */}
-              <Card>
+              <Card className="overflow-hidden border-white/75 bg-white/92 shadow-[0_18px_42px_-34px_rgba(15,45,71,0.2)]">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                     <div className="md:col-span-2">
@@ -496,7 +500,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           </div>
 
           {/* Footer con botones */}
-          <div className="sticky bottom-0 bg-white border-t p-6 flex justify-end gap-3">
+          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-white/75 bg-white/96 p-6 backdrop-blur-xl">
             <Button
               variant="outline"
               onClick={() => {
@@ -610,12 +614,15 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     if (!modalTransformacionAbierto) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-[#333333]">
-              {transformacionEditando ? 'Modifier la Transformation' : 'Nouvelle Transformation'}
-            </h2>
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/45 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[28px] border border-white/70 bg-white/96 shadow-[0_36px_90px_-46px_rgba(15,45,71,0.35)]">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/75 bg-[linear-gradient(135deg,rgba(255,107,53,0.08)_0%,rgba(26,77,122,0.06)_100%)] p-6 backdrop-blur-xl">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Cuisine</p>
+              <h2 className="mt-1 text-2xl font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                {transformacionEditando ? 'Modifier la Transformation' : 'Nouvelle Transformation'}
+              </h2>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -656,7 +663,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
             {/* Información de la receta seleccionada */}
             {recetaSeleccionada && (
-              <Card className="bg-[#F4F4F4]">
+              <Card className="overflow-hidden border-white/75 bg-[#F4F4F4]/92 shadow-[0_18px_42px_-34px_rgba(15,45,71,0.2)]">
                 <CardContent className="p-4">
                   <h4 className="font-semibold text-[#333333] mb-2">Détails de la Recette</h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
@@ -788,7 +795,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
             </div>
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t p-6 flex justify-end gap-3">
+          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-white/75 bg-white/96 p-6 backdrop-blur-xl">
             <Button
               variant="outline"
               onClick={() => {
@@ -853,7 +860,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
         {/* Menú de acciones principales con glassmorphism */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div 
-            className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
+            className={cuisineDashboardCardClassName}
             onClick={() => setVistaActual('recetas')}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -873,7 +880,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           </div>
 
           <div 
-            className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
+            className={cuisineDashboardCardClassName}
             onClick={() => setVistaActual('transformaciones')}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -893,7 +900,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           </div>
 
           <div 
-            className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
+            className={cuisineDashboardCardClassName}
             onClick={() => setVistaActual('produccion')}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -913,7 +920,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           </div>
 
           <div 
-            className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
+            className={cuisineDashboardCardClassName}
             onClick={() => setVistaActual('inventario')}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -932,7 +939,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           </div>
 
           <div 
-            className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
+            className={cuisineDashboardCardClassName}
             onClick={() => setVistaActual('estadisticas')}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -952,7 +959,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           </div>
 
           <div 
-            className="backdrop-blur-lg bg-white/80 rounded-xl shadow-lg p-4 sm:p-6 border border-white/40 hover:shadow-2xl transition-all cursor-pointer hover:scale-105"
+            className={cuisineDashboardCardClassName}
             onClick={() => setVistaActual('contactos')}
           >
             <div className="flex items-center gap-3 mb-3">

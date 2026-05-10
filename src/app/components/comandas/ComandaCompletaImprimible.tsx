@@ -11,8 +11,10 @@ import {
 } from '../../utils/productTemperature';
 import { sortByTemperature } from '../../utils/temperatureSort';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { openPrintPopup, writeAutoPrintPopupContent, writePrintPopupPlaceholder } from '../../utils/printPopup';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
+import { useBranding } from '../../../hooks/useBranding';
 
 interface ComandaCompletaImprimibleProps {
   comanda: any;
@@ -107,6 +109,9 @@ function escapeHtml(value: unknown): string {
 }
 
 type PrintPayload = {
+  systemName: string;
+  systemPhone: string;
+  systemAddress: string;
   numeroComanda: string;
   locale: string;
   title: string;
@@ -256,16 +261,41 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
             padding-bottom: 14px;
           }
 
-          .eyebrow {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: #1E73BE;
-            margin-bottom: 6px;
+          .brand-panel {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 14px 16px;
+            border: 1px solid #d7e3ef;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #f7fbff 0%, #eef6fb 48%, #f6fbf7 100%);
+            box-shadow: 0 12px 30px rgba(15, 45, 71, 0.08);
+            margin-bottom: 14px;
           }
 
-          h1 {
+          .brand-name {
+            font-family: Montserrat, Arial, Helvetica, sans-serif;
+            font-size: 32px;
+            line-height: 1.1;
+            font-weight: 700;
+            color: #1E73BE;
+            margin: 0;
+          }
+
+          .brand-subtitle {
+            font-size: 18px;
+            font-weight: 600;
+            color: #475569;
+            margin: 0;
+          }
+
+          .brand-contact {
+            font-size: 15px;
+            color: #64748b;
+            margin: 0;
+          }
+
+          .document-title {
             font-size: 28px;
             margin: 0 0 10px;
             font-family: Arial, Helvetica, sans-serif;
@@ -430,8 +460,13 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
         <div class="sheet">
           <div class="header">
             <div>
-              <div class="eyebrow">Banque Alimentaire</div>
-              <h1>${escapeHtml(payload.title)}</h1>
+              <div class="brand-panel">
+                <p class="brand-name">${escapeHtml(payload.systemName)}</p>
+                <p class="brand-subtitle">Système de gestion des commandes</p>
+                ${payload.systemAddress ? `<p class="brand-contact">${escapeHtml(payload.systemAddress)}</p>` : ''}
+                ${payload.systemPhone ? `<p class="brand-contact">${escapeHtml(payload.systemPhone)}</p>` : ''}
+              </div>
+              <h1 class="document-title">${escapeHtml(payload.title)}</h1>
               <div class="meta">
                 <div><strong>N°:</strong> ${escapeHtml(payload.numeroComanda)}</div>
                 <div><strong>Statut:</strong> ${escapeHtml(payload.statusLabel)}</div>
@@ -606,12 +641,41 @@ async function generatePreparationWorksheetHtml(payload: PrintPayload): Promise<
           }
 
           .eyebrow {
-            font-size: 11px;
+            display: none;
+          }
+
+          .brand-panel {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 14px 16px;
+            border: 1px solid #d7e3ef;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #f7fbff 0%, #eef6fb 48%, #f6fbf7 100%);
+            box-shadow: 0 12px 30px rgba(15, 45, 71, 0.08);
+            margin-bottom: 14px;
+          }
+
+          .brand-name {
+            font-family: Montserrat, Arial, Helvetica, sans-serif;
+            font-size: 32px;
+            line-height: 1.1;
             font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
             color: #1E73BE;
-            margin-bottom: 6px;
+            margin: 0;
+          }
+
+          .brand-subtitle {
+            font-size: 18px;
+            font-weight: 600;
+            color: #475569;
+            margin: 0;
+          }
+
+          .brand-contact {
+            font-size: 15px;
+            color: #64748b;
+            margin: 0;
           }
 
           h1 {
@@ -770,7 +834,12 @@ async function generatePreparationWorksheetHtml(payload: PrintPayload): Promise<
         <div class="sheet">
           <div class="header">
             <div>
-              <div class="eyebrow">Banque Alimentaire</div>
+              <div class="brand-panel">
+                <p class="brand-name">${escapeHtml(payload.systemName)}</p>
+                <p class="brand-subtitle">Système de gestion des commandes</p>
+                ${payload.systemAddress ? `<p class="brand-contact">${escapeHtml(payload.systemAddress)}</p>` : ''}
+                ${payload.systemPhone ? `<p class="brand-contact">${escapeHtml(payload.systemPhone)}</p>` : ''}
+              </div>
               <h1>${escapeHtml(payload.title)}</h1>
               <div class="meta">
                 <div><strong>N°:</strong> ${escapeHtml(payload.numeroComanda)}</div>
@@ -865,7 +934,10 @@ async function generatePreparationWorksheetHtml(payload: PrintPayload): Promise<
 
 export function ComandaCompletaImprimible({ comanda, organismo, onClose }: ComandaCompletaImprimibleProps) {
   const { t, i18n } = useTranslation();
+  const branding = useBranding();
   const locale = i18n.language || 'fr-CA';
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
   const items = Array.isArray(comanda?.items) ? comanda.items : [];
   const productosInventario = React.useMemo(() => obtenerProductos(), []);
   const productosCatalogoMap = React.useMemo(() => new Map(
@@ -957,6 +1029,9 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
       });
 
       const payload = {
+        systemName: nombreSistemaImpresion,
+        systemPhone: brandingPrint.phone,
+        systemAddress: brandingPrint.address,
         numeroComanda,
         locale,
         title: esPreparacionManual ? `Fiche de preparation ${numeroComanda}` : `Comanda ${numeroComanda}`,
@@ -1076,8 +1151,15 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
             <div className="border-b-4 border-[#1E73BE] px-5 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
+                  <div className="inline-flex flex-col gap-1 rounded-[24px] border border-[#d7e3ef] bg-[linear-gradient(135deg,#f7fbff_0%,#eef6fb_48%,#f6fbf7_100%)] px-4 py-3 shadow-[0_18px_42px_-36px_rgba(15,45,71,0.35)]">
+                    <p className="text-[2rem] font-bold leading-none text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.03em' }}>
+                      {nombreSistemaImpresion}
+                    </p>
+                    <p className="text-[1.05rem] font-semibold text-[#475569]">Système de gestion des commandes</p>
+                    <p className="text-sm text-[#64748b]">{brandingPrint.address || 'Laval, Québec, Canada'}</p>
+                    {brandingPrint.phone && <p className="text-sm text-[#64748b]">{brandingPrint.phone}</p>}
+                  </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#1E73BE]">Banque Alimentaire</p>
                     <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {esPreparacionManual ? 'Fiche de préparation manuelle' : t('orders.printOrder')}
                     </h1>

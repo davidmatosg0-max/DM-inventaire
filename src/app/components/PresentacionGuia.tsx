@@ -22,12 +22,18 @@ import {
   QrCode,
   Scale
 } from 'lucide-react';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../utils/brandingPrint';
+import { useBranding } from '../../hooks/useBranding';
 
 /**
  * Componente para generar presentación HTML imprimible
  * Este componente se renderiza en una ventana nueva para impresión/PDF
  */
 export function PresentacionGuia() {
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   return (
     <div className="presentation-container" style={{ 
       fontFamily: 'Montserrat, Roboto, sans-serif',
@@ -172,6 +178,13 @@ export function PresentacionGuia() {
           font-weight: 700;
           color: #1a4d7a;
         }
+
+        .logo-contact {
+          margin-top: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #5f6f7f;
+        }
         
         .module-card {
           background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -205,7 +218,7 @@ export function PresentacionGuia() {
             Système de Gestion
           </h1>
           <h1 style={{ fontSize: '56px', marginBottom: '40px', color: '#e0f2f1' }}>
-            Banque Alimentaire
+            {nombreSistemaImpresion}
           </h1>
           <p style={{ fontSize: '28px', color: '#b3e5fc', marginTop: '40px' }}>
             Solution Complète et Intégrée
@@ -221,10 +234,10 @@ export function PresentacionGuia() {
 
       {/* SLIDE 2: VUE D'ENSEMBLE */}
       <div className="slide page-break">
-        <div className="logo-area">🏦 Banque Alimentaire</div>
+        <div className="logo-area">🏦 {nombreSistemaImpresion}{brandingContactLine ? <div className="logo-contact">{brandingContactLine}</div> : null}</div>
         <h2>Vue d'Ensemble du Système</h2>
         <p style={{ fontSize: '22px', color: '#666', marginBottom: '40px' }}>
-          Une plateforme moderne et complète pour optimiser la gestion de votre banque alimentaire
+          Une plateforme moderne et complète pour optimiser la gestion de votre organisation alimentaire
         </p>
         
         <div className="grid-3" style={{ marginTop: '40px' }}>
@@ -272,7 +285,7 @@ export function PresentacionGuia() {
 
       {/* SLIDE 3: CARACTÉRISTIQUES PRINCIPALES */}
       <div className="slide page-break">
-        <div className="logo-area">🏦 Banque Alimentaire</div>
+        <div className="logo-area">🏦 {nombreSistemaImpresion}</div>
         <h2>Caractéristiques Principales</h2>
         
         <div className="grid-2" style={{ marginTop: '40px' }}>
@@ -382,7 +395,7 @@ export function PresentacionGuia() {
 
       {/* SLIDE 5: MODULE COMMANDES */}
       <div className="slide page-break">
-        <div className="logo-area">🏦 Banque Alimentaire</div>
+        <div className="logo-area">🏦 {nombreSistemaImpresion}</div>
         <h2>
           <ClipboardList style={{ width: '48px', height: '48px', marginRight: '16px', display: 'inline-block', verticalAlign: 'middle', color: '#1a4d7a' }} />
           Module Commandes
@@ -480,7 +493,7 @@ export function PresentacionGuia() {
 
       {/* SLIDE 7: AUTRES MODULES */}
       <div className="slide page-break">
-        <div className="logo-area">🏦 Banque Alimentaire</div>
+        <div className="logo-area">🏦 {nombreSistemaImpresion}</div>
         <h2>Modules Complémentaires</h2>
         
         <div className="grid-2" style={{ gap: '24px', marginTop: '40px' }}>
@@ -594,7 +607,7 @@ export function PresentacionGuia() {
 
       {/* SLIDE 9: BÉNÉFICES */}
       <div className="slide page-break">
-        <div className="logo-area">🏦 Banque Alimentaire</div>
+        <div className="logo-area">🏦 {nombreSistemaImpresion}</div>
         <h2>Bénéfices pour votre Organisation</h2>
         
         <div className="grid-2" style={{ gap: '30px', marginTop: '40px' }}>

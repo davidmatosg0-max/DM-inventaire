@@ -17,14 +17,21 @@ import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { FormularioOrganismoCompacto } from '../organismos/FormularioOrganismoCompacto';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { generarClaveAcceso } from '../../utils/claveAcceso';
+import { generarClaveAccesoUnica } from '../../utils/claveAcceso';
 import { MapLink } from '../ui/map-link';
 import { GestionDemandes } from '../liaison/GestionDemandes';
 import { obtenirNombreNouvellesDemandes } from '../../utils/demandesStorage';
 import { type JourDisponible } from '../shared/SelecteurJoursDisponibles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GestionContactosDepartamento } from '../departamentos/GestionContactosDepartamento';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { useBranding } from '../../../hooks/useBranding';
+import {
+  construirPayloadOrganismo,
+  convertirOrganismoAFormulario,
+  crearFormularioOrganismoVacio,
+  validarFormularioOrganismo,
+} from '../../utils/organismoForm';
 import { 
   obtenerOrganismos, 
   crearOrganismo, 
@@ -42,6 +49,7 @@ import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { obtenerUsuarioSesion, esAdministradorLiaison } from '../../utils/sesionStorage';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
+import { ModuleSection } from '../shared/ModuleSection';
 
 // Tipos de organismos predefinidos
 const getTiposOrganismo = (t: any) => [
@@ -68,15 +76,14 @@ const getTiposOrganismo = (t: any) => [
   { id: '20', nombre: t('organisms.organismTypes.other'), icono: '📌' }
 ];
 
-const resolverClasificacionOrganismo = (organismo?: { clasificacionOrganismo?: ClasificacionOrganismo; regular?: boolean }) => (
-  organismo?.clasificacionOrganismo || (organismo?.regular === false ? 'eventual' : 'regular')
-);
-
 const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
 export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { t } = useTranslation();
   const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const tiposOrganismo = getTiposOrganismo(t);
   
   // Cargar organismos desde el storage
@@ -128,35 +135,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   };
   
   // Estado del formulario de organismo
-  const [formOrganismo, setFormOrganismo] = useState({
-    nombre: '',
-    tipo: '',
-    codigoPostal: '',
-    direccion: '',
-    quartier: '',
-    responsable: '',
-    beneficiarios: 0,
-    telefono: '',
-    email: '',
-    frecuenciaCita: '',
-    diaCita: '',
-    horaCita: '',
-    participantePRS: false,
-    regular: true,
-    clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
-    activo: true,
-    personasServidas: 0,
-    cantidadColaciones: 0,
-    cantidadAlmuerzos: 0,
-    porcentajeReparticion: 0,
-    notas: '',
-    notificaciones: true,
-    logo: null as string | null,
-    documentoPDF: null as string | null,
-    contactosNotificacion: [{ nombre: '', email: '', cargo: '', joursDisponibles: [] as JourDisponible[] }],
-    fechaInicioInactividad: '',
-    fechaFinInactividad: ''
-  });
+  const [formOrganismo, setFormOrganismo] = useState(crearFormularioOrganismoVacio());
 
   // Estado para personas autorizadas
   const [personasAutorizadas, setPersonasAutorizadas] = useState<any[]>([]);
@@ -308,9 +287,11 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
               month: 'long', 
               year: 'numeric' 
             })}</p>
+            ${brandingContactLine ? `<p><strong>Coordonnées:</strong> ${brandingContactLine}</p>` : ''}
             ${contenido}
             <div class="footer">
-              <p>© ${new Date().getFullYear()} Banque Alimentaire - Système de Gestion</p>
+              <p>© ${new Date().getFullYear()} ${nombreSistemaImpresion} - Système de Gestion</p>
+              ${brandingContactLine ? `<p>${brandingContactLine}</p>` : ''}
             </div>
           </body>
         </html>
@@ -418,7 +399,10 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(150);
-      doc.text(`© ${new Date().getFullYear()} Banque Alimentaire - Page ${i}/${pageCount}`, 14, doc.internal.pageSize.height - 10);
+      doc.text(`© ${new Date().getFullYear()} ${nombreSistemaImpresion} - Page ${i}/${pageCount}`, 14, doc.internal.pageSize.height - 10);
+      if (brandingContactLine) {
+        doc.text(brandingContactLine, doc.internal.pageSize.width - 14, doc.internal.pageSize.height - 10, { align: 'right' });
+      }
     }
     
     doc.save(`Statistiques_Liaison_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -586,48 +570,30 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   };
 
   const handleCrearOrganismo = () => {
+    const errorValidacion = validarFormularioOrganismo(formOrganismo);
+    if (errorValidacion) {
+      toast.error(errorValidacion);
+      return;
+    }
+
     // Generar clave de acceso única
-    const claveAcceso = generarClaveAcceso(formOrganismo.nombre);
+    const claveAcceso = generarClaveAccesoUnica(formOrganismo.nombre, organismos.map(org => org.claveAcceso || ''));
+    const payloadOrganismo = construirPayloadOrganismo(formOrganismo);
 
     try {
       // Crear el organismo en el storage
-      crearOrganismo({
-        nombre: formOrganismo.nombre,
-        tipo: formOrganismo.tipo,
-        email: formOrganismo.email,
-        telefono: formOrganismo.telefono,
-        direccion: formOrganismo.direccion,
-        codigoPostal: formOrganismo.codigoPostal,
-        quartier: formOrganismo.quartier,
-        zona: '',
-        responsable: formOrganismo.responsable,
-        beneficiarios: formOrganismo.beneficiarios,
-        activo: formOrganismo.activo,
-        regular: formOrganismo.regular,
-        clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
-        participantePRS: formOrganismo.participantePRS,
-        frecuenciaCita: formOrganismo.frecuenciaCita,
-        diaCita: formOrganismo.diaCita,
-        horaCita: formOrganismo.horaCita,
-        personasServidas: formOrganismo.personasServidas,
-        cantidadColaciones: formOrganismo.cantidadColaciones,
-        cantidadAlmuerzos: formOrganismo.cantidadAlmuerzos,
-        porcentajeReparticion: formOrganismo.porcentajeReparticion,
-        notas: formOrganismo.notas,
-        notificaciones: formOrganismo.notificaciones,
-        logo: formOrganismo.logo,
-        documentoPDF: formOrganismo.documentoPDF,
+      const nuevoOrganismo = crearOrganismo({
+        ...payloadOrganismo,
         claveAcceso: claveAcceso,
-        contactosNotificacion: formOrganismo.contactosNotificacion
       });
       
       // Recargar la lista de organismos
       cargarOrganismos();
       
-      console.log('Organismo creado con clave:', claveAcceso);
+      console.log('Organismo creado con clave:', nuevoOrganismo.claveAcceso);
       
       // Guardar la clave generada y nombre para mostrar en el diálogo
-      setClaveGenerada(claveAcceso);
+      setClaveGenerada(nuevoOrganismo.claveAcceso || claveAcceso);
       setNombreOrganismoCreado(formOrganismo.nombre);
       
       // Cerrar diálogo de creación
@@ -638,74 +604,25 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
       setModoVisualizacion(false);
       
       // Resetear formulario
-      setFormOrganismo({
-        nombre: '',
-        tipo: '',
-        codigoPostal: '',
-        direccion: '',
-        quartier: '',
-        responsable: '',
-        beneficiarios: 0,
-        telefono: '',
-        email: '',
-        frecuenciaCita: '',
-        diaCita: '',
-        horaCita: '',
-        participantePRS: false,
-        regular: true,
-        clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
-        activo: true,
-        personasServidas: 0,
-        cantidadColaciones: 0,
-        cantidadAlmuerzos: 0,
-        porcentajeReparticion: 0,
-        notas: '',
-        notificaciones: true,
-        logo: null,
-        documentoPDF: null,
-        contactosNotificacion: [{ nombre: '', email: '', cargo: '', joursDisponibles: [] }],
-        fechaInicioInactividad: '',
-        fechaFinInactividad: ''
-      });
+      setFormOrganismo(crearFormularioOrganismoVacio());
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur lors de la création de l\'organisme');
     }
   };
 
   const handleGuardarCambios = () => {
+    const errorValidacion = validarFormularioOrganismo(formOrganismo);
+    if (errorValidacion) {
+      toast.error(errorValidacion);
+      return;
+    }
+
     if (organismoSeleccionado && organismoSeleccionado.id) {
       try {
+        const payloadOrganismo = construirPayloadOrganismo(formOrganismo);
         // Actualizar el organismo en el storage
-        actualizarOrganismo(organismoSeleccionado.id, {
-          nombre: formOrganismo.nombre,
-          tipo: formOrganismo.tipo,
-          email: formOrganismo.email,
-          telefono: formOrganismo.telefono,
-          direccion: formOrganismo.direccion,
-          codigoPostal: formOrganismo.codigoPostal,
-          quartier: formOrganismo.quartier,
-          responsable: formOrganismo.responsable,
-          beneficiarios: formOrganismo.beneficiarios,
-          activo: formOrganismo.activo,
-          regular: formOrganismo.regular,
-          clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
-          participantePRS: formOrganismo.participantePRS,
-          frecuenciaCita: formOrganismo.frecuenciaCita,
-          diaCita: formOrganismo.diaCita,
-          horaCita: formOrganismo.horaCita,
-          personasServidas: formOrganismo.personasServidas,
-          cantidadColaciones: formOrganismo.cantidadColaciones,
-          cantidadAlmuerzos: formOrganismo.cantidadAlmuerzos,
-          porcentajeReparticion: formOrganismo.porcentajeReparticion,
-          notas: formOrganismo.notas,
-          notificaciones: formOrganismo.notificaciones,
-          logo: formOrganismo.logo,
-          documentoPDF: formOrganismo.documentoPDF,
-          contactosNotificacion: formOrganismo.contactosNotificacion,
-          fechaInicioInactividad: formOrganismo.fechaInicioInactividad,
-          fechaFinInactividad: formOrganismo.fechaFinInactividad
-        });
-        
+        actualizarOrganismo(organismoSeleccionado.id, payloadOrganismo);
+
         // Recargar la lista de organismos
         cargarOrganismos();
       } catch (error) {
@@ -765,122 +682,74 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     setEmailMessage('');
   };
 
-  // Toggle organismo seleccionado
-  const toggleOrganismo = (organismoId: string) => {
-    setSelectedOrganismos(prev =>
-      prev.includes(organismoId)
-        ? prev.filter(id => id !== organismoId)
-        : [...prev, organismoId]
-    );
-  };
-
-  // Seleccionar/Deseleccionar todos
-  const toggleSelectAll = () => {
-    if (selectedOrganismos.length === organismos.length) {
-      setSelectedOrganismos([]);
-    } else {
-      setSelectedOrganismos(organismos.map(o => o.id));
-    }
-  };
-
-  // Enviar email
   const sendEmail = async () => {
-    if (!emailSubject.trim() || !emailMessage.trim()) {
-      toast.error(t('liaison.completeAllFields'));
-      return;
-    }
-
-    // Verificar que haya un usuario en sesión
-    if (!usuarioSesion) {
-      toast.error('⚠️ Aucun utilisateur connecté. Veuillez vous connecter pour envoyer des emails.', {
-        duration: 5000
+    if (!emailConfig || !emailConfig.isConfigured) {
+      toast.error('Configuration email requise', {
+        description: 'Veuillez configurer un compte email avant l\'envoi.',
       });
       return;
     }
 
-    // Preparar destinatarios
     let destinatarios: string[] = [];
-    if (emailType === 'individual' && currentRecipient) {
+
+    if (emailType === 'individual') {
+      if (!currentRecipient?.email) {
+        toast.error('Aucun destinataire valide selectionne.');
+        return;
+      }
+
       destinatarios = [currentRecipient.email];
     } else {
-      const organismosSeleccionados = organismos.filter(o => selectedOrganismos.includes(o.id));
-      destinatarios = organismosSeleccionados.map(o => o.email);
+      destinatarios = organismos
+        .filter((organismo) => selectedOrganismos.includes(organismo.id) && organismo.email)
+        .map((organismo) => organismo.email);
+
+      if (destinatarios.length === 0) {
+        toast.error('Selectionnez au moins un organisme avec une adresse email valide.');
+        return;
+      }
     }
 
-    if (destinatarios.length === 0) {
-      toast.error(t('liaison.selectAtLeastOneOrganism'));
-      return;
-    }
-
-    // Simular envío de email desde el usuario conectado
     try {
-      if (emailType === 'individual') {
-        toast.success(`✉️ Email envoyé avec succès à ${currentRecipient?.nombre}`, {
-          description: `De: ${usuarioSesion.email}`,
-          duration: 5000
+      const resultado = await enviarEmailService(destinatarios, emailSubject, emailMessage, emailConfig);
+
+      if (!resultado.exito) {
+        toast.error('Erreur lors de l\'envoi de l\'email', {
+          description: resultado.mensaje,
         });
+        return;
+      }
+
+      toast.success('Email envoye avec succes', {
+        description: resultado.mensaje,
+        duration: 5000,
+      });
+
+      if (emailType === 'individual' && currentRecipient) {
         console.log('Email individual enviado:', {
-          de: usuarioSesion.email,
-          nombreRemitente: `${usuarioSesion.nombre} ${usuarioSesion.apellido}`,
+          de: usuarioSesion?.email,
+          nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : emailConfig.email,
           destinatario: currentRecipient,
           asunto: emailSubject,
           mensaje: emailMessage,
-          fecha: new Date().toISOString()
+          fecha: new Date().toISOString(),
         });
       } else {
-        toast.success(`✉️ Email envoyé avec succès à ${selectedOrganismos.length} organismes`, {
-          description: `De: ${usuarioSesion.email}`,
-          duration: 5000
-        });
         console.log('Email grupal enviado:', {
-          de: usuarioSesion.email,
-          nombreRemitente: `${usuarioSesion.nombre} ${usuarioSesion.apellido}`,
-          destinatarios: organismos.filter(o => selectedOrganismos.includes(o.id)),
+          de: usuarioSesion?.email,
+          nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : emailConfig.email,
+          destinatarios: organismos.filter((organismo) => selectedOrganismos.includes(organismo.id)),
           asunto: emailSubject,
           mensaje: emailMessage,
-          fecha: new Date().toISOString()
+          fecha: new Date().toISOString(),
         });
       }
+
+      closeEmailModal();
     } catch (error) {
       toast.error('❌ Erreur lors de l\'envoi de l\'email');
       console.error('Error enviando email:', error);
     }
-
-    closeEmailModal();
-  };
-
-  // Función para convertir organismo al formato del formulario compacto
-  const convertirOrganismoAFormulario = (org: Organismo) => {
-    return {
-      nombre: org.nombre,
-      tipo: org.tipo,
-      codigoPostal: org.codigoPostal || '',
-      direccion: org.direccion,
-      responsable: org.responsable,
-      beneficiarios: org.beneficiarios,
-      telefono: org.telefono,
-      email: org.email,
-      activo: org.activo,
-      claveAcceso: org.claveAcceso || '',
-      zona: (org as any).zona || '',
-      frecuenciaCita: (org as any).frecuenciaCita || '',
-      diaCita: (org as any).diaCita || '',
-      horaCita: (org as any).horaCita || '',
-      participantePRS: (org as any).participantePRS || false,
-      regular: (org as any).regular !== undefined ? (org as any).regular : true,
-      clasificacionOrganismo: resolverClasificacionOrganismo(org as any),
-      personasServidas: (org as any).personasServidas || 0,
-      cantidadColaciones: (org as any).cantidadColaciones || 0,
-      cantidadAlmuerzos: (org as any).cantidadAlmuerzos || 0,
-      porcentajeReparticion: (org as any).porcentajeReparticion || 0,
-      notas: (org as any).notas || '',
-      notificaciones: (org as any).notificaciones !== undefined ? (org as any).notificaciones : true,
-      logo: (org as any).logo || null,
-      documentoPDF: (org as any).documentoPDF || null,
-      contactosNotificacion: (org as any).contactosNotificacion || [],
-      fechaInicioInactividad: (org as any).fechaInicioInactividad || '',
-      fechaFinInactividad: (org as any).fechaFinInactividad || ''
-    };
   };
 
   const handleVerPerfil = (organismo: Organismo) => {
@@ -979,33 +848,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                     });
                     return;
                   }
-                  setFormOrganismo({
-                    nombre: '',
-                    tipo: '',
-                    codigoPostal: '',
-                    direccion: '',
-                    responsable: '',
-                    beneficiarios: 0,
-                    telefono: '',
-                    email: '',
-                    frecuenciaCita: '',
-                    diaCita: '',
-                    horaCita: '',
-                    participantePRS: false,
-                    regular: true,
-                    activo: true,
-                    personasServidas: 0,
-                    cantidadColaciones: 0,
-                    cantidadAlmuerzos: 0,
-                    porcentajeReparticion: 0,
-                    notas: '',
-                    notificaciones: true,
-                    logo: null,
-                    documentoPDF: null,
-                    contactosNotificacion: [{ nombre: '', email: '', cargo: '', joursDisponibles: [] }],
-                    fechaInicioInactividad: '',
-                    fechaFinInactividad: ''
-                  });
+                  setFormOrganismo(crearFormularioOrganismoVacio());
                   setModoEdicion(false);
                   setModoVisualizacion(false);
                   setOrganismoSeleccionado(null);
@@ -1088,20 +931,16 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             <ModuleControlSurfaceBody className="space-y-6">
 
               <TabsContent value="liaison" className="space-y-6">
-                <div className="card-glass rounded-2xl border border-white/60 p-4 shadow-lg">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-[#1f2937]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        Statistiques et rapports
-                      </p>
-                      <p className="text-xs text-[#5d7185]">
-                        Accédez à la vue détaillée des tendances, exports et indicateurs de croissance de Liaison.
-                      </p>
-                    </div>
+                <ModuleSection
+                  title="Statistiques et rapports"
+                  description="Accédez à la vue détaillée des tendances, exports et indicateurs de croissance de Liaison."
+                  icon={TrendingUp}
+                  variant="glass"
+                  actions={(
                     <Button
                       type="button"
                       onClick={() => setMostrarEstadisticas(!mostrarEstadisticas)}
-                      className="gap-2 rounded-xl text-white shadow-lg hover:shadow-xl"
+                      className="gap-2 text-white shadow-lg hover:shadow-xl"
                       style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
                     >
                       <TrendingUp className="h-4 w-4" />
@@ -1109,11 +948,23 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                         {mostrarEstadisticas ? 'Masquer les statistiques détaillées' : 'Voir les statistiques détaillées'}
                       </span>
                     </Button>
+                  )}
+                  contentClassName="pt-0"
+                >
+                  <div className="flex flex-wrap gap-2 text-sm text-[#5d7185]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1 shadow-sm">
+                      <BarChart3 className="h-4 w-4" style={{ color: branding.primaryColor }} />
+                      <span>Tendances, exports et croissance</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1 shadow-sm">
+                      <Calendar className="h-4 w-4" style={{ color: branding.secondaryColor }} />
+                      <span>Filtres par période</span>
+                    </div>
                   </div>
-                </div>
+                </ModuleSection>
 
                 {mostrarEstadisticas && (
-                  <div className="card-glass rounded-2xl border border-white/60 p-6 shadow-xl sm:p-8" ref={estadisticasRef}>
+                  <div className="card-glass rounded-[28px] border border-white/75 p-5 shadow-[0_28px_68px_-42px_rgba(15,45,71,0.3)] sm:p-7" ref={estadisticasRef}>
             {/* Header avec boutons d'actions */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -1221,7 +1072,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             </div>
 
             {/* Filtres de période */}
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 mb-6 border border-purple-200">
+            <div className="rounded-[24px] border border-white/75 bg-[linear-gradient(135deg,rgba(248,250,252,0.98)_0%,rgba(240,249,255,0.96)_100%)] p-6 mb-6 shadow-[0_18px_36px_-34px_rgba(15,45,71,0.2)]">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <Calendar className="w-5 h-5 text-purple-600" />
                 Filtrer par Période
@@ -1334,7 +1185,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             </div>
 
             {/* Indicateur de données à exporter */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-6 border-l-4 border-blue-600">
+            <div className="rounded-[22px] border border-white/80 bg-[linear-gradient(135deg,rgba(239,246,255,0.96)_0%,rgba(250,245,255,0.94)_100%)] p-4 mb-6 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
@@ -1384,7 +1235,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             {/* Graphiques */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Graphique 1: Croissance des demandes d'accréditation */}
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="rounded-[22px] border border-white/75 bg-white/78 p-6 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   <TrendingUp className="w-5 h-5 text-blue-600" />
                   Croissance des Demandes d'Accréditation
@@ -1404,7 +1255,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
               </div>
 
               {/* Graphique 2: Croissance des organismes */}
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="rounded-[22px] border border-white/75 bg-white/78 p-6 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   <BarChart3 className="w-5 h-5 text-green-600" />
                   Croissance des Organismes
@@ -1424,7 +1275,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
               </div>
 
               {/* Graphique 3: Répartition par type */}
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="rounded-[22px] border border-white/75 bg-white/78 p-6 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   <PieChart className="w-5 h-5 text-purple-600" />
                   Répartition par Type d'Organisme
@@ -1451,7 +1302,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
               </div>
 
               {/* Tableau de rapport */}
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="rounded-[22px] border border-white/75 bg-white/78 p-6 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.22)]">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   <FileText className="w-5 h-5 text-orange-600" />
                   Rapport Mensuel
@@ -1496,7 +1347,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             </div>
 
             {/* Analyses et recommandations */}
-            <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-lg">
+            <div className="rounded-[24px] border border-white/80 bg-[linear-gradient(135deg,rgba(239,246,255,0.95)_0%,rgba(255,255,255,0.95)_100%)] p-6 shadow-[0_18px_36px_-30px_rgba(15,45,71,0.2)]">
               <h3 className="text-lg font-bold text-gray-900 mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 💡 Analyses et Recommandations
               </h3>
@@ -1523,20 +1374,20 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
         )}
 
         {/* Búsqueda con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-lg border border-white/20 p-6 mb-6 relative overflow-hidden">
+        <div className="card-glass rounded-[26px] border border-white/75 p-6 mb-6 relative overflow-hidden shadow-[0_20px_44px_-34px_rgba(15,45,71,0.24)]">
           <div className="absolute -top-10 -left-10 w-32 h-32 bg-[#1a4d7a]/10 rounded-full blur-2xl" />
-          <input
+          <Input
             type="text"
             placeholder={t('liaison.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="relative z-10 w-full px-4 py-3 border border-gray-300/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a4d7a] focus:border-transparent bg-white/80 backdrop-blur-sm transition-all"
+            className="relative z-10 w-full px-4 py-3 border border-gray-300/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a4d7a] focus:border-transparent bg-white/88 backdrop-blur-sm transition-all"
           />
         </div>
 
         {/* Grid de Organismos */}
         {filteredOrganismos.length === 0 ? (
-          <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-lg border border-white/20 p-12 text-center">
+          <div className="card-glass rounded-[26px] border border-white/75 p-12 text-center shadow-[0_20px_44px_-34px_rgba(15,45,71,0.24)]">
             <p className="text-xl text-gray-600 mb-2">{t('liaison.noOrganismsFound')}</p>
             <p className="text-gray-500">{t('liaison.tryOtherSearchTerms')}</p>
           </div>

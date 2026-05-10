@@ -22,6 +22,7 @@ import { obtenerPersonasPorOrganismo, type PersonaResponsable } from '../../util
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import type { Comanda } from '../../types';
 import { SimulacionRecepcionNotificacion } from './SimulacionRecepcionNotificacion';
+import { useBranding } from '../../../hooks/useBranding';
 
 interface ConfirmacionComandaProps {
   organismoId: string;
@@ -29,6 +30,7 @@ interface ConfirmacionComandaProps {
 }
 
 export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComandaProps) {
+  const branding = useBranding();
   const { t } = useTranslation();
   const defaultLocale = 'fr-CA';
   type NotificacionOrganismo = ReturnType<typeof obtenerNotificacionesPorOrganismo>[number];
@@ -280,7 +282,7 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
     actualizarComanda(comandaActualizada);
     
     toast.success('Commande annulée', {
-      description: 'La commande a été refusée et la Banque Alimentaire a été avisée',
+      description: `La commande a été refusée et ${branding.systemName} a été avisée`,
       duration: 4000
     });
 

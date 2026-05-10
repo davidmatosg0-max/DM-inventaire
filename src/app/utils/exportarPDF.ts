@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatBrandingContactLine, getStoredBrandingPrintConfig } from './brandingPrint';
 
 // Configuración de colores del sistema
 const COLORS = {
@@ -11,19 +12,31 @@ const COLORS = {
   lightGray: [244, 244, 244], // #F4F4F4
 };
 
-const PDF_HEADER_BOTTOM_Y = 55;
+const PDF_HEADER_BOTTOM_Y = 58;
 
 // Función auxiliar para agregar encabezado
 function agregarEncabezado(doc: jsPDF, titulo: string, subtitulo?: string) {
+  const brandingPrint = getStoredBrandingPrintConfig();
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
+  const titleY = brandingContactLine ? 36 : 35;
+  const subtitleY = brandingContactLine ? 45 : 45;
+  const dividerY = brandingContactLine ? 52 : 50;
+
   // Logo/Marca
   doc.setFontSize(22);
   doc.setTextColor(...COLORS.primary);
-  doc.text('Banque Alimentaire', 20, 20);
+  doc.text(brandingPrint.systemName, 20, 20);
+
+  if (brandingContactLine) {
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(brandingContactLine, 20, 27);
+  }
 
   // Título del reporte
   doc.setFontSize(16);
   doc.setTextColor(...COLORS.gray);
-  doc.text(titulo, 20, 35);
+  doc.text(titulo, 20, titleY);
 
   // Subtítulo/Fecha
   doc.setFontSize(10);
@@ -35,12 +48,12 @@ function agregarEncabezado(doc: jsPDF, titulo: string, subtitulo?: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
-  doc.text(subtitulo || `Generado: ${fecha}`, 20, 45);
+  doc.text(subtitulo || `Generado: ${fecha}`, 20, subtitleY);
 
   // Línea separadora
   doc.setDrawColor(...COLORS.primary);
   doc.setLineWidth(0.5);
-  doc.line(20, 50, doc.internal.pageSize.width - 20, 50);
+  doc.line(20, dividerY, doc.internal.pageSize.width - 20, dividerY);
 }
 
 // Función auxiliar para agregar pie de página

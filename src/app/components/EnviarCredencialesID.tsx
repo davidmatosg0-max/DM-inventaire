@@ -15,7 +15,13 @@ interface EnviarCredencialesIDProps {
   organismo: any;
 }
 
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../utils/brandingPrint';
+import { useBranding } from '../../hooks/useBranding';
 export function EnviarCredencialesID({ idDigital, organismo }: EnviarCredencialesIDProps) {
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [open, setOpen] = useState(false);
   const [metodosSeleccionados, setMetodosSeleccionados] = useState({
     email: true,
@@ -38,42 +44,45 @@ export function EnviarCredencialesID({ idDigital, organismo }: EnviarCredenciale
   const tipoUsuario = esContacto ? 'contacto' : 'beneficiario';
   
   // Mensaje personalizado
-  const mensajeBase = `🎉 ¡Hola ${idDigital.beneficiario}!
-
-✅ Votre ID Digital de la Banque Alimentaire a été généré avec succès.
-
-📇 INFORMACIÓN DE TU ID:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-• Número de ID: ${idDigital.numeroID}
-• Código QR: ${idDigital.qrCode}
-• Fecha de emisión: ${idDigital.fechaEmision}
-• Fecha de vencimiento: ${idDigital.fechaVencimiento}
-• Tipo: ${organismo.nombre}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔑 INSTRUCCIONES DE USO:
-1. Présentez cet ID à chaque ${esContacto ? 'transaction' : 'visite'} à la Banque Alimentaire
-2. Scannez votre code QR pour enregistrer votre ${esContacto ? 'opération' : 'présence'}
-3. Conservez ce message pour référence future
-4. Cet identifiant est valide jusqu’au ${idDigital.fechaVencimiento}
-
-⚠️ IMPORTANTE:
-• Ne partagez pas votre identifiant avec d’autres personnes
-• Assurez-vous de le renouveler avant son expiration
-• Contactez la Banque Alimentaire si vous avez des questions
-
-Si vous avez des questions ou besoin d’aide, contactez :
-📞 ${organismo.telefono || 'Téléphone non disponible'}
-✉️ ${organismo.email || 'Courriel non disponible'}
-
----
-Banque Alimentaire - Système de Gestion
-Au service des communautés, un aliment à la fois.`;
+  const mensajeBase = [
+    `🎉 ¡Hola ${idDigital.beneficiario}!`,
+    '',
+    `✅ Votre ID Digital de ${nombreSistemaImpresion} a été généré avec succès.`,
+    '',
+    '📇 INFORMACIÓN DE TU ID:',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `• Número de ID: ${idDigital.numeroID}`,
+    `• Código QR: ${idDigital.qrCode}`,
+    `• Fecha de emisión: ${idDigital.fechaEmision}`,
+    `• Fecha de vencimiento: ${idDigital.fechaVencimiento}`,
+    `• Tipo: ${organismo.nombre}`,
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    '',
+    '🔑 INSTRUCCIONES DE USO:',
+    `1. Présentez cet ID à chaque ${esContacto ? 'transaction' : 'visite'} à ${nombreSistemaImpresion}`,
+    `2. Scannez votre code QR pour enregistrer votre ${esContacto ? 'opération' : 'présence'}`,
+    '3. Conservez ce message pour référence future',
+    `4. Cet identifiant est valide jusqu’au ${idDigital.fechaVencimiento}`,
+    '',
+    '⚠️ IMPORTANTE:',
+    '• Ne partagez pas votre identifiant avec d’autres personnes',
+    '• Assurez-vous de le renouveler avant son expiration',
+    `• Contactez ${nombreSistemaImpresion} si vous avez des questions`,
+    '',
+    'Si vous avez des questions ou besoin d’aide, contactez :',
+    `📞 ${organismo.telefono || brandingPrint.phone || 'Téléphone non disponible'}`,
+    `✉️ ${organismo.email || 'Courriel non disponible'}`,
+    '',
+    '---',
+    `${nombreSistemaImpresion} - Système de Gestion`,
+    brandingContactLine,
+    'Au service des communautés, un aliment à la fois.',
+  ].filter(Boolean).join('\n');
 
   const [mensajePersonalizado, setMensajePersonalizado] = useState(mensajeBase);
 
   // Mensaje corto para SMS
-  const mensajeSMS = `Bonjour ${idDigital.beneficiario}! Votre ID Digital: ${idDigital.numeroID} | QR: ${idDigital.qrCode} | Valide jusqu'au ${idDigital.fechaVencimiento}. Présentez cet ID à chaque ${esContacto ? 'transaction' : 'visite'}. Plus d'info: ${organismo.telefono || 'Banque Alimentaire'} - Banque Alimentaire`;
+  const mensajeSMS = `Bonjour ${idDigital.beneficiario}! Votre ID Digital: ${idDigital.numeroID} | QR: ${idDigital.qrCode} | Valide jusqu'au ${idDigital.fechaVencimiento}. Présentez cet ID à chaque ${esContacto ? 'transaction' : 'visite'}. Plus d'info: ${organismo.telefono || brandingPrint.phone || nombreSistemaImpresion} - ${nombreSistemaImpresion}`;
 
   const handleCopiarMensaje = async () => {
     const exito = await copiarAlPortapapeles(mensajePersonalizado);

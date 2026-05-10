@@ -14,6 +14,7 @@ import {
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { useBranding } from '../../../hooks/useBranding';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { ComptoirDashboard } from '../comptoir/ComptoirDashboard';
 import { ListeBeneficiaires } from '../comptoir/ListeBeneficiaires';
 import { FicheBeneficiaire } from '../comptoir/FicheBeneficiaire';
@@ -290,15 +291,14 @@ export function IDDigital() {
               style={{ borderColor: branding.primaryColor }}
             >
               {branding.logo ? (
-                <img 
-                  src={branding.logo} 
-                  alt="Logo" 
-                  className="h-full w-full rounded-full" 
-                  style={{ 
-                    objectFit: 'cover',
-                    objectPosition: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset'
-                  }}
+                <AdaptiveBrandLogo
+                  src={branding.logo}
+                  alt="Logo"
+                  wrapperClassName="h-full w-full"
+                  borderWidthClassName="border-0"
+                  shadowClassName=""
+                  squareRadiusClassName="rounded-[14px]"
+                  imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
                 />
               ) : (
                 <div 

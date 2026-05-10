@@ -183,7 +183,7 @@ export const initialiserDonneesDemo = () => {
       {
         id: 'DEM-001',
         organismeId: '1',
-        organismeNom: 'Banque Alimentaire Montréal',
+        organismeNom: 'Réseau solidaire Montréal',
         type: 'technique',
         priorite: 'haute',
         statut: 'en_cours',

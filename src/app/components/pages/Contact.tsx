@@ -14,6 +14,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { Card } from '../ui/card';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -189,31 +190,37 @@ export function Contact() {
             {/* Logo con efecto glow */}
             <div className="flex justify-center mb-6">
               <div className="relative inline-block">
-                <div 
-                  className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
-                  style={{ backgroundColor: branding.primaryColor }}
-                />
-                <div 
-                  className="relative h-20 w-20 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
-                  style={{ borderColor: branding.primaryColor }}
-                >
-                  {branding.logo ? (
-                    <img 
-                      src={branding.logo} 
-                      alt="Logo" 
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
+                {branding.logo ? (
+                  <AdaptiveBrandLogo
+                    src={branding.logo}
+                    alt="Logo"
+                    wrapperClassName="h-20 w-20"
+                    glowColor={branding.primaryColor}
+                    glowClassName="blur-2xl opacity-30 animate-pulse"
+                    containerClassName="border-4 bg-white shadow-2xl"
+                    containerStyle={{ borderColor: branding.primaryColor }}
+                  />
+                ) : (
+                  <>
                     <div 
-                      className="h-full w-full flex items-center justify-center text-white"
+                      className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
                       style={{ backgroundColor: branding.primaryColor }}
+                    />
+                    <div 
+                      className="relative h-20 w-20 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
+                      style={{ borderColor: branding.primaryColor }}
                     >
-                      <span className="text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        BA
-                      </span>
+                      <div 
+                        className="h-full w-full flex items-center justify-center text-white"
+                        style={{ backgroundColor: branding.primaryColor }}
+                      >
+                        <span className="text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                          BA
+                        </span>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -340,36 +347,38 @@ export function Contact() {
           {/* Logo con efecto glow */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <div className="relative inline-block">
-              <div 
-                className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
-                style={{ backgroundColor: branding.primaryColor }}
-              />
-              <div 
-                className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
-                style={{ borderColor: branding.primaryColor }}
-              >
-                {branding.logo ? (
-                  <img 
-                    src={branding.logo} 
-                    alt="Logo" 
-                    className="h-full w-full rounded-full"
-                    style={{ 
-                      objectFit: 'cover',
-                      objectPosition: 'center',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset'
-                    }}
-                  />
-                ) : (
+              {branding.logo ? (
+                <AdaptiveBrandLogo
+                  src={branding.logo}
+                  alt="Logo"
+                  wrapperClassName="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24"
+                  glowColor={branding.primaryColor}
+                  glowClassName="blur-2xl opacity-30 animate-pulse"
+                  containerClassName="border-4 bg-white shadow-2xl"
+                  containerStyle={{ borderColor: branding.primaryColor }}
+                  imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
+                />
+              ) : (
+                <>
                   <div 
-                    className="h-full w-full flex items-center justify-center text-white"
+                    className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
                     style={{ backgroundColor: branding.primaryColor }}
+                  />
+                  <div 
+                    className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
+                    style={{ borderColor: branding.primaryColor }}
                   >
-                    <span className="text-2xl sm:text-3xl md:text-4xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      BA
-                    </span>
+                    <div 
+                      className="h-full w-full flex items-center justify-center text-white"
+                      style={{ backgroundColor: branding.primaryColor }}
+                    >
+                      <span className="text-2xl sm:text-3xl md:text-4xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                        BA
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
 

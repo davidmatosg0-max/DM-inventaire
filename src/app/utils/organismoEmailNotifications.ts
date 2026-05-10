@@ -1,4 +1,5 @@
 import type { Organismo } from './organismosStorage';
+import { formatBrandingContactLine, getStoredBrandingPrintConfig } from './brandingPrint';
 import { formatMoney } from './formatUtils';
 import { construirUrlAccesoOrganismo } from './organismoAccessLinks';
 import { obtenerUsuarioSesion } from './sesionStorage';
@@ -89,6 +90,8 @@ export function enviarEmailAutomaticoNuevaComanda({
 
   const asunto = `📦 Nouvelle distribution créée - ${numeroComanda}`;
   const linkAcceso = construirUrlAccesoOrganismo(organismo.claveAcceso);
+  const brandingPrint = getStoredBrandingPrintConfig();
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const mensaje = [
     `Bonjour ${organismo.nombre},`,
     '',
@@ -105,8 +108,9 @@ export function enviarEmailAutomaticoNuevaComanda({
     '',
     'Veuillez accéder au portail organisme pour consulter et confirmer la commande.',
     '',
-    'Banque Alimentaire',
+    brandingPrint.systemName,
     'Système de Gestion',
+    brandingContactLine,
   ].filter(Boolean).join('\n');
 
   console.log('Email automatique de distribution envoyé:', {

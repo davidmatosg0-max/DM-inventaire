@@ -44,10 +44,11 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { toast } from 'sonner';
 import { obtenerProductos, guardarProducto, actualizarProducto } from '../../utils/productStorage';
-import { mockProductos, mockOrganismos } from '../../data/mockData';
+import { mockProductos } from '../../data/mockData';
 import { calcularValorMonetario, obtenerCategorias, actualizarPesoUnitarioSubcategoria, actualizarPesoUnitarioVariante } from '../../utils/categoriaStorage';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerResumenReservasInventario } from '../../utils/inventoryReservations';
+import { obtenerOrganismos } from '../../utils/organismosStorage';
 import type { Producto, ProductoCreado, HistorialEntrada, ProductoConversion, FormConversion, DatosQR } from '../../types';
 import { filterByThreeLettersMultiple } from '../../utils/searchUtils';
 import { formatLargeNumber, formatMoney, formatQuantity } from '../../utils/formatUtils';
@@ -393,7 +394,10 @@ export function Inventario() {
     return [...productosLS, ...mockProductosFiltrados];
   }, [productosCreados, refreshKey]);
 
-  const organismosActivos = mockOrganismos.filter(o => o.activo);
+  const organismosActivos = React.useMemo(
+    () => obtenerOrganismos().filter(organismo => organismo.activo),
+    [refreshKey, compartirDialogOpen]
+  );
 
   const effectiveVistaMode = isCompactInventoryViewport ? 'grid' : vistaMode;
 
@@ -849,10 +853,46 @@ export function Inventario() {
   }, []);
 
   const getStockStatus = (producto: typeof todosLosProductos[0]) => {
+    const stockActual = Number(producto.stockActual ?? 0);
+    const stockMinimo = Number(producto.stockMinimo ?? 0);
+
+    if (!Number.isFinite(stockActual) || stockActual <= 0) {
+      return { label: t('inventory.low'), color: 'bg-[#c23934]', value: 'bajo' };
+    }
+
+    if (!Number.isFinite(stockMinimo) || stockMinimo <= 0) {
+      return { label: t('inventory.optimal'), color: 'bg-[#2d9561]', value: 'optimo' };
+    }
+
     const percentage = (producto.stockActual / producto.stockMinimo) * 100;
     if (percentage <= 100) return { label: t('inventory.low'), color: 'bg-[#c23934]', value: 'bajo' };
     if (percentage <= 150) return { label: t('inventory.medium'), color: 'bg-[#e8a419]', value: 'medio' };
     return { label: t('inventory.optimal'), color: 'bg-[#2d9561]', value: 'optimo' };
+  };
+
+  const getReliableUnitWeight = (producto: typeof todosLosProductos[0]): number | null => {
+    if (producto.pesoUnitario && producto.pesoUnitario > 0) {
+      return Math.round(producto.pesoUnitario);
+    }
+
+    if (producto.peso && producto.peso > 0 && producto.stockActual > 0) {
+      return Math.round(producto.peso / producto.stockActual);
+    }
+
+    return null;
+  };
+
+  const getDisplayWeight = (producto: typeof todosLosProductos[0]): number | null => {
+    const unitWeight = getReliableUnitWeight(producto);
+    if (unitWeight !== null) {
+      return unitWeight;
+    }
+
+    if (producto.peso && producto.peso > 0) {
+      return Math.round(producto.peso);
+    }
+
+    return null;
   };
 
   const reservasInventario = React.useMemo(
@@ -1523,6 +1563,11 @@ export function Inventario() {
     cantidadDestino: number,
     unidadDestino: string
   ) => {
+    if (!Number.isFinite(cantidadOrigen) || !Number.isFinite(cantidadDestino) || cantidadOrigen <= 0 || cantidadDestino <= 0) {
+      toast.error(t('inventory.errors.quantityMustBePositive'));
+      return;
+    }
+
     // 🎯 Buscar el producto en TODOS los productos (localStorage + mockProductos)
     const todosProductos = obtenerProductos();
     let productoOrigen = todosProductos.find(p => p.id === productoId);
@@ -1588,13 +1633,18 @@ export function Inventario() {
       registrarActividad(
         'Inventaire',
         'modificar',
-        `Stock du produit "${productoOrigen.nombre}" ajusté: ${nuevoStock} ${productoOrigen.unidad}`,
-        { productoId, stockAnterior: productoOrigen.stockActual, stockNuevo: nuevoStock }
+        `Stock du produit "${productoOrigen.nombre}" ajusté: ${nuevoStockOrigen} ${productoOrigen.unidad}`,
+        { productoId, stockAnterior: productoOrigen.stockActual, stockNuevo: nuevoStockOrigen }
       );
       
       // 2. Calcular el peso total que se está convirtiendo
       // 🎯 FÓRMULA DIRECTA: Peso Unitario Origen ÷ Factor de Conversión = Peso Unitario Destino
       const factorConversion = cantidadDestino / cantidadOrigen;
+      if (!Number.isFinite(factorConversion) || factorConversion <= 0) {
+        toast.error(t('inventory.errors.conversionError'));
+        return;
+      }
+
       const pesoUnitarioDestino = pesoPorUnidadOrigen / factorConversion;
       const pesoTotalConvertido = pesoPorUnidadOrigen * cantidadOrigen;
       
@@ -1660,7 +1710,7 @@ export function Inventario() {
           pesoRegistrado: pesoTotalConvertido,
           pesoUnitario: pesoUnitarioDestino,
           stockActual: cantidadDestino,
-          stockMinimo: Math.ceil(productoOrigen.stockMinimo * (cantidadDestino / cantidadOrigen)),
+          stockMinimo: Math.ceil((productoOrigen.stockMinimo || 0) * factorConversion),
           ubicacion: productoOrigen.ubicacion,
           lote: productoOrigen.lote,
           fechaVencimiento: productoOrigen.fechaVencimiento,
@@ -2225,7 +2275,7 @@ export function Inventario() {
           </ModuleStatsGrid>
 
       {ultimaDistribucionGrupoCreada && (
-        <Card className="mx-3 mb-3 border-2 border-[#4CAF50] bg-[#E8F5E9] shadow-sm sm:mx-4 lg:mx-6">
+        <Card className="mx-3 mb-3 overflow-hidden border border-[#A7D7AE] bg-[linear-gradient(145deg,rgba(232,245,233,0.96)_0%,rgba(255,255,255,0.96)_100%)] shadow-[0_22px_48px_-36px_rgba(46,125,50,0.24)] sm:mx-4 lg:mx-6">
           <CardContent className="p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0 space-y-2">
@@ -2413,7 +2463,7 @@ export function Inventario() {
 
               {/* Filters */}
               {showFilters && (
-                <Card>
+                <Card className="overflow-hidden border-white/75 bg-white/90 shadow-[0_20px_46px_-36px_rgba(15,45,71,0.22)]">
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div>
@@ -2491,21 +2541,21 @@ export function Inventario() {
 
           {/* Products List */}
           {showCompactProductsOverview ? (
-            <Card className="border-[#E0E0E0] shadow-sm">
+            <Card className="overflow-hidden border-white/75 bg-white/90 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)]">
               <CardContent className="space-y-2.5 p-2.5">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border border-[#D8E6F2] bg-[#F4F8FB] px-3 py-2">
+                  <div className="rounded-[18px] border border-white/80 bg-[#F4F8FB]/92 px-3 py-2 shadow-[0_14px_28px_-24px_rgba(15,45,71,0.16)]">
                     <p className="text-[10px] uppercase tracking-wide text-[#666666]">Produits visibles</p>
                     <p className="mt-1 text-lg font-bold text-[#1a4d7a]">{productosFiltrados.length}</p>
                   </div>
-                  <div className="rounded-lg border border-[#E7E0C8] bg-[#FFF8E8] px-3 py-2">
+                  <div className="rounded-[18px] border border-white/80 bg-[#FFF8E8]/92 px-3 py-2 shadow-[0_14px_28px_-24px_rgba(15,45,71,0.16)]">
                     <p className="text-[10px] uppercase tracking-wide text-[#666666]">Unités réservées</p>
                     <p className="mt-1 text-lg font-bold text-[#e8a419]">{compactReservedTotal}</p>
                   </div>
                 </div>
 
                 {productosFiltrados.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-[#D6D6D6] bg-[#FAFBFC] px-3 py-3.5 text-center">
+                  <div className="rounded-[20px] border border-dashed border-[#D6D6D6] bg-[#FAFBFC]/92 px-3 py-3.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                     <Package className="mx-auto h-8 w-8 text-[#999999]" />
                     <p className="mt-2 text-sm font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {t('common.noResults')}
@@ -2523,7 +2573,7 @@ export function Inventario() {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {compactProductsBySubcategory.map(item => (
-                          <div key={item.label} className="rounded-lg border border-[#E0E0E0] bg-white px-2.5 py-2">
+                          <div key={item.label} className="rounded-[18px] border border-white/80 bg-white/92 px-2.5 py-2 shadow-[0_12px_24px_-22px_rgba(15,45,71,0.16)]">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <p className="truncate text-xs font-semibold text-[#333333]">
@@ -2557,7 +2607,7 @@ export function Inventario() {
                           const stockStatus = getStockStatus(producto);
 
                           return (
-                            <div key={producto.id} className="rounded-lg border border-[#E0E0E0] bg-white px-3 py-2">
+                            <div key={producto.id} className="rounded-[18px] border border-white/80 bg-white/92 px-3 py-2 shadow-[0_12px_24px_-22px_rgba(15,45,71,0.16)]">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate text-sm font-semibold text-[#333333]" title={getInventoryProductName(producto)}>
@@ -2591,9 +2641,9 @@ export function Inventario() {
               </CardContent>
             </Card>
           ) : effectiveVistaMode === 'list' ? (
-            <Card className="shadow-lg border-[#E0E0E0] flex flex-col overflow-visible">
+            <Card className="flex flex-col overflow-visible border-white/75 bg-white/90 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)]">
               <CardContent className="pt-4 px-4 pb-4 overflow-visible">
-                <div className="overflow-visible border-2 border-[#E0E0E0] rounded-xl shadow-sm">
+                <div className="overflow-visible rounded-[22px] border border-white/78 shadow-[0_16px_36px_-30px_rgba(15,45,71,0.16)]">
                   <Table className="min-w-0 table-fixed [&_th]:whitespace-normal [&_th]:break-words [&_td]:whitespace-normal [&_td]:break-words">
                     <TableHeader className="sticky top-0 bg-gradient-to-r from-[#F8F9FA] to-[#E9ECEF] z-10 border-b-2 border-[#1a4d7a]">
                       <TableRow className="h-8">
@@ -2665,17 +2715,9 @@ export function Inventario() {
                               </Badge>
                             </TableCell>
                             <TableCell className="py-1 px-1.5 align-top">
-                              {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (
+                              {getDisplayWeight(producto) !== null ? (
                                 <span className="font-bold text-[#1a4d7a] text-xs">
-                                  {Math.round(producto.pesoUnitario)} <span className="text-[10px]">kg</span>
-                                </span>
-                              ) : (producto.peso && producto.peso > 0 && producto.stockActual > 0) ? (
-                                <span className="font-bold text-[#1a4d7a] text-xs">
-                                  {Math.round(producto.peso / producto.stockActual)} <span className="text-[10px]">kg</span>
-                                </span>
-                              ) : (producto.peso && producto.peso > 0) ? (
-                                <span className="font-bold text-[#1a4d7a] text-xs">
-                                  {Math.round(producto.peso)} <span className="text-[10px]">kg</span>
+                                  {getDisplayWeight(producto)} <span className="text-[10px]">kg</span>
                                 </span>
                               ) : (
                                 <span className="text-[#999999] text-[10px] italic">N/A</span>
@@ -2909,13 +2951,9 @@ export function Inventario() {
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                               {producto.unidad}
                             </Badge>
-                            {((producto.pesoUnitario && producto.pesoUnitario > 0) || (producto.peso && producto.peso > 0)) && (
+                            {getReliableUnitWeight(producto) !== null && (
                               <Badge variant="outline" className="bg-white text-[#1a4d7a] border-[#1a4d7a] text-[10px] px-1.5 py-0">
-                                ⚖️ {((producto.pesoUnitario && producto.pesoUnitario > 0)
-                                  ? Math.round(producto.pesoUnitario)
-                                  : (producto.peso && producto.stockActual > 0)
-                                    ? Math.round(producto.peso / producto.stockActual)
-                                    : Math.round(producto.peso))} kg/{producto.unidad}
+                                ⚖️ {getReliableUnitWeight(producto)} kg/{producto.unidad}
                               </Badge>
                             )}
                             <Badge className={`${stockStatus.color} text-white text-[10px] px-1.5 py-0`}>
@@ -3415,10 +3453,8 @@ export function Inventario() {
                                 <p className="font-medium text-sm">{getInventoryProductName(producto)}</p>
                                 <p className="text-xs text-[#666666]">
                                   {producto.codigo}
-                                  {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (
-                                    <> • {Math.round(producto.pesoUnitario)} kg/{producto.unidad}</>
-                                  ) : (producto.peso && producto.peso > 0 && producto.stockActual > 0) && (
-                                    <> • {Math.round(producto.peso / producto.stockActual)} kg/{producto.unidad}</>
+                                  {getReliableUnitWeight(producto) !== null && (
+                                    <> • {getReliableUnitWeight(producto)} kg/{producto.unidad}</>
                                   )}
                                 </p>
                               </div>
@@ -3508,10 +3544,8 @@ export function Inventario() {
                             <p className="font-medium text-sm">{getInventoryProductName(producto)}</p>
                             <p className="text-xs text-[#666666]">
                               {producto.codigo} • {producto.unidad}
-                              {(producto.pesoUnitario && producto.pesoUnitario > 0) ? (
-                                <> • {Math.round(producto.pesoUnitario)} kg/{producto.unidad}</>
-                              ) : (producto.peso && producto.peso > 0 && producto.stockActual > 0) && (
-                                <> • {Math.round(producto.peso / producto.stockActual)} kg/{producto.unidad}</>
+                              {getReliableUnitWeight(producto) !== null && (
+                                <> • {getReliableUnitWeight(producto)} kg/{producto.unidad}</>
                               )}
                             </p>
                           </div>

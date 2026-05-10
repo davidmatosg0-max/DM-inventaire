@@ -670,7 +670,7 @@ export function crearOfertasEjemplo() {
       {
         id: 'sol-003',
         organismoId: 'org-003',
-        organismoNombre: 'Banco de Alimentos Comunitario',
+        organismoNombre: 'Réseau alimentaire communautaire',
         fechaSolicitud: new Date(hoy.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         productosAceptados: [
           { productoId: productos3[0].productoId, cantidadAceptada: Math.floor(productos3[0].cantidadOfrecida * 0.5) }

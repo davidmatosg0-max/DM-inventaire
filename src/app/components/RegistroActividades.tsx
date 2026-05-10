@@ -199,7 +199,7 @@ export function RegistroActividades({ filtroModulo }: RegistroActividadesProps) 
         usuarioId: '1',
         modulo: 'Organismes',
         accion: 'crear' as const,
-        descripcion: 'Organisme "Banque Alimentaire Montréal" créé',
+        descripcion: 'Organisme "Réseau solidaire Montréal" créé',
         detalles: { organismoId: 'org-001' }
       },
       {

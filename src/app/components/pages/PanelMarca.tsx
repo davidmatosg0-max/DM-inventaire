@@ -10,6 +10,7 @@ import {
   Check
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 
 interface BrandingConfig {
   primaryColor: string;
@@ -19,7 +20,22 @@ interface BrandingConfig {
   warningColor: string;
   logo: string | null;
   systemName: string;
+  phone: string;
+  address: string;
 }
+
+const QUICK_COLOR_PRESETS = [
+  '#1a4d7a',
+  '#2d9561',
+  '#0f766e',
+  '#c2410c',
+  '#b45309',
+  '#7c3aed',
+  '#be123c',
+  '#475569',
+];
+
+const isValidHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
 const DEFAULT_BRANDING: BrandingConfig = {
   primaryColor: '#1a4d7a',      // Azul marino profesional (coordina con logo DM)
@@ -28,7 +44,9 @@ const DEFAULT_BRANDING: BrandingConfig = {
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
   logo: null,
-  systemName: 'Banque Alimentaire'
+  systemName: 'Banque Alimentaire',
+  phone: '',
+  address: ''
 };
 
 export function PanelMarca() {
@@ -43,9 +61,13 @@ export function PanelMarca() {
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig);
-        setConfig(parsed);
-        if (parsed.logo) {
-          setLogoPreview(parsed.logo);
+        const hydratedConfig = {
+          ...DEFAULT_BRANDING,
+          ...parsed,
+        };
+        setConfig(hydratedConfig);
+        if (hydratedConfig.logo) {
+          setLogoPreview(hydratedConfig.logo);
         }
       } catch (error) {
         console.error('Error loading branding config:', error);
@@ -143,7 +165,10 @@ export function PanelMarca() {
     value: string; 
     onChange: (value: string) => void;
     description: string;
-  }) => (
+  }) => {
+    const previewColor = isValidHexColor(value) ? value : '#94a3b8';
+
+    return (
     <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.35)]">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -161,19 +186,29 @@ export function PanelMarca() {
       </div>
 
       <div className="mt-5 flex items-center gap-4">
-        <div className="relative flex h-20 w-20 items-center justify-center rounded-[24px] border border-slate-200 bg-slate-50 shadow-inner">
+        <div className="flex h-20 w-20 items-center justify-center rounded-[24px] border border-slate-200 bg-slate-50 shadow-inner">
           <div
             className="h-12 w-12 rounded-2xl border border-white/70 shadow-sm"
-            style={{ backgroundColor: value }}
-          />
-          <input
-            type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="absolute inset-0 cursor-pointer opacity-0"
+            style={{ backgroundColor: previewColor }}
           />
         </div>
         <div className="flex-1 space-y-3">
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Sélecteur visuel
+            </label>
+            <input
+              type="color"
+              value={previewColor}
+              onChange={(e) => onChange(e.target.value)}
+              className="h-12 w-full cursor-pointer rounded-2xl border border-slate-200 bg-white p-1"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Code hexadécimal
+            </label>
           <input
             type="text"
             value={value}
@@ -182,16 +217,38 @@ export function PanelMarca() {
             pattern="^#[0-9A-Fa-f]{6}$"
             placeholder="#000000"
           />
+          </div>
+
           <div className="h-3 rounded-full bg-slate-100">
             <div
               className="h-3 rounded-full"
-              style={{ backgroundColor: value, width: '100%' }}
+              style={{ backgroundColor: previewColor, width: '100%' }}
             />
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Couleurs rapides
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_COLOR_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => onChange(preset)}
+                  className={`h-9 w-9 rounded-xl border transition hover:scale-105 ${preset.toLowerCase() === value.toLowerCase() ? 'border-slate-900 ring-2 ring-slate-300' : 'border-white/80'}`}
+                  style={{ backgroundColor: preset }}
+                  aria-label={`Choisir la couleur ${preset}`}
+                  title={preset}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
+  };
 
   const colorFields: Array<{
     key: keyof BrandingConfig;
@@ -231,6 +288,14 @@ export function PanelMarca() {
       value: config.systemName || 'Banque Alimentaire',
     },
     {
+      label: 'Téléphone',
+      value: config.phone || 'Non défini',
+    },
+    {
+      label: 'Adresse',
+      value: config.address || 'Non définie',
+    },
+    {
       label: 'Logo',
       value: logoPreview ? 'Actif' : 'Non défini',
     },
@@ -267,11 +332,11 @@ export function PanelMarca() {
               {t('branding.subtitle')} Ajustez votre identité visuelle avec une palette cohérente, un logo propre et un aperçu immédiat de l’expérience finale.
             </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               {identitySignals.map((signal) => (
                 <div key={signal.label} className="rounded-2xl border border-white/12 bg-white/10 px-4 py-4 backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/60">{signal.label}</p>
-                  <p className="mt-2 text-sm font-semibold text-white">{signal.value}</p>
+                  <p className="mt-2 text-sm font-semibold text-white break-words">{signal.value}</p>
                 </div>
               ))}
             </div>
@@ -363,17 +428,48 @@ export function PanelMarca() {
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-800" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Téléphone
+                </label>
+                <input
+                  type="tel"
+                  value={config.phone}
+                  onChange={(e) => handleColorChange('phone', e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+                  placeholder="Ex: (514) 555-0100"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-800" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Adresse
+                </label>
+                <input
+                  type="text"
+                  value={config.address}
+                  onChange={(e) => handleColorChange('address', e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+                  placeholder="Ex: 123 Rue Exemple, Laval, QC"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-800" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   {t('branding.uploadLogo')}
                 </label>
                 <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center">
                   {logoPreview ? (
                     <div className="space-y-4">
                       <div className="rounded-3xl border border-slate-200 bg-white px-4 py-6 shadow-sm">
-                        <img
-                          src={logoPreview}
-                          alt="Logo preview"
-                          className="mx-auto max-h-28"
-                        />
+                        <div className="flex justify-center">
+                          <AdaptiveBrandLogo
+                            src={logoPreview}
+                            alt="Logo preview"
+                            wrapperClassName="h-28 w-28 sm:h-32 sm:w-32"
+                            containerClassName="border border-slate-200"
+                            shadowClassName="shadow-[0_14px_28px_-20px_rgba(15,23,42,0.22)]"
+                            squareRadiusClassName="rounded-[28px]"
+                          />
+                        </div>
                       </div>
                       <button
                         onClick={() => document.getElementById('logo-upload')?.click()}
@@ -433,16 +529,30 @@ export function PanelMarca() {
             <div className="mt-5 overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50">
               <div className="flex items-center justify-between px-5 py-4 text-white" style={{ backgroundColor: config.primaryColor }}>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
-                    {logoPreview ? (
-                      <img src={logoPreview} alt="Logo" className="h-7 w-7 object-contain" />
-                    ) : (
+                  {logoPreview ? (
+                    <AdaptiveBrandLogo
+                      src={logoPreview}
+                      alt="Logo"
+                      wrapperClassName="h-10 w-10"
+                      containerClassName="border border-white/15 backdrop-blur-sm"
+                      backgroundClassName="bg-white/90"
+                      squareRadiusClassName="rounded-[16px]"
+                      shadowClassName=""
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
                       <Palette className="h-5 w-5" />
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs uppercase tracking-[0.22em] text-white/70">Identité</p>
                     <p className="text-sm font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>{config.systemName}</p>
+                    {config.phone && (
+                      <p className="mt-1 text-xs text-white/80">{config.phone}</p>
+                    )}
+                    {config.address && (
+                      <p className="mt-1 text-xs text-white/70">{config.address}</p>
+                    )}
                   </div>
                 </div>
                 <div className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/80">Portail interne</div>

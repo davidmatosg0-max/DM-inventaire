@@ -4,7 +4,7 @@ import {
   ShoppingCart, Trash2, Plus, Minus, Package, DollarSign, Scale, 
   FileText, Save, Download, Printer, TrendingUp, X, Users, Building2, Calendar, Share2, AlertTriangle
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '../ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '../ui/sheet';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
@@ -17,12 +17,14 @@ import { toast } from 'sonner';
 import { mockProductos, mockOrganismos } from '../../data/mockData';
 import { guardarComanda, generarNumeroComanda } from '../../utils/comandaStorage';
 import { obtenerProductos, actualizarProducto } from '../../utils/productStorage';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
 import { Comanda } from '../../types';
 import { DialogDistribuirProductos } from './DialogDistribuirProductos';
 import { obtenerResumenReservasInventario } from '../../utils/inventoryReservations';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { openAutoPrintPopup } from '../../utils/printPopup';
+import { useBranding } from '../../../hooks/useBranding';
 
 type CarritoItem = {
   productoId: string;
@@ -76,6 +78,10 @@ export function CarritoMejorado({
   productos = mockProductos
 }: CarritoMejoradoProps) {
   const { t } = useTranslation();
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [carritosGuardados, setCarritosGuardados] = useState<CarritoGuardado[]>([]);
   const [nombreCarrito, setNombreCarrito] = useState('');
   const [guardarDialogOpen, setGuardarDialogOpen] = useState(false);
@@ -176,7 +182,7 @@ export function CarritoMejorado({
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Liste de Produits - Banque Alimentaire</title>
+        <title>Liste de Produits - ${nombreSistemaImpresion}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; }
           h1 { color: #1E73BE; margin-bottom: 10px; }
@@ -194,7 +200,8 @@ export function CarritoMejorado({
       <body>
         <div class="header">
           <h1>🛒 Liste de Produits</h1>
-          <p><strong>Banque Alimentaire</strong></p>
+          <p><strong>${nombreSistemaImpresion}</strong></p>
+          ${brandingContactLine ? `<p>${brandingContactLine}</p>` : ''}
           <p><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES', { 
             weekday: 'long', 
             year: 'numeric', 
@@ -248,7 +255,8 @@ export function CarritoMejorado({
           </div>
         </div>
         <div class="footer">
-          <p>Document généré automatiquement par le Système de Gestion de la Banque Alimentaire</p>
+          <p>Document généré automatiquement par le Système de Gestion de ${nombreSistemaImpresion}</p>
+          ${brandingContactLine ? `<p>${brandingContactLine}</p>` : ''}
         </div>
       </body>
       </html>
@@ -278,6 +286,9 @@ export function CarritoMejorado({
                 🛒 Lista de Productos
               </SheetTitle>
             </div>
+            <SheetDescription className="sr-only">
+              Consultez les produits réservés dans le panier, ajustez leurs quantités, puis enregistrez, exportez, imprimez ou distribuez la sélection.
+            </SheetDescription>
           </SheetHeader>
           
           <div className="flex-1 overflow-auto py-4">
@@ -566,55 +577,59 @@ export function CarritoMejorado({
 
       {/* Dialog para guardar carrito */}
       <Dialog open={guardarDialogOpen} onOpenChange={setGuardarDialogOpen}>
-        <DialogContent aria-describedby="guardar-carrito-description">
-          <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              💾 Enregistrer le panier
-            </DialogTitle>
-            <DialogDescription id="guardar-carrito-description">
-              Saisissez un nom pour enregistrer ce panier et le recharger plus tard
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Nom du panier</Label>
-              <Input
-                placeholder="Ex. : panier commande janvier 2026"
-                value={nombreCarrito}
-                onChange={(e) => setNombreCarrito(e.target.value)}
-              />
+        {guardarDialogOpen && (
+          <DialogContent aria-describedby="guardar-carrito-description">
+            <DialogHeader>
+              <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
+                💾 Enregistrer le panier
+              </DialogTitle>
+              <DialogDescription id="guardar-carrito-description">
+                Saisissez un nom pour enregistrer ce panier et le recharger plus tard
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nom du panier</Label>
+                <Input
+                  placeholder="Ex. : panier commande janvier 2026"
+                  value={nombreCarrito}
+                  onChange={(e) => setNombreCarrito(e.target.value)}
+                />
+              </div>
+              <div className="bg-[#F4F4F4] p-3 rounded-lg">
+                <p className="text-sm text-[#666666]">
+                  <strong>Resumen:</strong>
+                </p>
+                <p className="text-sm text-[#666666] mt-1">
+                  {formatQuantity(calcularTotalItems())} items • CAD$ {formatMoney(calcularValorTotal())}
+                </p>
+              </div>
             </div>
-            <div className="bg-[#F4F4F4] p-3 rounded-lg">
-              <p className="text-sm text-[#666666]">
-                <strong>Resumen:</strong>
-              </p>
-              <p className="text-sm text-[#666666] mt-1">
-                {formatQuantity(calcularTotalItems())} items • CAD$ {formatMoney(calcularValorTotal())}
-              </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setGuardarDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={guardarCarrito} className="bg-[#1E73BE] hover:bg-[#1557A0]">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer
+              </Button>
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setGuardarDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={guardarCarrito} className="bg-[#1E73BE] hover:bg-[#1557A0]">
-              <Save className="w-4 h-4 mr-2" />
-              Enregistrer
-            </Button>
-          </div>
-        </DialogContent>
+          </DialogContent>
+        )}
       </Dialog>
 
       {/* Dialog para distribuir productos */}
-      <DialogDistribuirProductos
-        open={distribuirDialogOpen}
-        onOpenChange={setDistribuirDialogOpen}
-        carrito={carrito}
-        productos={productos}
-        categoriasInfo={categoriasInfo}
-        onDistribucionCompletada={handleDistribucionCompletada}
-        onDistribucionGrupoCreada={onDistribucionGrupoCreada}
-      />
+      {distribuirDialogOpen && (
+        <DialogDistribuirProductos
+          open={distribuirDialogOpen}
+          onOpenChange={setDistribuirDialogOpen}
+          carrito={carrito}
+          productos={productos}
+          categoriasInfo={categoriasInfo}
+          onDistribucionCompletada={handleDistribucionCompletada}
+          onDistribucionGrupoCreada={onDistribucionGrupoCreada}
+        />
+      )}
     </>
   );
 }

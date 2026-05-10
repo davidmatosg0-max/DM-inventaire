@@ -6,6 +6,7 @@
 import { obtenerProductos } from './productStorage';
 import { obtenerCategorias } from './categoriaStorage';
 import { obtenerComandas } from './comandaStorage';
+import { getStoredBrandingPrintConfig } from './brandingPrint';
 import { obtenerOrganismos, obtenerEstadisticasOrganismos } from './organismosLogic';
 import { obtenerRutas, obtenerVehiculos, obtenerEstadisticasTransporte } from './transporteLogic';
 import { obtenerEntradas, type EntradaInventario } from './entradaInventarioStorage';
@@ -693,9 +694,10 @@ export function exportarReporteJSON(reporte: any): string {
 
 export function exportarReporteCSV(reporte: ReporteGeneral): string {
   const lineas: string[] = [];
+  const systemName = getStoredBrandingPrintConfig().systemName;
   
   // Header
-  lineas.push('REPORTE GENERAL - BANCO DE ALIMENTOS');
+  lineas.push(`REPORTE GENERAL - ${systemName.toUpperCase()}`);
   lineas.push(`Periodo: ${reporte.periodo.inicio} - ${reporte.periodo.fin}`);
   lineas.push(`Generado: ${new Date(reporte.generadoEn).toLocaleString()}`);
   lineas.push('');
@@ -742,8 +744,9 @@ export function exportarReporteCSV(reporte: ReporteGeneral): string {
 
 export function exportarReportePRSCSV(reporte: ReportePRS): string {
   const lineas: string[] = [];
+  const systemName = getStoredBrandingPrintConfig().systemName;
 
-  lineas.push('REPORTE PRS - BANCO DE ALIMENTOS');
+  lineas.push(`REPORTE PRS - ${systemName.toUpperCase()}`);
   lineas.push(`Periodo,${reporte.periodo.inicio} - ${reporte.periodo.fin}`);
   lineas.push(`Generado,${new Date(reporte.generadoEn).toLocaleString()}`);
   lineas.push('');

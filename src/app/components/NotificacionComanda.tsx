@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { Badge } from './ui/badge';
 import { copiarAlPortapapeles } from '../utils/clipboard';
 import { construirUrlAccesoOrganismo } from '../utils/organismoAccessLinks';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../utils/brandingPrint';
+import { useBranding } from '../../hooks/useBranding';
 
 interface NotificacionComandaProps {
   comanda: any;
@@ -16,6 +18,10 @@ interface NotificacionComandaProps {
 }
 
 export function NotificacionComanda({ comanda, organismo }: NotificacionComandaProps) {
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const [open, setOpen] = useState(false);
   const [metodosSeleccionados, setMetodosSeleccionados] = useState({
     email: true,
@@ -26,26 +32,29 @@ export function NotificacionComanda({ comanda, organismo }: NotificacionComandaP
   // Generar el link de acceso público
   const linkAcceso = construirUrlAccesoOrganismo(organismo.claveAcceso || 'ORG-' + organismo.id.toUpperCase());
 
-  const mensajeBase = `🔔 Bonjour ${organismo.nombre} !
-
-✅ Votre commande #${comanda.numero} est PRÊTE pour le ramassage.
-
-📦 Détails de la commande :
-• Numéro : ${comanda.numero}
-• Date de livraison : ${comanda.fechaEntrega || 'À confirmer'}
-• Produits : ${comanda.items.length} articles
-• Statut : ${comanda.estado === 'completada' ? 'Complétée ✓' : 'Prête à livrer'}
-
-🔗 Accédez à votre portail pour consulter tous les détails :
-${linkAcceso}
-
-👉 Clé d'accès : ${organismo.claveAcceso || 'ORG-' + organismo.id.toUpperCase()}
-
-Merci de confirmer la réception de votre commande dans le système.
-
----
-Banque Alimentaire - Système de Gestion
-Si vous avez des questions, n'hésitez pas à nous contacter.`;
+  const mensajeBase = [
+    `🔔 Bonjour ${organismo.nombre} !`,
+    '',
+    `✅ Votre commande #${comanda.numero} est PRÊTE pour le ramassage.`,
+    '',
+    '📦 Détails de la commande :',
+    `• Numéro : ${comanda.numero}`,
+    `• Date de livraison : ${comanda.fechaEntrega || 'À confirmer'}`,
+    `• Produits : ${comanda.items.length} articles`,
+    `• Statut : ${comanda.estado === 'completada' ? 'Complétée ✓' : 'Prête à livrer'}`,
+    '',
+    '🔗 Accédez à votre portail pour consulter tous les détails :',
+    linkAcceso,
+    '',
+    `👉 Clé d'accès : ${organismo.claveAcceso || 'ORG-' + organismo.id.toUpperCase()}`,
+    '',
+    'Merci de confirmer la réception de votre commande dans le système.',
+    '',
+    '---',
+    `${nombreSistemaImpresion} - Système de Gestion`,
+    brandingContactLine,
+    `Si vous avez des questions, n'hésitez pas à nous contacter.`,
+  ].filter(Boolean).join('\n');
 
   const [mensajePersonalizado, setMensajePersonalizado] = useState(mensajeBase);
 

@@ -1479,6 +1479,43 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     }
   };
 
+  const contactoSeleccionado = formData.donadorId
+    ? contactosDisponibles.find(contacto => contacto.id === formData.donadorId)
+    : undefined;
+  const checkpointsCompletados = [
+    Boolean(formData.tipoEntrada),
+    Boolean(formData.donadorId),
+    Boolean(formData.nombreProducto),
+    formData.cantidad > 0,
+    Boolean(formData.unidad),
+    Boolean(formData.temperatura),
+  ].filter(Boolean).length;
+  const progressionFormulaire = Math.round((checkpointsCompletados / 6) * 100);
+  const totalPesoNetoAgregado = productosAgregados.reduce((sum, producto) => {
+    const pesoTaraTotal = producto.pesoUnidad && producto.pesoUnidad > 0
+      ? producto.pesoUnidad * producto.cantidad
+      : 0;
+    const pesoNeto = pesoTaraTotal > 0
+      ? Math.max(0, producto.pesoTotal - pesoTaraTotal)
+      : producto.pesoTotal;
+    return sum + pesoNeto;
+  }, 0);
+  const totalMonetarioAgregado = productosAgregados.reduce((sum, producto) => sum + (producto.valorTotal || 0), 0);
+  const poidsEstimeCourant = formData.cantidad > 0 && formData.pesoUnitario > 0
+    ? formData.cantidad * formData.pesoUnitario
+    : formData.peso || 0;
+  const etiquetteTemperature = formData.temperatura === 'ambiente'
+    ? 'Ambiante'
+    : formData.temperatura === 'refrigerado'
+      ? 'Réfrigéré'
+      : formData.temperatura === 'congelado'
+        ? 'Congelé'
+        : 'À définir';
+    const comboboxTriggerClass = 'min-h-[54px] w-full justify-between rounded-2xl border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.92)_100%)] px-4 shadow-[0_12px_24px_-22px_rgba(15,23,42,0.45)] transition-all hover:border-slate-300';
+    const floatingPanelClass = 'rounded-[24px] border border-slate-200/90 bg-white/98 p-0 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.38)] backdrop-blur-sm';
+    const selectTriggerClass = 'mt-2 min-h-[54px] rounded-2xl border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.92)_100%)] px-4 shadow-[0_12px_24px_-22px_rgba(15,23,42,0.35)]';
+    const selectContentClass = 'rounded-[24px] border border-slate-200/90 bg-white/98 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.38)] backdrop-blur-sm';
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {!hideTrigger && (
@@ -1495,41 +1532,74 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       
       <DialogContent className="w-[min(96vw,1320px)] max-w-[1320px] max-h-[92vh] overflow-hidden border-0 bg-white/98 p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]" aria-describedby="entry-form-description">
         <div className="flex max-h-[92vh] flex-col overflow-hidden rounded-[28px] bg-white">
-          <DialogHeader className="relative overflow-hidden border-b border-slate-200/80 px-6 py-5 sm:px-8">
+          <DialogHeader className="relative overflow-hidden border-b border-slate-200/80 px-5 py-4 sm:px-6">
             <div
               className="absolute inset-0"
               style={{
                 background: 'linear-gradient(135deg, rgba(26,77,122,0.10) 0%, rgba(45,149,97,0.08) 55%, rgba(255,255,255,0.96) 100%)'
               }}
             />
-            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1a4d7a] text-white shadow-lg shadow-[#1a4d7a]/20">
-                  <Package className="h-7 w-7" />
+            <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a4d7a] text-white shadow-lg shadow-[#1a4d7a]/20">
+                  <Package className="h-6 w-6" />
                 </div>
                 <div>
-                  <DialogTitle className="text-left text-[1.45rem] font-bold tracking-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  <DialogTitle className="text-left text-[1.3rem] font-bold tracking-tight text-slate-900 sm:text-[1.38rem]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     Registrer Entrée
                   </DialogTitle>
-                  <DialogDescription id="entry-form-description" className="mt-1 max-w-2xl text-sm text-slate-600">
+                  <DialogDescription id="entry-form-description" className="mt-0.5 max-w-2xl text-[0.95rem] leading-6 text-slate-600">
                     Sélectionnez le type d'entrée, ajoutez les produits et finalisez l'enregistrement dans une interface plus large et plus claire.
                   </DialogDescription>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <div className="rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <div className="rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Inventaire
                 </div>
-                <div className="rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#2d9561]">
+                <div className="rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2d9561]">
                   Saisie guidée
+                </div>
+                <div className="rounded-full border border-[#1a4d7a]/15 bg-[#1a4d7a]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a4d7a]">
+                  Progression {progressionFormulaire}%
                 </div>
               </div>
             </div>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-7 sm:py-5">
-            <div className="space-y-4">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)] lg:items-start xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
+              <div className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fbfd_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.38)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Programme</p>
+                    <p className="mt-2 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      {programaSeleccionado?.nombre || 'À sélectionner'}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {programaSeleccionado?.descripcion || 'Choisissez un flux d’entrée pour adapter le formulaire.'}
+                    </p>
+                  </div>
+                  <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f7fbf8_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.38)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Contact</p>
+                    <p className="mt-2 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      {contactoSeleccionado?.nombreEmpresa || (contactoSeleccionado ? `${contactoSeleccionado.nombre} ${contactoSeleccionado.apellido}` : 'Aucun contact')}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {contactoSeleccionado?.telefono || contactoSeleccionado?.email || 'La fiche du contact s’affiche ici dès la sélection.'}
+                    </p>
+                  </div>
+                  <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fafc_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.38)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Lot en préparation</p>
+                    <p className="mt-2 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      {productosAgregados.length} produit{productosAgregados.length > 1 ? 's' : ''}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {formatQuantity(totalPesoNetoAgregado)} kg net • {totalMonetarioAgregado > 0 ? `CAD$ ${formatMoney(totalMonetarioAgregado)}` : 'Valeur non renseignée'}
+                    </p>
+                  </div>
+                </div>
           {/* SECTION 1: Type d'entrée - DINÁMICO desde configuración */}
           <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
             <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -1601,7 +1671,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       variant="outline"
                       role="combobox"
                       aria-expanded={selectContactoOpen}
-                      className="min-h-[48px] w-full justify-between rounded-2xl border-slate-200 bg-white py-2 shadow-sm"
+                      className={comboboxTriggerClass}
                     >
                       {formData.donadorId ? (
                         <div className="flex-1 text-left">
@@ -1662,7 +1732,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[560px] rounded-2xl border-slate-200 p-0 shadow-xl">
+                  <PopoverContent className={`w-[min(92vw,560px)] ${floatingPanelClass}`}>
                     <Command>
                       <CommandInput
                         placeholder="Rechercher par nom, entreprise, téléphone, email..."
@@ -1760,14 +1830,32 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               {/* SECTION 3: Sélection Produit en Cascada */}
-              <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
-                <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  📦 Sélection du produit *
-                </Label>
+              <div className="space-y-4 rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.92)_100%)] p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
+                <div className="flex flex-col gap-3 rounded-[22px] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_32px_-30px_rgba(15,23,42,0.28)] lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      📦 Sélection du produit *
+                    </Label>
+                    <p className="mt-2 max-w-2xl text-sm text-slate-500">
+                      Configurez le produit avec un parcours plus lisible: sélection, paramètres logistiques et validation avant ajout au lot.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 lg:max-w-[280px] lg:justify-end">
+                    <Badge className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 hover:bg-slate-100">
+                      {formData.nombreProducto ? 'Produit prêt' : 'Sélection requise'}
+                    </Badge>
+                    <Badge className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 hover:bg-emerald-50">
+                      {formatQuantity(poidsEstimeCourant)} kg estimés
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
+                  <div className="space-y-4">
 
                 {/* 🎯 SI ES TIPO PRS: Mostrar selector de productos PRS */}
                 {formData.tipoEntrada === 'prs' ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3 rounded-[22px] border border-violet-200 bg-[linear-gradient(145deg,#fcfaff_0%,#f7f1ff_100%)] p-4 shadow-[0_14px_30px_-28px_rgba(91,33,182,0.35)]">
                     <div className="flex items-center gap-2">
                       <Label>⚡ Produit PRS *</Label>
                       <Badge variant="destructive" className="text-xs animate-pulse">
@@ -1782,7 +1870,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                           role="combobox"
                           aria-expanded={comboboxProductoPRSOpen}
                           className={cn(
-                            "w-full justify-between rounded-2xl bg-white shadow-sm",
+                            comboboxTriggerClass,
                             formData.categoriaNombre 
                               ? "border-purple-500 bg-purple-50 hover:bg-purple-100" 
                               : "border-purple-400 border-2"
@@ -1799,7 +1887,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[520px] rounded-2xl border-slate-200 p-0 shadow-xl">
+                      <PopoverContent className={`w-[min(92vw,560px)] ${floatingPanelClass}`}>
                         <Command>
                           <CommandInput
                             placeholder="🔍 Rechercher un produit PRS..."
@@ -1858,17 +1946,25 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   </div>
                 ) : (
                   /* MODO NORMAL: Cascada Categoría → Subcategoría → Variante */
-                  <>
+                  <div className="space-y-4">
                     {/* PASO 1: Catégorie */}
-                    <div>
+                    <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
                       <Label>1️⃣ Catégorie *</Label>
+                          <p className="mt-1 text-xs text-slate-500">Définissez la famille principale du produit.</p>
+                        </div>
+                        <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                          Étape 1
+                        </Badge>
+                      </div>
                       <Popover open={comboboxCategoriaOpen} onOpenChange={setComboboxCategoriaOpen}>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             role="combobox"
                             aria-expanded={comboboxCategoriaOpen}
-                            className="w-full justify-between rounded-2xl bg-white shadow-sm"
+                            className={comboboxTriggerClass}
                           >
                             {formData.categoriaNombre ? (
                               <span className="flex items-center gap-2">
@@ -1881,7 +1977,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                    <PopoverContent className="w-[420px] rounded-2xl border-slate-200 p-0 shadow-xl">
+                    <PopoverContent className={`w-[min(92vw,460px)] ${floatingPanelClass}`}>
                       <Command>
                         <CommandInput
                           placeholder="Rechercher une catégorie..."
@@ -1917,12 +2013,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       </Command>
                     </PopoverContent>
                   </Popover>
-                </div>
+                    </div>
 
                 {/* PASO 2: Sous-catégorie */}
-                <div>
+                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                   <div className="flex items-center justify-between mb-2">
-                    <Label>2️⃣ Sous-catégorie *</Label>
+                    <div>
+                      <Label>2️⃣ Sous-catégorie *</Label>
+                      <p className="mt-1 text-xs text-slate-500">Affinez le produit dans une ligne plus précise.</p>
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
@@ -1956,7 +2055,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         variant="outline"
                         role="combobox"
                         aria-expanded={comboboxSubcategoriaOpen}
-                        className="w-full justify-between"
+                        className={comboboxTriggerClass}
                         disabled={!formData.categoriaId}
                       >
                         {formData.subcategoriaNombre ? (
@@ -1974,7 +2073,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
+                    <PopoverContent className={`w-[min(92vw,440px)] ${floatingPanelClass}`}>
                       <Command>
                         <CommandInput
                           placeholder="Rechercher une sous-catégorie..."
@@ -2016,9 +2115,12 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                 {/* PASO 3: Variante (opcional) */}
                 {formData.subcategoriaId && (
-                  <div>
+                  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                     <div className="flex items-center justify-between mb-2">
-                      <Label>3️⃣ Variante (optionnel)</Label>
+                      <div>
+                        <Label>3️⃣ Variante (optionnel)</Label>
+                        <p className="mt-1 text-xs text-slate-500">Ajoutez une déclinaison seulement si elle apporte une différence utile.</p>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
@@ -2048,7 +2150,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             variant="outline"
                             role="combobox"
                             aria-expanded={comboboxVarianteOpen}
-                            className="w-full justify-between rounded-2xl bg-white shadow-sm"
+                            className={comboboxTriggerClass}
                           >
                             {formData.varianteNombre ? (
                               <span className="flex items-center gap-2">
@@ -2063,7 +2165,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                      <PopoverContent className="w-[420px] rounded-2xl border-slate-200 p-0 shadow-xl">
+                      <PopoverContent className={`w-[min(92vw,460px)] ${floatingPanelClass}`}>
                         <Command>
                           <CommandInput
                             placeholder="Rechercher une variante..."
@@ -2109,16 +2211,26 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     )}
                   </div>
                 )}
-                  </>
+                  </div>
                 )}
 
                 {/* Resumen del producto seleccionado */}
                 {formData.nombreProducto && (
-                  <div className="rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 shadow-sm">
-                    <p className="text-sm font-medium text-green-700 flex items-center gap-2">
-                      ✅ Produit sélectionné: 
-                      <span className="font-semibold">{formData.nombreProducto}</span>
-                    </p>
+                  <div className="rounded-[22px] border border-emerald-200 bg-[linear-gradient(145deg,#ffffff_0%,#f2fbf5_100%)] p-4 shadow-[0_14px_30px_-28px_rgba(16,185,129,0.35)]">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-lg">
+                        {formData.productoIcono || '📦'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Produit sélectionné</p>
+                        <p className="mt-1 truncate text-base font-semibold text-slate-900">{formData.nombreProducto}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {formData.categoriaNombre || 'Catégorie à définir'}
+                          {formData.subcategoriaNombre ? ` • ${formData.subcategoriaNombre}` : ''}
+                          {formData.varianteNombre ? ` • ${formData.varianteNombre}` : ''}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -2133,8 +2245,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 )}
 
                 {/* Campos de cantidad y unidad */}
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                     <Label>Quantité *</Label>
                     <Input
                       type="number"
@@ -2143,15 +2255,16 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       value={formData.cantidad || ''}
                       onChange={(e) => handleFieldChange('cantidad', parseFloat(e.target.value) || 0)}
                       placeholder="0"
+                      className="mt-2 rounded-2xl border-slate-200 bg-slate-50/60"
                     />
                   </div>
-                  <div>
+                  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                     <Label>Unité *</Label>
                     <Select value={formData.unidad} onValueChange={(value) => handleFieldChange('unidad', value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className={selectTriggerClass}>
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={selectContentClass}>
                         {unidades.map((unidad) => (
                           <SelectItem key={unidad.id} value={unidad.abreviatura}>
                             {unidad.nombre} ({unidad.abreviatura})
@@ -2162,8 +2275,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   </div>
                 </div>
 
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                 {/* Peso Unitario */}
-                <div>
+                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                   <Label>Poids Unitaire (kg/unité)</Label>
                   <Input
                     type="number"
@@ -2172,6 +2286,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     value={formData.pesoUnitario || ''}
                     onChange={(e) => handleFieldChange('pesoUnitario', Math.round(parseFloat(e.target.value) || 0))}
                     placeholder="0"
+                    className="mt-2 rounded-2xl border-slate-200 bg-slate-50/60"
                   />
                   {formData.pesoUnitario > 0 && formData.cantidad > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -2181,7 +2296,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </div>
 
                 {/* Peso */}
-                <div>
+                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                   <div className="flex items-center justify-between mb-2">
                     <Label>Poids Total (kg)</Label>
                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
@@ -2195,7 +2310,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     value={formData.peso ? formatQuantity(formData.peso) : ''}
                     onChange={(e) => handleFieldChange('peso', parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="bg-gray-50"
+                    className="rounded-2xl border-slate-200 bg-gray-50"
                     readOnly
                   />
                   
@@ -2249,9 +2364,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     );
                   })()}
                 </div>
+                </div>
 
                 {/* Temperatura */}
-                <div>
+                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                   <Label>Température *</Label>
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     <button
@@ -2293,6 +2409,39 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       <Snowflake className="w-5 h-5 mx-auto text-cyan-600" />
                       <p className="text-xs mt-1">Congelé</p>
                     </button>
+                  </div>
+                </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-[22px] border border-slate-200 bg-[linear-gradient(145deg,#f8fbfd_0%,#ffffff_100%)] p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Cockpit produit</p>
+                      <div className="mt-4 space-y-3">
+                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                          <span className="text-sm text-slate-500">Statut</span>
+                          <span className="text-sm font-semibold text-slate-900">{formData.nombreProducto ? 'Configuré' : 'En attente'}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                          <span className="text-sm text-slate-500">Quantité</span>
+                          <span className="text-sm font-semibold text-slate-900">{formData.cantidad > 0 ? `${formatQuantity(formData.cantidad)} ${formData.unidad || ''}`.trim() : 'Non définie'}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                          <span className="text-sm text-slate-500">Poids estimé</span>
+                          <span className="text-sm font-semibold text-slate-900">{formatQuantity(poidsEstimeCourant)} kg</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                          <span className="text-sm text-slate-500">Température</span>
+                          <span className="text-sm font-semibold text-slate-900">{etiquetteTemperature}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Conseil opérateur</p>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">
+                        Utilisez la catégorie et la sous-catégorie pour standardiser les données. Réservez les variantes aux différences réellement utiles pour l’étiquetage ou le suivi.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2537,6 +2686,91 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               )}
             </>
           )}
+              </div>
+
+              <aside className="space-y-4 lg:sticky lg:top-0">
+                <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_22px_50px_-38px_rgba(15,23,42,0.45)]">
+                  <div className="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(26,77,122,0.08),rgba(45,149,97,0.08))] px-5 py-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Résumé en direct</p>
+                    <h3 className="mt-1 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      Nouvelle entrée
+                    </h3>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full bg-[linear-gradient(90deg,#1a4d7a_0%,#2d9561_100%)] transition-all"
+                        style={{ width: `${progressionFormulaire}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">{checkpointsCompletados}/6 repères complétés</p>
+                  </div>
+
+                  <div className="space-y-4 px-5 py-4 text-sm text-slate-700">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Programme</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Gift className="h-4 w-4 text-[#2d9561]" />
+                        <span className="font-medium text-slate-900">{programaSeleccionado?.nombre || 'Non sélectionné'}</span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Contact</p>
+                      <div className="mt-2 flex items-start gap-2">
+                        <Building2 className="mt-0.5 h-4 w-4 text-[#1a4d7a]" />
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {contactoSeleccionado?.nombreEmpresa || (contactoSeleccionado ? `${contactoSeleccionado.nombre} ${contactoSeleccionado.apellido}` : 'À sélectionner')}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {contactoSeleccionado?.telefono || contactoSeleccionado?.email || 'Choisissez un donateur, fournisseur ou participant PRS.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Produit courant</p>
+                      <div className="mt-2 flex items-start gap-2">
+                        <Package2 className="mt-0.5 h-4 w-4 text-[#1a4d7a]" />
+                        <div>
+                          <p className="font-medium text-slate-900">{formData.nombreProducto || 'Aucun produit sélectionné'}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formData.cantidad > 0 && formData.unidad
+                              ? `${formatQuantity(formData.cantidad)} ${formData.unidad} • ${formatQuantity(formData.peso || 0)} kg`
+                              : 'Sélectionnez la catégorie, la quantité et l’unité.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Température</p>
+                        <div className="mt-2 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                          {getTemperatureIcon(formData.temperatura)}
+                          <span>{etiquetteTemperature}</span>
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Impression</p>
+                        <p className="mt-2 text-sm font-medium text-slate-900">{imprimirAutomaticamente ? 'Automatique' : 'Manuelle'}</p>
+                        <p className="mt-1 text-xs text-slate-500">Réimpression disponible après ajout.</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Validation finale</p>
+                      <p className="mt-2 text-sm text-slate-700">
+                        Ajoutez un ou plusieurs produits, puis finalisez l’entrée pour enregistrer le lot dans l’inventaire.
+                      </p>
+                      <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                        <Save className="h-4 w-4" />
+                        <span>Le résumé se met à jour en temps réel.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aside>
             </div>
           </div>
         </div>

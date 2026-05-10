@@ -1,13 +1,19 @@
+import { formatBrandingContactLine, getStoredBrandingPrintConfig } from './brandingPrint';
+
 /**
  * Genera el HTML completo para la presentación
  */
 export const generarPresentacionHTML = (): string => {
+    const brandingPrint = getStoredBrandingPrintConfig();
+    const nombreSistemaImpresion = brandingPrint.systemName;
+    const brandingContactLine = formatBrandingContactLine(brandingPrint);
+
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guide Complet - Banque Alimentaire</title>
+        <title>Guide Complet - ${nombreSistemaImpresion}</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -54,6 +60,9 @@ export const generarPresentacionHTML = (): string => {
             position: absolute; top: 30px; left: 60px; font-size: 24px; font-weight: 700;
             color: #1a4d7a; font-family: 'Montserrat', sans-serif;
         }
+        .logo-contact {
+            margin-top: 6px; font-size: 12px; font-weight: 500; color: #5f6f7f;
+        }
         .module-card {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 5px solid #1a4d7a;
             padding: 20px; border-radius: 12px; margin: 12px 0;
@@ -72,7 +81,7 @@ export const generarPresentacionHTML = (): string => {
         <div class="center" style="padding-top: 15vh;">
             <div style="font-size: 120px; margin-bottom: 40px;">📊</div>
             <h1 style="font-size: 64px; margin-bottom: 30px; color: white;">Système de Gestion</h1>
-            <h1 style="font-size: 56px; margin-bottom: 40px; color: #e0f2f1;">Banque Alimentaire</h1>
+            <h1 style="font-size: 56px; margin-bottom: 40px; color: #e0f2f1;">${nombreSistemaImpresion}</h1>
             <p style="font-size: 28px; color: #b3e5fc; margin-top: 40px;">Solution Complète et Intégrée</p>
             <p style="font-size: 20px; color: #b3e5fc; margin-top: 20px;">Guide de Présentation des Fonctionnalités</p>
         </div>
@@ -80,10 +89,10 @@ export const generarPresentacionHTML = (): string => {
     </div>
 
     <div class="slide page-break">
-        <div class="logo-area">🏦 Banque Alimentaire</div>
+        <div class="logo-area">🏦 ${nombreSistemaImpresion}${brandingContactLine ? `<div class="logo-contact">${brandingContactLine}</div>` : ''}</div>
         <h2>Vue d'Ensemble du Système</h2>
         <p style="font-size: 22px; color: #666; margin-bottom: 40px;">
-            Une plateforme moderne et complète pour optimiser la gestion de votre banque alimentaire
+            Une plateforme moderne et complète pour optimiser la gestion de votre organisation alimentaire
         </p>
         <div class="grid-3" style="margin-top: 40px;">
             <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 16px;">
@@ -123,7 +132,7 @@ export const generarPresentacionHTML = (): string => {
     </div>
 
     <div class="slide page-break">
-        <div class="logo-area">🏦 Banque Alimentaire</div>
+        <div class="logo-area">🏦 ${nombreSistemaImpresion}</div>
         <h2>Caractéristiques Principales</h2>
         <div class="grid-2" style="margin-top: 40px;">
             <div class="card-feature">
@@ -222,7 +231,7 @@ export const generarPresentacionHTML = (): string => {
     </div>
 
     <div class="slide page-break">
-        <div class="logo-area">🏦 Banque Alimentaire</div>
+        <div class="logo-area">🏦 ${nombreSistemaImpresion}</div>
         <h2>Bénéfices pour votre Organisation</h2>
         <div class="grid-2" style="gap: 30px; margin-top: 40px;">
             <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 40px; border-radius: 24px;">

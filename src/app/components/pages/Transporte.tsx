@@ -160,7 +160,7 @@ export function Transporte() {
             <TabsContent value="rutas">
               {showCompactRouteOverview ? (
                 <div className="space-y-3 pt-3">
-                  <Card className="border-white/60 bg-white/80 shadow-lg backdrop-blur-xl">
+                  <Card className="overflow-hidden border-white/75 bg-white/90 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -183,31 +183,31 @@ export function Transporte() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-xl border border-[#fde68a] bg-[#fff8db] p-3">
+                        <div className="rounded-[20px] border border-white/80 bg-[#fff8db]/92 p-3 shadow-[0_14px_28px_-24px_rgba(15,45,71,0.16)]">
                           <p className="text-[11px] font-medium text-[#92400e]">Itinéraires à lancer</p>
                           <p className="mt-1 text-lg font-bold text-[#b45309]">{resumen.rutasPlanificadas}</p>
                         </div>
-                        <div className="rounded-xl border p-3" style={{ borderColor: `${branding.primaryColor}40`, background: `${branding.primaryColor}12` }}>
+                        <div className="rounded-[20px] border border-white/80 p-3 shadow-[0_14px_28px_-24px_rgba(15,45,71,0.16)]" style={{ borderColor: `${branding.primaryColor}40`, background: `${branding.primaryColor}12` }}>
                           <p className="text-[11px] font-medium" style={{ color: branding.primaryColor }}>Itinéraires en cours</p>
                           <p className="mt-1 text-lg font-bold" style={{ color: branding.primaryColor }}>{resumen.rutasEnCurso}</p>
                         </div>
-                        <div className="rounded-xl border p-3" style={{ borderColor: `${branding.secondaryColor}40`, background: `${branding.secondaryColor}12` }}>
+                        <div className="rounded-[20px] border border-white/80 p-3 shadow-[0_14px_28px_-24px_rgba(15,45,71,0.16)]" style={{ borderColor: `${branding.secondaryColor}40`, background: `${branding.secondaryColor}12` }}>
                           <p className="text-[11px] font-medium" style={{ color: branding.secondaryColor }}>Livraisons terminées</p>
                           <p className="mt-1 text-lg font-bold" style={{ color: branding.secondaryColor }}>{resumen.rutasCompletadas}</p>
                         </div>
-                        <div className="rounded-xl border border-[#d1d5db] bg-[#f8fafc] p-3">
+                        <div className="rounded-[20px] border border-white/80 bg-[#f8fafc]/92 p-3 shadow-[0_14px_28px_-24px_rgba(15,45,71,0.16)]">
                           <p className="text-[11px] font-medium text-[#475569]">Véhicules disponibles</p>
                           <p className="mt-1 text-lg font-bold text-[#111827]">{resumen.totalVehiculos}</p>
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-3">
+                      <div className="rounded-[20px] border border-dashed border-[#cbd5e1] bg-[#f8fafc]/92 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
                         <p className="text-xs font-medium text-[#334155]">Modules accessibles sans perdre le contexte</p>
                         <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-[#475569]">
-                          <div className="rounded-lg bg-white px-2.5 py-2 shadow-sm">Véhicules pour la flotte et la capacité</div>
-                          <div className="rounded-lg bg-white px-2.5 py-2 shadow-sm">Conducteurs pour l’affectation des équipes</div>
-                          <div className="rounded-lg bg-white px-2.5 py-2 shadow-sm">Vérification SAAQ pour la conformité</div>
-                          <div className="rounded-lg bg-white px-2.5 py-2 shadow-sm">Itinéraires détaillés dès qu’un écran plus grand est disponible</div>
+                          <div className="rounded-[16px] bg-white/92 px-2.5 py-2 shadow-[0_10px_20px_-18px_rgba(15,45,71,0.18)]">Véhicules pour la flotte et la capacité</div>
+                          <div className="rounded-[16px] bg-white/92 px-2.5 py-2 shadow-[0_10px_20px_-18px_rgba(15,45,71,0.18)]">Conducteurs pour l’affectation des équipes</div>
+                          <div className="rounded-[16px] bg-white/92 px-2.5 py-2 shadow-[0_10px_20px_-18px_rgba(15,45,71,0.18)]">Vérification SAAQ pour la conformité</div>
+                          <div className="rounded-[16px] bg-white/92 px-2.5 py-2 shadow-[0_10px_20px_-18px_rgba(15,45,71,0.18)]">Itinéraires détaillés dès qu’un écran plus grand est disponible</div>
                         </div>
                       </div>
                     </CardContent>

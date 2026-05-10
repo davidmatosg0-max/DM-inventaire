@@ -6,6 +6,7 @@
 
 import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS } from '../../utils/comandaQr';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
+import { formatBrandingContactLine, getStoredBrandingPrintConfig } from '../../utils/brandingPrint';
 import { openPrintPopup, writeAutoPrintPopupContent } from '../../utils/printPopup';
 
 interface ComandaParaImprimir {
@@ -44,6 +45,9 @@ async function generatePrintHTML(
   comanda: ComandaParaImprimir,
   organismo: OrganismoParaImprimir
 ): Promise<string> {
+  const brandingPrint = getStoredBrandingPrintConfig();
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const numeroComanda = comanda.numero || comanda.numeroComanda || comanda.id;
 
   // ========== PÁGINA 1: QR PARA COMANDA DETALLADA ==========
@@ -682,11 +686,12 @@ async function generatePrintHTML(
         <div class="flex items-center justify-between">
           <div>
             <h1 class="font-bold text-[#1E73BE] mb-1 print-title" style="font-family: 'Montserrat', sans-serif; font-size: 1.4rem;">
-              BANQUE ALIMENTAIRE
+              ${nombreSistemaImpresion}
             </h1>
             <p class="text-[#666666] print-subtitle" style="font-size: 0.85rem;">
               Commande de Distribution
             </p>
+            ${brandingContactLine ? `<p class="text-[#666666] print-text" style="margin-top: 4px;">${brandingContactLine}</p>` : ''}
           </div>
           <div class="text-right">
             <div class="bg-[#1E73BE] text-white px-3 py-1 rounded">
@@ -836,8 +841,9 @@ async function generatePrintHTML(
     <div class="etiqueta-container">
       <!-- HEADER -->
       <div class="etiqueta-header">
-        <h1>🏦 BANQUE ALIMENTAIRE</h1>
+        <h1>🏦 ${nombreSistemaImpresion}</h1>
         <p>Étiquette de Commande</p>
+        ${brandingContactLine ? `<p>${brandingContactLine}</p>` : ''}
       </div>
       
       <!-- GRID SUPERIOR: QR + PRODUCTOS -->
@@ -933,6 +939,7 @@ async function generatePrintHTML(
       <!-- FOOTER -->
       <div class="etiqueta-footer">
         <p>Système de Gestion des Commandes</p>
+        ${brandingContactLine ? `<p>${brandingContactLine}</p>` : ''}
         <p class="timestamp">Imprimé le: ${formatDateTime(new Date())}</p>
       </div>
     </div>

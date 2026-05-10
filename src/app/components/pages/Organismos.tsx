@@ -16,11 +16,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { FormularioOrganismoCompacto } from '../organismos/FormularioOrganismoCompacto';
 import { AddressAutocomplete } from '../ui/address-autocomplete';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { LanguageSelector } from '../ui/language-selector';
-import { generarClaveAcceso } from '../../utils/claveAcceso';
+import { generarClaveAccesoUnica } from '../../utils/claveAcceso';
 import { MapLink } from '../ui/map-link';
 import { obtenerPersonasPorOrganismo } from '../../utils/personasResponsablesStorage';
 import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
+import {
+  construirPayloadOrganismo,
+  convertirOrganismoAFormulario,
+  crearFormularioOrganismoVacio,
+  validarFormularioOrganismo,
+} from '../../utils/organismoForm';
 import { 
   obtenerOrganismos, 
   crearOrganismo, 
@@ -59,10 +66,6 @@ const getTiposOrganismo = (t: any) => [
   { id: '19', nombre: t('organisms.organismTypes.foodBank'), icono: '🛒' },
   { id: '20', nombre: t('organisms.organismTypes.other'), icono: '📌' }
 ];
-
-const resolverClasificacionOrganismo = (organismo?: { clasificacionOrganismo?: ClasificacionOrganismo; regular?: boolean }) => (
-  organismo?.clasificacionOrganismo || (organismo?.regular === false ? 'eventual' : 'regular')
-);
 
 const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -138,39 +141,7 @@ export function Organismos() {
   // Resetear formulario cuando se cierra el diálogo
   useEffect(() => {
     if (!organismoDialogOpen) {
-      setFormOrganismo({
-        nombre: '',
-        tipo: '',
-        codigoPostal: '',
-        direccion: '',
-        quartier: '',
-        responsable: '',
-        beneficiarios: 0,
-        telefono: '',
-        email: '',
-        frecuenciaCita: '',
-        diaCita: '',
-        horaCita: '',
-        participantePRS: false,
-        regular: true,
-        clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
-        activo: true,
-        personasServidas: 0,
-        cantidadColaciones: 0,
-        cantidadAlmuerzos: 0,
-        porcentajeReparticion: 0,
-        notas: '',
-        notificaciones: true,
-        logo: null,
-        documentoPDF: null,
-        contactosNotificacion: [{ nombre: '', email: '', cargo: '', joursDisponibles: [] }],
-        fechaInicioInactividad: '',
-        fechaFinInactividad: '',
-        contactoCargo: '',
-        contactoTelefono: '',
-        contactoEmail: '',
-        contactoJoursDisponibles: []
-      });
+      setFormOrganismo(crearFormularioOrganismoVacio());
       setPersonasAutorizadas([]);
     }
   }, [organismoDialogOpen]);
@@ -216,39 +187,7 @@ export function Organismos() {
   });
   
   // Estado del formulario
-  const [formOrganismo, setFormOrganismo] = useState({
-    nombre: '',
-    tipo: '',
-    codigoPostal: '',
-    direccion: '',
-    quartier: '',
-    responsable: '',
-    beneficiarios: 0,
-    telefono: '',
-    email: '',
-    frecuenciaCita: '',
-    diaCita: '',
-    horaCita: '',
-    participantePRS: false,
-    regular: true,
-    clasificacionOrganismo: 'regular' as ClasificacionOrganismo,
-    activo: true,
-    personasServidas: 0,
-    cantidadColaciones: 0,
-    cantidadAlmuerzos: 0,
-    porcentajeReparticion: 0,
-    notas: '',
-    notificaciones: true,
-    logo: null as string | null,
-    documentoPDF: null as string | null,
-    contactosNotificacion: [{ nombre: '', email: '', cargo: '', joursDisponibles: [] as JourDisponible[] }],
-    fechaInicioInactividad: '',
-    fechaFinInactividad: '',
-    contactoCargo: '',
-    contactoTelefono: '',
-    contactoEmail: '',
-    contactoJoursDisponibles: [] as JourDisponible[]
-  });
+  const [formOrganismo, setFormOrganismo] = useState(crearFormularioOrganismoVacio());
 
   // Datos mock para historial (en producción vendrían de la base de datos)
   const historialDonaciones = [
@@ -299,54 +238,36 @@ export function Organismos() {
   );
 
   const handleCrearOrganismo = () => {
+    const errorValidacion = validarFormularioOrganismo(formOrganismo);
+    if (errorValidacion) {
+      toast.error(errorValidacion);
+      return;
+    }
+
     // Generar clave de acceso única
-    const claveAcceso = generarClaveAcceso(formOrganismo.nombre);
+    const claveAcceso = generarClaveAccesoUnica(formOrganismo.nombre, organismos.map(org => org.claveAcceso || ''));
+    const payloadOrganismo = construirPayloadOrganismo(formOrganismo);
 
     try {
       // Crear el organismo en el storage
       const nuevoOrganismo = crearOrganismo({
-        nombre: formOrganismo.nombre,
-        tipo: formOrganismo.tipo,
-        email: formOrganismo.email,
-        telefono: formOrganismo.telefono,
-        direccion: formOrganismo.direccion,
-        codigoPostal: formOrganismo.codigoPostal,
-        quartier: formOrganismo.quartier,
-        zona: '',
-        responsable: formOrganismo.responsable,
-        beneficiarios: formOrganismo.beneficiarios,
-        activo: formOrganismo.activo,
-        regular: formOrganismo.regular,
-        clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
-        participantePRS: formOrganismo.participantePRS,
-        frecuenciaCita: formOrganismo.frecuenciaCita,
-        diaCita: formOrganismo.diaCita,
-        horaCita: formOrganismo.horaCita,
-        personasServidas: formOrganismo.personasServidas,
-        cantidadColaciones: formOrganismo.cantidadColaciones,
-        cantidadAlmuerzos: formOrganismo.cantidadAlmuerzos,
-        porcentajeReparticion: formOrganismo.porcentajeReparticion,
-        notas: formOrganismo.notas,
-        notificaciones: formOrganismo.notificaciones,
-        logo: formOrganismo.logo,
-        documentoPDF: formOrganismo.documentoPDF,
+        ...payloadOrganismo,
         claveAcceso: claveAcceso,
-        contactosNotificacion: formOrganismo.contactosNotificacion
       });
       
       // Recargar la lista de organismos
       cargarOrganismos();
-      console.log('Organismo creado con clave:', claveAcceso);
+      console.log('Organismo creado con clave:', nuevoOrganismo.claveAcceso);
       
       // 📝 REGISTRAR ACTIVIDAD
       registrarActividad(
         'Organismes',
         'crear',
-        `Organisme "${formOrganismo.nombre}" créé avec clé d'accès: ${claveAcceso}`,
-        { organismoId: nuevoOrganismo.id, claveAcceso }
+        `Organisme "${formOrganismo.nombre}" créé avec clé d'accès: ${nuevoOrganismo.claveAcceso}`,
+        { organismoId: nuevoOrganismo.id, claveAcceso: nuevoOrganismo.claveAcceso }
       );
       
-      toast.success(`${t('organisms.organismCreated')} ${claveAcceso}`, {
+      toast.success(`${t('organisms.organismCreated')} ${nuevoOrganismo.claveAcceso}`, {
         duration: 5000,
       });
       
@@ -364,43 +285,7 @@ export function Organismos() {
     const personas = obtenerPersonasPorOrganismo(organismo.id);
     setPersonasAutorizadas(personas);
     
-    setFormOrganismo({
-      nombre: organismo.nombre,
-      tipo: organismo.tipo,
-      codigoPostal: organismo.codigoPostal || '',
-      direccion: organismo.direccion,
-      quartier: organismo.quartier || '',
-      responsable: organismo.responsable,
-      beneficiarios: organismo.beneficiarios,
-      telefono: organismo.telefono,
-      email: organismo.email,
-      frecuenciaCita: organismo.frecuenciaCita || 'semanal',
-      diaCita: organismo.diaCita || '',
-      horaCita: organismo.horaCita || '10:00',
-      participantePRS: false,
-      regular: organismo.regular,
-      clasificacionOrganismo: resolverClasificacionOrganismo(organismo),
-      activo: organismo.activo,
-      personasServidas: 120,
-      cantidadColaciones: 80,
-      cantidadAlmuerzos: 100,
-      porcentajeReparticion: 30,
-      notas: 'Organismo con excelente trayectoria en la comunidad.',
-      notificaciones: true,
-      logo: null,
-      documentoPDF: null,
-      contactosNotificacion: organismo.contactosNotificacion?.length > 0 
-        ? organismo.contactosNotificacion.map((contacto: any) => ({
-            nombre: contacto.nombre || '',
-            email: contacto.email || '',
-            cargo: contacto.cargo || '',
-            joursDisponibles: contacto.joursDisponibles || []
-          }))
-        : [{ nombre: '', email: '', cargo: '', joursDisponibles: [] }],
-      fechaInicioInactividad: organismo.fechaInicioInactividad || '',
-      fechaFinInactividad: organismo.fechaFinInactividad || '',
-      claveAcceso: organismo.claveAcceso || ''
-    });
+    setFormOrganismo(convertirOrganismoAFormulario(organismo));
     setModoEdicion(false);
     setModoVisualizacion(true);
     setOrganismoDialogOpen(true);
@@ -413,43 +298,7 @@ export function Organismos() {
     const personas = obtenerPersonasPorOrganismo(organismo.id);
     setPersonasAutorizadas(personas);
     
-    setFormOrganismo({
-      nombre: organismo.nombre,
-      tipo: organismo.tipo,
-      codigoPostal: organismo.codigoPostal || '',
-      direccion: organismo.direccion,
-      quartier: organismo.quartier || '',
-      responsable: organismo.responsable,
-      beneficiarios: organismo.beneficiarios,
-      telefono: organismo.telefono,
-      email: organismo.email,
-      frecuenciaCita: organismo.frecuenciaCita || 'semanal',
-      diaCita: organismo.diaCita || '',
-      horaCita: organismo.horaCita || '10:00',
-      participantePRS: false,
-      regular: organismo.regular,
-      clasificacionOrganismo: resolverClasificacionOrganismo(organismo),
-      activo: organismo.activo,
-      personasServidas: 120,
-      cantidadColaciones: 80,
-      cantidadAlmuerzos: 100,
-      porcentajeReparticion: 30,
-      notas: 'Organismo con excelente trayectoria en la comunidad.',
-      notificaciones: true,
-      logo: null,
-      documentoPDF: null,
-      contactosNotificacion: organismo.contactosNotificacion?.length > 0 
-        ? organismo.contactosNotificacion.map((contacto: any) => ({
-            nombre: contacto.nombre || '',
-            email: contacto.email || '',
-            cargo: contacto.cargo || '',
-            joursDisponibles: contacto.joursDisponibles || []
-          }))
-        : [{ nombre: '', email: '', cargo: '', joursDisponibles: [] }],
-      fechaInicioInactividad: organismo.fechaInicioInactividad || '',
-      fechaFinInactividad: organismo.fechaFinInactividad || '',
-      claveAcceso: organismo.claveAcceso || ''
-    });
+    setFormOrganismo(convertirOrganismoAFormulario(organismo));
     setModoEdicion(true);
     setModoVisualizacion(false);
     setOrganismoDialogOpen(true);
@@ -457,37 +306,15 @@ export function Organismos() {
 
   const handleGuardarCambios = () => {
     if (organismoSeleccionado && organismoSeleccionado.id) {
+      const errorValidacion = validarFormularioOrganismo(formOrganismo);
+      if (errorValidacion) {
+        toast.error(errorValidacion);
+        return;
+      }
+
       try {
         // Actualizar el organismo en el storage
-        actualizarOrganismo(organismoSeleccionado.id, {
-          nombre: formOrganismo.nombre,
-          tipo: formOrganismo.tipo,
-          email: formOrganismo.email,
-          telefono: formOrganismo.telefono,
-          direccion: formOrganismo.direccion,
-          codigoPostal: formOrganismo.codigoPostal,
-          quartier: formOrganismo.quartier,
-          responsable: formOrganismo.responsable,
-          beneficiarios: formOrganismo.beneficiarios,
-          activo: formOrganismo.activo,
-          regular: formOrganismo.regular,
-          clasificacionOrganismo: formOrganismo.clasificacionOrganismo,
-          participantePRS: formOrganismo.participantePRS,
-          frecuenciaCita: formOrganismo.frecuenciaCita,
-          diaCita: formOrganismo.diaCita,
-          horaCita: formOrganismo.horaCita,
-          personasServidas: formOrganismo.personasServidas,
-          cantidadColaciones: formOrganismo.cantidadColaciones,
-          cantidadAlmuerzos: formOrganismo.cantidadAlmuerzos,
-          porcentajeReparticion: formOrganismo.porcentajeReparticion,
-          notas: formOrganismo.notas,
-          notificaciones: formOrganismo.notificaciones,
-          logo: formOrganismo.logo,
-          documentoPDF: formOrganismo.documentoPDF,
-          contactosNotificacion: formOrganismo.contactosNotificacion,
-          fechaInicioInactividad: formOrganismo.fechaInicioInactividad,
-          fechaFinInactividad: formOrganismo.fechaFinInactividad
-        });
+        actualizarOrganismo(organismoSeleccionado.id, construirPayloadOrganismo(formOrganismo));
         
         // Recargar la lista de organismos
         cargarOrganismos();
@@ -588,17 +415,15 @@ export function Organismos() {
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               {branding.logo ? (
-                <div 
-                  className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border shadow-md sm:h-12 sm:w-12"
-                  style={{ borderColor: branding.primaryColor }}
-                >
-                  <img 
-                    src={branding.logo} 
-                    alt="Logo" 
-                    className="h-full w-full"
-                    style={{ objectFit: 'cover', objectPosition: 'center' }}
-                  />
-                </div>
+                <AdaptiveBrandLogo
+                  src={branding.logo}
+                  alt="Logo"
+                  wrapperClassName="h-11 w-11 sm:h-12 sm:w-12"
+                  containerClassName="border shadow-md"
+                  containerStyle={{ borderColor: branding.primaryColor }}
+                  squareRadiusClassName="rounded-[18px]"
+                  shadowClassName=""
+                />
               ) : (
                 <div 
                   className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-md sm:h-12 sm:w-12"

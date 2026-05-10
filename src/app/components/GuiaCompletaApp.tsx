@@ -106,7 +106,7 @@ export function GuiaCompletaApp({ onClose }: GuiaCompletaAppProps) {
                 <h2 className="text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   Guide Complet de l'Application
                 </h2>
-                <p className="text-blue-100 text-sm">Système de Communication Interne - Banque Alimentaire</p>
+                <p className="text-blue-100 text-sm">Système de Communication Interne - Réseau solidaire</p>
               </div>
             </div>
             <Button
@@ -131,7 +131,7 @@ export function GuiaCompletaApp({ onClose }: GuiaCompletaAppProps) {
                       <h3 className="text-2xl font-bold mb-3">Bienvenue dans le Chat Interne Pro!</h3>
                       <p className="text-blue-50 mb-4">
                         Un système de communication moderne et puissant conçu spécialement pour 
-                        optimiser la collaboration entre tous les départements de la Banque Alimentaire.
+                        optimiser la collaboration entre tous les départements du réseau.
                       </p>
                       <div className="grid grid-cols-3 gap-4 mt-6">
                         <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">

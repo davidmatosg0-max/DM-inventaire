@@ -4,6 +4,10 @@ import { useBranding } from '../../../hooks/useBranding';
 import { Lock, User, LogIn, AlertCircle, Sparkles, Clock, Shield } from 'lucide-react';
 import { LanguageSelector } from '../LanguageSelector';
 import { PWAFloatingButton } from '../PWAInstallButton';
+import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
+import { AccessExperienceShell } from '../shared/AccessExperienceShell';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import { toast } from 'sonner';
 import { useAuth } from '../../../contexts/AuthContext';
 import { inicializarUsuarios } from '../../utils/usuarios';
@@ -24,6 +28,12 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const authRemotaActiva = isSupabaseAuthEnabled();
+  const brandInitials = branding.systemName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(fragment => fragment.charAt(0).toUpperCase())
+    .join('') || 'BA';
 
   // Inicializar usuarios al montar el componente
   React.useEffect(() => {
@@ -81,103 +91,119 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center relative p-4 overflow-hidden"
-      style={{ 
-        fontFamily: 'Roboto, sans-serif',
-        background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`,
-      }}
-    >
-      {/* Formas décoratives de fond */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20 blur-3xl"
-          style={{ backgroundColor: branding.primaryColor }}
-        />
-        <div 
-          className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full opacity-20 blur-3xl"
-          style={{ backgroundColor: branding.secondaryColor }}
-        />
-      </div>
-
-      {/* Selector de idioma en la esquina supérieure droite */}
-      <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20">
-        <LanguageSelector />
-      </div>
-
-      {/* Conteneur du formulaire */}
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo et titre avec animation */}
-        <div className="text-center mb-8 animate-fadeIn">
-          <div className="relative inline-block mb-6">
-            {/* Effet de lumière derrière le logo */}
-            <div 
-              className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
-              style={{ backgroundColor: branding.primaryColor }}
-            />
-            <div 
-              onClick={handleDeveloperAccess}
-              className="relative h-28 w-28 sm:h-32 sm:w-32 mx-auto rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white cursor-default transition-all duration-300"
-              style={{ borderColor: branding.primaryColor }}
-              title=""
-            >
-              {branding.logo ? (
-                <img 
-                  src={branding.logo} 
-                  alt="Logo" 
-                  className="h-full w-full rounded-full"
-                  style={{ 
-                    objectFit: 'cover',
-                    objectPosition: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset'
-                  }}
-                />
-              ) : (
-                <div 
-                  className="h-full w-full flex items-center justify-center text-white"
-                  style={{ backgroundColor: branding.primaryColor }}
-                >
-                  <span className="text-4xl sm:text-5xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    BA
-                  </span>
+    <>
+      <AccessExperienceShell
+        branding={branding}
+        topRight={<LanguageSelector />}
+        leftPanel={
+          <div className="flex h-full flex-col justify-between gap-6">
+            <div>
+              <div className="relative mb-6 rounded-[28px] border border-white/90 bg-white/92 p-6 shadow-[0_22px_50px_-36px_rgba(15,45,71,0.35)]">
+                <div className="absolute right-5 top-5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Authentification
                 </div>
-              )}
+                <div className="relative inline-block mb-5">
+                  {branding.logo ? (
+                    <AdaptiveBrandLogo
+                      src={branding.logo}
+                      alt="Logo"
+                      wrapperClassName="h-24 w-24"
+                      glowColor={branding.primaryColor}
+                      glowClassName="blur-2xl opacity-30 animate-pulse"
+                      containerClassName="cursor-default transition-all duration-300 border-4 bg-white shadow-2xl"
+                      containerStyle={{ borderColor: branding.primaryColor }}
+                      imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
+                      onClick={handleDeveloperAccess}
+                    />
+                  ) : (
+                    <>
+                      <div 
+                        className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
+                        style={{ backgroundColor: branding.primaryColor }}
+                      />
+                      <div 
+                        onClick={handleDeveloperAccess}
+                        className="relative h-24 w-24 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white cursor-default transition-all duration-300"
+                        style={{ borderColor: branding.primaryColor }}
+                        title=""
+                      >
+                        <div 
+                          className="h-full w-full flex items-center justify-center text-white"
+                          style={{ backgroundColor: branding.primaryColor }}
+                        >
+                          <span className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            {brandInitials}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <h1 
+                  className="font-bold text-2xl sm:text-3xl mb-3 tracking-tight" 
+                  style={{ 
+                    fontFamily: 'Montserrat, sans-serif',
+                    color: branding.primaryColor,
+                  }}
+                >
+                  {branding.systemName}
+                </h1>
+                <p className="text-base sm:text-lg text-gray-700 font-light leading-7" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                  {t('login.welcome')}
+                </p>
+                {branding.address && <p className="mt-4 text-sm text-slate-500">{branding.address}</p>}
+                {branding.phone && <p className="mt-1 text-sm text-slate-500">{branding.phone}</p>}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.26)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Sécurité</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">JWT</p>
+                  <p className="mt-1 text-xs text-slate-500">Session chiffrée et persistante</p>
+                </div>
+                <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.26)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Portail</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">Organismes</p>
+                  <p className="mt-1 text-xs text-slate-500">Accès public séparé mais cohérent</p>
+                </div>
+                <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.26)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">App</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">Responsive</p>
+                  <p className="mt-1 text-xs text-slate-500">Conçue pour toutes les largeurs</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-white/80 bg-white/88 p-5 shadow-[0_18px_36px_-30px_rgba(15,45,71,0.35)]">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-2xl p-2" style={{ backgroundColor: `${branding.primaryColor}12` }}>
+                  <Shield className="h-5 w-5" style={{ color: branding.primaryColor }} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Design unifié pour toute la plateforme</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    La connexion interne, l’accès organisme et les modules métier partagent maintenant le même langage visuel premium et responsive.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <h1 
-            className="font-bold text-2xl sm:text-3xl mb-3 tracking-tight" 
-            style={{ 
-              fontFamily: 'Montserrat, sans-serif',
-              color: branding.primaryColor,
-            }}
-          >
-            {branding.systemName}
-          </h1>
-          <p className="text-base sm:text-lg text-gray-700 font-light" style={{ fontFamily: 'Roboto, sans-serif' }}>
-            {t('login.welcome')}
-          </p>
-        </div>
-
-        {/* Carte de login avec glassmorphism */}
-        <div 
-          className="backdrop-blur-xl bg-white/80 rounded-2xl shadow-2xl p-6 sm:p-8 border border-white/50"
-          style={{
-            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
-          }}
-        >
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Sparkles size={20} style={{ color: branding.primaryColor }} />
-            <h2 
-              className="font-bold text-xl sm:text-2xl text-center" 
-              style={{ 
-                fontFamily: 'Montserrat, sans-serif',
-                color: '#333333' 
-              }}
-            >
-              {t('login.signIn')}
-            </h2>
-          </div>
+        }
+        rightPanel={
+          <div className="space-y-5">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Sparkles size={20} style={{ color: branding.primaryColor }} />
+              <h2 
+                className="font-bold text-xl sm:text-2xl text-center" 
+                style={{ 
+                  fontFamily: 'Montserrat, sans-serif',
+                  color: '#333333' 
+                }}
+              >
+                {t('login.signIn')}
+              </h2>
+            </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Champ d'utilisateur */}
@@ -199,7 +225,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                 >
                   <User size={20} />
                 </div>
-                <input
+                <Input
                   id="usuario"
                   type="text"
                   value={usuario}
@@ -232,7 +258,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                 >
                   <Lock size={20} />
                 </div>
-                <input
+                <Input
                   id="contrasena"
                   type="password"
                   value={contrasena}
@@ -275,12 +301,13 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
             </div>
 
             {/* Bouton de connexion */}
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full text-white font-bold py-3.5 text-base rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none mt-6"
+              size="lg"
+              className="w-full text-white font-bold py-3.5 text-base transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none mt-6"
               style={{ 
-                backgroundColor: branding.primaryColor,
+                background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
                 fontFamily: 'Montserrat, sans-serif',
               }}
             >
@@ -295,7 +322,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                   {t('login.signIn')}
                 </>
               )}
-            </button>
+            </Button>
 
             {/* Message d'erreur */}
             {error && (
@@ -307,14 +334,14 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
               </div>
             )}
           </form>
-        </div>
+        
 
         {/* Botón de acceso público a Feuilles de Temps */}
         {onAccessPublic && (
-          <div className="mt-6 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+          <div className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <button
               onClick={() => onAccessPublic('recrutement-public')}
-              className="w-full backdrop-blur-xl bg-gradient-to-r from-white/70 to-white/50 rounded-xl shadow-lg p-4 border border-white/60 group hover:shadow-xl hover:from-white/80 hover:to-white/60 transition-all duration-300 transform hover:-translate-y-1"
+              className="w-full backdrop-blur-xl bg-gradient-to-r from-white/70 to-white/50 rounded-[24px] shadow-lg p-4 border border-white/60 group hover:shadow-xl hover:from-white/80 hover:to-white/60 transition-all duration-300 transform hover:-translate-y-1"
               style={{
                 boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.08)',
               }}
@@ -390,45 +417,17 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
         )}
 
         {/* Pied de page */}
-        <div className="text-center mt-6 text-sm text-gray-600">
+        <div className="text-center pt-1 text-sm text-gray-600">
           <p className="font-light">
             © 2024 {branding.systemName}. {t('login.allRightsReserved') || 'Todos los derechos reservados'}
           </p>
         </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Botón flotante de instalación PWA */}
       <PWAFloatingButton />
-
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.6s ease-out forwards;
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 0.3;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-
-        .animate-pulse {
-          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
-    </div>
+    </>
   );
 }

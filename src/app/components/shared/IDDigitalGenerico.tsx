@@ -6,6 +6,8 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { BrandedQRCode } from './BrandedQRCode';
+import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
+import { useBranding } from '../../../hooks/useBranding';
 
 export interface IDDigitalData {
   // Información básica
@@ -45,8 +47,18 @@ interface IDDigitalGenericoProps {
 }
 
 export function IDDigitalGenerico({ data, isOpen, onClose }: IDDigitalGenericoProps) {
+  const branding = useBranding();
+  const brandingPrint = normalizeBrandingPrintConfig(branding);
+  const nombreSistemaImpresion = brandingPrint.systemName;
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
   const couleurPrincipale = data.couleurTheme || '#4CAF50';
   const couleurSecondaire = data.couleurTheme === '#1E73BE' ? '#1557A0' : '#45a049';
+  const siglasSistema = nombreSistemaImpresion
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((fragmento) => fragmento.charAt(0).toUpperCase())
+    .join('') || 'BA';
   
   const qrData = JSON.stringify({
     type: data.role.toLowerCase(),
@@ -140,9 +152,12 @@ export function IDDigitalGenerico({ data, isOpen, onClose }: IDDigitalGenericoPr
               <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <h3 className="text-white font-bold text-2xl mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    BANQUE ALIMENTAIRE
+                    {nombreSistemaImpresion}
                   </h3>
-                  <p className="text-white opacity-90 text-sm">Laval, Quebec, Canadá</p>
+                  <p className="text-white opacity-90 text-sm">{brandingPrint.address || 'Laval, Quebec, Canadá'}</p>
+                  {brandingContactLine && (
+                    <p className="text-white opacity-90 text-xs mt-1">{brandingContactLine}</p>
+                  )}
                 </div>
                 <div className="bg-white rounded-full p-3 shadow-lg">
                   <div 
@@ -152,7 +167,7 @@ export function IDDigitalGenerico({ data, isOpen, onClose }: IDDigitalGenericoPr
                     }}
                   >
                     <span className="text-white font-bold text-2xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      BA
+                      {siglasSistema}
                     </span>
                   </div>
                 </div>
@@ -291,7 +306,7 @@ export function IDDigitalGenerico({ data, isOpen, onClose }: IDDigitalGenericoPr
             {/* Footer de la tarjeta */}
             <div className="bg-[#F9F9F9] px-8 py-4 border-t-2 border-[#E0E0E0]">
               <p className="text-xs text-center text-[#999999]">
-                Ce document certifie que la personne identifiée est {data.role.toLowerCase()} autorisé(e) de la Banque Alimentaire de Laval
+                Ce document certifie que la personne identifiée est {data.role.toLowerCase()} autorisé(e) de {nombreSistemaImpresion}
               </p>
             </div>
           </div>
