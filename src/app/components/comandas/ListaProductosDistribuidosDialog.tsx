@@ -310,7 +310,10 @@ export function ListaProductosDistribuidosDialog({
   const [filtroDetalleDistribucion, setFiltroDetalleDistribucion] = useState('');
   const [fechaCaducidadDistribucionEditada, setFechaCaducidadDistribucionEditada] = useState('');
   const detalleDistribucionRef = useRef<HTMLDivElement | null>(null);
+  const editorFechaDistribucionRef = useRef<HTMLDivElement | null>(null);
+  const inputFechaDistribucionRef = useRef<HTMLInputElement | null>(null);
   const debeDesplazarADetalleRef = useRef(false);
+  const debeEnfocarEditorFechaRef = useRef(false);
 
   const resumen = useMemo(() => {
     const productosReales = obtenerProductos();
@@ -555,13 +558,51 @@ export function ListaProductosDistribuidosDialog({
     debeDesplazarADetalleRef.current = false;
   }, [distribucionSeleccionadaFiltrada]);
 
-  const abrirDistribucion = (distribucionId: string) => {
+  useEffect(() => {
+    if (!debeEnfocarEditorFechaRef.current || !distribucionSeleccionadaFiltrada || !editorFechaDistribucionRef.current) {
+      return;
+    }
+
+    editorFechaDistribucionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => {
+      const input = inputFechaDistribucionRef.current;
+      if (!input) {
+        return;
+      }
+
+      input.focus();
+      input.showPicker?.();
+      window.requestAnimationFrame(() => {
+        input.focus();
+      });
+    }, 120);
+    debeEnfocarEditorFechaRef.current = false;
+  }, [distribucionSeleccionadaFiltrada]);
+
+  const abrirDistribucion = (distribucionId: string, enfocarEditorFecha = false) => {
     if (distribucionId === distribucionSeleccionadaId) {
-      detalleDistribucionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (enfocarEditorFecha && editorFechaDistribucionRef.current) {
+        editorFechaDistribucionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.setTimeout(() => {
+          const input = inputFechaDistribucionRef.current;
+          if (!input) {
+            return;
+          }
+
+          input.focus();
+          input.showPicker?.();
+          window.requestAnimationFrame(() => {
+            input.focus();
+          });
+        }, 120);
+      } else {
+        detalleDistribucionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       return;
     }
 
     debeDesplazarADetalleRef.current = true;
+    debeEnfocarEditorFechaRef.current = enfocarEditorFecha;
     setDistribucionSeleccionadaId(distribucionId);
   };
 
@@ -926,13 +967,27 @@ export function ListaProductosDistribuidosDialog({
                           (distribucion.comandaIds.length > 1 || Boolean(distribucion.grupoDistribucionId)) && !distribucionFinalizada;
 
                         return (
-                          <TableRow key={distribucion.comandaId} className={isActive ? 'bg-blue-50/70' : isLatestVisible ? 'bg-emerald-50/60' : undefined}>
+                          <TableRow
+                            key={distribucion.comandaId}
+                            className={[
+                              isActive ? 'bg-blue-50/70' : isLatestVisible ? 'bg-emerald-50/60' : undefined,
+                              esDistribucionEditable ? 'cursor-pointer hover:bg-blue-50/40' : undefined,
+                            ].filter(Boolean).join(' ')}
+                            onClick={() => {
+                              if (esDistribucionEditable) {
+                                abrirDistribucion(distribucion.comandaId, true);
+                              }
+                            }}
+                          >
                             <TableCell>
                               <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  onClick={() => abrirDistribucion(distribucion.comandaId)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    abrirDistribucion(distribucion.comandaId, esDistribucionEditable);
+                                  }}
                                   className="h-auto px-0 font-semibold text-[#1E73BE] hover:bg-transparent hover:text-[#175a95]"
                                 >
                                   {distribucion.numeroDistribucion}
@@ -954,7 +1009,10 @@ export function ListaProductosDistribuidosDialog({
                                 type="button"
                                 size="sm"
                                 variant={isLatestVisible ? 'default' : 'outline'}
-                                onClick={() => abrirDistribucion(distribucion.comandaId)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  abrirDistribucion(distribucion.comandaId, esDistribucionEditable);
+                                }}
                                 className={isLatestVisible ? 'bg-[#1E73BE] hover:bg-[#175a95]' : ''}
                                 title={distribucionFinalizada ? 'Voir la distribution finalisée' : esDistribucionEditable ? 'Modifier la distribution' : 'Ouvrir la distribution'}
                                 aria-label={distribucionFinalizada ? 'Voir la distribution finalisée' : esDistribucionEditable ? 'Modifier la distribution' : 'Ouvrir la distribution'}
@@ -1002,7 +1060,7 @@ export function ListaProductosDistribuidosDialog({
                 />
 
                 {(distribucionSeleccionadaFiltrada.comandaIds.length > 1 || distribucionSeleccionadaFiltrada.grupoDistribucionId) && (
-                  <div className="rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] p-4">
+                  <div ref={editorFechaDistribucionRef} className="rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] p-4">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1014,6 +1072,7 @@ export function ListaProductosDistribuidosDialog({
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-[#333333]">Date de péremption de la distribution</label>
                           <Input
+                            ref={inputFechaDistribucionRef}
                             type="date"
                             value={fechaCaducidadDistribucionEditada}
                             onChange={(event) => setFechaCaducidadDistribucionEditada(event.target.value)}
@@ -1033,7 +1092,7 @@ export function ListaProductosDistribuidosDialog({
                     </div>
                   </div>
                 )}
-
+                                onClick={() => abrirDistribucion(distribucion.comandaId, esDistribucionEditable)}
                 <div className="space-y-4">
                   {gruposTemperaturaDistribucion.map((grupo) => (
                     <div key={grupo.key} className="rounded-xl border bg-white overflow-hidden">

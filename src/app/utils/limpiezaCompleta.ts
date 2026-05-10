@@ -240,7 +240,7 @@ function crearUsuariosPermanentes(): void {
     {
       id: 'user-david-permanent',
       nombre: 'David',
-      email: 'david@banquealimentaire.org',
+      email: 'davidmatosg0@gmail.com',
       password: 'Lettycia26', // Contraseña: Lettycia26
       rol: 'desarrollador' as const,
       activo: true,

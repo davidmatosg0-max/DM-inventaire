@@ -61,6 +61,28 @@ export function ModeloComanda({
   const nombreSistemaImpresion = brandingPrint.systemName;
   const brandingContactLine = formatBrandingContactLine(brandingPrint);
 
+  const parseDateForDisplay = (value?: string) => {
+    if (!value) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    return new Date(value);
+  };
+
+  const formatDisplayDate = (value?: string, options?: Intl.DateTimeFormatOptions) => {
+    const parsedDate = parseDateForDisplay(value);
+    if (!parsedDate || Number.isNaN(parsedDate.getTime())) {
+      return 'Date invalide';
+    }
+
+    return parsedDate.toLocaleDateString(defaultLocale, options);
+  };
+
   const formatearCantidadProducto = (valor: number) => {
     return new Intl.NumberFormat(defaultLocale, {
       minimumFractionDigits: Number.isInteger(valor) ? 0 : 1,
@@ -1031,7 +1053,7 @@ export function ModeloComanda({
                     </div>
                     <div className="rounded-2xl border border-[#dbe7f1] bg-white/90 px-3 py-2 shadow-sm">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Créée le</p>
-                      <p className="mt-1 font-semibold text-slate-800">{new Date(comanda.fecha).toLocaleDateString(defaultLocale)}</p>
+                      <p className="mt-1 font-semibold text-slate-800">{formatDisplayDate(comanda.fecha)}</p>
                     </div>
                     <div className="rounded-2xl border border-[#dbe7f1] bg-white/90 px-3 py-2 shadow-sm">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Statut</p>
@@ -1068,7 +1090,7 @@ export function ModeloComanda({
                           Acceptation requise avant la date prévue
                         </p>
                         <p className="text-sm leading-5 text-[#7A4200]">
-                          Si cette commande n’est pas acceptée avant le {new Date(comanda.fechaEntrega || comanda.fecha).toLocaleDateString(defaultLocale)}, elle sera annulée automatiquement.
+                          Si cette commande n’est pas acceptée avant le {formatDisplayDate(comanda.fechaEntrega || comanda.fecha)}, elle sera annulée automatiquement.
                         </p>
                       </div>
                     </div>
@@ -1083,7 +1105,7 @@ export function ModeloComanda({
                     )}
                     {comanda.fechaCaducidadGrupo && (
                       <Badge className="border border-[#F59E0B]/20 bg-[#FFF7E8] text-[#B45309] hover:bg-[#FFF7E8]">
-                        Péremption: {new Date(comanda.fechaCaducidadGrupo).toLocaleDateString(defaultLocale)}
+                        Péremption: {formatDisplayDate(comanda.fechaCaducidadGrupo)}
                       </Badge>
                     )}
                   </div>
@@ -1120,7 +1142,7 @@ export function ModeloComanda({
               <div className={`space-y-1.5 ${vistaCompacta ? 'text-[13px]' : 'text-sm sm:text-base'}`}>
                 <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Jour :</strong> {comanda.fechaEntrega ? 
-                    new Date(comanda.fechaEntrega).toLocaleDateString(defaultLocale, { 
+                    formatDisplayDate(comanda.fechaEntrega, { 
                       weekday: 'long', 
                       year: 'numeric', 
                       month: 'long', 
@@ -1132,7 +1154,7 @@ export function ModeloComanda({
                 </p>
                 {comanda.fechaLimiteRespuesta && (
                   <p className="text-xs sm:text-sm text-[#DC3545] mt-2 font-medium rounded-xl bg-white/80 px-2.5 py-2 border border-[#f6d0d0]">
-                    ⚠️ À confirmer avant le : {new Date(comanda.fechaLimiteRespuesta).toLocaleDateString(defaultLocale)}
+                    ⚠️ À confirmer avant le : {formatDisplayDate(comanda.fechaLimiteRespuesta)}
                   </p>
                 )}
               </div>
@@ -1147,7 +1169,7 @@ export function ModeloComanda({
                   <strong>Préparée par :</strong> {comanda.usuarioCreacion || 'Non attribué'}
                 </p>
                 <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
-                  <strong>Date de création :</strong> {new Date(comanda.fecha).toLocaleDateString(defaultLocale)}
+                  <strong>Date de création :</strong> {formatDisplayDate(comanda.fecha)}
                 </p>
                 <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Heure de création :</strong> {new Date(comanda.fecha).toLocaleTimeString(defaultLocale, { hour: '2-digit', minute: '2-digit' })}
@@ -1231,7 +1253,7 @@ export function ModeloComanda({
                     <p>
                       <strong>Date de péremption de la distribution :</strong>{' '}
                       {comanda.fechaCaducidadGrupo
-                        ? new Date(comanda.fechaCaducidadGrupo).toLocaleDateString(defaultLocale)
+                        ? formatDisplayDate(comanda.fechaCaducidadGrupo)
                         : 'Non définie'}
                     </p>
                     <p>

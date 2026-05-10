@@ -43,6 +43,7 @@ import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { toast } from 'sonner';
+import { COMANDAS_UPDATED_EVENT, obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerProductos, guardarProducto, actualizarProducto } from '../../utils/productStorage';
 import { mockProductos } from '../../data/mockData';
 import { calcularValorMonetario, obtenerCategorias, actualizarPesoUnitarioSubcategoria, actualizarPesoUnitarioVariante } from '../../utils/categoriaStorage';
@@ -165,6 +166,53 @@ type UltimaDistribucionGrupoResumen = {
   grupoDistribucionEtiqueta: string;
   comandas: Array<{ numero: string; nombre: string; porcentaje: number }>;
 };
+
+function construirEtiquetaResumenDistribucion(
+  etiquetaActual: string,
+  fechaCaducidadGrupo?: string,
+  modalidadDistribucion?: string,
+): string {
+  const prefix = modalidadDistribucion === 'collation' || etiquetaActual.toLowerCase().includes('collation')
+    ? 'Distribution Collation'
+    : 'Distribution de groupe';
+
+  if (!fechaCaducidadGrupo) {
+    return etiquetaActual;
+  }
+
+  return `${prefix} ${fechaCaducidadGrupo}`;
+}
+
+function sincronizarResumenDistribucionGrupo(
+  resumen: UltimaDistribucionGrupoResumen | null,
+): UltimaDistribucionGrupoResumen | null {
+  if (!resumen) {
+    return null;
+  }
+
+  const comandaReferencia = obtenerComandas().find(
+    (comanda) => comanda.grupoDistribucionId === resumen.grupoDistribucionId,
+  );
+
+  if (!comandaReferencia) {
+    return resumen;
+  }
+
+  const grupoDistribucionEtiqueta = construirEtiquetaResumenDistribucion(
+    comandaReferencia.grupoDistribucionEtiqueta || resumen.grupoDistribucionEtiqueta,
+    comandaReferencia.fechaCaducidadGrupo,
+    comandaReferencia.modalidadDistribucion,
+  );
+
+  if (grupoDistribucionEtiqueta === resumen.grupoDistribucionEtiqueta) {
+    return resumen;
+  }
+
+  return {
+    ...resumen,
+    grupoDistribucionEtiqueta,
+  };
+}
 
 const ULTIMA_DISTRIBUCION_GRUPO_STORAGE_KEY = 'inventario_ultima_distribucion_grupo';
 
@@ -2192,6 +2240,25 @@ export function Inventario() {
     window.location.href = url.toString();
   };
 
+  const handleAbrirComandasParaEditarDistribucionGrupo = () => {
+    const numeroComanda = ultimaDistribucionGrupoCreada?.comandas[0]?.numero;
+
+    if (numeroComanda) {
+      savePendingQrNavigation({
+        targetPage: 'comandas',
+        qrType: 'comanda',
+        rawData: {
+          tipo: 'comanda',
+          id: numeroComanda,
+          comanda: numeroComanda,
+        },
+        action: 'modificar_grupo',
+      });
+    }
+
+    navigateToModule('comandas');
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -2210,6 +2277,27 @@ export function Inventario() {
       console.error('Erreur lors de la sauvegarde de la dernière distribution groupée:', error);
     }
   }, [ultimaDistribucionGrupoCreada]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const sincronizar = () => {
+      setUltimaDistribucionGrupoCreada((actual) => sincronizarResumenDistribucionGrupo(actual));
+    };
+
+    sincronizar();
+    window.addEventListener(COMANDAS_UPDATED_EVENT, sincronizar);
+    window.addEventListener('storage', sincronizar);
+    window.addEventListener('focus', sincronizar);
+
+    return () => {
+      window.removeEventListener(COMANDAS_UPDATED_EVENT, sincronizar);
+      window.removeEventListener('storage', sincronizar);
+      window.removeEventListener('focus', sincronizar);
+    };
+  }, []);
 
   return (
     <div
@@ -2309,7 +2397,7 @@ export function Inventario() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  onClick={() => navigateToModule('comandas')}
+                  onClick={handleAbrirComandasParaEditarDistribucionGrupo}
                   className="bg-[#1E73BE] hover:bg-[#1557A0]"
                 >
                   <FileText className="mr-2 h-4 w-4" />

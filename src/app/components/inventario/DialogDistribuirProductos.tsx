@@ -574,9 +574,10 @@ export function DialogDistribuirProductos({
       ])
     );
     const grupoDistribucionId = `grp-${Date.now()}`;
+    const fechaEtiquetaGrupo = fechaCaducidadGrupo || new Date().toLocaleDateString('fr-CA');
     const grupoDistribucionEtiqueta = tipoDistribucion === 'collation'
-      ? `Distribution Collation ${new Date().toLocaleDateString('fr-CA')}`
-      : `Distribution de groupe ${new Date().toLocaleDateString('fr-CA')}`;
+      ? `Distribution Collation ${fechaEtiquetaGrupo}`
+      : `Distribution de groupe ${fechaEtiquetaGrupo}`;
 
     try {
       distribucionActual.forEach(orgInfo => {

@@ -277,6 +277,11 @@ export interface Usuario {
   ultimoAcceso?: string;
 }
 
+export const DAVID_DEVELOPPEUR_USERNAME = 'David';
+export const DAVID_DEVELOPPEUR_NOMBRE = 'David';
+export const DAVID_DEVELOPPEUR_APELLIDO = 'Développeur';
+export const DAVID_DEVELOPPEUR_EMAIL = 'davidmatosg0@gmail.com';
+
 export function esRolSistema(rol: string): rol is RolUsuario {
   return rol in ROLES_CONFIG;
 }
@@ -289,11 +294,11 @@ export function obtenerEtiquetaRol(rol: string): string {
 const USUARIOS_PREDEFINIDOS: Usuario[] = [
   {
     id: '1',
-    username: 'David',
+    username: DAVID_DEVELOPPEUR_USERNAME,
     password: 'Lettycia26',
-    nombre: 'David',
-    apellido: 'Développeur',
-    email: 'david@banque-alimentaire.org',
+    nombre: DAVID_DEVELOPPEUR_NOMBRE,
+    apellido: DAVID_DEVELOPPEUR_APELLIDO,
+    email: DAVID_DEVELOPPEUR_EMAIL,
     rol: 'desarrollador',
     permisos: [
       PERMISOS.DESARROLLADOR,
@@ -314,7 +319,30 @@ const USUARIOS_PREDEFINIDOS: Usuario[] = [
 
 const STORAGE_KEY = 'banque_alimentaire_usuarios';
 const VERSION_KEY = 'banque_alimentaire_usuarios_version';
-const CURRENT_VERSION = '5.0-production'; // Versión producción - Solo David
+const CURRENT_VERSION = '5.2-production'; // Versión producción - Normaliza el email real de David
+
+function esUsuarioDavidDeveloppeur(usuario: Partial<Usuario>): boolean {
+  const username = usuario.username?.trim().toLowerCase();
+  const nombre = usuario.nombre?.trim().toLowerCase();
+  const apellido = usuario.apellido?.trim().toLowerCase();
+
+  return username === DAVID_DEVELOPPEUR_USERNAME.toLowerCase()
+    || (nombre === DAVID_DEVELOPPEUR_NOMBRE.toLowerCase() && apellido === DAVID_DEVELOPPEUR_APELLIDO.toLowerCase());
+}
+
+function normalizarUsuarioSistema(usuario: Usuario): Usuario {
+  if (!esUsuarioDavidDeveloppeur(usuario)) {
+    return usuario;
+  }
+
+  return {
+    ...usuario,
+    username: DAVID_DEVELOPPEUR_USERNAME,
+    nombre: DAVID_DEVELOPPEUR_NOMBRE,
+    apellido: DAVID_DEVELOPPEUR_APELLIDO,
+    email: DAVID_DEVELOPPEUR_EMAIL,
+  };
+}
 
 // Migrar usuarios existentes para actualizar permisos del usuario David
 export function migrarUsuarios(): void {
@@ -327,7 +355,7 @@ export function migrarUsuarios(): void {
       return; // Ya está actualizado
     }
 
-    const usuariosNormalizados = usuariosActuales.length > 0 ? usuariosActuales : USUARIOS_PREDEFINIDOS;
+    const usuariosNormalizados = (usuariosActuales.length > 0 ? usuariosActuales : USUARIOS_PREDEFINIDOS).map(normalizarUsuarioSistema);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuariosNormalizados));
     queueStorageSync(STORAGE_KEY);
     localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
@@ -347,7 +375,7 @@ export function inicializarUsuarios(): void {
       localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
       console.log('✅ Utilisateurs initialisés :', USUARIOS_PREDEFINIDOS.length, 'utilisateur(s)');
     } else {
-      const usuarios = JSON.parse(stored) as Usuario[];
+      const usuarios = (JSON.parse(stored) as Usuario[]).map(normalizarUsuarioSistema);
       if (usuarios.length === 0) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
         queueStorageSync(STORAGE_KEY);
@@ -355,6 +383,8 @@ export function inicializarUsuarios(): void {
         console.log('✅ Utilisateur administrateur initial restauré');
         return;
       }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
 
       migrarUsuarios();
     }

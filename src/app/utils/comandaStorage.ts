@@ -17,6 +17,22 @@ const ESTADOS_COMANDA_LEGACY: Record<EstadoComandaLegacy, EstadoComanda> = {
   cancelada: 'anulada'
 };
 
+function construirEtiquetaGrupoDistribucion(
+  modalidadDistribucion?: string,
+  fechaCaducidadGrupo?: string,
+  etiquetaActual?: string,
+): string | undefined {
+  const prefix = modalidadDistribucion === 'collation' || etiquetaActual?.toLowerCase().includes('collation')
+    ? 'Distribution Collation'
+    : 'Distribution de groupe';
+
+  if (fechaCaducidadGrupo) {
+    return `${prefix} ${fechaCaducidadGrupo}`;
+  }
+
+  return etiquetaActual || undefined;
+}
+
 function emitirActualizacionComandas(): void {
   if (typeof window === 'undefined') {
     return;
@@ -239,9 +255,16 @@ export function actualizarComandasGrupo(grupoDistribucionId: string, cambios: Pa
         return comanda;
       }
 
+      const grupoDistribucionEtiqueta = construirEtiquetaGrupoDistribucion(
+        comanda.modalidadDistribucion,
+        cambios.fechaCaducidadGrupo,
+        cambios.grupoDistribucionEtiqueta || comanda.grupoDistribucionEtiqueta,
+      );
+
       return normalizarComanda({
         ...comanda,
         ...cambios,
+        grupoDistribucionEtiqueta,
         fechaModificacion: new Date().toISOString(),
       }, obtenerProductos());
     });

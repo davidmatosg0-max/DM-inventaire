@@ -107,8 +107,17 @@ export function Comandas() {
   });
   const currentLocale = i18n.language || 'fr';
 
+  const parseDateForDisplay = (value: string) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    return new Date(value);
+  };
+
   const formatLocalizedDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
-    new Date(value).toLocaleDateString(currentLocale, options);
+    parseDateForDisplay(value).toLocaleDateString(currentLocale, options);
   const searchByNumberPlaceholder = t('orders.searchByNumber');
   const [searchTerm, setSearchTerm] = useState('');
   const [comandaDialogOpen, setComandaDialogOpen] = useState(false);
@@ -281,6 +290,7 @@ export function Comandas() {
   };
 
   const openScannedComanda = (comanda: Comanda, numeroComanda: string) => {
+    setAbrirEdicionGrupoDirecta(false);
     setComandaSeleccionada(comanda);
     setMostrarModeloComanda(true);
     setEscanerQROpen(false);
@@ -332,9 +342,17 @@ export function Comandas() {
         return;
       case 'modificar':
         setEscanerQROpen(false);
+        setAbrirEdicionGrupoDirecta(false);
         setComandaSeleccionada(comanda);
         setMostrarModeloComanda(true);
         toast.info(`Commande N° ${numeroComanda} ouverte pour modification`);
+        return;
+      case 'modificar_grupo':
+        setEscanerQROpen(false);
+        setAbrirEdicionGrupoDirecta(true);
+        setComandaSeleccionada(comanda);
+        setMostrarModeloComanda(true);
+        toast.info('Distribution de groupe ouverte directement pour modifier la date');
         return;
       case 'cancelar': {
         setEscanerQROpen(false);

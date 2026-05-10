@@ -1,6 +1,13 @@
 // Gestión de sesión de usuario conectado
 // Última actualización: 2026-03-17 - Soporte para apellido
 
+import {
+  DAVID_DEVELOPPEUR_APELLIDO,
+  DAVID_DEVELOPPEUR_EMAIL,
+  DAVID_DEVELOPPEUR_NOMBRE,
+  DAVID_DEVELOPPEUR_USERNAME,
+} from './usuarios';
+
 export type PermisoModulo = 'administrador_liaison' | 'coordinador' | 'almacenista' | 'transportista' | 'administrador_general' | 'desarrollador' | 'acceso_total';
 
 export interface UsuarioSesion {
@@ -16,6 +23,35 @@ export interface UsuarioSesion {
 
 const STORAGE_KEY = 'usuario_sesion_banco_alimentos';
 
+function esSesionDavidDeveloppeur(usuario: Partial<UsuarioSesion> & { role?: string; rol?: string; username?: string }): boolean {
+  const username = usuario.username?.trim().toLowerCase();
+  const nombre = usuario.nombre?.trim().toLowerCase();
+  const apellido = usuario.apellido?.trim().toLowerCase();
+
+  return username === DAVID_DEVELOPPEUR_USERNAME.toLowerCase()
+    || (nombre === DAVID_DEVELOPPEUR_NOMBRE.toLowerCase() && apellido === DAVID_DEVELOPPEUR_APELLIDO.toLowerCase());
+}
+
+function normalizarUsuarioSesion(usuario: UsuarioSesion): UsuarioSesion {
+  const email = usuario.email?.trim();
+  const baseNormalizada = {
+    ...usuario,
+    email: email || 'usuario@banquealimentaire.ca',
+  };
+
+  if (!esSesionDavidDeveloppeur(baseNormalizada)) {
+    return baseNormalizada;
+  }
+
+  return {
+    ...baseNormalizada,
+    username: DAVID_DEVELOPPEUR_USERNAME,
+    nombre: DAVID_DEVELOPPEUR_NOMBRE,
+    apellido: DAVID_DEVELOPPEUR_APELLIDO,
+    email: DAVID_DEVELOPPEUR_EMAIL,
+  };
+}
+
 /**
  * Guarda el usuario actual en la sesión
  */
@@ -30,9 +66,11 @@ export function guardarUsuarioSesion(usuarioOUsername: UsuarioSesion | string | 
       usuario = {
         id: '1',
         username: usuarioOUsername,
-        nombre: 'Administrateur',
-        apellido: 'Système',
-        email: `${usuarioOUsername.toLowerCase()}@banquealimentaire.ca`,
+        nombre: usuarioOUsername.trim().toLowerCase() === DAVID_DEVELOPPEUR_USERNAME.toLowerCase() ? DAVID_DEVELOPPEUR_NOMBRE : 'Administrateur',
+        apellido: usuarioOUsername.trim().toLowerCase() === DAVID_DEVELOPPEUR_USERNAME.toLowerCase() ? DAVID_DEVELOPPEUR_APELLIDO : 'Système',
+        email: usuarioOUsername.trim().toLowerCase() === DAVID_DEVELOPPEUR_USERNAME.toLowerCase()
+          ? DAVID_DEVELOPPEUR_EMAIL
+          : `${usuarioOUsername.toLowerCase()}@banquealimentaire.ca`,
         rol: 'administrador',
         permisos: ['administrador_general', 'desarrollador', 'acceso_total'],
         foto: undefined
@@ -54,6 +92,8 @@ export function guardarUsuarioSesion(usuarioOUsername: UsuarioSesion | string | 
         usuario = usuarioOUsername;
       }
     }
+
+    usuario = normalizarUsuarioSesion(usuario);
     
     console.log('💾 Guardando usuario en sesión:', usuario);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuario));
@@ -69,7 +109,9 @@ export function obtenerUsuarioSesion(): UsuarioSesion | null {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) return null;
-    return JSON.parse(data) as UsuarioSesion;
+    const usuario = normalizarUsuarioSesion(JSON.parse(data) as UsuarioSesion);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(usuario));
+    return usuario;
   } catch (error) {
     console.error('Error al obtener usuario de sesión:', error);
     return null;
