@@ -297,6 +297,7 @@ export function moduloDisponible(moduloId: string): boolean {
     'organismos': [PERMISOS.ORGANISMOS_VER],
     'ofertas-organismo': [PERMISOS.OFERTAS_VER, PERMISOS.ORGANISMOS_VER],
     'transporte': [PERMISOS.TRANSPORTE_VER],
+    'dechets-compostage': [PERMISOS.INVENTARIO_VER],
     'reportes': [PERMISOS.REPORTES_VER],
     'donateurs-fournisseurs': [PERMISOS.PARTENAIRES_VER, PERMISOS.ORGANISMOS_VER, PERMISOS.ACHAT_VER],
     'contactos-almacen': [PERMISOS.ANNUAIRE_ENTREPOT_VER, PERMISOS.ORGANISMOS_VER],

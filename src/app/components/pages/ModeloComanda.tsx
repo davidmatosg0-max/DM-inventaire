@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Printer, X, Thermometer, Snowflake, Sun, Maximize2, Minimize2, Check, Ban, Edit2, Box, AlertCircle } from 'lucide-react';
+import { Printer, X, Thermometer, Snowflake, Sun, Maximize2, Minimize2, Check, Ban, Edit2, Box, AlertCircle, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -20,6 +20,7 @@ import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr'
 import { useTranslation } from 'react-i18next';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
 import { actualizarComanda, actualizarComandasGrupo } from '../../utils/comandaStorage';
+import { obtenerReservaInventarioProducto } from '../../utils/inventoryReservations';
 import { toast } from 'sonner';
 
 interface ModeloComandaProps {
@@ -54,6 +55,13 @@ export function ModeloComanda({
   const comandaRef = useRef<HTMLDivElement>(null);
   const bloqueGrupoRef = useRef<HTMLDivElement>(null);
 
+  const formatearCantidadProducto = (valor: number) => {
+    return new Intl.NumberFormat(defaultLocale, {
+      minimumFractionDigits: Number.isInteger(valor) ? 0 : 1,
+      maximumFractionDigits: 2,
+    }).format(valor);
+  };
+
   const obtenerEtiquetaProducto = (producto: any, nombreProducto?: string) => {
     return nombreProducto || producto?.nombre || producto?.subcategoria || 'Produit introuvable';
   };
@@ -63,7 +71,7 @@ export function ModeloComanda({
       return null;
     }
 
-    return `Poids unitaire : ${formatQuantity(producto.pesoUnitario)} kg`;
+    return `Poids unitaire : ${formatearCantidadProducto(producto.pesoUnitario)} kg`;
   };
 
   const obtenerValorUnitario = (item: any) => {
@@ -81,12 +89,16 @@ export function ModeloComanda({
   const itemsComanda = React.useMemo(() => Array.isArray(comanda.items) ? comanda.items : [], [comanda.items]);
   const [vistaCompacta, setVistaCompacta] = useState(true);
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [modoEdicionInterna, setModoEdicionInterna] = useState(false);
   const [cantidadesEditadas, setCantidadesEditadas] = useState<{[key: string]: number}>({});
   const [campoEditando, setCampoEditando] = useState<string | null>(null); // Para edición inline
   const [modoEdicionGrupo, setModoEdicionGrupo] = useState(false);
   const [fechaCaducidadGrupoEditada, setFechaCaducidadGrupoEditada] = useState('');
   const [grupoAncladoEditado, setGrupoAncladoEditado] = useState(false);
   const [observacionesGrupoEditadas, setObservacionesGrupoEditadas] = useState('');
+  const [productoAgregarId, setProductoAgregarId] = useState('');
+  const [filtroRapidoProducto, setFiltroRapidoProducto] = useState('');
+  const [cantidadAgregarProducto, setCantidadAgregarProducto] = useState('1');
   const distribucionGrupoFinalizada = ['entregada', 'anulada'].includes(String(comanda.estado || ''));
   
   // 🎯 NUEVO: Estado para marcar productos como completados durante la preparación
@@ -97,6 +109,149 @@ export function ModeloComanda({
       ...prev,
       [itemKey]: !prev[itemKey],
     }));
+  };
+
+  const inventarioProductos = React.useMemo(() => {
+    return obtenerProductos()
+      .filter((producto: any) => producto?.id)
+      .sort((left: any, right: any) => String(left?.nombre || '').localeCompare(String(right?.nombre || ''), 'fr'));
+  }, []);
+
+  const productoAgregarSeleccionado = React.useMemo(() => {
+    return inventarioProductos.find((producto: any) => producto.id === productoAgregarId) || null;
+  }, [inventarioProductos, productoAgregarId]);
+
+  const obtenerCantidadActualProductoEnEdicion = (productoId: string) => {
+    return itemsComanda.reduce((total: number, item: any, index: number) => {
+      if (item?.productoId !== productoId) {
+        return total;
+      }
+
+      const itemKey = `${item.productoId}-${index}`;
+      const cantidadVisible = (modoEdicion || modoEdicionInterna) && cantidadesEditadas[itemKey] !== undefined
+        ? cantidadesEditadas[itemKey]
+        : Number(item?.cantidad || 0);
+
+      return total + Number(cantidadVisible || 0);
+    }, 0);
+  };
+
+  const productosFiltradosAgregar = React.useMemo(() => {
+    const inventarioDisponible = inventarioProductos.filter((producto: any) => {
+      return obtenerStockDisponibleProducto(producto) > 0 || producto.id === productoAgregarId;
+    });
+
+    const filtro = filtroRapidoProducto.trim().toLocaleLowerCase('fr-CA');
+
+    if (!filtro) {
+      return inventarioDisponible;
+    }
+
+    const filtrados = inventarioDisponible.filter((producto: any) => {
+      const textoBusqueda = [
+        producto?.nombre,
+        producto?.codigo,
+        producto?.categoria,
+        producto?.subcategoria,
+        producto?.varianteNombre,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLocaleLowerCase('fr-CA');
+
+      return textoBusqueda.includes(filtro);
+    });
+
+    if (productoAgregarSeleccionado && !filtrados.some((producto: any) => producto.id === productoAgregarSeleccionado.id)) {
+      return [productoAgregarSeleccionado, ...filtrados];
+    }
+
+    return filtrados;
+  }, [inventarioProductos, filtroRapidoProducto, productoAgregarSeleccionado, productoAgregarId, itemsComanda, cantidadesEditadas, modoEdicion, modoEdicionInterna, comanda.id]);
+
+  function obtenerStockDisponibleProducto(producto: any) {
+    if (!producto?.id) {
+      return 0;
+    }
+
+    const reserva = obtenerReservaInventarioProducto(producto.id, {
+      excludeComandaId: comanda.id,
+    });
+    const cantidadActual = obtenerCantidadActualProductoEnEdicion(producto.id);
+    const cantidadDisponible = Number(reserva?.disponibleParaReservar ?? 0) - cantidadActual;
+
+    return Number.isFinite(cantidadDisponible) ? Math.max(cantidadDisponible, 0) : 0;
+  }
+
+  const construirEtiquetaOpcionProducto = (producto: any) => {
+    const nombre = obtenerEtiquetaProducto(producto);
+    const stockDisponible = obtenerStockDisponibleProducto(producto);
+    const pesoUnitario = typeof producto?.pesoUnitario === 'number' && producto.pesoUnitario > 0
+      ? `${formatearCantidadProducto(producto.pesoUnitario)} kg`
+      : null;
+
+    return [
+      `${producto?.icono || '📦'} ${nombre}`,
+      pesoUnitario ? `${pesoUnitario}/un.` : null,
+      `Ajoutable: ${formatearCantidadProducto(stockDisponible)} ${producto?.unidad || 'kg'}`,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  };
+
+  const getItemKey = (item: any, index: number) => `${item.productoId}-${index}`;
+
+  const getCantidadVisible = (item: any, index: number) => {
+    const itemKey = getItemKey(item, index);
+    if ((modoEdicion || modoEdicionInterna) && cantidadesEditadas[itemKey] !== undefined) {
+      return cantidadesEditadas[itemKey];
+    }
+
+    return item.cantidad;
+  };
+
+  const inicializarCantidadesEditadas = (items: any[]) => {
+    const cantidadesIniciales: {[key: string]: number} = {};
+    items.forEach((item: any, index: number) => {
+      cantidadesIniciales[getItemKey(item, index)] = Number(item.cantidad || 0);
+    });
+    setCantidadesEditadas(cantidadesIniciales);
+  };
+
+  const normalizarTemperaturaPersistida = (temperatura?: string) => {
+    if (temperatura === 'refrigerado' || temperatura === 'Réfrigéré') {
+      return 'refrigerado';
+    }
+
+    if (temperatura === 'congelado' || temperatura === 'Congelé') {
+      return 'congelado';
+    }
+
+    return 'ambiente';
+  };
+
+  const construirItemPersistido = (item: any, cantidad: number) => {
+    const nombreProducto = item.nombreProducto || item.productoNombre || item.producto?.nombre || 'Produit introuvable';
+
+    return {
+      ...item,
+      producto: undefined,
+      nombreProducto,
+      productoNombre: nombreProducto,
+      cantidad,
+      cantidadAceptada: typeof item.cantidadAceptada === 'number' ? Math.min(item.cantidadAceptada, cantidad) : item.cantidadAceptada,
+      unidad: item.unidad || item.producto?.unidad || 'kg',
+      icono: item.icono || item.producto?.icono,
+      valorUnitario: typeof item.valorUnitario === 'number' ? item.valorUnitario : item.producto?.valorUnitario,
+      temperatura: normalizarTemperaturaPersistida(item.temperaturaOriginalEntrada || item.temperatura),
+      temperaturaOriginalEntrada: normalizarTemperaturaPersistida(item.temperaturaOriginalEntrada || item.temperatura),
+    };
+  };
+
+  const construirItemsInternosEditados = () => {
+    return productosOrdenados
+      .map((item: any, index: number) => construirItemPersistido(item, getCantidadVisible(item, index)))
+      .filter((item: any) => Number(item.cantidad) > 0);
   };
 
   const handleImprimir = () => {
@@ -172,32 +327,40 @@ export function ModeloComanda({
   const totalProductos = productosOrdenados.length;
   const productosCompletadosCount = Object.values(productosCompletados).filter(Boolean).length;
   const porcentajeCompletado = totalProductos > 0 ? (productosCompletadosCount / totalProductos) * 100 : 0;
+  const hayCambiosCantidad = productosOrdenados.some((item: any, index: number) => {
+    const itemKey = getItemKey(item, index);
+    return cantidadesEditadas[itemKey] !== undefined && cantidadesEditadas[itemKey] !== item.cantidad;
+  });
 
   // Agrupar por temperatura para mostrar secciones
   const productosAgrupados = React.useMemo(() => {
     const grupos: { [key: string]: any[] } = {
-      'Temperatura Ambiente': [],
-      'Refrigerado': [],
-      'Congelado': []
+      'Température ambiante': [],
+      'Réfrigéré': [],
+      'Congelé': []
     };
 
     productosOrdenados.forEach((item: any) => {
-      grupos[item.temperatura].push(item);
+      const temperatura = typeof item.temperatura === 'string' ? item.temperatura : 'Température ambiante';
+      if (!grupos[temperatura]) {
+        grupos[temperatura] = [];
+      }
+      grupos[temperatura].push(item);
     });
 
     return grupos;
   }, [productosOrdenados]);
 
   const obtenerEtiquetaTemperatura = (temperatura: string) => {
-    if (temperatura === 'Temperatura Ambiente') {
+    if (temperatura === 'Température ambiante') {
       return 'Ambiante';
     }
 
-    if (temperatura === 'Refrigerado') {
+    if (temperatura === 'Réfrigéré') {
       return 'Réfrigéré';
     }
 
-    if (temperatura === 'Congelado') {
+    if (temperatura === 'Congelé') {
       return 'Congelé';
     }
 
@@ -205,11 +368,11 @@ export function ModeloComanda({
   };
 
   const obtenerNombreOriginalTemperatura = (temperatura?: string) => {
-    if (temperatura === 'refrigerado') {
+    if (temperatura === 'refrigerado' || temperatura === 'Réfrigéré') {
       return 'refrigerado';
     }
 
-    if (temperatura === 'congelado') {
+    if (temperatura === 'congelado' || temperatura === 'Congelé') {
       return 'congelado';
     }
 
@@ -218,11 +381,11 @@ export function ModeloComanda({
 
   const getTemperatureBadgeStyle = (temp: string) => {
     switch (temp) {
-      case 'Temperatura Ambiente':
+      case 'Température ambiante':
         return 'bg-[#FFF8E1] text-[#F57C00] border-[#FFC107]';
-      case 'Refrigerado':
+      case 'Réfrigéré':
         return 'bg-[#E3F2FD] text-[#1E73BE] border-[#1E73BE]';
-      case 'Congelado':
+      case 'Congelé':
         return 'bg-[#E1F5FE] text-[#0277BD] border-[#0288D1]';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-300';
@@ -254,11 +417,11 @@ export function ModeloComanda({
   // Función para obtener icono de temperatura
   const getTemperaturaIcon = (temp: string) => {
     switch (temp) {
-      case 'Temperatura Ambiente':
+      case 'Température ambiante':
         return <Sun className="w-5 h-5 text-[#FFC107]" />;
-      case 'Refrigerado':
+      case 'Réfrigéré':
         return <Thermometer className="w-5 h-5 text-[#1E73BE]" />;
-      case 'Congelado':
+      case 'Congelé':
         return <Snowflake className="w-5 h-5 text-[#4CAF50]" />;
       default:
         return null;
@@ -343,12 +506,127 @@ export function ModeloComanda({
 
   // Función para cambiar cantidad
   const handleCambioCantidad = (itemKey: string, nuevaCantidad: number, cantidadOriginal: number) => {
-    // Solo permitir disminuir o mantener igual
-    if (nuevaCantidad <= cantidadOriginal && nuevaCantidad >= 0) {
+    if (nuevaCantidad < 0 || Number.isNaN(nuevaCantidad)) {
+      return;
+    }
+
+    if (modoEdicionInterna || nuevaCantidad <= cantidadOriginal) {
       setCantidadesEditadas(prev => ({
         ...prev,
         [itemKey]: nuevaCantidad
       }));
+    }
+  };
+
+  const handleIniciarEdicionInterna = () => {
+    inicializarCantidadesEditadas(productosOrdenados);
+    setCampoEditando(null);
+    setModoEdicionInterna(true);
+  };
+
+  const handleCancelarEdicionInterna = () => {
+    setModoEdicionInterna(false);
+    setCampoEditando(null);
+    setCantidadesEditadas({});
+    setProductoAgregarId('');
+    setFiltroRapidoProducto('');
+    setCantidadAgregarProducto('1');
+  };
+
+  const handleGuardarEdicionInterna = () => {
+    try {
+      const itemsActualizados = construirItemsInternosEditados();
+      const comandaActualizada = {
+        ...comanda,
+        items: itemsActualizados,
+        fechaModificacion: new Date().toISOString(),
+      };
+
+      actualizarComanda(comandaActualizada);
+      onComandaActualizada?.(comandaActualizada);
+      setModoEdicionInterna(false);
+      setCampoEditando(null);
+      setCantidadesEditadas({});
+      toast.success('Les articles de la commande ont été mis à jour.');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour interne de la commande:', error);
+      toast.error('Impossible de mettre à jour les articles de la commande.');
+    }
+  };
+
+  const handleAgregarProductoInterno = () => {
+    const producto = inventarioProductos.find((item: any) => item.id === productoAgregarId);
+    const cantidad = Number(cantidadAgregarProducto);
+
+    if (!producto) {
+      toast.error('Sélectionnez un produit à ajouter.');
+      return;
+    }
+
+    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+      toast.error('La quantité à ajouter doit être supérieure à 0.');
+      return;
+    }
+
+    const cantidadDisponibleAgregar = obtenerStockDisponibleProducto(producto);
+    const nombreProducto = producto.nombre || producto.subcategoria || 'Produit introuvable';
+
+    if (cantidadDisponibleAgregar <= 0) {
+      toast.error(`Aucune quantité réservabile n’est disponible pour ${nombreProducto}.`);
+      return;
+    }
+
+    if (cantidad > cantidadDisponibleAgregar) {
+      toast.error(
+        `Quantité indisponible pour ${nombreProducto}. Maximum ajoutable: ${formatearCantidadProducto(cantidadDisponibleAgregar)} ${producto.unidad || 'kg'}.`,
+      );
+      return;
+    }
+
+    try {
+      const itemsBase = construirItemsInternosEditados();
+      const indiceExistente = itemsBase.findIndex((item: any) => item.productoId === producto.id);
+      const temperaturaOriginal = normalizarTemperaturaPersistida(
+        resolverTemperaturaOriginalEntradaProducto(producto as any),
+      );
+
+      if (indiceExistente >= 0) {
+        itemsBase[indiceExistente] = {
+          ...itemsBase[indiceExistente],
+          cantidad: Number(itemsBase[indiceExistente].cantidad || 0) + cantidad,
+        };
+      } else {
+        itemsBase.push({
+          productoId: producto.id,
+          nombreProducto,
+          productoNombre: nombreProducto,
+          cantidad,
+          unidad: producto.unidad || 'kg',
+          icono: producto.icono,
+          valorUnitario: typeof producto.valorUnitario === 'number' ? producto.valorUnitario : undefined,
+          temperatura: temperaturaOriginal,
+          temperaturaOriginalEntrada: temperaturaOriginal,
+        });
+      }
+
+      const comandaActualizada = {
+        ...comanda,
+        items: itemsBase,
+        fechaModificacion: new Date().toISOString(),
+      };
+
+      actualizarComanda(comandaActualizada);
+      onComandaActualizada?.(comandaActualizada);
+      setProductoAgregarId('');
+      setFiltroRapidoProducto('');
+      setCantidadAgregarProducto('1');
+      setCantidadesEditadas({});
+      toast.success('Produit ajouté à la commande.');
+    } catch (error) {
+      console.error('Erreur lors de l’ajout interne de produit:', error);
+      if (!(error instanceof Error) || !error.message) {
+        toast.error('Impossible d’ajouter le produit à la commande.');
+      }
     }
   };
 
@@ -413,6 +691,40 @@ export function ModeloComanda({
             Commande - {comanda.numero}
           </h2>
           <div className="flex gap-2 flex-wrap">
+            {!modoOrganismo && (
+              modoEdicionInterna ? (
+                <>
+                  <Button
+                    onClick={handleGuardarEdicionInterna}
+                    variant="outline"
+                    size="sm"
+                    className="bg-[#2D9561] text-white hover:bg-[#267d50] border-0"
+                  >
+                    <Check className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Enregistrer les articles</span>
+                  </Button>
+                  <Button
+                    onClick={handleCancelarEdicionInterna}
+                    variant="outline"
+                    size="sm"
+                    className="bg-white text-[#334155] hover:bg-slate-50 border-[#dbe4ee]"
+                  >
+                    <X className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Annuler les modifications</span>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleIniciarEdicionInterna}
+                  variant="outline"
+                  size="sm"
+                  className="bg-white text-[#1E73BE] hover:bg-blue-50 border-[#dbe4ee]"
+                >
+                  <Edit2 className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Modifier les articles</span>
+                </Button>
+              )
+            )}
             <Button
               onClick={() => setVistaCompacta((prev) => !prev)}
               variant="outline"
@@ -463,6 +775,98 @@ export function ModeloComanda({
                 </Button>
               ))}
             </div>
+          </div>
+        )}
+
+        {!modoOrganismo && modoEdicionInterna && (
+          <div className={`mx-4 mb-4 rounded-lg border border-[#dbe4ee] bg-slate-50 print:hidden ${vistaCompacta ? 'p-3.5' : 'p-4'}`}>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+              <div className="flex-1 space-y-3">
+                <p className="font-semibold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Ajouter un produit à la commande
+                </p>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Filtre rapide
+                  </p>
+                  <Input
+                    type="text"
+                    value={filtroRapidoProducto}
+                    onChange={(e) => setFiltroRapidoProducto(e.target.value)}
+                    placeholder="Nom, code, catégorie..."
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-slate-500">
+                    {productosFiltradosAgregar.length} produit{productosFiltradosAgregar.length > 1 ? 's' : ''} affiché{productosFiltradosAgregar.length > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Seuls les produits avec quantité réservabile disponible sont proposés.
+                  </p>
+                </div>
+                <select
+                  value={productoAgregarId}
+                  onChange={(e) => setProductoAgregarId(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-[#dbe4ee] bg-white px-3 text-sm text-slate-700"
+                >
+                  <option value="">Sélectionner un produit</option>
+                  {productosFiltradosAgregar.map((producto: any) => (
+                    <option key={producto.id} value={producto.id}>
+                      {construirEtiquetaOpcionProducto(producto)}
+                    </option>
+                  ))}
+                </select>
+                {filtroRapidoProducto.trim() && productosFiltradosAgregar.length === 0 && (
+                  <p className="text-xs text-amber-700">
+                    Aucun produit ne correspond à ce filtre.
+                  </p>
+                )}
+                {productoAgregarSeleccionado && (
+                  <div className="rounded-xl border border-[#cfe0f2] bg-white p-3 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EAF4FF] text-2xl shadow-inner">
+                        {productoAgregarSeleccionado.icono || '📦'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-slate-800" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                          {obtenerEtiquetaProducto(productoAgregarSeleccionado)}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Code: {productoAgregarSeleccionado.codigo || 'N/A'}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          <span className="rounded-full bg-[#EAF4FF] px-2.5 py-1 font-medium text-[#1E73BE]">
+                            Poids unitaire: {typeof productoAgregarSeleccionado.pesoUnitario === 'number' && productoAgregarSeleccionado.pesoUnitario > 0 ? `${formatearCantidadProducto(productoAgregarSeleccionado.pesoUnitario)} kg` : 'N/A'}
+                          </span>
+                          <span className="rounded-full bg-[#EDF8EE] px-2.5 py-1 font-medium text-[#2E7D32]">
+                            Ajoutable: {formatearCantidadProducto(obtenerStockDisponibleProducto(productoAgregarSeleccionado))} {productoAgregarSeleccionado.unidad || 'kg'}
+                          </span>
+                          <span className="rounded-full bg-[#FFF6E8] px-2.5 py-1 font-medium text-[#B46900]">
+                            Unité: {productoAgregarSeleccionado.unidad || 'kg'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 lg:w-40">
+                <p className="text-sm font-medium text-slate-700">Quantité</p>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={cantidadAgregarProducto}
+                  onChange={(e) => setCantidadAgregarProducto(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleAgregarProductoInterno} className="bg-[#1E73BE] text-white hover:bg-[#1557A0]">
+                <Plus className="w-4 h-4 mr-2" />
+                Ajouter produit
+              </Button>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              En mode interne, vous pouvez augmenter, diminuer ou compléter les articles puis enregistrer la commande.
+            </p>
           </div>
         )}
 
@@ -562,7 +966,7 @@ export function ModeloComanda({
               </Button>
             </div>
 
-            {Object.values(cantidadesEditadas).some((cant, idx) => cant !== productosOrdenados[idx]?.cantidad) && (
+            {hayCambiosCantidad && (
               <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-[#FFC107] rounded">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-[#FFC107] rounded-full flex items-center justify-center flex-shrink-0">
@@ -818,19 +1222,19 @@ export function ModeloComanda({
               if (items.length === 0) return null;
               
               const colorConfig = {
-                'Temperatura Ambiente': { 
+                'Température ambiante': { 
                   bg: 'bg-[#FFF8E1]', 
                   border: 'border-[#FFC107]', 
                   text: 'text-[#F57C00]',
                   icon: <Sun className="w-6 h-6 text-[#FFC107]" />
                 },
-                'Refrigerado': { 
+                'Réfrigéré': { 
                   bg: 'bg-[#E3F2FD]', 
                   border: 'border-[#1E73BE]', 
                   text: 'text-[#1E73BE]',
                   icon: <Thermometer className="w-6 h-6 text-[#1E73BE]" />
                 },
-                'Congelado': { 
+                'Congelé': { 
                   bg: 'bg-[#E1F5FE]', 
                   border: 'border-[#0288D1]', 
                   text: 'text-[#0277BD]',
@@ -873,7 +1277,7 @@ export function ModeloComanda({
                       </TableHeader>
                       <TableBody>
                         {items.map((item: any, index: number) => {
-                          const itemKey = `${item.productoId}-${index}`;
+                                  const itemKey = getItemKey(item, index);
                           return (
                             <TableRow key={itemKey} className="hover:bg-gray-50">
                               {/* 🎯 NUEVO: Checkbox para marcar producto como completado */}
@@ -919,26 +1323,35 @@ export function ModeloComanda({
                                 {item.producto?.lote || 'N/A'}
                               </TableCell>
                               <TableCell className={`text-center ${vistaCompacta ? 'px-2 py-2' : ''}`}>
-                                {modoEdicion || campoEditando === itemKey ? (
+                                {modoEdicionInterna || modoEdicion || campoEditando === itemKey ? (
                                   <Input
                                     type="number"
-                                    min="0"
-                                    max={Math.round(item.cantidad)}
-                                    value={formatQuantity(cantidadesEditadas[itemKey] || item.cantidad)}
-                                    onChange={(e) => handleCambioCantidad(itemKey, parseInt(e.target.value) || 0, item.cantidad)}
-                                    onBlur={() => setCampoEditando(null)}
+                                    min={modoEdicionInterna ? '0.01' : '0'}
+                                    step="0.01"
+                                    max={modoEdicionInterna ? undefined : String(Math.round(item.cantidad))}
+                                    value={String(getCantidadVisible(item, index))}
+                                    onChange={(e) => handleCambioCantidad(itemKey, Number(e.target.value), item.cantidad)}
+                                    onBlur={() => {
+                                      if (!modoEdicionInterna) {
+                                        setCampoEditando(null);
+                                      }
+                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
-                                        setCampoEditando(null);
+                                        if (!modoEdicionInterna) {
+                                          setCampoEditando(null);
+                                        }
                                       } else if (e.key === 'Escape') {
                                         setCantidadesEditadas(prev => ({
                                           ...prev,
                                           [itemKey]: item.cantidad
                                         }));
-                                        setCampoEditando(null);
+                                        if (!modoEdicionInterna) {
+                                          setCampoEditando(null);
+                                        }
                                       }
                                     }}
-                                    autoFocus
+                                    autoFocus={!modoEdicionInterna}
                                     className={`${vistaCompacta ? 'w-16 h-8 text-sm' : 'w-20'} text-center font-bold text-[#1E73BE]`}
                                   />
                                 ) : (
@@ -952,10 +1365,10 @@ export function ModeloComanda({
                                     }}
                                     title={modoOrganismo && comanda.estado !== 'anulada' && comanda.estado !== 'completada' && comanda.estado !== 'entregada' ? 'Cliquer pour modifier' : ''}
                                   >
-                                    {cantidadesEditadas[itemKey] !== undefined && cantidadesEditadas[itemKey] !== item.cantidad ? (
+                                    {getCantidadVisible(item, index) !== item.cantidad ? (
                                       <span className="flex items-center justify-center gap-1">
                                         <span className="line-through text-gray-400 text-sm">{formatQuantity(item.cantidad)}</span>
-                                        <span className="text-[#FFC107]">{formatQuantity(cantidadesEditadas[itemKey])}</span>
+                                        <span className="text-[#FFC107]">{formatQuantity(getCantidadVisible(item, index))}</span>
                                       </span>
                                     ) : (
                                       formatQuantity(item.cantidad)
@@ -999,14 +1412,15 @@ export function ModeloComanda({
               <div className={`bg-green-50 border-2 border-[#4CAF50] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Poids total</p>
                 <p className="font-bold text-[#4CAF50]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
-                  {formatQuantity(productosOrdenados.reduce((sum: number, item: any) => sum + (modoEdicion && cantidadesEditadas[item.productoId] !== undefined ? cantidadesEditadas[item.productoId] : item.cantidad), 0))} kg
+                  {formatQuantity(productosOrdenados.reduce((sum: number, item: any, index: number) => sum + getCantidadVisible(item, index), 0))} kg
                 </p>
               </div>
               <div className={`bg-orange-50 border-2 border-[#FF9800] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Valeur monétaire</p>
                 <p className="font-bold text-[#FF9800]" style={{ fontSize: vistaCompacta ? '1.05rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
                   CAD$ {formatMoney(productosOrdenados.reduce((sum: number, item: any) => {
-                    const cantidad = modoEdicion && cantidadesEditadas[item.productoId] !== undefined ? cantidadesEditadas[item.productoId] : item.cantidad;
+                    const index = productosOrdenados.findIndex((productoActual: any) => productoActual === item);
+                    const cantidad = getCantidadVisible(item, index);
                     return sum + (cantidad * obtenerValorUnitario(item));
                   }, 0))}
                 </p>
@@ -1014,13 +1428,13 @@ export function ModeloComanda({
               <div className={`bg-yellow-50 border-2 border-[#FFC107] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Ambiante</p>
                 <p className="font-bold text-[#FFC107]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
-                  {productosAgrupados['Temperatura Ambiente'].length}
+                  {productosAgrupados['Température ambiante'].length}
                 </p>
               </div>
               <div className={`bg-blue-50 border-2 border-[#0288D1] rounded-lg ${vistaCompacta ? 'p-3' : 'p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Réfrigéré/Congelé</p>
                 <p className="font-bold text-[#0288D1]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
-                  {productosAgrupados['Refrigerado'].length + productosAgrupados['Congelado'].length}
+                  {productosAgrupados['Réfrigéré'].length + productosAgrupados['Congelé'].length}
                 </p>
               </div>
             </div>

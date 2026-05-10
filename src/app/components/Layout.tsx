@@ -40,7 +40,8 @@ import {
   ChefHat,
   Sparkles,
   BookOpen,
-  Zap
+  Zap,
+  Recycle
 } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { CentroNotificaciones } from './CentroNotificaciones';
@@ -393,6 +394,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
         { id: 'organismos', label: t('nav.organisms'), icon: <Building className="w-4 h-4" /> },
         { id: 'ofertas-organismo', label: t('nav.offers'), icon: <Tags className="w-4 h-4" /> },
         { id: 'transporte', label: t('nav.transport'), icon: <Truck className="w-4 h-4" /> },
+        { id: 'dechets-compostage', label: 'Déchets & compostage', icon: <Recycle className="w-4 h-4" /> },
         { id: 'donateurs-fournisseurs', label: 'Partenaires & fournisseurs', icon: <Building className="w-4 h-4" /> },
         { id: 'contactos-almacen', label: 'Annuaire Entrepôt', icon: <Users className="w-4 h-4" /> },
       ]

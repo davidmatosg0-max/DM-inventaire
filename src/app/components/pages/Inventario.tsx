@@ -194,15 +194,18 @@ export function Inventario() {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
   const translatedNewEntry = t('newEntry');
-  const newEntryLabel = translatedNewEntry !== 'newEntry'
-    ? translatedNewEntry
-    : i18n.resolvedLanguage?.startsWith('es')
-      ? 'Nueva entrada'
-      : i18n.resolvedLanguage?.startsWith('en')
-        ? 'New entry'
-        : i18n.resolvedLanguage?.startsWith('ar')
-          ? 'إدخال جديد'
-          : 'Nouvelle entrée';
+  const isFrenchLocale = !i18n.resolvedLanguage || i18n.resolvedLanguage.startsWith('fr');
+  const newEntryLabel = isFrenchLocale
+    ? 'Registrer Entrée'
+    : translatedNewEntry !== 'newEntry'
+      ? translatedNewEntry
+      : i18n.resolvedLanguage?.startsWith('es')
+        ? 'Nueva entrada'
+        : i18n.resolvedLanguage?.startsWith('en')
+          ? 'New entry'
+          : i18n.resolvedLanguage?.startsWith('ar')
+            ? 'إدخال جديد'
+            : 'Registrer Entrée';
   const [activeTab, setActiveTab] = useState('productos');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLote, setSearchLote] = useState('');

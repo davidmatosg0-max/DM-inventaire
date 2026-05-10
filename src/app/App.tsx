@@ -53,6 +53,7 @@ const Contact = lazyNamed(() => import('./components/pages/Contact'), 'Contact')
 const Login = lazyNamed(() => import('./components/pages/Login'), 'Login');
 const CuisinePage = lazyNamed(() => import('./components/pages/CuisinePage'), 'CuisinePage');
 const ContactosAlmacenPage = lazyNamed(() => import('./components/pages/ContactosAlmacenPage'), 'ContactosAlmacenPage');
+const DechetsCompostage = lazyNamed(() => import('./components/pages/DechetsCompostage'), 'DechetsCompostage');
 const CommunicationInterne = lazyNamed(() => import('./components/CommunicationInterne'), 'CommunicationInterne');
 const SystemDiagnostics = lazyNamed(() => import('./components/SystemDiagnostics'), 'SystemDiagnostics');
 const GestionDonateursFournisseurs = lazyNamed(
@@ -76,6 +77,7 @@ const PAGE_PERMISSION_ALIASES: Record<string, string> = {
   'usuarios-internos': 'usuarios',
   'gestion-autenticacion': 'usuarios',
   'dashboard-predictivo': 'dashboard',
+  'dechets-compostage': 'inventario',
 };
 
 function obtenerModuloProtegido(pageId: string): string | null {
@@ -203,6 +205,8 @@ function AppContent() {
         return renderWithSuspense(<GestionDonateursFournisseurs />);
       case 'contactos-almacen':
         return renderWithSuspense(<ContactosAlmacenPage onNavigate={setCurrentPage} />);
+      case 'dechets-compostage':
+        return renderWithSuspense(<DechetsCompostage />);
       case 'diagnosticos':
         return renderWithSuspense(<SystemDiagnostics />);
       default:

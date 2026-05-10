@@ -299,6 +299,7 @@ export function FormularioOrganismoCompacto({
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="regular">Regulier</SelectItem>
+                              <SelectItem value="collation">Collation</SelectItem>
                               <SelectItem value="eventual">Eventuel</SelectItem>
                             </SelectContent>
                           </Select>

@@ -10,11 +10,22 @@ import {
 } from './productTemperature';
 
 const COMANDAS_KEY = 'banco_alimentos_comandas';
+export const COMANDAS_UPDATED_EVENT = 'comandas-actualizadas';
 const ESTADOS_COMANDA_LEGACY: Record<EstadoComandaLegacy, EstadoComanda> = {
   preparada: 'completada',
   en_transito: 'entregada',
   cancelada: 'anulada'
 };
+
+function emitirActualizacionComandas(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(COMANDAS_UPDATED_EVENT, {
+    detail: { timestamp: Date.now() }
+  }));
+}
 
 type ComandaPersistida = Omit<Comanda, 'estado'> & {
   estado?: Comanda['estado'] | EstadoComandaLegacy | string;
@@ -114,6 +125,7 @@ export function obtenerComandas(): Comanda[] {
       if (JSON.stringify(comandasPersistidas) !== JSON.stringify(comandasNormalizadas)) {
         localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasNormalizadas));
         queueStorageSync(COMANDAS_KEY);
+        emitirActualizacionComandas();
       }
 
       return comandasNormalizadas;
@@ -143,6 +155,7 @@ export function guardarComanda(comanda: Comanda): void {
     comandas.push(comandaNormalizada);
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
     queueStorageSync(COMANDAS_KEY);
+    emitirActualizacionComandas();
     
     // Registrar actividad
     registrarActividad(
@@ -197,6 +210,7 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
       comandas[index] = comandaNormalizada;
       localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
       queueStorageSync(COMANDAS_KEY);
+      emitirActualizacionComandas();
       
       // Registrar actividad con cambios
       const cambios = [];
@@ -234,6 +248,7 @@ export function actualizarComandasGrupo(grupoDistribucionId: string, cambios: Pa
 
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasActualizadas));
     queueStorageSync(COMANDAS_KEY);
+    emitirActualizacionComandas();
 
     registrarActividad(
       'Commandes',
@@ -272,6 +287,7 @@ export function actualizarComandasDistribucion(
 
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasActualizadas));
     queueStorageSync(COMANDAS_KEY);
+    emitirActualizacionComandas();
 
     registrarActividad(
       'Commandes',
@@ -295,6 +311,7 @@ export function eliminarComanda(comandaId: string): void {
     const comandasFiltradas = comandas.filter(c => c.id !== comandaId);
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandasFiltradas));
     queueStorageSync(COMANDAS_KEY);
+    emitirActualizacionComandas();
     
     // Registrar actividad
     if (comandaEliminar) {

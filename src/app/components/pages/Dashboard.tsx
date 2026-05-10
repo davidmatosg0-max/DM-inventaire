@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Package, ClipboardList, Building, TrendingUp, Clock, Users, DollarSign, AlertTriangle, Sparkles, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { AlertaComandasUrgentes } from '../AlertaComandasUrgentes';
-import { obtenerComandas } from '../../utils/comandaStorage';
+import { COMANDAS_UPDATED_EVENT, obtenerComandas } from '../../utils/comandaStorage';
 import { EntradaDonAchat } from '../EntradaDonAchat';
 import { VerificacionesRecientes } from '../VerificacionesRecientes';
 import { AlertasInteligentes } from '../inventario/AlertasInteligentes';
@@ -13,6 +13,7 @@ import { formatLargeNumber } from '../../utils/formatUtils';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { obtenerOrganismos } from '../../utils/organismosStorage';
+import { escucharCambiosOrganismo } from '../../utils/organismoEvents';
 import { obtenerMovimientos, type MovimientoExtendido } from '../../utils/movimientoStorage';
 import { 
   obtenerProductosActivos, 
@@ -128,16 +129,7 @@ export function Dashboard() {
   const [organismosDisponibles, setOrganismosDisponibles] = useState<any[]>([]);
   const [activeDashboardTab, setActiveDashboardTab] = useState<'executive' | 'suivi' | 'prevision'>('executive');
 
-  // Cargar estadísticas al montar el componente
-  useEffect(() => {
-    cargarDatos();
-  }, []);
-
-  useEffect(() => {
-    window.dispatchEvent(new Event('resize'));
-  }, [activeDashboardTab]);
-
-  const cargarDatos = () => {
+  const cargarDatos = useCallback(() => {
     // Obtener datos de localStorage
     const productos = obtenerProductosActivos();
     const comandas = obtenerComandas();
@@ -187,7 +179,41 @@ export function Dashboard() {
     );
     setMovimientosPorDia(construirSerieDashboard(movimientos, totalStock));
     setOrganismosDisponibles(organismos);
-  };
+  }, []);
+
+  useEffect(() => {
+    cargarDatos();
+
+    const handleRefresh = () => {
+      cargarDatos();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        cargarDatos();
+      }
+    };
+
+    const cleanupOrganismos = escucharCambiosOrganismo(cargarDatos);
+    const refreshEvents = ['productos-actualizados', 'entradaGuardada', COMANDAS_UPDATED_EVENT, 'storage', 'focus'] as const;
+
+    refreshEvents.forEach((eventName) => {
+      window.addEventListener(eventName, handleRefresh);
+    });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      refreshEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, handleRefresh);
+      });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      cleanupOrganismos();
+    };
+  }, [cargarDatos]);
+
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, [activeDashboardTab]);
 
   const totalProductos = stats.totalProductos;
   const stockTotal = stats.totalStock;

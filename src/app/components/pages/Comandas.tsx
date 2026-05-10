@@ -1120,7 +1120,10 @@ export function Comandas() {
         onCambiarEstado={handleCambiarEstado}
         onAceptarComanda={handleAceptarComanda}
         onAnularComanda={handleAnularComanda}
-        onComandaActualizada={setComandaSeleccionada}
+        onComandaActualizada={(comandaActualizada) => {
+          setComandaSeleccionada(comandaActualizada);
+          setComandas((prev) => prev.map((item) => item.id === comandaActualizada.id ? comandaActualizada : item));
+        }}
         abrirEdicionGrupoInicial={abrirEdicionGrupoDirecta}
       />
     );

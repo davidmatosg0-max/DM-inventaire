@@ -1,7 +1,7 @@
 ﻿// 🎨🎨🎨 VERSIÓN 3.0.0 - SISTEMA DE LOGOS IMPLEMENTADO 🎨🎨🎨
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Edit, Phone, Mail, MapPin, Users, Upload, X, FileText, Bell, Calendar, Percent, UserCheck, UtensilsCrossed, Coffee, Clock, PackageCheck, History, ClipboardCheck, Key, Copy, Check, Send, Sparkles, Languages, Shield } from 'lucide-react';
+import { Plus, Eye, Edit, Phone, Mail, MapPin, Users, Upload, X, FileText, Bell, Calendar, Percent, UserCheck, UtensilsCrossed, Coffee, Clock, PackageCheck, History, ClipboardCheck, Key, Copy, Check, Send, Languages, Shield, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -559,37 +559,37 @@ export function Organismos() {
 
   return (
     <div 
-      className="app-compact-page min-h-screen p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 relative overflow-hidden"
+      className="app-compact-page relative min-h-screen overflow-hidden p-3 sm:p-4 lg:p-5"
       style={{ 
         fontFamily: 'Roboto, sans-serif',
-        background: 'linear-gradient(135deg, #1a4d7a15 0%, #2d956110 100%)',
+        background: 'linear-gradient(135deg, rgba(26,77,122,0.08) 0%, rgba(45,149,97,0.06) 100%)',
       }}
     >
       {/* Formas decorativas de fondo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
+          className="absolute -top-24 -left-24 h-80 w-80 rounded-full opacity-15 blur-3xl"
           style={{ backgroundColor: branding.primaryColor }}
         />
         <div 
-          className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
+          className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full opacity-15 blur-3xl"
           style={{ backgroundColor: branding.secondaryColor }}
         />
         <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-10 blur-3xl"
+          className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 transform rounded-full opacity-8 blur-3xl"
           style={{ backgroundColor: branding.primaryColor }}
         />
       </div>
 
       {/* Contenido con z-index superior */}
-      <div className="app-compact-page__content relative z-10 space-y-4 sm:space-y-6">
+      <div className="app-compact-page__content relative z-10 space-y-3 sm:space-y-4">
         {/* Header con glassmorphism */}
-        <div className="app-compact-panel backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div className="flex items-center gap-3 min-w-0">
+        <div className="app-compact-panel rounded-[28px] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-38px_rgba(15,45,71,0.34)] backdrop-blur-xl sm:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
               {branding.logo ? (
                 <div 
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center overflow-hidden shadow-lg border-2"
+                  className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border shadow-md sm:h-12 sm:w-12"
                   style={{ borderColor: branding.primaryColor }}
                 >
                   <img 
@@ -601,54 +601,53 @@ export function Organismos() {
                 </div>
               ) : (
                 <div 
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center text-white shadow-lg"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-md sm:h-12 sm:w-12"
                   style={{ backgroundColor: branding.primaryColor }}
                 >
-                  <Users className="w-6 h-6 sm:w-7 sm:h-7" />
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
               )}
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
+                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                    Liaison
+                  </span>
                   <h1 
-                    className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight break-words"
+                    className="break-words text-xl font-bold tracking-tight sm:text-2xl md:text-[30px]"
                     style={{ 
                       fontFamily: 'Montserrat, sans-serif',
                       color: branding.primaryColor 
                     }}
                   >
-                    🎨 {t('organisms.title')}
+                    {t('organisms.title')}
                   </h1>
-                  <Sparkles 
-                    className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" 
-                    style={{ color: branding.secondaryColor }}
-                  />
                 </div>
-                <p className="text-xs sm:text-sm text-[#666666] mt-1 font-medium">
-                  {t('organisms.subtitle')} • {t('organisms.version.subtitle')}
+                <p className="mt-1 text-sm font-medium text-slate-600">
+                  Gestion centralisée des organismes bénéficiaires, de leurs contacts et des accès de portail.
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+            <div className="flex w-full flex-wrap gap-2 xl:w-auto xl:justify-end">
               <Button 
                 onClick={handleAbrirEmailGrupal}
-                className="flex-1 lg:flex-none text-white transition-all duration-300 hover:scale-105"
+                className="h-10 flex-1 rounded-2xl px-4 text-white xl:flex-none"
                 style={{ 
                   fontFamily: 'Montserrat, sans-serif', 
                   fontWeight: 500, 
                   background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
-                  boxShadow: `0 4px 15px ${branding.secondaryColor}40`
+                  boxShadow: `0 10px 24px -18px ${branding.secondaryColor}`
                 }}
               >
                 <Send className="w-4 h-4 mr-2" />
                 {t('organisms.email.send')}
               </Button>
               <Button 
-                className={puedeGestionarOrganismos ? "flex-1 lg:flex-none text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl" : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"} 
+                className={puedeGestionarOrganismos ? "h-10 flex-1 rounded-2xl px-4 text-white xl:flex-none" : "h-10 flex-1 cursor-not-allowed rounded-2xl bg-gray-300 px-4 text-gray-500 opacity-60 xl:flex-none"} 
                 style={puedeGestionarOrganismos ? { 
                   fontFamily: 'Montserrat, sans-serif', 
                   fontWeight: 500, 
                   background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
-                  boxShadow: `0 4px 15px ${branding.primaryColor}40`
+                  boxShadow: `0 10px 24px -18px ${branding.primaryColor}`
                 } : { fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
                 disabled={!puedeGestionarOrganismos}
                 onClick={() => {
@@ -688,17 +687,18 @@ export function Organismos() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="card-glass rounded-xl sm:rounded-2xl p-3.5 sm:p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="card-glass cursor-pointer rounded-2xl border border-white/70 p-3 shadow-sm" style={{ borderLeft: `4px solid ${branding.primaryColor}` }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('organisms.totalOrganisms')}</p>
-              <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('organisms.totalOrganisms')}</p>
+              <p className="text-xl font-bold sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
                 {organismos.length}
               </p>
+              <p className="mt-1 text-xs text-slate-500">Base visible dans le registre principal.</p>
             </div>
             <div 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg"
+              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-md sm:h-10 sm:w-10"
               style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
             >
               <Users className="h-5 w-5 text-white" />
@@ -706,16 +706,17 @@ export function Organismos() {
           </div>
         </div>
 
-        <div className="card-glass rounded-xl sm:rounded-2xl p-3.5 sm:p-4 hover-lift cursor-pointer border-l-4" style={{ borderLeftColor: branding.secondaryColor }}>
+        <div className="card-glass cursor-pointer rounded-2xl border border-white/70 p-3 shadow-sm" style={{ borderLeft: `4px solid ${branding.secondaryColor}` }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('organisms.activeOrganisms')}</p>
-              <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('organisms.activeOrganisms')}</p>
+              <p className="text-xl font-bold sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>
                 {organismosActivos}
               </p>
+              <p className="mt-1 text-xs text-slate-500">Organismes actuellement opérationnels.</p>
             </div>
             <div 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg"
+              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-md sm:h-10 sm:w-10"
               style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
             >
               <Check className="h-5 w-5 text-white" />
@@ -723,146 +724,163 @@ export function Organismos() {
           </div>
         </div>
 
-        <div className="card-glass rounded-xl sm:rounded-2xl p-3.5 sm:p-4 hover-lift cursor-pointer border-l-4 border-l-[#FFC107]">
+        <div className="card-glass cursor-pointer rounded-2xl border border-white/70 p-3 shadow-sm" style={{ borderLeft: '4px solid #FFC107' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-[#666666] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>{t('organisms.totalBeneficiaries')}</p>
-              <p className="text-xl sm:text-2xl font-bold text-[#FFC107]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('organisms.totalBeneficiaries')}</p>
+              <p className="text-xl font-bold text-[#FFC107] sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 {totalBeneficiarios}
               </p>
+              <p className="mt-1 text-xs text-slate-500">Population totale couverte par le réseau.</p>
             </div>
             <div 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg"
+              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-md sm:h-10 sm:w-10"
               style={{ background: 'linear-gradient(135deg, #FFC107 0%, #FFB300 100%)' }}
             >
               <Users className="h-5 w-5 text-white" />
             </div>
           </div>
         </div>
-      </div>
+
+        </div>
 
         {/* Search con glassmorphism */}
-        <div className="app-compact-panel backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60">
-          <Input
-            placeholder={t('organisms.searchOrganism')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="app-compact-panel rounded-[24px] border border-white/70 bg-white/92 p-3 shadow-[0_18px_45px_-34px_rgba(15,45,71,0.3)] backdrop-blur-xl sm:p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder={t('organisms.searchOrganism')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-10 rounded-2xl border-slate-200 bg-white pl-10 text-sm shadow-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-[11px] text-slate-700">
+                {organismosFiltrados.length} affiché(s)
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Organismos Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
-        {organismosFiltrados.map(organismo => {
-          const comandasOrganismo = obtenerComandas().filter(c => c.organismoId === organismo.id);
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+          {organismosFiltrados.map((organismo) => {
+            const comandasOrganismo = obtenerComandas().filter(c => c.organismoId === organismo.id);
 
-          return (
-            <Card key={organismo.id} className="hover:shadow-lg transition-shadow border-white/70 shadow-sm overflow-hidden">
-              <CardHeader className="pb-2 sm:pb-3">
-                <div className="flex items-start justify-between gap-3">
-                  {/* Logo del organismo */}
-                  {organismo.logo && (
-                    <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 border border-gray-200 rounded-lg overflow-hidden bg-white">
-                      <img 
-                        src={organismo.logo} 
-                        alt={`Logo ${organismo.nombre}`}
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="mb-1.5 text-lg sm:text-xl leading-tight break-words" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {organismo.nombre}
-                    </CardTitle>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge style={{ backgroundColor: branding.primaryColor }}>
-                        {tiposOrganismo.find(tipo => tipo.nombre === organismo.tipo)?.nombre || organismo.tipo}
-                      </Badge>
-                      {organismo.participaPRS && (
-                        <Badge style={{ backgroundColor: branding.secondaryColor }}>
-                          ✓ PRS
+            return (
+              <Card key={organismo.id} className="overflow-hidden rounded-[24px] border border-white/80 bg-white/96 shadow-[0_18px_40px_-32px_rgba(15,45,71,0.34)] transition-shadow hover:shadow-[0_24px_55px_-34px_rgba(15,45,71,0.42)]">
+                <CardHeader className="px-4 pb-2 pt-4">
+                  <div className="flex items-start justify-between gap-3">
+                    {organismo.logo && (
+                      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white sm:h-14 sm:w-14">
+                        <img
+                          src={organismo.logo}
+                          alt={`Logo ${organismo.nombre}`}
+                          className="h-full w-full object-contain p-1"
+                        />
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="mb-1 text-base leading-tight break-words sm:text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                        {organismo.nombre}
+                      </CardTitle>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.primaryColor }}>
+                          {tiposOrganismo.find(tipo => tipo.nombre === organismo.tipo)?.nombre || organismo.tipo}
                         </Badge>
-                      )}
+                        {organismo.participaPRS && (
+                          <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
+                            ✓ PRS
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {organismo.activo ? (
+                      <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
+                        {t('common.active')}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[11px]">
+                        {t('common.inactive')}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-3 px-4 pb-4">
+                  <div className="grid gap-2 text-xs text-slate-600 sm:text-[13px]">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                      <MapLink direccion={organismo.direccion} variant="inline" showIcon={false} />
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Users className="h-4 w-4 text-slate-400" />
+                      <span>{organismo.responsable} • {organismo.beneficiarios} {t('organisms.beneficiaries')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      <span>{organismo.telefono}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      <span>{organismo.email}</span>
                     </div>
                   </div>
-                  {organismo.activo ? (
-                    <Badge style={{ backgroundColor: branding.secondaryColor }}>{t('common.active')}</Badge>
-                  ) : (
-                    <Badge variant="secondary">{t('common.inactive')}</Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2.5">
-                <div className="space-y-1.5 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#666666] flex-shrink-0" />
-                    <MapLink 
-                      direccion={organismo.direccion} 
-                      variant="inline"
-                      showIcon={false}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 text-[#666666]">
-                    <Users className="w-4 h-4" />
-                    <span>{organismo.responsable} • {organismo.beneficiarios} {t('organisms.beneficiaries')}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#666666]">
-                    <Phone className="w-4 h-4" />
-                    <span>{organismo.telefono}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#666666]">
-                    <Mail className="w-4 h-4" />
-                    <span>{organismo.email}</span>
-                  </div>
-                </div>
 
-                <div className="pt-2.5 border-t grid grid-cols-2 gap-3 text-center">
-                  <div>
-                    <p className="text-xs sm:text-sm text-[#666666]">{t('organisms.orders')}</p>
-                    <p className="font-medium" style={{ color: '#1E73BE' }}>{comandasOrganismo.length}</p>
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{t('organisms.orders')}</p>
+                      <p className="text-xs text-slate-500">Activité récente de commande</p>
+                    </div>
+                    <p className="text-lg font-bold" style={{ color: '#1E73BE', fontFamily: 'Montserrat, sans-serif' }}>
+                      {comandasOrganismo.length}
+                    </p>
                   </div>
-                </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 pt-2.5">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleAbrirEmailIndividual(organismo)}
-                    className="w-full sm:w-auto text-white"
-                    style={{ backgroundColor: branding.secondaryColor, borderColor: branding.secondaryColor }}
-                  >
-                    <Send className="w-4 h-4 mr-1" />
-                    Email
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full sm:flex-1" onClick={() => handleVerPerfil(organismo)}>
-                    <Eye className="w-4 h-4 mr-1" />
-                    {t('organisms.viewProfile')}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full sm:flex-1" 
-                    onClick={() => {
-                      if (!puedeGestionarOrganismos) {
-                        toast.error(t('organisms.accessDeniedTitle'), {
-                          description: t('organisms.editPermissionDescription')
-                        });
-                        return;
-                      }
-                      handleEditarPerfil(organismo);
-                    }}
-                    disabled={!puedeGestionarOrganismos}
-                    title={!puedeGestionarOrganismos ? t('organisms.editPermissionTooltip') : ''}
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    {t('organisms.edit')}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAbrirEmailIndividual(organismo)}
+                      className="h-9 w-full rounded-xl border-transparent text-white sm:w-auto"
+                      style={{ backgroundColor: branding.secondaryColor, borderColor: branding.secondaryColor }}
+                    >
+                      <Send className="mr-1 h-4 w-4" />
+                      Email
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9 w-full rounded-xl border-slate-200 bg-white sm:flex-1" onClick={() => handleVerPerfil(organismo)}>
+                      <Eye className="mr-1 h-4 w-4" />
+                      {t('organisms.viewProfile')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-full rounded-xl border-slate-200 bg-white sm:flex-1"
+                      onClick={() => {
+                        if (!puedeGestionarOrganismos) {
+                          toast.error(t('organisms.accessDeniedTitle'), {
+                            description: t('organisms.editPermissionDescription')
+                          });
+                          return;
+                        }
+                        handleEditarPerfil(organismo);
+                      }}
+                      disabled={!puedeGestionarOrganismos}
+                      title={!puedeGestionarOrganismos ? t('organisms.editPermissionTooltip') : ''}
+                    >
+                      <Edit className="mr-1 h-4 w-4" />
+                      {t('organisms.edit')}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
       {/* Dialog de Envío de Email */}
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>

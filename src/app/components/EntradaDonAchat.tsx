@@ -1488,7 +1488,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
             style={{ fontFamily: 'Montserrat, sans-serif' }}
           >
             <Plus className="w-5 h-5 mr-2" />
-            Nouvelle Entrée
+            Registrer Entrée
           </Button>
         </DialogTrigger>
       )}
@@ -1509,7 +1509,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </div>
                 <div>
                   <DialogTitle className="text-left text-[1.45rem] font-bold tracking-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    Enregistrer Entrée Don/Achat
+                    Registrer Entrée
                   </DialogTitle>
                   <DialogDescription id="entry-form-description" className="mt-1 max-w-2xl text-sm text-slate-600">
                     Sélectionnez le type d'entrée, ajoutez les produits et finalisez l'enregistrement dans une interface plus large et plus claire.
@@ -1528,11 +1528,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5 sm:px-8 sm:py-6">
-            <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-7 sm:py-5">
+            <div className="space-y-4">
           {/* SECTION 1: Type d'entrée - DINÁMICO desde configuración */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
+            <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               Type d'Entrée *
             </Label>
             
@@ -1558,10 +1558,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     type="button"
                     onClick={() => handleFieldChange('tipoEntrada', programa.codigo.toLowerCase())}
                     className={cn(
-                      "p-4 border-2 rounded-lg transition-all hover:shadow-md text-left",
+                      "rounded-2xl border px-3 py-3 transition-all hover:shadow-sm text-left",
                       formData.tipoEntrada === programa.codigo.toLowerCase()
                         ? "border-current bg-opacity-10"
-                        : "border-gray-300 hover:border-gray-400"
+                        : "border-slate-200 bg-white hover:border-slate-300"
                     )}
                     style={{
                       borderColor: formData.tipoEntrada === programa.codigo.toLowerCase() ? programa.color : undefined,
@@ -1569,9 +1569,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{programa.icono || '📦'}</span>
+                      <span className="text-xl">{programa.icono || '📦'}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{programa.nombre}</p>
+                        <p className="truncate text-sm font-semibold text-slate-900">{programa.nombre}</p>
                         <p className="text-xs text-gray-500 truncate">{programa.descripcion}</p>
                       </div>
                       {formData.tipoEntrada === programa.codigo.toLowerCase() && (
@@ -1587,8 +1587,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           {formData.tipoEntrada && (
             <>
               {/* SECTION 2: Contact (Donateur/Fournisseur) */}
-              <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-                <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
+                <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   {formData.tipoEntrada === 'achat' ? '📦 Fournisseur *' : 
                    formData.tipoEntrada === 'prs' ? '🚚 Participant PRS *' :
                    formData.tipoEntrada === 'occ' ? '🔄 Donateur/Fournisseur *' : 
@@ -1601,7 +1601,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       variant="outline"
                       role="combobox"
                       aria-expanded={selectContactoOpen}
-                      className="w-full justify-between h-auto min-h-[44px] py-2"
+                      className="min-h-[48px] w-full justify-between rounded-2xl border-slate-200 bg-white py-2 shadow-sm"
                     >
                       {formData.donadorId ? (
                         <div className="flex-1 text-left">
@@ -1612,7 +1612,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             return (
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-base">
+                                  <span className="font-semibold text-sm text-slate-900">
                                     {contacto.nombreEmpresa || `${contacto.nombre} ${contacto.apellido}`}
                                   </span>
                                   {(() => {
@@ -1662,7 +1662,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[550px] p-0">
+                  <PopoverContent className="w-[560px] rounded-2xl border-slate-200 p-0 shadow-xl">
                     <Command>
                       <CommandInput
                         placeholder="Rechercher par nom, entreprise, téléphone, email..."
@@ -1677,7 +1677,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                               key={contacto.id}
                               value={contacto.id}
                               onSelect={() => handleContactoSelect(contacto.id)}
-                              className="py-3"
+                              className="py-2.5"
                             >
                               <Check
                                 className={cn(
@@ -1687,7 +1687,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <p className="font-medium text-base">
+                                  <p className="font-medium text-sm text-slate-900">
                                     {contacto.nombreEmpresa || `${contacto.nombre} ${contacto.apellido}`}
                                   </p>
                                   {(() => {
@@ -1760,8 +1760,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               {/* SECTION 3: Sélection Produit en Cascada */}
-              <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-                <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
+                <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   📦 Sélection du produit *
                 </Label>
 
@@ -1782,7 +1782,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                           role="combobox"
                           aria-expanded={comboboxProductoPRSOpen}
                           className={cn(
-                            "w-full justify-between",
+                            "w-full justify-between rounded-2xl bg-white shadow-sm",
                             formData.categoriaNombre 
                               ? "border-purple-500 bg-purple-50 hover:bg-purple-100" 
                               : "border-purple-400 border-2"
@@ -1799,7 +1799,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[500px] p-0">
+                      <PopoverContent className="w-[520px] rounded-2xl border-slate-200 p-0 shadow-xl">
                         <Command>
                           <CommandInput
                             placeholder="🔍 Rechercher un produit PRS..."
@@ -1868,7 +1868,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             variant="outline"
                             role="combobox"
                             aria-expanded={comboboxCategoriaOpen}
-                            className="w-full justify-between"
+                            className="w-full justify-between rounded-2xl bg-white shadow-sm"
                           >
                             {formData.categoriaNombre ? (
                               <span className="flex items-center gap-2">
@@ -1881,7 +1881,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
+                    <PopoverContent className="w-[420px] rounded-2xl border-slate-200 p-0 shadow-xl">
                       <Command>
                         <CommandInput
                           placeholder="Rechercher une catégorie..."
@@ -2048,7 +2048,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             variant="outline"
                             role="combobox"
                             aria-expanded={comboboxVarianteOpen}
-                            className="w-full justify-between"
+                            className="w-full justify-between rounded-2xl bg-white shadow-sm"
                           >
                             {formData.varianteNombre ? (
                               <span className="flex items-center gap-2">
@@ -2063,7 +2063,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0">
+                      <PopoverContent className="w-[420px] rounded-2xl border-slate-200 p-0 shadow-xl">
                         <Command>
                           <CommandInput
                             placeholder="Rechercher une variante..."
@@ -2114,7 +2114,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                 {/* Resumen del producto seleccionado */}
                 {formData.nombreProducto && (
-                  <div className="p-3 bg-white border border-green-200 rounded-lg">
+                  <div className="rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 shadow-sm">
                     <p className="text-sm font-medium text-green-700 flex items-center gap-2">
                       ✅ Produit sélectionné: 
                       <span className="font-semibold">{formData.nombreProducto}</span>
@@ -2133,7 +2133,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 )}
 
                 {/* Campos de cantidad y unidad */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
                     <Label>Quantité *</Label>
                     <Input
@@ -2253,15 +2253,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 {/* Temperatura */}
                 <div>
                   <Label>Température *</Label>
-                  <div className="grid grid-cols-3 gap-2 mt-2">
+                  <div className="mt-2 grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => handleFieldChange('temperatura', 'ambiente')}
                       className={cn(
-                        "p-3 border-2 rounded-lg transition-all",
+                        "rounded-2xl border px-3 py-2.5 transition-all",
                         formData.temperatura === 'ambiente'
                           ? "border-amber-500 bg-amber-50"
-                          : "border-gray-300 hover:border-gray-400"
+                          : "border-slate-200 bg-white hover:border-slate-300"
                       )}
                     >
                       <Wind className="w-5 h-5 mx-auto text-amber-600" />
@@ -2271,10 +2271,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       type="button"
                       onClick={() => handleFieldChange('temperatura', 'refrigerado')}
                       className={cn(
-                        "p-3 border-2 rounded-lg transition-all",
+                        "rounded-2xl border px-3 py-2.5 transition-all",
                         formData.temperatura === 'refrigerado'
                           ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 hover:border-gray-400"
+                          : "border-slate-200 bg-white hover:border-slate-300"
                       )}
                     >
                       <Thermometer className="w-5 h-5 mx-auto text-blue-600" />
@@ -2284,10 +2284,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       type="button"
                       onClick={() => handleFieldChange('temperatura', 'congelado')}
                       className={cn(
-                        "p-3 border-2 rounded-lg transition-all",
+                        "rounded-2xl border px-3 py-2.5 transition-all",
                         formData.temperatura === 'congelado'
                           ? "border-cyan-500 bg-cyan-50"
-                          : "border-gray-300 hover:border-gray-400"
+                          : "border-slate-200 bg-white hover:border-slate-300"
                       )}
                     >
                       <Snowflake className="w-5 h-5 mx-auto text-cyan-600" />
@@ -2298,11 +2298,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               {/* SECTION 4: Detalles opcionales */}
-              <div className="border-t pt-4">
+              <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-3 shadow-[0_14px_30px_-28px_rgba(15,23,42,0.4)]">
                 <button
                   type="button"
                   onClick={() => setDetallesOpcionalesAbiertos(!detallesOpcionalesAbiertos)}
-                  className="flex items-center justify-between w-full text-left font-semibold"
+                  className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-800"
                 >
                   <span>Détails Optionnels</span>
                   {detallesOpcionalesAbiertos ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -2310,7 +2310,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                 {detallesOpcionalesAbiertos && (
                   <div className="mt-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <div>
                         <Label>Numéro de Lot</Label>
                         <Input
@@ -2352,16 +2352,16 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               {/* SECTION 5: Botones de acción */}
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center">
                 <Button
                   onClick={agregarProductoALista}
-                  className="flex-1 bg-[#2d9561] hover:bg-[#267d50]"
+                  className="flex-1 rounded-2xl bg-[#2d9561] shadow-sm hover:bg-[#267d50]"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Ajouter Produit
                 </Button>
                 
-                <div className="flex items-center gap-2 p-2 border rounded-lg">
+                <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
                   <Checkbox
                     id="imprimirAuto"
                     checked={imprimirAutomaticamente}
@@ -2376,10 +2376,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
               {/* SECTION 6: Lista de productos agregados */}
               {productosAgregados.length > 0 && (
-                <div className="border-t pt-4 mt-4">
+                <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_36px_-34px_rgba(15,23,42,0.45)]">
                   {/* Información del contacto seleccionado */}
                   {formData.donadorId && (
-                    <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
+                    <div className="mb-3 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-green-50 p-3">
                       {(() => {
                         const contacto = contactosDisponibles.find(c => c.id === formData.donadorId);
                         const programa = programasActivos.find(p => p.codigo.toLowerCase() === formData.tipoEntrada);
@@ -2444,7 +2444,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     </div>
                   </div>
 
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  <div className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
                     {productosAgregados.map((producto, index) => {
                       const pesoTaraTotal = (producto.pesoUnidad && producto.pesoUnidad > 0) 
                         ? producto.pesoUnidad * producto.cantidad 
@@ -2455,7 +2455,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       const tieneTara = producto.pesoUnidad && producto.pesoUnidad > 0;
 
                       return (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+                        <div key={index} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
                           <span className="text-2xl">{producto.productoIcono}</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{producto.nombreProducto}</p>
@@ -2510,7 +2510,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     })}
                   </div>
 
-                  <div className="mt-4 flex gap-3">
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -2519,13 +2519,14 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         handleOpenChange(false);
                       }}
                       size="lg"
+                      className="rounded-2xl"
                     >
                       <X className="w-5 h-5 mr-2" />
                       Annuler
                     </Button>
                     <Button
                       onClick={finalizarEntrada}
-                      className="flex-1 bg-[#1a4d7a] hover:bg-[#153d62]"
+                      className="flex-1 rounded-2xl bg-[#1a4d7a] shadow-sm hover:bg-[#153d62]"
                       size="lg"
                     >
                       <Check className="w-5 h-5 mr-2" />
