@@ -601,7 +601,7 @@ export function UsuariosInternos() {
               )}
             </DialogTitle>
             <DialogDescription id="perfil-dialog-description">
-              Información completa y historial del {usuarioSeleccionado?.categoria === 'donador' ? 'donador' : 'vendedor'}
+              Informations complètes et historique du {usuarioSeleccionado?.categoria === 'donador' ? 'donateur' : 'vendeur'}
             </DialogDescription>
           </DialogHeader>
           {usuarioSeleccionado && (
@@ -609,7 +609,7 @@ export function UsuariosInternos() {
               {/* Información general */}
               <Card>
                 <CardHeader>
-                  <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Información General</CardTitle>
+                  <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Informations générales</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -630,7 +630,7 @@ export function UsuariosInternos() {
                       <p className="font-medium text-[#333333]">{usuarioSeleccionado.telefono}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-xs text-[#999999]">Dirección</p>
+                      <p className="text-xs text-[#999999]">Adresse</p>
                       <p className="font-medium text-[#333333]">{usuarioSeleccionado.direccion}</p>
                     </div>
                   </div>
@@ -640,7 +640,7 @@ export function UsuariosInternos() {
                     <div>
                       <p className="text-xs text-[#999999] mb-1">
                         <FileText className="w-3 h-3 inline mr-1" />
-                        Notas
+                        Notes
                       </p>
                       <div className="bg-[#F4F4F4] rounded-lg p-3">
                         <p className="text-sm text-[#333333]">{usuarioSeleccionado.notas}</p>
@@ -653,11 +653,11 @@ export function UsuariosInternos() {
                     <div>
                       <p className="text-xs text-[#999999] mb-1">
                         <Paperclip className="w-3 h-3 inline mr-1" />
-                        Documento Adjunto
+                        Document joint
                       </p>
                       <Button variant="outline" size="sm">
                         <Download className="w-4 h-4 mr-2" />
-                        Descargar PDF
+                        Télécharger le PDF
                       </Button>
                     </div>
                   )}
@@ -670,9 +670,9 @@ export function UsuariosInternos() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {usuarioSeleccionado.categoria === 'donador' ? (
-                        <><Gift className="w-5 h-5 inline mr-2" />Historial de Donaciones Recibidas</>
+                        <><Gift className="w-5 h-5 inline mr-2" />Historique des dons reçus</>
                       ) : (
-                        <><ShoppingCart className="w-5 h-5 inline mr-2" />Historial de Compras Realizadas</>
+                        <><ShoppingCart className="w-5 h-5 inline mr-2" />Historique des achats effectués</>
                       )}
                     </CardTitle>
                     <Button
@@ -692,9 +692,9 @@ export function UsuariosInternos() {
                         <TableRow>
                           <TableHead>Date</TableHead>
                           <TableHead>Description</TableHead>
-                          <TableHead>Quantite</TableHead>
+                          <TableHead>Quantité</TableHead>
                           <TableHead>Montant</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -987,7 +987,7 @@ export function UsuariosInternos() {
               {t('contacts.delete')}
             </DialogTitle>
             <DialogDescription id="eliminar-dialog-description">
-              Esta acción eliminará permanentemente el contacto del sistema
+              Cette action supprimera définitivement le contact du système
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">

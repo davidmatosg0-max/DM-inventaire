@@ -29,7 +29,7 @@ export function ModuleCardList<T>({
   data,
   renderCard,
   keyExtractor,
-  emptyMessage = 'No hay elementos para mostrar',
+  emptyMessage = 'Aucun élément à afficher',
   emptyIcon,
   columns = 1,
   gap = 'md',

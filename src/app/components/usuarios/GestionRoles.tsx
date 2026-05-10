@@ -325,7 +325,7 @@ export function GestionRoles() {
                 <div className="space-y-2 col-span-2">
                   <Label>{t('users.roleName')} *</Label>
                   <Input
-                    placeholder="Ej: Supervisor"
+                    placeholder="Ex. : Superviseur"
                     value={formRol.nombre}
                     onChange={(e) => setFormRol({ ...formRol, nombre: e.target.value })}
                   />

@@ -133,10 +133,10 @@ export function ModeloComanda({
 
       const temperatura =
         String(temperaturaFuente).toLowerCase().includes('congel')
-          ? 'Congelado'
+          ? 'Congelé'
           : String(temperaturaFuente).toLowerCase().includes('refrig')
-            ? 'Refrigerado'
-            : 'Temperatura Ambiente';
+            ? 'Réfrigéré'
+            : 'Température ambiante';
       const temperaturaOriginalEntrada = resolverTemperaturaOriginalEntradaProducto({
         ...(producto || {}),
         categoria: (producto as any)?.categoria || item?.categoria,

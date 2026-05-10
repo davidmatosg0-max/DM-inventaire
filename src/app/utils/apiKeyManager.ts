@@ -84,7 +84,7 @@ export function obtenerAPIKeys(): APIKey[] {
       lastUsed: key.lastUsed ? new Date(key.lastUsed) : undefined,
     }));
   } catch (error) {
-    console.error('Error al obtener API Keys:', error);
+    console.error('Erreur lors de la récupération des clés API :', error);
     return [];
   }
 }
@@ -146,15 +146,15 @@ export function validarAPIKey(apiKey: string): {
   const key = keys.find(k => k.key === apiKey);
 
   if (!key) {
-    return { isValid: false, error: 'API Key no encontrada' };
+    return { isValid: false, error: 'Clé API introuvable' };
   }
 
   if (!key.isActive) {
-    return { isValid: false, error: 'API Key desactivada' };
+    return { isValid: false, error: 'Clé API désactivée' };
   }
 
   if (key.expiresAt && new Date() > key.expiresAt) {
-    return { isValid: false, error: 'API Key expirada' };
+    return { isValid: false, error: 'Clé API expirée' };
   }
 
   return { isValid: true, key };
@@ -244,7 +244,7 @@ function guardarAPIKeys(keys: APIKey[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
   } catch (error) {
-    console.error('Error al guardar API Keys:', error);
+    console.error('Erreur lors de l’enregistrement des clés API :', error);
   }
 }
 

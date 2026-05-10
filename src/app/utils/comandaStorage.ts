@@ -120,7 +120,7 @@ export function obtenerComandas(): Comanda[] {
     }
     return [];
   } catch (error) {
-    console.error('Error al cargar comandas:', error);
+    console.error('Erreur lors du chargement des commandes :', error);
     return [];
   }
 }
@@ -152,7 +152,7 @@ export function guardarComanda(comanda: Comanda): void {
       { comandaId: comandaNormalizada.id, numero: comandaNormalizada.numero, organismoId: comandaNormalizada.organismoId }
     );
   } catch (error) {
-    console.error('Error al guardar comanda:', error);
+    console.error('Erreur lors de l’enregistrement de la commande :', error);
     throw error;
   }
 }
@@ -212,7 +212,7 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
       );
     }
   } catch (error) {
-    console.error('Error al actualizar comanda:', error);
+    console.error('Erreur lors de la mise à jour de la commande :', error);
     throw error;
   }
 }
@@ -244,7 +244,7 @@ export function actualizarComandasGrupo(grupoDistribucionId: string, cambios: Pa
 
     return comandasActualizadas.filter(comanda => comanda.grupoDistribucionId === grupoDistribucionId);
   } catch (error) {
-    console.error('Error al actualizar comandas del grupo:', error);
+    console.error('Erreur lors de la mise à jour des commandes du groupe :', error);
     throw error;
   }
 }
@@ -282,7 +282,7 @@ export function actualizarComandasDistribucion(
 
     return comandasActualizadas.filter(comanda => idsObjetivo.has(comanda.id));
   } catch (error) {
-    console.error('Error al actualizar comandas de la distribución:', error);
+    console.error('Erreur lors de la mise à jour des commandes de la distribution :', error);
     throw error;
   }
 }
@@ -306,7 +306,7 @@ export function eliminarComanda(comandaId: string): void {
       );
     }
   } catch (error) {
-    console.error('Error al eliminar comanda:', error);
+    console.error('Erreur lors de la suppression de la commande :', error);
     throw error;
   }
 }

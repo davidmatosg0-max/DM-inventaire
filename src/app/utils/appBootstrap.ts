@@ -79,16 +79,16 @@ export async function runAppBootstrap() {
   inicializarConfigSupport();
 
   try {
-    console.log('🧹 Verificando backups en localStorage...');
+    console.log('🧹 Vérification des sauvegardes dans localStorage...');
     const backupsExistentes = localStorage.getItem('storedBackups');
     if (backupsExistentes) {
       const tamañoBackups = new Blob([backupsExistentes]).size;
-      console.warn(`⚠️ Encontrados backups almacenados: ${(tamañoBackups / 1024 / 1024).toFixed(2)} MB`);
-      console.warn('⚠️ LIMPIANDO TODOS los backups para prevenir errores de cuota...');
+      console.warn(`⚠️ Sauvegardes stockées détectées : ${(tamañoBackups / 1024 / 1024).toFixed(2)} MB`);
+      console.warn('⚠️ SUPPRESSION de toutes les sauvegardes pour éviter les erreurs de quota...');
       localStorage.removeItem('storedBackups');
-      console.log('✅ Backups eliminados exitosamente');
+      console.log('✅ Sauvegardes supprimées avec succès');
     } else {
-      console.log('✅ No hay backups almacenados');
+      console.log('✅ Aucune sauvegarde stockée');
     }
 
     const configBackup = localStorage.getItem('autoBackupConfig');
@@ -96,27 +96,27 @@ export async function runAppBootstrap() {
       try {
         const config = JSON.parse(configBackup);
         if (config.enabled) {
-          console.warn('⚠️ Backups automáticos estaban activados, DESACTIVANDO...');
+          console.warn('⚠️ Les sauvegardes automatiques étaient activées, désactivation en cours...');
           config.enabled = false;
           localStorage.setItem('autoBackupConfig', JSON.stringify(config));
-          console.log('✅ Backups automáticos DESACTIVADOS permanentemente');
+          console.log('✅ Sauvegardes automatiques DÉSACTIVÉES de façon permanente');
         }
       } catch {
-        console.warn('⚠️ Error al verificar config de backups, eliminando...');
+        console.warn('⚠️ Erreur lors de la vérification de la configuration des sauvegardes, suppression...');
         localStorage.removeItem('autoBackupConfig');
       }
     }
 
-    console.log('💡 IMPORTANTE: Los backups automáticos están DESACTIVADOS por defecto');
-    console.log('💡 Para crear backups, usa el botón "Descargar Backup" manualmente');
+    console.log('💡 IMPORTANT : les sauvegardes automatiques sont DÉSACTIVÉES par défaut');
+    console.log('💡 Pour créer des sauvegardes, utilisez manuellement le bouton « Télécharger la sauvegarde »');
   } catch (cleanError) {
-    console.error('⚠️ Error al verificar backups:', cleanError);
+    console.error('⚠️ Erreur lors de la vérification des sauvegardes :', cleanError);
     try {
       localStorage.removeItem('storedBackups');
       localStorage.removeItem('autoBackupConfig');
-      console.log('✅ Backups y configuración eliminados por seguridad');
+      console.log('✅ Sauvegardes et configuration supprimées par sécurité');
     } catch (error) {
-      console.error('❌ No se pudo limpiar backups:', error);
+      console.error('❌ Impossible de nettoyer les sauvegardes :', error);
     }
   }
 
@@ -131,7 +131,7 @@ export async function runAppBootstrap() {
     console.log('  - diagnosticarBackup() - Ver estado completo del sistema');
     console.log('  - ejecutarBackupManual() - Ejecutar backup inmediato');
     console.log('  - verificarBackups() - Ver tamaño y uso de espacio ✅ NUEVO');
-    console.log('  - limpiarBackups() - Limpiar TODOS los backups (emergencia) ✅ NUEVO');
+    console.log('  - nettoyerSauvegardes() - Nettoyer TOUTES les sauvegardes (urgence) ✅ NOUVEAU');
   }
 
   inicializarFileSystem().then(() => {

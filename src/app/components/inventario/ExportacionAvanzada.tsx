@@ -472,16 +472,17 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
 
           {/* Resumen */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-[#1E73BE] mb-2">📋 Resumen de exportación</h4>
+            <h4 className="font-semibold text-[#1E73BE] mb-2">📋 Résumé de l’exportation</h4>
             <div className="space-y-1 text-sm">
               <p>• Formato: <Badge variant="outline">{formatosDisponibles.find(f => f.id === formato)?.nombre}</Badge></p>
-              <p>• Datos: <Badge variant="outline">{tipoDatos === 'productos' ? 'Productos' : tipoDatos === 'entradas' ? 'Entradas' : 'Productos + Entradas'}</Badge></p>
+              <p>• Format : <Badge variant="outline">{formatosDisponibles.find(f => f.id === formato)?.nombre}</Badge></p>
+              <p>• Données : <Badge variant="outline">{tipoDatos === 'productos' ? 'Produits' : tipoDatos === 'entradas' ? 'Entrées' : 'Produits + Entrées'}</Badge></p>
               {(tipoDatos === 'entradas' || tipoDatos === 'ambos') && (
-                <p>• Período: <Badge variant="outline">{
-                  rangoFechas === 'todos' ? 'Todas las fechas' :
-                  rangoFechas === '7dias' ? 'Últimos 7 días' :
-                  rangoFechas === '30dias' ? 'Últimos 30 días' :
-                  'Últimos 90 días'
+                <p>• Période : <Badge variant="outline">{
+                  rangoFechas === 'todos' ? 'Toutes les dates' :
+                  rangoFechas === '7dias' ? '7 derniers jours' :
+                  rangoFechas === '30dias' ? '30 derniers jours' :
+                  '90 derniers jours'
                 }</Badge></p>
               )}
             </div>
@@ -490,14 +491,14 @@ export function ExportacionAvanzada({ open, onOpenChange }: ExportacionAvanzadaP
 
         <DialogFooter className="border-t pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            Annuler
           </Button>
           <Button
             onClick={generarExportacion}
             className="bg-[#4CAF50] hover:bg-[#45a049]"
           >
             <Download className="h-4 w-4 mr-2" />
-            Exportar Datos
+            Exporter les données
           </Button>
         </DialogFooter>
       </DialogContent>

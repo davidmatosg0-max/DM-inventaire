@@ -42,7 +42,7 @@ export async function hydrateCriticalStorageFromCloud(): Promise<void> {
       .in('storage_key', [...CRITICAL_REMOTE_STORAGE_KEYS]);
 
     if (error) {
-      console.warn('No se pudo hidratar almacenamiento remoto:', error.message);
+      console.warn('Impossible d’hydrater le stockage distant :', error.message);
       return;
     }
 
@@ -54,7 +54,7 @@ export async function hydrateCriticalStorageFromCloud(): Promise<void> {
       localStorage.setItem(row.storage_key, JSON.stringify(row.payload));
     }
   } catch (error) {
-    console.warn('Error al cargar datos remotos:', error);
+    console.warn('Erreur lors du chargement des données distantes :', error);
   }
 }
 
@@ -78,7 +78,7 @@ async function syncStorageKeyNow(storageKey: CriticalStorageKey): Promise<void> 
         .eq('storage_key', storageKey);
 
       if (error) {
-        console.warn(`No se pudo eliminar ${storageKey} de Supabase:`, error.message);
+        console.warn(`Impossible de supprimer ${storageKey} de Supabase :`, error.message);
       }
       return;
     }

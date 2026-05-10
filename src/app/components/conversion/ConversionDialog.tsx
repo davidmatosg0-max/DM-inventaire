@@ -105,7 +105,7 @@ export function ConversionDialog({
           {/* Producto Origen */}
           <div className="space-y-2">
             <Label htmlFor="productoOrigen" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-              Producto Origen <span className="text-red-500">*</span>
+              Produit source <span className="text-red-500">*</span>
             </Label>
             <Select
               value={formConversion.productoOrigenId}
@@ -114,7 +114,7 @@ export function ConversionDialog({
               }}
             >
               <SelectTrigger id="productoOrigen" className="h-11">
-                <SelectValue placeholder="Selecciona el producto origen..." />
+                <SelectValue placeholder="Sélectionnez le produit source..." />
               </SelectTrigger>
               <SelectContent>
                 {productos
@@ -159,7 +159,7 @@ export function ConversionDialog({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cantidadOrigen" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-                Cantidad a Convertir <span className="text-red-500">*</span>
+                Quantité à convertir <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="cantidadOrigen"
@@ -202,13 +202,13 @@ export function ConversionDialog({
           {formConversion.merma > 0 && (
             <div className="space-y-2">
               <Label htmlFor="mermaMotivo" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-                Motivo de la Merma
+                Motif de la perte
               </Label>
               <Input
                 id="mermaMotivo"
                 value={formConversion.mermaMotivo}
                 onChange={(e) => setFormConversion({ ...formConversion, mermaMotivo: e.target.value })}
-                placeholder="Ej: Pérdida por cáscara, partes dañadas, etc."
+                placeholder="Ex. : perte liée à l’épluchage, parties abîmées, etc."
                 className="h-11"
               />
             </div>
@@ -227,7 +227,7 @@ export function ConversionDialog({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-                Productos Destino <span className="text-red-500">*</span>
+                Produits de destination <span className="text-red-500">*</span>
               </Label>
               <Button
                 type="button"
@@ -237,7 +237,7 @@ export function ConversionDialog({
                 className="h-9 border-[#4CAF50] text-[#4CAF50] hover:bg-green-50"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Agregar Producto
+                Ajouter un produit
               </Button>
             </div>
 
@@ -245,10 +245,10 @@ export function ConversionDialog({
               <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                 <Package className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                 <p className="text-sm text-[#666666]">
-                  No hay productos destino agregados
+                  Aucun produit de destination ajouté
                 </p>
                 <p className="text-xs text-[#999999] mt-1">
-                  Haz clic en "Agregar Producto" para comenzar
+                  Cliquez sur « Ajouter un produit » pour commencer
                 </p>
               </div>
             ) : (
@@ -269,7 +269,7 @@ export function ConversionDialog({
                               onValueChange={(value) => onActualizarDestino(index, 'productoId', value)}
                             >
                               <SelectTrigger className="h-10">
-                                <SelectValue placeholder="Selecciona..." />
+                                <SelectValue placeholder="Sélectionner..." />
                               </SelectTrigger>
                               <SelectContent>
                                 {productos
@@ -339,13 +339,13 @@ export function ConversionDialog({
           {/* Observaciones */}
           <div className="space-y-2">
             <Label htmlFor="observacionesConversion" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-              Observaciones (opcional)
+              Observations (optionnel)
             </Label>
             <Textarea
               id="observacionesConversion"
               value={formConversion.observaciones}
               onChange={(e) => setFormConversion({ ...formConversion, observaciones: e.target.value })}
-              placeholder="Motivo de la conversión, notas adicionales..."
+              placeholder="Motif de la conversion, notes complémentaires..."
               className="min-h-[80px] resize-none"
             />
           </div>
@@ -363,13 +363,13 @@ export function ConversionDialog({
               <div className="flex-1">
                 <Label htmlFor="guardarPlantilla" className="text-sm font-medium cursor-pointer">
                   <BookmarkPlus className="w-4 h-4 inline mr-1" />
-                  Guardar como plantilla para conversiones futuras
+                  Enregistrer comme modèle pour de futures conversions
                 </Label>
                 {formConversion.guardarComoPlantilla && (
                   <Input
                     value={formConversion.nombrePlantilla}
                     onChange={(e) => setFormConversion({ ...formConversion, nombrePlantilla: e.target.value })}
-                    placeholder="Nombre de la plantilla..."
+                    placeholder="Nom du modèle..."
                     className="mt-2 h-10"
                   />
                 )}
@@ -436,7 +436,7 @@ export function ConversionDialog({
             className="h-11 px-6"
           >
             <X className="w-4 h-4 mr-2" />
-            Cancelar
+            Annuler
           </Button>
           <Button
             onClick={onConvertir}

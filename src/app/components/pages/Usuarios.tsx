@@ -20,7 +20,7 @@ import { obtenerRoles, ROLES_UPDATED_EVENT } from '../../utils/rolesStorage';
 import { useBranding } from '../../../hooks/useBranding';
 import { obtenerDepartamentos } from '../../utils/departamentosStorage';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
-import { Rol } from '../../data/rolesPermisos';
+import { Rol, permisos as permisosCatalogo } from '../../data/rolesPermisos';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
@@ -315,6 +315,17 @@ export function Usuarios() {
     coordinador: usuarios.filter(u => u.rol === 'coordinador').length,
     operativo: usuarios.filter(u => u.rol !== 'administrador' && u.rol !== 'coordinador').length
   };
+
+  const rolSeleccionadoInfo = rolesDisponibles.find((rol) => rol.id === formUsuario.rol) || null;
+  const permisosRolSeleccionado = getPermisosSegunRol(formUsuario.rol).map((permisoId) => {
+    const permiso = permisosCatalogo.find((item) => item.id === permisoId);
+
+    return {
+      id: permisoId,
+      nombre: permiso?.nombre || permisoId,
+      modulo: permiso?.modulo || 'Autre'
+    };
+  });
 
   return (
     <div className="min-h-screen relative">
@@ -675,15 +686,39 @@ export function Usuarios() {
                 </div>
               </div>
 
-              <div className="bg-[#F4F4F4] p-4 rounded-lg space-y-2">
+              <div className="bg-[#F4F4F4] p-4 rounded-lg space-y-3">
                 <h4 className="font-medium" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   Permissions par Rôle
                 </h4>
-                <ul className="text-sm text-[#666666] space-y-1">
-                  <li><strong>Administrateur:</strong> Accès complet au système</li>
-                  <li><strong>Coordinateur:</strong> Lecture seule de tous les modules</li>
-                  <li><strong>Utilisateur:</strong> Permissions personnalisées selon la fonction</li>
-                </ul>
+                {rolSeleccionadoInfo ? (
+                  <>
+                    <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        {getRolBadge(rolSeleccionadoInfo.id)}
+                        <Badge variant="outline">{permisosRolSeleccionado.length} autorisations</Badge>
+                      </div>
+                      <p className="text-sm text-[#666666]">{rolSeleccionadoInfo.descripcion}</p>
+                    </div>
+
+                    {permisosRolSeleccionado.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {permisosRolSeleccionado.map((permiso) => (
+                          <div
+                            key={permiso.id}
+                            className="rounded-full border border-[#d7e3ef] bg-white px-3 py-1 text-xs text-[#35516b]"
+                            title={permiso.id}
+                          >
+                            {permiso.modulo} · {permiso.nombre}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-[#666666]">Aucune autorisation définie pour ce rôle.</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-[#666666]">Sélectionnez un rôle pour afficher ses autorisations.</p>
+                )}
               </div>
 
               <div className="app-compact-actions justify-end pt-4">

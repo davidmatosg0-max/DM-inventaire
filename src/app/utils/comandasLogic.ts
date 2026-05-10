@@ -45,7 +45,7 @@ export function obtenerComandas(): Comanda[] {
     const datos = localStorage.getItem(COMANDAS_KEY);
     return datos ? JSON.parse(datos) : [];
   } catch (error) {
-    console.error('Error al obtener comandas:', error);
+    console.error('Erreur lors de la récupération des commandes :', error);
     return [];
   }
 }
@@ -55,7 +55,7 @@ export function guardarComandas(comandas: Comanda[]): boolean {
     localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
     return true;
   } catch (error) {
-    console.error('Error al guardar comandas:', error);
+    console.error('Erreur lors de l’enregistrement des commandes :', error);
     return false;
   }
 }

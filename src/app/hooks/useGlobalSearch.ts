@@ -326,7 +326,7 @@ export function useGlobalSearch(options: UseGlobalSearchOptions = {}) {
         setResults(sortedResults.slice(0, maxResults));
         setTotalResults(sortedResults.length);
       } catch (error) {
-        console.error('Error en búsqueda global:', error);
+        console.error('Erreur lors de la recherche globale :', error);
         setResults([]);
         setTotalResults(0);
       } finally {

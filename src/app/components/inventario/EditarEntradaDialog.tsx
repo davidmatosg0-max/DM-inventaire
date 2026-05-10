@@ -136,7 +136,7 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
 
             <div className="flex items-center gap-2 text-sm text-[#666666]">
               <AlertCircle className="h-4 w-4" />
-              <span>El producto y el donador no se pueden modificar</span>
+              <span>Le produit et le donateur ne peuvent pas être modifiés</span>
             </div>
           </div>
 
@@ -159,7 +159,7 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
           <div className="space-y-2">
             <Label htmlFor="cantidad" className="flex items-center gap-2">
               <Package className="h-4 w-4 text-[#1E73BE]" />
-              Cantidad ({entrada.unidad}) <span className="text-red-500">*</span>
+              Quantité ({entrada.unidad}) <span className="text-red-500">*</span>
             </Label>
             <Input
               id="cantidad"
@@ -168,14 +168,14 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
               min="0"
               value={cantidad}
               onChange={(e) => setCantidad(e.target.value)}
-              placeholder="Ejemplo: 100"
+              placeholder="Exemple : 100"
               required
             />
             <p className="text-xs text-[#666666]">
-              Peso unitario: {formatQuantity(entrada.pesoUnidad)} kg/ud
+              Poids unitaire : {formatQuantity(entrada.pesoUnidad)} kg/unité
               {cantidad && !isNaN(parseFloat(cantidad)) && (
                 <span className="ml-2 text-[#1E73BE] font-semibold">
-                  → Peso total: {formatQuantity(parseFloat(cantidad) * entrada.pesoUnidad)} kg
+                  → Poids total : {formatQuantity(parseFloat(cantidad) * entrada.pesoUnidad)} kg
                 </span>
               )}
             </p>
@@ -184,34 +184,34 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
           {/* Temperatura */}
           <div className="space-y-2">
             <Label htmlFor="temperatura">
-              🌡️ Temperatura de Almacenamiento <span className="text-red-500">*</span>
+              🌡️ Température de stockage <span className="text-red-500">*</span>
             </Label>
             <Select value={temperatura} onValueChange={(v: any) => setTemperatura(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ambiente">🌡️ Ambiente</SelectItem>
-                <SelectItem value="refrigerado">❄️ Refrigerado (0-5°C)</SelectItem>
-                <SelectItem value="congelado">🧊 Congelado (-18°C o menos)</SelectItem>
+                <SelectItem value="ambiente">🌡️ Température ambiante</SelectItem>
+                <SelectItem value="refrigerado">❄️ Réfrigéré (0-5°C)</SelectItem>
+                <SelectItem value="congelado">🧊 Congelé (-18°C ou moins)</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Lote */}
           <div className="space-y-2">
-            <Label htmlFor="lote">📦 Lote (opcional)</Label>
+            <Label htmlFor="lote">📦 Lot (optionnel)</Label>
             <Input
               id="lote"
               value={lote}
               onChange={(e) => setLote(e.target.value)}
-              placeholder="Ejemplo: LOT-2024-001"
+              placeholder="Exemple : LOT-2024-001"
             />
           </div>
 
           {/* Fecha de Caducidad */}
           <div className="space-y-2">
-            <Label htmlFor="fechaCaducidad">📅 Fecha de Caducidad (opcional)</Label>
+            <Label htmlFor="fechaCaducidad">📅 Date d’expiration (optionnel)</Label>
             <Input
               id="fechaCaducidad"
               type="date"
@@ -222,12 +222,12 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
 
           {/* Observaciones */}
           <div className="space-y-2">
-            <Label htmlFor="observaciones">📝 Observaciones (opcional)</Label>
+            <Label htmlFor="observaciones">📝 Observations (optionnel)</Label>
             <Textarea
               id="observaciones"
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
-              placeholder="Notas adicionales sobre esta entrada..."
+              placeholder="Notes additionnelles sur cette entrée..."
               rows={3}
             />
           </div>
@@ -239,14 +239,14 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
             onClick={() => onOpenChange(false)}
             disabled={guardando}
           >
-            Cancelar
+            Annuler
           </Button>
           <Button
             onClick={handleGuardar}
             disabled={guardando}
             className="bg-[#1E73BE] hover:bg-[#1557a0]"
           >
-            {guardando ? 'Guardando...' : 'Guardar Cambios'}
+            {guardando ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </Button>
         </DialogFooter>
       </DialogContent>

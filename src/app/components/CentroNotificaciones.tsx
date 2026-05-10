@@ -73,7 +73,7 @@ export function CentroNotificaciones() {
     if (dias === 1) return t('notifications.yesterday');
     if (dias < 7) return t('notifications.daysAgo', { days: dias });
     
-    return new Date(fecha).toLocaleDateString('es-ES', {
+    return new Date(fecha).toLocaleDateString('fr-CA', {
       day: '2-digit',
       month: 'short',
       hour: '2-digit',

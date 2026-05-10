@@ -103,8 +103,8 @@ export function AuditLogViewer() {
       const logsData = obtenerLogs();
       setLogs(logsData);
     } catch (error) {
-      console.error('Error al cargar logs:', error);
-      toast.error('Error al cargar los logs de auditoría');
+      console.error('Erreur lors du chargement des journaux :', error);
+      toast.error('Erreur lors du chargement des journaux d\'audit');
     } finally {
       setCargando(false);
     }
@@ -135,17 +135,17 @@ export function AuditLogViewer() {
   
   const handleExportarCSV = () => {
     descargarLogs('csv', logsFiltrados);
-    toast.success(`${logsFiltrados.length} logs exportados a CSV`);
+    toast.success(`${logsFiltrados.length} journaux exportés en CSV`);
   };
   
   const handleExportarJSON = () => {
     descargarLogs('json', logsFiltrados);
-    toast.success(`${logsFiltrados.length} logs exportados a JSON`);
+    toast.success(`${logsFiltrados.length} journaux exportés en JSON`);
   };
   
   const handleLimpiarAntiguos = () => {
     const eliminados = limpiarLogsAntiguos(90);
-    toast.success(`${eliminados} logs antiguos eliminados`);
+    toast.success(`${eliminados} anciens journaux supprimés`);
     cargarLogs();
   };
   
@@ -187,7 +187,7 @@ export function AuditLogViewer() {
   
   const formatearFecha = (fecha: string) => {
     const d = new Date(fecha);
-    return d.toLocaleString('es-ES', {
+    return d.toLocaleString('fr-CA', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -212,10 +212,10 @@ export function AuditLogViewer() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-[#1a4d7a]">
-              {t('audit.title', 'Registros de Auditoría')}
+              {t('audit.title', 'Journal d\'audit')}
             </h2>
             <p className="text-sm text-gray-600">
-              {t('audit.subtitle', 'Trazabilidad completa del sistema')}
+              {t('audit.subtitle', 'Traçabilité complète du système')}
             </p>
           </div>
         </div>
@@ -228,7 +228,7 @@ export function AuditLogViewer() {
             className="gap-2"
           >
             <RefreshCw className="w-4 h-4" />
-            {t('audit.refresh', 'Actualizar')}
+            {t('audit.refresh', 'Actualiser')}
           </Button>
           
           <Button
@@ -261,7 +261,7 @@ export function AuditLogViewer() {
           </TabsTrigger>
           <TabsTrigger value="estadisticas" className="gap-2">
             <BarChart3 className="w-4 h-4" />
-            {t('audit.statistics', 'Estadísticas')}
+            {t('audit.statistics', 'Statistiques')}
           </TabsTrigger>
         </TabsList>
         
@@ -273,7 +273,7 @@ export function AuditLogViewer() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Total Logs</p>
+                    <p className="text-sm text-gray-600">Total des journaux</p>
                     <p className="text-2xl font-bold text-[#1a4d7a]">
                       {estadisticas.totalLogs.toLocaleString()}
                     </p>
@@ -287,7 +287,7 @@ export function AuditLogViewer() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Exitosos</p>
+                    <p className="text-sm text-gray-600">Réussis</p>
                     <p className="text-2xl font-bold text-green-600">
                       {estadisticas.logsExitosos.toLocaleString()}
                     </p>
@@ -301,7 +301,7 @@ export function AuditLogViewer() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Errores</p>
+                    <p className="text-sm text-gray-600">Erreurs</p>
                     <p className="text-2xl font-bold text-red-600">
                       {estadisticas.logsErrores.toLocaleString()}
                     </p>
@@ -315,7 +315,7 @@ export function AuditLogViewer() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Tasa Éxito</p>
+                    <p className="text-sm text-gray-600">Taux de réussite</p>
                     <p className="text-2xl font-bold text-[#2d9561]">
                       {estadisticas.tasaExito.toFixed(1)}%
                     </p>
@@ -331,18 +331,18 @@ export function AuditLogViewer() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Filter className="w-5 h-5" />
-                {t('audit.filters', 'Filtros')}
+                {t('audit.filters', 'Filtres')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Búsqueda */}
                 <div className="col-span-full">
-                  <Label>{t('audit.search', 'Buscar')}</Label>
+                  <Label>{t('audit.search', 'Rechercher')}</Label>
                   <div className="relative mt-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      placeholder={t('audit.searchPlaceholder', 'Buscar en logs...')}
+                      placeholder={t('audit.searchPlaceholder', 'Rechercher dans les journaux...')}
                       value={busqueda}
                       onChange={(e) => setBusqueda(e.target.value)}
                       className="pl-10"
@@ -352,7 +352,7 @@ export function AuditLogViewer() {
                 
                 {/* Fecha Inicio */}
                 <div>
-                  <Label>{t('audit.dateFrom', 'Desde')}</Label>
+                  <Label>{t('audit.dateFrom', 'Du')}</Label>
                   <Input
                     type="date"
                     value={fechaInicio}
@@ -363,7 +363,7 @@ export function AuditLogViewer() {
                 
                 {/* Fecha Fin */}
                 <div>
-                  <Label>{t('audit.dateTo', 'Hasta')}</Label>
+                  <Label>{t('audit.dateTo', 'Au')}</Label>
                   <Input
                     type="date"
                     value={fechaFin}
@@ -374,13 +374,13 @@ export function AuditLogViewer() {
                 
                 {/* Módulo */}
                 <div>
-                  <Label>{t('audit.module', 'Módulo')}</Label>
+                  <Label>{t('audit.module', 'Module')}</Label>
                   <Select value={moduloFiltro} onValueChange={setModuloFiltro}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="todos">Tous</SelectItem>
                       {obtenerModulosUnicos().map(modulo => (
                         <SelectItem key={modulo} value={modulo}>
                           {modulo}
@@ -392,17 +392,17 @@ export function AuditLogViewer() {
                 
                 {/* Severidad */}
                 <div>
-                  <Label>{t('audit.severity', 'Severidad')}</Label>
+                  <Label>{t('audit.severity', 'Sévérité')}</Label>
                   <Select value={severidadFiltro} onValueChange={setSeveridadFiltro}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
+                      <SelectItem value="todos">Toutes</SelectItem>
                       <SelectItem value="info">Info</SelectItem>
-                      <SelectItem value="warning">Advertencia</SelectItem>
+                      <SelectItem value="warning">Avertissement</SelectItem>
                       <SelectItem value="error">Error</SelectItem>
-                      <SelectItem value="critical">Crítico</SelectItem>
+                      <SelectItem value="critical">Critique</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -416,7 +416,7 @@ export function AuditLogViewer() {
                   className="gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  {t('audit.clearFilters', 'Limpiar Filtros')}
+                  {t('audit.clearFilters', 'Réinitialiser les filtres')}
                 </Button>
               </div>
             </CardContent>
@@ -427,7 +427,7 @@ export function AuditLogViewer() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">
-                  {t('audit.recentLogs', 'Registros Recientes')} ({logsFiltrados.length})
+                  {t('audit.recentLogs', 'Journaux récents')} ({logsFiltrados.length})
                 </CardTitle>
                 
                 <Badge variant="outline" className="gap-2">
@@ -522,7 +522,7 @@ export function AuditLogViewer() {
                   {logsFiltrados.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>{t('audit.noLogs', 'No se encontraron registros')}</p>
+                      <p>{t('audit.noLogs', 'Aucun journal trouvé')}</p>
                     </div>
                   )}
                 </div>
@@ -539,7 +539,7 @@ export function AuditLogViewer() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <User className="w-5 h-5" />
-                  {t('audit.mostActiveUsers', 'Usuarios Más Activos')}
+                  {t('audit.mostActiveUsers', 'Utilisateurs les plus actifs')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -552,7 +552,7 @@ export function AuditLogViewer() {
                         </div>
                         <span className="font-medium">{item.usuario}</span>
                       </div>
-                      <Badge>{item.acciones} acciones</Badge>
+                      <Badge>{item.acciones} actions</Badge>
                     </div>
                   ))}
                 </div>
@@ -564,7 +564,7 @@ export function AuditLogViewer() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Activity className="w-5 h-5" />
-                  {t('audit.mostUsedModules', 'Módulos Más Utilizados')}
+                  {t('audit.mostUsedModules', 'Modules les plus utilisés')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -577,7 +577,7 @@ export function AuditLogViewer() {
                         </div>
                         <span className="font-medium">{item.modulo}</span>
                       </div>
-                      <Badge>{item.acciones} acciones</Badge>
+                      <Badge>{item.acciones} actions</Badge>
                     </div>
                   ))}
                 </div>
@@ -590,27 +590,27 @@ export function AuditLogViewer() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Info className="w-5 h-5" />
-                {t('audit.systemInfo', 'Información del Sistema')}
+                {t('audit.systemInfo', 'Informations système')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Total de Logs Almacenados</p>
+                  <p className="text-sm text-gray-600 mb-1">Total des journaux stockés</p>
                   <p className="text-2xl font-bold text-[#1a4d7a]">
                     {tamañoStorage.logs.toLocaleString()}
                   </p>
                 </div>
                 
                 <div className="p-4 bg-purple-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Espacio Utilizado</p>
+                  <p className="text-sm text-gray-600 mb-1">Espace utilisé</p>
                   <p className="text-2xl font-bold text-purple-600">
                     {tamañoStorage.mb} MB
                   </p>
                 </div>
                 
                 <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Logs por Día (promedio)</p>
+                  <p className="text-sm text-gray-600 mb-1">Journaux par jour (moyenne)</p>
                   <p className="text-2xl font-bold text-[#2d9561]">
                     {Object.keys(estadisticas.logsPorDia).length > 0
                       ? Math.round(estadisticas.totalLogs / Object.keys(estadisticas.logsPorDia).length)
@@ -626,7 +626,7 @@ export function AuditLogViewer() {
                   className="gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
-                  {t('audit.cleanOldLogs', 'Limpiar Logs Antiguos (>90 días)')}
+                  {t('audit.cleanOldLogs', 'Supprimer les anciens journaux (>90 jours)')}
                 </Button>
               </div>
             </CardContent>
@@ -638,9 +638,9 @@ export function AuditLogViewer() {
       <Dialog open={dialogDetalleOpen} onOpenChange={setDialogDetalleOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" aria-describedby="detalle-log-description">
           <DialogHeader>
-            <DialogTitle>Detalle del Log</DialogTitle>
+            <DialogTitle>Détail du journal</DialogTitle>
             <DialogDescription id="detalle-log-description">
-              Información completa del registro de auditoría
+              Informations complètes du registre d'audit
             </DialogDescription>
           </DialogHeader>
           
@@ -653,29 +653,29 @@ export function AuditLogViewer() {
                 </div>
                 
                 <div>
-                  <Label className="text-xs text-gray-500">Fecha</Label>
+                  <Label className="text-xs text-gray-500">Date</Label>
                   <p className="text-sm">{formatearFecha(logSeleccionado.fecha)}</p>
                 </div>
                 
                 <div>
-                  <Label className="text-xs text-gray-500">Usuario</Label>
+                  <Label className="text-xs text-gray-500">Utilisateur</Label>
                   <p className="text-sm font-medium">{logSeleccionado.usuario}</p>
                 </div>
                 
                 <div>
-                  <Label className="text-xs text-gray-500">Módulo</Label>
+                  <Label className="text-xs text-gray-500">Module</Label>
                   <Badge>{logSeleccionado.modulo}</Badge>
                 </div>
                 
                 <div>
-                  <Label className="text-xs text-gray-500">Acción</Label>
+                  <Label className="text-xs text-gray-500">Action</Label>
                   <p className="text-sm">{logSeleccionado.accion}</p>
                 </div>
                 
                 <div>
-                  <Label className="text-xs text-gray-500">Estado</Label>
+                  <Label className="text-xs text-gray-500">Statut</Label>
                   {logSeleccionado.exito ? (
-                    <Badge className="bg-green-100 text-green-800">Exitoso</Badge>
+                    <Badge className="bg-green-100 text-green-800">Réussi</Badge>
                   ) : (
                     <Badge className="bg-red-100 text-red-800">Error</Badge>
                   )}
@@ -683,14 +683,14 @@ export function AuditLogViewer() {
                 
                 {logSeleccionado.duracion && (
                   <div>
-                    <Label className="text-xs text-gray-500">Duración</Label>
+                    <Label className="text-xs text-gray-500">Durée</Label>
                     <p className="text-sm">{logSeleccionado.duracion} ms</p>
                   </div>
                 )}
                 
                 {logSeleccionado.navegador && (
                   <div>
-                    <Label className="text-xs text-gray-500">Navegador</Label>
+                    <Label className="text-xs text-gray-500">Navigateur</Label>
                     <p className="text-sm">{logSeleccionado.navegador}</p>
                   </div>
                 )}
@@ -698,7 +698,7 @@ export function AuditLogViewer() {
               
               {logSeleccionado.detalles && (
                 <div>
-                  <Label className="text-xs text-gray-500">Detalles</Label>
+                  <Label className="text-xs text-gray-500">Détails</Label>
                   <pre className="mt-2 p-4 bg-gray-50 rounded-lg overflow-x-auto text-xs">
                     {JSON.stringify(logSeleccionado.detalles, null, 2)}
                   </pre>
@@ -707,7 +707,7 @@ export function AuditLogViewer() {
               
               {logSeleccionado.datosAntes && (
                 <div>
-                  <Label className="text-xs text-gray-500">Estado Anterior</Label>
+                  <Label className="text-xs text-gray-500">État précédent</Label>
                   <pre className="mt-2 p-4 bg-yellow-50 rounded-lg overflow-x-auto text-xs">
                     {JSON.stringify(logSeleccionado.datosAntes, null, 2)}
                   </pre>
@@ -716,7 +716,7 @@ export function AuditLogViewer() {
               
               {logSeleccionado.datosDespues && (
                 <div>
-                  <Label className="text-xs text-gray-500">Estado Posterior</Label>
+                  <Label className="text-xs text-gray-500">État suivant</Label>
                   <pre className="mt-2 p-4 bg-green-50 rounded-lg overflow-x-auto text-xs">
                     {JSON.stringify(logSeleccionado.datosDespues, null, 2)}
                   </pre>

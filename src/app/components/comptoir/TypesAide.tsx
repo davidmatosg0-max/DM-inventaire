@@ -32,6 +32,8 @@ import {
   comptoirStorageKeys,
   obtenirDemandesAideComptoir,
   obtenirDistributionsComptoir,
+  sauvegarderDemandesAideComptoir,
+  sauvegarderDistributionsComptoir,
 } from '../../utils/comptoirStorage';
 
 interface AidType {
@@ -188,20 +190,36 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
   };
 
   const handleSave = () => {
-    if (!formData.name.trim()) {
+    const normalizedName = formData.name.trim();
+
+    if (!normalizedName) {
       toast.error(t('common.error'), {
         description: 'Le nom du type d\'aide est requis'
       });
       return;
     }
 
+    const duplicateType = aidTypes.find((type) =>
+      type.id !== editingType?.id
+      && type.name.trim().toLowerCase() === normalizedName.toLowerCase()
+    );
+
+    if (duplicateType) {
+      toast.error(t('common.error'), {
+        description: 'Un type d\'aide avec ce nom existe déjà.'
+      });
+      return;
+    }
+
     if (editingType) {
+      const previousName = editingType.name;
+
       // Update existing type
       setAidTypes(prev => prev.map(type => 
         type.id === editingType.id
           ? {
               ...type,
-              name: formData.name,
+              name: normalizedName,
               description: formData.description,
               defaultValue: formData.defaultValue ? parseFloat(formData.defaultValue) : undefined,
               color: formData.color,
@@ -209,12 +227,36 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
             }
           : type
       ));
+
+      if (previousName.trim() !== normalizedName) {
+        const updatedRequests = obtenirDemandesAideComptoir().map((request) =>
+          request.type === previousName
+            ? { ...request, type: normalizedName }
+            : request
+        );
+
+        const updatedDistributions = obtenirDistributionsComptoir().map((distribution) => {
+          const shouldUpdate = distribution.aidTypeId === editingType.id || distribution.type === previousName;
+
+          return shouldUpdate
+            ? {
+                ...distribution,
+                aidTypeId: editingType.id,
+                type: normalizedName,
+              }
+            : distribution;
+        });
+
+        sauvegarderDemandesAideComptoir(updatedRequests);
+        sauvegarderDistributionsComptoir(updatedDistributions);
+      }
+
       toast.success(t('comptoir.aidTypeUpdated'));
     } else {
       // Create new type
       const newType: AidType = {
         id: `custom-${Date.now()}`,
-        name: formData.name,
+        name: normalizedName,
         description: formData.description,
         defaultValue: formData.defaultValue ? parseFloat(formData.defaultValue) : undefined,
         color: formData.color,
@@ -306,31 +348,25 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
         </div>
 
         <div className="flex gap-2">
-          {!type.isSystem && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleOpenDialog(type)}
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-[#DC3545] border-[#DC3545] hover:bg-[#DC3545] hover:text-white"
-                onClick={() => handleDelete(type)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </>
-          )}
-          {!type.isSystem && (
-            <Switch
-              checked={type.isActive}
-              onCheckedChange={() => toggleStatus(type)}
-            />
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleOpenDialog(type)}
+          >
+            <Edit2 className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-[#DC3545] border-[#DC3545] hover:bg-[#DC3545] hover:text-white"
+            onClick={() => handleDelete(type)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          <Switch
+            checked={type.isActive}
+            onCheckedChange={() => toggleStatus(type)}
+          />
         </div>
       </div>
     </div>
@@ -357,27 +393,28 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
         </Button>
       </div>
 
-      {/* System Types */}
-      <Card>
-        <CardHeader className="bg-[#F4F4F4] border-b">
-          <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            <Package className="w-5 h-5" />
-            {t('comptoir.systemAidTypes')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-3">
-            {systemAidTypes.map(type => renderTypeCard(type))}
-          </div>
-        </CardContent>
-      </Card>
+      {systemAidTypes.length > 0 && (
+        <Card>
+          <CardHeader className="bg-[#F4F4F4] border-b">
+            <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <Package className="w-5 h-5" />
+              {t('comptoir.systemAidTypes')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {systemAidTypes.map(type => renderTypeCard(type))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Custom Types */}
+      {/* Managed Types */}
       <Card>
         <CardHeader className="bg-[#F4F4F4] border-b">
           <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <Package className="w-5 h-5" />
-            {t('comptoir.customAidTypes')}
+            {systemAidTypes.length > 0 ? t('comptoir.customAidTypes') : t('comptoir.aidTypes')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">

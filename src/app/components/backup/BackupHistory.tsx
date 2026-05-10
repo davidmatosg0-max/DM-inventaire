@@ -74,9 +74,9 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
     const backup = loadBackupFromStorage(backupId);
     if (backup) {
       exportBackupToFile(backup);
-      toast.success(t('backup.exported', 'Backup exportado'));
+      toast.success(t('backup.exported', 'Sauvegarde exportée'));
     } else {
-      toast.error(t('backup.notFound', 'Backup no encontrado'));
+      toast.error(t('backup.notFound', 'Sauvegarde introuvable'));
     }
   };
   
@@ -84,12 +84,12 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
   const handleRestore = (backupId: string) => {
     const backup = loadBackupFromStorage(backupId);
     if (!backup) {
-      toast.error(t('backup.notFound', 'Backup no encontrado'));
+      toast.error(t('backup.notFound', 'Sauvegarde introuvable'));
       return;
     }
     
     const confirmed = window.confirm(
-      t('backup.confirmRestore', '¿Está seguro de restaurar este backup?')
+      t('backup.confirmRestore', 'Êtes-vous sûr de vouloir restaurer cette sauvegarde ?')
     );
     
     if (!confirmed) return;
@@ -98,25 +98,25 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
       const result = restoreBackup(backup);
       
       if (result.success) {
-        toast.success(t('backup.restored', 'Backup restaurado exitosamente'));
+        toast.success(t('backup.restored', 'Sauvegarde restaurée avec succès'));
         if (onRestore) {
           onRestore(backupId);
         }
       } else {
         toast.error(
-          t('backup.restoreError', 'Error al restaurar'),
+          t('backup.restoreError', 'Erreur lors de la restauration'),
           { description: result.errors.join(', ') }
         );
       }
     } catch (error) {
-      toast.error(t('backup.restoreError', 'Error al restaurar'));
+      toast.error(t('backup.restoreError', 'Erreur lors de la restauration'));
     }
   };
   
   // Eliminar backup
   const handleDelete = (backupId: string) => {
     const confirmed = window.confirm(
-      t('backup.confirmDelete', '¿Está seguro de eliminar este backup?')
+      t('backup.confirmDelete', 'Êtes-vous sûr de vouloir supprimer cette sauvegarde ?')
     );
     
     if (!confirmed) return;
@@ -124,16 +124,16 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
     try {
       deleteBackup(backupId);
       loadBackups();
-      toast.success(t('backup.deleted', 'Backup eliminado'));
+      toast.success(t('backup.deleted', 'Sauvegarde supprimée'));
     } catch (error) {
-      toast.error(t('backup.deleteError', 'Error al eliminar'));
+      toast.error(t('backup.deleteError', 'Erreur lors de la suppression'));
     }
   };
   
   // Limpiar todos
   const handleClearAll = () => {
     const confirmed = window.confirm(
-      t('backup.confirmClearAll', '¿Está seguro de eliminar TODOS los backups?')
+      t('backup.confirmClearAll', 'Êtes-vous sûr de vouloir supprimer TOUTES les sauvegardes ?')
     );
     
     if (!confirmed) return;
@@ -141,9 +141,9 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
     try {
       backups.forEach(backup => deleteBackup(backup.id));
       loadBackups();
-      toast.success(t('backup.allDeleted', 'Todos los backups eliminados'));
+      toast.success(t('backup.allDeleted', 'Toutes les sauvegardes ont été supprimées'));
     } catch (error) {
-      toast.error(t('backup.clearError', 'Error al limpiar'));
+      toast.error(t('backup.clearError', 'Erreur lors du nettoyage'));
     }
   };
   
@@ -173,7 +173,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.full', 'Completos')}
+                    {t('backup.full', 'Complètes')}
                   </p>
                   <p className="text-2xl font-bold text-green-600">
                     {stats.full}
@@ -189,7 +189,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.incremental', 'Incrementales')}
+                    {t('backup.incremental', 'Incrémentales')}
                   </p>
                   <p className="text-2xl font-bold text-blue-600">
                     {stats.incremental}
@@ -205,7 +205,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.size', 'Tamaño')}
+                    {t('backup.size', 'Taille')}
                   </p>
                   <p className="text-2xl font-bold text-purple-600">
                     {formatFileSize(stats.totalSize)}
@@ -225,10 +225,10 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-[#1a4d7a]" />
-                {t('backup.history', 'Historial de Backups')}
+                {t('backup.history', 'Historique des sauvegardes')}
               </CardTitle>
               <CardDescription>
-                {t('backup.historyDescription', 'Backups guardados en el sistema')}
+                {t('backup.historyDescription', 'Sauvegardes enregistrées dans le système')}
               </CardDescription>
             </div>
             
@@ -240,7 +240,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
                 className="text-red-600 hover:text-red-700"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                {t('backup.clearAll', 'Limpiar Todo')}
+                {t('backup.clearAll', 'Tout nettoyer')}
               </Button>
             )}
           </div>
@@ -251,7 +251,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder={t('backup.search', 'Buscar backups...')}
+                placeholder={t('backup.search', 'Rechercher des sauvegardes...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -263,9 +263,9 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
               onChange={(e) => setFilterType(e.target.value as any)}
               className="px-3 py-2 border rounded-lg text-sm"
             >
-              <option value="all">{t('backup.allTypes', 'Todos')}</option>
-              <option value="full">{t('backup.full', 'Completos')}</option>
-              <option value="incremental">{t('backup.incremental', 'Incrementales')}</option>
+              <option value="all">{t('backup.allTypes', 'Tous')}</option>
+              <option value="full">{t('backup.full', 'Complètes')}</option>
+              <option value="incremental">{t('backup.incremental', 'Incrémentales')}</option>
             </select>
           </div>
           
@@ -295,8 +295,8 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
                             }
                           >
                             {backup.type === 'full'
-                              ? t('backup.full', 'Completo')
-                              : t('backup.incremental', 'Incremental')
+                              ? t('backup.full', 'Complète')
+                              : t('backup.incremental', 'Incrémentale')
                             }
                           </Badge>
                         </div>
@@ -313,10 +313,10 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
                             {formatFileSize(backup.size)}
                           </div>
                           <div>
-                            {backup.recordCount} registros
+                            {backup.recordCount} enregistrements
                           </div>
                           <div className="col-span-2">
-                            {backup.modules.length} módulos: {backup.modules.slice(0, 3).join(', ')}
+                            {backup.modules.length} modules : {backup.modules.slice(0, 3).join(', ')}
                             {backup.modules.length > 3 && ` +${backup.modules.length - 3}`}
                           </div>
                         </div>
@@ -328,7 +328,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleExport(backup.id)}
-                          title={t('backup.export', 'Exportar')}
+                          title={t('backup.export', 'Exporter')}
                         >
                           <FileDown className="w-4 h-4" />
                         </Button>
@@ -337,7 +337,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRestore(backup.id)}
-                          title={t('backup.restore', 'Restaurar')}
+                          title={t('backup.restore', 'Restaurer')}
                           className="text-green-600 hover:text-green-700"
                         >
                           <RotateCcw className="w-4 h-4" />
@@ -347,7 +347,7 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(backup.id)}
-                          title={t('backup.delete', 'Eliminar')}
+                          title={t('backup.delete', 'Supprimer')}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -363,8 +363,8 @@ export function BackupHistory({ onRestore }: BackupHistoryProps) {
               <HardDrive className="w-12 h-12 mx-auto text-gray-300 mb-3" />
               <p className="text-gray-500">
                 {searchQuery || filterType !== 'all'
-                  ? t('backup.noMatching', 'No se encontraron backups que coincidan')
-                  : t('backup.noBackups', 'No hay backups guardados')}
+                  ? t('backup.noMatching', 'Aucune sauvegarde correspondante trouvée')
+                  : t('backup.noBackups', 'Aucune sauvegarde enregistrée')}
               </p>
             </div>
           )}

@@ -3441,7 +3441,7 @@ export function Configuracion() {
                       <SelectValue placeholder={t('configuration.prsLocationPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Sin ubicación</SelectItem>
+                      <SelectItem value="__none__">Sans emplacement</SelectItem>
                       {seccionesUbicacionProducto.map((seccion) => (
                         <SelectGroup key={`prs-${seccion.codigoZona}`}>
                           <SelectLabel>
@@ -3974,7 +3974,7 @@ export function Configuracion() {
                     <SelectValue placeholder={t('configuration.locationPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">Sin ubicación</SelectItem>
+                    <SelectItem value="__none__">Sans emplacement</SelectItem>
                     {seccionesUbicacionProducto.map((seccion) => (
                       <SelectGroup key={`producto-${seccion.codigoZona}`}>
                         <SelectLabel>

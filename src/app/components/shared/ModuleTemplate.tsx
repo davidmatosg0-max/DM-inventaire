@@ -156,7 +156,7 @@ export function ModuleTemplate() {
       >
         <div className="flex gap-3">
           <Input
-            placeholder="Buscar productos..."
+            placeholder="Rechercher des produits..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1"
@@ -201,7 +201,7 @@ export function ModuleTemplate() {
           columns={3}
           gap="md"
           keyExtractor={(item) => item.id}
-          emptyMessage="No hay productos disponibles"
+          emptyMessage="Aucun produit disponible"
           emptyIcon={<Package className="w-16 h-16" />}
           renderCard={(item) => (
             <Card className="shadow-modern hover:shadow-modern-lg transition-all duration-300 hover:-translate-y-1">

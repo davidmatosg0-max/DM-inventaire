@@ -152,14 +152,14 @@ function resolveStorageTemperature(item: any, product?: any): string {
   });
 
   if (String(temperaturaFuente).toLowerCase().includes('congel')) {
-    return 'Congelado';
+    return 'Congelé';
   }
 
   if (String(temperaturaFuente).toLowerCase().includes('refrig')) {
-    return 'Refrigerado';
+    return 'Réfrigéré';
   }
 
-  return 'Temperatura Ambiente';
+  return 'Température ambiante';
 }
 
 function resolveOriginalEntryTemperature(item: any, product?: any): string {
@@ -185,7 +185,7 @@ async function generatePrintableComandaHtml(payload: PrintPayload): Promise<stri
       ...COMANDA_QR_DATA_URL_OPTIONS,
     });
   } catch (error) {
-    console.error('Error al generar QR de la comanda:', error);
+    console.error('Erreur lors de la génération du QR de la commande :', error);
   }
 
   let previousTemperatureGroup = '';
@@ -534,7 +534,7 @@ async function generatePreparationWorksheetHtml(payload: PrintPayload): Promise<
       ...COMANDA_QR_DATA_URL_OPTIONS,
     });
   } catch (error) {
-    console.error('Error al generar QR de la ficha de preparation:', error);
+    console.error('Erreur lors de la génération du QR de la fiche de préparation :', error);
   }
 
   let previousTemperatureGroup = '';
@@ -928,7 +928,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
     try {
       printWindow = openPrintPopup({ width: 1024, height: 768, printDelayMs: 350 });
     } catch (error) {
-      console.error('El navegador bloqueó la ventana de impresión');
+      console.error('Le navigateur a bloqué la fenêtre d’impression');
       return;
     }
 
@@ -988,7 +988,7 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
 
       writeAutoPrintPopupContent(printWindow, html, { width: 1024, height: 768, printDelayMs: 350 });
     } catch (error) {
-      console.error('Error al preparar la impresión de la comanda:', error);
+      console.error('Erreur lors de la préparation de l’impression de la commande :', error);
       printWindow.document.open();
       printWindow.document.write(`
         <!DOCTYPE html>

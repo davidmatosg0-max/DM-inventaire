@@ -111,7 +111,7 @@ export function CarritoMejorado({
 
   const guardarCarrito = () => {
     if (!nombreCarrito.trim()) {
-      toast.error('Por favor ingrese un nombre para el carrito');
+      toast.error('Veuillez saisir un nom pour le panier');
       return;
     }
     
@@ -257,7 +257,7 @@ export function CarritoMejorado({
     try {
       openAutoPrintPopup(carritoHTML, { width: 800, height: 600, printDelayMs: 250 });
     } catch (error) {
-      toast.error('No se pudo abrir la ventana de impresión.');
+      toast.error('La fenêtre d’impression n’a pas pu être ouverte.');
     }
   };
 
@@ -375,7 +375,7 @@ export function CarritoMejorado({
                     className="flex-1 border-[#1E73BE] text-[#1E73BE] hover:bg-[#E3F2FD]"
                   >
                     <Save className="w-4 h-4 mr-1" />
-                    Guardar
+                    Enregistrer
                   </Button>
                   <Button
                     variant="outline"
@@ -569,17 +569,17 @@ export function CarritoMejorado({
         <DialogContent aria-describedby="guardar-carrito-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              💾 Guardar Carrito
+              💾 Enregistrer le panier
             </DialogTitle>
             <DialogDescription id="guardar-carrito-description">
-              Ingrese un nombre para guardar este carrito y poder cargarlo más tarde
+              Saisissez un nom pour enregistrer ce panier et le recharger plus tard
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Nombre del Carrito</Label>
+              <Label>Nom du panier</Label>
               <Input
-                placeholder="Ej: Carrito Comanda Enero 2026"
+                placeholder="Ex. : panier commande janvier 2026"
                 value={nombreCarrito}
                 onChange={(e) => setNombreCarrito(e.target.value)}
               />
@@ -595,11 +595,11 @@ export function CarritoMejorado({
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setGuardarDialogOpen(false)}>
-              Cancelar
+              Annuler
             </Button>
             <Button onClick={guardarCarrito} className="bg-[#1E73BE] hover:bg-[#1557A0]">
               <Save className="w-4 h-4 mr-2" />
-              Guardar
+              Enregistrer
             </Button>
           </div>
         </DialogContent>

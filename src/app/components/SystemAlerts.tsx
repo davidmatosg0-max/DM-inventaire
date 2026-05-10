@@ -81,7 +81,7 @@ export function SystemAlerts() {
             variant="ghost"
             size="icon"
             className="relative hover:bg-white/20 hidden md:flex"
-            title={t('alerts.settings') || 'Configuración de alertas'}
+            title={t('alerts.settings') || 'Paramètres des alertes'}
           >
             <SettingsIcon className="w-5 h-5 text-white" />
           </Button>
@@ -90,11 +90,11 @@ export function SystemAlerts() {
           <SheetHeader>
             <SheetTitle className="text-[#1a4d7a] flex items-center gap-2">
               <Bell className="w-5 h-5" />
-              {t('alerts.settings') || 'Configuración de Alertas'}
+              {t('alerts.settings') || 'Paramètres des alertes'}
             </SheetTitle>
             <SheetDescription>
               {t('alerts.settingsDescription') || 
-                'Personaliza las notificaciones automáticas del sistema'}
+                'Personnalisez les notifications automatiques du système'}
             </SheetDescription>
           </SheetHeader>
 
@@ -177,10 +177,10 @@ export function SystemAlerts() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="order-alerts" className="text-[#333333] font-medium">
-                  {t('alerts.orderAlerts') || 'Alertas de Comandas'}
+                    {t('alerts.orderAlerts') || 'Alertes de commandes'}
                 </Label>
                 <p className="text-xs text-[#666666]">
-                  {t('alerts.orderAlertsDesc') || 'Notificar comandas urgentes y pendientes'}
+                  {t('alerts.orderAlertsDesc') || 'Notifier les commandes urgentes et en attente'}
                 </p>
               </div>
               <Switch
@@ -235,13 +235,13 @@ export function SystemAlerts() {
               onClick={() => setSettings(DEFAULT_SETTINGS)}
               className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-[#1a4d7a]/10"
             >
-              {t('common.restoreDefaults') || 'Restaurar por defecto'}
+              {t('common.restoreDefaults') || 'Rétablir les valeurs par défaut'}
             </Button>
             <Button
               onClick={() => setShowSettings(false)}
               className="bg-[#1a4d7a] hover:bg-[#1a4d7a]/90"
             >
-              {t('common.save') || 'Guardar'}
+              {t('common.save') || 'Enregistrer'}
             </Button>
           </div>
         </SheetContent>

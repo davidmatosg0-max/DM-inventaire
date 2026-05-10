@@ -25,7 +25,7 @@ export function obtenerMensajesContacto(): MensajeContacto[] {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('❌ Error al leer mensajes de contacto:', error);
+    console.error('❌ Erreur lors de la lecture des messages de contact :', error);
     return [];
   }
 }
@@ -57,10 +57,10 @@ export function guardarMensajeContacto(
   
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(mensajes));
-    console.log('✅ Mensaje de contacto guardado:', nuevoMensaje.id);
+    console.log('✅ Message de contact enregistré :', nuevoMensaje.id);
     return nuevoMensaje;
   } catch (error) {
-    console.error('❌ Error al guardar mensaje de contacto:', error);
+    console.error('❌ Erreur lors de l’enregistrement du message de contact :', error);
     throw error;
   }
 }
@@ -80,7 +80,7 @@ export function marcarMensajeComoLeido(id: string): boolean {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(mensajes));
     return true;
   } catch (error) {
-    console.error('❌ Error al marcar mensaje como leído:', error);
+    console.error('❌ Erreur lors du marquage du message comme lu :', error);
     return false;
   }
 }

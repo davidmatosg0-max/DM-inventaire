@@ -24,78 +24,111 @@ export interface Rol {
 // Definición de todos los permisos del sistema
 export const permisos: Permiso[] = [
   // Dashboard
-  { id: 'dashboard.ver', nombre: 'Ver Dashboard', descripcion: 'Acceso al panel principal y estadísticas', modulo: 'Dashboard' },
+  { id: 'dashboard.ver', nombre: 'Voir le tableau de bord', descripcion: 'Accès au panneau principal et aux statistiques', modulo: 'Tableau de bord' },
+  { id: 'dashboard.metricas', nombre: 'Voir les métriques avancées', descripcion: 'Accéder aux indicateurs détaillés et aux métriques exécutives', modulo: 'Tableau de bord' },
   
   // Inventario
-  { id: 'inventario.ver', nombre: 'Ver Inventario', descripcion: 'Visualizar productos y stock', modulo: 'Inventario' },
-  { id: 'inventario.crear', nombre: 'Crear Productos', descripcion: 'Agregar nuevos productos al inventario', modulo: 'Inventario' },
-  { id: 'inventario.editar', nombre: 'Editar Productos', descripcion: 'Modificar información de productos', modulo: 'Inventario' },
-  { id: 'inventario.eliminar', nombre: 'Eliminar Productos', descripcion: 'Eliminar productos del inventario', modulo: 'Inventario' },
-  { id: 'inventario.movimientos', nombre: 'Registrar Movimientos', descripcion: 'Crear entradas y salidas de inventario', modulo: 'Inventario' },
-  { id: 'inventario.ajustes', nombre: 'Ajustes de Inventario', descripcion: 'Realizar ajustes y correcciones de stock', modulo: 'Inventario' },
+  { id: 'inventario.ver', nombre: 'Voir l\'inventaire', descripcion: 'Consulter les produits et le stock', modulo: 'Inventaire' },
+  { id: 'inventario.crear', nombre: 'Créer des produits', descripcion: 'Ajouter de nouveaux produits à l\'inventaire', modulo: 'Inventaire' },
+  { id: 'inventario.editar', nombre: 'Modifier les produits', descripcion: 'Mettre à jour les informations des produits', modulo: 'Inventaire' },
+  { id: 'inventario.eliminar', nombre: 'Supprimer des produits', descripcion: 'Retirer des produits de l\'inventaire', modulo: 'Inventaire' },
+  { id: 'inventario.movimientos', nombre: 'Enregistrer des mouvements', descripcion: 'Créer des entrées et des sorties d\'inventaire', modulo: 'Inventaire' },
+  { id: 'inventario.ajustes', nombre: 'Ajustements d\'inventaire', descripcion: 'Effectuer des ajustements et corrections de stock', modulo: 'Inventaire' },
   
   // Comandas
-  { id: 'comandas.ver', nombre: 'Ver Comandas', descripcion: 'Visualizar comandas existentes', modulo: 'Comandas' },
-  { id: 'comandas.crear', nombre: 'Crear Comandas', descripcion: 'Generar nuevas comandas', modulo: 'Comandas' },
-  { id: 'comandas.editar', nombre: 'Editar Comandas', descripcion: 'Modificar comandas pendientes', modulo: 'Comandas' },
-  { id: 'comandas.eliminar', nombre: 'Eliminar Comandas', descripcion: 'Eliminar comandas del sistema', modulo: 'Comandas' },
-  { id: 'comandas.aprobar', nombre: 'Aprobar Comandas', descripcion: 'Aprobar comandas generadas', modulo: 'Comandas' },
-  { id: 'comandas.completar', nombre: 'Completar Comandas', descripcion: 'Marcar comandas como completadas', modulo: 'Comandas' },
+  { id: 'comandas.ver', nombre: 'Voir les commandes', descripcion: 'Consulter les commandes existantes', modulo: 'Commandes' },
+  { id: 'comandas.crear', nombre: 'Créer des commandes', descripcion: 'Générer de nouvelles commandes', modulo: 'Commandes' },
+  { id: 'comandas.editar', nombre: 'Modifier les commandes', descripcion: 'Mettre à jour les commandes en attente', modulo: 'Commandes' },
+  { id: 'comandas.eliminar', nombre: 'Supprimer des commandes', descripcion: 'Supprimer des commandes du système', modulo: 'Commandes' },
+  { id: 'comandas.aprobar', nombre: 'Approuver les commandes', descripcion: 'Valider les commandes générées', modulo: 'Commandes' },
+  { id: 'comandas.completar', nombre: 'Finaliser les commandes', descripcion: 'Marquer les commandes comme terminées', modulo: 'Commandes' },
   
   // PRS
-  { id: 'prs.ver', nombre: 'Ver Panel PRS', descripcion: 'Acceso al módulo PRS', modulo: 'PRS' },
-  { id: 'prs.registrar', nombre: 'Registrar PRS', descripcion: 'Crear registros de rescate de sobrantes', modulo: 'PRS' },
-  { id: 'prs.editar', nombre: 'Editar Registros PRS', descripcion: 'Modificar registros PRS', modulo: 'PRS' },
-  { id: 'prs.eliminar', nombre: 'Eliminar Registros PRS', descripcion: 'Eliminar registros PRS', modulo: 'PRS' },
-  { id: 'prs.categorias', nombre: 'Gestionar Categorías PRS', descripcion: 'Administrar categorías y productos PRS', modulo: 'PRS' },
+  { id: 'prs.ver', nombre: 'Voir le panneau PRS', descripcion: 'Accès au module PRS', modulo: 'PRS' },
+  { id: 'prs.registrar', nombre: 'Enregistrer des dossiers PRS', descripcion: 'Créer des registres de récupération des surplus', modulo: 'PRS' },
+  { id: 'prs.editar', nombre: 'Modifier les dossiers PRS', descripcion: 'Mettre à jour les registres PRS', modulo: 'PRS' },
+  { id: 'prs.eliminar', nombre: 'Supprimer les dossiers PRS', descripcion: 'Supprimer des registres PRS', modulo: 'PRS' },
+  { id: 'prs.categorias', nombre: 'Gérer les catégories PRS', descripcion: 'Administrer les catégories et produits PRS', modulo: 'PRS' },
   
   // Organismos
-  { id: 'organismos.ver', nombre: 'Ver Organismos', descripcion: 'Visualizar información de organismos', modulo: 'Organismos' },
-  { id: 'organismos.crear', nombre: 'Crear Organismos', descripcion: 'Registrar nuevos organismos', modulo: 'Organismos' },
-  { id: 'organismos.editar', nombre: 'Editar Organismos', descripcion: 'Modificar datos de organismos', modulo: 'Organismos' },
-  { id: 'organismos.eliminar', nombre: 'Eliminar Organismos', descripcion: 'Eliminar organismos del sistema', modulo: 'Organismos' },
-  { id: 'organismos.perfil', nombre: 'Ver Perfil Completo', descripcion: 'Acceso a perfil detallado de organismos', modulo: 'Organismos' },
-  { id: 'organismos.documentos', nombre: 'Gestionar Documentos', descripcion: 'Subir y gestionar documentos de organismos', modulo: 'Organismos' },
+  { id: 'organismos.ver', nombre: 'Voir les organismes', descripcion: 'Consulter les informations des organismes', modulo: 'Organismes' },
+  { id: 'organismos.crear', nombre: 'Créer des organismes', descripcion: 'Enregistrer de nouveaux organismes', modulo: 'Organismes' },
+  { id: 'organismos.editar', nombre: 'Modifier les organismes', descripcion: 'Mettre à jour les données des organismes', modulo: 'Organismes' },
+  { id: 'organismos.eliminar', nombre: 'Supprimer des organismes', descripcion: 'Retirer des organismes du système', modulo: 'Organismes' },
+  { id: 'organismos.perfil', nombre: 'Voir le profil complet', descripcion: 'Accès au profil détaillé des organismes', modulo: 'Organismes' },
+  { id: 'organismos.documentos', nombre: 'Gérer les documents', descripcion: 'Téléverser et gérer les documents des organismes', modulo: 'Organismes' },
+
+  // Offres organismes
+  { id: 'ofertas.ver', nombre: 'Voir les offres aux organismes', descripcion: 'Consulter les offres disponibles pour les organismes', modulo: 'Offres Organismes' },
+  { id: 'ofertas.editar', nombre: 'Gérer les offres aux organismes', descripcion: 'Créer et mettre à jour les offres destinées aux organismes', modulo: 'Offres Organismes' },
+
+  // Partenaires et fournisseurs
+  { id: 'partenaires.ver', nombre: 'Voir les partenaires et fournisseurs', descripcion: 'Consulter le registre des partenaires et fournisseurs', modulo: 'Partenaires & Fournisseurs' },
+  { id: 'partenaires.editar', nombre: 'Gérer les partenaires et fournisseurs', descripcion: 'Créer et mettre à jour les partenaires et fournisseurs', modulo: 'Partenaires & Fournisseurs' },
+
+  // Annuaire entrepôt
+  { id: 'annuaire_entrepot.ver', nombre: 'Voir l\'annuaire Entrepôt', descripcion: 'Consulter les contacts opérationnels de l\'entrepôt', modulo: 'Annuaire Entrepôt' },
+  { id: 'annuaire_entrepot.editar', nombre: 'Gérer l\'annuaire Entrepôt', descripcion: 'Créer et mettre à jour les contacts de l\'entrepôt', modulo: 'Annuaire Entrepôt' },
   
   // Transporte
-  { id: 'transporte.ver', nombre: 'Ver Transporte', descripcion: 'Visualizar rutas y entregas', modulo: 'Transporte' },
-  { id: 'transporte.crear', nombre: 'Crear Rutas', descripcion: 'Planificar nuevas rutas de entrega', modulo: 'Transporte' },
-  { id: 'transporte.editar', nombre: 'Editar Rutas', descripcion: 'Modificar rutas existentes', modulo: 'Transporte' },
-  { id: 'transporte.eliminar', nombre: 'Eliminar Rutas', descripcion: 'Eliminar rutas del sistema', modulo: 'Transporte' },
-  { id: 'transporte.entregar', nombre: 'Registrar Entregas', descripcion: 'Marcar entregas como completadas', modulo: 'Transporte' },
-  { id: 'transporte.vehiculos', nombre: 'Gestionar Vehículos', descripcion: 'Administrar flota de vehículos', modulo: 'Transporte' },
+  { id: 'transporte.ver', nombre: 'Voir le transport', descripcion: 'Consulter les routes et les livraisons', modulo: 'Transport' },
+  { id: 'transporte.crear', nombre: 'Créer des routes', descripcion: 'Planifier de nouvelles routes de livraison', modulo: 'Transport' },
+  { id: 'transporte.editar', nombre: 'Modifier les routes', descripcion: 'Mettre à jour les routes existantes', modulo: 'Transport' },
+  { id: 'transporte.eliminar', nombre: 'Supprimer des routes', descripcion: 'Supprimer des routes du système', modulo: 'Transport' },
+  { id: 'transporte.entregar', nombre: 'Enregistrer les livraisons', descripcion: 'Marquer les livraisons comme terminées', modulo: 'Transport' },
+  { id: 'transporte.vehiculos', nombre: 'Gérer les véhicules', descripcion: 'Administrer la flotte de véhicules', modulo: 'Transport' },
+
+  // Comptoir
+  { id: 'comptoir.ver', nombre: 'Voir le comptoir', descripcion: 'Accéder au module de comptoir et aux opérations associées', modulo: 'Comptoir' },
+  { id: 'comptoir.editar', nombre: 'Gérer le comptoir', descripcion: 'Mettre à jour les opérations et informations du comptoir', modulo: 'Comptoir' },
+
+  // Cuisine
+  { id: 'cuisine.ver', nombre: 'Voir la cuisine', descripcion: 'Accéder au module de cuisine et de préparation', modulo: 'Cuisine' },
+  { id: 'cuisine.editar', nombre: 'Gérer la cuisine', descripcion: 'Mettre à jour les opérations de cuisine et de production', modulo: 'Cuisine' },
+
+  // Liaison organismes
+  { id: 'liaison.ver', nombre: 'Voir la liaison organismes', descripcion: 'Accéder au module de liaison avec les organismes', modulo: 'Liaison Organismes' },
+  { id: 'liaison.editar', nombre: 'Gérer la liaison organismes', descripcion: 'Mettre à jour les échanges et le suivi des organismes', modulo: 'Liaison Organismes' },
+
+  // Communication interne
+  { id: 'communication.ver', nombre: 'Voir la messagerie interne', descripcion: 'Accéder à la messagerie interne et aux conversations', modulo: 'Messagerie Interne' },
+  { id: 'communication.editar', nombre: 'Gérer la messagerie interne', descripcion: 'Envoyer et gérer les messages internes', modulo: 'Messagerie Interne' },
+
+  // Recrutement
+  { id: 'recrutement.ver', nombre: 'Voir le recrutement', descripcion: 'Accéder au module de recrutement et aux candidatures', modulo: 'Recrutement' },
+  { id: 'recrutement.editar', nombre: 'Gérer le recrutement', descripcion: 'Mettre à jour les candidatures et les campagnes de recrutement', modulo: 'Recrutement' },
   
   // Reportes
-  { id: 'reportes.ver', nombre: 'Ver Reportes', descripcion: 'Acceso a módulo de reportes', modulo: 'Reportes' },
-  { id: 'reportes.generar', nombre: 'Generar Reportes', descripcion: 'Crear reportes personalizados', modulo: 'Reportes' },
-  { id: 'reportes.exportar', nombre: 'Exportar Reportes', descripcion: 'Exportar reportes en PDF/Excel', modulo: 'Reportes' },
-  { id: 'reportes.avanzados', nombre: 'Reportes Avanzados', descripcion: 'Acceso a reportes financieros y estadísticos', modulo: 'Reportes' },
+  { id: 'reportes.ver', nombre: 'Voir les rapports', descripcion: 'Accès au module de rapports', modulo: 'Rapports' },
+  { id: 'reportes.generar', nombre: 'Générer des rapports', descripcion: 'Créer des rapports personnalisés', modulo: 'Rapports' },
+  { id: 'reportes.exportar', nombre: 'Exporter les rapports', descripcion: 'Exporter les rapports en PDF ou Excel', modulo: 'Rapports' },
+  { id: 'reportes.avanzados', nombre: 'Rapports avancés', descripcion: 'Accès aux rapports financiers et statistiques', modulo: 'Rapports' },
 
   // Achats
-  { id: 'achat.ver', nombre: 'Voir Achats', descripcion: 'Acceso al módulo de bons d\'achat y seguimiento de compras', modulo: 'Achats' },
-  { id: 'achat.crear', nombre: 'Créer Bons d\'Achat', descripcion: 'Crear y enviar bons d\'achat a aprobación', modulo: 'Achats' },
-  { id: 'achat.autorizar', nombre: 'Autoriser Achats', descripcion: 'Aprobar o rechazar bons d\'achat según la política interna', modulo: 'Achats' },
+  { id: 'achat.ver', nombre: 'Voir les achats', descripcion: 'Accès au module des bons d\'achat et au suivi des achats', modulo: 'Achats' },
+  { id: 'achat.crear', nombre: 'Créer des bons d\'achat', descripcion: 'Créer et envoyer des bons d\'achat pour approbation', modulo: 'Achats' },
+  { id: 'achat.autorizar', nombre: 'Autoriser les achats', descripcion: 'Approuver ou refuser les bons d\'achat selon la politique interne', modulo: 'Achats' },
   
   // Usuarios y Roles
-  { id: 'usuarios.ver', nombre: 'Ver Usuarios', descripcion: 'Visualizar usuarios del sistema', modulo: 'Usuarios' },
-  { id: 'usuarios.crear', nombre: 'Crear Usuarios', descripcion: 'Registrar nuevos usuarios', modulo: 'Usuarios' },
-  { id: 'usuarios.editar', nombre: 'Editar Usuarios', descripcion: 'Modificar información de usuarios', modulo: 'Usuarios' },
-  { id: 'usuarios.eliminar', nombre: 'Eliminar Usuarios', descripcion: 'Eliminar usuarios del sistema', modulo: 'Usuarios' },
-  { id: 'usuarios.roles', nombre: 'Gestionar Roles', descripcion: 'Crear y modificar roles y permisos', modulo: 'Usuarios' },
-  { id: 'usuarios.permisos', nombre: 'Asignar Permisos', descripcion: 'Asignar permisos a roles', modulo: 'Usuarios' },
+  { id: 'usuarios.ver', nombre: 'Voir les utilisateurs', descripcion: 'Consulter les utilisateurs du système', modulo: 'Utilisateurs' },
+  { id: 'usuarios.crear', nombre: 'Créer des utilisateurs', descripcion: 'Enregistrer de nouveaux utilisateurs', modulo: 'Utilisateurs' },
+  { id: 'usuarios.editar', nombre: 'Modifier les utilisateurs', descripcion: 'Mettre à jour les informations des utilisateurs', modulo: 'Utilisateurs' },
+  { id: 'usuarios.eliminar', nombre: 'Supprimer des utilisateurs', descripcion: 'Supprimer des utilisateurs du système', modulo: 'Utilisateurs' },
+  { id: 'usuarios.roles', nombre: 'Gérer les rôles', descripcion: 'Créer et modifier les rôles et les permissions', modulo: 'Utilisateurs' },
+  { id: 'usuarios.permisos', nombre: 'Attribuer des permissions', descripcion: 'Attribuer des permissions aux rôles', modulo: 'Utilisateurs' },
   
   // ID Digital
-  { id: 'iddigital.ver', nombre: 'Ver IDs Digitales', descripcion: 'Acceso a módulo de ID Digital', modulo: 'ID Digital' },
-  { id: 'iddigital.crear', nombre: 'Crear IDs', descripcion: 'Generar nuevas tarjetas digitales', modulo: 'ID Digital' },
-  { id: 'iddigital.editar', nombre: 'Editar IDs', descripcion: 'Modificar IDs existentes', modulo: 'ID Digital' },
-  { id: 'iddigital.eliminar', nombre: 'Eliminar IDs', descripcion: 'Eliminar IDs digitales', modulo: 'ID Digital' },
-  { id: 'iddigital.imprimir', nombre: 'Imprimir IDs', descripcion: 'Generar PDFs para impresión', modulo: 'ID Digital' },
+  { id: 'iddigital.ver', nombre: 'Voir les identifiants numériques', descripcion: 'Accès au module ID Digital', modulo: 'ID Digital' },
+  { id: 'iddigital.crear', nombre: 'Créer des identifiants', descripcion: 'Générer de nouvelles cartes numériques', modulo: 'ID Digital' },
+  { id: 'iddigital.editar', nombre: 'Modifier les identifiants', descripcion: 'Mettre à jour les identifiants existants', modulo: 'ID Digital' },
+  { id: 'iddigital.eliminar', nombre: 'Supprimer des identifiants', descripcion: 'Supprimer des identifiants numériques', modulo: 'ID Digital' },
+  { id: 'iddigital.imprimir', nombre: 'Imprimer les identifiants', descripcion: 'Générer des PDF pour l\'impression', modulo: 'ID Digital' },
   
   // Configuración
-  { id: 'configuracion.ver', nombre: 'Ver Configuración', descripcion: 'Acceso a configuración del sistema', modulo: 'Configuración' },
-  { id: 'configuracion.editar', nombre: 'Editar Configuración', descripcion: 'Modificar configuración general', modulo: 'Configuración' },
-  { id: 'configuracion.marca', nombre: 'Gestionar Marca', descripcion: 'Personalizar marca y apariencia', modulo: 'Configuración' },
-  { id: 'configuracion.idioma', nombre: 'Configurar Idioma', descripcion: 'Cambiar idioma del sistema', modulo: 'Configuración' },
+  { id: 'configuracion.ver', nombre: 'Voir la configuration', descripcion: 'Accès à la configuration du système', modulo: 'Configuration' },
+  { id: 'configuracion.editar', nombre: 'Modifier la configuration', descripcion: 'Mettre à jour la configuration générale', modulo: 'Configuration' },
+  { id: 'configuracion.marca', nombre: 'Gérer la marque', descripcion: 'Personnaliser la marque et l\'apparence', modulo: 'Configuration' },
+  { id: 'configuracion.idioma', nombre: 'Configurer la langue', descripcion: 'Changer la langue du système', modulo: 'Configuration' },
 ];
 
 const permisosDisponibles = new Set(permisos.map((permiso) => permiso.id));
@@ -119,6 +152,7 @@ const permisosPorRolSistema: Record<RolUsuario, string[]> = {
   administrador: permisos.map((permiso) => permiso.id),
   coordinador: [
     'dashboard.ver',
+    'dashboard.metricas',
     'inventario.ver',
     'inventario.editar',
     'inventario.movimientos',
@@ -132,7 +166,12 @@ const permisosPorRolSistema: Record<RolUsuario, string[]> = {
     'organismos.crear',
     'organismos.editar',
     'organismos.perfil',
+    'ofertas.ver',
+    'partenaires.ver',
+    'annuaire_entrepot.ver',
     'transporte.ver',
+    'cuisine.ver',
+    'communication.ver',
     'reportes.ver',
     'reportes.generar',
     'reportes.exportar',
@@ -153,6 +192,9 @@ const permisosPorRolSistema: Record<RolUsuario, string[]> = {
     'prs.registrar',
     'prs.editar',
     'organismos.ver',
+    'partenaires.ver',
+    'annuaire_entrepot.ver',
+    'communication.ver',
     'reportes.ver',
     'achat.ver'
   ],
@@ -161,7 +203,9 @@ const permisosPorRolSistema: Record<RolUsuario, string[]> = {
     'comandas.ver',
     'comandas.crear',
     'comandas.editar',
+    'comptoir.ver',
     'organismos.ver',
+    'communication.ver',
     'reportes.ver',
     'achat.ver'
   ],
@@ -184,6 +228,12 @@ const permisosPorRolSistema: Record<RolUsuario, string[]> = {
     'organismos.eliminar',
     'organismos.perfil',
     'organismos.documentos',
+    'ofertas.ver',
+    'ofertas.editar',
+    'liaison.ver',
+    'liaison.editar',
+    'communication.ver',
+    'communication.editar',
     'comandas.ver',
     'comandas.crear',
     'comandas.editar',
@@ -252,30 +302,46 @@ export const tienePermiso = (rolId: string, permisoId: string): boolean => {
 
 // Iconos de módulos
 export const iconosModulos: Record<string, string> = {
-  'Dashboard': '📊',
-  'Inventario': '📦',
-  'Comandas': '📋',
+  'Tableau de bord': '📊',
+  'Inventaire': '📦',
+  'Commandes': '📋',
   'PRS': '♻️',
-  'Organismos': '🏛️',
-  'Transporte': '🚚',
-  'Reportes': '📈',
+  'Organismes': '🏛️',
+  'Offres Organismes': '🏷️',
+  'Partenaires & Fournisseurs': '🤝',
+  'Annuaire Entrepôt': '📇',
+  'Transport': '🚚',
+  'Comptoir': '🛒',
+  'Cuisine': '👨‍🍳',
+  'Liaison Organismes': '📨',
+  'Messagerie Interne': '💬',
+  'Recrutement': '🧑‍💼',
+  'Rapports': '📈',
   'Achats': '🧾',
-  'Usuarios': '👥',
+  'Utilisateurs': '👥',
   'ID Digital': '🪪',
-  'Configuración': '⚙️'
+  'Configuration': '⚙️'
 };
 
 // Colores de módulos
 export const coloresModulos: Record<string, string> = {
-  'Dashboard': '#1E73BE',
-  'Inventario': '#4CAF50',
-  'Comandas': '#FFC107',
+  'Tableau de bord': '#1E73BE',
+  'Inventaire': '#4CAF50',
+  'Commandes': '#FFC107',
   'PRS': '#4CAF50',
-  'Organismos': '#1E73BE',
-  'Transporte': '#FFC107',
-  'Reportes': '#9C27B0',
+  'Organismes': '#1E73BE',
+  'Offres Organismes': '#0F766E',
+  'Partenaires & Fournisseurs': '#8B5CF6',
+  'Annuaire Entrepôt': '#64748B',
+  'Transport': '#FFC107',
+  'Comptoir': '#2D9561',
+  'Cuisine': '#EA580C',
+  'Liaison Organismes': '#7C3AED',
+  'Messagerie Interne': '#0F172A',
+  'Recrutement': '#BE185D',
+  'Rapports': '#9C27B0',
   'Achats': '#8B5CF6',
-  'Usuarios': '#DC3545',
+  'Utilisateurs': '#DC3545',
   'ID Digital': '#00BCD4',
-  'Configuración': '#607D8B'
+  'Configuration': '#607D8B'
 };

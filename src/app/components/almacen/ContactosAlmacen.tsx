@@ -36,13 +36,13 @@ export function ContactosAlmacen() {
 
   const inicializarTiposContactoAlmacen = () => {
     try {
-      console.log('🏢 Inicializando tipos de contacto para Almacén...');
+      console.log('🏢 Initialisation des types de contact pour l’Entrepôt...');
       
       const tiposExistentes = obtenerTiposContacto('almacen');
       
       // Si ya existen tipos, no sobrescribir
       if (tiposExistentes.length > 0) {
-        console.log(`✅ Ya existen ${tiposExistentes.length} tipos de contacto para Almacén`);
+        console.log(`✅ ${tiposExistentes.length} types de contact existent déjà pour l’Entrepôt`);
         setTiposInicializados(true);
         return;
       }
@@ -102,14 +102,14 @@ export function ContactosAlmacen() {
         }
       });
 
-      console.log(`✅ ${guardados} tipos de contacto creados para Almacén`);
+      console.log(`✅ ${guardados} types de contact créés pour l’Entrepôt`);
       setTiposInicializados(true);
       
       // Notificar al usuario
       toast.success(`Types de contact initialisés (${guardados})`);
       
     } catch (error) {
-      console.error('❌ Error inicializando tipos de contacto:', error);
+      console.error('❌ Erreur lors de l’initialisation des types de contact :', error);
       toast.error('Erreur lors de l\'initialisation des types de contact');
     }
   };

@@ -106,12 +106,12 @@ export async function generateStandardProductLabel(
     donor: data.translations?.donor || 'DONANTE',
     entryDate: data.translations?.entryDate || 'FECHA DE ENTRADA',
     systemFooter: data.translations?.systemFooter || 'Sistema de gestión de inventario',
-    ambient: data.translations?.ambient || 'Ambiente',
-    refrigerated: data.translations?.refrigerated || 'Refrigerado',
-    frozen: data.translations?.frozen || 'Congelado',
-    packagingDetails: data.translations?.packagingDetails || 'Detalles del empaque',
-    printButton: data.translations?.printButton || 'Imprimir etiqueta',
-    closeButton: data.translations?.closeButton || 'Cerrar'
+    ambient: data.translations?.ambient || 'Température ambiante',
+    refrigerated: data.translations?.refrigerated || 'Réfrigéré',
+    frozen: data.translations?.frozen || 'Congelé',
+    packagingDetails: data.translations?.packagingDetails || 'Détails de l’emballage',
+    printButton: data.translations?.printButton || 'Imprimer l’étiquette',
+    closeButton: data.translations?.closeButton || 'Fermer'
   };
 
   // Generar QR Code (reducido para optimizar espacio)

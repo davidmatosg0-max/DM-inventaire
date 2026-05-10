@@ -48,18 +48,18 @@ export function OfflineIndicator() {
     
     if (result.success > 0) {
       toast.success(
-        t('offline.syncSuccess', 'Sincronización exitosa'),
+        t('offline.syncSuccess', 'Synchronisation réussie'),
         {
-          description: `${result.success} operaciones sincronizadas`
+          description: `${result.success} opérations synchronisées`
         }
       );
     }
     
     if (result.failed > 0) {
       toast.error(
-        t('offline.syncError', 'Error en sincronización'),
+        t('offline.syncError', 'Erreur de synchronisation'),
         {
-          description: `${result.failed} operaciones fallidas`
+          description: `${result.failed} opérations en échec`
         }
       );
     }
@@ -93,8 +93,8 @@ export function OfflineIndicator() {
           
           <span className="text-sm">
             {isOnline 
-              ? t('offline.online', 'En Línea')
-              : t('offline.offline', 'Sin Conexión')
+              ? t('offline.online', 'En ligne')
+              : t('offline.offline', 'Hors connexion')
             }
           </span>
           
@@ -116,12 +116,12 @@ export function OfflineIndicator() {
                   {isOnline ? (
                     <>
                       <Cloud className="w-5 h-5 text-green-600" />
-                      {t('offline.onlineStatus', 'Estado de Conexión: En Línea')}
+                      {t('offline.onlineStatus', 'État de connexion : en ligne')}
                     </>
                   ) : (
                     <>
                       <CloudOff className="w-5 h-5 text-red-600" />
-                      {t('offline.offlineStatus', 'Estado de Conexión: Sin Conexión')}
+                      {t('offline.offlineStatus', 'État de connexion : hors connexion')}
                     </>
                   )}
                 </CardTitle>
@@ -140,12 +140,12 @@ export function OfflineIndicator() {
               <div className="p-3 bg-gray-50 rounded-lg space-y-2 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">
-                    {t('offline.status', 'Estado')}:
+                    {t('offline.status', 'État')}:
                   </span>
                   <span className={`font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
                     {isOnline 
-                      ? t('offline.connected', 'Conectado')
-                      : t('offline.disconnected', 'Desconectado')
+                      ? t('offline.connected', 'Connecté')
+                      : t('offline.disconnected', 'Déconnecté')
                     }
                   </span>
                 </div>
@@ -153,7 +153,7 @@ export function OfflineIndicator() {
                 {lastOnline && (
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">
-                      {t('offline.lastOnline', 'Última conexión')}:
+                      {t('offline.lastOnline', 'Dernière connexion')}:
                     </span>
                     <span className="text-gray-900">
                       {formatDateRelative(lastOnline)}
@@ -164,7 +164,7 @@ export function OfflineIndicator() {
                 {!isOnline && lastOffline && (
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">
-                      {t('offline.lastOffline', 'Sin conexión desde')}:
+                      {t('offline.lastOffline', 'Hors connexion depuis')}:
                     </span>
                     <span className="text-gray-900">
                       {formatDateRelative(lastOffline)}
@@ -180,7 +180,7 @@ export function OfflineIndicator() {
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold flex items-center gap-2">
                         <Clock className="w-4 h-4 text-amber-600" />
-                        {t('offline.pendingOperations', 'Operaciones Pendientes')}
+                        {t('offline.pendingOperations', 'Opérations en attente')}
                       </h3>
                       <Badge variant="outline" className="bg-amber-50 text-amber-700">
                         {queueSize}
@@ -194,7 +194,7 @@ export function OfflineIndicator() {
                           {stats.byType.CREATE}
                         </div>
                         <div className="text-xs text-green-600">
-                          {t('offline.create', 'Crear')}
+                          {t('offline.create', 'Créer')}
                         </div>
                       </div>
                       <div className="p-2 bg-blue-50 border border-blue-200 rounded text-center">
@@ -202,7 +202,7 @@ export function OfflineIndicator() {
                           {stats.byType.UPDATE}
                         </div>
                         <div className="text-xs text-blue-600">
-                          {t('offline.update', 'Actualizar')}
+                          {t('offline.update', 'Mettre à jour')}
                         </div>
                       </div>
                       <div className="p-2 bg-red-50 border border-red-200 rounded text-center">
@@ -210,7 +210,7 @@ export function OfflineIndicator() {
                           {stats.byType.DELETE}
                         </div>
                         <div className="text-xs text-red-600">
-                          {t('offline.delete', 'Eliminar')}
+                          {t('offline.delete', 'Supprimer')}
                         </div>
                       </div>
                     </div>
@@ -226,7 +226,7 @@ export function OfflineIndicator() {
                             <span className={getOperationTypeColor(operation.type)}>
                               {formatOperationType(operation.type)}
                             </span>
-                            <span className="text-gray-600">en</span>
+                            <span className="text-gray-600">dans</span>
                             <span className="font-medium capitalize">
                               {operation.module}
                             </span>
@@ -249,12 +249,12 @@ export function OfflineIndicator() {
                       {isSyncing ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          {t('offline.syncing', 'Sincronizando...')} {syncProgress}%
+                          {t('offline.syncing', 'Synchronisation...')} {syncProgress}%
                         </>
                       ) : (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2" />
-                          {t('offline.syncNow', 'Sincronizar Ahora')}
+                          {t('offline.syncNow', 'Synchroniser maintenant')}
                         </>
                       )}
                     </Button>
@@ -265,7 +265,7 @@ export function OfflineIndicator() {
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
                       <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-amber-700">
-                        {t('offline.willSyncWhenOnline', 'Las operaciones se sincronizarán automáticamente cuando se restaure la conexión.')}
+                        {t('offline.willSyncWhenOnline', 'Les opérations seront synchronisées automatiquement lorsque la connexion sera rétablie.')}
                       </p>
                     </div>
                   )}
@@ -274,7 +274,7 @@ export function OfflineIndicator() {
                 <div className="p-6 text-center">
                   <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-3" />
                   <p className="text-gray-600">
-                    {t('offline.allSynced', 'Todas las operaciones están sincronizadas')}
+                    {t('offline.allSynced', 'Toutes les opérations sont synchronisées')}
                   </p>
                 </div>
               )}

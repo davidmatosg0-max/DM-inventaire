@@ -38,13 +38,13 @@ export const DiagnosticoDatos: React.FC<DiagnosticoDatosProps> = ({ branding }) 
   const handleCrearBackup = () => {
     const backupKey = crearBackupSeguridad('todos');
     if (backupKey) {
-      alert(`✅ Backup creado: ${backupKey}`);
+      alert(`✅ Sauvegarde créée : ${backupKey}`);
     }
   };
 
   const handleListarBackups = () => {
     const backups = listarBackups();
-    alert(`Backups disponibles:\n${backups.join('\n') || 'No hay backups'}`);
+    alert(`Sauvegardes disponibles :\n${backups.join('\n') || 'Aucune sauvegarde'}`);
   };
 
   return (

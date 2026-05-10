@@ -80,10 +80,10 @@ export function BackupModule() {
                   <div className="p-3 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl text-white shadow-lg">
                     <Database className="w-8 h-8" />
                   </div>
-                  {t('backup.title', 'Backup y Restauración')}
+                  {t('backup.title', 'Sauvegarde et restauration')}
                 </h1>
                 <p className="text-gray-600">
-                  {t('backup.subtitle', 'Sistema de respaldo y recuperación de datos')}
+                  {t('backup.subtitle', 'Système de sauvegarde et de récupération des données')}
                 </p>
               </div>
               
@@ -94,7 +94,7 @@ export function BackupModule() {
                     {stats?.total || 0}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('backup.backups', 'Backups')}
+                    {t('backup.backups', 'Sauvegardes')}
                   </div>
                 </div>
                 
@@ -103,7 +103,7 @@ export function BackupModule() {
                     {stats ? formatFileSize(stats.totalSize) : '0 B'}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('backup.size', 'Tamaño')}
+                    {t('backup.size', 'Taille')}
                   </div>
                 </div>
                 
@@ -114,16 +114,16 @@ export function BackupModule() {
                         {formatDateRelative(stats.newest)}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {t('backup.lastBackup', 'Último')}
+                        {t('backup.lastBackup', 'Dernière')}
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="text-sm font-bold text-gray-400">
-                        {t('backup.none', 'Ninguno')}
+                        {t('backup.none', 'Aucune')}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {t('backup.lastBackup', 'Último')}
+                        {t('backup.lastBackup', 'Dernière')}
                       </div>
                     </>
                   )}
@@ -137,14 +137,14 @@ export function BackupModule() {
                 <div className="flex items-center gap-2 text-amber-700">
                   <Shield className="w-5 h-5" />
                   <span className="font-medium">
-                    {t('backup.autoBackupDue', 'Es momento de crear un backup automático')}
+                    {t('backup.autoBackupDue', 'Il est temps de créer une sauvegarde automatique')}
                   </span>
                 </div>
                 <button
                   onClick={handleAutoBackup}
                   className="px-4 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
                 >
-                  {t('backup.createNow', 'Crear Ahora')}
+                  {t('backup.createNow', 'Créer maintenant')}
                 </button>
               </div>
             )}
@@ -157,15 +157,15 @@ export function BackupModule() {
             <TabsList className="grid grid-cols-4 w-full p-1 bg-gray-100/50">
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Download className="w-4 h-4" />
-                {t('backup.create', 'Crear')}
+                {t('backup.create', 'Créer')}
               </TabsTrigger>
               <TabsTrigger value="restore" className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
-                {t('textCorrector.correction', 'Corrección')}
+                {t('textCorrector.correction', 'Correction')}
               </TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                {t('backup.history', 'Historial')}
+                {t('backup.history', 'Historique')}
                 {stats && stats.total > 0 && (
                   <Badge variant="outline" className="ml-1 text-xs">
                     {stats.total}
@@ -174,7 +174,7 @@ export function BackupModule() {
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
-                {t('backup.settings', 'Configuración')}
+                {t('backup.settings', 'Configuration')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -194,24 +194,24 @@ export function BackupModule() {
                   <CardContent className="p-4 space-y-3">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
                       <Shield className="w-4 h-4 text-[#2d9561]" />
-                      {t('backup.benefits', 'Ventajas del Backup')}
+                      {t('backup.benefits', 'Avantages de la sauvegarde')}
                     </h3>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-start gap-2">
                         <span className="text-green-500">✓</span>
-                        <span>{t('backup.benefit1', 'Protección contra pérdida de datos')}</span>
+                        <span>{t('backup.benefit1', 'Protection contre la perte de données')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-green-500">✓</span>
-                        <span>{t('backup.benefit2', 'Recuperación rápida')}</span>
+                        <span>{t('backup.benefit2', 'Récupération rapide')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-green-500">✓</span>
-                        <span>{t('backup.benefit3', 'Migración de datos')}</span>
+                        <span>{t('backup.benefit3', 'Migration des données')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-green-500">✓</span>
-                        <span>{t('backup.benefit4', 'Historial de cambios')}</span>
+                        <span>{t('backup.benefit4', 'Historique des changements')}</span>
                       </li>
                     </ul>
                   </CardContent>
@@ -222,24 +222,24 @@ export function BackupModule() {
                   <CardContent className="p-4 space-y-3">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-[#1a4d7a]" />
-                      {t('backup.bestPractices', 'Mejores Prácticas')}
+                      {t('backup.bestPractices', 'Bonnes pratiques')}
                     </h3>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-start gap-2">
                         <span>📅</span>
-                        <span>{t('backup.practice1', 'Crear backups regularmente')}</span>
+                        <span>{t('backup.practice1', 'Créer des sauvegardes régulièrement')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span>💾</span>
-                        <span>{t('backup.practice2', 'Exportar a archivos externos')}</span>
+                        <span>{t('backup.practice2', 'Exporter vers des fichiers externes')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span>✅</span>
-                        <span>{t('backup.practice3', 'Verificar backups periódicamente')}</span>
+                        <span>{t('backup.practice3', 'Vérifier périodiquement les sauvegardes')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span>🔒</span>
-                        <span>{t('backup.practice4', 'Mantener múltiples copias')}</span>
+                        <span>{t('backup.practice4', 'Conserver plusieurs copies')}</span>
                       </li>
                     </ul>
                   </CardContent>
@@ -250,23 +250,23 @@ export function BackupModule() {
                   <CardContent className="p-4 space-y-3">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
                       <HardDrive className="w-4 h-4 text-purple-600" />
-                      {t('backup.types', 'Tipos de Backup')}
+                      {t('backup.types', 'Types de sauvegarde')}
                     </h3>
                     <div className="space-y-3">
                       <div className="p-2 bg-green-50 border border-green-200 rounded">
                         <p className="text-sm font-medium text-green-900 mb-1">
-                          {t('backup.full', 'Completo')}
+                          {t('backup.full', 'Complète')}
                         </p>
                         <p className="text-xs text-green-700">
-                          {t('backup.fullTypeDesc', 'Respalda todos los datos. Recomendado.')}
+                          {t('backup.fullTypeDesc', 'Sauvegarde toutes les données. Recommandée.')}
                         </p>
                       </div>
                       <div className="p-2 bg-blue-50 border border-blue-200 rounded">
                         <p className="text-sm font-medium text-blue-900 mb-1">
-                          {t('backup.incremental', 'Incremental')}
+                          {t('backup.incremental', 'Incrémentale')}
                         </p>
                         <p className="text-xs text-blue-700">
-                          {t('backup.incrementalTypeDesc', 'Solo cambios recientes. Más rápido.')}
+                          {t('backup.incrementalTypeDesc', 'Seulement les changements récents. Plus rapide.')}
                         </p>
                       </div>
                     </div>

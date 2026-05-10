@@ -12,15 +12,70 @@ const STORAGE_KEY = 'banco_alimentos_unidades';
 
 // Unidades por defecto
 const unidadesIniciales: Unidad[] = [
-  { id: '1', nombre: 'Paleta', abreviatura: 'PLT', icono: '📦' },
-  { id: '2', nombre: 'Caja', abreviatura: 'CJA', icono: '📦' },
-  { id: '3', nombre: 'Unidad', abreviatura: 'UND', icono: '🏷️' },
-  { id: '4', nombre: 'Saco', abreviatura: 'SAC', icono: '💼' },
+  { id: '1', nombre: 'Palette', abreviatura: 'PLT', icono: '📦' },
+  { id: '2', nombre: 'Boîte', abreviatura: 'CJA', icono: '📦' },
+  { id: '3', nombre: 'Unité', abreviatura: 'UND', icono: '🏷️' },
+  { id: '4', nombre: 'Sac', abreviatura: 'SAC', icono: '💼' },
   { id: '5', nombre: 'Bac Noir', abreviatura: 'BN', icono: '⚫' },
-  { id: '6', nombre: 'Kilogramo', abreviatura: 'kg', icono: '⚖️' },
+  { id: '6', nombre: 'Kilogramme', abreviatura: 'kg', icono: '⚖️' },
   { id: '7', nombre: 'Benne de plastique', abreviatura: 'BNN-P', icono: '🗑️' },
   { id: '8', nombre: 'Benne de bois', abreviatura: 'BNN-B', icono: '🪵' },
 ];
+
+const traduccionesUnidadesPorAbreviatura: Record<string, string> = {
+  PLT: 'Palette',
+  CJA: 'Boîte',
+  UND: 'Unité',
+  SAC: 'Sac',
+  KG: 'Kilogramme',
+  BN: 'Bac Noir',
+  'BNN-P': 'Benne de plastique',
+  'BNN-B': 'Benne de bois',
+};
+
+function normalizarNombreUnidad(unidad: Unidad): Unidad {
+  const abreviatura = unidad.abreviatura?.toUpperCase?.() || '';
+  const nombreTraducido = traduccionesUnidadesPorAbreviatura[abreviatura];
+
+  if (!nombreTraducido) {
+    return unidad;
+  }
+
+  const nombreActual = unidad.nombre?.trim?.() || '';
+  const nombresEquivalentes = new Set([
+    nombreTraducido.toLowerCase(),
+    'paleta',
+    'caja',
+    'unidad',
+    'saco',
+    'kilogramo',
+  ]);
+
+  if (!nombreActual || nombresEquivalentes.has(nombreActual.toLowerCase())) {
+    return {
+      ...unidad,
+      nombre: nombreTraducido,
+    };
+  }
+
+  return unidad;
+}
+
+function migrarUnidadesAlFrances(unidades: Unidad[]): { unidades: Unidad[]; actualizado: boolean } {
+  let actualizado = false;
+
+  const unidadesMigradas = unidades.map((unidad) => {
+    const unidadNormalizada = normalizarNombreUnidad(unidad);
+
+    if (unidadNormalizada.nombre !== unidad.nombre) {
+      actualizado = true;
+    }
+
+    return unidadNormalizada;
+  });
+
+  return { unidades: unidadesMigradas, actualizado };
+}
 
 // Inicializar unidades si no existen
 export function inicializarUnidades(): void {
@@ -32,7 +87,8 @@ export function inicializarUnidades(): void {
   } else {
     // Migración: Agregar nuevas unidades benne si no existen
     try {
-      const unidades = JSON.parse(unidadesExistentes) as Unidad[];
+      const unidadesGuardadas = JSON.parse(unidadesExistentes) as Unidad[];
+      const { unidades } = migrarUnidadesAlFrances(unidadesGuardadas);
       let actualizado = false;
       
       // Verificar y agregar Benne de plastique
@@ -49,10 +105,10 @@ export function inicializarUnidades(): void {
       
       if (actualizado) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(unidades));
-        console.log('✅ Unidades benne agregadas exitosamente');
+        console.log('✅ Unités par défaut mises à jour avec succès');
       }
     } catch (error) {
-      console.error('Error en migración de unidades:', error);
+      console.error('Erreur lors de la migration des unités :', error);
     }
   }
 }
@@ -68,10 +124,16 @@ export function obtenerUnidades(): Unidad[] {
       return unidadesIniciales;
     }
     
-    const unidades = JSON.parse(data) as Unidad[];
+    const unidadesGuardadas = JSON.parse(data) as Unidad[];
+    const { unidades, actualizado } = migrarUnidadesAlFrances(unidadesGuardadas);
+
+    if (actualizado) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(unidades));
+    }
+
     return unidades;
   } catch (error) {
-    console.error('Error al obtener unidades:', error);
+    console.error('Erreur lors de la récupération des unités :', error);
     return unidadesIniciales;
   }
 }
@@ -99,7 +161,7 @@ export function guardarUnidad(unidad: Unidad): boolean {
     
     return true;
   } catch (error) {
-    console.error('Error al guardar unidad:', error);
+    console.error('Erreur lors de l’enregistrement de l’unité :', error);
     return false;
   }
 }
@@ -123,7 +185,7 @@ export function eliminarUnidad(id: string): boolean {
     
     return true;
   } catch (error) {
-    console.error('Error al eliminar unidad:', error);
+    console.error('Erreur lors de la suppression de l’unité :', error);
     return false;
   }
 }

@@ -64,16 +64,16 @@ export function BackupRestorer() {
       setRestoreComplete(false);
       
       if (validationResult.isValid) {
-        toast.success(t('backup.loaded', 'Backup cargado correctamente'));
+        toast.success(t('backup.loaded', 'Sauvegarde chargée correctement'));
       } else {
-        toast.error(t('backup.validationFailed', 'El backup tiene errores de validación'));
+        toast.error(t('backup.validationFailed', 'La sauvegarde contient des erreurs de validation'));
       }
     } catch (error) {
       console.error('Error loading backup:', error);
       toast.error(
-        t('backup.loadError', 'Error al cargar el backup'),
+        t('backup.loadError', 'Erreur lors du chargement de la sauvegarde'),
         {
-          description: error instanceof Error ? error.message : 'Error desconocido'
+          description: error instanceof Error ? error.message : 'Erreur inconnue'
         }
       );
     }
@@ -91,18 +91,18 @@ export function BackupRestorer() {
   // Restaurar backup
   const handleRestore = async () => {
     if (!backup || !validation?.isValid) {
-      toast.error(t('backup.cannotRestore', 'No se puede restaurar este backup'));
+      toast.error(t('backup.cannotRestore', 'Cette sauvegarde ne peut pas être restaurée'));
       return;
     }
     
     if (selectedModules.length === 0) {
-      toast.error(t('backup.selectModules', 'Seleccione al menos un módulo'));
+      toast.error(t('backup.selectModules', 'Sélectionnez au moins un module'));
       return;
     }
     
     // Confirmar
     const confirmed = window.confirm(
-      t('backup.confirmRestore', '¿Está seguro de restaurar este backup? Esta acción no se puede deshacer.')
+      t('backup.confirmRestore', 'Êtes-vous sûr de vouloir restaurer cette sauvegarde ? Cette action est irréversible.')
     );
     
     if (!confirmed) return;
@@ -120,14 +120,14 @@ export function BackupRestorer() {
       if (result.success) {
         setRestoreComplete(true);
         toast.success(
-          t('backup.restored', 'Backup restaurado exitosamente'),
+          t('backup.restored', 'Sauvegarde restaurée avec succès'),
           {
-            description: t('backup.reloadPage', 'Recargue la página para ver los cambios')
+            description: t('backup.reloadPage', 'Rechargez la page pour voir les changements')
           }
         );
       } else {
         toast.error(
-          t('backup.restoreError', 'Error al restaurar el backup'),
+          t('backup.restoreError', 'Erreur lors de la restauration de la sauvegarde'),
           {
             description: result.errors.join(', ')
           }
@@ -136,9 +136,9 @@ export function BackupRestorer() {
     } catch (error) {
       console.error('Error restoring backup:', error);
       toast.error(
-        t('backup.restoreError', 'Error al restaurar el backup'),
+        t('backup.restoreError', 'Erreur lors de la restauration de la sauvegarde'),
         {
-          description: error instanceof Error ? error.message : 'Error desconocido'
+          description: error instanceof Error ? error.message : 'Erreur inconnue'
         }
       );
     } finally {
@@ -154,10 +154,10 @@ export function BackupRestorer() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-[#1a4d7a]" />
-              {t('backup.loadBackup', 'Cargar Backup')}
+              {t('backup.loadBackup', 'Charger une sauvegarde')}
             </CardTitle>
             <CardDescription>
-              {t('backup.loadDescription', 'Seleccione un archivo de backup para restaurar')}
+              {t('backup.loadDescription', 'Sélectionnez un fichier de sauvegarde à restaurer')}
             </CardDescription>
           </CardHeader>
           
@@ -168,10 +168,10 @@ export function BackupRestorer() {
             >
               <FileUp className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <p className="text-lg font-medium text-gray-700 mb-2">
-                {t('backup.clickToUpload', 'Haga clic para seleccionar archivo')}
+                {t('backup.clickToUpload', 'Cliquez pour sélectionner un fichier')}
               </p>
               <p className="text-sm text-gray-500">
-                {t('backup.supportedFormat', 'Archivos .json de backup')}
+                {t('backup.supportedFormat', 'Fichiers de sauvegarde .json')}
               </p>
               
               <input
@@ -194,7 +194,7 @@ export function BackupRestorer() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Info className="w-5 h-5 text-[#1a4d7a]" />
-                  {t('backup.information', 'Información del Backup')}
+                  {t('backup.information', 'Informations de la sauvegarde')}
                 </CardTitle>
                 <Button
                   variant="outline"
@@ -205,7 +205,7 @@ export function BackupRestorer() {
                     setRestoreComplete(false);
                   }}
                 >
-                  {t('backup.loadAnother', 'Cargar Otro')}
+                  {t('backup.loadAnother', 'Charger une autre sauvegarde')}
                 </Button>
               </div>
             </CardHeader>
@@ -218,7 +218,7 @@ export function BackupRestorer() {
                     <Alert className="border-green-200 bg-green-50">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
                       <AlertDescription className="text-green-700">
-                        {t('backup.valid', 'El backup es válido y puede ser restaurado')}
+                        {t('backup.valid', 'La sauvegarde est valide et peut être restaurée')}
                       </AlertDescription>
                     </Alert>
                   ) : (
@@ -226,7 +226,7 @@ export function BackupRestorer() {
                       <AlertTriangle className="h-4 w-4" />
                       <AlertDescription>
                         <p className="font-medium mb-2">
-                          {t('backup.invalid', 'El backup tiene errores:')}
+                          {t('backup.invalid', 'La sauvegarde contient des erreurs :')}
                         </p>
                         <ul className="list-disc list-inside space-y-1 text-sm">
                           {validation.errors.map((error: string, i: number) => (
@@ -242,7 +242,7 @@ export function BackupRestorer() {
                       <AlertTriangle className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-amber-700">
                         <p className="font-medium mb-2">
-                          {t('backup.warnings', 'Advertencias:')}
+                          {t('backup.warnings', 'Avertissements :')}
                         </p>
                         <ul className="list-disc list-inside space-y-1 text-sm">
                           {validation.warnings.map((warning: string, i: number) => (
@@ -259,7 +259,7 @@ export function BackupRestorer() {
               <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.date', 'Fecha')}
+                    {t('backup.date', 'Date')}
                   </p>
                   <p className="font-medium">
                     {formatDateTime(backup.metadata.timestamp)}
@@ -268,19 +268,19 @@ export function BackupRestorer() {
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.type', 'Tipo')}
+                    {t('backup.type', 'Type')}
                   </p>
                   <Badge variant="outline">
                     {backup.metadata.type === 'full'
-                      ? t('backup.full', 'Completo')
-                      : t('backup.incremental', 'Incremental')
+                      ? t('backup.full', 'Complète')
+                      : t('backup.incremental', 'Incrémentale')
                     }
                   </Badge>
                 </div>
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.size', 'Tamaño')}
+                    {t('backup.size', 'Taille')}
                   </p>
                   <p className="font-medium">
                     {formatFileSize(backup.metadata.size)}
@@ -289,21 +289,21 @@ export function BackupRestorer() {
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.records', 'Registros')}
+                    {t('backup.records', 'Enregistrements')}
                   </p>
                   <p className="font-medium">{backup.metadata.recordCount}</p>
                 </div>
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.user', 'Usuario')}
+                    {t('backup.user', 'Utilisateur')}
                   </p>
                   <p className="font-medium">{backup.metadata.user}</p>
                 </div>
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('backup.version', 'Versión')}
+                    {t('backup.version', 'Version')}
                   </p>
                   <p className="font-medium">{backup.metadata.version}</p>
                 </div>
@@ -312,7 +312,7 @@ export function BackupRestorer() {
               {backup.metadata.description && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-700">
-                    <strong>{t('backup.description', 'Descripción')}:</strong>{' '}
+                    <strong>{t('backup.description', 'Description')}:</strong>{' '}
                     {backup.metadata.description}
                   </p>
                 </div>
@@ -326,27 +326,27 @@ export function BackupRestorer() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <RotateCcw className="w-5 h-5 text-[#1a4d7a]" />
-                  {t('backup.restoreOptions', 'Opciones de Restauración')}
+                  {t('backup.restoreOptions', 'Options de restauration')}
                 </CardTitle>
               </CardHeader>
               
               <CardContent className="space-y-6">
                 {/* Modo de restauración */}
                 <div className="space-y-3">
-                  <Label>{t('backup.restoreMode', 'Modo de Restauración')}</Label>
+                  <Label>{t('backup.restoreMode', 'Mode de restauration')}</Label>
                   <RadioGroup value={restoreMode} onValueChange={(v: any) => setRestoreMode(v)}>
                     <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="replace" id="replace" />
                       <Label htmlFor="replace" className="flex-1 cursor-pointer">
                         <div className="font-medium">
-                          {t('backup.replace', 'Reemplazar')}
+                          {t('backup.replace', 'Remplacer')}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {t('backup.replaceDesc', 'Eliminar datos actuales y usar los del backup')}
+                          {t('backup.replaceDesc', 'Supprimer les données actuelles et utiliser celles de la sauvegarde')}
                         </div>
                       </Label>
                       <Badge variant="outline" className="bg-red-50 text-red-700">
-                        {t('backup.destructive', 'Destructivo')}
+                        {t('backup.destructive', 'Destructif')}
                       </Badge>
                     </div>
                     
@@ -354,14 +354,14 @@ export function BackupRestorer() {
                       <RadioGroupItem value="merge" id="merge" />
                       <Label htmlFor="merge" className="flex-1 cursor-pointer">
                         <div className="font-medium">
-                          {t('backup.merge', 'Combinar')}
+                          {t('backup.merge', 'Fusionner')}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {t('backup.mergeDesc', 'Combinar datos del backup con los actuales')}
+                          {t('backup.mergeDesc', 'Fusionner les données de la sauvegarde avec les données actuelles')}
                         </div>
                       </Label>
                       <Badge variant="outline" className="bg-green-50 text-green-700">
-                        {t('backup.safer', 'Más seguro')}
+                        {t('backup.safer', 'Plus sûr')}
                       </Badge>
                     </div>
                   </RadioGroup>
@@ -369,7 +369,7 @@ export function BackupRestorer() {
                 
                 {/* Módulos a restaurar */}
                 <div className="space-y-3">
-                  <Label>{t('backup.modulesToRestore', 'Módulos a Restaurar')}</Label>
+                  <Label>{t('backup.modulesToRestore', 'Modules à restaurer')}</Label>
                   <div className="space-y-2">
                     {backup.metadata.modules.map((module) => (
                       <div
@@ -394,8 +394,8 @@ export function BackupRestorer() {
                               ? `${Array.isArray(backup.data[module])
                                   ? backup.data[module].length
                                   : Object.keys(backup.data[module]).length
-                                } registros`
-                              : 'Sin datos'
+                                } enregistrements`
+                              : 'Aucune donnée'
                             }
                           </p>
                         </div>
@@ -409,10 +409,10 @@ export function BackupRestorer() {
                   <Shield className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-700">
                     <p className="font-medium mb-2">
-                      {t('backup.safetyNote', 'Nota de Seguridad')}
+                      {t('backup.safetyNote', 'Note de sécurité')}
                     </p>
                     <p className="text-sm">
-                      {t('backup.safetyDesc', 'Se creará un backup automático antes de restaurar. Puede deshacer esta operación restaurando ese backup.')}
+                      {t('backup.safetyDesc', 'Une sauvegarde automatique sera créée avant la restauration. Vous pourrez annuler cette opération en restaurant cette sauvegarde.')}
                     </p>
                   </AlertDescription>
                 </Alert>
@@ -427,12 +427,12 @@ export function BackupRestorer() {
                   {isRestoring ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('backup.restoring', 'Restaurando...')}
+                      {t('backup.restoring', 'Restauration...')}
                     </>
                   ) : (
                     <>
                       <RotateCcw className="w-4 h-4 mr-2" />
-                      {t('backup.restore', 'Restaurar Backup')}
+                      {t('backup.restore', 'Restaurer la sauvegarde')}
                     </>
                   )}
                 </Button>
@@ -450,17 +450,17 @@ export function BackupRestorer() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-green-900 mb-1">
-                      {t('backup.restoreSuccess', '¡Backup Restaurado!')}
+                      {t('backup.restoreSuccess', 'Sauvegarde restaurée !')}
                     </h3>
                     <p className="text-green-700">
-                      {t('backup.restoreSuccessDesc', 'Los datos han sido restaurados correctamente.')}
+                      {t('backup.restoreSuccessDesc', 'Les données ont été restaurées correctement.')}
                     </p>
                   </div>
                   <Button
                     onClick={() => window.location.reload()}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {t('backup.reloadNow', 'Recargar Ahora')}
+                    {t('backup.reloadNow', 'Recharger maintenant')}
                   </Button>
                 </div>
               </CardContent>

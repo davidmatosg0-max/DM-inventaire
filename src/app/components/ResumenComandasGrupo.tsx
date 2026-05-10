@@ -54,10 +54,10 @@ export function ResumenComandasGrupo({
           </div>
           <div>
             <h3 className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              Resumen de Comandas en Grupo
+              Résumé des commandes groupées
             </h3>
             <p className="text-sm text-[#666666]">
-              Verifica los datos antes de crear las {totalComandas} comandas
+              Vérifiez les informations avant de créer les {totalComandas} commandes
             </p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export function ResumenComandasGrupo({
                 <Users className="w-6 h-6 text-[#1E73BE]" />
               </div>
               <div>
-                <p className="text-xs text-[#666666] uppercase">Comandas a Crear</p>
+                <p className="text-xs text-[#666666] uppercase">Commandes à créer</p>
                 <p className="font-bold text-2xl text-[#1E73BE]">{totalComandas}</p>
               </div>
             </div>
@@ -86,7 +86,7 @@ export function ResumenComandasGrupo({
                 <Package className="w-6 h-6 text-[#4CAF50]" />
               </div>
               <div>
-                <p className="text-xs text-[#666666] uppercase">Productos por Comanda</p>
+                <p className="text-xs text-[#666666] uppercase">Produits par commande</p>
                 <p className="font-bold text-2xl text-[#4CAF50]">{totalProductos}</p>
               </div>
             </div>
@@ -100,7 +100,7 @@ export function ResumenComandasGrupo({
                 <Package className="w-6 h-6 text-[#FFC107]" />
               </div>
               <div>
-                <p className="text-xs text-[#666666] uppercase">Unidades Totales</p>
+                <p className="text-xs text-[#666666] uppercase">Unités totales</p>
                 <p className="font-bold text-2xl text-[#FFC107]">{totalItems * totalComandas}</p>
               </div>
             </div>
@@ -116,9 +116,9 @@ export function ResumenComandasGrupo({
               <Users className="w-6 h-6 text-[#1E73BE]" />
             </div>
             <div>
-              <Label className="text-xs text-[#666666] uppercase">Organismos Destinatarios</Label>
+              <Label className="text-xs text-[#666666] uppercase">Organismes destinataires</Label>
               <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {totalComandas} organismos seleccionados
+                {totalComandas} organismes sélectionnés
               </p>
             </div>
           </div>
@@ -150,9 +150,9 @@ export function ResumenComandasGrupo({
               <Calendar className="w-6 h-6 text-[#FFC107]" />
             </div>
             <div className="flex-1">
-              <Label className="text-xs text-[#666666] uppercase">Fecha de Entrega Programada</Label>
+              <Label className="text-xs text-[#666666] uppercase">Date de livraison prévue</Label>
               <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {new Date(fechaEntrega).toLocaleDateString('es-ES', {
+                {new Date(fechaEntrega).toLocaleDateString('fr-CA', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -173,9 +173,9 @@ export function ResumenComandasGrupo({
                 <Clock className="w-6 h-6 text-[#FFC107]" />
               </div>
               <div className="flex-1">
-                <Label className="text-xs text-[#666666] uppercase">Fecha Límite de Respuesta</Label>
+                <Label className="text-xs text-[#666666] uppercase">Date limite de réponse</Label>
                 <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {new Date(fechaLimiteRespuesta).toLocaleDateString('es-ES', {
+                  {new Date(fechaLimiteRespuesta).toLocaleDateString('fr-CA', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -184,12 +184,12 @@ export function ResumenComandasGrupo({
                 </p>
                 {esMuyUrgente && (
                   <Badge className="bg-red-500 text-white block mt-2" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
-                    ¡Muy Urgente! {diasRestantes} día{diasRestantes !== 1 ? 's' : ''}
+                    Très urgent ! {diasRestantes} jour{diasRestantes !== 1 ? 's' : ''}
                   </Badge>
                 )}
                 {esUrgente && !esMuyUrgente && (
                   <Badge className="bg-orange-500 text-white block mt-2" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
-                    Urgente! {diasRestantes} días
+                    Urgent ! {diasRestantes} jours
                   </Badge>
                 )}
               </div>
@@ -207,18 +207,18 @@ export function ResumenComandasGrupo({
                 <Package className="w-6 h-6 text-[#4CAF50]" />
               </div>
               <div>
-                <Label className="text-xs text-[#666666] uppercase">Productos por Comanda</Label>
+                <Label className="text-xs text-[#666666] uppercase">Produits par commande</Label>
                 <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {totalProductos} producto{totalProductos !== 1 ? 's' : ''}
+                  {totalProductos} produit{totalProductos !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
             <div className="text-right">
               <Badge className="bg-[#4CAF50] text-white block mb-1" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
-                {totalItems} unidades por comanda
+                {totalItems} unités par commande
               </Badge>
               <Badge variant="outline" className="text-xs">
-                Total: {totalItems * totalComandas} unidades
+                Total : {totalItems * totalComandas} unités
               </Badge>
             </div>
           </div>
@@ -255,12 +255,12 @@ export function ResumenComandasGrupo({
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {producto.codigo && (
                           <span className="text-xs text-[#666666]">
-                            Código: {producto.codigo}
+                            Code : {producto.codigo}
                           </span>
                         )}
                         <span className={`text-xs font-medium ${\n                          suficienteStock ? 'text-[#4CAF50]' : 'text-[#DC3545]'\n                        }`}>
-                          Stock: {producto.stockActual} {producto.unidad}
-                          {!suficienteStock && ` (necesita ${totalNecesario})`}
+                          Stock : {producto.stockActual} {producto.unidad}
+                          {!suficienteStock && ` (besoin de ${totalNecesario})`}
                         </span>
                       </div>
                     </div>
@@ -269,7 +269,7 @@ export function ResumenComandasGrupo({
                     <div className="text-right">
                       <div className="flex items-center gap-2">
                         <div>
-                          <p className="text-xs text-[#666666]">Por comanda</p>
+                          <p className="text-xs text-[#666666]">Par commande</p>
                           <p className="font-bold text-xl text-[#1E73BE]">{item.cantidad}</p>
                         </div>
                         <span className="text-[#666666] font-bold">×</span>
@@ -283,7 +283,7 @@ export function ResumenComandasGrupo({
                   </div>
                   {!suficienteStock && (
                     <Badge className="bg-[#DC3545] text-white ml-4">
-                      ⚠️ Stock Insuficiente
+                      ⚠️ Stock insuffisant
                     </Badge>
                   )}
                 </div>
@@ -302,7 +302,7 @@ export function ResumenComandasGrupo({
                 <FileText className="w-6 h-6 text-[#666666]" />
               </div>
               <div className="flex-1">
-                <Label className="text-xs text-[#666666] uppercase">Observaciones</Label>
+                <Label className="text-xs text-[#666666] uppercase">Observations</Label>
                 <p className="text-[#333333] mt-1">{observaciones}</p>
               </div>
             </div>
@@ -315,11 +315,11 @@ export function ResumenComandasGrupo({
         <div className="flex items-start gap-3">
           <div className="text-2xl">⚠️</div>
           <div>
-            <p className="font-medium text-[#F57C00] mb-1">Verificación Final</p>
+            <p className="font-medium text-[#F57C00] mb-1">Vérification finale</p>
             <p className="text-sm text-[#856404]">
-              Se crearán <strong>{totalComandas} comandas idénticas</strong>, una para cada organismo seleccionado.
-              Cada comanda contendrá {totalProductos} producto{totalProductos !== 1 ? 's' : ''} ({totalItems} unidades).
-              Por favor, verifica el stock disponible antes de confirmar.
+              <strong>{totalComandas} commandes identiques</strong> seront créées, une pour chaque organisme sélectionné.
+              Chaque commande contiendra {totalProductos} produit{totalProductos !== 1 ? 's' : ''} ({totalItems} unités).
+              Veuillez vérifier le stock disponible avant de confirmer.
             </p>
           </div>
         </div>
@@ -333,7 +333,7 @@ export function ResumenComandasGrupo({
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Volver a Editar
+          Retour à la modification
         </Button>
         <Button
           onClick={onConfirmar}
@@ -341,7 +341,7 @@ export function ResumenComandasGrupo({
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
         >
           <CheckCircle className="w-5 h-5" />
-          Confirmar y Crear {totalComandas} Comandas
+          Confirmer et créer {totalComandas} commandes
         </Button>
       </div>
     </div>

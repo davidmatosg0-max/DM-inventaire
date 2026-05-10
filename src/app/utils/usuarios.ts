@@ -331,9 +331,9 @@ export function migrarUsuarios(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuariosNormalizados));
     queueStorageSync(STORAGE_KEY);
     localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
-    console.log(`✅ Usuarios migrados para producción: ${usuariosNormalizados.length} usuario(s)`);
+    console.log(`✅ Utilisateurs migrés pour la production : ${usuariosNormalizados.length} utilisateur(s)`);
   } catch (error) {
-    console.error('Error al migrar usuarios:', error);
+    console.error('Erreur lors de la migration des utilisateurs :', error);
   }
 }
 
@@ -345,21 +345,21 @@ export function inicializarUsuarios(): void {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
       queueStorageSync(STORAGE_KEY);
       localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
-      console.log('✅ Usuarios inicializados:', USUARIOS_PREDEFINIDOS.length, 'usuarios');
+      console.log('✅ Utilisateurs initialisés :', USUARIOS_PREDEFINIDOS.length, 'utilisateur(s)');
     } else {
       const usuarios = JSON.parse(stored) as Usuario[];
       if (usuarios.length === 0) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
         queueStorageSync(STORAGE_KEY);
         localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
-        console.log('✅ Usuario administrador inicial restaurado');
+        console.log('✅ Utilisateur administrateur initial restauré');
         return;
       }
 
       migrarUsuarios();
     }
   } catch (error) {
-    console.error('Error al inicializar usuarios:', error);
+    console.error('Erreur lors de l’initialisation des utilisateurs :', error);
   }
 }
 
@@ -382,7 +382,7 @@ export function obtenerUsuarios(): Usuario[] {
       return nuevosUsuarios ? JSON.parse(nuevosUsuarios) : [];
     }
   } catch (error) {
-    console.error('Error al cargar usuarios:', error);
+    console.error('Erreur lors du chargement des utilisateurs :', error);
   }
   // Retornar array vacío si hay error
   return [];
@@ -409,9 +409,9 @@ export function guardarUsuarios(usuarios: Usuario[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
     queueStorageSync(STORAGE_KEY);
-    console.log('✅ Usuarios guardados:', usuarios.length, 'usuarios');
+    console.log('✅ Utilisateurs enregistrés :', usuarios.length, 'utilisateur(s)');
   } catch (error) {
-    console.error('Error al guardar usuarios:', error);
+    console.error('Erreur lors de l’enregistrement des utilisateurs :', error);
   }
 }
 
@@ -423,13 +423,13 @@ export function validarCredenciales(username: string, password: string): Usuario
   );
   
   if (usuario) {
-    console.log('✅ Login exitoso:', usuario.username, '-', usuario.descripcion);
+    console.log('✅ Connexion réussie :', usuario.username, '-', usuario.descripcion);
     // No retornar el password por seguridad
     const { password: _, ...usuarioSinPassword } = usuario;
     return usuario;
   }
   
-  console.log('❌ Credenciales inválidas para:', username);
+  console.log('❌ Identifiants invalides pour :', username);
   return null;
 }
 

@@ -68,21 +68,21 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
     }
 
     if (!formData.nombreContacto.trim()) {
-      newErrors.nombreContacto = t('contacts.errors.contactNameRequired', 'Nombre de contacto requerido');
+      newErrors.nombreContacto = t('contacts.errors.contactNameRequired', 'Le prénom du contact est requis');
     }
 
     if (!formData.apellidoContacto.trim()) {
-      newErrors.apellidoContacto = t('contacts.errors.contactLastNameRequired', 'Apellido de contacto requerido');
+      newErrors.apellidoContacto = t('contacts.errors.contactLastNameRequired', 'Le nom du contact est requis');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = t('contacts.errors.emailRequired', 'Email requerido');
+      newErrors.email = t('contacts.errors.emailRequired', 'Le courriel est requis');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = t('contacts.errors.emailInvalid', 'Email inválido');
+      newErrors.email = t('contacts.errors.emailInvalid', 'Courriel invalide');
     }
 
     if (!formData.telefono.trim()) {
-      newErrors.telefono = t('contacts.errors.phoneRequired', 'Teléfono requerido');
+      newErrors.telefono = t('contacts.errors.phoneRequired', 'Le téléphone est requis');
     }
 
     setErrors(newErrors);
@@ -97,11 +97,11 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
       onOpenChange(false);
       toast.success(
         formData.tipo === 'donador'
-          ? t('contacts.donorCreated', 'Donador creado exitosamente')
-          : t('contacts.supplierCreated', 'Proveedor creado exitosamente')
+          ? t('contacts.donorCreated', 'Donateur créé avec succès')
+          : t('contacts.supplierCreated', 'Fournisseur créé avec succès')
       );
     } else {
-      toast.error(t('contacts.completeRequired', 'Complete los campos requeridos'));
+      toast.error(t('contacts.completeRequired', 'Veuillez remplir les champs requis'));
     }
   };
 
@@ -141,14 +141,14 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <Building2 className="w-4 h-4 text-[#1a4d7a]" />
-                {t('contacts.basicInfo', 'Información Básica')}
+                {t('contacts.basicInfo', 'Informations de base')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Tipo de contacto */}
               <div className="space-y-2">
                 <Label htmlFor="tipo">
-                  {t('contacts.contactType', 'Tipo de Contacto')} *
+                  {t('contacts.contactType', 'Type de contact')} *
                 </Label>
                 <Select
                   value={formData.tipo}
@@ -162,31 +162,31 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
                   <SelectContent>
                     <SelectItem value="donador">
                       <span className="flex items-center gap-2">
-                        💰 {t('contacts.donor', 'Donador')}
+                        💰 {t('contacts.donor', 'Donateur')}
                       </span>
                     </SelectItem>
                     <SelectItem value="proveedor">
                       <span className="flex items-center gap-2">
-                        🛍️ {t('contacts.supplier', 'Proveedor')}
+                        🛍️ {t('contacts.supplier', 'Fournisseur')}
                       </span>
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-gray-500">
                   {formData.tipo === 'donador'
-                    ? t('contacts.donorDesc', 'Empresa o persona que dona alimentos')
-                    : t('contacts.supplierDesc', 'Proveedor de productos o servicios')}
+                    ? t('contacts.donorDesc', 'Entreprise ou personne qui fait un don alimentaire')
+                    : t('contacts.supplierDesc', 'Fournisseur de produits ou de services')}
                 </p>
               </div>
 
               {/* Nombre de empresa */}
               <div className="space-y-2">
                 <Label htmlFor="nombreEmpresa">
-                  {t('contacts.companyName', 'Nombre de Empresa/Organización')} *
+                  {t('contacts.companyName', 'Nom de l’entreprise / organisation')} *
                 </Label>
                 <Input
                   id="nombreEmpresa"
-                  placeholder={t('contacts.companyNamePlaceholder', 'Ej: Costco Montreal')}
+                  placeholder={t('contacts.companyNamePlaceholder', 'Ex. : Costco Montréal')}
                   value={formData.nombreEmpresa}
                   onChange={(e) => setFormData({ ...formData, nombreEmpresa: e.target.value })}
                   className={`h-11 ${errors.nombreEmpresa ? 'border-red-500' : ''}`}
@@ -203,7 +203,7 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <User className="w-4 h-4 text-[#2d9561]" />
-                {t('contacts.contactPerson', 'Persona de Contacto')}
+                {t('contacts.contactPerson', 'Personne-ressource')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -211,11 +211,11 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nombreContacto">
-                    {t('contacts.firstName', 'Nombre')} *
+                    {t('contacts.firstName', 'Prénom')} *
                   </Label>
                   <Input
                     id="nombreContacto"
-                    placeholder={t('contacts.firstNamePlaceholder', 'Ej: Jean')}
+                    placeholder={t('contacts.firstNamePlaceholder', 'Ex. : Jean')}
                     value={formData.nombreContacto}
                     onChange={(e) => setFormData({ ...formData, nombreContacto: e.target.value })}
                     className={`h-11 ${errors.nombreContacto ? 'border-red-500' : ''}`}
@@ -227,11 +227,11 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
 
                 <div className="space-y-2">
                   <Label htmlFor="apellidoContacto">
-                    {t('contacts.lastName', 'Apellido')} *
+                    {t('contacts.lastName', 'Nom')} *
                   </Label>
                   <Input
                     id="apellidoContacto"
-                    placeholder={t('contacts.lastNamePlaceholder', 'Ej: Tremblay')}
+                    placeholder={t('contacts.lastNamePlaceholder', 'Ex. : Tremblay')}
                     value={formData.apellidoContacto}
                     onChange={(e) => setFormData({ ...formData, apellidoContacto: e.target.value })}
                     className={`h-11 ${errors.apellidoContacto ? 'border-red-500' : ''}`}
@@ -249,7 +249,7 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <Mail className="w-4 h-4 text-[#1a4d7a]" />
-                {t('contacts.contactInfo', 'Información de Contacto')}
+                {t('contacts.contactInfo', 'Informations de contact')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -277,7 +277,7 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
               {/* Teléfono */}
               <div className="space-y-2">
                 <Label htmlFor="telefono">
-                  {t('contacts.phone', 'Teléfono')} *
+                  {t('contacts.phone', 'Téléphone')} *
                 </Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -305,7 +305,7 @@ export function ContactFormSimple({ open, onOpenChange, onGuardar }: ContactForm
               onClick={handleCancel}
               className="min-w-[100px]"
             >
-              {t('common.cancel', 'Cancelar')}
+              {t('common.cancel', 'Annuler')}
             </Button>
             <Button
               type="submit"

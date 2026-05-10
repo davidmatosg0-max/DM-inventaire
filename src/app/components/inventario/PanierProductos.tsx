@@ -201,7 +201,7 @@ export function PanierProductos({
     const cantidad = Math.min(cantidadTemporal[productoId] || 1, maximoReservable);
 
     if (maximoReservable <= 0) {
-      toast.error('No hay stock reservable para este producto');
+      toast.error('Aucun stock réservable pour ce produit');
       return;
     }
 

@@ -1192,7 +1192,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                           { code: 'fr', label: 'Français', flag: '🇫🇷', color: branding.primaryColor },
                           { code: 'ar', label: 'العربية', flag: '🇸🇦', color: '#F59E0B' },
                           { code: 'en', label: 'English', flag: '🇬🇧', color: branding.secondaryColor },
-                          { code: 'es', label: 'Español', flag: '🇪🇸', color: '#8B5CF6' }
+                          { code: 'es', label: 'Espagnol', flag: '🇪🇸', color: '#8B5CF6' }
                         ]}
                       />
                     </div>

@@ -191,11 +191,11 @@ export function BackupManager() {
   };
 
   const handleProtegerDatos = () => {
-    if (confirm('🔒 PROTEGER DATOS\n\nEsta acción marcará sus datos actuels comme DATOS REALES et évitera que se eliminen automatiquement.\n\n¿Desea continuar?')) {
+    if (confirm('🔒 PROTÉGER LES DONNÉES\n\nCette action marquera vos données actuelles comme DONNÉES RÉELLES et évitera leur suppression automatique.\n\nVoulez-vous continuer ?')) {
       marcarComoSistemaConDatosReales();
       setDatosProtegidos(true);
-      toast.success('✅ Datos protegidos avec succès', {
-        description: 'Sus datos no se eliminarán automatiquement al recargar la page'
+      toast.success('✅ Données protégées avec succès', {
+        description: 'Vos données ne seront pas supprimées automatiquement au rechargement de la page'
       });
     }
   };

@@ -35,10 +35,10 @@ export function HistorialConversiones({
         <DialogHeader>
           <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }} className="text-xl flex items-center gap-2">
             <History className="w-5 h-5 text-[#FFC107]" />
-            Historial de Conversiones
+            Historique des conversions
           </DialogTitle>
           <DialogDescription id="historial-conversiones-description" className="text-sm mt-1">
-            Registro completo de todas las conversiones realizadas. Puedes revertir conversiones recientes si es necesario.
+            Registre complet de toutes les conversions effectuées. Vous pouvez annuler les conversions récentes si nécessaire.
           </DialogDescription>
         </DialogHeader>
 
@@ -46,9 +46,9 @@ export function HistorialConversiones({
           {conversiones.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <History className="w-16 h-16 mx-auto text-gray-400 mb-3" />
-              <p className="text-sm text-[#666666]">No hay conversiones registradas</p>
+              <p className="text-sm text-[#666666]">Aucune conversion enregistrée</p>
               <p className="text-xs text-[#999999] mt-1">
-                Las conversiones que realices aparecerán aquí
+                Les conversions que vous effectuerez apparaîtront ici
               </p>
             </div>
           ) : (
@@ -71,7 +71,7 @@ export function HistorialConversiones({
                       </span>
                       {conversion.revertida && (
                         <Badge variant="outline" className="bg-gray-100 text-gray-600 text-xs">
-                          Revertida {conversion.fechaReversion && `• ${formatearFecha(conversion.fechaReversion)}`}
+                          Annulée {conversion.fechaReversion && `• ${formatearFecha(conversion.fechaReversion)}`}
                         </Badge>
                       )}
                     </div>
@@ -83,7 +83,7 @@ export function HistorialConversiones({
                         className="h-8 text-xs border-red-300 text-red-600 hover:bg-red-50"
                       >
                         <Undo2 className="w-3 h-3 mr-1" />
-                        Revertir
+                        Annuler
                       </Button>
                     )}
                   </div>
@@ -161,7 +161,7 @@ export function HistorialConversiones({
             className="h-11 px-6"
           >
             <X className="w-4 h-4 mr-2" />
-            Cerrar
+            Fermer
           </Button>
         </div>
       </DialogContent>

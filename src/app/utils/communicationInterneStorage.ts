@@ -74,26 +74,94 @@ export interface Message {
   dateLecture?: string;
 }
 
+export interface MessageDraft {
+  id: string;
+  departementId: string;
+  ownerUserId: string;
+  ownerName: string;
+  type: TypeMessage;
+  departementDestinataire: string;
+  departementDestinataires: string[];
+  isGroupMessage: boolean;
+  sujet: string;
+  contenu: string;
+  typeDemande?: TypeDemande;
+  priorite?: PrioriteDemande;
+  dateEcheance?: string;
+  piecesJointes: PieceJointe[];
+  updatedAt: string;
+}
+
+export interface MessageTemplate {
+  id: string;
+  departementId: string;
+  nom: string;
+  description?: string;
+  type: TypeMessage;
+  sujet: string;
+  contenu: string;
+  isGroupMessage: boolean;
+  typeDemande?: TypeDemande;
+  priorite?: PrioriteDemande;
+  createdBy: string;
+  updatedAt: string;
+  usageCount: number;
+}
+
+export interface PresenceMessagerie {
+  userId: string;
+  userName: string;
+  role: string;
+  departementId: string;
+  status: 'online' | 'away';
+  lastSeen: string;
+}
+
 const STORAGE_KEY_MESSAGES = 'communication_interne_messages';
 const STORAGE_KEY_NOTIFICATIONS = 'communication_interne_notifications';
+const STORAGE_KEY_DRAFTS = 'communication_interne_drafts';
+const STORAGE_KEY_TEMPLATES = 'communication_interne_templates';
+const STORAGE_KEY_PRESENCE = 'communication_interne_presence';
+const STORAGE_KEY_SIGNAL = 'communication_interne_signal';
+
+export const COMMUNICATION_INTERNE_EVENT = 'communication-interne:updated';
+
+function lireStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+
+  const data = localStorage.getItem(key);
+  if (!data) return fallback;
+
+  try {
+    return JSON.parse(data) as T;
+  } catch (error) {
+    console.error(`Erreur lors du parsing du stockage ${key}:`, error);
+    return fallback;
+  }
+}
+
+function ecrireStorage<T>(key: string, value: T, scope: string): void {
+  if (typeof window === 'undefined') return;
+
+  localStorage.setItem(key, JSON.stringify(value));
+
+  const payload = {
+    scope,
+    updatedAt: new Date().toISOString(),
+  };
+
+  window.dispatchEvent(new CustomEvent(COMMUNICATION_INTERNE_EVENT, { detail: payload }));
+  localStorage.setItem(STORAGE_KEY_SIGNAL, JSON.stringify(payload));
+}
 
 // ==================== MESSAGES ====================
 
 export function obtenirMessages(): Message[] {
-  if (typeof window === 'undefined') return [];
-  const data = localStorage.getItem(STORAGE_KEY_MESSAGES);
-  if (!data) return [];
-  try {
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Erreur lors du parsing des messages:', error);
-    return [];
-  }
+  return lireStorage<Message[]>(STORAGE_KEY_MESSAGES, []);
 }
 
 function sauvegarderMessages(messages: Message[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
+  ecrireStorage(STORAGE_KEY_MESSAGES, messages, 'messages');
 }
 
 export function envoyerMessage(
@@ -267,20 +335,11 @@ export function rechercherMessages(query: string, departementId?: string): Messa
 // ==================== NOTIFICATIONS ====================
 
 export function obtenirNotifications(): Notification[] {
-  if (typeof window === 'undefined') return [];
-  const data = localStorage.getItem(STORAGE_KEY_NOTIFICATIONS);
-  if (!data) return [];
-  try {
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Erreur lors du parsing des notifications:', error);
-    return [];
-  }
+  return lireStorage<Notification[]>(STORAGE_KEY_NOTIFICATIONS, []);
 }
 
 function sauvegarderNotifications(notifications: Notification[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY_NOTIFICATIONS, JSON.stringify(notifications));
+  ecrireStorage(STORAGE_KEY_NOTIFICATIONS, notifications, 'notifications');
 }
 
 export function creerNotification(
@@ -372,4 +431,146 @@ export function obtenirStatistiquesDepartement(departementId: string) {
     demandesRejetees: demandes.filter(d => d.statut === 'rejetee').length,
     demandesUrgentes: demandes.filter(d => d.priorite === 'urgente').length
   };
+}
+
+// ==================== BROUILLONS ====================
+
+export function obtenirBrouillonsMessagerie(departementId?: string, ownerUserId?: string): MessageDraft[] {
+  const drafts = lireStorage<MessageDraft[]>(STORAGE_KEY_DRAFTS, []);
+
+  return drafts.filter((draft) => {
+    if (departementId && draft.departementId !== departementId) return false;
+    if (ownerUserId && draft.ownerUserId !== ownerUserId) return false;
+    return true;
+  }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+}
+
+export function sauvegarderBrouillonMessagerie(
+  draft: Omit<MessageDraft, 'id' | 'updatedAt'> & { id?: string }
+): MessageDraft {
+  const drafts = lireStorage<MessageDraft[]>(STORAGE_KEY_DRAFTS, []);
+  const draftToSave: MessageDraft = {
+    ...draft,
+    id: draft.id || `draft-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const index = drafts.findIndex((entry) => entry.id === draftToSave.id);
+  if (index >= 0) {
+    drafts[index] = draftToSave;
+  } else {
+    drafts.unshift(draftToSave);
+  }
+
+  ecrireStorage(STORAGE_KEY_DRAFTS, drafts, 'drafts');
+  return draftToSave;
+}
+
+export function supprimerBrouillonMessagerie(draftId: string): boolean {
+  const drafts = lireStorage<MessageDraft[]>(STORAGE_KEY_DRAFTS, []);
+  const filtered = drafts.filter((draft) => draft.id !== draftId);
+
+  if (filtered.length === drafts.length) return false;
+
+  ecrireStorage(STORAGE_KEY_DRAFTS, filtered, 'drafts');
+  return true;
+}
+
+// ==================== TEMPLATES ====================
+
+export function obtenirTemplatesMessagerie(departementId?: string): MessageTemplate[] {
+  const templates = lireStorage<MessageTemplate[]>(STORAGE_KEY_TEMPLATES, []);
+
+  return templates.filter((template) => !departementId || template.departementId === departementId)
+    .sort((a, b) => {
+      if (b.usageCount !== a.usageCount) return b.usageCount - a.usageCount;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+}
+
+export function sauvegarderTemplateMessagerie(
+  template: Omit<MessageTemplate, 'id' | 'updatedAt' | 'usageCount'> & { id?: string; usageCount?: number }
+): MessageTemplate {
+  const templates = lireStorage<MessageTemplate[]>(STORAGE_KEY_TEMPLATES, []);
+  const templateToSave: MessageTemplate = {
+    ...template,
+    id: template.id || `template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    updatedAt: new Date().toISOString(),
+    usageCount: template.usageCount || 0,
+  };
+
+  const index = templates.findIndex((entry) => entry.id === templateToSave.id);
+  if (index >= 0) {
+    templates[index] = templateToSave;
+  } else {
+    templates.unshift(templateToSave);
+  }
+
+  ecrireStorage(STORAGE_KEY_TEMPLATES, templates, 'templates');
+  return templateToSave;
+}
+
+export function incrementerUsageTemplateMessagerie(templateId: string): boolean {
+  const templates = lireStorage<MessageTemplate[]>(STORAGE_KEY_TEMPLATES, []);
+  const template = templates.find((entry) => entry.id === templateId);
+
+  if (!template) return false;
+
+  template.usageCount += 1;
+  template.updatedAt = new Date().toISOString();
+  ecrireStorage(STORAGE_KEY_TEMPLATES, templates, 'templates');
+  return true;
+}
+
+export function supprimerTemplateMessagerie(templateId: string): boolean {
+  const templates = lireStorage<MessageTemplate[]>(STORAGE_KEY_TEMPLATES, []);
+  const filtered = templates.filter((template) => template.id !== templateId);
+
+  if (filtered.length === templates.length) return false;
+
+  ecrireStorage(STORAGE_KEY_TEMPLATES, filtered, 'templates');
+  return true;
+}
+
+// ==================== PRESENCE ====================
+
+export function obtenirPresencesMessagerie(departementId?: string): PresenceMessagerie[] {
+  nettoyerPresencesMessagerie();
+  const presences = lireStorage<PresenceMessagerie[]>(STORAGE_KEY_PRESENCE, []);
+
+  return presences
+    .filter((presence) => !departementId || presence.departementId === departementId)
+    .sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
+}
+
+export function enregistrerPresenceMessagerie(
+  presence: Omit<PresenceMessagerie, 'lastSeen'> & { lastSeen?: string }
+): PresenceMessagerie {
+  const presences = lireStorage<PresenceMessagerie[]>(STORAGE_KEY_PRESENCE, []);
+  const payload: PresenceMessagerie = {
+    ...presence,
+    lastSeen: presence.lastSeen || new Date().toISOString(),
+  };
+
+  const index = presences.findIndex((entry) => entry.userId === payload.userId);
+  if (index >= 0) {
+    presences[index] = payload;
+  } else {
+    presences.push(payload);
+  }
+
+  ecrireStorage(STORAGE_KEY_PRESENCE, presences, 'presence');
+  return payload;
+}
+
+export function nettoyerPresencesMessagerie(timeoutMs: number = 120000): PresenceMessagerie[] {
+  const presences = lireStorage<PresenceMessagerie[]>(STORAGE_KEY_PRESENCE, []);
+  const now = Date.now();
+  const filtered = presences.filter((presence) => now - new Date(presence.lastSeen).getTime() <= timeoutMs);
+
+  if (filtered.length !== presences.length) {
+    ecrireStorage(STORAGE_KEY_PRESENCE, filtered, 'presence');
+  }
+
+  return filtered;
 }

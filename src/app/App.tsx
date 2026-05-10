@@ -7,6 +7,7 @@ import { Layout } from './components/Layout';
 import { Toaster } from './components/ui/sonner';
 import { PWAInstaller } from './components/PWAInstaller';
 import { cerrarSesionUsuario } from './utils/sesionStorage';
+import { moduloDisponible } from './utils/permisos';
 import { BalanceProvider } from '../contexts/BalanceContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { useUpdateNotifications } from '../hooks/useUpdateNotifications';
@@ -67,6 +68,24 @@ function PageLoadingState() {
   );
 }
 
+const PUBLIC_PAGE_IDS = new Set(['acceso-organismo', 'benevoles-public', 'recrutement-public']);
+const AUTH_UTILITY_PAGE_IDS = new Set(['contact', 'departamentos']);
+const PAGE_PERMISSION_ALIASES: Record<string, string> = {
+  liaison: 'email-organismos',
+  'reportes-avanzado': 'reportes',
+  'usuarios-internos': 'usuarios',
+  'gestion-autenticacion': 'usuarios',
+  'dashboard-predictivo': 'dashboard',
+};
+
+function obtenerModuloProtegido(pageId: string): string | null {
+  if (PUBLIC_PAGE_IDS.has(pageId) || AUTH_UTILITY_PAGE_IDS.has(pageId)) {
+    return null;
+  }
+
+  return PAGE_PERMISSION_ALIASES[pageId] || pageId;
+}
+
 // Componente interno que usa el contexto de autenticación
 function AppContent() {
   const [currentPage, setCurrentPage] = useState(() => {
@@ -95,6 +114,26 @@ function AppContent() {
       document.documentElement.lang = i18n.language;
     }
   }, [i18n.language]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const moduloProtegido = obtenerModuloProtegido(currentPage);
+
+    if (!moduloProtegido || moduloDisponible(moduloProtegido)) {
+      return;
+    }
+
+    setCurrentPage('dashboard');
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', 'dashboard');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [currentPage, isAuthenticated]);
 
   const renderWithSuspense = (content: React.ReactNode) => (
     <Suspense fallback={<PageLoadingState />}>

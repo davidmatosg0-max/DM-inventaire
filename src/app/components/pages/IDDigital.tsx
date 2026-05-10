@@ -80,8 +80,7 @@ export function IDDigital() {
   const [selectedBeneficiaireId, setSelectedBeneficiaireId] = useState<string | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Tipos de ayuda del sistema (no modificables) - CONTADORES EN CERO PARA PRODUCCIÓN
-  const systemAidTypes: AidType[] = [
+  const defaultAidTypes: AidType[] = [
     {
       id: 'system-1',
       name: t('comptoir.completeBasket'),
@@ -139,18 +138,21 @@ export function IDDigital() {
     },
   ];
 
-  // Estado compartido para tipos de ayuda personalizados - VACÍO PARA PRODUCCIÓN
-  const [customAidTypes, setCustomAidTypes] = useState<AidType[]>(() => obtenirTypesAidePersonnalises());
+  const hydrateAidTypes = () => {
+    const storedAidTypes = obtenirTypesAidePersonnalises();
+    return storedAidTypes.length > 0 ? storedAidTypes : defaultAidTypes;
+  };
 
-  // Combinar todos los tipos de ayuda (sistema + personalizados)
-  const allAidTypes = [...systemAidTypes, ...customAidTypes];
+  const [managedAidTypes, setManagedAidTypes] = useState<AidType[]>(() => hydrateAidTypes());
+
+  const allAidTypes = managedAidTypes;
 
   // Estado compartido para demandas de ayuda - VACÍO PARA PRODUCCIÓN
   const [aidRequests, setAidRequests] = useState<AidRequest[]>(() => obtenirDemandesAideComptoir());
 
   useEffect(() => {
-    sauvegarderTypesAidePersonnalises(customAidTypes);
-  }, [customAidTypes]);
+    sauvegarderTypesAidePersonnalises(managedAidTypes);
+  }, [managedAidTypes]);
 
   useEffect(() => {
     sauvegarderDemandesAideComptoir(aidRequests);
@@ -159,7 +161,7 @@ export function IDDigital() {
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === comptoirStorageKeys.customAidTypes) {
-        setCustomAidTypes(obtenirTypesAidePersonnalises());
+        setManagedAidTypes(hydrateAidTypes());
       }
 
       if (event.key === comptoirStorageKeys.aidRequests) {
@@ -171,7 +173,7 @@ export function IDDigital() {
       const { detail } = event as CustomEvent<{ key?: string }>;
 
       if (detail?.key === comptoirStorageKeys.customAidTypes) {
-        setCustomAidTypes(obtenirTypesAidePersonnalises());
+        setManagedAidTypes(hydrateAidTypes());
       }
 
       if (detail?.key === comptoirStorageKeys.aidRequests) {
@@ -221,7 +223,7 @@ export function IDDigital() {
       case 'demandes-aide':
         return <DemandesAide onNavigate={handleNavigate} aidRequests={aidRequests} setAidRequests={setAidRequests} />;
       case 'types-aide':
-        return <TypesAide onNavigate={handleNavigate} aidTypes={customAidTypes} setAidTypes={setCustomAidTypes} systemAidTypes={systemAidTypes} />;
+        return <TypesAide onNavigate={handleNavigate} aidTypes={managedAidTypes} setAidTypes={setManagedAidTypes} systemAidTypes={[]} />;
       case 'rapports':
         return <Rapports aidRequests={aidRequests} aidTypes={allAidTypes} />;
       case 'contactos':

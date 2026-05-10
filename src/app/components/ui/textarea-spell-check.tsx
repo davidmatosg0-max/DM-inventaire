@@ -530,7 +530,7 @@ export function TextareaSpellCheck({
               onClick={restructureParagraph}
               disabled={isRestructuring}
               className="h-7 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 border border-purple-200"
-              title="Reestructurar y mejorar el texto"
+              title="Restructurer et améliorer le texte"
             >
               <Sparkles className={cn("w-3 h-3 mr-1", isRestructuring && "animate-spin")} />
               Reformuler

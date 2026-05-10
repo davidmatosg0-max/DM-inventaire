@@ -93,9 +93,9 @@ export function BackupSettings() {
       });
       
       setHasChanges(false);
-      toast.success(t('backup.configSaved', 'Configuración guardada'));
+      toast.success(t('backup.configSaved', 'Configuration enregistrée'));
     } catch (error) {
-      toast.error(t('backup.saveError', 'Error al guardar configuración'));
+      toast.error(t('backup.saveError', 'Erreur lors de l\'enregistrement de la configuration'));
     }
   };
   
@@ -104,19 +104,19 @@ export function BackupSettings() {
     try {
       const backup = runAutoBackup();
       if (backup) {
-        toast.success(t('backup.created', 'Backup creado exitosamente'));
+        toast.success(t('backup.created', 'Sauvegarde créée avec succès'));
       } else {
-        toast.error(t('backup.createError', 'Error al crear backup'));
+        toast.error(t('backup.createError', 'Erreur lors de la création de la sauvegarde'));
       }
     } catch (error) {
-      toast.error(t('backup.createError', 'Error al crear backup'));
+      toast.error(t('backup.createError', 'Erreur lors de la création de la sauvegarde'));
     }
   };
   
   // Limpiar backups antiguos
   const handleCleanOld = () => {
     const confirmed = window.confirm(
-      t('backup.confirmCleanOld', `¿Eliminar backups anteriores a los últimos ${keepLast}?`)
+      t('backup.confirmCleanOld', `Supprimer les sauvegardes plus anciennes que les ${keepLast} dernières ?`)
     );
     
     if (!confirmed) return;
@@ -124,11 +124,11 @@ export function BackupSettings() {
     try {
       const deleted = cleanOldBackups(30); // 30 días
       toast.success(
-        t('backup.cleaned', 'Backups eliminados'),
-        { description: `${deleted} backups eliminados` }
+        t('backup.cleaned', 'Sauvegardes supprimées'),
+        { description: `${deleted} sauvegardes supprimées` }
       );
     } catch (error) {
-      toast.error(t('backup.cleanError', 'Error al limpiar'));
+      toast.error(t('backup.cleanError', 'Erreur lors du nettoyage'));
     }
   };
   
@@ -136,11 +136,11 @@ export function BackupSettings() {
   const getFrequencyInfo = () => {
     switch (frequency) {
       case 'daily':
-        return t('backup.dailyInfo', 'Un backup cada 24 horas');
+        return t('backup.dailyInfo', 'Une sauvegarde toutes les 24 heures');
       case 'weekly':
-        return t('backup.weeklyInfo', 'Un backup cada 7 días');
+        return t('backup.weeklyInfo', 'Une sauvegarde tous les 7 jours');
       case 'monthly':
-        return t('backup.monthlyInfo', 'Un backup cada 30 días');
+        return t('backup.monthlyInfo', 'Une sauvegarde tous les 30 jours');
     }
   };
   
@@ -150,10 +150,10 @@ export function BackupSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-[#1a4d7a]" />
-            {t('backup.autoBackup', 'Backup Automático')}
+            {t('backup.autoBackup', 'Sauvegarde automatique')}
           </CardTitle>
           <CardDescription>
-            {t('backup.autoDescription', 'Configure backups automáticos programados')}
+            {t('backup.autoDescription', 'Configurez des sauvegardes automatiques planifiées')}
           </CardDescription>
         </CardHeader>
         
@@ -164,12 +164,12 @@ export function BackupSettings() {
               <Power className={`w-5 h-5 ${enabled ? 'text-green-600' : 'text-gray-400'}`} />
               <div>
                 <p className="font-medium">
-                  {t('backup.autoEnabled', 'Backup Automático')}
+                  {t('backup.autoEnabled', 'Sauvegarde automatique')}
                 </p>
                 <p className="text-sm text-gray-500">
                   {enabled
-                    ? t('backup.autoEnabledDesc', 'Los backups se crearán automáticamente')
-                    : t('backup.autoDisabledDesc', 'Los backups automáticos están desactivados')
+                    ? t('backup.autoEnabledDesc', 'Les sauvegardes seront créées automatiquement')
+                    : t('backup.autoDisabledDesc', 'Les sauvegardes automatiques sont désactivées')
                   }
                 </p>
               </div>
@@ -186,7 +186,7 @@ export function BackupSettings() {
               {/* Frecuencia */}
               <div className="space-y-3">
                 <Label htmlFor="frequency">
-                  {t('backup.frequency', 'Frecuencia')}
+                  {t('backup.frequency', 'Fréquence')}
                 </Label>
                 <Select value={frequency} onValueChange={(v: any) => setFrequency(v)}>
                   <SelectTrigger>
@@ -194,13 +194,13 @@ export function BackupSettings() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="daily">
-                      {t('backup.daily', 'Diario')}
+                      {t('backup.daily', 'Quotidienne')}
                     </SelectItem>
                     <SelectItem value="weekly">
-                      {t('backup.weekly', 'Semanal')}
+                      {t('backup.weekly', 'Hebdomadaire')}
                     </SelectItem>
                     <SelectItem value="monthly">
-                      {t('backup.monthly', 'Mensual')}
+                      {t('backup.monthly', 'Mensuelle')}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -210,7 +210,7 @@ export function BackupSettings() {
               {/* Hora */}
               <div className="space-y-2">
                 <Label htmlFor="time">
-                  {t('backup.time', 'Hora de Ejecución')}
+                  {t('backup.time', 'Heure d\'exécution')}
                 </Label>
                 <Input
                   id="time"
@@ -219,13 +219,13 @@ export function BackupSettings() {
                   onChange={(e) => setTime(e.target.value)}
                 />
                 <p className="text-sm text-gray-500">
-                  {t('backup.timeInfo', 'Hora local del sistema')}
+                  {t('backup.timeInfo', 'Heure locale du système')}
                 </p>
               </div>
               
               {/* Módulos */}
               <div className="space-y-3">
-                <Label>{t('backup.modulesToBackup', 'Módulos a Respaldar')}</Label>
+                <Label>{t('backup.modulesToBackup', 'Modules à sauvegarder')}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.values(BACKUP_MODULES).map((module) => (
                     <div
@@ -258,10 +258,10 @@ export function BackupSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-[#1a4d7a]" />
-            {t('backup.retention', 'Políticas de Retención')}
+            {t('backup.retention', 'Politiques de rétention')}
           </CardTitle>
           <CardDescription>
-            {t('backup.retentionDescription', 'Configure cuántos backups mantener')}
+            {t('backup.retentionDescription', 'Configurez combien de sauvegardes conserver')}
           </CardDescription>
         </CardHeader>
         
@@ -269,7 +269,7 @@ export function BackupSettings() {
           {/* Mantener últimos N backups */}
           <div className="space-y-2">
             <Label htmlFor="keepLast">
-              {t('backup.keepLast', 'Mantener Últimos Backups')}
+              {t('backup.keepLast', 'Conserver les dernières sauvegardes')}
             </Label>
             <div className="flex items-center gap-3">
               <Input
@@ -282,11 +282,11 @@ export function BackupSettings() {
                 className="w-24"
               />
               <span className="text-sm text-gray-500">
-                {t('backup.backups', 'backups')}
+                {t('backup.backups', 'sauvegardes')}
               </span>
             </div>
             <p className="text-sm text-gray-500">
-              {t('backup.keepLastInfo', 'Los backups más antiguos se eliminarán automáticamente')}
+              {t('backup.keepLastInfo', 'Les sauvegardes les plus anciennes seront supprimées automatiquement')}
             </p>
           </div>
           
@@ -296,10 +296,10 @@ export function BackupSettings() {
               <Trash2 className="w-5 h-5 text-gray-600" />
               <div>
                 <p className="font-medium">
-                  {t('backup.autoClean', 'Limpieza Automática')}
+                  {t('backup.autoClean', 'Nettoyage automatique')}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {t('backup.autoCleanDesc', 'Eliminar backups antiguos automáticamente')}
+                  {t('backup.autoCleanDesc', 'Supprimer automatiquement les anciennes sauvegardes')}
                 </p>
               </div>
             </div>
@@ -316,7 +316,7 @@ export function BackupSettings() {
             className="w-full"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            {t('backup.cleanNow', 'Limpiar Ahora')}
+            {t('backup.cleanNow', 'Nettoyer maintenant')}
           </Button>
         </CardContent>
       </Card>
@@ -326,17 +326,17 @@ export function BackupSettings() {
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-700">
           <p className="font-medium mb-2">
-            {t('backup.note', 'Nota Importante')}
+            {t('backup.note', 'Note importante')}
           </p>
           <ul className="list-disc list-inside space-y-1 text-sm">
             <li>
-              {t('backup.noteBackupAuto', 'Los backups automáticos se ejecutan cuando cumple la frecuencia configurada')}
+              {t('backup.noteBackupAuto', 'Les sauvegardes automatiques s\'exécutent selon la fréquence configurée')}
             </li>
             <li>
-              {t('backup.noteStorage', 'Los backups se guardan en el almacenamiento local del navegador')}
+              {t('backup.noteStorage', 'Les sauvegardes sont enregistrées dans le stockage local du navigateur')}
             </li>
             <li>
-              {t('backup.noteLimit', 'Recomendamos exportar backups importantes a archivos')}
+              {t('backup.noteLimit', 'Nous recommandons d\'exporter les sauvegardes importantes dans des fichiers')}
             </li>
           </ul>
         </AlertDescription>
@@ -350,7 +350,7 @@ export function BackupSettings() {
           className="flex-1 bg-[#2d9561] hover:bg-[#257a4f]"
         >
           <Save className="w-4 h-4 mr-2" />
-          {t('backup.saveConfig', 'Guardar Configuración')}
+          {t('backup.saveConfig', 'Enregistrer la configuration')}
         </Button>
         
         {enabled && (
@@ -360,7 +360,7 @@ export function BackupSettings() {
             className="flex-1"
           >
             <Clock className="w-4 h-4 mr-2" />
-            {t('backup.runNow', 'Ejecutar Ahora')}
+            {t('backup.runNow', 'Exécuter maintenant')}
           </Button>
         )}
       </div>

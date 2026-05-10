@@ -286,10 +286,10 @@ export async function exportBackupToFile(backup: BackupData): Promise<void> {
         console.log(`✅ Backup guardado en carpeta predefinida: ${filename}`);
         return;
       } else {
-        console.warn('⚠️ No se pudo guardar en carpeta predefinida, usando descarga normal');
+        console.warn('⚠️ Impossible d’enregistrer dans le dossier prédéfini, utilisation du téléchargement standard');
       }
     } catch (error) {
-      console.warn('⚠️ Error al guardar en carpeta predefinida:', error);
+      console.warn('⚠️ Erreur lors de l’enregistrement dans le dossier prédéfini :', error);
     }
   }
   

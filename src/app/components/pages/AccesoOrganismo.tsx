@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Key, Lock, Eye, EyeOff, LogIn, Shield, Sparkles } from 'lucide-react';
+import { Key, Lock, Eye, EyeOff, LogIn, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -92,6 +92,8 @@ export function AccesoOrganismo() {
     }
   };
 
+  const organismesAvecCle = organismosDisponibles.filter((organisme) => organisme.claveAcceso);
+
   // Si ya está autenticado, mostrar vista pública
   if (organismoAutenticado) {
     return (
@@ -108,7 +110,7 @@ export function AccesoOrganismo() {
       className="min-h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 relative overflow-hidden"
       style={{ 
         fontFamily: 'Roboto, sans-serif',
-        background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`,
+        background: `linear-gradient(145deg, ${branding.primaryColor}12 0%, #ffffff 45%, ${branding.secondaryColor}10 100%)`,
       }}
     >
       {/* Selector de Idioma - Posicionado arriba a la derecha */}
@@ -116,74 +118,57 @@ export function AccesoOrganismo() {
         <LanguageSelector />
       </div>
 
-      {/* Formas decorativas de fondo */}
+      {/* Fond décoratif discret */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
+          className="absolute -top-24 -left-24 w-80 h-80 rounded-full opacity-10 blur-3xl"
           style={{ backgroundColor: branding.primaryColor }}
         />
         <div 
-          className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full opacity-20 blur-3xl animate-pulse"
+          className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full opacity-10 blur-3xl"
           style={{ backgroundColor: branding.secondaryColor }}
-        />
-        <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-10 blur-3xl"
-          style={{ backgroundColor: branding.primaryColor }}
         />
       </div>
       
-      {/* Contenedor principal con glassmorphism */}
+      {/* Conteneur principal */}
       <div className="relative z-10 w-full max-w-md">
         <div 
-          className="backdrop-blur-xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/60"
+          className="bg-white/94 rounded-[28px] shadow-[0_28px_70px_-48px_rgba(15,45,71,0.45)] p-4 sm:p-6 md:p-8 border border-white/70"
           style={{
-            boxShadow: `0 8px 32px 0 ${branding.primaryColor}33, 0 0 80px ${branding.secondaryColor}1a`
+            backdropFilter: 'blur(16px)'
           }}
         >
-          {/* Logo y Header con efecto glow */}
+          {/* Logo et introduction */}
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">
-              <div className="relative inline-block">
-                {/* Glow effect detrás del logo */}
-                <div 
-                  className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
-                  style={{ backgroundColor: branding.primaryColor }}
-                />
-                <div 
-                  className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
-                  style={{ borderColor: branding.primaryColor }}
-                >
-                  {branding.logo ? (
-                    <img 
-                      src={branding.logo} 
-                      alt="Logo" 
-                      className="h-full w-full rounded-full"
-                      style={{ 
-                        objectFit: 'cover',
-                        objectPosition: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset'
-                      }}
-                    />
-                  ) : (
-                    <div 
-                      className="h-full w-full flex items-center justify-center text-white"
-                      style={{ backgroundColor: branding.primaryColor }}
-                    >
-                      <Key className="w-8 h-8 sm:w-10 sm:h-10" />
-                    </div>
-                  )}
-                </div>
+              <div 
+                className="h-16 w-16 sm:h-18 sm:w-18 rounded-full flex items-center justify-center overflow-hidden border-4 bg-white shadow-lg"
+                style={{ borderColor: `${branding.primaryColor}55` }}
+              >
+                {branding.logo ? (
+                  <img 
+                    src={branding.logo} 
+                    alt="Logo" 
+                    className="h-full w-full rounded-full"
+                    style={{ 
+                      objectFit: 'cover',
+                      objectPosition: 'center'
+                    }}
+                  />
+                ) : (
+                  <div 
+                    className="h-full w-full flex items-center justify-center text-white"
+                    style={{ backgroundColor: branding.primaryColor }}
+                  >
+                    <Key className="w-8 h-8" />
+                  </div>
+                )}
               </div>
             </div>
-            
-            {/* Título con iconos y efecto Sparkles */}
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Key 
-                className="w-5 h-5 sm:w-6 sm:h-6" 
-                style={{ color: branding.primaryColor }}
-              />
+
+            <div className="mb-2">
               <h1 
-                className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight" 
+                className="text-xl sm:text-2xl md:text-[2rem] font-bold tracking-tight" 
                 style={{ 
                   fontFamily: 'Montserrat, sans-serif',
                   color: branding.primaryColor 
@@ -191,23 +176,19 @@ export function AccesoOrganismo() {
               >
                 {t('organismPortal.title')}
               </h1>
-              <Sparkles 
-                className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" 
-                style={{ color: branding.secondaryColor }}
-              />
             </div>
             <p className="text-sm sm:text-base text-[#666666]" style={{ fontFamily: 'Roboto, sans-serif' }}>
               {t('organismPortal.subtitle')}
             </p>
           </div>
 
-          {/* Card de Login con estilo moderno */}
-          <Card className="shadow-lg border-2 border-white/60">
+          {/* Carte d'accès */}
+          <Card className="shadow-sm border border-slate-200/80 overflow-hidden">
             <CardHeader 
               className="text-white rounded-t-lg"
               style={{ 
                 background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
-                boxShadow: `0 4px 15px ${branding.primaryColor}40`
+                boxShadow: `0 10px 24px -18px ${branding.primaryColor}90`
               }}
             >
               <CardTitle className="flex items-center gap-2 justify-center" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -215,8 +196,7 @@ export function AccesoOrganismo() {
                 {t('organismPortal.login')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {/* Campo de Clave */}
+            <CardContent className="pt-6 space-y-5 bg-white">
               <div className="space-y-2">
                 <Label htmlFor="claveAcceso" className="text-[#333333] font-medium">
                   {t('organismPortal.accessKey')} *
@@ -230,17 +210,16 @@ export function AccesoOrganismo() {
                     value={claveAcceso}
                     onChange={(e) => setClaveAcceso(e.target.value.toUpperCase())}
                     onKeyPress={handleKeyPress}
-                    className="pr-10 font-mono tracking-wider uppercase border-2 focus:border-opacity-50 transition-all duration-300"
+                    className="h-11 pr-10 font-mono tracking-wider uppercase border-slate-200 bg-slate-50 focus-visible:ring-2"
                     style={{ 
-                      fontSize: '1.1rem',
-                      borderColor: branding.primaryColor + '30'
+                      fontSize: '1.05rem'
                     }}
                     maxLength={24}
                   />
                   <button
                     type="button"
                     onClick={() => setMostrarClave(!mostrarClave)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#333333] transition-colors duration-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#333333]"
                     aria-label={mostrarClave ? t('organismPortal.hideKey') : t('organismPortal.showKey')}
                   >
                     {mostrarClave ? (
@@ -255,9 +234,9 @@ export function AccesoOrganismo() {
                 </p>
               </div>
 
-              {/* Información de Ayuda con nuevo estilo */}
+              {/* Aide */}
               <div 
-                className="rounded-lg p-4 border-2"
+                className="rounded-xl p-4 border"
                 style={{
                   backgroundColor: `${branding.primaryColor}08`,
                   borderColor: `${branding.primaryColor}30`
@@ -271,61 +250,59 @@ export function AccesoOrganismo() {
                 </p>
               </div>
 
-              {/* Botón de Acceso con estilo moderno */}
+              {/* Action principale */}
               <Button
                 onClick={handleAcceder}
                 disabled={claveAcceso.length < 6}
-                className="w-full h-12 text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="w-full h-12 text-white font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ 
-                  fontSize: '1.1rem',
+                  fontSize: '1.05rem',
                   fontFamily: 'Montserrat, sans-serif',
                   background: claveAcceso.length >= 6 
                     ? `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`
                     : '#cccccc',
-                  boxShadow: claveAcceso.length >= 6 ? `0 4px 15px ${branding.secondaryColor}40` : 'none'
+                  boxShadow: claveAcceso.length >= 6 ? `0 10px 24px -18px ${branding.secondaryColor}95` : 'none'
                 }}
               >
                 <LogIn className="w-5 h-5 mr-2" />
                 {t('organismPortal.accessButton')}
               </Button>
 
-              {/* Claves de prueba (solo para desarrollo) */}
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-xs text-[#666666] mb-2 font-medium">{t('organismPortal.testKeys')}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {organismosDisponibles.filter(o => o.claveAcceso).map(o => (
-                    <button
-                      key={o.id}
-                      onClick={() => setClaveAcceso(o.claveAcceso || '')}
-                      className="text-xs bg-gray-100 hover:bg-gray-200 p-2 rounded-lg font-mono transition-all duration-200 hover:scale-105 relative"
-                      style={{
-                        borderLeft: `3px solid ${branding.primaryColor}`
-                      }}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span>{o.claveAcceso}</span>
-                        {o.participaPRS && (
-                          <span 
-                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white whitespace-nowrap"
-                            style={{ 
-                              backgroundColor: branding.secondaryColor,
-                              fontFamily: 'Montserrat, sans-serif'
-                            }}
-                          >
-                            ✓ PRS
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+              {organismesAvecCle.length > 0 && (
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-xs text-[#666666] mb-2 font-medium">{t('organismPortal.testKeys')}</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {organismesAvecCle.map((organisme) => (
+                      <button
+                        key={organisme.id}
+                        onClick={() => setClaveAcceso(organisme.claveAcceso || '')}
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left font-mono text-xs transition-colors hover:bg-slate-100"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{organisme.claveAcceso}</span>
+                          {organisme.participaPRS && (
+                            <span 
+                              className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap"
+                              style={{ 
+                                backgroundColor: branding.secondaryColor,
+                                fontFamily: 'Montserrat, sans-serif'
+                              }}
+                            >
+                              PRS
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Footer decorativo */}
+          {/* Signature */}
           <div className="mt-6 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-transparent via-gray-100/50 to-transparent">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/80 px-4 py-2">
               <Shield className="w-4 h-4" style={{ color: branding.primaryColor }} />
               <p className="text-xs text-[#666666]" style={{ fontFamily: 'Roboto, sans-serif' }}>
                 {branding.systemName}

@@ -13,7 +13,7 @@ export function LanguageSelector() {
   const { i18n } = useTranslation();
 
   const languages = [
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'es', name: 'Espagnol', flag: '🇪🇸' },
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'ar', name: 'العربية', flag: '🇸🇦' },

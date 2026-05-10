@@ -29,6 +29,7 @@ import { Checkbox } from '../ui/checkbox';
 import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
 import { useBranding } from '../../../hooks/useBranding';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { obtenerUsuarios, type Usuario } from '../../utils/usuarios';
 import { 
   obtenerPersonasPorOrganismo, 
   guardarPersonaResponsable, 
@@ -59,6 +60,44 @@ interface VistaPublicaOrganismoProps {
 export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublicaOrganismoProps) {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
+
+  const contactoGeneralAyuda = {
+    nombre: 'Banque Alimentaire',
+    telefono: '(514) 555-0100',
+    email: 'info@bancoalimentos.org'
+  };
+
+  const responsableLiaison = React.useMemo(() => {
+    const usuariosLiaison = obtenerUsuarios()
+      .filter((usuario: Usuario) => usuario.activo !== false)
+      .filter((usuario: Usuario) =>
+        usuario.rol === 'liaison_organisme'
+        || usuario.permisos.includes('administrador_liaison')
+        || usuario.permisos.includes('comunicacion_organismos')
+      )
+      .sort((usuarioA: Usuario, usuarioB: Usuario) => {
+        const prioridad = (usuario: Usuario) => {
+          if (usuario.rol === 'liaison_organisme') return 0;
+          if (usuario.permisos.includes('comunicacion_organismos')) return 1;
+          if (usuario.permisos.includes('administrador_liaison')) return 2;
+          return 3;
+        };
+
+        return prioridad(usuarioA) - prioridad(usuarioB);
+      });
+
+    const usuarioLiaison = usuariosLiaison[0];
+
+    if (!usuarioLiaison) {
+      return contactoGeneralAyuda;
+    }
+
+    return {
+      nombre: [usuarioLiaison.nombre, usuarioLiaison.apellido].filter(Boolean).join(' ').trim() || contactoGeneralAyuda.nombre,
+      telefono: usuarioLiaison.telefono?.trim() || contactoGeneralAyuda.telefono,
+      email: usuarioLiaison.email?.trim() || contactoGeneralAyuda.email
+    };
+  }, []);
 
   const obtenerValorUnitario = (item: any, producto?: any) => {
     if (typeof item?.valorUnitario === 'number' && item.valorUnitario > 0) {
@@ -521,8 +560,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       // Actualizar la vista de ofertas sin recargar la página
       setRefreshOfertas(prev => prev + 1);
     } else {
-      toast.error('Error al procesar la solicitud', {
-        description: 'No se pudo registrar la solicitud. Verifique si ya existe una solicitud activa para esta oferta o si las cantidades siguen disponibles.',
+      toast.error('Erreur lors du traitement de la demande', {
+        description: 'La demande n’a pas pu être enregistrée. Vérifiez s’il existe déjà une demande active pour cette offre ou si les quantités sont encore disponibles.',
         duration: 4000
       });
     }
@@ -599,7 +638,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       setRefreshComandas((valorActual) => valorActual + 1);
     } catch (error) {
       console.error('Error al aceptar la comanda desde el portal del organismo:', error);
-      toast.error('No se pudo actualizar la comanda');
+      toast.error('La commande n’a pas pu être mise à jour');
       return;
     }
 
@@ -632,7 +671,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       setRefreshComandas((valorActual) => valorActual + 1);
     } catch (error) {
       console.error('Error al anular la comanda desde el portal del organismo:', error);
-      toast.error('No se pudo anular la comanda');
+      toast.error('La commande n’a pas pu être annulée');
       return;
     }
 
@@ -809,11 +848,11 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
         
         setDialogNuevaEntradaOpen(false);
       } else {
-        toast.error('Error al guardar la entrada');
+        toast.error('Erreur lors de l’enregistrement de l’entrée');
       }
     } catch (error) {
-      console.error('Error al guardar entrada:', error);
-      toast.error('Error al guardar la entrada');
+      console.error('Erreur lors de l’enregistrement de l’entrée :', error);
+      toast.error('Erreur lors de l’enregistrement de l’entrée');
     }
   };
 
@@ -930,12 +969,12 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
             />
           </div>
 
-      {/* Header with glassmorphism */}
+      {/* Header du portail */}
       <header 
-        className="relative backdrop-blur-lg text-white shadow-xl border-b border-white/20"
+        className="relative text-white border-b border-white/10"
         style={{ 
           background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
-          boxShadow: `0 8px 32px 0 ${branding.primaryColor}40`
+          boxShadow: `0 12px 30px -20px ${branding.primaryColor}70`
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
@@ -973,61 +1012,42 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
             <div className="flex flex-wrap items-stretch gap-2 sm:gap-3">
               <LanguageSelector />
               {organismo.participaPRS && (
-                <div className="relative">
-                  {/* Efecto de pulso en el fondo */}
-                  <div 
-                    className="absolute inset-0 rounded-lg animate-pulse opacity-30 blur-md"
-                    style={{ backgroundColor: branding.primaryColor }}
-                  />
-                  <Button
-                    onClick={() => setDialogNuevaEntradaOpen(true)}
-                    className="relative text-white border-2 border-white/40 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl animate-pulse h-11 sm:h-12 px-4 sm:px-6"
-                    style={{ 
-                      background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
-                      fontFamily: 'Montserrat, sans-serif',
-                      fontWeight: 700,
-                      fontSize: '0.95rem'
-                    }}
-                  >
-                    {/* Efecto de brillo */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer rounded-lg" />
-                    <Plus className="w-5 h-5 mr-2 relative z-10" />
-                    <span className="relative z-10">Nouvelle Entrée PRS</span>
-                    <div 
-                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-ping"
-                      style={{ backgroundColor: branding.secondaryColor }}
-                    />
-                    <div 
-                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
-                      style={{ backgroundColor: branding.secondaryColor }}
-                    />
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => setDialogNuevaEntradaOpen(true)}
+                  className="h-11 sm:h-12 px-4 sm:px-5 text-white border border-white/20 shadow-sm hover:shadow-md"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 600,
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle Entrée PRS
+                </Button>
               )}
               <Button
                 onClick={() => setMostrarDemandes(true)}
                 variant="outline"
-                className="bg-white/95 hover:bg-white border-0 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                className="bg-white/95 hover:bg-white border-0 shadow-sm"
                 style={{ 
                   color: branding.primaryColor,
                   fontFamily: 'Montserrat, sans-serif',
                   fontWeight: 500
                 }}
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
                 Mes Demandes
               </Button>
               <Button
                 onClick={onCerrarSesion}
                 variant="outline"
-                className="bg-white/95 hover:bg-white border-0 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                className="bg-white/95 hover:bg-white border-0 shadow-sm"
                 style={{ 
                   color: branding.primaryColor,
                   fontFamily: 'Montserrat, sans-serif',
                   fontWeight: 500
                 }}
               >
-                <LogOut className="w-4 h-4 mr-2" />
                 {t('organismPortal.logout')}
               </Button>
             </div>
@@ -1067,25 +1087,25 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
           </div>
         )}
 
-        {/* Tarjetas de Estadísticas con nuevo estilo */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Indicateurs principaux */}
+        <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
           <Card 
-            className="border-l-4 backdrop-blur-sm bg-white/90 hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="border-l-4 bg-white/92 shadow-sm"
             style={{ borderColor: branding.primaryColor }}
           >
-            <CardContent className="pt-6">
+            <CardContent className="pt-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[#666666]">{t('organismPortal.beneficiaries')}</p>
                   <p 
                     className="font-bold" 
-                    style={{ fontSize: '2rem', color: branding.primaryColor }}
+                    style={{ fontSize: '1.65rem', color: branding.primaryColor }}
                   >
                     {organismo.beneficiarios}
                   </p>
                 </div>
                 <Users 
-                  className="w-10 h-10 opacity-20" 
+                  className="w-7 h-7 opacity-20" 
                   style={{ color: branding.primaryColor }}
                 />
               </div>
@@ -1093,22 +1113,22 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
           </Card>
 
           <Card 
-            className="border-l-4 backdrop-blur-sm bg-white/90 hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="border-l-4 bg-white/92 shadow-sm"
             style={{ borderColor: branding.secondaryColor }}
           >
-            <CardContent className="pt-6">
+            <CardContent className="pt-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[#666666]">{t('organismPortal.orders')}</p>
                   <p 
                     className="font-bold" 
-                    style={{ fontSize: '2rem', color: branding.secondaryColor }}
+                    style={{ fontSize: '1.65rem', color: branding.secondaryColor }}
                   >
                     {totalComandas}
                   </p>
                 </div>
                 <Package 
-                  className="w-10 h-10 opacity-20" 
+                  className="w-7 h-7 opacity-20" 
                   style={{ color: branding.secondaryColor }}
                 />
               </div>
@@ -1116,21 +1136,21 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
           </Card>
 
           <Card 
-            className="border-l-4 backdrop-blur-sm bg-white/90 hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="border-l-4 bg-white/92 shadow-sm"
             style={{ borderColor: '#e8a419' }}
           >
-            <CardContent className="pt-6">
+            <CardContent className="pt-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[#666666]">{t('organismPortal.completed')}</p>
                   <p 
                     className="font-bold text-[#e8a419]" 
-                    style={{ fontSize: '2rem' }}
+                    style={{ fontSize: '1.65rem' }}
                   >
                     {comandasCompletadas}
                   </p>
                 </div>
-                <CheckCircle className="w-10 h-10 text-[#e8a419] opacity-20" />
+                <CheckCircle className="w-7 h-7 text-[#e8a419] opacity-20" />
               </div>
             </CardContent>
           </Card>
@@ -1138,7 +1158,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         {/* Sección de Personas Responsables */}
         <Card 
-          className="mb-6 border-l-4 backdrop-blur-sm bg-white/90 shadow-lg hover:shadow-xl transition-shadow duration-300"
+          className="mb-6 border-l-4 bg-white/92 shadow-sm"
           style={{ borderColor: branding.secondaryColor }}
         >
           <CardHeader 
@@ -1162,7 +1182,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
               </div>
               <Button 
                 onClick={() => handleAbrirFormPersona()}
-                className="text-white hover:shadow-lg transition-all duration-300 hover:scale-105"
+                className="text-white shadow-sm hover:shadow-md"
                 style={{ 
                   background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
                   fontFamily: 'Montserrat, sans-serif', 
@@ -1180,7 +1200,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 {personasResponsables.map(persona => (
                   <Card 
                     key={persona.id} 
-                    className={`border-2 transition-all duration-300 hover:shadow-lg ${persona.esPrincipal ? 'bg-green-50/50' : ''}`}
+                    className={`border transition-colors ${persona.esPrincipal ? 'bg-green-50/50' : 'bg-white'}`}
                     style={{ 
                       borderColor: persona.esPrincipal ? branding.secondaryColor : '#e0e0e0' 
                     }}
@@ -1263,7 +1283,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                             size="sm"
                             variant="outline"
                             onClick={() => handleMarcarPrincipal(persona)}
-                            className="flex-1 hover:shadow-md transition-all duration-200"
+                            className="flex-1"
                             style={{ 
                               color: branding.secondaryColor,
                               borderColor: `${branding.secondaryColor}40`
@@ -1292,7 +1312,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                           size="sm"
                           variant="outline"
                           onClick={() => handleEliminarPersona(persona)}
-                          className="hover:shadow-md transition-all duration-200"
+                          className=""
                           style={{ 
                             color: '#c23934',
                             borderColor: '#c2393440'
@@ -1317,7 +1337,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 <p className="text-[#666666] mb-4">{t('organisms.profileDialog.authorizedPersons.noPersonsRegistered')}</p>
                 <Button 
                   onClick={() => handleAbrirFormPersona()}
-                  className="text-white hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  className="text-white shadow-sm hover:shadow-md"
                   style={{ 
                     background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`
                   }}
@@ -1332,7 +1352,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         {/* Sección de Reportes de Donaciones */}
         <Card 
-          className="mb-6 border-l-4 backdrop-blur-sm bg-white/90 shadow-lg hover:shadow-xl transition-shadow duration-300"
+          className="mb-6 border-l-4 bg-white/92 shadow-sm"
           style={{ borderColor: '#e8a419' }}
         >
           <CardHeader 
@@ -1386,7 +1406,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 <div className="flex gap-2">
                   <Button
                     onClick={handleGenerarPDF}
-                    className="flex-1 text-white hover:shadow-lg transition-all duration-300 hover:scale-105"
+                    className="flex-1 text-white shadow-sm hover:shadow-md"
                     style={{ 
                       background: '#c23934',
                       opacity: (!fechaInicio || !fechaFin) ? 0.5 : 1
@@ -1398,7 +1418,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   </Button>
                   <Button
                     onClick={handleGenerarExcel}
-                    className="flex-1 text-white hover:shadow-lg transition-all duration-300 hover:scale-105"
+                    className="flex-1 text-white shadow-sm hover:shadow-md"
                     style={{ 
                       background: branding.secondaryColor,
                       opacity: (!fechaInicio || !fechaFin) ? 0.5 : 1
@@ -1439,7 +1459,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Información del Organismo */}
-          <Card className="backdrop-blur-sm bg-white/90 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="bg-white/92 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between rounded-t-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor}08 0%, ${branding.secondaryColor}08 100%)` }}>
               <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 {t('organismPortal.organisInfo')}
@@ -1456,7 +1476,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   });
                   setEditarPerfilOpen(true);
                 }}
-                className="text-white hover:shadow-lg transition-all duration-300 hover:scale-105"
+                className="text-white shadow-sm hover:shadow-md"
                 style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
                 size="sm"
               >
@@ -1540,7 +1560,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
           </Card>
 
           {/* Historial de Comandas */}
-          <Card className="backdrop-blur-sm bg-white/90 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="bg-white/92 shadow-sm">
             <CardHeader className="rounded-t-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor}08 0%, ${branding.secondaryColor}08 100%)` }}>
               <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 <History className="w-5 h-5" />
@@ -2159,14 +2179,17 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 <p className="text-sm text-[#666666] mb-3">
                   {t('organismPortal.assistanceDescription')}
                 </p>
-                <div className="flex gap-4 text-sm">
+                <p className="text-sm font-medium text-[#1E73BE] mb-2">
+                  Contact liaison: {responsableLiaison.nombre}
+                </p>
+                <div className="flex flex-wrap gap-4 text-sm">
                   <p className="text-[#1E73BE]">
                     <Phone className="w-4 h-4 inline mr-1" />
-                    {t('organismPortal.phone')}: (514) 555-0100
+                    {t('organismPortal.phone')}: {responsableLiaison.telefono}
                   </p>
                   <p className="text-[#1E73BE]">
                     <Mail className="w-4 h-4 inline mr-1" />
-                    Email: info@bancoalimentos.org
+                    Email: {responsableLiaison.email}
                   </p>
                 </div>
               </div>
@@ -2227,7 +2250,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
               <Input
                 value={datosEdicion.responsable}
                 onChange={(e) => setDatosEdicion({ ...datosEdicion, responsable: e.target.value })}
-                placeholder="Nombre del responsable"
+                placeholder="Nom du responsable"
               />
             </div>
 
@@ -2269,8 +2292,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 disabled={false}
                 initialValue={datosEdicion.direccion}
                 initialQuartier={datosEdicion.quartier || ''}
-                label="Dirección *"
-                placeholder="Ex: 123 Boulevard Saint-Martin Est"
+                label="Adresse *"
+                placeholder="Ex. : 123 boulevard Saint-Martin Est"
                 required={true}
               />
             </div>
@@ -2357,14 +2380,14 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 onClick={() => setEditarPerfilOpen(false)}
                 variant="outline"
               >
-                Cancelar
+                Annuler
               </Button>
               <Button
                 onClick={handleGuardarCambios}
                 className="bg-[#4CAF50] hover:bg-[#45a049]"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Guardar Cambios
+                Enregistrer les modifications
               </Button>
             </div>
           </div>
@@ -2582,7 +2605,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                           }}
                         >
                           <SelectTrigger className="flex-1 border-[#1E73BE]">
-                            <SelectValue placeholder="Seleccione una persona autorizada" />
+                            <SelectValue placeholder="Sélectionnez une personne autorisée" />
                           </SelectTrigger>
                           <SelectContent className="max-h-[300px] overflow-y-auto">
                             {personasResponsables.length > 0 ? (
@@ -2663,7 +2686,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   variant="outline"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Cancelar
+                  Annuler
                 </Button>
                 <Button
                   onClick={handleConfirmarSolicitudOferta}
@@ -2766,7 +2789,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   {[
                     { code: 'fr' as IdiomaPersona, label: '🇫🇷 Français', color: '#1a4d7a' },
                     { code: 'en' as IdiomaPersona, label: '🇬🇧 English', color: '#2d9561' },
-                    { code: 'es' as IdiomaPersona, label: '🇪🇸 Español', color: '#8B5CF6' },
+                    { code: 'es' as IdiomaPersona, label: '🇪🇸 Espagnol', color: '#8B5CF6' },
                     { code: 'ar' as IdiomaPersona, label: '🇸🇦 العربية', color: '#F59E0B' }
                   ].map((idioma) => (
                     <label
@@ -2800,7 +2823,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                       const idiomaInfo = [
                         { code: 'fr', label: '🇫🇷 Français', color: '#1a4d7a' },
                         { code: 'en', label: '🇬🇧 English', color: '#2d9561' },
-                        { code: 'es', label: '🇪🇸 Español', color: '#8B5CF6' },
+                        { code: 'es', label: '🇪🇸 Espagnol', color: '#8B5CF6' },
                         { code: 'ar', label: '🇸🇦 العربية', color: '#F59E0B' }
                       ].find(i => i.code === code);
                       return idiomaInfo ? (

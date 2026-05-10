@@ -142,7 +142,7 @@ export function DialogAceptarOferta({
     const productosSeleccionados = productos.filter(p => p.seleccionado);
     
     if (productosSeleccionados.length === 0) {
-      toast.error('Debe seleccionar al menos un producto');
+      toast.error('Vous devez sélectionner au moins un produit');
       return false;
     }
 
@@ -215,10 +215,10 @@ export function DialogAceptarOferta({
             <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#4CAF50] to-[#45A049] flex items-center justify-center">
               <CheckCircle className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl">Aceptar Oferta</span>
+            <span className="text-xl">Accepter l’offre</span>
           </DialogTitle>
           <DialogDescription id="aceptar-oferta-description">
-            Revisa y acepta los productos de esta oferta para tu organismo
+            Passez en revue et acceptez les produits de cette offre pour votre organisme
           </DialogDescription>
         </DialogHeader>
 
@@ -272,10 +272,10 @@ export function DialogAceptarOferta({
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle2 className={`w-5 h-5 ${modoAceptacion === 'completa' ? 'text-[#4CAF50]' : 'text-gray-400'}`} />
-                    <p className="font-semibold">Aceptación Completa</p>
+                    <p className="font-semibold">Acceptation complète</p>
                   </div>
                   <p className="text-xs text-gray-600">
-                    Aceptar todos los productos con las cantidades ofrecidas
+                    Accepter tous les produits avec les quantités offertes
                   </p>
                 </div>
 
@@ -289,10 +289,10 @@ export function DialogAceptarOferta({
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Package className={`w-5 h-5 ${modoAceptacion === 'parcial' ? 'text-[#1E73BE]' : 'text-gray-400'}`} />
-                    <p className="font-semibold">Aceptación Parcial</p>
+                    <p className="font-semibold">Acceptation partielle</p>
                   </div>
                   <p className="text-xs text-gray-600">
-                    Seleccionar productos y ajustar cantidades según necesidad
+                    Sélectionner les produits et ajuster les quantités selon le besoin
                   </p>
                 </div>
               </div>
@@ -465,12 +465,12 @@ export function DialogAceptarOferta({
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-[#FFC107] flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold text-[#FF9800] mb-1">Información Importante</p>
+                  <p className="font-semibold text-[#FF9800] mb-1">Information importante</p>
                   <ul className="text-gray-700 space-y-1 list-disc list-inside">
-                    <li>Al aceptar la oferta, se generará una comanda automáticamente</li>
-                    <li>Los productos aceptados se reservarán para su organismo</li>
-                    <li>La comanda quedará pendiente de confirmación por el banco</li>
-                    <li>Recibirá una notificación cuando la comanda sea confirmada</li>
+                    <li>En acceptant l’offre, une commande sera générée automatiquement</li>
+                    <li>Les produits acceptés seront réservés pour votre organisme</li>
+                    <li>La commande restera en attente de confirmation par la banque</li>
+                    <li>Vous recevrez une notification lorsque la commande sera confirmée</li>
                   </ul>
                 </div>
               </div>
@@ -481,7 +481,7 @@ export function DialogAceptarOferta({
         <DialogFooter className="border-t pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="w-4 h-4 mr-2" />
-            Cancelar
+            Annuler
           </Button>
           <Button
             onClick={handleAceptarOferta}
@@ -489,7 +489,7 @@ export function DialogAceptarOferta({
             disabled={productosSeleccionadosCount === 0}
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Aceptar Oferta ({productosSeleccionadosCount} {productosSeleccionadosCount === 1 ? 'producto' : 'productos'})
+            Accepter l’offre ({productosSeleccionadosCount} {productosSeleccionadosCount === 1 ? 'produit' : 'produits'})
           </Button>
         </DialogFooter>
       </DialogContent>

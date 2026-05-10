@@ -182,13 +182,13 @@ function getEntryTypeLabel(tipoEntrada: string): string {
 
   if (normalized === 'don') return 'Don';
   if (normalized === 'achat') return 'Achat';
-  if (normalized === 'transferencia') return 'Transferencia';
+  if (normalized === 'transferencia') return 'Transfert';
 
-  return tipoEntrada || 'Sin tipo';
+  return tipoEntrada || 'Sans type';
 }
 
 function getStatusLabel(activo: boolean): string {
-  return activo ? 'Activo' : 'Anulado';
+  return activo ? 'Actif' : 'Annulé';
 }
 
 export function EntryReportView() {
@@ -226,8 +226,8 @@ export function EntryReportView() {
 
       return {
         ...entry,
-        categoryLabel: entry.productoCategoria || entry.categoria || 'Sin categoria',
-        actorLabel: entry.donadorNombre || 'Sin actor',
+        categoryLabel: entry.productoCategoria || entry.categoria || 'Sans catégorie',
+        actorLabel: entry.donadorNombre || 'Sans acteur',
         typeLabel: getEntryTypeLabel(entry.tipoEntrada),
         totalValueResolved,
       };
@@ -645,7 +645,7 @@ export function EntryReportView() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
                   className="pl-9"
-                  placeholder={t('reports.procurementSearchPlaceholder', 'Entrada, actor, producto o programa...')}
+                  placeholder={t('reports.procurementSearchPlaceholder', 'Entrée, acteur, produit ou programme...')}
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                 />

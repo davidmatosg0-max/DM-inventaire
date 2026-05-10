@@ -67,6 +67,34 @@ export const PERMISOS = {
   COMPTOIR_VER: 'comptoir.ver',
   COMPTOIR_EDITAR: 'comptoir.editar',
 
+  // Cuisine
+  CUISINE_VER: 'cuisine.ver',
+  CUISINE_EDITAR: 'cuisine.editar',
+
+  // Liaison organismes
+  LIAISON_VER: 'liaison.ver',
+  LIAISON_EDITAR: 'liaison.editar',
+
+  // Communication interne
+  COMMUNICATION_VER: 'communication.ver',
+  COMMUNICATION_EDITAR: 'communication.editar',
+
+  // Recrutement
+  RECRUTEMENT_VER: 'recrutement.ver',
+  RECRUTEMENT_EDITAR: 'recrutement.editar',
+
+  // Offres organismes
+  OFERTAS_VER: 'ofertas.ver',
+  OFERTAS_EDITAR: 'ofertas.editar',
+
+  // Partenaires et fournisseurs
+  PARTENAIRES_VER: 'partenaires.ver',
+  PARTENAIRES_EDITAR: 'partenaires.editar',
+
+  // Annuaire Entrepôt
+  ANNUAIRE_ENTREPOT_VER: 'annuaire_entrepot.ver',
+  ANNUAIRE_ENTREPOT_EDITAR: 'annuaire_entrepot.editar',
+
   // Achat
   ACHAT_VER: 'achat.ver',
   ACHAT_CREAR: 'achat.crear',
@@ -267,11 +295,11 @@ export function moduloDisponible(moduloId: string): boolean {
     'etiquetas': [PERMISOS.INVENTARIO_VER],
     'comandas': [PERMISOS.COMANDAS_VER],
     'organismos': [PERMISOS.ORGANISMOS_VER],
-    'ofertas-organismo': [PERMISOS.ORGANISMOS_VER],
+    'ofertas-organismo': [PERMISOS.OFERTAS_VER, PERMISOS.ORGANISMOS_VER],
     'transporte': [PERMISOS.TRANSPORTE_VER],
     'reportes': [PERMISOS.REPORTES_VER],
-    'donateurs-fournisseurs': [PERMISOS.ORGANISMOS_VER, PERMISOS.ACHAT_VER],
-    'contactos-almacen': [PERMISOS.ORGANISMOS_VER],
+    'donateurs-fournisseurs': [PERMISOS.PARTENAIRES_VER, PERMISOS.ORGANISMOS_VER, PERMISOS.ACHAT_VER],
+    'contactos-almacen': [PERMISOS.ANNUAIRE_ENTREPOT_VER, PERMISOS.ORGANISMOS_VER],
     'usuarios': [PERMISOS.USUARIOS_VER],
     'roles': [PERMISOS.USUARIOS_ROLES, PERMISOS.USUARIOS_VER],
     'configuracion': [PERMISOS.CONFIGURACION_VER],
@@ -282,10 +310,20 @@ export function moduloDisponible(moduloId: string): boolean {
     'id-digital': [PERMISOS.IDDIGITAL_VER],
     'guia-completa': [PERMISOS.ACCESO_TOTAL, PERMISOS.DESARROLLADOR],
     // Módulos sin permiso canónico dedicado: se controlan por rol
-    'cuisine': ['administrador', 'coordinador', 'desarrollador'],
-    'email-organismos': ['liaison_organisme', 'administrador', 'desarrollador'],
-    'communication': ['administrador', 'desarrollador'],
-    'recrutement': ['administrador', 'desarrollador'],
+    'cuisine': [PERMISOS.CUISINE_VER, 'administrador', 'coordinador', 'desarrollador'],
+    'email-organismos': [PERMISOS.LIAISON_VER, 'liaison_organisme', 'administrador', 'desarrollador'],
+    'communication': [
+      PERMISOS.COMMUNICATION_VER,
+      'administrador',
+      'desarrollador',
+      'coordinador',
+      'responsable_entrepot',
+      'responsable_comptoir',
+      'responsable_transport',
+      'liaison_organisme',
+      'administrador_liaison'
+    ],
+    'recrutement': [PERMISOS.RECRUTEMENT_VER, 'administrador', 'desarrollador'],
     'panel-marca': [PERMISOS.DESARROLLADOR],
   };
   

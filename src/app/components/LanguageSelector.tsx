@@ -4,7 +4,7 @@ import { Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const languages = [
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'es', name: 'Espagnol', flag: '🇪🇸' },
   { code: 'fr', name: 'Français', flag: '🇫🇷' },
   { code: 'en', name: 'English', flag: '🇬🇧' },
   { code: 'ar', name: 'العربية', flag: '🇸🇦' },

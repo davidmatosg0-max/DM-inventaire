@@ -28,15 +28,15 @@ export function ProponerNuevaFecha({
 
   const handleEnviar = () => {
     if (!nuevaFecha) {
-      toast.error('Por favor, seleccione una nueva fecha');
+      toast.error('Veuillez sélectionner une nouvelle date');
       return;
     }
     if (!nuevaHora) {
-      toast.error('Por favor, seleccione una hora');
+      toast.error('Veuillez sélectionner une heure');
       return;
     }
     if (!motivo.trim()) {
-      toast.error('Por favor, indique el motivo del cambio');
+      toast.error('Veuillez indiquer le motif du changement');
       return;
     }
 
@@ -48,7 +48,7 @@ export function ProponerNuevaFecha({
     setMotivo('');
     onOpenChange(false);
     
-    toast.success(`Propuesta de nueva fecha enviada al organismo ${organismo?.nombre}`);
+    toast.success(`Proposition de nouvelle date envoyée à l'organisme ${organismo?.nombre}`);
   };
 
   const fechaOriginal = new Date(comanda?.fechaEntrega);
@@ -58,10 +58,10 @@ export function ProponerNuevaFecha({
       <DialogContent className="max-w-2xl" aria-describedby="proponer-fecha-description">
         <DialogHeader>
           <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>
-            Proponer Nueva Fecha de Recogida
+            Proposer une nouvelle date de collecte
           </DialogTitle>
           <DialogDescription id="proponer-fecha-description" className="text-[#666666]">
-            Sugiera una nueva fecha y hora para la recogida de la comanda
+            Suggérez une nouvelle date et une nouvelle heure pour la collecte de la commande
           </DialogDescription>
         </DialogHeader>
 
@@ -70,23 +70,23 @@ export function ProponerNuevaFecha({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-[#666666] mb-1">Comanda:</p>
+                <p className="text-sm text-[#666666] mb-1">Commande :</p>
                 <p className="font-bold text-[#1E73BE]">{comanda?.id}</p>
               </div>
               <div>
-                <p className="text-sm text-[#666666] mb-1">Organismo:</p>
+                <p className="text-sm text-[#666666] mb-1">Organisme :</p>
                 <p className="font-bold text-[#333333]">{organismo?.nombre}</p>
               </div>
               <div className="col-span-2">
-                <p className="text-sm text-[#666666] mb-1">Fecha Original de Recogida:</p>
+                <p className="text-sm text-[#666666] mb-1">Date originale de collecte :</p>
                 <p className="font-bold text-[#DC3545]">
-                  {fechaOriginal.toLocaleDateString('es-ES', { 
+                  {fechaOriginal.toLocaleDateString('fr-CA', { 
                     weekday: 'long', 
                     year: 'numeric', 
                     month: 'long', 
                     day: 'numeric' 
                   })}
-                  {organismo?.horaCita && ` a las ${organismo.horaCita}`}
+                  {organismo?.horaCita && ` à ${organismo.horaCita}`}
                 </p>
               </div>
             </div>
@@ -98,7 +98,7 @@ export function ProponerNuevaFecha({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#1E73BE]" />
-                  Nueva Fecha Propuesta *
+                  Nouvelle date proposée *
                 </Label>
                 <Input 
                   type="date"
@@ -111,7 +111,7 @@ export function ProponerNuevaFecha({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#1E73BE]" />
-                  Hora Propuesta *
+                  Heure proposée *
                 </Label>
                 <Input 
                   type="time"
@@ -125,30 +125,30 @@ export function ProponerNuevaFecha({
             {/* Vista previa de la nueva fecha */}
             {nuevaFecha && nuevaHora && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-[#666666] mb-1">Nueva fecha propuesta:</p>
+                <p className="text-sm text-[#666666] mb-1">Nouvelle date proposée :</p>
                 <p className="font-bold text-[#4CAF50]" style={{ fontSize: '1.1rem' }}>
-                  {new Date(nuevaFecha).toLocaleDateString('es-ES', { 
+                  {new Date(nuevaFecha).toLocaleDateString('fr-CA', { 
                     weekday: 'long', 
                     year: 'numeric', 
                     month: 'long', 
                     day: 'numeric' 
-                  })} a las {nuevaHora}
+                  })} à {nuevaHora}
                 </p>
               </div>
             )}
 
             {/* Motivo del cambio */}
             <div className="space-y-2">
-              <Label>Motivo del Cambio de Fecha *</Label>
+              <Label>Motif du changement de date *</Label>
               <Textarea 
                 rows={4}
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Explique el motivo por el cual se propone cambiar la fecha de recogida (ej: problemas de inventario, ajuste de horarios, disponibilidad del personal, etc.)"
+                placeholder="Expliquez le motif de la proposition de changement de date de collecte (ex. : problème d'inventaire, ajustement d'horaire, disponibilité du personnel, etc.)"
                 className="resize-none"
               />
               <p className="text-xs text-[#666666]">
-                Este mensaje se enviará al organismo junto con la propuesta de nueva fecha
+                Ce message sera envoyé à l'organisme avec la proposition de nouvelle date
               </p>
             </div>
           </div>
@@ -158,9 +158,9 @@ export function ProponerNuevaFecha({
             <p className="text-sm text-[#666666] flex items-start gap-2">
               <span className="text-[#FFC107] font-bold">ℹ️</span>
               <span>
-                El organismo recibirá una notificación con la nueva fecha propuesta y podrá aceptarla o contactar 
-                con la Banque Alimentaire para coordinar otra fecha. La comanda quedará en estado pendiente hasta 
-                que se confirme la nueva fecha.
+                L'organisme recevra une notification avec la nouvelle date proposée et pourra l'accepter ou contacter 
+                la Banque Alimentaire pour coordonner une autre date. La commande restera en attente jusqu'à 
+                la confirmation de la nouvelle date.
               </span>
             </p>
           </div>
@@ -177,7 +177,7 @@ export function ProponerNuevaFecha({
               }}
             >
               <X className="w-4 h-4 mr-2" />
-              Cancelar
+              Annuler
             </Button>
             <Button
               onClick={handleEnviar}
@@ -185,7 +185,7 @@ export function ProponerNuevaFecha({
               disabled={!nuevaFecha || !nuevaHora || !motivo.trim()}
             >
               <Send className="w-4 h-4 mr-2" />
-              Enviar Propuesta
+              Envoyer la proposition
             </Button>
           </div>
         </div>

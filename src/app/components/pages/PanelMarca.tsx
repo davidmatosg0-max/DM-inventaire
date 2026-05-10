@@ -144,315 +144,391 @@ export function PanelMarca() {
     onChange: (value: string) => void;
     description: string;
   }) => (
-    <div className="space-y-2">
-      <label className="block font-medium" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-        {label}
-      </label>
-      <p className="text-sm text-gray-600">{description}</p>
-      <div className="flex items-center gap-4">
-        <div className="relative">
+    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.35)]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <label className="block text-sm font-semibold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            {label}
+          </label>
+          <p className="mt-1 text-sm text-slate-500">{description}</p>
+        </div>
+        <div
+          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500"
+          style={{ fontFamily: 'Montserrat, sans-serif' }}
+        >
+          Ton
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center gap-4">
+        <div className="relative flex h-20 w-20 items-center justify-center rounded-[24px] border border-slate-200 bg-slate-50 shadow-inner">
+          <div
+            className="h-12 w-12 rounded-2xl border border-white/70 shadow-sm"
+            style={{ backgroundColor: value }}
+          />
           <input
             type="color"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
+            className="absolute inset-0 cursor-pointer opacity-0"
           />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 space-y-3">
           <input
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
             pattern="^#[0-9A-Fa-f]{6}$"
             placeholder="#000000"
           />
-          <div 
-            className="mt-2 h-12 rounded-lg border-2 border-gray-200"
-            style={{ backgroundColor: value }}
-          />
+          <div className="h-3 rounded-full bg-slate-100">
+            <div
+              className="h-3 rounded-full"
+              style={{ backgroundColor: value, width: '100%' }}
+            />
+          </div>
         </div>
       </div>
     </div>
   );
 
+  const colorFields: Array<{
+    key: keyof BrandingConfig;
+    label: string;
+    description: string;
+  }> = [
+    {
+      key: 'primaryColor',
+      label: t('branding.primaryColor'),
+      description: t('branding.primaryColorDesc'),
+    },
+    {
+      key: 'secondaryColor',
+      label: t('branding.secondaryColor'),
+      description: t('branding.secondaryColorDesc'),
+    },
+    {
+      key: 'successColor',
+      label: t('branding.successColor'),
+      description: t('branding.successColorDesc'),
+    },
+    {
+      key: 'dangerColor',
+      label: t('branding.dangerColor'),
+      description: t('branding.dangerColorDesc'),
+    },
+    {
+      key: 'warningColor',
+      label: t('branding.warningColor'),
+      description: t('branding.warningColorDesc'),
+    },
+  ];
+
+  const identitySignals = [
+    {
+      label: 'Nom du système',
+      value: config.systemName || 'Banque Alimentaire',
+    },
+    {
+      label: 'Logo',
+      value: logoPreview ? 'Actif' : 'Non défini',
+    },
+    {
+      label: 'Palette',
+      value: `${colorFields.length} tons`,
+    },
+  ];
+
+  const previewChips = [
+    { label: 'Principal', color: config.primaryColor },
+    { label: 'Accent', color: config.secondaryColor },
+    { label: 'Succès', color: config.successColor },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        {/* Banner de autoguardado */}
-        <div className="mb-4 bg-green-50 border-l-4 border-green-500 p-3 rounded">
-          <div className="flex items-center gap-2">
-            <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-green-800" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                ✨ Sauvegarde Automatique Activée
-              </p>
-              <p className="text-xs text-green-700 mt-0.5">
-                Tous les changements sont sauvegardés automatiquement et de manière permanente dans votre navigateur.
-              </p>
+    <div className="space-y-6 pb-8">
+      <section
+        className="overflow-hidden rounded-[32px] border border-slate-200/70 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)]"
+        style={{
+          background: `linear-gradient(135deg, ${config.primaryColor} 0%, #10243a 52%, ${config.secondaryColor} 100%)`,
+        }}
+      >
+        <div className="grid gap-8 px-6 py-7 text-white lg:grid-cols-[1.5fr_0.9fr] lg:px-8 lg:py-8">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-white/85">
+              <Check className="h-3.5 w-3.5" />
+              Studio de marque
+            </div>
+            <h1 className="mt-5 text-3xl font-bold tracking-tight lg:text-4xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              {t('branding.title')}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80 lg:text-base">
+              {t('branding.subtitle')} Ajustez votre identité visuelle avec une palette cohérente, un logo propre et un aperçu immédiat de l’expérience finale.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {identitySignals.map((signal) => (
+                <div key={signal.label} className="rounded-2xl border border-white/12 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/60">{signal.label}</p>
+                  <p className="mt-2 text-sm font-semibold text-white">{signal.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-white/12 bg-white/10 p-5 backdrop-blur-md">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-white/60">Pilotage</p>
+                <p className="mt-2 text-lg font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Configuration permanente
+                </p>
+              </div>
+              <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">
+                Auto-save
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <button
+                onClick={() => setPreviewMode(!previewMode)}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
+              >
+                <Eye className="h-4 w-4" />
+                {previewMode ? t('branding.previewActive') : t('branding.activatePreview')}
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 transition"
+                style={{
+                  fontFamily: 'Montserrat, sans-serif',
+                  backgroundColor: '#f7f8fa',
+                }}
+              >
+                <Save className="h-4 w-4" />
+                {t('branding.saveChanges')}
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 px-4 py-3 text-sm font-medium text-white/85 transition hover:bg-white/10"
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
+              >
+                <RotateCcw className="h-4 w-4" />
+                {t('branding.reset')}
+              </button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {previewChips.map((chip) => (
+                <div key={chip.label} className="rounded-2xl border border-white/12 bg-white/10 p-2.5 text-center">
+                  <div className="mx-auto h-8 w-8 rounded-xl border border-white/20" style={{ backgroundColor: chip.color }} />
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/65">{chip.label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1a4d7a' }}>
-              <Palette className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>
-                {t('branding.title')}
-              </h1>
-              <p className="text-gray-600">
-                {t('branding.subtitle')}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPreviewMode(!previewMode)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                previewMode 
-                  ? 'text-white' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-              style={{ 
-                fontFamily: 'Montserrat, sans-serif', 
-                fontWeight: 500,
-                backgroundColor: previewMode ? '#2d9561' : undefined
-              }}
-            >
-              <Eye className="w-4 h-4" />
-              {previewMode ? t('branding.previewActive') : t('branding.activatePreview')}
-            </button>
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-              style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
-            >
-              <RotateCcw className="w-4 h-4" />
-              {t('branding.reset')}
-            </button>
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors"
-              style={{ 
-                fontFamily: 'Montserrat, sans-serif', 
-                fontWeight: 500,
-                backgroundColor: '#2d9561'
-              }}
-            >
-              <Save className="w-4 h-4" />
-              {t('branding.saveChanges')}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Logo del Sistema */}
-        <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-          <h2 className="font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.25rem' }}>
-            <ImageIcon className="w-5 h-5 inline mr-2" />
-            {t('branding.logoSettings')}
-          </h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block font-medium mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {t('branding.systemNameSettings')}
-              </label>
-              <input
-                type="text"
-                value={config.systemName}
-                onChange={(e) => handleColorChange('systemName', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                placeholder={t('branding.systemNamePlaceholder')}
-              />
+      <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+        <section className="space-y-6">
+          <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.45)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-white" style={{ backgroundColor: config.primaryColor }}>
+                <ImageIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  {t('branding.logoSettings')}
+                </h2>
+                <p className="text-sm text-slate-500">Nom du système, logo et présence visuelle principale.</p>
+              </div>
             </div>
 
-            <div>
-              <label className="block font-medium mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {t('branding.uploadLogo')}
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                {logoPreview ? (
-                  <div className="space-y-4">
-                    <img 
-                      src={logoPreview} 
-                      alt="Logo preview" 
-                      className="max-h-32 mx-auto"
-                    />
-                    <button
-                      onClick={() => document.getElementById('logo-upload')?.click()}
-                      style={{ color: '#1a4d7a' }}
-                      className="hover:underline"
-                    >
-                      {t('branding.uploadLogo')}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="w-12 h-12 mx-auto text-gray-400" />
-                    <p className="text-gray-600">
-                      {t('branding.uploadLogo')}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {t('branding.logoFormats')}
-                    </p>
-                  </div>
-                )}
+            <div className="mt-6 space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-800" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  {t('branding.systemNameSettings')}
+                </label>
                 <input
-                  id="logo-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
+                  type="text"
+                  value={config.systemName}
+                  onChange={(e) => handleColorChange('systemName', e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+                  placeholder={t('branding.systemNamePlaceholder')}
                 />
               </div>
-              {!logoPreview && (
-                <button
-                  onClick={() => document.getElementById('logo-upload')?.click()}
-                  className="mt-2 w-full px-4 py-2 text-white rounded-lg transition-colors"
-                  style={{ 
-                    fontFamily: 'Montserrat, sans-serif', 
-                    fontWeight: 500,
-                    backgroundColor: '#1a4d7a'
-                  }}
-                >
-                  {t('common.upload')}
-                </button>
-              )}
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-800" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  {t('branding.uploadLogo')}
+                </label>
+                <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center">
+                  {logoPreview ? (
+                    <div className="space-y-4">
+                      <div className="rounded-3xl border border-slate-200 bg-white px-4 py-6 shadow-sm">
+                        <img
+                          src={logoPreview}
+                          alt="Logo preview"
+                          className="mx-auto max-h-28"
+                        />
+                      </div>
+                      <button
+                        onClick={() => document.getElementById('logo-upload')?.click()}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white"
+                        style={{ fontFamily: 'Montserrat, sans-serif' }}
+                      >
+                        <Upload className="h-4 w-4" />
+                        {t('branding.uploadLogo')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <Upload className="h-7 w-7 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-700">{t('branding.uploadLogo')}</p>
+                      <p className="text-xs text-slate-500">{t('branding.logoFormats')}</p>
+                    </div>
+                  )}
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                </div>
+                {!logoPreview && (
+                  <button
+                    onClick={() => document.getElementById('logo-upload')?.click()}
+                    className="mt-3 w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white transition"
+                    style={{
+                      fontFamily: 'Montserrat, sans-serif',
+                      backgroundColor: config.primaryColor,
+                    }}
+                  >
+                    {t('common.upload')}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Vista Previa */}
-        <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-          <h2 className="font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.25rem' }}>
-            {t('branding.activatePreview')}
-          </h2>
-
-          <div className="space-y-4">
-            {/* Header Preview */}
-            <div 
-              className="rounded-lg p-4 text-white"
-              style={{ backgroundColor: config.primaryColor }}
-            >
-              <div className="flex items-center gap-3">
-                {logoPreview && (
-                  <img src={logoPreview} alt="Logo" className="h-8" />
-                )}
-                <span className="font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {config.systemName}
-                </span>
+          <div className={`rounded-[30px] border bg-white p-6 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.45)] transition ${previewMode ? 'border-slate-900 ring-1 ring-slate-900/10' : 'border-slate-200'}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Aperçu de l’interface
+                </h2>
+                <p className="text-sm text-slate-500">Une prévisualisation plus réaliste du rendu de votre identité.</p>
+              </div>
+              <div className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                {previewMode ? 'Live' : 'Studio'}
               </div>
             </div>
 
-            {/* Buttons Preview */}
-            <div className="space-y-2">
-              <button
-                className="w-full px-4 py-2 rounded-lg text-white"
-                style={{ backgroundColor: config.primaryColor }}
-              >
-                {t('branding.primaryColor')}
-              </button>
-              <button
-                className="w-full px-4 py-2 rounded-lg text-white"
-                style={{ backgroundColor: config.secondaryColor }}
-              >
-                {t('branding.secondaryColor')}
-              </button>
-              <button
-                className="w-full px-4 py-2 rounded-lg text-white"
-                style={{ backgroundColor: config.successColor }}
-              >
-                {t('branding.successColor')}
-              </button>
-              <button
-                className="w-full px-4 py-2 rounded-lg text-white"
-                style={{ backgroundColor: config.dangerColor }}
-              >
-                {t('branding.dangerColor')}
-              </button>
-              <button
-                className="w-full px-4 py-2 rounded-lg text-white"
-                style={{ backgroundColor: config.warningColor }}
-              >
-                {t('branding.warningColor')}
-              </button>
+            <div className="mt-5 overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50">
+              <div className="flex items-center justify-between px-5 py-4 text-white" style={{ backgroundColor: config.primaryColor }}>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo" className="h-7 w-7 object-contain" />
+                    ) : (
+                      <Palette className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-white/70">Identité</p>
+                    <p className="text-sm font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>{config.systemName}</p>
+                  </div>
+                </div>
+                <div className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/80">Portail interne</div>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Accent principal</p>
+                    <div className="mt-3 h-2 rounded-full" style={{ backgroundColor: config.primaryColor }} />
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Accent secondaire</p>
+                    <div className="mt-3 h-2 rounded-full" style={{ backgroundColor: config.secondaryColor }} />
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Signal d’alerte</p>
+                    <div className="mt-3 h-2 rounded-full" style={{ backgroundColor: config.warningColor }} />
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-wrap gap-3">
+                    <button className="rounded-2xl px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: config.primaryColor }}>
+                      Action principale
+                    </button>
+                    <button className="rounded-2xl px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: config.secondaryColor }}>
+                      Action secondaire
+                    </button>
+                    <button className="rounded-2xl px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: config.successColor }}>
+                      Confirmation
+                    </button>
+                  </div>
+                  <div className="mt-4 rounded-2xl border px-4 py-3 text-sm" style={{ borderColor: `${config.warningColor}40`, backgroundColor: `${config.warningColor}10` }}>
+                    Les avertissements et messages sensibles gardent un contraste clair et une hiérarchie propre.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Paleta de Colores */}
-      <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
-        <h2 className="font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.25rem' }}>
-          <Palette className="w-5 h-5 inline mr-2" />
-          {t('branding.colorSettings')}
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ColorPicker
-            label={t('branding.primaryColor')}
-            value={config.primaryColor}
-            onChange={(value) => handleColorChange('primaryColor', value)}
-            description={t('branding.primaryColorDesc')}
-          />
-
-          <ColorPicker
-            label={t('branding.secondaryColor')}
-            value={config.secondaryColor}
-            onChange={(value) => handleColorChange('secondaryColor', value)}
-            description={t('branding.secondaryColorDesc')}
-          />
-
-          <ColorPicker
-            label={t('branding.successColor')}
-            value={config.successColor}
-            onChange={(value) => handleColorChange('successColor', value)}
-            description={t('branding.successColorDesc')}
-          />
-
-          <ColorPicker
-            label={t('branding.dangerColor')}
-            value={config.dangerColor}
-            onChange={(value) => handleColorChange('dangerColor', value)}
-            description={t('branding.dangerColorDesc')}
-          />
-
-          <ColorPicker
-            label={t('branding.warningColor')}
-            value={config.warningColor}
-            onChange={(value) => handleColorChange('warningColor', value)}
-            description={t('branding.warningColorDesc')}
-          />
-        </div>
-      </div>
-
-      {/* Información */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#1a4d7a' }}>
-            <Check className="w-4 h-4 text-white" />
+        <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.45)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Palette className="mr-2 inline h-5 w-5" />
+                {t('branding.colorSettings')}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">Composez une palette élégante, stable et cohérente à travers tous les modules.</p>
+            </div>
+            <div className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              {colorFields.length} réglages
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-[#333333] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              💾 Configuration Permanente
-            </h3>
-            <ul className="text-sm text-gray-700 space-y-1.5">
-              <li>✅ <strong>Sauvegarde automatique:</strong> Chaque modification est sauvegardée instantanément dans votre navigateur</li>
-              <li>✅ <strong>Persistance permanente:</strong> Vos configurations restent actives même après fermeture du navigateur</li>
-              <li>✅ <strong>Synchronisation globale:</strong> Les couleurs et le logo s'appliquent automatiquement dans tous les modules</li>
-              <li>🎨 <strong>Vista previa en temps réel:</strong> Utilisez le mode prévisualisation pour voir les changements avant de sauvegarder</li>
-              <li>🖼️ <strong>Logo recommandé:</strong> PNG avec fond transparent, taille max 2MB</li>
-              <li>🔄 <strong>Restauration:</strong> Vous pouvez revenir aux valeurs par défaut à tout moment avec le bouton "Réinitialiser"</li>
-            </ul>
+
+          <div className="mt-6 grid gap-5 md:grid-cols-2">
+            {colorFields.map((field) => (
+              <ColorPicker
+                key={field.key}
+                label={field.label}
+                value={config[field.key] as string}
+                onChange={(value) => handleColorChange(field.key, value)}
+                description={field.description}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.45)]">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Sauvegarde</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-700">Chaque ajustement est enregistré automatiquement dans le navigateur et réappliqué au prochain chargement.</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Cohérence</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-700">Les couleurs et le logo se diffusent dans l’ensemble des modules pour préserver une lecture uniforme et professionnelle.</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Recommandation</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-700">Préférez un logo PNG transparent de moins de 2 MB et des couleurs contrastées pour garantir une apparence haut de gamme.</p>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -569,7 +569,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     }
     
     productosFiltrados.forEach(producto => {
-      const categoriaKey = producto.categoria || 'Sin categoría';
+      const categoriaKey = producto.categoria || 'Sans catégorie';
       if (!grupos.has(categoriaKey)) {
         grupos.set(categoriaKey, []);
       }
@@ -1493,17 +1493,43 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
         </DialogTrigger>
       )}
       
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="entry-form-description">
-        <DialogHeader>
-          <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            📦 Enregistrer Entrée Don/Achat
-          </DialogTitle>
-          <DialogDescription id="entry-form-description">
-            Sélectionnez le type d'entrée et ajoutez les produits à enregistrer
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-[min(96vw,1320px)] max-w-[1320px] max-h-[92vh] overflow-hidden border-0 bg-white/98 p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]" aria-describedby="entry-form-description">
+        <div className="flex max-h-[92vh] flex-col overflow-hidden rounded-[28px] bg-white">
+          <DialogHeader className="relative overflow-hidden border-b border-slate-200/80 px-6 py-5 sm:px-8">
+            <div
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(135deg, rgba(26,77,122,0.10) 0%, rgba(45,149,97,0.08) 55%, rgba(255,255,255,0.96) 100%)'
+              }}
+            />
+            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1a4d7a] text-white shadow-lg shadow-[#1a4d7a]/20">
+                  <Package className="h-7 w-7" />
+                </div>
+                <div>
+                  <DialogTitle className="text-left text-[1.45rem] font-bold tracking-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Enregistrer Entrée Don/Achat
+                  </DialogTitle>
+                  <DialogDescription id="entry-form-description" className="mt-1 max-w-2xl text-sm text-slate-600">
+                    Sélectionnez le type d'entrée, ajoutez les produits et finalisez l'enregistrement dans une interface plus large et plus claire.
+                  </DialogDescription>
+                </div>
+              </div>
 
-        <div className="space-y-6 py-4">
+              <div className="flex flex-wrap gap-2">
+                <div className="rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Inventaire
+                </div>
+                <div className="rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#2d9561]">
+                  Saisie guidée
+                </div>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-6 py-5 sm:px-8 sm:py-6">
+            <div className="space-y-6">
           {/* SECTION 1: Type d'entrée - DINÁMICO desde configuración */}
           <div className="space-y-3">
             <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -2510,6 +2536,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               )}
             </>
           )}
+            </div>
+          </div>
         </div>
 
         {/* Botón de Cancelar - Siempre visible cuando no hay productos */}
@@ -2558,7 +2586,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 <Input
                   value={formVariante.nombre}
                   onChange={(e) => setFormVariante(prev => ({ ...prev, nombre: e.target.value }))}
-                  placeholder="Ex: Grande, 500ml, Marca A, Orgánico..."
+                  placeholder="Ex. : grande, 500 ml, marque A, biologique..."
                 />
               </div>
 

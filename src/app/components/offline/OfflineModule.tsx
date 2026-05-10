@@ -64,18 +64,18 @@ export function OfflineModule() {
     
     if (result.success > 0) {
       toast.success(
-        t('offline.syncSuccess', 'Sincronización exitosa'),
+        t('offline.syncSuccess', 'Synchronisation réussie'),
         {
-          description: `${result.success} operaciones sincronizadas`
+          description: `${result.success} opérations synchronisées`
         }
       );
     }
     
     if (result.failed > 0) {
       toast.error(
-        t('offline.syncError', 'Error en sincronización'),
+        t('offline.syncError', 'Erreur de synchronisation'),
         {
-          description: `${result.failed} operaciones fallidas`
+          description: `${result.failed} opérations en échec`
         }
       );
     }
@@ -84,19 +84,19 @@ export function OfflineModule() {
   // Limpiar queue
   const handleClearQueue = () => {
     const confirmed = window.confirm(
-      t('offline.confirmClear', '¿Está seguro de eliminar todas las operaciones pendientes?')
+      t('offline.confirmClear', 'Voulez-vous vraiment supprimer toutes les opérations en attente ?')
     );
     
     if (confirmed) {
       clearAllQueue();
-      toast.success(t('offline.queueCleared', 'Cola de operaciones limpiada'));
+      toast.success(t('offline.queueCleared', 'File des opérations vidée'));
     }
   };
 
   // Eliminar operación específica
   const handleRemoveOperation = (operationId: string) => {
     removeFromQueue(operationId);
-    toast.success(t('offline.operationRemoved', 'Operación eliminada'));
+    toast.success(t('offline.operationRemoved', 'Opération supprimée'));
   };
 
   return (
@@ -119,10 +119,10 @@ export function OfflineModule() {
                   <div className="p-3 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl text-white shadow-lg">
                     <CloudOff className="w-8 h-8" />
                   </div>
-                  {t('offline.title', 'Gestión Offline')}
+                  {t('offline.title', 'Gestion hors ligne')}
                 </h1>
                 <p className="text-gray-600">
-                  {t('offline.subtitle', 'Operaciones sin conexión y sincronización')}
+                  {t('offline.subtitle', 'Opérations hors connexion et synchronisation')}
                 </p>
               </div>
 
@@ -138,19 +138,19 @@ export function OfflineModule() {
                   {isOnline ? (
                     <>
                       <Cloud className="w-5 h-5" />
-                      {t('offline.online', 'En Línea')}
+                      {t('offline.online', 'En ligne')}
                     </>
                   ) : (
                     <>
                       <WifiOff className="w-5 h-5 animate-pulse" />
-                      {t('offline.offline', 'Sin Conexión')}
+                      {t('offline.offline', 'Hors connexion')}
                     </>
                   )}
                 </div>
 
                 {queueSize > 0 && (
                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                    {queueSize} {t('offline.pendingOps', 'operaciones pendientes')}
+                    {queueSize} {t('offline.pendingOps', 'opérations en attente')}
                   </Badge>
                 )}
               </div>
@@ -181,7 +181,7 @@ export function OfflineModule() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('offline.create', 'Crear')}
+                    {t('offline.create', 'Créer')}
                   </p>
                   <p className="text-2xl font-bold text-green-600">
                     {stats.byType.CREATE}
@@ -197,7 +197,7 @@ export function OfflineModule() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('offline.update', 'Actualizar')}
+                    {t('offline.update', 'Mettre à jour')}
                   </p>
                   <p className="text-2xl font-bold text-blue-600">
                     {stats.byType.UPDATE}
@@ -213,7 +213,7 @@ export function OfflineModule() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">
-                    {t('offline.delete', 'Eliminar')}
+                    {t('offline.delete', 'Supprimer')}
                   </p>
                   <p className="text-2xl font-bold text-red-600">
                     {stats.byType.DELETE}
@@ -231,7 +231,7 @@ export function OfflineModule() {
             <TabsList className="grid grid-cols-3 w-full p-1 bg-gray-100/50">
               <TabsTrigger value="queue" className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                {t('offline.queue', 'Cola')}
+                {t('offline.queue', 'File')}
                 {queueSize > 0 && (
                   <Badge variant="outline" className="ml-1 text-xs">
                     {queueSize}
@@ -240,11 +240,11 @@ export function OfflineModule() {
               </TabsTrigger>
               <TabsTrigger value="status" className="flex items-center gap-2">
                 <Activity className="w-4 h-4" />
-                {t('offline.status', 'Estado')}
+                {t('offline.status', 'État')}
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
-                {t('offline.settings', 'Configuración')}
+                {t('offline.settings', 'Paramètres')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -257,10 +257,10 @@ export function OfflineModule() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Clock className="w-5 h-5 text-[#1a4d7a]" />
-                      {t('offline.pendingOperations', 'Operaciones Pendientes')}
+                      {t('offline.pendingOperations', 'Opérations en attente')}
                     </CardTitle>
                     <CardDescription>
-                      {t('offline.queueDescription', 'Operaciones que se sincronizarán cuando haya conexión')}
+                      {t('offline.queueDescription', 'Opérations qui seront synchronisées dès le retour de la connexion')}
                     </CardDescription>
                   </div>
 
@@ -279,7 +279,7 @@ export function OfflineModule() {
                         ) : (
                           <>
                             <RefreshCw className="w-4 h-4 mr-2" />
-                            {t('offline.syncNow', 'Sincronizar')}
+                            {t('offline.syncNow', 'Synchroniser')}
                           </>
                         )}
                       </Button>
@@ -292,7 +292,7 @@ export function OfflineModule() {
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        {t('offline.clearAll', 'Limpiar Todo')}
+                        {t('offline.clearAll', 'Tout effacer')}
                       </Button>
                     )}
                   </div>
@@ -316,10 +316,10 @@ export function OfflineModule() {
                   <div className="py-12 text-center">
                     <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
                     <p className="text-lg font-medium text-gray-700 mb-2">
-                      {t('offline.noOperations', 'Sin Operaciones Pendientes')}
+                      {t('offline.noOperations', 'Aucune opération en attente')}
                     </p>
                     <p className="text-gray-500">
-                      {t('offline.allSynced', 'Todas las operaciones están sincronizadas')}
+                      {t('offline.allSynced', 'Toutes les opérations sont synchronisées')}
                     </p>
                   </div>
                 )}
@@ -333,7 +333,7 @@ export function OfflineModule() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="w-5 h-5 text-[#1a4d7a]" />
-                  {t('offline.connectionStatus', 'Estado de Conexión')}
+                  {t('offline.connectionStatus', 'État de la connexion')}
                 </CardTitle>
               </CardHeader>
 
@@ -342,7 +342,7 @@ export function OfflineModule() {
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold">
-                      {t('offline.currentStatus', 'Estado Actual')}
+                      {t('offline.currentStatus', 'État actuel')}
                     </h3>
                     <Badge
                       variant="outline"
@@ -353,8 +353,8 @@ export function OfflineModule() {
                       }
                     >
                       {isOnline 
-                        ? t('offline.connected', 'Conectado')
-                        : t('offline.disconnected', 'Desconectado')
+                        ? t('offline.connected', 'Connecté')
+                        : t('offline.disconnected', 'Déconnecté')
                       }
                     </Badge>
                   </div>
@@ -363,7 +363,7 @@ export function OfflineModule() {
                     {lastOnline && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">
-                          {t('offline.lastOnline', 'Última conexión')}:
+                          {t('offline.lastOnline', 'Dernière connexion')}:
                         </span>
                         <span className="font-medium">
                           {formatDateTime(lastOnline)}
@@ -374,7 +374,7 @@ export function OfflineModule() {
                     {lastOffline && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">
-                          {t('offline.lastOffline', 'Última desconexión')}:
+                          {t('offline.lastOffline', 'Dernière déconnexion')}:
                         </span>
                         <span className="font-medium">
                           {formatDateTime(lastOffline)}
@@ -388,7 +388,7 @@ export function OfflineModule() {
                 {Object.keys(stats.byModule).length > 0 && (
                   <div>
                     <h3 className="font-semibold mb-3">
-                      {t('offline.operationsByModule', 'Operaciones por Módulo')}
+                      {t('offline.operationsByModule', 'Opérations par module')}
                     </h3>
                     <div className="space-y-2">
                       {Object.entries(stats.byModule).map(([module, count]) => (
@@ -411,10 +411,10 @@ export function OfflineModule() {
                       <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="font-medium text-red-900 mb-1">
-                          {t('offline.failedOperations', 'Operaciones Fallidas')}
+                          {t('offline.failedOperations', 'Opérations en échec')}
                         </p>
                         <p className="text-sm text-red-700">
-                          {stats.failedOperations} {t('offline.operationsReachedMaxRetries', 'operaciones alcanzaron el máximo de reintentos')}
+                          {stats.failedOperations} {t('offline.operationsReachedMaxRetries', 'opérations ont atteint le nombre maximal de tentatives')}
                         </p>
                       </div>
                     </div>
@@ -430,7 +430,7 @@ export function OfflineModule() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="w-5 h-5 text-[#1a4d7a]" />
-                  {t('offline.configuration', 'Configuración Offline')}
+                  {t('offline.configuration', 'Configuration hors ligne')}
                 </CardTitle>
               </CardHeader>
 
@@ -439,10 +439,10 @@ export function OfflineModule() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-medium mb-1">
-                      {t('offline.autoSync', 'Sincronización Automática')}
+                      {t('offline.autoSync', 'Synchronisation automatique')}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {t('offline.autoSyncDesc', 'Sincronizar automáticamente cuando se restaure la conexión')}
+                      {t('offline.autoSyncDesc', 'Synchroniser automatiquement lorsque la connexion est rétablie')}
                     </p>
                   </div>
                   <Switch
@@ -454,8 +454,8 @@ export function OfflineModule() {
                 {/* Información */}
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-700">
-                    <strong>{t('offline.note', 'Nota')}:</strong>{' '}
-                    {t('offline.noteDesc', 'Las operaciones offline se guardan localmente y se sincronizarán cuando vuelva la conexión.')}
+                    <strong>{t('offline.note', 'Note')}:</strong>{' '}
+                    {t('offline.noteDesc', 'Les opérations hors ligne sont enregistrées localement et seront synchronisées au retour de la connexion.')}
                   </p>
                 </div>
               </CardContent>

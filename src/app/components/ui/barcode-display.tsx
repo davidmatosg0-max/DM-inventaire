@@ -63,10 +63,10 @@ export function BarcodeDisplay({
         <Card className="p-4">
           <div className="flex flex-col items-center gap-2">
             <p className="text-sm text-[#DC3545]">
-              Código de barras inválido para formato {format}
+              Code-barres invalide pour le format {format}
             </p>
             <p className="text-xs text-[#666666]">
-              Valor: {value || '(vacío)'}
+              Valeur : {value || '(vide)'}
             </p>
           </div>
         </Card>
@@ -78,10 +78,10 @@ export function BarcodeDisplay({
     try {
       await copiarAlPortapapeles(value);
       setCopied(true);
-      toast.success('Código copiado al portapapeles');
+      toast.success('Code copié dans le presse-papiers');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      toast.error('Error al copiar el código');
+      toast.error('Erreur lors de la copie du code');
     }
   };
 
@@ -109,7 +109,7 @@ export function BarcodeDisplay({
           link.download = `barcode-${value}.png`;
           link.click();
           URL.revokeObjectURL(url);
-          toast.success('Código de barras descargado');
+          toast.success('Code-barres téléchargé');
         }
       });
     };
@@ -127,7 +127,7 @@ export function BarcodeDisplay({
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Código de Barras - ${displayValue || value}</title>
+            <title>Code-barres - ${displayValue || value}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -165,7 +165,7 @@ export function BarcodeDisplay({
         </html>
       `, { width: 600, height: 400, printDelayMs: 250 });
     } catch (error) {
-      toast.error('No se pudo abrir la ventana de impresión.');
+      toast.error('La fenêtre d’impression n’a pas pu être ouverte.');
     }
   };
 
@@ -196,10 +196,10 @@ export function BarcodeDisplay({
                 return (
                   <div className="p-4 text-center">
                     <p className="text-sm text-[#DC3545]">
-                      Error al generar código de barras
+                      Erreur lors de la génération du code-barres
                     </p>
                     <p className="text-xs text-[#666666] mt-1">
-                      {error instanceof Error ? error.message : 'Error desconocido'}
+                      {error instanceof Error ? error.message : 'Erreur inconnue'}
                     </p>
                   </div>
                 );

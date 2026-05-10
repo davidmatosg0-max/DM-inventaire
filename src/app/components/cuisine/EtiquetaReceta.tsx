@@ -372,7 +372,7 @@ export function EtiquetaReceta({
         </html>
       `, { width: 900, height: 700, printDelayMs: 250 });
     } catch (error) {
-      toast.error('No se pudo abrir la ventana de impresión.');
+      toast.error('La fenêtre d’impression n’a pas pu être ouverte.');
     }
   };
 

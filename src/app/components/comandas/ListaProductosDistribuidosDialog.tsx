@@ -220,7 +220,7 @@ function construirResumenDistribuciones(
         productoCatalogo?.temperaturaAlmacenamiento ||
         (productoCatalogo as { temperatura?: string } | undefined)?.temperatura;
       const numeroComanda = comanda.numero || comanda.numeroComanda || comanda.id;
-      const organismo = comanda.nombreOrganismo || 'Sin organismo';
+      const organismo = comanda.nombreOrganismo || 'Aucun organisme';
       const fechaBase = comanda.fechaEntrega || comanda.fecha;
 
       const existente = acumulado.get(item.productoId);
@@ -351,7 +351,7 @@ export function ListaProductosDistribuidosDialog({
         }
 
         const comandaReferencia = comandasAgrupadas.find(comanda => comanda.grupoDistribucionId) || comandasAgrupadas[0];
-        const organismos = Array.from(new Set(comandasAgrupadas.map(comanda => comanda.nombreOrganismo || 'Sin organismo')));
+        const organismos = Array.from(new Set(comandasAgrupadas.map(comanda => comanda.nombreOrganismo || 'Aucun organisme')));
         const fecha = comandasAgrupadas
           .map(comanda => comanda.fechaEntrega || comanda.fecha)
           .filter(Boolean)

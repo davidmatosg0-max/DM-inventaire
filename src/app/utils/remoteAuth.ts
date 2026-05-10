@@ -60,7 +60,7 @@ async function resolverEmailLogin(identifier: string): Promise<string | null> {
   });
 
   if (error) {
-    console.warn('No se pudo resolver el usuario remoto:', error.message);
+    console.warn('Impossible de résoudre l’utilisateur distant :', error.message);
     return null;
   }
 
@@ -84,7 +84,7 @@ async function obtenerPayloadUsuario(userId: string): Promise<AuthPayloadRow | n
     .maybeSingle<AuthPayloadRow>();
 
   if (error) {
-    console.warn('No se pudo cargar el perfil remoto del usuario:', error.message);
+    console.warn('Impossible de charger le profil distant de l’utilisateur :', error.message);
     return null;
   }
 

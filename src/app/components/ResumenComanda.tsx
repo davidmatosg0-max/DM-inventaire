@@ -53,10 +53,10 @@ export function ResumenComanda({
           </div>
           <div>
             <h3 className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              Resumen de la Comanda
+              Résumé de la commande
             </h3>
             <p className="text-sm text-[#666666]">
-              Verifica los datos antes de crear la comanda
+              Vérifiez les informations avant de créer la commande
             </p>
           </div>
         </div>
@@ -70,7 +70,7 @@ export function ResumenComanda({
               <User className="w-6 h-6 text-[#1E73BE]" />
             </div>
             <div className="flex-1">
-              <Label className="text-xs text-[#666666] uppercase">Organismo Destinatario</Label>
+              <Label className="text-xs text-[#666666] uppercase">Organisme destinataire</Label>
               <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 {organismo?.nombre}
               </p>
@@ -95,9 +95,9 @@ export function ResumenComanda({
               <Calendar className="w-6 h-6 text-[#FFC107]" />
             </div>
             <div className="flex-1">
-              <Label className="text-xs text-[#666666] uppercase">Fecha de Entrega Programada</Label>
+              <Label className="text-xs text-[#666666] uppercase">Date de livraison prévue</Label>
               <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {new Date(fechaEntrega).toLocaleDateString('es-ES', {
+                {new Date(fechaEntrega).toLocaleDateString('fr-CA', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -118,9 +118,9 @@ export function ResumenComanda({
                 <Clock className="w-6 h-6 text-[#FFC107]" />
               </div>
               <div className="flex-1">
-                <Label className="text-xs text-[#666666] uppercase">Fecha Límite de Respuesta</Label>
+                <Label className="text-xs text-[#666666] uppercase">Date limite de réponse</Label>
                 <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {new Date(fechaLimiteRespuesta).toLocaleDateString('es-ES', {
+                  {new Date(fechaLimiteRespuesta).toLocaleDateString('fr-CA', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -129,12 +129,12 @@ export function ResumenComanda({
                 </p>
                 {esMuyUrgente && (
                   <Badge className="bg-red-500 text-white" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
-                    ¡Muy Urgente! {diasRestantes} día{diasRestantes !== 1 ? 's' : ''}
+                    Très urgent ! {diasRestantes} jour{diasRestantes !== 1 ? 's' : ''}
                   </Badge>
                 )}
                 {esUrgente && !esMuyUrgente && (
                   <Badge className="bg-orange-500 text-white" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
-                    Urgente {diasRestantes} días
+                    Urgent {diasRestantes} jours
                   </Badge>
                 )}
               </div>
@@ -152,14 +152,14 @@ export function ResumenComanda({
                 <Package className="w-6 h-6 text-[#4CAF50]" />
               </div>
               <div>
-                <Label className="text-xs text-[#666666] uppercase">Productos en la Comanda</Label>
+                <Label className="text-xs text-[#666666] uppercase">Produits de la commande</Label>
                 <p className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {totalProductos} producto{totalProductos !== 1 ? 's' : ''}
+                  {totalProductos} produit{totalProductos !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
             <Badge className="bg-[#4CAF50] text-white" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
-              Total: {totalItems} unidades
+              Total : {totalItems} unités
             </Badge>
           </div>
 
@@ -188,11 +188,11 @@ export function ResumenComanda({
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {producto.codigo && (
                           <span className="text-xs text-[#666666]">
-                            Código: {producto.codigo}
+                            Code : {producto.codigo}
                           </span>
                         )}
                         <span className="text-xs text-[#666666]">
-                          Stock: {producto.stockActual} {producto.unidad}
+                          Stock : {producto.stockActual} {producto.unidad}
                         </span>
                       </div>
                     </div>
@@ -219,7 +219,7 @@ export function ResumenComanda({
                 <FileText className="w-6 h-6 text-[#666666]" />
               </div>
               <div className="flex-1">
-                <Label className="text-xs text-[#666666] uppercase">Observaciones</Label>
+                <Label className="text-xs text-[#666666] uppercase">Observations</Label>
                 <p className="text-[#333333] mt-1">{observaciones}</p>
               </div>
             </div>
@@ -232,10 +232,10 @@ export function ResumenComanda({
         <div className="flex items-start gap-3">
           <div className="text-2xl">⚠️</div>
           <div>
-            <p className="font-medium text-[#F57C00] mb-1">Verificación Final</p>
+            <p className="font-medium text-[#F57C00] mb-1">Vérification finale</p>
             <p className="text-sm text-[#856404]">
-              Por favor, verifica que toda la información sea correcta antes de confirmar. 
-              Una vez creada, la comanda se agregará al sistema y se notificará al organismo.
+              Veuillez vérifier que toutes les informations sont exactes avant de confirmer.
+              Une fois créée, la commande sera ajoutée au système et l'organisme sera notifié.
             </p>
           </div>
         </div>
@@ -249,7 +249,7 @@ export function ResumenComanda({
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Volver a Editar
+          Retour à la modification
         </Button>
         <Button
           onClick={onConfirmar}
@@ -257,7 +257,7 @@ export function ResumenComanda({
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
         >
           <CheckCircle className="w-5 h-5" />
-          Confirmar y Crear Comanda
+          Confirmer et créer la commande
         </Button>
       </div>
     </div>

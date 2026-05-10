@@ -122,7 +122,7 @@ const obtenerTiposBenevoles = (deptId: string = DEPARTAMENTO_ID): TipoBenevolePe
     const stored = localStorage.getItem(getStorageKey(deptId));
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
-    console.error('Error al obtener tipos de bénévoles:', error);
+    console.error('Erreur lors de la récupération des types de bénévoles :', error);
     return [];
   }
 };
@@ -131,7 +131,7 @@ const guardarTiposBenevoles = (tipos: TipoBenevolePersonalizado[], deptId: strin
   try {
     localStorage.setItem(getStorageKey(deptId), JSON.stringify(tipos));
   } catch (error) {
-    console.error('Error al guardar tipos de bénévoles:', error);
+    console.error('Erreur lors de l’enregistrement des types de bénévoles :', error);
   }
 };
 

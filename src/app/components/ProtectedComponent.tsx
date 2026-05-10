@@ -55,10 +55,10 @@ export function ProtectedComponent({
       <div className="p-8">
         <Alert variant="destructive" className="max-w-2xl mx-auto">
           <Lock className="h-5 w-5" />
-          <AlertTitle className="ml-2">Acceso Denegado</AlertTitle>
+          <AlertTitle className="ml-2">Accès refusé</AlertTitle>
           <AlertDescription className="ml-2 mt-2">
-            No tienes los permisos necesarios para acceder a esta función. Por favor, contacta con
-            un administrador si necesitas acceso.
+            Vous n’avez pas les permissions nécessaires pour accéder à cette fonction. Contactez
+            un administrateur si vous avez besoin d’y accéder.
           </AlertDescription>
         </Alert>
       </div>
@@ -117,16 +117,16 @@ export function withPermission(
               className="text-2xl text-[#333333] mb-2"
               style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
             >
-              Acceso Restringido
+              Accès restreint
             </h2>
             <p className="text-[#666666] mb-6">
-              No tienes permisos para acceder a esta página.
+              Vous n’avez pas la permission d’accéder à cette page.
             </p>
             <Button
               onClick={() => window.history.back()}
               className="bg-[#1E73BE] hover:bg-[#155a8a]"
             >
-              Volver
+              Retour
             </Button>
           </div>
         </div>

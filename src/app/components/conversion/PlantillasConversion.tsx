@@ -35,10 +35,10 @@ export function PlantillasConversion({
         <DialogHeader>
           <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }} className="text-xl flex items-center gap-2">
             <Bookmark className="w-5 h-5 text-[#1E73BE]" />
-            Plantillas de Conversión
+            Modèles de conversion
           </DialogTitle>
           <DialogDescription id="plantillas-conversion-description" className="text-sm mt-1">
-            Guarda configuraciones de conversión frecuentes para reutilizarlas rápidamente.
+            Enregistrez des configurations de conversion fréquentes pour les réutiliser rapidement.
           </DialogDescription>
         </DialogHeader>
 
@@ -46,9 +46,9 @@ export function PlantillasConversion({
           {plantillas.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <Bookmark className="w-16 h-16 mx-auto text-gray-400 mb-3" />
-              <p className="text-sm text-[#666666]">No hay plantillas guardadas</p>
+              <p className="text-sm text-[#666666]">Aucun modèle enregistré</p>
               <p className="text-xs text-[#999999] mt-1">
-                Al crear una conversión, marca la opción "Guardar como plantilla" para crear una
+                Lors de la création d’une conversion, cochez l’option « Enregistrer comme modèle » pour en créer un
               </p>
             </div>
           ) : (
@@ -85,7 +85,7 @@ export function PlantillasConversion({
                     <div className="text-xs">
                       <div className="flex items-center gap-1.5 text-[#666666] mb-1.5">
                         <ArrowRight className="w-3 h-3" />
-                        <span className="font-medium">Configuración:</span>
+                        <span className="font-medium">Configuration :</span>
                       </div>
                       <div className="pl-5 space-y-1">
                         {plantilla.configuracion.map((config, index) => (
@@ -102,7 +102,7 @@ export function PlantillasConversion({
                     {plantilla.mermaEsperada > 0 && (
                       <div className="flex items-center gap-1.5 text-xs text-orange-600">
                         <TrendingDown className="w-3 h-3" />
-                        <span>Merma esperada: {plantilla.mermaEsperada.toFixed(1)}%</span>
+                        <span>Perte prévue : {plantilla.mermaEsperada.toFixed(1)}%</span>
                       </div>
                     )}
                   </div>
@@ -111,7 +111,7 @@ export function PlantillasConversion({
                   <div className="flex items-center justify-between pt-3 border-t border-blue-200">
                     <div className="flex items-center gap-2 text-xs text-[#666666]">
                       <Badge variant="outline" className="text-xs bg-white">
-                        Usada {plantilla.vecesUsada} {plantilla.vecesUsada === 1 ? 'vez' : 'veces'}
+                        Utilisée {plantilla.vecesUsada} {plantilla.vecesUsada === 1 ? 'fois' : 'fois'}
                       </Badge>
                       <span>•</span>
                       <span>{formatearFecha(plantilla.fechaCreacion)}</span>
@@ -127,7 +127,7 @@ export function PlantillasConversion({
                     className="w-full mt-3 h-9 bg-[#1E73BE] hover:bg-[#1565C0] text-white"
                     size="sm"
                   >
-                    Aplicar Plantilla
+                    Appliquer le modèle
                   </Button>
                 </div>
               ))}
@@ -143,7 +143,7 @@ export function PlantillasConversion({
             className="h-11 px-6"
           >
             <X className="w-4 h-4 mr-2" />
-            Cerrar
+            Fermer
           </Button>
         </div>
       </DialogContent>

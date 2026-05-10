@@ -3759,10 +3759,10 @@ export function Inventario() {
           <DialogHeader className="app-dialog-form-header">
             <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Copy className="h-5 w-5 text-[#1a4d7a]" />
-              Crear Variante de Producto
+              Créer une variante de produit
             </DialogTitle>
             <DialogDescription id="product-variant-description">
-              Crea una variante basada en: {productoBase?.nombre}
+              Créez une variante basée sur : {productoBase?.nombre}
             </DialogDescription>
           </DialogHeader>
 
@@ -3809,7 +3809,7 @@ export function Inventario() {
                     id="varianteCodigo"
                     value={formVariante.codigo}
                     onChange={(e) => setFormVariante({ ...formVariante, codigo: e.target.value })}
-                    placeholder="Ej: PROD-VAR-001"
+                    placeholder="Ex. : PROD-VAR-001"
                     style={{ fontFamily: 'Roboto, sans-serif' }}
                   />
                 </div>
@@ -3823,7 +3823,7 @@ export function Inventario() {
                     id="varianteNombre"
                     value={formVariante.nombre}
                     onChange={(e) => setFormVariante({ ...formVariante, nombre: e.target.value })}
-                    placeholder="Ej: Manzanas Verdes (Variante)"
+                    placeholder="Ex. : pommes vertes (variante)"
                     style={{ fontFamily: 'Roboto, sans-serif' }}
                   />
                 </div>
@@ -3896,7 +3896,7 @@ export function Inventario() {
               variant="outline" 
               onClick={cerrarVarianteDialog}
             >
-              Cancelar
+              Annuler
             </Button>
             <Button
               onClick={guardarVariante}
@@ -3905,7 +3905,7 @@ export function Inventario() {
               style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
             >
               <Copy className="h-4 w-4 mr-2" />
-              Crear Variante
+              Créer la variante
             </Button>
           </DialogFooter>
         </DialogContent>

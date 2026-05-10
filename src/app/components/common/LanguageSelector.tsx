@@ -41,7 +41,7 @@ const LANGUAGES: Language[] = [
   {
     code: 'es',
     name: 'Spanish',
-    nativeName: 'Español',
+    nativeName: 'Espagnol',
     flag: '🇪🇸',
     isRTL: false
   },
@@ -86,7 +86,7 @@ export function LanguageSelector() {
       
       // Notificación de éxito
       toast.success(
-        t('settings.languageChanged', 'Idioma cambiado exitosamente'),
+        t('settings.languageChanged', 'Langue changée avec succès'),
         {
           description: language?.nativeName,
           icon: language?.flag
@@ -95,8 +95,8 @@ export function LanguageSelector() {
       
       setIsOpen(false);
     } catch (error) {
-      console.error('Error al cambiar idioma:', error);
-      toast.error(t('settings.languageChangeError', 'Error al cambiar el idioma'));
+      console.error('Erreur lors du changement de langue :', error);
+      toast.error(t('settings.languageChangeError', 'Erreur lors du changement de langue'));
     }
   };
   
@@ -117,7 +117,7 @@ export function LanguageSelector() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex items-center gap-2">
           <Languages className="w-4 h-4" />
-          {t('settings.selectLanguage', 'Seleccionar Idioma')}
+          {t('settings.selectLanguage', 'Choisir la langue')}
         </DropdownMenuLabel>
         
         <DropdownMenuSeparator />
@@ -151,7 +151,7 @@ export function LanguageSelector() {
         <DropdownMenuSeparator />
         
         <div className="px-2 py-1.5 text-xs text-gray-500">
-          {t('settings.languageNote', 'El sistema se adaptará automáticamente')}
+          {t('settings.languageNote', 'Le système s’adaptera automatiquement')}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

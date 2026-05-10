@@ -66,7 +66,7 @@ export function obtenerConfigAutoBackup(): AutoBackupConfig {
     }
     return DEFAULT_CONFIG;
   } catch (error) {
-    console.error('Error al obtener config de auto backup:', error);
+    console.error('Erreur lors de la récupération de la configuration de sauvegarde automatique :', error);
     return DEFAULT_CONFIG;
   }
 }
@@ -80,7 +80,7 @@ export function guardarConfigAutoBackup(config: AutoBackupConfig): void {
     config.nextBackup = calcularProximoBackup(config).toISOString();
     localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(config));
     
-    console.log('💾 Configuración de backup actualizada:', {
+    console.log('💾 Configuration de sauvegarde mise à jour :', {
       enabled: config.enabled,
       frequency: config.frequency,
       time: config.time,
@@ -91,7 +91,7 @@ export function guardarConfigAutoBackup(config: AutoBackupConfig): void {
     // Solo dispatch el evento
     window.dispatchEvent(new CustomEvent('autoBackupConfigUpdated', { detail: config }));
   } catch (error) {
-    console.error('Error al guardar config de auto backup:', error);
+    console.error('Erreur lors de l’enregistrement de la configuration de sauvegarde automatique :', error);
   }
 }
 
@@ -106,7 +106,7 @@ export function obtenerBackupsAlmacenados(): StoredBackup[] {
     }
     return [];
   } catch (error) {
-    console.error('Error al obtener backups almacenados:', error);
+    console.error('Erreur lors de la récupération des sauvegardes stockées :', error);
     return [];
   }
 }
@@ -128,8 +128,8 @@ export function guardarBackup(data: string, automatic: boolean = false): StoredB
   // ✅ CRÍTICO: Si el backup es grande, NO HACER NADA más que retornarlo
   const TAMAÑO_MAXIMO_BACKUP = 2 * 1024 * 1024; // 2MB máximo por backup
   if (newBackup.size > TAMAÑO_MAXIMO_BACKUP) {
-    console.warn(`⚠️ Backup demasiado grande (${formatearTamano(newBackup.size)}), no se guardará en localStorage`);
-    console.log('✅ Backup NO se guardará - retornando objeto sin persistencia');
+    console.warn(`⚠️ Sauvegarde trop volumineuse (${formatearTamano(newBackup.size)}), elle ne sera pas enregistrée dans localStorage`);
+    console.log('✅ La sauvegarde ne sera PAS enregistrée, retour de l’objet sans persistance');
     // ✅ RETORNAR INMEDIATAMENTE - NO intentar guardar NADA
     // La descarga se manejará desde ejecutarBackupAutomatico()
     return newBackup;
@@ -140,11 +140,11 @@ export function guardarBackup(data: string, automatic: boolean = false): StoredB
     try {
       const backupsAntiguos = obtenerBackupsAlmacenados();
       if (backupsAntiguos.length > 0) {
-        console.log(`🧹 Limpiando ${backupsAntiguos.length} backup(s) antiguo(s) para hacer espacio...`);
+        console.log(`🧹 Nettoyage de ${backupsAntiguos.length} ancienne(s) sauvegarde(s) pour libérer de l’espace...`);
         localStorage.removeItem(STORED_BACKUPS_KEY);
       }
     } catch (cleanError) {
-      console.warn('⚠️ No se pudo limpiar backups antiguos:', cleanError);
+      console.warn('⚠️ Impossible de nettoyer les anciennes sauvegardes :', cleanError);
     }
     
     // Crear array con solo el nuevo backup
@@ -153,26 +153,26 @@ export function guardarBackup(data: string, automatic: boolean = false): StoredB
     // ✅ INTENTAR GUARDAR CON MANEJO DE ERRORES
     try {
       localStorage.setItem(STORED_BACKUPS_KEY, JSON.stringify(trimmedBackups));
-      console.log(`✅ Backup guardado en localStorage (1 backup)`);
+      console.log('✅ Sauvegarde enregistrée dans localStorage (1 sauvegarde)');
     } catch (quotaError) {
-      console.error('❌ Error de cuota excedida al guardar backup:', quotaError);
-      console.log('⚠️ No se guardará en localStorage - continuar sin persistencia');
+      console.error('❌ Erreur de quota dépassé lors de l’enregistrement de la sauvegarde :', quotaError);
+      console.log('⚠️ La sauvegarde ne sera pas enregistrée dans localStorage, poursuite sans persistance');
       
       // Eliminar todos los backups de localStorage
       try {
         localStorage.removeItem(STORED_BACKUPS_KEY);
-        console.log('✅ Backups eliminados de localStorage');
+        console.log('✅ Sauvegardes supprimées de localStorage');
       } catch (removeError) {
-        console.error('❌ No se pudo eliminar backups:', removeError);
+        console.error('❌ Impossible de supprimer les sauvegardes :', removeError);
       }
       
       // NO lanzar excepción - solo retornar el objeto
-      console.log('ℹ️ El backup no se persistió pero se retorna el objeto');
+      console.log('ℹ️ La sauvegarde n’a pas été persistée, mais l’objet est renvoyé');
     }
     
     return newBackup;
   } catch (error) {
-    console.error('❌ Error al procesar backup:', error);
+    console.error('❌ Erreur lors du traitement de la sauvegarde :', error);
     // NO lanzar excepción - retornar el objeto de todas formas
     return newBackup;
   }
@@ -187,7 +187,7 @@ export function eliminarBackup(backupId: string): void {
     const filteredBackups = backups.filter(b => b.id !== backupId);
     localStorage.setItem(STORED_BACKUPS_KEY, JSON.stringify(filteredBackups));
   } catch (error) {
-    console.error('Error al eliminar backup:', error);
+    console.error('Erreur lors de la suppression de la sauvegarde :', error);
   }
 }
 
@@ -206,7 +206,7 @@ export function limpiarBackupsAntiguos(): void {
     const cleanedBackups = [...backupsManuales, ...backupsAutomaticos];
     localStorage.setItem(STORED_BACKUPS_KEY, JSON.stringify(cleanedBackups));
   } catch (error) {
-    console.error('Error al limpiar backups antiguos:', error);
+    console.error('Erreur lors du nettoyage des anciennes sauvegardes :', error);
   }
 }
 
@@ -273,12 +273,12 @@ export function debeEjecutarBackup(): boolean {
  */
 export function ejecutarBackupAutomatico(): boolean {
   try {
-    console.log('🔄 Iniciando backup automático...');
+    console.log('🔄 Démarrage de la sauvegarde automatique...');
     const config = obtenerConfigAutoBackup();
     
     // ✅ VERIFICAR SI LOS BACKUPS ESTÁN REALMENTE HABILITADOS
     if (!config.enabled) {
-      console.log('⏸️ Backups automáticos están desactivados, abortando...');
+      console.log('⏸️ Les sauvegardes automatiques sont désactivées, arrêt...');
       return false;
     }
     
@@ -295,20 +295,20 @@ export function ejecutarBackupAutomatico(): boolean {
       }
     }
     
-    console.log(`📦 Datos a respaldar: ${Object.keys(backup).length} claves`);
+    console.log(`📦 Données à sauvegarder : ${Object.keys(backup).length} clés`);
     
     const backupData = JSON.stringify(backup, null, 2);
     const backupSize = new Blob([backupData]).size;
     const backupSizeMB = (backupSize / 1024 / 1024).toFixed(2);
     
-    console.log(`📊 Tamaño del backup: ${backupSizeMB} MB`);
+    console.log(`📊 Taille de la sauvegarde : ${backupSizeMB} MB`);
     
     // ✅ SI EL BACKUP ES MUY GRANDE (>2MB), SOLO DESCARGAR - NO GUARDAR EN LOCALSTORAGE
     const TAMAÑO_MAXIMO = 2 * 1024 * 1024; // 2MB
     
     if (backupSize > TAMAÑO_MAXIMO) {
-      console.warn(`⚠️ Backup demasiado grande (${backupSizeMB} MB), descargando directamente...`);
-      console.log('💡 No se guardará en localStorage para prevenir errores de cuota');
+      console.warn(`⚠️ Sauvegarde trop volumineuse (${backupSizeMB} MB), téléchargement direct...`);
+      console.log('💡 Elle ne sera pas enregistrée dans localStorage pour éviter les erreurs de quota');
       
       // Crear objeto de backup temporal solo para descargar
       const tempBackup: StoredBackup = {
@@ -320,17 +320,17 @@ export function ejecutarBackupAutomatico(): boolean {
       };
       
       // Descargar automáticamente
-      console.log('📥 Descargando backup automáticamente...');
+      console.log('📥 Téléchargement automatique de la sauvegarde...');
       descargarBackup(tempBackup, config.filePrefix);
       
-      console.log('✅ Backup descargado exitosamente (no guardado en localStorage)');
+      console.log('✅ Sauvegarde téléchargée avec succès (non enregistrée dans localStorage)');
       
       // Actualizar solo la fecha del último backup en config (sin guardar el backup completo)
       try {
         const updatedConfig = { ...config, lastBackup: tempBackup.timestamp };
         localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(updatedConfig));
       } catch (configError) {
-        console.warn('⚠️ No se pudo actualizar fecha de último backup');
+        console.warn('⚠️ Impossible de mettre à jour la date de la dernière sauvegarde');
       }
       
       return true;
@@ -339,26 +339,26 @@ export function ejecutarBackupAutomatico(): boolean {
     // Si el backup es pequeño (<2MB), intentar guardarlo
     try {
       const savedBackup = guardarBackup(backupData, true);
-      console.log(`✅ Backup guardado: ${savedBackup.id} (${formatearTamano(savedBackup.size)})`);
+      console.log(`✅ Sauvegarde enregistrée : ${savedBackup.id} (${formatearTamano(savedBackup.size)})`);
       
       // Auto-descargar si está configurado
       if (config.autoDownload) {
-        console.log('📥 Auto-descargando backup...');
+        console.log('📥 Téléchargement automatique de la sauvegarde...');
         descargarBackup(savedBackup, config.filePrefix);
       }
       
       // Limpiar backups antiguos
       limpiarBackupsAntiguos();
       
-      console.log('✅ Backup automático ejecutado exitosamente');
-      console.log(`📅 Próximo backup: ${config.nextBackup ? new Date(config.nextBackup).toLocaleString('fr-CA') : 'No programado'}`);
+      console.log('✅ Sauvegarde automatique exécutée avec succès');
+      console.log(`📅 Prochaine sauvegarde : ${config.nextBackup ? new Date(config.nextBackup).toLocaleString('fr-CA') : 'Non planifiée'}`);
       
       return true;
     } catch (saveError) {
-      console.error('❌ Error al guardar backup:', saveError);
+      console.error('❌ Erreur lors de l’enregistrement de la sauvegarde :', saveError);
       
       // Fallback: Descargar directamente si falla guardar
-      console.log('📥 Descargando backup como alternativa...');
+      console.log('📥 Téléchargement de la sauvegarde en alternative...');
       const tempBackup: StoredBackup = {
         id: `backup_${Date.now()}`,
         timestamp: new Date().toISOString(),
@@ -368,12 +368,12 @@ export function ejecutarBackupAutomatico(): boolean {
       };
       
       descargarBackup(tempBackup, config.filePrefix);
-      console.log('✅ Backup descargado (guardado falló)');
+      console.log('✅ Sauvegarde téléchargée (l’enregistrement a échoué)');
       
       return true;
     }
   } catch (error) {
-    console.error('❌ Error al ejecutar backup automático:', error);
+    console.error('❌ Erreur lors de l’exécution de la sauvegarde automatique :', error);
     return false;
   }
 }
@@ -390,7 +390,7 @@ export async function descargarBackup(backup: StoredBackup, customPrefix?: strin
     const tipo = backup.automatic ? 'auto' : 'manual';
     const nombreArchivo = `${prefix}-${tipo}-${fecha}-${hora}.json`;
     
-    console.log('📥 Descargando backup:', {
+    console.log('📥 Téléchargement de la sauvegarde :', {
       id: backup.id,
       tamaño: formatearTamano(backup.size),
       automático: backup.automatic,
@@ -400,26 +400,26 @@ export async function descargarBackup(backup: StoredBackup, customPrefix?: strin
     
     // Si está configurada carpeta personalizada y es soportada, intentar guardar ahí
     if (config.customFolder && soportaFileSystemAccess() && tieneCarpetaSeleccionada()) {
-      console.log('📁 Intentando guardar en carpeta personalizada...');
+      console.log('📁 Tentative d’enregistrement dans le dossier personnalisé...');
       const resultado = await guardarArchivoEnCarpeta(nombreArchivo, backup.data);
       
       if (resultado.success) {
-        console.log(`✅ Backup guardado en carpeta personalizada: ${nombreArchivo}`);
+        console.log(`✅ Sauvegarde enregistrée dans le dossier personnalisé : ${nombreArchivo}`);
         return;
       } else {
-        console.warn('⚠️ No se pudo guardar en carpeta personalizada, usando descarga normal');
-        console.warn('Razón:', resultado.error || 'Desconocida');
+        console.warn('⚠️ Impossible d’enregistrer dans le dossier personnalisé, utilisation du téléchargement standard');
+        console.warn('Raison :', resultado.error || 'Inconnue');
       }
     } else {
       if (config.customFolder) {
-        console.log('ℹ️ Carpeta personalizada configurada pero no disponible:');
-        console.log('  - Soporta File System Access:', soportaFileSystemAccess());
-        console.log('  - Carpeta seleccionada:', tieneCarpetaSeleccionada());
+        console.log('ℹ️ Dossier personnalisé configuré mais indisponible :');
+        console.log('  - Prise en charge de File System Access :', soportaFileSystemAccess());
+        console.log('  - Dossier sélectionné :', tieneCarpetaSeleccionada());
       }
     }
     
     // Fallback: Descarga normal
-    console.log('📥 Usando descarga normal del navegador...');
+    console.log('📥 Utilisation du téléchargement standard du navigateur...');
     const blob = new Blob([backup.data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -429,9 +429,9 @@ export async function descargarBackup(backup: StoredBackup, customPrefix?: strin
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    console.log('✅ Descarga iniciada:', nombreArchivo);
+    console.log('✅ Téléchargement lancé :', nombreArchivo);
   } catch (error) {
-    console.error('❌ Error al descargar backup:', error);
+    console.error('❌ Erreur lors du téléchargement de la sauvegarde :', error);
     throw error;
   }
 }

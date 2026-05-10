@@ -53,22 +53,22 @@ export function EnviarCredencialesID({ idDigital, organismo }: EnviarCredenciale
 
 🔑 INSTRUCCIONES DE USO:
 1. Présentez cet ID à chaque ${esContacto ? 'transaction' : 'visite'} à la Banque Alimentaire
-2. Escanea tu código QR pour registrar tu ${esContacto ? 'operación' : 'asistencia'}
-3. Guarda este mensaje para futuras referencias
-4. El ID es válido hasta ${idDigital.fechaVencimiento}
+2. Scannez votre code QR pour enregistrer votre ${esContacto ? 'opération' : 'présence'}
+3. Conservez ce message pour référence future
+4. Cet identifiant est valide jusqu’au ${idDigital.fechaVencimiento}
 
 ⚠️ IMPORTANTE:
-• No compartas tu ID con otras personas
-• Asegúrate de renovarlo antes de su vencimiento
+• Ne partagez pas votre identifiant avec d’autres personnes
+• Assurez-vous de le renouveler avant son expiration
 • Contactez la Banque Alimentaire si vous avez des questions
 
-Si tienes preguntas o necesitas ayuda, contacta a:
-📞 ${organismo.telefono || 'Teléfono no disponible'}
-✉️ ${organismo.email || 'Email no disponible'}
+Si vous avez des questions ou besoin d’aide, contactez :
+📞 ${organismo.telefono || 'Téléphone non disponible'}
+✉️ ${organismo.email || 'Courriel non disponible'}
 
 ---
 Banque Alimentaire - Système de Gestion
-Ayudando a las comunidades, un alimento a la vez.`;
+Au service des communautés, un aliment à la fois.`;
 
   const [mensajePersonalizado, setMensajePersonalizado] = useState(mensajeBase);
 
@@ -77,18 +77,18 @@ Ayudando a las comunidades, un alimento a la vez.`;
 
   const handleCopiarMensaje = async () => {
     const exito = await copiarAlPortapapeles(mensajePersonalizado);
-    if (exito) toast.success('Mensaje copiado al portapapeles');
+    if (exito) toast.success('Message copié dans le presse-papiers');
   };
 
   const handleCopiarMensajeSMS = async () => {
     const exito = await copiarAlPortapapeles(mensajeSMS);
-    if (exito) toast.success('Mensaje SMS copiado al portapapeles');
+    if (exito) toast.success('Message SMS copié dans le presse-papiers');
   };
 
   const handleCopiarCredenciales = async () => {
-    const credenciales = `ID: ${idDigital.numeroID}\nQR: ${idDigital.qrCode}\nVálido: ${idDigital.fechaEmision} - ${idDigital.fechaVencimiento}`;
+    const credenciales = `ID: ${idDigital.numeroID}\nQR: ${idDigital.qrCode}\nValide: ${idDigital.fechaEmision} - ${idDigital.fechaVencimiento}`;
     const exito = await copiarAlPortapapeles(credenciales);
-    if (exito) toast.success('Credenciales copiadas');
+    if (exito) toast.success('Identifiants copiés');
   };
 
   const handleEnviar = () => {
@@ -97,24 +97,24 @@ Ayudando a las comunidades, un alimento a la vez.`;
       .map(([metodo]) => metodo);
 
     if (metodosActivos.length === 0) {
-      toast.error('Selecciona al menos un método de envío');
+      toast.error('Sélectionnez au moins une méthode d’envoi');
       return;
     }
 
     // Validar que al menos un destinatario esté seleccionado
     if (!destinatarios.beneficiario && !destinatarios.contactoOrganismo) {
-      toast.error('Selecciona al menos un destinatario');
+      toast.error('Sélectionnez au moins un destinataire');
       return;
     }
 
     // Validar destinatarios del beneficiario
     if (destinatarios.beneficiario) {
       if (metodosSeleccionados.email && !emailBeneficiario) {
-        toast.error('Ingresa el email del beneficiario');
+        toast.error('Saisissez le courriel du bénéficiaire');
         return;
       }
       if (metodosSeleccionados.sms && !telefonoBeneficiario) {
-        toast.error('Ingresa el teléfono del beneficiario');
+        toast.error('Saisissez le téléphone du bénéficiaire');
         return;
       }
     }
@@ -122,11 +122,11 @@ Ayudando a las comunidades, un alimento a la vez.`;
     // Validar destinatarios del contacto
     if (destinatarios.contactoOrganismo) {
       if (metodosSeleccionados.email && !emailContacto) {
-        toast.error('Ingresa el email del contacto del organismo');
+        toast.error('Saisissez le courriel du contact de l’organisme');
         return;
       }
       if (metodosSeleccionados.sms && !telefonoContacto) {
-        toast.error('Ingresa el teléfono del contacto del organismo');
+        toast.error('Saisissez le téléphone du contact de l’organisme');
         return;
       }
     }
@@ -152,10 +152,10 @@ Ayudando a las comunidades, un alimento a la vez.`;
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-[#4CAF50]" />
-          <span className="font-semibold">Credenciales enviadas</span>
+          <span className="font-semibold">Identifiants envoyés</span>
         </div>
         <span className="text-sm text-[#666666]">
-          Enviado a {destinatariosTexto.join(' y ')} por {metodosTexto}
+          Envoyé à {destinatariosTexto.join(' et ')} par {metodosTexto}
         </span>
       </div>,
       { duration: 6000 }
@@ -173,16 +173,16 @@ Ayudando a las comunidades, un alimento a la vez.`;
           className="text-[#1E73BE] border-[#1E73BE] hover:bg-[#E3F2FD] w-full"
         >
           <Send className="w-4 h-4 mr-1" />
-          Enviar Credenciales
+          Envoyer les identifiants
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="enviar-credenciales-description">
         <DialogHeader>
           <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-            Enviar Credenciales de ID Digital {esContacto ? '- Contacto' : '- Beneficiario'}
-          </DialogTitle>
+            Envoyer les identifiants de l’ID numérique {esContacto ? '- Contact' : '- Bénéficiaire'}
+                  Copier
           <DialogDescription id="enviar-credenciales-description">
-            Complete la información para enviar las credenciales del ID digital al destinatario
+            Complétez les informations pour envoyer les identifiants de l’ID numérique au destinataire
           </DialogDescription>
         </DialogHeader>
 
@@ -233,7 +233,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
 
           {/* Información adicional */}
           <div className="bg-[#F4F4F4] rounded-lg p-4">
-            <p className="text-xs text-[#666666] mb-2">{esContacto ? 'Categoría' : 'Organismo Asociado'}</p>
+            <p className="text-xs text-[#666666] mb-2">{esContacto ? 'Catégorie' : 'Organisme associé'}</p>
             <p className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {organismo.nombre}
             </p>
@@ -310,7 +310,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
                     <Label htmlFor="dest-contacto" className="cursor-pointer flex items-center gap-2">
                       <Users className="w-4 h-4 text-[#4CAF50]" />
                       <span className="font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        {esContacto ? 'Administración General' : 'Contacto del Organismo'}
+                        {esContacto ? 'Administration générale' : 'Contact de l’organisme'}
                       </span>
                     </Label>
                     <p className="text-xs text-[#666666] mt-1">
@@ -347,7 +347,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
             {!destinatarios.beneficiario && !destinatarios.contactoOrganismo && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <p className="text-sm text-red-700">
-                  ⚠️ Selecciona al menos un destinatario para enviar las credenciales
+                  ⚠️ Sélectionnez au moins un destinataire pour envoyer les identifiants
                 </p>
               </div>
             )}
@@ -356,7 +356,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
           {/* Métodos de envío */}
           <div className="space-y-3">
             <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-              📨 Métodos de Envío
+              📨 Méthodes d’envoi
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Email */}
@@ -374,11 +374,11 @@ Ayudando a las comunidades, un alimento a la vez.`;
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-sm mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Email (Mensaje Completo)
+                      Courriel (message complet)
                     </p>
                     <Input
                       type="email"
-                      placeholder="correo@ejemplo.com"
+                      placeholder="courriel@exemple.com"
                       value={emailBeneficiario}
                       onChange={(e) => {
                         e.stopPropagation();
@@ -389,7 +389,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
                       disabled={!metodosSeleccionados.email}
                     />
                     {metodosSeleccionados.email && (
-                      <Badge className="bg-[#4CAF50] mt-2 text-xs">Seleccionado</Badge>
+                      <Badge className="bg-[#4CAF50] mt-2 text-xs">Sélectionné</Badge>
                     )}
                   </div>
                 </div>
@@ -410,7 +410,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-sm mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      SMS (Mensaje Corto)
+                      SMS (message court)
                     </p>
                     <Input
                       type="tel"
@@ -425,7 +425,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
                       disabled={!metodosSeleccionados.sms}
                     />
                     {metodosSeleccionados.sms && (
-                      <Badge className="bg-[#4CAF50] mt-2 text-xs">Seleccionado</Badge>
+                      <Badge className="bg-[#4CAF50] mt-2 text-xs">Sélectionné</Badge>
                     )}
                   </div>
                 </div>
@@ -438,7 +438,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                  ✉️ Mensaje para Email (Completo)
+                  ✉️ Message courriel (complet)
                 </Label>
                 <Button
                   type="button"
@@ -447,7 +447,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
                   onClick={handleCopiarMensaje}
                 >
                   <Copy className="w-4 h-4 mr-1" />
-                  Copiar
+                  Copier
                 </Button>
               </div>
               <Textarea
@@ -455,10 +455,10 @@ Ayudando a las comunidades, un alimento a la vez.`;
                 onChange={(e) => setMensajePersonalizado(e.target.value)}
                 rows={14}
                 className="font-mono text-sm"
-                placeholder="Personaliza el mensaje aquí..."
+                placeholder="Personnalisez le message ici..."
               />
               <p className="text-xs text-[#666666]">
-                Este mensaje incluye toda la información del ID Digital y será enviado por email.
+                Ce message inclut toutes les informations de l’ID numérique et sera envoyé par courriel.
               </p>
             </div>
           )}
@@ -468,7 +468,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                  📱 Mensaje para SMS (Corto)
+                  📱 Message SMS (court)
                 </Label>
                 <Button
                   type="button"
@@ -477,16 +477,16 @@ Ayudando a las comunidades, un alimento a la vez.`;
                   onClick={handleCopiarMensajeSMS}
                 >
                   <Copy className="w-4 h-4 mr-1" />
-                  Copiar
+                  Copier
                 </Button>
               </div>
               <div className="bg-[#F4F4F4] rounded-lg p-4 border border-gray-300">
                 <p className="text-sm font-mono whitespace-pre-wrap">{mensajeSMS}</p>
               </div>
               <div className="flex items-center justify-between text-xs text-[#666666]">
-                <span>Versión optimizada para SMS (160 caracteres aprox.)</span>
+                <span>Version optimisée pour SMS (environ 160 caractères)</span>
                 <Badge variant="outline" className="text-xs">
-                  {mensajeSMS.length} caracteres
+                  {mensajeSMS.length} caractères
                 </Badge>
               </div>
             </div>
@@ -500,13 +500,13 @@ Ayudando a las comunidades, un alimento a la vez.`;
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-[#856404] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  Información Importante
+                  Information importante
                 </p>
                 <ul className="text-sm text-[#856404] space-y-1 list-disc list-inside">
-                  <li>Verifica que los datos de contacto sean correctos antes de enviar</li>
-                  <li>El mensaje por SMS es una versión resumida del mensaje completo</li>
-                  <li>Guarda una copia del ID Digital en el sistema</li>
-                  <li>El beneficiario debe presentar este ID en cada visita</li>
+                  <li>Vérifiez que les coordonnées sont correctes avant l’envoi</li>
+                  <li>Le message SMS est une version résumée du message complet</li>
+                  <li>Conservez une copie de l’ID numérique dans le système</li>
+                  <li>Le bénéficiaire doit présenter cet identifiant à chaque visite</li>
                 </ul>
               </div>
             </div>
@@ -518,7 +518,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
               <QrCode className="w-5 h-5 text-[#4CAF50] mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold text-[#2E7D32] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  Credenciales a Enviar
+                  Identifiants à envoyer
                 </p>
                 <div className="space-y-2 text-sm text-[#666666]">
                   <div className="grid grid-cols-2 gap-2">
@@ -534,7 +534,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
                   <div>
                     <strong>Vigencia:</strong>
                     <p className="text-[#333333]">
-                      Del {idDigital.fechaEmision} al {idDigital.fechaVencimiento}
+                      Du {idDigital.fechaEmision} au {idDigital.fechaVencimiento}
                     </p>
                   </div>
                 </div>
@@ -548,7 +548,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Cancelar
+              Annuler
             </Button>
             <Button
               onClick={handleEnviar}
@@ -556,7 +556,7 @@ Ayudando a las comunidades, un alimento a la vez.`;
               style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
             >
               <Send className="w-4 h-4 mr-2" />
-              Enviar Credenciales
+              Envoyer les identifiants
             </Button>
           </div>
         </div>

@@ -552,13 +552,13 @@ export function TextCorrector() {
   const handleCopy = () => {
     if (result?.correctedText) {
       copiarAlPortapapeles(result.correctedText);
-      toast.success(t('textCorrector.copied', 'Texto copiado al portapapeles'));
+      toast.success(t('textCorrector.copied', 'Texte copié dans le presse-papiers'));
     }
   };
 
   const getLanguageName = (lang: string) => {
     switch(lang) {
-      case 'es': return 'Español';
+      case 'es': return 'Espagnol';
       case 'en': return 'English';
       case 'ar': return 'العربية';
       case 'fr': return 'Français';
@@ -573,10 +573,10 @@ export function TextCorrector() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#1a4d7a]" />
-            {t('textCorrector.title', 'Corrección de Texto')}
+            {t('textCorrector.title', 'Correction de texte')}
           </CardTitle>
           <CardDescription>
-            {t('textCorrector.description', 'Corrija ortografía y gramática en español, francés, inglés y árabe')}
+            {t('textCorrector.description', 'Corrigez l’orthographe et la grammaire en espagnol, français, anglais et arabe')}
           </CardDescription>
         </CardHeader>
         
@@ -585,7 +585,7 @@ export function TextCorrector() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Languages className="w-4 h-4" />
-              {t('textCorrector.language', 'Idioma del Texto')}
+              {t('textCorrector.language', 'Langue du texte')}
             </Label>
             <div className="flex gap-2">
               <Button
@@ -593,7 +593,7 @@ export function TextCorrector() {
                 onClick={() => setSelectedLanguage('es')}
                 className={selectedLanguage === 'es' ? 'bg-[#1a4d7a] hover:bg-[#143d5f]' : ''}
               >
-                Español
+                Espagnol
               </Button>
               <Button
                 variant={selectedLanguage === 'en' ? 'default' : 'outline'}
@@ -623,20 +623,20 @@ export function TextCorrector() {
           {/* Área de texto */}
           <div className="space-y-2">
             <Label htmlFor="inputText">
-              {t('textCorrector.inputLabel', 'Texto a Corregir')}
+              {t('textCorrector.inputLabel', 'Texte à corriger')}
             </Label>
             <textarea
               id="inputText"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={t('textCorrector.placeholder', 'Escriba o pegue el texto aquí...')}
+              placeholder={t('textCorrector.placeholder', 'Écrivez ou collez le texte ici...')}
               className={`w-full h-40 p-4 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#1a4d7a] ${
                 selectedLanguage === 'ar' ? 'text-right' : 'text-left'
               }`}
               dir={selectedLanguage === 'ar' ? 'rtl' : 'ltr'}
             />
             <p className="text-sm text-gray-500">
-              {inputText.length} {t('textCorrector.characters', 'caracteres')}
+              {inputText.length} {t('textCorrector.characters', 'caractères')}
             </p>
           </div>
 
@@ -651,12 +651,12 @@ export function TextCorrector() {
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('textCorrector.processing', 'Procesando...')}
+                  {t('textCorrector.processing', 'Traitement...')}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  {t('textCorrector.correct', 'Corregir')}
+                  {t('textCorrector.correct', 'Corriger')}
                 </>
               )}
             </Button>
@@ -665,7 +665,7 @@ export function TextCorrector() {
               variant="outline"
               size="lg"
             >
-              {t('textCorrector.clear', 'Limpiar')}
+              {t('textCorrector.clear', 'Effacer')}
             </Button>
           </div>
         </CardContent>
@@ -680,7 +680,7 @@ export function TextCorrector() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-[#2d9561]" />
-                  {t('textCorrector.correctedText', 'Texto Corregido')}
+                  {t('textCorrector.correctedText', 'Texte corrigé')}
                 </CardTitle>
                 <Badge variant="outline" className="bg-blue-50">
                   <Languages className="w-3 h-3 mr-1" />
@@ -701,7 +701,7 @@ export function TextCorrector() {
                 variant="outline"
                 size="sm"
               >
-                {t('textCorrector.copy', 'Copiar Texto')}
+                {t('textCorrector.copy', 'Copier le texte')}
               </Button>
             </CardContent>
           </Card>
@@ -712,14 +712,14 @@ export function TextCorrector() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <AlignLeft className="w-5 h-5 text-purple-600" />
-                  {t('textCorrector.structuredText', 'Estructura Sugerida')}
+                  {t('textCorrector.structuredText', 'Structure suggérée')}
                 </CardTitle>
                 <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300">
                   Profesional
                 </Badge>
               </div>
               <CardDescription>
-                {t('textCorrector.structuredDescription', 'Texto reorganizado con párrafos y formato profesional')}
+                {t('textCorrector.structuredDescription', 'Texte réorganisé avec paragraphes et format professionnel')}
               </CardDescription>
             </CardHeader>
             
@@ -740,13 +740,13 @@ export function TextCorrector() {
                 onClick={() => {
                   if (result?.structuredText) {
                     copiarAlPortapapeles(result.structuredText);
-                    toast.success(t('textCorrector.copiedStructured', 'Texto estructurado copiado al portapapeles'));
+                    toast.success(t('textCorrector.copiedStructured', 'Texte structuré copié dans le presse-papiers'));
                   }
                 }}
                 variant="outline"
                 size="sm"
               >
-                {t('textCorrector.copyStructured', 'Copiar Texto Estructurado')}
+                {t('textCorrector.copyStructured', 'Copier le texte structuré')}
               </Button>
             </CardContent>
           </Card>
@@ -757,7 +757,7 @@ export function TextCorrector() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-[#1a4d7a]" />
-                  {t('textCorrector.corrections', 'Correcciones Realizadas')}
+                  {t('textCorrector.corrections', 'Corrections appliquées')}
                   <Badge variant="secondary">{result.corrections.length}</Badge>
                 </CardTitle>
               </CardHeader>
@@ -800,7 +800,7 @@ export function TextCorrector() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-amber-500" />
-                  {t('textCorrector.suggestions', 'Sugerencias de Mejora')}
+                  {t('textCorrector.suggestions', 'Suggestions d’amélioration')}
                 </CardTitle>
               </CardHeader>
               
@@ -831,10 +831,10 @@ export function TextCorrector() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-green-900 mb-1">
-                      {t('textCorrector.noCorrections', '¡Excelente!')}
+                      {t('textCorrector.noCorrections', 'Excellent !')}
                     </h3>
                     <p className="text-green-700">
-                      {t('textCorrector.noCorrectionsDesc', 'No se encontraron errores en el texto.')}
+                      {t('textCorrector.noCorrectionsDesc', 'Aucune erreur n’a été trouvée dans le texte.')}
                     </p>
                   </div>
                 </div>

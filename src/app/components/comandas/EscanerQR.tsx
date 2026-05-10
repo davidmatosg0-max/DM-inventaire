@@ -87,7 +87,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
         streamRef.current = stream;
       } catch (permError: any) {
         // Manejar errores de permisos ANTES de usar Html5Qrcode
-        console.log('⚠️ Permiso de cámara requerido');
+        console.log('⚠️ Autorisation de la caméra requise');
         
         if (permError.name === 'NotAllowedError' || permError.message?.includes('Permission denied')) {
           setError('permission_denied');
@@ -140,9 +140,9 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
       
       if (rearCamera) {
         selectedCamera = rearCamera;
-        console.log('✓ Cámara trasera seleccionada:', rearCamera.label);
+        console.log('✓ Caméra arrière sélectionnée :', rearCamera.label);
       } else {
-        console.log('→ Usando cámara:', selectedCamera.label);
+        console.log('→ Caméra utilisée :', selectedCamera.label);
       }
 
       // Iniciar el scanner con la cámara seleccionada
@@ -168,7 +168,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
       setError(null);
       
     } catch (err: any) {
-      console.error('Error inesperado al iniciar escáner:', err);
+      console.error('Erreur inattendue au démarrage du scanner :', err);
       setError('unknown_error');
     }
   };
@@ -222,7 +222,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
       const decodedText = await scanner.scanFile(file, true);
       handleScanSuccess(decodedText);
     } catch (err: any) {
-      console.error('Error al escanear archivo:', err);
+      console.error('Erreur lors du scan du fichier :', err);
       setError('qr_not_found_in_image');
     } finally {
       await detenerScanner();

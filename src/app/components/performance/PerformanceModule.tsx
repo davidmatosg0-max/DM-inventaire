@@ -75,15 +75,15 @@ export function PerformanceModule() {
     a.click();
     URL.revokeObjectURL(url);
 
-    toast.success(t('performance.reportExported', 'Reporte exportado'));
+    toast.success(t('performance.reportExported', 'Rapport exporté'));
   };
 
   // Limpiar métricas
   const handleClearMetrics = () => {
-    if (window.confirm(t('performance.confirmClear', '¿Limpiar todas las métricas?'))) {
+    if (window.confirm(t('performance.confirmClear', 'Effacer toutes les métriques ?'))) {
       performanceManager.reset();
       setComponentMetrics([]);
-      toast.success(t('performance.metricsCleared', 'Métricas limpiadas'));
+      toast.success(t('performance.metricsCleared', 'Métriques effacées'));
     }
   };
 
@@ -92,23 +92,23 @@ export function PerformanceModule() {
     const recommendations: string[] = [];
 
     if (metrics.fps < 30) {
-      recommendations.push('FPS bajo: Considere reducir la complejidad de los componentes');
+      recommendations.push('FPS faible : réduisez la complexité des composants');
     }
 
     if (metrics.memory && metrics.memory.usedPercentage > 80) {
-      recommendations.push('Alto uso de memoria: Verifique memory leaks y optimice caché');
+      recommendations.push('Utilisation mémoire élevée : vérifiez les fuites mémoire et optimisez le cache');
     }
 
     if (globalStats.slowRenderPercentage > 20) {
-      recommendations.push('Muchos renders lentos: Use React.memo y memoización');
+      recommendations.push('Beaucoup de rendus lents : utilisez React.memo et la mémoïsation');
     }
 
     if (componentMetrics.length > 50) {
-      recommendations.push('Muchos componentes: Considere lazy loading y code splitting');
+      recommendations.push('Beaucoup de composants : envisagez le lazy loading et le code splitting');
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('Performance óptima - Sin recomendaciones');
+      recommendations.push('Performance optimale - aucune recommandation');
     }
 
     return recommendations;
@@ -139,7 +139,7 @@ export function PerformanceModule() {
                   {t('performance.title', 'Performance')}
                 </h1>
                 <p className="text-gray-600">
-                  {t('performance.subtitle', 'Análisis y optimización del rendimiento')}
+                  {t('performance.subtitle', 'Analyse et optimisation des performances')}
                 </p>
               </div>
 
@@ -149,7 +149,7 @@ export function PerformanceModule() {
                   onClick={handleExportReport}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  {t('performance.export', 'Exportar')}
+                  {t('performance.export', 'Exporter')}
                 </Button>
                 <Button
                   variant="outline"
@@ -157,7 +157,7 @@ export function PerformanceModule() {
                   className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  {t('performance.clear', 'Limpiar')}
+                  {t('performance.clear', 'Effacer')}
                 </Button>
               </div>
             </div>
@@ -241,19 +241,19 @@ export function PerformanceModule() {
             <TabsList className="grid grid-cols-4 w-full p-1 bg-gray-100/50">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <Activity className="w-4 h-4" />
-                {t('performance.overview', 'Vista General')}
+                {t('performance.overview', 'Vue générale')}
               </TabsTrigger>
               <TabsTrigger value="components" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
-                {t('performance.components', 'Componentes')}
+                {t('performance.components', 'Composants')}
               </TabsTrigger>
               <TabsTrigger value="memory" className="flex items-center gap-2">
                 <HardDrive className="w-4 h-4" />
-                {t('performance.memory', 'Memoria')}
+                {t('performance.memory', 'Mémoire')}
               </TabsTrigger>
               <TabsTrigger value="recommendations" className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
-                {t('performance.recommendations', 'Recomendaciones')}
+                {t('performance.recommendations', 'Recommandations')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -265,20 +265,20 @@ export function PerformanceModule() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="w-5 h-5 text-[#1a4d7a]" />
-                    {t('performance.globalStats', 'Estadísticas Globales')}
+                    {t('performance.globalStats', 'Statistiques globales')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">
-                      {t('performance.totalRenders', 'Total Renders')}
+                      {t('performance.totalRenders', 'Total des rendus')}
                     </span>
                     <Badge variant="outline">{globalStats.totalRenders}</Badge>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">
-                      {t('performance.slowRenders', 'Renders Lentos')}
+                      {t('performance.slowRenders', 'Rendus lents')}
                     </span>
                     <Badge variant="outline" className="bg-red-50 text-red-700">
                       {globalStats.totalSlowRenders}
@@ -288,7 +288,7 @@ export function PerformanceModule() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">
-                        {t('performance.slowRenderPercentage', 'Porcentaje de Renders Lentos')}
+                        {t('performance.slowRenderPercentage', 'Pourcentage de rendus lents')}
                       </span>
                       <span className="font-medium">
                         {globalStats.slowRenderPercentage.toFixed(1)}%
@@ -299,7 +299,7 @@ export function PerformanceModule() {
 
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">
-                      {t('performance.totalComponents', 'Total Componentes')}
+                      {t('performance.totalComponents', 'Nombre total de composants')}
                     </span>
                     <Badge variant="outline">{globalStats.totalComponents}</Badge>
                   </div>
@@ -310,7 +310,7 @@ export function PerformanceModule() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Zap className="w-5 h-5 text-[#2d9561]" />
-                    {t('performance.currentMetrics', 'Métricas Actuales')}
+                    {t('performance.currentMetrics', 'Métriques actuelles')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -323,7 +323,7 @@ export function PerformanceModule() {
 
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">
-                      {t('performance.lastRender', 'Último Render')}
+                      {t('performance.lastRender', 'Dernier rendu')}
                     </span>
                     <span className="font-medium">
                       {metrics.lastRenderTime.toFixed(2)}ms
@@ -360,10 +360,10 @@ export function PerformanceModule() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-[#1a4d7a]" />
-                  {t('performance.slowestComponents', 'Componentes Más Lentos')}
+                  {t('performance.slowestComponents', 'Composants les plus lents')}
                 </CardTitle>
                 <CardDescription>
-                  {t('performance.slowestComponentsDesc', 'Componentes ordenados por tiempo promedio de render')}
+                  {t('performance.slowestComponentsDesc', 'Composants classés par temps moyen de rendu')}
                 </CardDescription>
               </CardHeader>
 
@@ -412,7 +412,7 @@ export function PerformanceModule() {
                   </ScrollArea>
                 ) : (
                   <div className="py-12 text-center text-gray-500">
-                    {t('performance.noComponentData', 'Sin datos de componentes')}
+                    {t('performance.noComponentData', 'Aucune donnée de composant')}
                   </div>
                 )}
               </CardContent>
@@ -425,7 +425,7 @@ export function PerformanceModule() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <HardDrive className="w-5 h-5 text-[#1a4d7a]" />
-                  {t('performance.memoryAnalysis', 'Análisis de Memoria')}
+                  {t('performance.memoryAnalysis', 'Analyse de la mémoire')}
                 </CardTitle>
               </CardHeader>
 
@@ -449,7 +449,7 @@ export function PerformanceModule() {
                     <div className="grid grid-cols-3 gap-4">
                       <div className="p-4 border rounded-lg">
                         <p className="text-sm text-gray-500 mb-1">
-                          {t('performance.used', 'Usado')}
+                          {t('performance.used', 'Utilisé')}
                         </p>
                         <p className="text-xl font-bold">
                           {formatBytes(metrics.memory.usedJSHeapSize)}
@@ -467,7 +467,7 @@ export function PerformanceModule() {
 
                       <div className="p-4 border rounded-lg">
                         <p className="text-sm text-gray-500 mb-1">
-                          {t('performance.limit', 'Límite')}
+                          {t('performance.limit', 'Limite')}
                         </p>
                         <p className="text-xl font-bold">
                           {formatBytes(metrics.memory.jsHeapSizeLimit)}
@@ -482,10 +482,10 @@ export function PerformanceModule() {
                           <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                           <div>
                             <p className="font-medium text-red-900 mb-1">
-                              {t('performance.highMemoryUsage', 'Alto Uso de Memoria')}
+                              {t('performance.highMemoryUsage', 'Utilisation mémoire élevée')}
                             </p>
                             <p className="text-sm text-red-700">
-                              {t('performance.memoryRecommendation', 'Considere limpiar caché, cerrar componentes no usados, o verificar memory leaks.')}
+                              {t('performance.memoryRecommendation', 'Pensez à vider le cache, fermer les composants inutilisés et vérifier les fuites mémoire.')}
                             </p>
                           </div>
                         </div>
@@ -494,7 +494,7 @@ export function PerformanceModule() {
                   </div>
                 ) : (
                   <div className="py-12 text-center text-gray-500">
-                    {t('performance.memoryNotAvailable', 'Información de memoria no disponible en este navegador')}
+                    {t('performance.memoryNotAvailable', 'Les informations mémoire ne sont pas disponibles dans ce navigateur')}
                   </div>
                 )}
               </CardContent>
@@ -507,10 +507,10 @@ export function PerformanceModule() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-[#2d9561]" />
-                  {t('performance.optimizationTips', 'Consejos de Optimización')}
+                  {t('performance.optimizationTips', 'Conseils d’optimisation')}
                 </CardTitle>
                 <CardDescription>
-                  {t('performance.tipsDesc', 'Recomendaciones basadas en las métricas actuales')}
+                  {t('performance.tipsDesc', 'Recommandations basées sur les métriques actuelles')}
                 </CardDescription>
               </CardHeader>
 

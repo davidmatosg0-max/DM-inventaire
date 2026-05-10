@@ -81,7 +81,7 @@ export function useAlerts(config: Partial<AlertConfig> = {}) {
         }
       });
     } catch (error) {
-      console.error('Error al verificar niveles de stock:', error);
+      console.error('Erreur lors de la vérification des niveaux de stock :', error);
     }
   };
 
@@ -114,9 +114,9 @@ export function useAlerts(config: Partial<AlertConfig> = {}) {
             const isUrgent = diasRestantes <= 3;
             
             (isUrgent ? toast.error : toast.warning)(
-              `${isUrgent ? '🚨' : '⏰'} ${t('alerts.expiringProduct') || 'Producto por caducar'}: ${producto.nombre}`,
+              `${isUrgent ? '🚨' : '⏰'} ${t('alerts.expiringProduct') || 'Produit proche de l’expiration'}: ${producto.nombre}`,
               {
-                description: `${t('alerts.daysRemaining') || 'Días restantes'}: ${diasRestantes}`,
+                description: `${t('alerts.daysRemaining') || 'Jours restants'}: ${diasRestantes}`,
                 duration: isUrgent ? 12000 : 8000,
               }
             );
@@ -130,7 +130,7 @@ export function useAlerts(config: Partial<AlertConfig> = {}) {
         }
       });
     } catch (error) {
-      console.error('Error al verificar productos próximos a caducar:', error);
+      console.error('Erreur lors de la vérification des produits proches de l’expiration :', error);
     }
   };
 
@@ -170,9 +170,9 @@ export function useAlerts(config: Partial<AlertConfig> = {}) {
           });
 
           toast.error(
-            `🚨 ${t('alerts.urgentOrder') || 'Comanda urgente'}: #${comanda.numero}`,
+            `🚨 ${t('alerts.urgentOrder') || 'Commande urgente'}: #${comanda.numero}`,
             {
-              description: `${comanda.nombreOrganismo} - ${t('alerts.requiresAttention') || 'Requiere atención'}`,
+              description: `${comanda.nombreOrganismo} - ${t('alerts.requiresAttention') || 'Nécessite une attention'}`,
               duration: 10000,
             }
           );
@@ -185,7 +185,7 @@ export function useAlerts(config: Partial<AlertConfig> = {}) {
         }
       });
     } catch (error) {
-      console.error('Error al verificar comandas urgentes:', error);
+      console.error('Erreur lors de la vérification des commandes urgentes :', error);
     }
   };
 
@@ -218,9 +218,9 @@ export function useAlerts(config: Partial<AlertConfig> = {}) {
         
         if (!alertasEnviadas.current.has(alertKey)) {
           toast.info(
-            `🚚 ${t('alerts.deliveriesToday') || 'Entregas programadas hoy'}: ${entregasHoy.length}`,
+            `🚚 ${t('alerts.deliveriesToday') || 'Livraisons prévues aujourd’hui'}: ${entregasHoy.length}`,
             {
-              description: t('alerts.checkTransportModule') || 'Revisa el módulo de transporte',
+              description: t('alerts.checkTransportModule') || 'Vérifiez le module transport',
               duration: 10000,
             }
           );
@@ -233,7 +233,7 @@ export function useAlerts(config: Partial<AlertConfig> = {}) {
         }
       }
     } catch (error) {
-      console.error('Error al verificar entregas programadas:', error);
+      console.error('Erreur lors de la vérification des livraisons planifiées :', error);
     }
   };
 

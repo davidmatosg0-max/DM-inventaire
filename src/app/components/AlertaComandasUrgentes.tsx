@@ -32,10 +32,10 @@ export function AlertaComandasUrgentes() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
             <AlertTriangle className="w-5 h-5 text-[#DC3545]" />
-            Comandas con Respuesta Urgente
+            Commandes avec réponse urgente
           </CardTitle>
           <Badge className="bg-[#DC3545]">
-            {comandasUrgentes.length} pendiente{comandasUrgentes.length !== 1 ? 's' : ''}
+            {comandasUrgentes.length} en attente
           </Badge>
         </div>
       </CardHeader>
@@ -64,18 +64,18 @@ export function AlertaComandasUrgentes() {
                       </span>
                       {esMuyUrgente && (
                         <Badge className="bg-red-600 text-white text-xs">
-                          ¡MUY URGENTE!
+                          TRES URGENT
                         </Badge>
                       )}
                     </div>
                     
                     <p className="text-sm text-[#666666] mb-1">
-                      <strong>Organismo:</strong> {organismo?.nombre}
+                      <strong>Organisme :</strong> {organismo?.nombre}
                     </p>
                     
                     <p className="text-sm text-[#666666] mb-1">
-                      <strong>Fecha límite:</strong>{' '}
-                      {new Date(comanda.fechaLimiteRespuesta!).toLocaleDateString('es-ES', {
+                      <strong>Date limite :</strong>{' '}
+                      {new Date(comanda.fechaLimiteRespuesta!).toLocaleDateString('fr-CA', {
                         day: 'numeric',
                         month: 'long'
                       })}
@@ -87,13 +87,13 @@ export function AlertaComandasUrgentes() {
                         style={{ fontSize: '0.75rem' }}
                       >
                         {diasRestantes === 0 
-                          ? '¡Vence hoy!' 
+                          ? 'Échéance aujourd\'hui' 
                           : diasRestantes === 1 
-                            ? 'Vence mañana' 
-                            : `${diasRestantes} días restantes`}
+                            ? 'Échéance demain' 
+                            : `${diasRestantes} jours restants`}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        {comanda.items.length} productos
+                        {comanda.items.length} produits
                       </Badge>
                     </div>
                   </div>
@@ -104,7 +104,7 @@ export function AlertaComandasUrgentes() {
                     className="flex items-center gap-2"
                   >
                     <Eye className="w-4 h-4" />
-                    Ver
+                    Voir
                   </Button>
                 </div>
               </div>
@@ -118,8 +118,8 @@ export function AlertaComandasUrgentes() {
             : 'bg-orange-100 border border-orange-300'
         }`}>
           <p className="text-sm text-[#333333]">
-            <strong>💡 Recordatorio:</strong> Los organismos deben confirmar estas comandas antes de la fecha límite. 
-            Considera contactarlos para recordarles sobre la confirmación pendiente.
+            <strong>💡 Rappel :</strong> Les organismes doivent confirmer ces commandes avant la date limite.
+            Pensez à les contacter pour leur rappeler la confirmation en attente.
           </p>
         </div>
       </CardContent>

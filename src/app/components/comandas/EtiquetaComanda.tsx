@@ -39,7 +39,7 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
   // Generar datos para QR
   const qrData = buildComandaQRData({
     numeroComanda: comanda.numero || comanda.id,
-    organismo: organismo?.nombre || 'Sin organismo',
+    organismo: organismo?.nombre || 'Aucun organisme',
     fecha: comanda.fechaEntrega || comanda.fecha,
     items: comanda.items?.length || 0,
     organismoId: organismo?.id,
@@ -192,7 +192,7 @@ export function EtiquetaComanda({ comanda, organismo }: EtiquetaComandaProps) {
               {/* Código de barras */}
               <div className="border-2 border-dashed border-[#999999] rounded-lg p-3 bg-gray-50 flex flex-col items-center justify-center shadow-sm">
                 {barcodeUrl && (
-                  <img src={barcodeUrl} alt="Código de barras" className="h-20" />
+                  <img src={barcodeUrl} alt="Code-barres" className="h-20" />
                 )}
               </div>
 

@@ -77,7 +77,7 @@ export async function seleccionarCarpetaBackup(): Promise<{ success: boolean; fo
     try {
       await guardarHandleEnIndexedDB(handle);
     } catch (e) {
-      console.warn('No se pudo persistir el handle:', e);
+      console.warn('Impossible de persister le handle :', e);
     }
     
     return {
@@ -92,7 +92,7 @@ export async function seleccionarCarpetaBackup(): Promise<{ success: boolean; fo
       };
     }
     
-    console.error('Error al seleccionar carpeta:', error);
+    console.error('Erreur lors de la sélection du dossier :', error);
     return {
       success: false,
       error: error.message || 'Erreur lors de la sélection du dossier'

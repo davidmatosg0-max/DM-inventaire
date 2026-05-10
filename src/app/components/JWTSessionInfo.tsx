@@ -34,24 +34,24 @@ export function JWTSessionInfo({ compact = false }: JWTSessionInfoProps) {
     try {
       const exito = await refrescarSesion();
       if (exito) {
-        toast.success('🔐 Sesión refrescada', {
-          description: 'Tu sesión ha sido renovada exitosamente'
+        toast.success('🔐 Session rafraîchie', {
+          description: 'Votre session a été renouvelée avec succès'
         });
         setStats(obtenerEstadisticasJWT());
       } else {
-        toast.error('Error al refrescar sesión', {
-          description: 'Por favor, inicia sesión nuevamente'
+        toast.error('Erreur lors du rafraîchissement de la session', {
+          description: 'Veuillez vous reconnecter'
         });
       }
     } catch (error) {
-      toast.error('Error al refrescar sesión');
+      toast.error('Erreur lors du rafraîchissement de la session');
     } finally {
       setIsRefreshing(false);
     }
   };
 
   const formatTiempoRestante = (segundos: number): string => {
-    if (segundos <= 0) return 'Expirado';
+    if (segundos <= 0) return 'Expiré';
     
     const minutos = Math.floor(segundos / 60);
     const segs = segundos % 60;
@@ -92,7 +92,7 @@ export function JWTSessionInfo({ compact = false }: JWTSessionInfoProps) {
             onClick={handleRefresh}
             disabled={isRefreshing}
             className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-            title="Refrescar sesión"
+            title="Rafraîchir la session"
           >
             <RefreshCw className={`w-3 h-3 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>

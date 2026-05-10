@@ -172,7 +172,7 @@ function formatCompactNumber(value: number): string {
 function getStatusLabel(status: ReportComanda['estado']): string {
   switch (status) {
     case 'pendiente':
-      return 'Pendiente';
+      return 'En attente';
     case 'confirmada':
       return 'Acceptée';
     case 'en_preparacion':
@@ -180,7 +180,7 @@ function getStatusLabel(status: ReportComanda['estado']): string {
     case 'completada':
       return 'Prête';
     case 'entregada':
-      return 'Entregada';
+      return 'Livrée';
     case 'anulada':
       return 'Annulée';
     default:
@@ -517,11 +517,11 @@ export function ExitReportView() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('reports.activeStatuses', 'États actifs')}</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
+                  <SelectItem value="pendiente">En attente</SelectItem>
                   <SelectItem value="confirmada">Acceptée</SelectItem>
                   <SelectItem value="en_preparacion">En préparation</SelectItem>
                   <SelectItem value="completada">Prête</SelectItem>
-                  <SelectItem value="entregada">Entregada</SelectItem>
+                  <SelectItem value="entregada">Livrée</SelectItem>
                   <SelectItem value="anulada">Annulée</SelectItem>
                 </SelectContent>
               </Select>
@@ -865,7 +865,7 @@ export function ExitReportView() {
                       <td className="px-4 py-3 text-sm text-gray-900">
                         <div>
                           <p>{comanda.organismoNombre}</p>
-                          <p className="text-xs text-gray-500">{comanda.organismoFrecuencia || 'Sin frecuencia'}</p>
+                          <p className="text-xs text-gray-500">{comanda.organismoFrecuencia || 'Sans fréquence'}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-900">{comanda.productos.length}</td>

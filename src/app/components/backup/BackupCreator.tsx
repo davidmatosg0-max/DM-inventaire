@@ -50,44 +50,44 @@ export function BackupCreator() {
   // Módulos disponibles con info
   const moduleInfo = {
     [BACKUP_MODULES.INVENTORY]: {
-      name: t('modules.inventory', 'Inventario'),
+      name: t('modules.inventory', 'Inventaire'),
       icon: <Package className="w-4 h-4" />,
-      description: t('modules.inventoryDesc', 'Productos y stock')
+      description: t('modules.inventoryDesc', 'Produits et stock')
     },
     [BACKUP_MODULES.ORDERS]: {
-      name: t('modules.orders', 'Pedidos'),
+      name: t('modules.orders', 'Commandes'),
       icon: <Package className="w-4 h-4" />,
-      description: t('modules.ordersDesc', 'Comandas y entregas')
+      description: t('modules.ordersDesc', 'Commandes et livraisons')
     },
     [BACKUP_MODULES.ORGANISMS]: {
-      name: t('modules.organisms', 'Organismos'),
+      name: t('modules.organisms', 'Organismes'),
       icon: <Database className="w-4 h-4" />,
-      description: t('modules.organismsDesc', 'Beneficiarios')
+      description: t('modules.organismsDesc', 'Bénéficiaires')
     },
     [BACKUP_MODULES.CONTACTS]: {
-      name: t('modules.contacts', 'Contactos'),
+      name: t('modules.contacts', 'Contacts'),
       icon: <Database className="w-4 h-4" />,
-      description: t('modules.contactsDesc', 'Donantes y proveedores')
+      description: t('modules.contactsDesc', 'Donateurs et fournisseurs')
     },
     [BACKUP_MODULES.TRANSPORT]: {
-      name: t('modules.transport', 'Transporte'),
+      name: t('modules.transport', 'Transport'),
       icon: <Database className="w-4 h-4" />,
-      description: t('modules.transportDesc', 'Vehículos y rutas')
+      description: t('modules.transportDesc', 'Véhicules et trajets')
     },
     [BACKUP_MODULES.USERS]: {
-      name: t('modules.users', 'Usuarios'),
+      name: t('modules.users', 'Utilisateurs'),
       icon: <Database className="w-4 h-4" />,
-      description: t('modules.usersDesc', 'Usuarios y permisos')
+      description: t('modules.usersDesc', 'Utilisateurs et permissions')
     },
     [BACKUP_MODULES.SETTINGS]: {
-      name: t('modules.settings', 'Configuración'),
+      name: t('modules.settings', 'Configuration'),
       icon: <Database className="w-4 h-4" />,
-      description: t('modules.settingsDesc', 'Preferencias del sistema')
+      description: t('modules.settingsDesc', 'Préférences du système')
     },
     [BACKUP_MODULES.AUDIT]: {
-      name: t('modules.audit', 'Auditoría'),
+      name: t('modules.audit', 'Audit'),
       icon: <Database className="w-4 h-4" />,
-      description: t('modules.auditDesc', 'Logs y actividad')
+      description: t('modules.auditDesc', 'Journaux et activité')
     }
   };
   
@@ -113,7 +113,7 @@ export function BackupCreator() {
   // Crear backup
   const handleCreateBackup = async (saveToStorage: boolean) => {
     if (selectedModules.length === 0) {
-      toast.error(t('backup.selectAtLeastOne', 'Seleccione al menos un módulo'));
+      toast.error(t('backup.selectAtLeastOne', 'Sélectionnez au moins un module'));
       return;
     }
     
@@ -131,15 +131,15 @@ export function BackupCreator() {
       if (saveToStorage) {
         saveBackupToStorage(backup);
         toast.success(
-          t('backup.savedToStorage', 'Backup guardado en el sistema'),
+          t('backup.savedToStorage', 'Sauvegarde enregistrée dans le système'),
           {
-            description: `${formatFileSize(backup.metadata.size)} - ${backup.metadata.recordCount} registros`
+            description: `${formatFileSize(backup.metadata.size)} - ${backup.metadata.recordCount} enregistrements`
           }
         );
       } else {
         exportBackupToFile(backup);
         toast.success(
-          t('backup.exported', 'Backup exportado exitosamente'),
+          t('backup.exported', 'Sauvegarde exportée avec succès'),
           {
             description: `${formatFileSize(backup.metadata.size)}`
           }
@@ -151,9 +151,9 @@ export function BackupCreator() {
     } catch (error) {
       console.error('Error creating backup:', error);
       toast.error(
-        t('backup.createError', 'Error al crear el backup'),
+        t('backup.createError', 'Erreur lors de la création de la sauvegarde'),
         {
-          description: error instanceof Error ? error.message : 'Error desconocido'
+          description: error instanceof Error ? error.message : 'Erreur inconnue'
         }
       );
     } finally {
@@ -167,30 +167,30 @@ export function BackupCreator() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="w-5 h-5 text-[#1a4d7a]" />
-            {t('backup.createBackup', 'Crear Backup')}
+            {t('backup.createBackup', 'Créer une sauvegarde')}
           </CardTitle>
           <CardDescription>
-            {t('backup.createDescription', 'Respaldar datos del sistema')}
+            {t('backup.createDescription', 'Sauvegarder les données du système')}
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-6">
           {/* Tipo de backup */}
           <div className="space-y-3">
-            <Label>{t('backup.type', 'Tipo de Backup')}</Label>
+            <Label>{t('backup.type', 'Type de sauvegarde')}</Label>
             <RadioGroup value={backupType} onValueChange={(v: any) => setBackupType(v)}>
               <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
                 <RadioGroupItem value="full" id="full" />
                 <Label htmlFor="full" className="flex-1 cursor-pointer">
                   <div className="font-medium">
-                    {t('backup.full', 'Completo')}
+                    {t('backup.full', 'Complète')}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {t('backup.fullDesc', 'Respaldar todos los datos seleccionados')}
+                    {t('backup.fullDesc', 'Sauvegarder toutes les données sélectionnées')}
                   </div>
                 </Label>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                  {t('backup.recommended', 'Recomendado')}
+                  {t('backup.recommended', 'Recommandé')}
                 </Badge>
               </div>
               
@@ -198,10 +198,10 @@ export function BackupCreator() {
                 <RadioGroupItem value="incremental" id="incremental" />
                 <Label htmlFor="incremental" className="flex-1 cursor-pointer">
                   <div className="font-medium">
-                    {t('backup.incremental', 'Incremental')}
+                    {t('backup.incremental', 'Incrémentale')}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {t('backup.incrementalDesc', 'Solo cambios desde el último backup')}
+                    {t('backup.incrementalDesc', 'Seulement les changements depuis la dernière sauvegarde')}
                   </div>
                 </Label>
               </div>
@@ -211,13 +211,13 @@ export function BackupCreator() {
           {/* Descripción */}
           <div className="space-y-2">
             <Label htmlFor="description">
-              {t('backup.description', 'Descripción')} ({t('common.optional', 'opcional')})
+              {t('backup.description', 'Description')} ({t('common.optional', 'optionnel')})
             </Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('backup.descriptionPlaceholder', 'Ej: Backup mensual de febrero')}
+              placeholder={t('backup.descriptionPlaceholder', 'Ex. : sauvegarde mensuelle de février')}
               rows={3}
             />
           </div>
@@ -225,7 +225,7 @@ export function BackupCreator() {
           {/* Módulos */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>{t('backup.modulesToBackup', 'Módulos a Respaldar')}</Label>
+              <Label>{t('backup.modulesToBackup', 'Modules à sauvegarder')}</Label>
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
@@ -233,7 +233,7 @@ export function BackupCreator() {
                   onClick={selectAll}
                   className="text-xs"
                 >
-                  {t('common.selectAll', 'Seleccionar todos')}
+                  {t('common.selectAll', 'Tout sélectionner')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -241,7 +241,7 @@ export function BackupCreator() {
                   onClick={selectNone}
                   className="text-xs"
                 >
-                  {t('common.selectNone', 'Ninguno')}
+                  {t('common.selectNone', 'Aucun')}
                 </Button>
               </div>
             </div>
@@ -283,7 +283,7 @@ export function BackupCreator() {
             </div>
             
             <p className="text-sm text-gray-500">
-              {selectedModules.length} {t('backup.modulesSelected', 'módulos seleccionados')}
+              {selectedModules.length} {t('backup.modulesSelected', 'modules sélectionnés')}
             </p>
           </div>
           
@@ -297,12 +297,12 @@ export function BackupCreator() {
               {isCreating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('backup.creating', 'Creando...')}
+                  {t('backup.creating', 'Création...')}
                 </>
               ) : (
                 <>
                   <HardDrive className="w-4 h-4 mr-2" />
-                  {t('backup.saveToSystem', 'Guardar en Sistema')}
+                  {t('backup.saveToSystem', 'Enregistrer dans le système')}
                 </>
               )}
             </Button>
@@ -316,12 +316,12 @@ export function BackupCreator() {
               {isCreating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('backup.exporting', 'Exportando...')}
+                  {t('backup.exporting', 'Exportation...')}
                 </>
               ) : (
                 <>
                   <FileDown className="w-4 h-4 mr-2" />
-                  {t('backup.exportToFile', 'Exportar a Archivo')}
+                  {t('backup.exportToFile', 'Exporter vers un fichier')}
                 </>
               )}
             </Button>
@@ -335,25 +335,25 @@ export function BackupCreator() {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2 text-green-700">
               <CheckCircle2 className="w-4 h-4" />
-              {t('backup.lastCreated', 'Último Backup Creado')}
+              {t('backup.lastCreated', 'Dernière sauvegarde créée')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500 mb-1">{t('backup.date', 'Fecha')}</p>
+                <p className="text-gray-500 mb-1">{t('backup.date', 'Date')}</p>
                 <p className="font-medium">{formatDateTime(lastBackup.timestamp)}</p>
               </div>
               <div>
-                <p className="text-gray-500 mb-1">{t('backup.size', 'Tamaño')}</p>
+                <p className="text-gray-500 mb-1">{t('backup.size', 'Taille')}</p>
                 <p className="font-medium">{formatFileSize(lastBackup.size)}</p>
               </div>
               <div>
-                <p className="text-gray-500 mb-1">{t('backup.records', 'Registros')}</p>
+                <p className="text-gray-500 mb-1">{t('backup.records', 'Enregistrements')}</p>
                 <p className="font-medium">{lastBackup.recordCount}</p>
               </div>
               <div>
-                <p className="text-gray-500 mb-1">{t('backup.modules', 'Módulos')}</p>
+                <p className="text-gray-500 mb-1">{t('backup.modules', 'Modules')}</p>
                 <p className="font-medium">{lastBackup.modules.length}</p>
               </div>
             </div>

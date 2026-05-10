@@ -49,7 +49,7 @@ export function obtenerConversiones(): RegistroConversion[] {
     if (!data) return [];
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error al obtener conversiones:', error);
+    console.error('Erreur lors de la récupération des conversions :', error);
     return [];
   }
 }
@@ -62,9 +62,9 @@ export function guardarConversion(conversion: RegistroConversion): void {
     const conversiones = obtenerConversiones();
     conversiones.unshift(conversion); // Agregar al inicio
     localStorage.setItem(CONVERSIONES_KEY, JSON.stringify(conversiones));
-    console.log('✅ Conversión guardada exitosamente');
+    console.log('✅ Conversion enregistrée avec succès');
   } catch (error) {
-    console.error('❌ Error al guardar conversión:', error);
+    console.error('❌ Erreur lors de l’enregistrement de la conversion :', error);
     throw error;
   }
 }
@@ -80,10 +80,10 @@ export function revertirConversion(conversionId: string): void {
       conversiones[index].revertida = true;
       conversiones[index].fechaReversion = new Date().toISOString();
       localStorage.setItem(CONVERSIONES_KEY, JSON.stringify(conversiones));
-      console.log('✅ Conversión revertida');
+      console.log('✅ Conversion annulée');
     }
   } catch (error) {
-    console.error('❌ Error al revertir conversión:', error);
+    console.error('❌ Erreur lors de l’annulation de la conversion :', error);
     throw error;
   }
 }
@@ -105,7 +105,7 @@ export function obtenerPlantillasConversion(): PlantillaConversion[] {
     if (!data) return [];
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error al obtener plantillas:', error);
+    console.error('Erreur lors de la récupération des modèles :', error);
     return [];
   }
 }
@@ -126,9 +126,9 @@ export function guardarPlantillaConversion(plantilla: PlantillaConversion): void
       plantillas.push(plantilla);
     }
     localStorage.setItem(PLANTILLAS_KEY, JSON.stringify(plantillas));
-    console.log('✅ Plantilla guardada exitosamente');
+    console.log('✅ Modèle enregistré avec succès');
   } catch (error) {
-    console.error('❌ Error al guardar plantilla:', error);
+    console.error('❌ Erreur lors de l’enregistrement du modèle :', error);
     throw error;
   }
 }
@@ -145,7 +145,7 @@ export function incrementarUsoPlantilla(plantillaId: string): void {
       localStorage.setItem(PLANTILLAS_KEY, JSON.stringify(plantillas));
     }
   } catch (error) {
-    console.error('Error al incrementar uso de plantilla:', error);
+    console.error('Erreur lors de l’incrémentation de l’utilisation du modèle :', error);
   }
 }
 
@@ -157,9 +157,9 @@ export function eliminarPlantillaConversion(plantillaId: string): void {
     const plantillas = obtenerPlantillasConversion();
     const plantillasFiltradas = plantillas.filter(p => p.id !== plantillaId);
     localStorage.setItem(PLANTILLAS_KEY, JSON.stringify(plantillasFiltradas));
-    console.log('✅ Plantilla eliminada');
+    console.log('✅ Modèle supprimé');
   } catch (error) {
-    console.error('❌ Error al eliminar plantilla:', error);
+    console.error('❌ Erreur lors de la suppression du modèle :', error);
     throw error;
   }
 }

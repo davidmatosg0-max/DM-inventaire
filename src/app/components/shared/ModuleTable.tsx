@@ -26,7 +26,7 @@ export function ModuleTable<T>({
   columns,
   keyExtractor,
   onRowClick,
-  emptyMessage = 'No hay datos disponibles',
+  emptyMessage = 'Aucune donnée disponible',
   className,
   hoverable = true,
   striped = false,

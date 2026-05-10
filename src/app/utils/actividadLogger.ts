@@ -91,7 +91,7 @@ export const registrarActividad = (
     
     return actividad;
   } catch (error) {
-    console.error('❌ Error al registrar actividad:', error);
+    console.error('❌ Erreur lors de l’enregistrement de l’activité :', error);
     return undefined;
   }
 };
@@ -105,7 +105,7 @@ export const obtenerActividades = (): ActividadLog[] => {
     const actividades = JSON.parse(localStorage.getItem('registroActividades') || '[]');
     return actividades;
   } catch (error) {
-    console.error('Error al obtener actividades:', error);
+    console.error('Erreur lors de la récupération des activités :', error);
     return [];
   }
 };
@@ -117,9 +117,9 @@ export const limpiarActividades = (): void => {
   try {
     localStorage.removeItem('registroActividades');
     window.dispatchEvent(new Event('actividadesLimpiadas'));
-    console.log('✅ Registro de actividades limpiado');
+    console.log('✅ Journal des activités nettoyé');
   } catch (error) {
-    console.error('Error al limpiar actividades:', error);
+    console.error('Erreur lors du nettoyage des activités :', error);
   }
 };
 

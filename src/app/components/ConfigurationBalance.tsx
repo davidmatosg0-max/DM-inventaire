@@ -175,16 +175,16 @@ export function ConfigurationBalance({ onWeightChange, showInline = false }: Con
             <p className="font-medium text-red-900">{t('balance.notSupported')}</p>
             <p className="text-red-700 mt-1">{t('balance.notSupportedDesc')}</p>
             <div className="mt-3 p-3 bg-white rounded border border-red-300">
-              <p className="font-semibold text-red-900 mb-2">Navegadores compatibles:</p>
+              <p className="font-semibold text-red-900 mb-2">Navigateurs compatibles :</p>
               <ul className="space-y-1 text-xs text-red-800">
-                <li>✅ <strong>Google Chrome</strong> (versión 89+) - Recomendado</li>
-                <li>✅ <strong>Microsoft Edge</strong> (versión 89+)</li>
-                <li>✅ <strong>Opera</strong> (versión 75+)</li>
-                <li>❌ <strong>Firefox</strong> - No soportado</li>
-                <li>❌ <strong>Safari</strong> - No soportado</li>
+                <li>✅ <strong>Google Chrome</strong> (version 89+) - Recommandé</li>
+                <li>✅ <strong>Microsoft Edge</strong> (version 89+)</li>
+                <li>✅ <strong>Opera</strong> (version 75+)</li>
+                <li>❌ <strong>Firefox</strong> - Non pris en charge</li>
+                <li>❌ <strong>Safari</strong> - Non pris en charge</li>
               </ul>
               <p className="mt-2 text-xs text-red-700">
-                Por favor, abre esta página en Google Chrome o Microsoft Edge para usar la balanza USB.
+                Veuillez ouvrir cette page dans Google Chrome ou Microsoft Edge pour utiliser la balance USB.
               </p>
             </div>
           </div>

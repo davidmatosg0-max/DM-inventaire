@@ -125,7 +125,7 @@ export function obtenerLogs(): AuditLog[] {
     const logs = JSON.parse(data);
     return Array.isArray(logs) ? logs : [];
   } catch (error) {
-    console.error('Error al obtener logs de auditoría:', error);
+    console.error('Erreur lors de la récupération des journaux d’audit :', error);
     return [];
   }
 }
@@ -155,7 +155,7 @@ export function registrarAuditLog(log: Omit<AuditLog, 'id' | 'fecha'>): string {
     
     return nuevoLog.id;
   } catch (error) {
-    console.error('Error al registrar log de auditoría:', error);
+    console.error('Erreur lors de l’enregistrement du journal d’audit :', error);
     return '';
   }
 }
