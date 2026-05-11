@@ -479,6 +479,12 @@ export function ModeloComanda({
 
   // Inicializar cantidades editadas
   useEffect(() => {
+    if (mostrar) {
+      setVistaCompacta(true);
+    }
+  }, [mostrar]);
+
+  useEffect(() => {
     if (mostrar && modoOrganismo) {
       const cantidadesIniciales: {[key: string]: number} = {};
       productosOrdenados.forEach((item: any, index: number) => {
