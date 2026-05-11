@@ -77,6 +77,11 @@ const getTiposOrganismo = (t: any) => [
 ];
 
 const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const clasificacionOptions: Array<{ value: ClasificacionOrganismo; label: string }> = [
+  { value: 'regular', label: 'Régulier' },
+  { value: 'eventual', label: 'Éventuel' },
+  { value: 'collation', label: 'Collation' },
+];
 
 export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { t } = useTranslation();
@@ -96,6 +101,8 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   const [currentRecipient, setCurrentRecipient] = useState<Organismo | null>(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
+  const [selectedDiaCitaFilter, setSelectedDiaCitaFilter] = useState<'all' | string>('all');
+  const [selectedClasificacionFilter, setSelectedClasificacionFilter] = useState<'all' | ClasificacionOrganismo>('all');
 
   // Estados para funcionalidades adicionales
   const [organismoDialogOpen, setOrganismoDialogOpen] = useState(false);
@@ -680,6 +687,47 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     setSelectedOrganismos([]);
     setEmailSubject('');
     setEmailMessage('');
+    setSelectedDiaCitaFilter('all');
+    setSelectedClasificacionFilter('all');
+  };
+
+  const getClasificacionOrganismo = (organismo: Organismo): ClasificacionOrganismo => (
+    organismo.clasificacionOrganismo || (organismo.regular ? 'regular' : 'eventual')
+  );
+
+  const organismosFiltradosModal = organismos.filter((organismo) => {
+    const coincideDiaCita = selectedDiaCitaFilter === 'all'
+      ? true
+      : (organismo.diaCita || '').trim() === selectedDiaCitaFilter;
+    const coincideClasificacion = selectedClasificacionFilter === 'all'
+      ? true
+      : getClasificacionOrganismo(organismo) === selectedClasificacionFilter;
+
+    return coincideDiaCita && coincideClasificacion;
+  });
+
+  const todosLosOrganismosFiltradosSeleccionados = (
+    organismosFiltradosModal.length > 0
+    && organismosFiltradosModal.every((organismo) => selectedOrganismos.includes(organismo.id))
+  );
+
+  const toggleOrganismo = (organismoId: string) => {
+    setSelectedOrganismos((prev) => (
+      prev.includes(organismoId)
+        ? prev.filter((id) => id !== organismoId)
+        : [...prev, organismoId]
+    ));
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedOrganismos((prev) => (
+      todosLosOrganismosFiltradosSeleccionados
+        ? prev.filter((id) => !organismosFiltradosModal.some((organismo) => organismo.id === id))
+        : Array.from(new Set([
+            ...prev,
+            ...organismosFiltradosModal.map((organismo) => organismo.id),
+          ]))
+    ));
   };
 
   const sendEmail = async () => {
@@ -803,7 +851,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   
   // Si mostrar gestión demandes, renderizar ese componente
   if (mostrarGestionDemandes) {
-    return <GestionDemandes />;
+    return <GestionDemandes onBack={() => setMostrarGestionDemandes(false)} />;
   }
 
   return (
@@ -1559,6 +1607,40 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             {/* Selección Grupal */}
             {emailType === 'group' && (
               <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] sm:items-end">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#333333]">Filtrer par jour de rendez-vous</Label>
+                    <Select value={selectedDiaCitaFilter} onValueChange={setSelectedDiaCitaFilter}>
+                      <SelectTrigger className="h-10 rounded-lg border-gray-200 bg-white">
+                        <SelectValue placeholder="Tous les jours" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les jours</SelectItem>
+                        {diasCitaOptions.map((dia) => (
+                          <SelectItem key={dia} value={dia}>{dia}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#333333]">Filtrer par classification</Label>
+                    <Select value={selectedClasificacionFilter} onValueChange={(value) => setSelectedClasificacionFilter(value as 'all' | ClasificacionOrganismo)}>
+                      <SelectTrigger className="h-10 rounded-lg border-gray-200 bg-white">
+                        <SelectValue placeholder="Toutes les classifications" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les classifications</SelectItem>
+                        {clasificacionOptions.map((clasificacion) => (
+                          <SelectItem key={clasificacion.value} value={clasificacion.value}>{clasificacion.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-[#666666] sm:pb-2">
+                    {organismosFiltradosModal.length} organisme(s) correspondent aux filtres sélectionnés.
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-medium">{t('liaison.selectOrganisms')}</Label>
                   <Button
@@ -1567,14 +1649,14 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                     onClick={toggleSelectAll}
                     className="text-xs"
                   >
-                    {selectedOrganismos.length === organismos.length
+                    {todosLosOrganismosFiltradosSeleccionados
                       ? t('liaison.deselectAll')
                       : t('liaison.selectAll')}
                   </Button>
                 </div>
 
                 <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
-                  {organismos.map((org) => (
+                  {organismosFiltradosModal.length > 0 ? organismosFiltradosModal.map((org) => (
                     <label
                       key={org.id}
                       className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
@@ -1597,9 +1679,15 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                       <div className="flex-1">
                         <p className="font-medium text-sm">{org.nombre}</p>
                         <p className="text-xs text-[#666666]">{org.email}</p>
+                        <p className="text-xs text-[#8a8a8a]">Jour de rendez-vous: {org.diaCita || 'Non défini'}</p>
+                        <p className="text-xs text-[#8a8a8a]">Classification: {clasificacionOptions.find((item) => item.value === getClasificacionOrganismo(org))?.label || 'Non définie'}</p>
                       </div>
                     </label>
-                  ))}
+                  )) : (
+                    <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center text-sm text-[#666666]">
+                      Aucun organisme ne correspond aux filtres sélectionnés.
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">

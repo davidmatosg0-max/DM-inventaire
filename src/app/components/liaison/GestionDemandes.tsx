@@ -18,7 +18,11 @@ import {
 } from '../../utils/demandesStorage';
 import { useTranslation } from 'react-i18next';
 
-export const GestionDemandes: React.FC = () => {
+type GestionDemandesProps = {
+  onBack?: () => void;
+};
+
+export const GestionDemandes: React.FC<GestionDemandesProps> = ({ onBack }) => {
   const { t } = useTranslation();
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [demandeSelectionnee, setDemandeSelectionnee] = useState<Demande | null>(null);
@@ -455,6 +459,15 @@ export const GestionDemandes: React.FC = () => {
         {/* Header con glassmorphism */}
         <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-2xl border border-white/20 p-8 mb-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1a4d7a] via-[#2d9561] to-[#1a4d7a]" />
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="group mb-4 flex items-center gap-2 font-medium text-[#1a4d7a] transition-all duration-300 hover:scale-105 hover:text-[#2d9561]"
+            >
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              Retour à Liaison
+            </button>
+          )}
           <h1 className="text-4xl font-bold text-[#1a4d7a] mb-2 flex items-center gap-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <div className="w-12 h-12 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl flex items-center justify-center text-white text-2xl shadow-lg">
               💬
