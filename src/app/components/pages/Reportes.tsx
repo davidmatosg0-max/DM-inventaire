@@ -480,6 +480,37 @@ function getReportProductWeight(
   return unitWeight > 0 ? unitWeight * item.cantidad : item.cantidad;
 }
 
+function getEntryMonetaryValue(
+  entry: { productoId?: string; cantidad: number; valorUnitario?: number; valorTotal?: number },
+  productIndex: Map<string, ProductoCreado>
+): number {
+  const entryTotal = getSafeNumericValue(entry.valorTotal);
+  if (entryTotal > 0) {
+    return entryTotal;
+  }
+
+  const entryUnitValue = getSafeNumericValue(entry.valorUnitario);
+  if (entryUnitValue > 0) {
+    return entryUnitValue * entry.cantidad;
+  }
+
+  const producto = productIndex.get(entry.productoId || '');
+  if (!producto) {
+    return 0;
+  }
+
+  const productUnitValue = getSafeNumericValue(producto.valorUnitario);
+  if (productUnitValue > 0) {
+    return productUnitValue * entry.cantidad;
+  }
+
+  const productTotalValue = getSafeNumericValue(producto.valorTotal);
+  const productStock = getSafeNumericValue(producto.stockActual);
+  return productTotalValue > 0 && productStock > 0
+    ? (productTotalValue / productStock) * entry.cantidad
+    : 0;
+}
+
 function formatReportDate(value?: string): string {
   if (!value) return 'N/A';
   const parsedDate = new Date(value);
@@ -835,7 +866,7 @@ export function Reportes() {
             .filter((comanda) => selectedCategory === 'all' || comanda.filteredPeso > 0);
 
           const procurementValue = operationalEntries.reduce(
-            (sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)),
+            (sum, entry) => sum + getEntryMonetaryValue(entry, productIndex),
             0,
           );
           const distributionValue = operationalDistributions.reduce(
@@ -876,7 +907,7 @@ export function Reportes() {
                       Catégorie: getEntryCategoryLabel(entry, productIndex),
                       Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
                       Quantité: entry.cantidad,
-                      Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
+                      Valeur: getEntryMonetaryValue(entry, productIndex),
                     }))
                   : [{ Section: 'Approvisionnement', Note: 'Aucune donnée disponible.' }]),
                 ...(operationalDistributions.length > 0
@@ -906,7 +937,7 @@ export function Reportes() {
                       Catégorie: getEntryCategoryLabel(entry, productIndex),
                       Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
                       Quantité: entry.cantidad,
-                      Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
+                      Valeur: getEntryMonetaryValue(entry, productIndex),
                     }))
                   : [{ Note: 'Aucune donnée disponible.' }],
               },
@@ -941,7 +972,7 @@ export function Reportes() {
                       Catégorie: getEntryCategoryLabel(entry, productIndex),
                       Programme: entry.programaCodigo || entry.programaNombre || 'N/A',
                       Quantité: entry.cantidad,
-                      Valeur: entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad),
+                      Valeur: getEntryMonetaryValue(entry, productIndex),
                     }))
                   : [{ Section: 'Approvisionnement', Note: 'Aucune donnée disponible.' }]),
                 ...(operationalDistributions.length > 0
@@ -1409,7 +1440,7 @@ export function Reportes() {
     })
     .filter((comanda) => selectedCategory === 'all' || comanda.filteredPeso > 0);
   const procurementValue = operationalEntries.reduce(
-    (sum, entry) => sum + (entry.valorTotal ?? ((entry.valorUnitario || 0) * entry.cantidad)),
+    (sum, entry) => sum + getEntryMonetaryValue(entry, productIndex),
     0,
   );
   const operationalEntriesKg = Number(
