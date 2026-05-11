@@ -300,10 +300,17 @@ export function actualizarComandasDistribucion(
         return comanda;
       }
 
+      const grupoDistribucionEtiqueta = construirEtiquetaGrupoDistribucion(
+        comanda.modalidadDistribucion,
+        cambios.fechaCaducidadGrupo,
+        metadatosGrupo?.grupoDistribucionEtiqueta || comanda.grupoDistribucionEtiqueta,
+      );
+
       return normalizarComanda({
         ...comanda,
         ...metadatosGrupo,
         ...cambios,
+        grupoDistribucionEtiqueta,
         fechaModificacion: new Date().toISOString(),
       }, obtenerProductos());
     });

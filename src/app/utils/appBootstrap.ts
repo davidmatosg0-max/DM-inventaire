@@ -31,7 +31,7 @@ import { sincronizarTodosLosBenevolesConContactos } from './debugBenevoles';
 import './debugContactosDepartamentos';
 import './limpiarContactosDepartamento';
 import './ejemplosFuncionalesPrueba';
-import { hydrateCriticalStorageFromCloud, isCloudPersistenceEnabled } from './cloudPersistence';
+import { hydrateCriticalStorageFromCloud, initializeCloudPersistence, isCloudPersistenceEnabled } from './cloudPersistence';
 
 const CLAVES_OBSOLETAS_CUISINE = ['productos_cocina_pendientes'];
 
@@ -51,10 +51,11 @@ function limpiarDatosObsoletosCuisine(): void {
 
 export async function runAppBootstrap() {
   inicializarProteccionDatos();
+  initializeCloudPersistence();
 
   if (isCloudPersistenceEnabled()) {
     await hydrateCriticalStorageFromCloud();
-    logger.info('Persistencia remota crítica hidratada desde Supabase');
+    logger.info('Persistencia remota de datos reales hidratada y asegurada desde Supabase');
   }
 
   localStorage.setItem('sistema_con_datos_reales', 'true');
