@@ -100,6 +100,8 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
     { id: 'organismos', titulo: 'Organismes', icono: Building2 },
     { id: 'ofertas', titulo: 'Offres Organismes', icono: Gift },
     { id: 'transporte', titulo: 'Transport', icono: Truck },
+    { id: 'achats', titre: 'Achats', icono: ShoppingCart },
+    { id: 'dechets', titre: 'Déchets & compostage', icono: Trash2 },
     { id: 'reportes', titre: 'Rapports', icono: FileBarChart },
     { id: 'cuisine', titre: 'Cuisine', icono: ChefHat },
     { id: 'liaison', titre: 'Liaison', icono: Mail },
@@ -280,6 +282,39 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                         <p className="font-medium">Sécurisé</p>
                         <p className="text-sm text-gray-600">Gestion avancée des rôles et permissions</p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-md border-2 border-blue-200">
+                  <h4 className="font-bold text-xl mb-4 flex items-center gap-2">
+                    <Rocket className="w-6 h-6 text-blue-600" />
+                    Mises à Jour Récentes
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <p className="font-bold text-blue-900">Inventaire</p>
+                      <p className="mt-1 text-sm text-gray-700">
+                        Ajout d'une action indépendante pour <strong>ajouter au stock existant</strong> et simplification du formulaire de saisie avec un bouton <strong>Annuler</strong> visible.
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <p className="font-bold text-purple-900">Commandes</p>
+                      <p className="mt-1 text-sm text-gray-700">
+                        Le modèle de commande s'ouvre maintenant en <strong>vue compacte</strong> par défaut pour afficher les informations essentielles plus rapidement.
+                      </p>
+                    </div>
+                    <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                      <p className="font-bold text-teal-900">Rapports</p>
+                      <p className="mt-1 text-sm text-gray-700">
+                        L'onglet <strong>Opérations</strong> calcule correctement la <strong>valeur entrante</strong>, même lorsque les anciennes entrées n'avaient pas de montant stocké.
+                      </p>
+                    </div>
+                    <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
+                      <p className="font-bold text-pink-900">Liaison</p>
+                      <p className="mt-1 text-sm text-gray-700">
+                        Réactivation de l'envoi d'emails groupés avec filtres par <strong>jour de rendez-vous</strong> et <strong>classification</strong>, plus retour direct depuis la gestion des demandes.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -664,6 +699,27 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                   </div>
                 </div>
 
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-xl p-6">
+                  <h4 className="font-bold text-emerald-900 mb-4 flex items-center gap-2">
+                    <Plus className="w-6 h-6" />
+                    Nouveautés de Saisie
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                      <p className="font-bold mb-2">Ajouter au stock existant</p>
+                      <p>
+                        Un bouton dédié permet d'augmenter rapidement la quantité d'un produit déjà présent sans passer par le formulaire complet de nouvelle entrée.
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                      <p className="font-bold mb-2">Formulaire de nouvelle entrée clarifié</p>
+                      <p>
+                        Le formulaire principal conserve le flux standard, avec un <strong>cockpit produit</strong>, un calcul de poids automatique et un bouton <strong>Annuler</strong> directement visible pendant la saisie.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-blue-50 border-l-4 border-blue-600 rounded-r-xl p-6">
                   <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
                     <Lightbulb className="w-5 h-5" />
@@ -814,6 +870,20 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                         <p className="text-sm text-gray-600">Mises à jour instantanées du statut</p>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 rounded-xl p-6">
+                  <h4 className="font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                    <Eye className="w-6 h-6" />
+                    Mise à Jour de la Vue Commande
+                  </h4>
+                  <p className="text-sm text-gray-700 mb-3">
+                    Le modèle de commande s'ouvre désormais en <strong>vue compacte</strong> par défaut afin d'afficher immédiatement les informations essentielles sans surcharge visuelle.
+                  </p>
+                  <div className="bg-white p-4 rounded-lg border border-indigo-200 text-sm text-gray-700">
+                    <p className="font-medium">Idéal pour:</p>
+                    <p className="mt-1">consulter rapidement l'organisme, les produits, les quantités, les notes et le statut sans devoir basculer manuellement vers un affichage plus dense.</p>
                   </div>
                 </div>
 
@@ -1081,6 +1151,159 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
               </div>
             )}
 
+            {/* ACHATS */}
+            {seccionActiva === 'achats' && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-violet-600 to-fuchsia-700 text-white rounded-2xl p-8 shadow-xl">
+                  <div className="flex items-start gap-4">
+                    <ShoppingCart className="w-16 h-16 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-3xl font-bold mb-3">Module Achats</h3>
+                      <p className="text-violet-50 text-lg">
+                        Pilotage des bons d'achat, des fournisseurs, des programmes budgétaires et des circuits d'autorisation internes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-md border-2 border-violet-200">
+                  <h4 className="font-bold text-xl mb-4 flex items-center gap-2">
+                    <Star className="w-6 h-6 text-violet-600" />
+                    Parcours Principal
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-violet-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold">1</div>
+                      <div className="flex-1 bg-violet-50 p-4 rounded-lg border border-violet-200">
+                        <p className="font-bold mb-2">Tableau de bord achats</p>
+                        <p className="text-sm text-gray-700">Visualisez le volume engagé, les demandes en validation, les bons approuvés et les réceptions finalisées.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-violet-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold">2</div>
+                      <div className="flex-1 bg-violet-50 p-4 rounded-lg border border-violet-200">
+                        <p className="font-bold mb-2">Création d'un bon d'achat</p>
+                        <p className="text-sm text-gray-700">Rattachez un fournisseur, un programme d'achat, un montant, une date de livraison souhaitée et préparez la demande avant soumission.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-violet-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold">3</div>
+                      <div className="flex-1 bg-violet-50 p-4 rounded-lg border border-violet-200">
+                        <p className="font-bold mb-2">Validation interne</p>
+                        <p className="text-sm text-gray-700">Les bons passent par une file d'autorisation. Les montants importants peuvent exiger une double validation selon les règles configurées.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="bg-violet-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold">4</div>
+                      <div className="flex-1 bg-violet-50 p-4 rounded-lg border border-violet-200">
+                        <p className="font-bold mb-2">Emission et réception</p>
+                        <p className="text-sm text-gray-700">Après approbation, le bon peut être marqué commandé, reçu ou annulé, avec historique des décisions et export PDF.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl p-6 shadow-md border border-violet-200">
+                    <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-violet-600" />
+                      Base fournisseurs
+                    </h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li>• Référence centralisée des fournisseurs actifs</li>
+                      <li>• Coordonnées, catégories de produits et contacts principaux</li>
+                      <li>• Réutilisation directe lors de la création des bons</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white rounded-xl p-6 shadow-md border border-violet-200">
+                    <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-violet-600" />
+                      Programmes et autorisations
+                    </h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li>• Programmes d'achat avec responsable et budget annuel</li>
+                      <li>• Suivi de consommation et restant budgétaire</li>
+                      <li>• Règles d'autorisation par seuil financier et rôle responsable</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-violet-50 border-l-4 border-violet-600 rounded-r-xl p-6">
+                  <h4 className="font-bold text-violet-900 mb-3 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5" />
+                    Conseils d'Usage
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex gap-2"><CheckCircle className="w-4 h-4 text-violet-600 mt-0.5 flex-shrink-0" /> Associez chaque bon à un programme pour suivre le budget réel.</li>
+                    <li className="flex gap-2"><CheckCircle className="w-4 h-4 text-violet-600 mt-0.5 flex-shrink-0" /> Utilisez la prévisualisation et l'export PDF avant émission au fournisseur.</li>
+                    <li className="flex gap-2"><CheckCircle className="w-4 h-4 text-violet-600 mt-0.5 flex-shrink-0" /> Vérifiez régulièrement la file d'autorisation pour éviter les blocages opérationnels.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* DÉCHETS & COMPOSTAGE */}
+            {seccionActiva === 'dechets' && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-emerald-600 to-lime-700 text-white rounded-2xl p-8 shadow-xl">
+                  <div className="flex items-start gap-4">
+                    <Trash2 className="w-16 h-16 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-3xl font-bold mb-3">Module Déchets & compostage</h3>
+                      <p className="text-emerald-50 text-lg">
+                        Suivi opérationnel des déchets et compostages de l'entrepôt avec enregistrement en kilogrammes, gestion des catégories et rapports par période.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-md border-2 border-emerald-200">
+                  <h4 className="font-bold text-xl mb-4 flex items-center gap-2">
+                    <Target className="w-6 h-6 text-emerald-600" />
+                    Organisation du Module
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                      <p className="font-bold mb-2">Gestion par kg</p>
+                      <p className="text-sm text-gray-700">Saisissez la date, le type, la catégorie, le poids et les notes pour chaque registre, avec édition, duplication et suppression.</p>
+                    </div>
+                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                      <p className="font-bold mb-2">Rapport par dates</p>
+                      <p className="text-sm text-gray-700">Analysez une période avec dates de début et de fin, catégories dominantes, volume total et détail exportable.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-xl p-5 shadow-md border border-emerald-200">
+                    <p className="text-sm font-semibold text-slate-900">Types personnalisables</p>
+                    <p className="mt-2 text-sm text-gray-700">Les types comme déchet, compostage ou recyclage peuvent être configurés avec leur propre couleur.</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-5 shadow-md border border-emerald-200">
+                    <p className="text-sm font-semibold text-slate-900">Catégories suivies</p>
+                    <p className="mt-2 text-sm text-gray-700">Les catégories sont gérées séparément pour normaliser les enregistrements et faciliter la lecture des volumes.</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-5 shadow-md border border-emerald-200">
+                    <p className="text-sm font-semibold text-slate-900">Exports opérationnels</p>
+                    <p className="mt-2 text-sm text-gray-700">Le rapport de période peut être exporté en Excel ou PDF pour le suivi interne et les bilans mensuels.</p>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 border-l-4 border-green-600 rounded-r-xl p-6">
+                  <h4 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Indicateurs Disponibles
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex gap-2"><CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" /> Volume total enregistré sur l'ensemble du module</li>
+                    <li className="flex gap-2"><CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" /> Répartition par type avec cartes de synthèse</li>
+                    <li className="flex gap-2"><CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" /> Top catégories sur la période analysée</li>
+                    <li className="flex gap-2"><CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" /> Recherche textuelle dans les registres et dans les rapports</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
             {/* RAPPORTS */}
             {seccionActiva === 'reportes' && (
               <div className="space-y-6">
@@ -1176,6 +1399,26 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <Activity className="w-10 h-10 text-purple-600 mx-auto mb-2" />
                       <p className="font-bold">Courbes d'Évolution</p>
                       <p className="text-xs text-gray-600">Tendances dans le temps</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-300 rounded-xl p-6">
+                  <h4 className="font-bold text-teal-900 mb-3 flex items-center gap-2">
+                    <DollarSign className="w-6 h-6" />
+                    Fiabilité de l'Onglet Opérations
+                  </h4>
+                  <div className="space-y-3 text-sm text-gray-700">
+                    <p>
+                      La <strong>valeur entrante</strong> est maintenant recalculée de manière robuste, même si certaines entrées historiques ne contiennent pas directement de valeur unitaire ou totale.
+                    </p>
+                    <div className="bg-white p-4 rounded-lg border border-teal-200">
+                      <p className="font-medium mb-2">Ordre de calcul appliqué:</p>
+                      <ul className="space-y-1">
+                        <li>• valeur totale enregistrée sur l'entrée</li>
+                        <li>• valeur unitaire × quantité</li>
+                        <li>• repli sur la valeur monétaire du produit associé</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -1942,6 +2185,33 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <h5 className="font-bold text-purple-900 mb-2">📜 Historique Communications</h5>
                       <p className="text-sm text-gray-700">
                         Consultez l'historique complet de tous les emails envoyés avec dates, destinataires et contenus.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-fuchsia-50 to-pink-50 border-2 border-fuchsia-300 rounded-xl p-6">
+                  <h4 className="font-bold text-fuchsia-900 mb-4 flex items-center gap-2">
+                    <Filter className="w-6 h-6" />
+                    Mises à Jour Récentes de Liaison
+                  </h4>
+                  <div className="space-y-3 text-sm text-gray-700">
+                    <div className="bg-white p-4 rounded-lg border border-fuchsia-200">
+                      <p className="font-bold mb-1">Envoi groupé stabilisé</p>
+                      <p>
+                        Le modal d'email groupé s'ouvre de nouveau correctement et la sélection globale fonctionne sur la liste affichée.
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-fuchsia-200">
+                      <p className="font-bold mb-1">Filtres avancés</p>
+                      <p>
+                        Les envois peuvent être filtrés par <strong>jour de rendez-vous</strong> et par <strong>classification</strong> pour cibler plus finement les organismes.
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-fuchsia-200">
+                      <p className="font-bold mb-1">Retour depuis la gestion des demandes</p>
+                      <p>
+                        Un bouton de retour permet de revenir directement à Liaison depuis l'écran de gestion des demandes sans casser le flux de travail.
                       </p>
                     </div>
                   </div>
