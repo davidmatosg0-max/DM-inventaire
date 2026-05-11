@@ -136,7 +136,7 @@ export function Comandas() {
   const [searchInventario, setSearchInventario] = useState('');
   const [cantidadesInventario, setCantidadesInventario] = useState<Record<string, number>>({});
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
-  const [vistaCompactaComandas, setVistaCompactaComandas] = useState(true);
+  const [vistaCompactaComandas, setVistaCompactaComandas] = useState(false);
   
   // Estados para proponer nueva fecha
   const [dialogProponerFechaOpen, setDialogProponerFechaOpen] = useState(false);
