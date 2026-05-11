@@ -1373,6 +1373,12 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     }
   }, [handleOpenChange, productosAgregados, formData, contactosDisponibles, programaSeleccionado]);
 
+  const annulerEtFermer = useCallback(() => {
+    setFormData(FORM_DATA_INICIAL);
+    setProductosAgregados([]);
+    handleOpenChange(false);
+  }, [handleOpenChange]);
+
   const eliminarProductoAgregado = useCallback((index: number) => {
     setProductosAgregados(prev => prev.filter((_, i) => i !== index));
     toast.info('Produit retiré de la liste');
@@ -2429,6 +2435,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               {/* SECTION 5: Botones de acción */}
               <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center">
                 <Button
+                  type="button"
+                  variant="outline"
+                  onClick={annulerEtFermer}
+                  className="rounded-2xl border-slate-300"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Annuler
+                </Button>
+                <Button
                   onClick={agregarProductoALista}
                   className="flex-1 rounded-2xl bg-[#2d9561] shadow-sm hover:bg-[#267d50]"
                 >
@@ -2588,11 +2603,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        setFormData(FORM_DATA_INICIAL);
-                        setProductosAgregados([]);
-                        handleOpenChange(false);
-                      }}
+                      onClick={annulerEtFermer}
                       size="lg"
                       className="rounded-2xl"
                     >
@@ -2700,23 +2711,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
             </div>
         </div>
 
-        {/* Botón de Cancelar - Siempre visible cuando no hay productos */}
-        {productosAgregados.length === 0 && (
-          <div className="border-t px-6 py-4 bg-gray-50 flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setFormData(FORM_DATA_INICIAL);
-                setProductosAgregados([]);
-                handleOpenChange(false);
-              }}
-              className="px-6"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Annuler
-            </Button>
-          </div>
-        )}
       </div>
       </DialogContent>
 
