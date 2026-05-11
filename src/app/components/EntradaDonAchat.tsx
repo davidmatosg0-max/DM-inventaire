@@ -1769,7 +1769,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
+                <div>
                   <div className="space-y-4">
                 {/* 🎯 SI ES TIPO PRS: Mostrar selector de productos PRS */}
                 {formData.tipoEntrada === 'prs' && (
