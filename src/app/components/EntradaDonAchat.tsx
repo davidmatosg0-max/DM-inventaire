@@ -24,7 +24,6 @@ import { cn } from './ui/utils';
 import { IconSelector } from './ui/IconSelector';
 import { obtenerProductosActivos, obtenerProductos, guardarProducto, actualizarProducto, type ProductoCreado } from '../utils/productStorage';
 import { guardarEntrada } from '../utils/entradaInventarioStorage';
-import { resolverTemperaturaProductoCanonica } from '../utils/productTemperature';
 import { type Categoria } from '../data/configuracionData';
 import { obtenerProgramasActivos, type ProgramaEntrada } from '../utils/programaEntradaStorage';
 import { filterByThreeLetters } from '../utils/searchUtils';
@@ -137,7 +136,6 @@ interface EntradaDonAchatProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
-  initialManualMode?: 'nuevo' | 'existente';
 }
 
 // ==================== DATOS INICIALES ====================
@@ -201,7 +199,7 @@ const FORM_VARIANTE_INICIAL: FormVariante = {
 };
 
 // ==================== COMPONENTE PRINCIPAL ====================
-export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigger = false, initialManualMode = 'nuevo' }: EntradaDonAchatProps = {}) {
+export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigger = false }: EntradaDonAchatProps = {}) {
   const { t } = useTranslation();
   const branding = useBranding();
   const printRef = useRef<HTMLDivElement>(null);
@@ -227,13 +225,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
   const [searchCategoriaQuery, setSearchCategoriaQuery] = useState('');
   const [searchSubcategoriaQuery, setSearchSubcategoriaQuery] = useState('');
   const [searchVarianteQuery, setSearchVarianteQuery] = useState('');
-  const [comboboxProductoOpen, setComboboxProductoOpen] = useState(false);
-  const [searchProductoQuery, setSearchProductoQuery] = useState('');
   const [selectContactoOpen, setSelectContactoOpen] = useState(false);
   const [searchContactoQuery, setSearchContactoQuery] = useState('');
   const [detallesOpcionalesAbiertos, setDetallesOpcionalesAbiertos] = useState(true); // Siempre visible por defecto
   const [imprimirAutomaticamente, setImprimirAutomaticamente] = useState(true);
-  const [modoProductoManual, setModoProductoManual] = useState<'nuevo' | 'existente'>('nuevo');
   
   // 🎯 Estados específicos para productos PRS
   const [comboboxProductoPRSOpen, setComboboxProductoPRSOpen] = useState(false);
@@ -303,13 +298,12 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
   useEffect(() => {
     if (open) {
       console.log('🚪 Diálogo abierto - Cargando datos...');
-      setModoProductoManual(initialManualMode);
       cargarDatosIniciales();
     } else {
       // Limpiar al cerrar
       setProductosAgregados([]);
     }
-  }, [open, initialManualMode, cargarDatosIniciales]);
+  }, [open, cargarDatosIniciales]);
 
   // ==================== LISTENERS DE EVENTOS ====================
   useEffect(() => {
@@ -539,54 +533,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     return subcategoria?.variantes || [];
   }, [categoriasDB, formData.categoriaId, formData.subcategoriaId]);
 
-  const productosFiltrados = useMemo(() => {
-    const esProgramaPRS = formData.tipoEntrada === 'prs';
-    let productos = productosDB.filter(p => {
-      const esProductoPRS = p.esPRS === true;
-      return esProgramaPRS ? esProductoPRS : !esProductoPRS;
-    });
-
-    // 🐛 DEBUG: Ver productos filtrados
-    console.log(`🔍 DEBUG Productos:`, {
-      total: productosDB.length,
-      esProgramaPRS,
-      productosPRS: productosDB.filter(p => p.esPRS === true).length,
-      productosNoPRS: productosDB.filter(p => !p.esPRS).length,
-      productosFiltrados: productos.length,
-      tipoEntrada: formData.tipoEntrada
-    });
-
-    if (searchProductoQuery && searchProductoQuery.length >= 3) {
-      productos = filterByThreeLetters(searchProductoQuery, productos, ['nombre', 'codigo']);
-    }
-
-    return productos;
-  }, [productosDB, formData.tipoEntrada, searchProductoQuery]);
-
-  // Agrupar productos por categoría para mostrar organizados
-  const productosAgrupadosPorCategoria = useMemo(() => {
-    const grupos = new Map<string, ProductoCreado[]>();
-    
-    // Validar que productosFiltrados sea un array
-    if (!Array.isArray(productosFiltrados)) {
-      return [];
-    }
-    
-    productosFiltrados.forEach(producto => {
-      const categoriaKey = producto.categoria || 'Sans catégorie';
-      if (!grupos.has(categoriaKey)) {
-        grupos.set(categoriaKey, []);
-      }
-      grupos.get(categoriaKey)!.push(producto);
-    });
-    
-    return Array.from(grupos.entries()).map(([categoria, productos]) => ({
-      categoria,
-      productos: productos.sort((a, b) => a.nombre.localeCompare(b.nombre)),
-      icono: productos[0]?.icono || '📦'
-    }));
-  }, [productosFiltrados]);
-
   const categoriaSeleccionada = useMemo(() => 
     categoriasDB.find(c => c.id === formData.categoriaId),
     [categoriasDB, formData.categoriaId]
@@ -740,45 +686,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     setSearchVarianteQuery('');
     toast.success(`Variante sélectionnée: ${variante.nombre}`);
   }, [categoriasDB, formData.categoriaId, formData.subcategoriaId, formData.categoriaNombre, formData.subcategoriaNombre]);
-
-  const handleProductoSelect = useCallback((productoId: string) => {
-    const producto = productosDB.find(p => p.id === productoId);
-    if (!producto) return;
-
-    const nuevaCategoria = producto.categoria || '';
-    const nuevaSubcategoria = producto.subcategoria || '';
-    const categoriaEncontrada = categoriasDB.find(c =>
-      c.id === nuevaCategoria || c.codigo === nuevaCategoria || c.nombre === nuevaCategoria
-    );
-    const subcategoriaEncontrada = categoriaEncontrada?.subcategorias?.find(
-      s => s.id === nuevaSubcategoria || s.codigo === nuevaSubcategoria || s.nombre === nuevaSubcategoria
-    );
-
-    setFormData(prev => ({
-      ...prev,
-      productoId: producto.id,
-      nombreProducto: producto.nombre,
-      productoIcono: producto.icono || '📦',
-      categoriaId: categoriaEncontrada?.id || '',
-      categoriaNombre: categoriaEncontrada?.nombre || nuevaCategoria,
-      subcategoriaId: subcategoriaEncontrada?.id || '',
-      subcategoriaNombre: subcategoriaEncontrada?.nombre || nuevaSubcategoria,
-      categoria: nuevaCategoria,
-      subcategoria: nuevaSubcategoria,
-      varianteId: '',
-      varianteNombre: '',
-      unidad: producto.unidad || subcategoriaEncontrada?.unidad || '',
-      pesoUnitario: producto.pesoUnitario || producto.peso || 0,
-      temperatura: resolverTemperaturaProductoCanonica({
-        ...producto,
-        categoria: nuevaCategoria,
-        subcategoria: nuevaSubcategoria,
-      }),
-    }));
-
-    setComboboxProductoOpen(false);
-    toast.success(`Produit sélectionné: ${producto.nombre}`);
-  }, [productosDB, categoriasDB]);
 
   const handleContactoSelect = useCallback((contactoId: string) => {
     const contacto = contactosDisponibles.find(c => c.id === contactoId);
@@ -1250,7 +1157,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
         observaciones: '',
       }));
 
-      setSearchProductoQuery('');
       toast.success(`✅ Produit ajouté: ${nombreFinal}`);
     } catch (error) {
       console.error('Error agregando producto:', error);
@@ -1274,11 +1180,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
     if (!formData.donadorId) {
       toast.error("Sélectionnez un donateur/fournisseur");
-      return;
-    }
-
-    if (modoProductoManual === 'existente' && !formData.productoId) {
-      toast.error('Sélectionnez un produit existant');
       return;
     }
 
@@ -1330,7 +1231,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
     // Si llegamos aquí, todos los campos opcionales están completos, proceder normalmente
     await procesarAgregarProducto();
-  }, [formData, modoProductoManual, procesarAgregarProducto]);
+  }, [formData, procesarAgregarProducto]);
 
   const finalizarEntrada = useCallback(async () => {
     if (productosAgregados.length === 0) {
@@ -1870,136 +1771,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
                   <div className="space-y-4">
-
-                {formData.tipoEntrada !== 'prs' && (
-                  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <Label>Mode d'ajout *</Label>
-                        <p className="mt-1 text-xs text-slate-500">Choisissez entre un produit déjà créé et un nouveau produit à configurer.</p>
-                      </div>
-                      <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                        Manuel
-                      </Badge>
-                    </div>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setModoProductoManual('existente')}
-                        className={cn(
-                          'h-auto min-h-14 justify-start rounded-2xl px-4 py-3 text-left',
-                          modoProductoManual === 'existente'
-                            ? 'border-[#1E73BE] bg-blue-50 text-[#1E73BE]'
-                            : 'border-slate-200 bg-white text-slate-700'
-                        )}
-                      >
-                        <div>
-                          <p className="font-semibold">Produit existant</p>
-                          <p className="text-xs text-slate-500">Ajoutez du stock à un produit déjà créé.</p>
-                        </div>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setModoProductoManual('nuevo')}
-                        className={cn(
-                          'h-auto min-h-14 justify-start rounded-2xl px-4 py-3 text-left',
-                          modoProductoManual === 'nuevo'
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                            : 'border-slate-200 bg-white text-slate-700'
-                        )}
-                      >
-                        <div>
-                          <p className="font-semibold">Nouveau produit</p>
-                          <p className="text-xs text-slate-500">Configurez un produit depuis la catégorie.</p>
-                        </div>
-                      </Button>
-                    </div>
-
-                    {modoProductoManual === 'existente' && (
-                      <div className="mt-4 rounded-[20px] border border-blue-200 bg-[linear-gradient(145deg,#f8fbff_0%,#ffffff_100%)] p-4 shadow-[0_12px_28px_-26px_rgba(30,115,190,0.35)]">
-                        <div className="mb-3 flex items-center justify-between gap-3">
-                          <div>
-                            <Label>Produit existant *</Label>
-                            <p className="mt-1 text-xs text-slate-500">Sélectionnez un produit existant pour augmenter manuellement sa quantité.</p>
-                          </div>
-                          {formData.productoId && (
-                            <Badge className="rounded-full bg-blue-100 text-blue-700 hover:bg-blue-100">
-                              Stock actuel: {formatQuantity(productosDB.find(producto => producto.id === formData.productoId)?.stockActual || 0)} {productosDB.find(producto => producto.id === formData.productoId)?.unidad || formData.unidad}
-                            </Badge>
-                          )}
-                        </div>
-
-                        <Popover open={comboboxProductoOpen} onOpenChange={setComboboxProductoOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={comboboxProductoOpen}
-                              className={cn(
-                                comboboxTriggerClass,
-                                formData.productoId ? 'border-blue-500 bg-blue-50 hover:bg-blue-100' : 'border-blue-300'
-                              )}
-                            >
-                              {formData.productoId ? (
-                                <span className="flex items-center gap-2 truncate">
-                                  <span>{formData.productoIcono || '📦'}</span>
-                                  <span className="truncate">{formData.nombreProducto}</span>
-                                </span>
-                              ) : (
-                                <span className="text-blue-700">Sélectionner un produit existant...</span>
-                              )}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className={`w-[min(92vw,560px)] ${floatingPanelClass}`}>
-                            <Command>
-                              <CommandInput
-                                placeholder="Rechercher un produit existant..."
-                                value={searchProductoQuery}
-                                onValueChange={setSearchProductoQuery}
-                              />
-                              <CommandEmpty>Aucun produit existant trouvé</CommandEmpty>
-                              <CommandList className="max-h-[360px]">
-                                {productosAgrupadosPorCategoria.map((grupo) => (
-                                  <CommandGroup key={grupo.categoria} heading={grupo.categoria}>
-                                    {grupo.productos.map((producto) => (
-                                      <CommandItem
-                                        key={producto.id}
-                                        value={producto.id}
-                                        onSelect={() => handleProductoSelect(producto.id)}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            'mr-2 h-4 w-4',
-                                            formData.productoId === producto.id ? 'opacity-100' : 'opacity-0'
-                                          )}
-                                        />
-                                        <span className="mr-2">{producto.icono || '📦'}</span>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="font-medium truncate">{producto.nombre}</p>
-                                          <p className="text-xs text-slate-500 truncate">{producto.subcategoria || 'Sans sous-catégorie'} • Stock: {formatQuantity(producto.stockActual || 0)} {producto.unidad}</p>
-                                        </div>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                ))}
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-
-                        {formData.productoId && (
-                          <div className="mt-3 rounded-2xl border border-blue-100 bg-white px-3 py-2.5 text-sm text-slate-600">
-                            La fiche existante est préremplie. Ajustez ensuite la quantité, le lot, la date et les détails de cette nouvelle entrée.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* 🎯 SI ES TIPO PRS: Mostrar selector de productos PRS */}
                 {formData.tipoEntrada === 'prs' && (
                   <div className="space-y-3 rounded-[22px] border border-violet-200 bg-[linear-gradient(145deg,#fcfaff_0%,#f7f1ff_100%)] p-4 shadow-[0_14px_30px_-28px_rgba(91,33,182,0.35)]">
