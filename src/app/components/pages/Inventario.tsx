@@ -45,6 +45,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { toast } from 'sonner';
 import { COMANDAS_UPDATED_EVENT, obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerProductos, guardarProducto, actualizarProducto } from '../../utils/productStorage';
+import { guardarEntrada } from '../../utils/entradaInventarioStorage';
 import { mockProductos } from '../../data/mockData';
 import { calcularValorMonetario, obtenerCategorias, actualizarPesoUnitarioSubcategoria, actualizarPesoUnitarioVariante } from '../../utils/categoriaStorage';
 import { registrarActividad } from '../../utils/actividadLogger';
@@ -117,6 +118,20 @@ type AccionUbicacionEscaneada = 'localizar_productos' | 'delocalizar_productos';
 type UbicacionEscaneadaPendiente = {
   ubicacion: string;
   action: AccionUbicacionEscaneada;
+};
+
+type FormAjoutStockExistant = {
+  productoId: string;
+  cantidad: string;
+  lote: string;
+  fechaCaducidad: string;
+};
+
+const FORM_AJOUT_STOCK_EXISTANT_INITIAL: FormAjoutStockExistant = {
+  productoId: '',
+  cantidad: '',
+  lote: '',
+  fechaCaducidad: '',
 };
 
 const categoriasInfo: Record<string, { icono: string; valorMonetario: number; color: string; label: string }> = {
@@ -324,6 +339,8 @@ export function Inventario() {
   
   // Estado para formulario de entrada
   const [entradaDonAchatOpen, setEntradaDonAchatOpen] = useState(false);
+  const [ajoutStockExistantOpen, setAjoutStockExistantOpen] = useState(false);
+  const [formAjoutStockExistant, setFormAjoutStockExistant] = useState<FormAjoutStockExistant>(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
   
   // Estado para escáner QR
   const [escanerQROpen, setEscanerQROpen] = useState(false);
@@ -340,6 +357,22 @@ export function Inventario() {
   const [floatingButtonsDragStart, setFloatingButtonsDragStart] = useState({ x: 0, y: 0 });
   const [floatingButtonsDragDistance, setFloatingButtonsDragDistance] = useState(0);
   const floatingButtonsRef = React.useRef<HTMLDivElement>(null);
+
+  const abrirEntradaInventario = () => {
+    setEntradaDonAchatOpen(true);
+  };
+
+  const abrirAjoutStockExistant = () => {
+    setFormAjoutStockExistant(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
+    setAjoutStockExistantOpen(true);
+  };
+
+  const handleAjoutStockExistantOpenChange = (open: boolean) => {
+    setAjoutStockExistantOpen(open);
+    if (!open) {
+      setFormAjoutStockExistant(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
+    }
+  };
   
   // Estados para nuevos componentes
   const [validacionEntradasOpen, setValidacionEntradasOpen] = useState(false);
@@ -441,6 +474,116 @@ export function Inventario() {
     
     return [...productosLS, ...mockProductosFiltrados];
   }, [productosCreados, refreshKey]);
+
+  const productosDisponiblesParaAjout = React.useMemo(
+    () => todosLosProductos
+      .filter(producto => Boolean(producto.id) && Boolean(producto.nombre))
+      .sort((left, right) => left.nombre.localeCompare(right.nombre)),
+    [todosLosProductos]
+  );
+
+  const productoAjoutStockSeleccionado = React.useMemo(
+    () => productosDisponiblesParaAjout.find(producto => producto.id === formAjoutStockExistant.productoId) || null,
+    [productosDisponiblesParaAjout, formAjoutStockExistant.productoId]
+  );
+
+  const productoCreadoAjoutStockSeleccionado = React.useMemo(
+    () => productosCreados.find(producto => producto.id === formAjoutStockExistant.productoId) || null,
+    [productosCreados, formAjoutStockExistant.productoId]
+  );
+
+  const handleProductoAjoutStockChange = (productoId: string) => {
+    const producto = productosCreados.find(item => item.id === productoId)
+      || productosDisponiblesParaAjout.find(item => item.id === productoId);
+
+    setFormAjoutStockExistant(prev => ({
+      ...prev,
+      productoId,
+      lote: producto?.lote || '',
+      fechaCaducidad: producto?.fechaVencimiento || '',
+    }));
+  };
+
+  const obtenerUsuarioInventarioActual = () => {
+    try {
+      const usuario = JSON.parse(localStorage.getItem('usuario_sesion_banco_alimentos') || '{}');
+      const nombreCompleto = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim();
+      return nombreCompleto || 'Utilisateur inventaire';
+    } catch {
+      return 'Utilisateur inventaire';
+    }
+  };
+
+  const resolverTemperaturaAjoutStock = () => {
+    const temperaturaBase = [
+      (productoCreadoAjoutStockSeleccionado as any)?.temperaturaOriginalEntrada,
+      (productoCreadoAjoutStockSeleccionado as any)?.temperaturaAlmacenamiento,
+      (productoAjoutStockSeleccionado as any)?.temperatura,
+    ].find((value): value is string => typeof value === 'string' && value.trim().length > 0);
+
+    const valorNormalizado = temperaturaBase?.toLowerCase() || '';
+
+    if (valorNormalizado.includes('congel')) return 'congelado' as const;
+    if (valorNormalizado.includes('refrig')) return 'refrigerado' as const;
+    return 'ambiente' as const;
+  };
+
+  const handleGuardarAjoutStockExistant = () => {
+    if (!productoAjoutStockSeleccionado) {
+      toast.error('Sélectionnez un produit existant');
+      return;
+    }
+
+    const cantidad = Number.parseFloat(formAjoutStockExistant.cantidad);
+    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+      toast.error('Saisissez une quantité valide');
+      return;
+    }
+
+    const pesoUnitario = productoCreadoAjoutStockSeleccionado?.pesoUnitario
+      || productoAjoutStockSeleccionado.pesoUnitario
+      || productoAjoutStockSeleccionado.peso
+      || 0;
+
+    const temperatura = resolverTemperaturaAjoutStock();
+    const usuarioActual = obtenerUsuarioInventarioActual();
+
+    guardarEntrada({
+      fecha: new Date().toISOString(),
+      tipoEntrada: 'ajustement-manuel',
+      programaNombre: 'Ajustement inventaire',
+      programaCodigo: 'INV',
+      programaColor: '#2d9561',
+      programaIcono: '➕',
+      donadorId: 'inventaire-ajustement-manuel',
+      donadorNombre: 'Ajustement manuel inventaire',
+      donadorEsCustom: true,
+      productoId: productoAjoutStockSeleccionado.id,
+      nombreProducto: productoAjoutStockSeleccionado.nombre,
+      categoria: productoAjoutStockSeleccionado.categoria,
+      subcategoria: productoAjoutStockSeleccionado.subcategoria,
+      productoCategoria: productoAjoutStockSeleccionado.categoria,
+      productoSubcategoria: productoAjoutStockSeleccionado.subcategoria,
+      productoIcono: productoAjoutStockSeleccionado.icono,
+      productoCodigo: productoAjoutStockSeleccionado.codigo,
+      varianteId: productoCreadoAjoutStockSeleccionado?.varianteId,
+      cantidad,
+      unidad: productoAjoutStockSeleccionado.unidad,
+      pesoUnidad: pesoUnitario,
+      pesoTotal: pesoUnitario * cantidad,
+      temperatura,
+      lote: formAjoutStockExistant.lote.trim(),
+      fechaCaducidad: formAjoutStockExistant.fechaCaducidad || '',
+      observaciones: 'Ajout rapide depuis le module Inventaire',
+      creadoPor: usuarioActual,
+      registradoPor: usuarioActual,
+    });
+
+    setRefreshKey(prev => prev + 1);
+    setAjoutStockExistantOpen(false);
+    setFormAjoutStockExistant(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
+    toast.success(`Stock ajouté à ${productoAjoutStockSeleccionado.nombre}`);
+  };
 
   const organismosActivos = React.useMemo(
     () => obtenerOrganismos().filter(organismo => organismo.activo),
@@ -807,7 +950,7 @@ export function Inventario() {
     clearPendingEntrepotQuickAction();
 
     if (pendingQuickAction === 'open-new-entry') {
-      setEntradaDonAchatOpen(true);
+      abrirEntradaInventario();
       return;
     }
 
@@ -2480,7 +2623,7 @@ export function Inventario() {
                   </Select>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {!isCompactInventoryViewport && (
                     <Button
                       variant="outline"
@@ -2492,6 +2635,15 @@ export function Inventario() {
                       {vistaMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
                     </Button>
                   )}
+
+                  <Button
+                    onClick={abrirAjoutStockExistant}
+                    className="h-9 gap-2 bg-[#2d9561] px-3 text-white hover:bg-[#24794f]"
+                    title="Ajouter au stock existant"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="text-xs font-semibold">Ajouter au stock</span>
+                  </Button>
 
                   <Button
                     size="icon"
@@ -3791,6 +3943,104 @@ export function Inventario() {
         </DeferredPanel>
       )}
 
+      {ajoutStockExistantOpen && (
+      <Dialog open={ajoutStockExistantOpen} onOpenChange={handleAjoutStockExistantOpenChange}>
+        <DialogContent className="w-[min(92vw,720px)] max-w-[720px] overflow-hidden rounded-[28px] border-0 bg-white p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]">
+          <DialogHeader className="border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(45,149,97,0.08)_0%,rgba(26,77,122,0.06)_100%)] px-6 py-5 text-left">
+            <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Ajouter au stock existant</DialogTitle>
+            <DialogDescription>
+              Sélectionnez un produit déjà créé, indiquez la quantité à ajouter et enregistrez l’ajustement sans passer par le formulaire complet d’entrée.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 px-6 py-5">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(220px,0.8fr)]">
+              <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_16px_34px_-30px_rgba(15,23,42,0.3)]">
+                <Label>Produit existant *</Label>
+                <Select value={formAjoutStockExistant.productoId} onValueChange={handleProductoAjoutStockChange}>
+                  <SelectTrigger className="mt-2 min-h-[54px] rounded-2xl border-slate-200 bg-slate-50/70">
+                    <SelectValue placeholder="Sélectionner un produit..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[320px]">
+                    {productosDisponiblesParaAjout.map((producto) => (
+                      <SelectItem key={producto.id} value={producto.id}>
+                        {producto.icono || '📦'} {producto.nombre} • {producto.categoria} • Stock: {formatQuantity(producto.stockActual)} {producto.unidad}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-[24px] border border-emerald-200 bg-[linear-gradient(145deg,#ffffff_0%,#f4fbf7_100%)] p-4 shadow-[0_16px_34px_-30px_rgba(45,149,97,0.28)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Résumé rapide</p>
+                <p className="mt-3 text-sm text-slate-500">Stock actuel</p>
+                <p className="text-2xl font-bold text-slate-900">{productoAjoutStockSeleccionado ? formatQuantity(productoAjoutStockSeleccionado.stockActual) : '0'} <span className="text-sm font-medium text-slate-500">{productoAjoutStockSeleccionado?.unidad || ''}</span></p>
+                <p className="mt-3 text-sm text-slate-500">Après ajout</p>
+                <p className="text-lg font-semibold text-emerald-700">
+                  {productoAjoutStockSeleccionado
+                    ? `${formatQuantity(productoAjoutStockSeleccionado.stockActual + (Number.parseFloat(formAjoutStockExistant.cantidad) || 0))} ${productoAjoutStockSeleccionado.unidad}`
+                    : 'Sélection requise'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                <Label>Quantité à ajouter *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formAjoutStockExistant.cantidad}
+                  onChange={(event) => setFormAjoutStockExistant(prev => ({ ...prev, cantidad: event.target.value }))}
+                  placeholder="0"
+                  className="mt-2 rounded-2xl border-slate-200 bg-slate-50/70"
+                />
+              </div>
+              <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                <Label>Lot</Label>
+                <Input
+                  value={formAjoutStockExistant.lote}
+                  onChange={(event) => setFormAjoutStockExistant(prev => ({ ...prev, lote: event.target.value }))}
+                  placeholder="LOT-12345"
+                  className="mt-2 rounded-2xl border-slate-200 bg-slate-50/70"
+                />
+              </div>
+              <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                <Label>Date d'expiration</Label>
+                <Input
+                  type="date"
+                  value={formAjoutStockExistant.fechaCaducidad}
+                  onChange={(event) => setFormAjoutStockExistant(prev => ({ ...prev, fechaCaducidad: event.target.value }))}
+                  className="mt-2 rounded-2xl border-slate-200 bg-slate-50/70"
+                />
+              </div>
+            </div>
+
+            {productoAjoutStockSeleccionado && (
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600">
+                <p className="font-semibold text-slate-900">{productoAjoutStockSeleccionado.icono || '📦'} {productoAjoutStockSeleccionado.nombre}</p>
+                <p className="mt-1">{productoAjoutStockSeleccionado.categoria} • {productoAjoutStockSeleccionado.subcategoria || 'Sans sous-catégorie'} • {productoAjoutStockSeleccionado.codigo}</p>
+                <p className="mt-2 text-xs text-slate-500">Cette action ajoute du stock directement au produit existant et enregistre un mouvement d’inventaire séparé.</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+            <Button variant="outline" onClick={() => handleAjoutStockExistantOpenChange(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleGuardarAjoutStockExistant}
+              className="bg-[#2d9561] hover:bg-[#24794f]"
+            >
+              Ajouter au stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      )}
+
       {/* Validación de Entradas - NUEVO */}
       {validacionEntradasOpen && (
         <DeferredPanel>
@@ -4057,7 +4307,7 @@ export function Inventario() {
           size="icon"
           onClick={() => {
             if (floatingButtonsDragDistance < floatingButtonsDragThreshold) {
-              setEntradaDonAchatOpen(true);
+              abrirEntradaInventario();
             }
           }}
           disabled={entradaDonAchatOpen}

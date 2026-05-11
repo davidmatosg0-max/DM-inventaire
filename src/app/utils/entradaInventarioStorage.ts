@@ -383,6 +383,9 @@ function registrarEnInventario(entrada: EntradaInventario): string {
   // 🔄 PASO 1: Verificar si el producto ya existe en localStorage (persistente)
   // ⚠️ REGLA IMPORTANTE: Productos con diferente peso unitario o variante son productos DIFERENTES
   const productosLocalStorage = obtenerProductosActivos();
+  const productoExistentePorId = entrada.productoId && !entrada.productoId.startsWith('TEMP-')
+    ? productosLocalStorage.find((producto) => producto.id === entrada.productoId)
+    : undefined;
   
   // Tolerancia para comparar pesos (0.001 kg = 1 gramo)
   const TOLERANCIA_PESO = 0.001;
@@ -396,7 +399,7 @@ function registrarEnInventario(entrada: EntradaInventario): string {
     pesoUnitario: entrada.pesoUnidad,
   });
   
-  const productoExistenteLS = productosLocalStorage.find((p) => {
+  const productoExistenteLS = productoExistentePorId || productosLocalStorage.find((p) => {
     const pesoUnitarioProducto = p.pesoUnitario || 0;
     const pesoCoincide = Math.abs(pesoUnitarioProducto - entrada.pesoUnidad) < TOLERANCIA_PESO;
 
