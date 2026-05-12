@@ -77,6 +77,13 @@ interface MenuSection {
   itemIds: string[];
 }
 
+const MENU_PERMISSION_ALIASES: Record<string, string> = {
+  'reportes-avanzado': 'reportes',
+  'usuarios-internos': 'usuarios',
+  'gestion-autenticacion': 'usuarios',
+  'dashboard-predictivo': 'dashboard',
+};
+
 export function Layout({ children, currentPage, onNavigate, onLogout, hideSidebar = false }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [expandedMenus, setExpandedMenus] = React.useState<string[]>([]);
@@ -387,8 +394,14 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     return item.id === currentPage || item.children?.some(child => child.id === currentPage);
   }, [currentPage]);
 
+  const menuItemDisponible = React.useCallback((itemId: string) => {
+    return moduloDisponible(MENU_PERMISSION_ALIASES[itemId] || itemId);
+  }, []);
+
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: t('nav.mainDashboard'), icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'dashboard-metricas', label: t('nav.dashboardMetrics'), icon: <Sparkles className="w-5 h-5" /> },
+    { id: 'dashboard-predictivo', label: t('nav.predictiveDashboard'), icon: <Zap className="w-5 h-5" /> },
     { 
       id: 'entrepot', 
       label: t('nav.warehouse'), 
@@ -398,6 +411,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
         { id: 'comandas', label: t('nav.orders'), icon: <ClipboardList className="w-4 h-4" /> },
         { id: 'etiquetas', label: t('nav.labels'), icon: <Tag className="w-4 h-4" /> },
         { id: 'reportes', label: t('nav.reports'), icon: <FileText className="w-4 h-4" /> },
+        { id: 'reportes-avanzado', label: t('nav.advancedReports'), icon: <Sparkles className="w-4 h-4" /> },
         { id: 'organismos', label: t('nav.organisms'), icon: <Building className="w-4 h-4" /> },
         { id: 'ofertas-organismo', label: t('nav.offers'), icon: <Tags className="w-4 h-4" /> },
         { id: 'transporte', label: t('nav.transport'), icon: <Truck className="w-4 h-4" /> },
@@ -411,9 +425,13 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     { id: 'id-digital', label: t('nav.digitalID'), icon: <Scale className="w-5 h-5" /> },
     { id: 'email-organismos', label: t('nav.liaison'), icon: <Users className="w-5 h-5" /> },
     { id: 'communication', label: t('nav.messaging'), icon: <MessageSquare className="w-5 h-5" /> },
+    { id: 'benevoles', label: t('nav.volunteers'), icon: <UserPlus className="w-5 h-5" />, soloDesarrollador: true },
     { id: 'recrutement', label: t('nav.recruitment'), icon: <UserPlus className="w-5 h-5" /> },
     { id: 'usuarios', label: t('nav.users'), icon: <Users className="w-5 h-5" /> },
+    { id: 'usuarios-internos', label: t('nav.internalUsers'), icon: <UserCog className="w-5 h-5" /> },
+    { id: 'gestion-autenticacion', label: t('nav.authenticationManagement'), icon: <Key className="w-5 h-5" /> },
     { id: 'configuracion', label: t('nav.configuration'), icon: <Settings className="w-5 h-5" /> },
+    { id: 'diagnosticos', label: t('nav.diagnostics'), icon: <Sparkles className="w-5 h-5" />, soloDesarrollador: true },
     { id: 'panel-marca', label: t('nav.visualIdentity'), icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
     { id: 'api-keys', label: t('nav.apiIntegrations'), icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
   ];
@@ -452,42 +470,44 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   };
 
   const menuSections: MenuSection[] = [
-    { id: 'overview', label: t('layout.sections.overview'), itemIds: ['dashboard'] },
+    { id: 'overview', label: t('layout.sections.overview'), itemIds: ['dashboard', 'dashboard-metricas', 'dashboard-predictivo'] },
     { id: 'operations', label: t('layout.sections.operations'), itemIds: ['entrepot', 'cuisine', 'achat', 'id-digital'] },
-    { id: 'coordination', label: t('layout.sections.coordination'), itemIds: ['email-organismos', 'communication', 'recrutement'] },
-    { id: 'administration', label: t('layout.sections.administration'), itemIds: ['usuarios', 'configuracion'] },
-    { id: 'advanced', label: t('layout.sections.advanced'), itemIds: ['panel-marca', 'api-keys'] },
+    { id: 'coordination', label: t('layout.sections.coordination'), itemIds: ['email-organismos', 'communication', 'benevoles', 'recrutement'] },
+    { id: 'administration', label: t('layout.sections.administration'), itemIds: ['usuarios', 'usuarios-internos', 'gestion-autenticacion', 'configuracion'] },
+    { id: 'advanced', label: t('layout.sections.advanced'), itemIds: ['diagnosticos', 'panel-marca', 'api-keys'] },
   ];
 
-  // Filtrar menú según permisos
-  const menuItemsFiltrado = menuItems.map(item => {
-    // Si el item es solo para desarrollador y el usuario no lo es, no mostrarlo
+  const filtrarMenuItem = React.useCallback((item: MenuItem): MenuItem | null => {
     if (item.soloDesarrollador && !esDesarrollador) {
       return null;
     }
-    
-    // Si tiene hijos, filtrar los hijos según permisos
+
     if (item.children) {
-      const hijosFiltrados = item.children.filter(child => moduloDisponible(child.id));
-      
-      // Si no hay hijos disponibles, no mostrar el padre
+      const hijosFiltrados = item.children
+        .map(filtrarMenuItem)
+        .filter((child): child is MenuItem => child !== null);
+
       if (hijosFiltrados.length === 0) {
         return null;
       }
-      
+
       return {
         ...item,
-        children: hijosFiltrados
+        children: hijosFiltrados,
       };
     }
-    
-    // Verificar si el módulo está disponible para el usuario
-    if (!moduloDisponible(item.id)) {
+
+    if (!menuItemDisponible(item.id)) {
       return null;
     }
-    
+
     return item;
-  }).filter((item): item is MenuItem => item !== null);
+  }, [esDesarrollador, menuItemDisponible]);
+
+  // Filtrar menú según permisos
+  const menuItemsFiltrado = menuItems
+    .map(filtrarMenuItem)
+    .filter((item): item is MenuItem => item !== null);
 
   const menuSectionsFiltradas = menuSections
     .map(section => ({
