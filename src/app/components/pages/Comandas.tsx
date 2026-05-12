@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, FileCheck, Search, Printer, Users, Bell, Tag, Package, Check, X, Edit2, Ban, Calendar, Clock, Rows3, LayoutGrid } from 'lucide-react';
+import { Plus, Eye, FileCheck, Search, Printer, Users, Bell, Tag, Package, Check, X, Edit2, Ban, Calendar, Clock, Rows3, LayoutGrid, QrCode } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -52,6 +52,7 @@ import { formatNumberSimple } from '../../utils/formatUtils';
 import { sortByTemperature } from '../../utils/temperatureSort';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 
 export function Comandas() {
   const { t, i18n } = useTranslation();
@@ -1111,6 +1112,44 @@ export function Comandas() {
   const ofertasConSolicitudes = ofertasFiltradas.filter(oferta => (oferta.solicitudes?.length || 0) > 0).length;
   const ofertasExpiradasCount = ofertasFiltradas.filter(oferta => !oferta.activa || new Date(oferta.fechaExpiracion) < new Date()).length;
   const solicitudesOfertaCount = ofertasFiltradas.reduce((sum, oferta) => sum + (oferta.solicitudes?.length || 0), 0);
+  const ordersTabLabels: Record<string, string> = {
+    comandas: 'Commandes',
+    ofertas: 'Offres',
+  };
+  const ordersExecutiveMetrics = [
+    {
+      id: 'active-view',
+      label: 'Vue active',
+      value: ordersTabLabels[tabActual] || 'Commandes',
+      helper: tabActual === 'comandas' ? 'Suivi dense des états et actions de distribution.' : 'Pilotage des offres et demandes associées.',
+      icon: <FileCheck className="h-4 w-4" />,
+      accentColor: branding.primaryColor,
+    },
+    {
+      id: 'pending-orders',
+      label: 'En attente',
+      value: comandasPendientesCount,
+      helper: comandasPendientesCount > 0 ? 'Des commandes attendent encore confirmation ou traitement.' : 'Aucune commande en attente immédiate.',
+      icon: <Bell className="h-4 w-4" />,
+      accentColor: '#f59e0b',
+    },
+    {
+      id: 'distributed-list',
+      label: 'Distribuables',
+      value: comandasDistribuidasFiltradas.length,
+      helper: 'Volume disponible pour la liste des distributions filtrée.',
+      icon: <Package className="h-4 w-4" />,
+      accentColor: branding.secondaryColor,
+    },
+    {
+      id: 'offers-demand',
+      label: 'Demandes offres',
+      value: solicitudesOfertaCount,
+      helper: ofertasConSolicitudes > 0 ? `${ofertasConSolicitudes} offre(s) avec demandes actives.` : 'Aucune demande active sur les offres visibles.',
+      icon: <Tag className="h-4 w-4" />,
+      accentColor: '#7c3aed',
+    },
+  ];
 
   if (mostrarImpresionCompacta && comandaSeleccionada) {
     const organismo = resolverOrganismoComanda(comandaSeleccionada);
@@ -1196,6 +1235,39 @@ export function Comandas() {
             >
               <Bell className="w-4 h-4" />
             </Button>
+          )}
+        />
+
+        <ModuleExecutiveStrip
+          eyebrow="Pilotage distribution"
+          title="Console rapide des commandes"
+          description="Centralisez les commandes en attente, les accès de distribution et les flux rapides de contrôle sans quitter la vue opérationnelle."
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          metrics={ordersExecutiveMetrics}
+          actions={(
+            <>
+              <Button variant="outline" onClick={() => setTabActual('comandas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <FileCheck className="mr-2 h-4 w-4" />
+                Commandes
+              </Button>
+              <Button variant="outline" onClick={() => setDialogListaDistribuidosOpen(true)} disabled={comandasDistribuidasFiltradas.length === 0} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:bg-white/60">
+                <Package className="mr-2 h-4 w-4" />
+                Liste distribuée
+              </Button>
+              <Button variant="outline" onClick={() => setDialogNotificacionOpen(true)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <Bell className="mr-2 h-4 w-4" />
+                Notifications
+              </Button>
+              <Button variant="outline" onClick={() => setTabActual('ofertas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <Tag className="mr-2 h-4 w-4" />
+                Offres
+              </Button>
+              <Button onClick={() => setEscanerQROpen(true)} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+                <QrCode className="mr-2 h-4 w-4" />
+                Scanner QR
+              </Button>
+            </>
           )}
         />
 

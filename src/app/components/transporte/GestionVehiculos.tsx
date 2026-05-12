@@ -12,7 +12,7 @@ import { Textarea } from '../ui/textarea';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { registrarActividad } from '../../utils/actividadLogger';
-import { TRANSPORTE_MODULE_EVENT, actualizarVehiculo, crearVehiculo, eliminarVehiculo, obtenerChoferes, obtenerVehiculos, type Chofer, type Vehiculo } from '../../utils/transporteLogic';
+import { TRANSPORTE_MODULE_EVENT, TRANSPORTE_OPEN_VEHICULO_DIALOG_EVENT, actualizarVehiculo, crearVehiculo, eliminarVehiculo, obtenerChoferes, obtenerVehiculos, type Chofer, type Vehiculo } from '../../utils/transporteLogic';
 
 export function GestionVehiculos() {
   const { t } = useTranslation();
@@ -120,6 +120,17 @@ export function GestionVehiculos() {
     setVehiculoSeleccionado(null);
     setVehiculoDialogOpen(true);
   };
+
+  useEffect(() => {
+    const abrirDialogRapido = () => {
+      handleAbrirCreacion();
+    };
+
+    window.addEventListener(TRANSPORTE_OPEN_VEHICULO_DIALOG_EVENT, abrirDialogRapido);
+    return () => {
+      window.removeEventListener(TRANSPORTE_OPEN_VEHICULO_DIALOG_EVENT, abrirDialogRapido);
+    };
+  }, []);
 
   const handleAbrirEdicion = (vehiculo: Vehiculo) => {
     setVehiculoSeleccionado(vehiculo);

@@ -40,7 +40,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
 import { registrarActividad } from '../../utils/actividadLogger';
-import { TRANSPORTE_MODULE_EVENT, actualizarChofer, crearChofer, eliminarChofer as eliminarChoferTransporte, obtenerChoferes, obtenerVehiculos, type Chofer, type Vehiculo } from '../../utils/transporteLogic';
+import { TRANSPORTE_MODULE_EVENT, TRANSPORTE_OPEN_CHOFER_DIALOG_EVENT, actualizarChofer, crearChofer, eliminarChofer as eliminarChoferTransporte, obtenerChoferes, obtenerVehiculos, type Chofer, type Vehiculo } from '../../utils/transporteLogic';
 
 interface GestionChoferesProps {
   compactMode?: boolean;
@@ -112,6 +112,17 @@ export function GestionChoferes({ compactMode = false }: GestionChoferesProps) {
     resetForm();
     setDialogOpen(true);
   };
+
+  useEffect(() => {
+    const abrirDialogRapido = () => {
+      abrirDialogNuevo();
+    };
+
+    window.addEventListener(TRANSPORTE_OPEN_CHOFER_DIALOG_EVENT, abrirDialogRapido);
+    return () => {
+      window.removeEventListener(TRANSPORTE_OPEN_CHOFER_DIALOG_EVENT, abrirDialogRapido);
+    };
+  }, []);
 
   const abrirDialogEditar = (chofer: Chofer) => {
     setFormData({

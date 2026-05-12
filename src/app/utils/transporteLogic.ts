@@ -113,6 +113,8 @@ const LEGACY_VEHICULOS_KEY = 'banque_alimentaire_transporte_ui_vehiculos';
 const LEGACY_RUTAS_KEY = 'banque_alimentaire_transporte_ui_rutas';
 const LEGACY_CHOFERES_KEY = 'banque_alimentaire_transporte_ui_choferes';
 export const TRANSPORTE_MODULE_EVENT = 'transporte-ui-actualizado';
+export const TRANSPORTE_OPEN_VEHICULO_DIALOG_EVENT = 'transporte-ui-abrir-vehiculo';
+export const TRANSPORTE_OPEN_CHOFER_DIALOG_EVENT = 'transporte-ui-abrir-chofer';
 
 function generarIdUnico(prefijo: string): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

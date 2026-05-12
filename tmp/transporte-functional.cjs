@@ -32,7 +32,11 @@ async function login(page) {
   await page.getByLabel('Utilisateur').fill('David');
   await page.getByLabel('Mot de passe').fill('Lettycia26');
   await page.getByRole('button', { name: 'Connexion', exact: true }).click();
-  await page.getByRole('heading', { name: 'Tableau de Bord Principal - Entrepôt', exact: true }).waitFor({ timeout: 20000 });
+
+  await Promise.all([
+    page.locator('aside').first().waitFor({ timeout: 20000 }),
+    page.locator('main').first().waitFor({ timeout: 20000 })
+  ]);
 }
 
 async function openTransport(page) {
@@ -134,11 +138,16 @@ async function resetTransportStorage(page) {
 async function getKpiValue(page, label) {
   return page.evaluate((expectedLabel) => {
     const labelNode = Array.from(document.querySelectorAll('p')).find((node) => node.textContent?.trim() === expectedLabel);
-    if (!labelNode || !labelNode.parentElement) {
+    if (!labelNode) {
       return null;
     }
 
-    const values = Array.from(labelNode.parentElement.querySelectorAll('p'))
+    const container = labelNode.closest('article') || labelNode.parentElement?.parentElement || labelNode.parentElement;
+    if (!container) {
+      return null;
+    }
+
+    const values = Array.from(container.querySelectorAll('p, div, span'))
       .map((node) => node.textContent?.trim() || '')
       .filter((text) => /^\d+$/.test(text));
 

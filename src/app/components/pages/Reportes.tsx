@@ -35,6 +35,7 @@ import type { Comanda } from '../../types';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { ModulePageHeader } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceHeader } from '../shared/ModuleControlSurface';
+import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 
 type ComandaExportable = Comanda & {
   organismo?: {
@@ -1614,6 +1615,58 @@ export function Reportes() {
     },
   ];
 
+  const reportTabLabels: Record<ReportTab, string> = {
+    general: 'Vue générale',
+    operaciones: 'Opérations',
+    inventario: 'Inventaire',
+    comandas: 'Commandes',
+    prs: 'PRS',
+    auditoria: 'Audit',
+  };
+
+  const remotePrsStatusLabel = {
+    idle: 'En attente',
+    loading: 'Synchronisation',
+    ready: 'Disponible',
+    unavailable: 'Indisponible',
+    error: 'Erreur',
+  }[remotePrsStatus];
+
+  const reportsExecutiveMetrics = [
+    {
+      id: 'view',
+      label: 'Vue active',
+      value: reportTabLabels[activeReportTab],
+      helper: exportableReportType ? `Type exportable: ${exportableReportType.toUpperCase()}` : 'Cette vue gère ses exports localement.',
+      icon: <BarChart3 className="h-4 w-4" />,
+      accentColor: branding.primaryColor,
+    },
+    {
+      id: 'range',
+      label: 'Période',
+      value: rangoValido ? `${fechaInicio} → ${fechaFin}` : 'À corriger',
+      helper: rangoValido ? 'Les graphiques et exports utilisent cette plage.' : 'Définissez une plage de dates valide.',
+      icon: <FileText className="h-4 w-4" />,
+      accentColor: branding.secondaryColor,
+    },
+    {
+      id: 'entries',
+      label: 'Entrées actives',
+      value: activeEntries.length,
+      helper: 'Base opérationnelle utilisée dans les vues générales et inventaire.',
+      icon: <Shield className="h-4 w-4" />,
+      accentColor: '#f59e0b',
+    },
+    {
+      id: 'prs-status',
+      label: 'Flux PRS',
+      value: remotePrsStatusLabel,
+      helper: activeReportTab === 'prs' ? 'État du rapport PRS distant pour la période courante.' : 'Le statut PRS reste visible sans changer d’onglet.',
+      icon: <RefreshCcw className="h-4 w-4" />,
+      accentColor: '#7c3aed',
+    },
+  ];
+
   return (
     <div className="min-h-[calc(100vh-56px)] relative overflow-hidden" style={reportsViewportZoom < 1 ? { zoom: reportsViewportZoom } : undefined}>
       {/* Fondo degradado con colores del branding */}
@@ -1669,6 +1722,40 @@ export function Reportes() {
             secondaryColor={branding.secondaryColor}
           />
         )}
+
+        <ModuleExecutiveStrip
+          eyebrow="Centre de commandement"
+          title="Rapports prioritaires et export rapide"
+          description="Passez d'une vue à l'autre, verrouillez la période utile et déclenchez les exports clés sans quitter l'espace analytique."
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          metrics={reportsExecutiveMetrics}
+          className={showCompactReportsOverview ? 'rounded-[24px] px-3 py-3 sm:px-4' : undefined}
+          actions={(
+            <>
+              <Button variant="outline" onClick={() => setActiveReportTab('general')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Vue générale
+              </Button>
+              <Button variant="outline" onClick={() => setActiveReportTab('operaciones')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <Shield className="mr-2 h-4 w-4" />
+                Opérations
+              </Button>
+              <Button variant="outline" onClick={() => setActiveReportTab('inventario')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <FileText className="mr-2 h-4 w-4" />
+                Inventaire
+              </Button>
+              <Button variant="outline" onClick={() => handleApplyDatePreset('last30days')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                30 derniers jours
+              </Button>
+              <Button onClick={() => void handleGenerarReporte('pdf')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+                <Download className="mr-2 h-4 w-4" />
+                Export PDF
+              </Button>
+            </>
+          )}
+        />
 
       {/* Tabs de Reportes con glassmorphism */}
       <ModuleControlSurface>

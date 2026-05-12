@@ -49,6 +49,7 @@ import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { obtenerUsuarioSesion, esAdministradorLiaison } from '../../utils/sesionStorage';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
+import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 import { ModuleSection } from '../shared/ModuleSection';
 
 // Tipos de organismos predefinidos
@@ -854,6 +855,41 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     return <GestionDemandes onBack={() => setMostrarGestionDemandes(false)} />;
   }
 
+  const liaisonExecutiveMetrics = [
+    {
+      id: 'active-tab',
+      label: 'Vue active',
+      value: tabActual === 'liaison' ? 'Liaison' : 'Contacts',
+      helper: tabActual === 'liaison' ? 'Coordination avec les organismes et suivi des échanges.' : 'Carnet opérationnel des contacts par département.',
+      icon: <Building2 className="h-4 w-4" />,
+      accentColor: branding.primaryColor,
+    },
+    {
+      id: 'requests',
+      label: 'Demandes nouvelles',
+      value: nombreNouvellesDemandes,
+      helper: nombreNouvellesDemandes > 0 ? 'Des demandes récentes attendent une revue.' : 'Aucune nouvelle demande à traiter pour le moment.',
+      icon: <MessageSquare className="h-4 w-4" />,
+      accentColor: '#7c3aed',
+    },
+    {
+      id: 'stats-panel',
+      label: 'Statistiques',
+      value: mostrarEstadisticas ? 'Visibles' : 'Masquées',
+      helper: 'Les tendances et exports de croissance restent pilotables depuis ici.',
+      icon: <BarChart3 className="h-4 w-4" />,
+      accentColor: branding.secondaryColor,
+    },
+    {
+      id: 'access-level',
+      label: 'Niveau d’accès',
+      value: puedeGestionarOrganismos ? 'Administration' : 'Lecture seule',
+      helper: puedeGestionarOrganismos ? 'Création et mise à jour des organismes autorisées.' : 'Consultation et communication disponibles sans modification.',
+      icon: <Users className="h-4 w-4" />,
+      accentColor: puedeGestionarOrganismos ? '#16a34a' : '#f97316',
+    },
+  ];
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -909,6 +945,35 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
               >
                 <Plus className="h-4 w-4" />
                 <span>{t('liaison.newOrganism')}</span>
+              </Button>
+            </>
+          )}
+        />
+
+        <ModuleExecutiveStrip
+          eyebrow="Coordination prioritaire"
+          title="Liaison active, suivi instantané et accès rapides"
+          description="Gardez la vue métier, les nouvelles demandes et les principaux leviers de communication à portée immédiate pour accélérer la coordination avec les organismes."
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          metrics={liaisonExecutiveMetrics}
+          actions={(
+            <>
+              <Button variant="outline" onClick={() => setTabActual('liaison')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <Building2 className="mr-2 h-4 w-4" />
+                Liaison
+              </Button>
+              <Button variant="outline" onClick={() => setTabActual('contactos')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <Users className="mr-2 h-4 w-4" />
+                Contacts
+              </Button>
+              <Button variant="outline" onClick={() => setMostrarEstadisticas((current) => !current)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                {mostrarEstadisticas ? 'Masquer stats' : 'Afficher stats'}
+              </Button>
+              <Button onClick={() => openEmailModal('group')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+                <Mail className="mr-2 h-4 w-4" />
+                Email groupé
               </Button>
             </>
           )}

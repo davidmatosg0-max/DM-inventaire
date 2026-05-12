@@ -77,6 +77,12 @@ interface MenuSection {
   itemIds: string[];
 }
 
+const PROFESSIONAL_SHELL_BADGES = [
+  'Suite opérationnelle',
+  'Temps réel',
+  'Sécurisé',
+];
+
 export function Layout({ children, currentPage, onNavigate, onLogout, hideSidebar = false }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [expandedMenus, setExpandedMenus] = React.useState<string[]>([]);
@@ -412,6 +418,27 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     { id: 'api-keys', label: 'API & intégrations', icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
   ];
 
+  const currentMenuItem = React.useMemo(() => {
+    const findRecursive = (items: MenuItem[]): MenuItem | null => {
+      for (const item of items) {
+        if (item.id === currentPage) {
+          return item;
+        }
+        if (item.children) {
+          const childMatch = findRecursive(item.children);
+          if (childMatch) {
+            return childMatch;
+          }
+        }
+      }
+      return null;
+    };
+
+    return findRecursive(menuItems);
+  }, [currentPage, menuItems]);
+
+  const currentWorkspaceLabel = currentMenuItem?.label || 'Tableau de bord';
+
   const entrepotModulePageIds = React.useMemo(
     () => menuItems.find(item => item.id === 'entrepot')?.children?.map(child => child.id) ?? [],
     [menuItems]
@@ -544,10 +571,10 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
   return (
     <div 
-      className="min-h-screen relative overflow-hidden" 
+      className="app-professional-shell min-h-screen relative overflow-hidden" 
       style={{ 
         fontFamily: 'Roboto, sans-serif',
-        background: `linear-gradient(135deg, ${branding.primaryColor}08 0%, ${branding.secondaryColor}05 100%)`,
+        background: `linear-gradient(135deg, ${branding.primaryColor}0d 0%, ${branding.secondaryColor}08 52%, rgba(255,255,255,0.9) 100%)`,
       }}
     >
       {/* Formas decorativas de fondo */}
@@ -564,14 +591,32 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
       {/* Header con glassmorphism */}
       <header 
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b"
+        className="app-pro-topbar fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b"
         style={{ 
-          background: `linear-gradient(135deg, ${branding.primaryColor}f5 0%, ${branding.primaryColor}e8 100%)`,
-          borderColor: `${branding.primaryColor}30`,
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
+          background: `linear-gradient(140deg, ${branding.primaryColor}f4 0%, ${branding.primaryColor}ea 46%, ${branding.secondaryColor}d8 100%)`,
+          borderColor: `${branding.primaryColor}26`,
+          boxShadow: '0 16px 40px -28px rgba(6, 24, 44, 0.55)'
         }}
       >
         <div className="px-3 sm:px-4 py-3 sm:py-4">
+          <div className="mb-3 hidden lg:flex items-center justify-between gap-4 text-white/78">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+              <Zap className="h-3.5 w-3.5 text-white/90" />
+              Environnement Pro
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {PROFESSIONAL_SHELL_BADGES.map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded-full border border-white/18 bg-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/80 backdrop-blur-md"
+                  style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
+          </div>
+
           {/* Primera fila: Menú, Logo/Nombre */}
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
@@ -607,11 +652,19 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                     }}
                   />
                 )}
-                <div className="flex items-center gap-2">
-                  <h1 className="font-bold truncate text-sm sm:text-base md:text-xl lg:text-2xl text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    {nombreMostrar}
-                  </h1>
-                  <Sparkles className="w-4 h-4 text-white/80 hidden sm:block" />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h1 className="font-bold truncate text-sm sm:text-base md:text-xl lg:text-2xl text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      {nombreMostrar}
+                    </h1>
+                    <Sparkles className="w-4 h-4 text-white/80 hidden sm:block" />
+                  </div>
+                  <div className="hidden md:flex items-center gap-2 mt-1.5 text-white/78">
+                    <span className="rounded-full border border-white/16 bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] backdrop-blur-md" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                      {currentWorkspaceLabel}
+                    </span>
+                    <span className="text-xs text-white/70">Plateforme de gestion unifiée</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -621,22 +674,22 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               <GlobalSearch onNavigate={onNavigate} />
               <CentroNotificaciones />
               <LanguageSelector />
-              <div className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 max-w-[220px] sm:max-w-[260px]">
+              <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-white/16 bg-white/10 px-3 py-2 max-w-[220px] sm:max-w-[260px] shadow-[0_14px_28px_-24px_rgba(0,0,0,0.55)] backdrop-blur-md">
                 <div className="text-right">
                   <p className="text-xs sm:text-sm text-white font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     {nombreCompleto}
                   </p>
-                  <p className="text-xs text-white/80">{rolTraducido}</p>
+                  <p className="text-xs text-white/75">{rolTraducido}</p>
                 </div>
                 <div 
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 shadow-lg"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 shadow-lg border border-white/25"
                   style={{ backgroundColor: branding.secondaryColor }}
                 >
                   {iniciales}
                 </div>
               </div>
               {/* Usuario móvil compacto */}
-              <div className="sm:hidden flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-2 py-1.5 max-w-[150px]">
+              <div className="sm:hidden flex items-center gap-2 rounded-xl border border-white/16 bg-white/10 px-2 py-1.5 max-w-[150px] backdrop-blur-md">
                 <div className="text-right min-w-0">
                   <p
                     className="text-[11px] text-white font-semibold truncate"
@@ -670,20 +723,35 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Sidebar con glassmorphism */}
       {!hideSidebar && (
         <aside
-          className={`fixed top-[56px] sm:top-[72px] left-0 bottom-0 w-64 sm:w-72 shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
+          className={`app-pro-sidebar fixed top-[56px] sm:top-[72px] left-0 bottom-0 w-64 sm:w-72 shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
           style={{ 
-            background: `linear-gradient(180deg, ${branding.primaryColor}f8 0%, ${branding.primaryColor}f0 100%)`,
+            background: `linear-gradient(180deg, ${branding.primaryColor}fa 0%, ${branding.primaryColor}f3 58%, ${branding.primaryColor}ea 100%)`,
             borderColor: `${branding.primaryColor}30`
           }}
         >
           <nav className="p-3 sm:p-4 space-y-4">
-            <div className="px-3 sm:px-4 pb-1">
-              <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-white/70" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                Navigation principale
-              </p>
-              <p className="text-xs text-white/60 mt-1">Accès structuré par fonction métier</p>
+            <div className="app-pro-sidebar-panel px-3 sm:px-4 py-3 rounded-[22px] border border-white/12 bg-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-white/72" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                    Navigation principale
+                  </p>
+                  <p className="text-xs text-white/60 mt-1">Accès structuré par fonction métier</p>
+                </div>
+                <span className="rounded-full border border-white/14 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-white/78" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                  Pro
+                </span>
+              </div>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/55" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                  Module actif
+                </p>
+                <p className="mt-1 text-sm font-semibold text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  {currentWorkspaceLabel}
+                </p>
+              </div>
             </div>
             {menuSectionsFiltradas.map((section) => (
               <section key={section.id} className="space-y-1.5">
@@ -713,6 +781,24 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Main content */}
       <main className={`app-main-stage pt-[56px] sm:pt-[72px] ${!hideSidebar ? 'lg:pl-64 xl:pl-72' : ''} min-h-screen relative z-10`}>
         <div data-app-shell className="app-shell-content px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5">
+          <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                Espace de travail actif
+              </p>
+              <p className="mt-1 text-base font-semibold text-[#16324f]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                {currentWorkspaceLabel}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <span className="rounded-full border border-[#16324f]/10 bg-[#16324f]/5 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#16324f]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                Interface professionnelle
+              </span>
+              <span className="rounded-full border border-[#2d9561]/15 bg-[#2d9561]/8 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#267d51]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                Parcours unifiés
+              </span>
+            </div>
+          </div>
           {children}
         </div>
       </main>

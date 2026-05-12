@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Key, Lock, Eye, EyeOff, LogIn, Shield } from 'lucide-react';
+import { Key, Lock, Eye, EyeOff, LogIn, Shield, Sparkles, ShieldCheck, Building2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -128,19 +128,30 @@ export function AccesoOrganismo() {
       leftPanel={
         <div className="flex h-full flex-col justify-between gap-6">
           <div>
-            <div className="rounded-[28px] border border-white/90 bg-white/92 p-6 shadow-[0_22px_50px_-36px_rgba(15,45,71,0.35)]">
+            <div className="relative overflow-hidden rounded-[30px] border border-white/90 bg-white/94 p-6 shadow-[0_28px_64px_-40px_rgba(15,45,71,0.36)]">
+                <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+                <div className="pointer-events-none absolute -right-12 top-[-3rem] h-28 w-28 rounded-full blur-3xl" style={{ backgroundColor: `${branding.secondaryColor}1f` }} />
                 <p
                   className="text-[2.1rem] font-bold leading-none tracking-tight"
                   style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
                 >
                   {branding.systemName}
                 </p>
-                <p className="mt-4 text-[1.08rem] font-semibold text-slate-700">Système de gestion des commandes</p>
+                <p className="mt-4 text-[1.08rem] font-semibold text-slate-700">{t('common.systemManagementSubtitle')}</p>
                 {systemAddress && <p className="mt-3 text-[1.02rem] text-slate-500">{systemAddress}</p>}
                 {systemPhone && <p className="mt-1 text-[1.02rem] text-slate-500">{systemPhone}</p>}
             </div>
 
-            <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Portail organisme</p>
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-3 py-1 shadow-sm">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: branding.secondaryColor }} />
+                {t('organismPortal.portalLabel')}
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/75 bg-white/68 px-3 py-1 text-[10px] text-slate-400">
+                <Sparkles className="h-3.5 w-3.5" style={{ color: branding.primaryColor }} />
+                {t('experience.executiveCadence')}
+              </div>
+            </div>
             <h1
               className="mt-2 text-[1.9rem] font-bold tracking-tight text-slate-900"
               style={{ fontFamily: 'Montserrat, sans-serif' }}
@@ -152,32 +163,43 @@ export function AccesoOrganismo() {
               {t('organismPortal.subtitle')}
             </p>
 
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 shadow-sm">
+              <ShieldCheck className="h-4 w-4" style={{ color: branding.primaryColor }} />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{t('organismPortal.secureControlledAccess')}</p>
+            </div>
+
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.4)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Accès actifs</p>
+              <div className="relative overflow-hidden rounded-[24px] border border-white/82 bg-white/88 p-4 shadow-[0_20px_40px_-32px_rgba(15,45,71,0.4)]">
+                <div className="absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }} />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{t('organismPortal.activeAccesses')}</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>{organismesAvecCle.length}</p>
+                <p className="mt-2 text-xs text-slate-500">{t('organismPortal.activeAccessesDescription')}</p>
               </div>
-              <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.4)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Portail PRS</p>
+              <div className="relative overflow-hidden rounded-[24px] border border-white/82 bg-white/88 p-4 shadow-[0_20px_40px_-32px_rgba(15,45,71,0.4)]">
+                <div className="absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg, ${branding.secondaryColor} 0%, ${branding.primaryColor} 100%)` }} />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{t('organismPortal.prsPortalLabel')}</p>
                 <p className="mt-2 text-2xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>{organismesPRS}</p>
+                <p className="mt-2 text-xs text-slate-500">{t('organismPortal.prsPortalDescription')}</p>
               </div>
-              <div className="rounded-[22px] border border-white/80 bg-white/85 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.4)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Sécurité</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">Authentification par clé</p>
+              <div className="relative overflow-hidden rounded-[24px] border border-white/82 bg-white/88 p-4 shadow-[0_20px_40px_-32px_rgba(15,45,71,0.4)]">
+                <div className="absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg, ${branding.primaryColor} 0%, ${branding.primaryColor}aa 100%)` }} />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{t('organismPortal.securityLabel')}</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{t('organismPortal.keyAuthentication')}</p>
+                <p className="mt-2 text-xs text-slate-500">{t('organismPortal.securityDescription')}</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="rounded-[24px] border border-white/80 bg-white/88 p-5 shadow-[0_18px_36px_-30px_rgba(15,45,71,0.35)]">
+            <div className="rounded-[26px] border border-white/82 bg-white/90 p-5 shadow-[0_22px_48px_-34px_rgba(15,45,71,0.34)]">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 rounded-2xl p-2" style={{ backgroundColor: `${branding.primaryColor}12` }}>
                   <Shield className="h-5 w-5" style={{ color: branding.primaryColor }} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Accès plus sobre et plus direct</p>
+                  <p className="text-sm font-semibold text-slate-900">{t('organismPortal.premiumEntryTitle')}</p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Un écran recentré sur la clé d’accès, la sécurité et les raccourcis utiles pour les organismes.
+                    {t('organismPortal.premiumEntryDescription')}
                   </p>
                 </div>
               </div>
@@ -192,15 +214,20 @@ export function AccesoOrganismo() {
       }
       rightPanel={
         <div className="space-y-5">
-          <div className="rounded-[28px] border border-slate-200 bg-white/96 p-5 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.18)] sm:p-6">
+          <div className="relative overflow-hidden rounded-[30px] border border-slate-200/90 bg-white/98 p-5 shadow-[0_28px_70px_-42px_rgba(15,23,42,0.2)] sm:p-6">
+              <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+              <div className="pointer-events-none absolute -right-12 top-[-4rem] h-32 w-32 rounded-full blur-3xl" style={{ backgroundColor: `${branding.primaryColor}12` }} />
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Connexion sécurisée</p>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <Lock className="h-3.5 w-3.5" />
+                    {t('organismPortal.secureLogin')}
+                  </div>
                   <h2 className="mt-1 text-[1.55rem] font-bold tracking-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     {t('organismPortal.login')}
                   </h2>
                   <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                    Entrez la clé de votre organisme pour accéder au portail privé et consulter vos commandes.
+                    {t('organismPortal.loginDescription')}
                   </p>
                 </div>
 
@@ -210,13 +237,13 @@ export function AccesoOrganismo() {
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-2 rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.9)_100%)] p-4 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.12)]">
                   <div className="flex items-center justify-between gap-3">
                     <Label htmlFor="claveAcceso" className="text-sm font-semibold text-slate-800">
                       {t('organismPortal.accessKey')} *
                     </Label>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Format sécurisé
+                      {t('organismPortal.secureFormat')}
                     </span>
                   </div>
 
@@ -246,7 +273,7 @@ export function AccesoOrganismo() {
                 </div>
 
                 <div
-                  className="rounded-[22px] border p-4"
+                  className="rounded-[24px] border p-4 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.1)]"
                   style={{
                     backgroundColor: `${branding.primaryColor}08`,
                     borderColor: `${branding.primaryColor}24`,
@@ -280,13 +307,13 @@ export function AccesoOrganismo() {
                 </Button>
 
                 {organismesAvecCle.length > 0 && (
-                  <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                         {t('organismPortal.testKeys')}
                       </p>
                       <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-                        {organismesAvecCle.length} disponibles
+                        {t('organismPortal.availableCount', { count: organismesAvecCle.length })}
                       </span>
                     </div>
 
@@ -295,8 +322,9 @@ export function AccesoOrganismo() {
                         <button
                           key={organisme.id}
                           onClick={() => setClaveAcceso(organisme.claveAcceso || '')}
-                          className="rounded-[18px] border border-slate-200 bg-white px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_14px_26px_-24px_rgba(15,23,42,0.4)]"
+                          className="relative overflow-hidden rounded-[20px] border border-slate-200 bg-white px-3 py-3 text-left transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_18px_32px_-24px_rgba(15,23,42,0.4)]"
                         >
+                          <div className="pointer-events-none absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }} />
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-mono text-xs font-semibold tracking-[0.16em] text-slate-700">{organisme.claveAcceso}</span>
                             {organisme.participaPRS && (
@@ -312,6 +340,10 @@ export function AccesoOrganismo() {
                             )}
                           </div>
                           <p className="mt-2 truncate text-xs text-slate-500">{organisme.nombre}</p>
+                          <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            <Building2 className="h-3.5 w-3.5" />
+                            {t('organismPortal.quickSelection')}
+                          </div>
                         </button>
                       ))}
                     </div>

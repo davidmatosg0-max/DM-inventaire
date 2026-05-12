@@ -5,7 +5,7 @@
 // - Badge "✓ PRS" en el título del organismo cuando participa en PRS
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Phone, Mail, MapPin, Users, Calendar, Package, History, TrendingUp, Award, CheckCircle, Eye, X, Printer, Edit2, Save, Plus, Thermometer, Download, FileText, FileSpreadsheet, Tag, ShoppingCart, Clock, AlertCircle, Minus, Trash2, Star, UserPlus, MessageSquare, Languages, ChefHat } from 'lucide-react';
+import { LogOut, Phone, Mail, MapPin, Users, Calendar, Package, History, TrendingUp, Award, CheckCircle, Eye, X, Printer, Edit2, Save, Plus, Thermometer, Download, FileText, FileSpreadsheet, Tag, ShoppingCart, Clock, AlertCircle, Minus, Trash2, Star, UserPlus, MessageSquare, Languages, ChefHat, Sparkles, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -980,10 +980,13 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
             />
           </div>
       {/* Header du portail */}
-      <header className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/72 backdrop-blur-xl">
+      <header className="relative overflow-hidden rounded-[32px] border border-white/78 bg-white/74 shadow-[0_32px_78px_-48px_rgba(15,45,71,0.34)] ring-1 ring-slate-900/5 backdrop-blur-xl">
+        <div className="pointer-events-none absolute -left-12 top-[-4rem] h-40 w-40 rounded-full blur-3xl" style={{ backgroundColor: `${branding.primaryColor}18` }} />
+        <div className="pointer-events-none absolute bottom-[-5rem] right-[-2rem] h-44 w-44 rounded-full blur-3xl" style={{ backgroundColor: `${branding.secondaryColor}18` }} />
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent" />
         <div className="px-4 py-4 sm:px-6 sm:py-5">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-start">
-            <div className="rounded-[28px] border border-white/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(247,250,252,0.92)_100%)] p-4 shadow-[0_24px_54px_-38px_rgba(15,45,71,0.34)] sm:p-5">
+            <div className="rounded-[30px] border border-white/82 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(247,250,252,0.92)_100%)] p-4 shadow-[0_28px_60px_-40px_rgba(15,45,71,0.34)] sm:p-5">
               <div className="flex items-start gap-3 sm:gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border border-white/80 bg-white text-2xl shadow-[0_16px_34px_-28px_rgba(15,45,71,0.4)] sm:h-14 sm:w-14 sm:text-3xl">
                   {organismo.tipo === 'Comedor' ? '🍽️' :
@@ -992,7 +995,14 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Portail privé</p>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: branding.secondaryColor }} />
+                      {t('organismPortal.privatePortal')}
+                    </div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/75 bg-white/64 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      <Sparkles className="h-3.5 w-3.5" style={{ color: branding.primaryColor }} />
+                      {t('experience.executiveCadence')}
+                    </div>
                     {organismo.participaPRS && (
                       <Badge className="border-0 bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                         ✓ PRS
@@ -1005,6 +1015,10 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   <p className="mt-2 text-sm text-slate-600 sm:text-[0.98rem]">
                     {organismo.tipo} • {t('organismPortal.registeredSince')} {formatearFechaRegistroOrganismo()}
                   </p>
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 shadow-sm">
+                    <ShieldCheck className="h-4 w-4" style={{ color: branding.primaryColor }} />
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{t('organismPortal.prioritySignal')}</p>
+                  </div>
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
                     {organismo.direccion && (
                       <span className="inline-flex items-center gap-1.5">
@@ -1029,11 +1043,14 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/80 bg-white/92 p-4 shadow-[0_24px_54px_-38px_rgba(15,45,71,0.3)] sm:p-5">
+            <div className="rounded-[30px] border border-white/82 bg-white/94 p-4 shadow-[0_28px_60px_-40px_rgba(15,45,71,0.3)] sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Actions rapides</p>
-                  <p className="mt-1 text-sm text-slate-600">Accédez directement aux fonctions utiles du portail.</p>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-slate-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <Star className="h-3.5 w-3.5" style={{ color: branding.primaryColor }} />
+                    {t('organismPortal.quickActionsLabel')}
+                  </div>
+                  <p className="mt-1 text-sm text-slate-600">{t('organismPortal.quickActionsDescription')}</p>
                 </div>
                 <LanguageSelector />
               </div>
@@ -1042,21 +1059,21 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 {organismo.participaPRS && (
                   <Button
                     onClick={() => setDialogNuevaEntradaOpen(true)}
-                    className="h-11 justify-start rounded-2xl px-4 text-white shadow-[0_18px_32px_-24px_rgba(26,77,122,0.45)]"
+                    className="h-11 justify-start rounded-2xl px-4 text-white shadow-[0_20px_36px_-24px_rgba(26,77,122,0.45)]"
                     style={{
-                      background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
+                      background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
                       fontFamily: 'Montserrat, sans-serif',
                       fontWeight: 600,
                     }}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Nouvelle Entrée PRS
+                    {t('organismPortal.newPRSEntry')}
                   </Button>
                 )}
                 <Button
                   onClick={() => setMostrarDemandes(true)}
                   variant="outline"
-                  className="h-11 justify-start rounded-2xl border-slate-200 bg-slate-50/90 px-4 shadow-none hover:bg-slate-100"
+                  className="h-11 justify-start rounded-2xl border-slate-200 bg-slate-50/92 px-4 shadow-[0_16px_30px_-28px_rgba(15,23,42,0.26)] hover:bg-slate-100"
                   style={{
                     color: branding.primaryColor,
                     fontFamily: 'Montserrat, sans-serif',
@@ -1064,12 +1081,12 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   }}
                 >
                   <Package className="mr-2 h-4 w-4" />
-                  Mes Demandes
+                  {t('organismPortal.myRequests')}
                 </Button>
                 <Button
                   onClick={onCerrarSesion}
                   variant="outline"
-                  className="h-11 justify-start rounded-2xl border-slate-200 bg-slate-50/90 px-4 shadow-none hover:bg-slate-100"
+                  className="h-11 justify-start rounded-2xl border-slate-200 bg-slate-50/92 px-4 shadow-[0_16px_30px_-28px_rgba(15,23,42,0.26)] hover:bg-slate-100"
                   style={{
                     color: branding.primaryColor,
                     fontFamily: 'Montserrat, sans-serif',
@@ -1079,6 +1096,11 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   <LogOut className="mr-2 h-4 w-4" />
                   {t('organismPortal.logout')}
                 </Button>
+              </div>
+
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-4 py-2 shadow-sm">
+                <ShieldCheck className="h-4 w-4" style={{ color: branding.secondaryColor }} />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{t('organismPortal.immediateAccess')}</p>
               </div>
             </div>
           </div>

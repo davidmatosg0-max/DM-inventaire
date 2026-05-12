@@ -355,7 +355,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
               </li>
               <li className="flex gap-2">
                 <span className="font-bold text-[#DC3545]">4.</span>
-                <span>Rechargez la page (F5) et réessayez</span>
+                <span>Revenez ici puis cliquez sur <strong>Réessayer</strong></span>
               </li>
             </ol>
           </div>
@@ -391,14 +391,12 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
           </div>
 
           <div className="flex gap-3 mt-4">
-            {!isPermissionError && (
-              <button
-                onClick={prepararCamara}
-                className="flex-1 px-6 py-2 border-2 border-[#1E73BE] text-[#1E73BE] rounded-lg hover:bg-[#1E73BE] hover:text-white transition-colors font-medium"
-              >
-                Réessayer
-              </button>
-            )}
+            <button
+              onClick={prepararCamara}
+              className="flex-1 px-6 py-2 border-2 border-[#1E73BE] text-[#1E73BE] rounded-lg hover:bg-[#1E73BE] hover:text-white transition-colors font-medium"
+            >
+              Réessayer
+            </button>
             <button
               onClick={volverASeleccion}
               className="flex-1 px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"

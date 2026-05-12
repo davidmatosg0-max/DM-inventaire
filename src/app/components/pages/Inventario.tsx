@@ -90,6 +90,7 @@ import {
 } from '../../utils/pendingEntrepotQuickAction';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 
 type CarritoItem = {
   productoId: string;
@@ -2442,13 +2443,59 @@ export function Inventario() {
     };
   }, []);
 
+  const inventoryTabLabels: Record<string, string> = {
+    productos: 'Produits',
+    movimientos: 'Mouvements',
+    conversions: 'Conversions',
+    entradas: 'Entrées',
+    validacion: 'Validation',
+    prediccion: 'Prévision',
+  };
+
+  const reservedProductsCount = Object.values(reservasInventario).filter((resumen) => (resumen?.totalReservado ?? 0) > 0).length;
+
+  const inventoryExecutiveMetrics = [
+    {
+      id: 'active-tab',
+      label: 'Vue active',
+      value: inventoryTabLabels[activeTab] || 'Produits',
+      helper: 'Le module garde votre contexte actif pour enchaîner les opérations.',
+      icon: <Package className="h-4 w-4" />,
+      accentColor: branding.primaryColor,
+    },
+    {
+      id: 'low-stock',
+      label: 'Stock critique',
+      value: compactLowStockProducts.length,
+      helper: compactLowStockProducts.length > 0 ? 'Produits sous seuil minimum à traiter rapidement.' : 'Aucune alerte critique détectée actuellement.',
+      icon: <CheckSquare className="h-4 w-4" />,
+      accentColor: '#c23934',
+    },
+    {
+      id: 'reserved',
+      label: 'Réservations',
+      value: reservedProductsCount,
+      helper: reservedProductsCount > 0 ? 'Produits actuellement réservés pour des commandes actives.' : 'Aucune réservation en attente.',
+      icon: <ShoppingCart className="h-4 w-4" />,
+      accentColor: '#e8a419',
+    },
+    {
+      id: 'group-distribution',
+      label: 'Distribution ancrée',
+      value: ultimaDistribucionGrupoCreada ? ultimaDistribucionGrupoCreada.comandas.length : 0,
+      helper: ultimaDistribucionGrupoCreada ? ultimaDistribucionGrupoCreada.grupoDistribucionEtiqueta : 'Aucune distribution de groupe récente mémorisée.',
+      icon: <History className="h-4 w-4" />,
+      accentColor: branding.secondaryColor,
+    },
+  ];
+
   return (
     <div
       className="app-compact-page relative min-h-[calc(100vh-56px)] sm:min-h-[calc(100vh-64px)] flex flex-col overflow-visible -my-3 sm:-my-4 lg:-my-6 -mx-3 sm:-mx-4 lg:-mx-6"
       style={inventoryViewportZoom < 1 ? { zoom: inventoryViewportZoom } : undefined}
     >
       <Card className="border-none bg-transparent shadow-none flex flex-col overflow-visible rounded-none w-full relative z-10">
-        <div className="px-3 pt-3 sm:px-4 sm:pt-4 lg:px-6">
+        <div className="space-y-3 px-3 pt-3 sm:px-4 sm:pt-4 lg:px-6">
           <ModulePageHeader
             title={t('inventory.title')}
             subtitle={t('inventory.subtitle')}
@@ -2466,6 +2513,35 @@ export function Inventario() {
                 <span className="hidden sm:inline">Module Rapports</span>
                 <span className="sm:hidden">Rapports</span>
               </Button>
+            )}
+          />
+
+          <ModuleExecutiveStrip
+            eyebrow="Pilotage opérationnel"
+            title="Console d'action Entrepôt"
+            description="Gardez les signaux critiques, l'onglet actif et les accès rapides au même endroit pour piloter l'inventaire sans changer de contexte."
+            accentColor={branding.primaryColor}
+            secondaryColor={branding.secondaryColor}
+            metrics={inventoryExecutiveMetrics}
+            actions={(
+              <>
+                <Button variant="outline" onClick={() => setActiveTab('productos')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                  <Package className="mr-2 h-4 w-4" />
+                  Produits
+                </Button>
+                <Button variant="outline" onClick={() => setActiveTab('entradas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                  <History className="mr-2 h-4 w-4" />
+                  Entrées
+                </Button>
+                <Button variant="outline" onClick={() => setActiveTab('validacion')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  Validation
+                </Button>
+                <Button onClick={() => setActiveTab('prediccion')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Prévision
+                </Button>
+              </>
             )}
           />
         </div>

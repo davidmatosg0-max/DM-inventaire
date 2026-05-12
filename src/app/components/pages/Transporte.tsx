@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, MapPin, Clock, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
+import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GestionVehiculos } from '../transporte/GestionVehiculos';
 import { PlanificacionRutas } from '../transporte/PlanificacionRutas';
@@ -9,9 +10,10 @@ import { VerificacionVehiculo } from '../transporte/VerificacionVehiculo';
 import { GestionChoferes } from '../transporte/GestionChoferes';
 import { useBranding } from '../../../hooks/useBranding';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
-import { obtenerEstadisticasTransporte, TRANSPORTE_MODULE_EVENT } from '../../utils/transporteLogic';
+import { obtenerChoferes, obtenerEstadisticasTransporte, TRANSPORTE_MODULE_EVENT, TRANSPORTE_OPEN_CHOFER_DIALOG_EVENT, TRANSPORTE_OPEN_VEHICULO_DIALOG_EVENT } from '../../utils/transporteLogic';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 
 export function Transporte() {
   const { t } = useTranslation();
@@ -79,6 +81,7 @@ export function Transporte() {
   });
   const [resumen, setResumen] = React.useState(() => obtenerEstadisticasTransporte());
   const showCompactRouteOverview = isCompactTransportViewport && activeTransportTab === 'rutas';
+  const totalChoferes = React.useMemo(() => obtenerChoferes().length, [resumen]);
 
   React.useEffect(() => {
     const refrescarResumen = () => {
@@ -94,6 +97,58 @@ export function Transporte() {
     };
   }, []);
 
+  const transportTabLabels: Record<string, string> = {
+    rutas: 'Itinéraires',
+    vehiculos: 'Véhicules',
+    choferes: 'Chauffeurs',
+    verificacion: 'Vérification',
+  };
+
+  const openTransportQuickAction = (tab: string, eventName?: string) => {
+    setActiveTransportTab(tab);
+
+    if (typeof window !== 'undefined' && eventName) {
+      window.requestAnimationFrame(() => {
+        window.dispatchEvent(new Event(eventName));
+      });
+    }
+  };
+
+  const transportExecutiveMetrics = [
+    {
+      id: 'active-view',
+      label: 'Vue active',
+      value: transportTabLabels[activeTransportTab] || 'Itinéraires',
+      helper: 'Le flux reste centré sur la brique transport actuellement pilotée.',
+      icon: <MapPin className="h-4 w-4" />,
+      accentColor: branding.primaryColor,
+    },
+    {
+      id: 'planned-routes',
+      label: 'À lancer',
+      value: resumen.rutasPlanificadas,
+      helper: 'Itinéraires planifiés en attente de départ.',
+      icon: <Clock className="h-4 w-4" />,
+      accentColor: '#f59e0b',
+    },
+    {
+      id: 'fleet',
+      label: 'Flotte',
+      value: resumen.totalVehiculos,
+      helper: 'Véhicules disponibles dans le module transport.',
+      icon: <Truck className="h-4 w-4" />,
+      accentColor: branding.secondaryColor,
+    },
+    {
+      id: 'drivers',
+      label: 'Chauffeurs',
+      value: totalChoferes,
+      helper: 'Conducteurs actuellement enregistrés dans le module.',
+      icon: <CheckCircle className="h-4 w-4" />,
+      accentColor: '#7c3aed',
+    },
+  ];
+
   return (
     <div className="min-h-[calc(100vh-56px)] space-y-3 sm:space-y-4" style={transportViewportZoom < 1 ? { zoom: transportViewportZoom } : undefined}>
       <ModulePageHeader
@@ -102,6 +157,35 @@ export function Transporte() {
         icon={<Truck className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
+      />
+
+      <ModuleExecutiveStrip
+        eyebrow="Pilotage logistique"
+        title="Transport opérationnel et accès directs"
+        description="Déclenchez l’ajout d’un véhicule ou d’un chauffeur en un clic et basculez immédiatement vers la vérification ou la planification sans perdre le fil logistique."
+        accentColor={branding.primaryColor}
+        secondaryColor={branding.secondaryColor}
+        metrics={transportExecutiveMetrics}
+        actions={(
+          <>
+            <Button variant="outline" onClick={() => setActiveTransportTab('rutas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <MapPin className="mr-2 h-4 w-4" />
+              Itinéraires
+            </Button>
+            <Button variant="outline" onClick={() => openTransportQuickAction('vehiculos', TRANSPORTE_OPEN_VEHICULO_DIALOG_EVENT)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <Truck className="mr-2 h-4 w-4" />
+              Nouveau véhicule
+            </Button>
+            <Button variant="outline" onClick={() => openTransportQuickAction('choferes', TRANSPORTE_OPEN_CHOFER_DIALOG_EVENT)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Nouveau chauffeur
+            </Button>
+            <Button onClick={() => setActiveTransportTab('verificacion')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+              <Clock className="mr-2 h-4 w-4" />
+              Vérification
+            </Button>
+          </>
+        )}
       />
 
       <ModuleStatsGrid
