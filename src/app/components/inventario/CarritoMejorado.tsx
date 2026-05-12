@@ -619,17 +619,15 @@ export function CarritoMejorado({
       </Dialog>
 
       {/* Dialog para distribuir productos */}
-      {distribuirDialogOpen && (
-        <DialogDistribuirProductos
-          open={distribuirDialogOpen}
-          onOpenChange={setDistribuirDialogOpen}
-          carrito={carrito}
-          productos={productos}
-          categoriasInfo={categoriasInfo}
-          onDistribucionCompletada={handleDistribucionCompletada}
-          onDistribucionGrupoCreada={onDistribucionGrupoCreada}
-        />
-      )}
+      <DialogDistribuirProductos
+        open={distribuirDialogOpen}
+        onOpenChange={setDistribuirDialogOpen}
+        carrito={carrito}
+        productos={productos}
+        categoriasInfo={categoriasInfo}
+        onDistribucionCompletada={handleDistribucionCompletada}
+        onDistribucionGrupoCreada={onDistribucionGrupoCreada}
+      />
     </>
   );
 }
