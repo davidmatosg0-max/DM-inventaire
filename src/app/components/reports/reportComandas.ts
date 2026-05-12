@@ -1,4 +1,5 @@
 import { obtenerComandas as obtenerComandasCanonicas } from '../../utils/comandaStorage';
+import { obtenerOfertas, type Oferta as OfertaSistema, type SolicitudOferta } from '../../utils/ofertaStorage';
 import type { Comanda, ItemComanda } from '../../types';
 
 export interface ReportComandaProduct {
@@ -22,6 +23,8 @@ export interface ReportComanda {
   totalPeso: number;
   totalValorMonetario: number;
 }
+
+type ReportOfferRequestStatus = Extract<SolicitudOferta['estado'], 'aceptada' | 'entregada'>;
 
 function readFiniteNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -73,6 +76,94 @@ function getReportFrequency(comanda: Comanda): string | undefined {
   return runtimeComanda.organismoFrecuencia || runtimeComanda.frecuenciaEntrega || runtimeComanda.organismo?.frecuenciaEntrega;
 }
 
+function getOfferRequestDate(solicitud: SolicitudOferta): string {
+  return solicitud.fechaActualizacion || solicitud.fechaSolicitud;
+}
+
+function mapOfferRequestStatusToReportStatus(status: ReportOfferRequestStatus): ReportComanda['estado'] {
+  return status === 'entregada' ? 'entregada' : 'confirmada';
+}
+
+function getOfferProductWeight(producto: OfertaSistema['productos'][number], cantidad: number): number {
+  const peso = readFiniteNumber(producto.peso) ?? 0;
+
+  if (producto.unidad === 'kg') {
+    return cantidad;
+  }
+
+  return cantidad * peso;
+}
+
+function getOfferRequestProducts(
+  oferta: OfertaSistema,
+  solicitud: SolicitudOferta,
+): ReportComandaProduct[] {
+  return solicitud.productosAceptados.map((productoAceptado) => {
+    const productoOferta = oferta.productos.find((producto) => producto.productoId === productoAceptado.productoId);
+
+    return {
+      productoId: productoAceptado.productoId,
+      productoNombre: productoOferta?.productoNombre || 'Produit sans nom',
+      cantidad: productoAceptado.cantidadAceptada,
+      unidad: productoOferta?.unidad || 'u',
+    };
+  });
+}
+
+function adaptOfferRequestToReport(
+  oferta: OfertaSistema,
+  solicitud: SolicitudOferta,
+): ReportComanda | null {
+  if (solicitud.estado !== 'aceptada' && solicitud.estado !== 'entregada') {
+    return null;
+  }
+
+  const productos = getOfferRequestProducts(oferta, solicitud);
+  const fecha = getOfferRequestDate(solicitud);
+  const totalPeso = solicitud.productosAceptados.reduce((sum, productoAceptado) => {
+    const productoOferta = oferta.productos.find((producto) => producto.productoId === productoAceptado.productoId);
+    if (!productoOferta) {
+      return sum;
+    }
+
+    return sum + getOfferProductWeight(productoOferta, productoAceptado.cantidadAceptada);
+  }, 0);
+  const totalValorMonetario = solicitud.productosAceptados.reduce((sum, productoAceptado) => {
+    const productoOferta = oferta.productos.find((producto) => producto.productoId === productoAceptado.productoId);
+    const valorUnitario = productoOferta ? (readFiniteNumber(productoOferta.valorUnitario) ?? 0) : 0;
+
+    return sum + (productoAceptado.cantidadAceptada * valorUnitario);
+  }, 0);
+
+  return {
+    id: `OFE-SOL-${solicitud.id}`,
+    numero: `${oferta.numeroOferta}-${solicitud.id}`,
+    organismoId: solicitud.organismoId,
+    organismoNombre: solicitud.organismoNombre,
+    fecha,
+    fechaEntrega: solicitud.estado === 'entregada' ? fecha : undefined,
+    estado: mapOfferRequestStatusToReportStatus(solicitud.estado),
+    observaciones: solicitud.observaciones,
+    productos,
+    totalPeso,
+    totalValorMonetario,
+  };
+}
+
+function obtenerSolicitudesOfertaReporte(): ReportComanda[] {
+  return obtenerOfertas().flatMap((oferta) => (
+    (oferta.solicitudes || []).reduce<ReportComanda[]>((reportes, solicitud) => {
+      const reporte = adaptOfferRequestToReport(oferta, solicitud);
+
+      if (reporte) {
+        reportes.push(reporte);
+      }
+
+      return reportes;
+    }, [])
+  ));
+}
+
 export function adaptComandaToReport(comanda: Comanda): ReportComanda {
   const runtimeComanda = comanda as Comanda & {
     totalPeso?: unknown;
@@ -106,5 +197,8 @@ export function adaptComandaToReport(comanda: Comanda): ReportComanda {
 }
 
 export function obtenerComandasReporte(): ReportComanda[] {
-  return obtenerComandasCanonicas().map(adaptComandaToReport);
+  return [
+    ...obtenerComandasCanonicas().map(adaptComandaToReport),
+    ...obtenerSolicitudesOfertaReporte(),
+  ];
 }

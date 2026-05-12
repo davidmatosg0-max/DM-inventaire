@@ -293,14 +293,6 @@ export function ReportesAvanzado() {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  useEffect(() => {
-    if (tipoReporte !== 'prs' || !rangoValido) {
-      return;
-    }
-
-    void cargarReportePRSRemoto(false);
-  }, [tipoReporte, fechaInicio, fechaFin, rangoValido]);
-
   const rangoInicio = parseDateValue(fechaInicio);
   const rangoFin = parseDateValue(fechaFin, true);
   const rangoValido = Boolean(rangoInicio && rangoFin && rangoInicio <= rangoFin);
@@ -308,6 +300,14 @@ export function ReportesAvanzado() {
   const comparacionInicio = rangoInicio ? shiftDate(rangoInicio, periodoComparacion) : null;
   const comparacionFin = rangoFin ? shiftDate(rangoFin, periodoComparacion) : null;
   const movimientosReporte = movimientos as MovimientoReporte[];
+
+  useEffect(() => {
+    if (tipoReporte !== 'prs' || !rangoValido) {
+      return;
+    }
+
+    void cargarReportePRSRemoto(false);
+  }, [tipoReporte, fechaInicio, fechaFin, rangoValido]);
 
   const comandasFiltradas = rangoValido
     ? comandas.filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha, rangoInicio, rangoFin))
