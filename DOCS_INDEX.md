@@ -48,6 +48,126 @@ Bienvenido al Sistema de Gestión Banque Alimentaire. Esta guía te ayudará a n
 
 ---
 
+#### 🎬 [GUIDE_TUTORIELS_VIDEO_MODULES.md](./GUIDE_TUTORIELS_VIDEO_MODULES.md)
+**Audiencia:** Formation, opérations, communication interne  
+**Tamaño:** guía de producción por módulos  
+**Tiempo de lectura:** 15-20 minutos  
+**Contenido:**
+- Format standard de mini tutoriels vidéo
+- Storyboards prêts à enregistrer pour chaque module
+- Scripts courts de voix off
+- Ordre recommandé de production et diffusion
+- Conseils de montage et livrables attendus
+
+**Cuándo leer:** Cuando quieras grabar mini videos guía o preparar una base de formación rápida por módulo
+
+---
+
+#### 🎙️ [SCRIPTS_TUTORIELS_VIDEO_4_MODULES.md](./SCRIPTS_TUTORIELS_VIDEO_4_MODULES.md)
+**Audiencia:** Formation, communication interne, captation vidéo  
+**Tamaño:** guiones listos para grabación  
+**Tiempo de lectura:** 10-15 minutos  
+**Contenido:**
+- Scripts mot a mot para Tableau de bord, Entrepôt, Inventaire y Commandes
+- Duración objetivo por video
+- Frases de apertura y cierre
+- Textos recomendados en pantalla
+- Recomendaciones de postproducción
+
+**Cuándo leer:** Cuando vayas a grabar las primeras 4 mini guías sin redactar la locución desde cero
+
+---
+
+#### 🎙️ [SCRIPTS_TUTORIELS_VIDEO_VAGUE_2.md](./SCRIPTS_TUTORIELS_VIDEO_VAGUE_2.md)
+**Audiencia:** Formation, communication interne, captation vidéo  
+**Tamaño:** segunda tanda de guiones listos para grabación  
+**Tiempo de lectura:** 10-15 minutos  
+**Contenido:**
+- Scripts mot a mot para Liaison, Rapports, Achats y Déchets & compostage
+- Duración objetivo por video
+- Textos recomendados en pantalla
+- Frases finales de cierre
+- Consejos de postproducción para la segunda ola
+
+**Cuándo leer:** Cuando quieras grabar la segunda serie de mini guías sin escribir la locución manualmente
+
+---
+
+#### 🎙️ [SCRIPTS_TUTORIELS_VIDEO_VAGUE_3.md](./SCRIPTS_TUTORIELS_VIDEO_VAGUE_3.md)
+**Audiencia:** Formation, communication interne, captation vidéo  
+**Tamaño:** tercera tanda de guiones listos para grabación  
+**Tiempo de lectura:** 10-15 minutos  
+**Contenido:**
+- Scripts mot a mot para Organismes, Transport, Etiquettes y Configuration
+- Duración objetivo por video
+- Textos recomendados en pantalla
+- Frases finales de cierre
+- Consejos de postproducción de la tercera ola
+
+**Cuándo leer:** Cuando quieras grabar la tercera serie manteniendo el mismo formato de voz y montaje
+
+---
+
+#### 🎙️ [SCRIPTS_TUTORIELS_VIDEO_VAGUE_4.md](./SCRIPTS_TUTORIELS_VIDEO_VAGUE_4.md)
+**Audiencia:** Formation, communication interne, captation vidéo  
+**Tamaño:** cuarta tanda de guiones listos para grabación  
+**Tiempo de lectura:** 10-15 minutos  
+**Contenido:**
+- Scripts mot a mot para Offres organismes, Partenaires & fournisseurs, Annuaire Entrepot y Comptoir
+- Duración objetivo por video
+- Textos recomendados en pantalla
+- Frases finales de cierre
+- Consejos de postproducción de la cuarta ola
+
+**Cuándo leer:** Cuando quieras grabar la cuarta serie conservando el mismo tono de formación y montaje
+
+---
+
+#### 🎙️ [SCRIPTS_TUTORIELS_VIDEO_VAGUE_5.md](./SCRIPTS_TUTORIELS_VIDEO_VAGUE_5.md)
+**Audiencia:** Formation, communication interne, captation vidéo  
+**Tamaño:** quinta tanda de guiones listos para grabación  
+**Tiempo de lectura:** 10-15 minutos  
+**Contenido:**
+- Scripts mot a mot para Cuisine, Messagerie, Recrutement y Utilisateurs/Roles
+- Duración objetivo por video
+- Textos recomendados en pantalla
+- Frases finales de cierre
+- Consejos de postproducción de la quinta ola
+
+**Cuándo leer:** Cuando quieras grabar la quinta serie manteniendo el mismo tono visual y narrativo
+
+---
+
+#### 🎙️ [SCRIPTS_TUTORIELS_VIDEO_VAGUE_6.md](./SCRIPTS_TUTORIELS_VIDEO_VAGUE_6.md)
+**Audiencia:** Formation, communication interne, captation vidéo  
+**Tamaño:** sexta tanda de guiones listos para grabación  
+**Tiempo de lectura:** 10-15 minutos  
+**Contenido:**
+- Scripts mot a mot para Identite visuelle, API & integrations y dos cápsulas administrativas complementarias
+- Duración objetivo por video
+- Textos recomendados en pantalla
+- Frases finales de cierre
+- Consejos de postproducción orientados a verificación y gobernanza
+
+**Cuándo leer:** Cuando quieras cerrar la serie con cápsulas técnicas y administrativas complementarias
+
+---
+
+#### 🎬 [KIT_FINAL_TOURNAGE_TUTORIELS.md](./KIT_FINAL_TOURNAGE_TUTORIELS.md)
+**Audiencia:** Formation, communication interne, captation vidéo, coordination  
+**Tamaño:** kit final de producción y publicación  
+**Tiempo de lectura:** 15-20 minutos  
+**Contenido:**
+- Modelos de miniaturas para toda la serie
+- Sous-titres types y reglas de subtitulado
+- Textes de diffusion interne reutilizables
+- Orden final recomendado de publicación
+- Check-list de salida por cápsula y pack de livraison
+
+**Cuándo leer:** Cuando quieras pasar de los guiones a la producción final y a la difusión interna
+
+---
+
 #### 🚀 [QUICK_START.md](./QUICK_START.md)
 **Audiencia:** DevOps, Desarrolladores  
 **Tamaño:** ~200 líneas  

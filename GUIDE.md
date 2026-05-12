@@ -1138,11 +1138,12 @@ Solutions :
 
 **Dans l'Application** :
 - Icône "?" dans chaque module pour aide contextuelle
-- Tutoriels vidéo intégrés
+- Guide de storyboards vidéo disponible pour préparer les mini tutoriels
 - Chat de support (coin inférieur droit)
 
 **Documentation** :
 - Ce guide (Menu → Aide → Guide Utilisateur)
+- Guide de tournage : `GUIDE_TUTORIELS_VIDEO_MODULES.md`
 - Base de connaissances en ligne
 - Vidéos tutoriels sur notre chaîne
 
