@@ -35,6 +35,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../ui/badge';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 import { obtenerContactosDepartamento, type ContactoDepartamento } from '../../utils/contactosDepartamentoStorage';
 import {
   actualizarBonAchat,
@@ -83,61 +84,81 @@ interface ProgrammeFormulaire {
   actif: boolean;
 }
 
-function createEmptyLine(): LigneFormulaire {
+function resolveIntlLocale(language: string): string {
+  const normalized = language.split('-')[0];
+
+  switch (normalized) {
+    case 'en':
+      return 'en-CA';
+    case 'es':
+      return 'es-ES';
+    case 'ar':
+      return 'ar-EG';
+    case 'fr':
+    default:
+      return 'fr-CA';
+  }
+}
+
+function createEmptyLine(defaultUnit = 'unit'): LigneFormulaire {
   return {
     id: `ligne-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     description: '',
     quantite: '',
-    unite: 'unité',
+    unite: defaultUnit,
     prixUnitaire: 0,
     total: 0
   };
 }
 
-const statutConfig: Record<StatutBonAchat, { label: string; className: string }> = {
-  brouillon: { label: 'Brouillon', className: 'bg-slate-100 text-slate-700 border-slate-200' },
-  en_attente: { label: 'En attente', className: 'bg-amber-100 text-amber-800 border-amber-200' },
-  approuve: { label: 'Approuvé', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-  refuse: { label: 'Refusé', className: 'bg-rose-100 text-rose-800 border-rose-200' },
-  commande: { label: 'Commandé', className: 'bg-sky-100 text-sky-800 border-sky-200' },
-  recu: { label: 'Reçu', className: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-  annule: { label: 'Annulé', className: 'bg-zinc-200 text-zinc-700 border-zinc-300' }
-};
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('fr-CA', {
+function formatCurrency(value: number, language = 'fr'): string {
+  return new Intl.NumberFormat(resolveIntlLocale(language), {
     style: 'currency',
     currency: 'CAD',
     maximumFractionDigits: 2
   }).format(value || 0);
 }
 
-function formatDate(value?: string): string {
+function formatDate(value?: string, language = 'fr'): string {
   if (!value) {
     return '-';
   }
 
-  return new Intl.DateTimeFormat('fr-CA', {
+  return new Intl.DateTimeFormat(resolveIntlLocale(language), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
   }).format(new Date(value));
 }
 
-function getSupplierLabel(contact: ContactoDepartamento): string {
-  return contact.nombreEmpresa || `${contact.nombre} ${contact.apellido}`.trim() || 'Fournisseur';
+function getSupplierLabel(contact: ContactoDepartamento, fallbackLabel = 'Supplier'): string {
+  return contact.nombreEmpresa || `${contact.nombre} ${contact.apellido}`.trim() || fallbackLabel;
 }
 
 export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const branding = useBranding();
   const usuario = obtenerUsuarioSesion();
+  const currentLanguage = i18n.resolvedLanguage || i18n.language || 'fr';
+  const supplierFallback = t('achatPage.supplierFallback');
+  const formatCurrencyValue = (value: number) => formatCurrency(value, currentLanguage);
+  const formatDateValue = (value?: string) => formatDate(value, currentLanguage);
+  const statutConfig = useMemo<Record<StatutBonAchat, { label: string; className: string }>>(() => ({
+    brouillon: { label: t('achatPage.status.draft'), className: 'bg-slate-100 text-slate-700 border-slate-200' },
+    en_attente: { label: t('achatPage.status.pending'), className: 'bg-amber-100 text-amber-800 border-amber-200' },
+    approuve: { label: t('achatPage.status.approved'), className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+    refuse: { label: t('achatPage.status.refused'), className: 'bg-rose-100 text-rose-800 border-rose-200' },
+    commande: { label: t('achatPage.status.ordered'), className: 'bg-sky-100 text-sky-800 border-sky-200' },
+    recu: { label: t('achatPage.status.received'), className: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+    annule: { label: t('achatPage.status.cancelled'), className: 'bg-zinc-200 text-zinc-700 border-zinc-300' }
+  }), [t]);
   const [bons, setBons] = useState<BonAchat[]>([]);
   const [programmes, setProgrammes] = useState<ProgrammeAchat[]>([]);
   const [reglas, setReglas] = useState<RegleAutorisationAchat[]>([]);
   const [dialogBonOpen, setDialogBonOpen] = useState(false);
   const [dialogProgrammeOpen, setDialogProgrammeOpen] = useState(false);
   const [dialogReglaOpen, setDialogReglaOpen] = useState(false);
+  const [activeAchatTab, setActiveAchatTab] = useState('overview');
   const [previewBon, setPreviewBon] = useState<BonAchat | null>(null);
   const [programmeEnEdicion, setProgrammeEnEdicion] = useState<ProgrammeAchat | null>(null);
   const [reglaEnEdicion, setReglaEnEdicion] = useState<RegleAutorisationAchat | null>(null);
@@ -146,9 +167,9 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [dateLivraisonSouhaitee, setDateLivraisonSouhaitee] = useState('');
   const [priorite, setPriorite] = useState<PrioriteBonAchat>('normal');
-  const [conditionsPaiement, setConditionsPaiement] = useState('30 jours');
+  const [conditionsPaiement, setConditionsPaiement] = useState(t('achatPage.defaults.paymentTerms'));
   const [notes, setNotes] = useState('');
-  const [lignes, setLignes] = useState<LigneFormulaire[]>([createEmptyLine()]);
+  const [lignes, setLignes] = useState<LigneFormulaire[]>([createEmptyLine(t('achatPage.defaults.unit'))]);
   const [reglaForm, setReglaForm] = useState<ReglaFormulaire>({
     nom: '',
     roleAutorisateur: '',
@@ -169,8 +190,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   const fournisseurs = useMemo(() => {
     return obtenerContactosDepartamento()
       .filter(contact => contact.activo && (contact.isFournisseur === true || contact.tipo === 'fournisseur'))
-      .sort((a, b) => getSupplierLabel(a).localeCompare(getSupplierLabel(b), 'fr'));
-  }, []);
+      .sort((a, b) => getSupplierLabel(a, supplierFallback).localeCompare(getSupplierLabel(b, supplierFallback), 'fr'));
+  }, [supplierFallback]);
 
   const fournisseurSeleccionado = useMemo(
     () => fournisseurs.find(contact => contact.id === selectedSupplierId) || null,
@@ -245,6 +266,52 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   const canAuthorize = Boolean(usuario?.permisos?.some(permiso =>
     ['acceso_total', 'desarrollador', 'administrador_general'].includes(permiso)
   ));
+  const achatTabLabels: Record<string, string> = useMemo(() => ({
+    overview: t('achatPage.tabs.overview'),
+    bons: t('achatPage.tabs.orders'),
+    fournisseurs: t('achatPage.tabs.suppliers'),
+    programmes: t('achatPage.tabs.programs'),
+    autorisations: t('achatPage.tabs.authorizations'),
+  }), [t]);
+  const priorityLabels: Record<PrioriteBonAchat, string> = useMemo(() => ({
+    normal: t('achatPage.create.priorityNormal'),
+    urgent: t('achatPage.create.priorityUrgent'),
+    critique: t('achatPage.create.priorityCritical')
+  }), [t]);
+  const achatsExecutiveMetrics = useMemo(() => [
+    {
+      id: 'active-view',
+      label: t('achatPage.metrics.activeView'),
+      value: achatTabLabels[activeAchatTab] || t('achatPage.tabs.overview'),
+      helper: t('achatPage.metrics.activeViewHelper'),
+      icon: <Receipt className="h-4 w-4" />,
+      accentColor: branding.primaryColor,
+    },
+    {
+      id: 'pending-approvals',
+      label: t('achatPage.metrics.pendingValidation'),
+      value: resumen.enAttente,
+      helper: resumen.enAttente > 0 ? t('achatPage.metrics.pendingValidationSome') : t('achatPage.metrics.pendingValidationNone'),
+      icon: <ShieldCheck className="h-4 w-4" />,
+      accentColor: '#f59e0b',
+    },
+    {
+      id: 'active-programmes',
+      label: t('achatPage.metrics.activePrograms'),
+      value: programmes.filter(programme => programme.actif).length,
+      helper: t('achatPage.metrics.activeProgramsHelper'),
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      accentColor: branding.secondaryColor,
+    },
+    {
+      id: 'engaged-volume',
+      label: t('achatPage.metrics.engagedVolume'),
+      value: formatCurrencyValue(resumen.totalMontant),
+      helper: t('achatPage.metrics.engagedVolumeHelper'),
+      icon: <CreditCard className="h-4 w-4" />,
+      accentColor: '#7c3aed',
+    },
+  ], [t, achatTabLabels, activeAchatTab, resumen.enAttente, resumen.totalMontant, programmes, branding.primaryColor, branding.secondaryColor]);
 
   const loadModuleData = () => {
     setBons(obtenerBonsAchat());
@@ -277,9 +344,9 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     setSelectedSupplierId('');
     setDateLivraisonSouhaitee('');
     setPriorite('normal');
-    setConditionsPaiement('30 jours');
+    setConditionsPaiement(t('achatPage.defaults.paymentTerms'));
     setNotes('');
-    setLignes([createEmptyLine()]);
+    setLignes([createEmptyLine(t('achatPage.defaults.unit'))]);
   };
 
   const resetReglaForm = () => {
@@ -331,7 +398,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
 
   const handleCreateBon = (statutInitial: 'brouillon' | 'en_attente') => {
     if (!fournisseurSeleccionado) {
-      toast.error('Sélectionnez un fournisseur pour créer le bon d\'achat.');
+      toast.error(t('achatPage.toasts.selectSupplier'));
       return;
     }
 
@@ -344,11 +411,11 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
       }));
 
     if (lignesValides.length === 0) {
-      toast.error('Ajoutez au moins une ligne valide au bon d\'achat.');
+      toast.error(t('achatPage.toasts.addValidLine'));
       return;
     }
 
-    const auteur = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : 'Système';
+    const auteur = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : t('achatPage.defaults.systemActor');
     crearBonAchat({
       programmeAchatId: programmeSeleccionado?.id,
       programmeAchatNom: programmeSeleccionado?.nom,
@@ -369,8 +436,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
 
     toast.success(
       statutInitial === 'en_attente'
-        ? 'Bon d\'achat soumis pour autorisation.'
-        : 'Bon d\'achat enregistré en brouillon.'
+        ? t('achatPage.toasts.submitted')
+        : t('achatPage.toasts.savedDraft')
     );
     setDialogBonOpen(false);
     resetBonForm();
@@ -378,8 +445,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const handleSubmitBon = (bonId: string) => {
-    soumettreBonAchat(bonId, usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : 'Système');
-    toast.success('Le bon d\'achat a été envoyé au circuit d\'approbation.');
+    soumettreBonAchat(bonId, usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : t('achatPage.defaults.systemActor'));
+    toast.success(t('achatPage.toasts.sentForApproval'));
     loadModuleData();
   };
 
@@ -395,42 +462,42 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
         id: usuario.id,
         nom: `${usuario.nombre} ${usuario.apellido || ''}`.trim(),
         role: usuario.rol,
-        commentaire: approved ? 'Validation effectuée depuis le module Achat.' : 'Demande refusée depuis le module Achat.'
+        commentaire: approved ? t('achatPage.toasts.approvalCommentApproved') : t('achatPage.toasts.approvalCommentRejected')
       }
     );
 
-    toast.success(approved ? 'Autorisation approuvée.' : 'Autorisation refusée.');
+    toast.success(approved ? t('achatPage.toasts.approvalApproved') : t('achatPage.toasts.approvalRejected'));
     loadModuleData();
   };
 
   const handleUpdateBonStatus = (bonId: string, statut: StatutBonAchat) => {
-    const actorName = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : 'Système';
+    const actorName = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : t('achatPage.defaults.systemActor');
 
     if (statut === 'recu') {
       const bonRecu = registrarRecepcionBonAchat(bonId, actorName);
       if (bonRecu?.inventarioRegistrado) {
-        toast.success(`Bon reçu et intégré automatiquement à l'inventaire (${bonRecu.entradasInventarioIds?.length || 0} entrée(s)).`);
+        toast.success(t('achatPage.toasts.receivedInventory', { count: bonRecu.entradasInventarioIds?.length || 0 }));
       }
       loadModuleData();
       return;
     }
 
     actualizarBonAchat(bonId, { statut }, actorName);
-    toast.success(`Statut du bon mis à jour vers ${statutConfig[statut].label}.`);
+    toast.success(t('achatPage.toasts.statusUpdated', { status: statutConfig[statut].label }));
     loadModuleData();
   };
 
   const handleCancelBon = (bonId: string) => {
-    const actorName = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : 'Système';
+    const actorName = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : t('achatPage.defaults.systemActor');
     const bonAnnule = actualizarBonAchat(bonId, { statut: 'annule' }, actorName);
 
     if (!bonAnnule) {
-      toast.error('Impossible d\'annuler ce bon d\'achat.');
+      toast.error(t('achatPage.toasts.cancelFailed'));
       return;
     }
 
     setPreviewBon(current => current?.id === bonId ? bonAnnule : current);
-    toast.success('Bon d\'achat annulé.');
+    toast.success(t('achatPage.toasts.cancelled'));
     loadModuleData();
   };
 
@@ -450,43 +517,43 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     doc.setTextColor('#FFFFFF');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('Bon d\'achat', 14, 16);
+    doc.text(t('achatPage.pdf.title'), 14, 16);
     doc.setFontSize(11);
     doc.text(`${branding.systemName || 'Banque Alimentaire'}`, 14, 23);
 
     doc.setTextColor('#111827');
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Bon d'achat: ${bon.numero}`, 14, 40);
+    doc.text(`${t('achatPage.pdf.orderLabel')}: ${bon.numero}`, 14, 40);
 
     doc.setFont('helvetica', 'normal');
-    doc.text(`Date de création: ${formatDate(bon.dateCreation)}`, 110, 40);
-    doc.text(`Livraison souhaitée: ${formatDate(bon.dateLivraisonSouhaitee)}`, 110, 47);
-    doc.text(`Créé par: ${bon.createdByName}`, 110, 54);
+    doc.text(`${t('achatPage.pdf.creationDate')}: ${formatDateValue(bon.dateCreation)}`, 110, 40);
+    doc.text(`${t('achatPage.pdf.desiredDelivery')}: ${formatDateValue(bon.dateLivraisonSouhaitee)}`, 110, 47);
+    doc.text(`${t('achatPage.pdf.createdBy')}: ${bon.createdByName}`, 110, 54);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primary);
-    doc.text('Fournisseur', 14, 66);
-    doc.text('Conditions', 110, 66);
+    doc.text(t('achatPage.pdf.supplier'), 14, 66);
+    doc.text(t('achatPage.pdf.conditions'), 110, 66);
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor('#111827');
     fournisseurDetails.forEach((line, index) => {
       doc.text(line, 14, 73 + index * 6);
     });
-    doc.text(`Priorité: ${bon.priorite}`, 110, 73);
-    doc.text(`Statut: ${statutConfig[bon.statut].label}`, 110, 79);
-    doc.text(`Paiement: ${bon.conditionsPaiement || 'À confirmer'}`, 110, 85);
+    doc.text(`${t('achatPage.pdf.priority')}: ${priorityLabels[bon.priorite]}`, 110, 73);
+    doc.text(`${t('achatPage.pdf.status')}: ${statutConfig[bon.statut].label}`, 110, 79);
+    doc.text(`${t('achatPage.pdf.payment')}: ${bon.conditionsPaiement || t('achatPage.defaults.toConfirm')}`, 110, 85);
 
     autoTable(doc, {
       startY: 98,
-      head: [['Description', 'Qté', 'Unité', 'Prix unitaire', 'Total']],
+      head: [[t('achatPage.pdf.headers.description'), t('achatPage.pdf.headers.qty'), t('achatPage.pdf.headers.unit'), t('achatPage.pdf.headers.unitPrice'), t('achatPage.pdf.headers.total')]],
       body: bon.lignes.map(ligne => [
         ligne.description,
         `${ligne.quantite}`,
         ligne.unite,
-        formatCurrency(ligne.prixUnitaire),
-        formatCurrency(ligne.total)
+        formatCurrencyValue(ligne.prixUnitaire),
+        formatCurrencyValue(ligne.total)
       ]),
       theme: 'grid',
       headStyles: {
@@ -511,20 +578,20 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     doc.setTextColor('#FFFFFF');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text(`Total: ${formatCurrency(bon.montantTotal)}`, 138, finalY + 16);
+    doc.text(`${t('achatPage.pdf.headers.total')}: ${formatCurrencyValue(bon.montantTotal)}`, 138, finalY + 16);
 
     doc.setTextColor('#111827');
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Autorisations', 14, finalY + 16);
+    doc.text(t('achatPage.pdf.authorizations'), 14, finalY + 16);
     doc.setFont('helvetica', 'normal');
     bon.autorisations.forEach((autorisation, index) => {
       const decisionLabel = autorisation.decision === 'approuve'
-        ? 'Approuvée'
+        ? t('achatPage.pdf.approvalApproved')
         : autorisation.decision === 'refuse'
-          ? 'Refusée'
-          : 'En attente';
-      const acteur = autorisation.autorisateurNom ? ` par ${autorisation.autorisateurNom}` : '';
+          ? t('achatPage.pdf.approvalRejected')
+          : t('achatPage.pdf.approvalPending');
+      const acteur = autorisation.autorisateurNom ? ` ${t('achatPage.pdf.by')} ${autorisation.autorisateurNom}` : '';
       doc.text(
         `${autorisation.nom} • ${decisionLabel}${acteur}`,
         14,
@@ -540,32 +607,32 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     doc.line(146, signatureBaseY, 202, signatureBaseY);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor('#111827');
-    doc.text('Demandeur', 18, signatureBaseY + 6);
-    doc.text('Validation financière', 82, signatureBaseY + 6);
-    doc.text('Approbation finale', 146, signatureBaseY + 6);
+    doc.text(t('achatPage.pdf.requester'), 18, signatureBaseY + 6);
+    doc.text(t('achatPage.pdf.financeValidation'), 82, signatureBaseY + 6);
+    doc.text(t('achatPage.pdf.finalApproval'), 146, signatureBaseY + 6);
     doc.setFont('helvetica', 'normal');
     doc.text(bon.createdByName, 18, signatureBaseY + 12);
     const approbations = bon.autorisations.filter(item => item.decision === 'approuve');
-    doc.text(approbations[0]?.autorisateurNom || 'Signature requise', 82, signatureBaseY + 12);
-    doc.text(approbations[approbations.length - 1]?.autorisateurNom || 'Signature requise', 146, signatureBaseY + 12);
+    doc.text(approbations[0]?.autorisateurNom || t('achatPage.pdf.signatureRequired'), 82, signatureBaseY + 12);
+    doc.text(approbations[approbations.length - 1]?.autorisateurNom || t('achatPage.pdf.signatureRequired'), 146, signatureBaseY + 12);
 
     if (bon.fechaRecepcionInventario) {
       doc.setFont('helvetica', 'italic');
-      doc.text(`Réception en inventaire confirmée le ${formatDate(bon.fechaRecepcionInventario)}.`, 14, signatureBaseY + 24);
+      doc.text(t('achatPage.pdf.inventoryConfirmedOn', { date: formatDateValue(bon.fechaRecepcionInventario) }), 14, signatureBaseY + 24);
       doc.setFont('helvetica', 'normal');
     }
 
     if (bon.notes) {
       const notesStartY = finalY + 28 + bon.autorisations.length * 6;
       doc.setFont('helvetica', 'bold');
-      doc.text('Notes', 14, notesStartY);
+      doc.text(t('achatPage.pdf.notes'), 14, notesStartY);
       doc.setFont('helvetica', 'normal');
       const splitNotes = doc.splitTextToSize(bon.notes, 180);
       doc.text(splitNotes, 14, notesStartY + 6);
     }
 
     doc.save(`${bon.numero}.pdf`);
-    toast.success(`PDF généré pour ${bon.numero}.`);
+    toast.success(t('achatPage.toasts.pdfGeneratedFor', { number: bon.numero }));
   };
 
   const openEditRule = (regla: RegleAutorisationAchat) => {
@@ -584,7 +651,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
 
   const handleSaveRule = () => {
     if (!reglaForm.nom.trim() || !reglaForm.roleAutorisateur.trim()) {
-      toast.error('Le nom de la règle et le rôle autorisateur sont obligatoires.');
+      toast.error(t('achatPage.toasts.ruleRequired'));
       return;
     }
 
@@ -599,7 +666,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
       ordre: reglaEnEdicion?.ordre || reglas.length + 1
     });
 
-    toast.success(reglaEnEdicion ? 'Règle d\'autorisation mise à jour.' : 'Règle d\'autorisation créée.');
+    toast.success(reglaEnEdicion ? t('achatPage.toasts.ruleUpdated') : t('achatPage.toasts.ruleCreated'));
     setDialogReglaOpen(false);
     resetReglaForm();
     loadModuleData();
@@ -623,7 +690,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
 
   const handleSaveProgramme = () => {
     if (!programmeForm.nom.trim() || !programmeForm.code.trim()) {
-      toast.error('Le nom et le code du programme sont obligatoires.');
+      toast.error(t('achatPage.toasts.programRequired'));
       return;
     }
 
@@ -637,7 +704,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
       actif: programmeForm.actif,
     });
 
-    toast.success(programmeEnEdicion ? 'Programme d\'achat mis à jour.' : 'Programme d\'achat créé.');
+    toast.success(programmeEnEdicion ? t('achatPage.toasts.programUpdated') : t('achatPage.toasts.programCreated'));
     setDialogProgrammeOpen(false);
     resetProgrammeForm();
     loadModuleData();
@@ -646,51 +713,84 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Module Achat professionnel"
-        subtitle="Gérez les bons d'achat, pilotez les autorisations internes et exploitez directement la base fournisseurs pour générer des demandes d'achat conformes."
+        title={t('achatPage.header.title')}
+        subtitle={t('achatPage.header.subtitle')}
         icon={<ShoppingCart className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
       />
 
+      <ModuleExecutiveStrip
+        eyebrow={t('achatPage.strip.eyebrow')}
+        title={t('achatPage.strip.title')}
+        description={t('achatPage.strip.description')}
+        accentColor={branding.primaryColor}
+        secondaryColor={branding.secondaryColor}
+        metrics={achatsExecutiveMetrics}
+        actions={(
+          <>
+            <Button variant="outline" onClick={() => setActiveAchatTab('bons')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <Receipt className="mr-2 h-4 w-4" />
+              {t('achatPage.actions.orders')}
+            </Button>
+            <Button onClick={() => { setActiveAchatTab('bons'); setDialogBonOpen(true); }} disabled={!canCreateBon} className="text-white shadow-lg disabled:opacity-60" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('achatPage.actions.newOrder')}
+            </Button>
+            <Button variant="outline" onClick={() => { setActiveAchatTab('programmes'); setDialogProgrammeOpen(true); }} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              {t('achatPage.actions.newProgram')}
+            </Button>
+            <Button variant="outline" onClick={() => { setActiveAchatTab('autorisations'); setDialogReglaOpen(true); }} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              {t('achatPage.actions.newRule')}
+            </Button>
+            <Button variant="outline" onClick={() => setActiveAchatTab('fournisseurs')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <Building2 className="mr-2 h-4 w-4" />
+              {t('achatPage.actions.suppliers')}
+            </Button>
+          </>
+        )}
+      />
+
       <ModuleStatsGrid defaultLayout="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-[32rem]">
         <ModuleStatCard
-          label="Fournisseurs actifs"
+          label={t('achatPage.stats.activeSuppliers')}
           value={fournisseurs.length}
           icon={<Building2 className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
           accentColor={branding.primaryColor}
         />
         <ModuleStatCard
-          label="Autorisations en attente"
+          label={t('achatPage.stats.pendingAuthorizations')}
           value={resumen.enAttente}
           icon={<ShieldCheck className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
           accentColor={branding.secondaryColor}
         />
       </ModuleStatsGrid>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeAchatTab} onValueChange={setActiveAchatTab} className="space-y-6">
         <ModuleControlSurface>
           <ModuleControlSurfaceTabs>
             <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
               <TabsTrigger value="overview" className="gap-2 rounded-xl px-4 py-2">
                 <Receipt className="h-4 w-4" />
-                Tableau de bord
+                {t('achatPage.tabs.overview')}
               </TabsTrigger>
               <TabsTrigger value="bons" className="gap-2 rounded-xl px-4 py-2">
                 <FileSignature className="h-4 w-4" />
-                Bons d'achat
+                {t('achatPage.tabs.orders')}
               </TabsTrigger>
               <TabsTrigger value="fournisseurs" className="gap-2 rounded-xl px-4 py-2">
                 <Building2 className="h-4 w-4" />
-                Base fournisseurs
+                {t('achatPage.tabs.suppliers')}
               </TabsTrigger>
               <TabsTrigger value="programmes" className="gap-2 rounded-xl px-4 py-2">
                 <ClipboardCheck className="h-4 w-4" />
-                Programmes d'achat
+                {t('achatPage.tabs.programs')}
               </TabsTrigger>
               <TabsTrigger value="autorisations" className="gap-2 rounded-xl px-4 py-2">
                 <ShieldCheck className="h-4 w-4" />
-                Autorisations
+                {t('achatPage.tabs.authorizations')}
               </TabsTrigger>
             </TabsList>
           </ModuleControlSurfaceTabs>
@@ -700,30 +800,30 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Card>
               <CardContent className="p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Volume engagé</p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">{formatCurrency(resumen.totalMontant)}</p>
-                <p className="mt-2 text-sm text-slate-500">Total de tous les bons d'achat enregistrés</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('achatPage.overview.engagedVolume.title')}</p>
+                <p className="mt-2 text-3xl font-bold text-slate-900">{formatCurrencyValue(resumen.totalMontant)}</p>
+                <p className="mt-2 text-sm text-slate-500">{t('achatPage.overview.engagedVolume.description')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">En validation</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('achatPage.overview.underReview.title')}</p>
                 <p className="mt-2 text-3xl font-bold text-amber-700">{resumen.enAttente}</p>
-                <p className="mt-2 text-sm text-slate-500">Bons actuellement dans le circuit d'autorisation</p>
+                <p className="mt-2 text-sm text-slate-500">{t('achatPage.overview.underReview.description')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Prêts à commander</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('achatPage.overview.readyToOrder.title')}</p>
                 <p className="mt-2 text-3xl font-bold text-emerald-700">{resumen.approuves}</p>
-                <p className="mt-2 text-sm text-slate-500">Bons approuvés et prêts pour émission au fournisseur</p>
+                <p className="mt-2 text-sm text-slate-500">{t('achatPage.overview.readyToOrder.description')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Réceptions finalisées</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('achatPage.overview.finalizedReceipts.title')}</p>
                 <p className="mt-2 text-3xl font-bold text-sky-700">{resumen.recus}</p>
-                <p className="mt-2 text-sm text-slate-500">Bons réceptionnés et clôturés</p>
+                <p className="mt-2 text-sm text-slate-500">{t('achatPage.overview.finalizedReceipts.description')}</p>
               </CardContent>
             </Card>
           </div>
@@ -732,20 +832,20 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Derniers bons d'achat</CardTitle>
-                  <p className="text-sm text-slate-500">Suivi opérationnel des demandes les plus récentes</p>
+                  <CardTitle>{t('achatPage.latestOrders.title')}</CardTitle>
+                  <p className="text-sm text-slate-500">{t('achatPage.latestOrders.description')}</p>
                 </div>
                 {canCreateBon && (
                   <Button onClick={() => setDialogBonOpen(true)} className="gap-2">
                     <Plus className="h-4 w-4" />
-                    Nouveau bon
+                    {t('achatPage.actions.newOrder')}
                   </Button>
                 )}
               </CardHeader>
               <CardContent className="space-y-3">
                 {bonsRecents.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
-                    Aucun bon d'achat enregistré pour le moment.
+                    {t('achatPage.latestOrders.empty')}
                   </div>
                 )}
                 {bonsRecents.map(bon => (
@@ -759,14 +859,14 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                           </Badge>
                         </div>
                         {bon.programmeAchatNom && (
-                          <p className="mt-1 text-xs font-medium text-slate-500">Programme: {bon.programmeAchatNom}</p>
+                          <p className="mt-1 text-xs font-medium text-slate-500">{t('achatPage.latestOrders.programLabel')}: {bon.programmeAchatNom}</p>
                         )}
                         <p className="mt-1 text-sm text-slate-600">{bon.fournisseurNom}</p>
-                        <p className="text-xs text-slate-500">Créé le {formatDate(bon.dateCreation)} par {bon.createdByName}</p>
+                        <p className="text-xs text-slate-500">{t('achatPage.latestOrders.createdOnBy', { date: formatDateValue(bon.dateCreation), name: bon.createdByName })}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-slate-900">{formatCurrency(bon.montantTotal)}</p>
-                        <p className="text-xs text-slate-500">Livraison souhaitée: {formatDate(bon.dateLivraisonSouhaitee)}</p>
+                        <p className="text-lg font-bold text-slate-900">{formatCurrencyValue(bon.montantTotal)}</p>
+                        <p className="text-xs text-slate-500">{t('achatPage.latestOrders.desiredDelivery')}: {formatDateValue(bon.dateLivraisonSouhaitee)}</p>
                       </div>
                     </div>
                   </div>
@@ -776,13 +876,13 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
 
             <Card>
               <CardHeader>
-                <CardTitle>File d'autorisation</CardTitle>
-                <p className="text-sm text-slate-500">Bons qui exigent une validation interne</p>
+                <CardTitle>{t('achatPage.authorizationQueue.title')}</CardTitle>
+                <p className="text-sm text-slate-500">{t('achatPage.authorizationQueue.description')}</p>
               </CardHeader>
               <CardContent className="space-y-3">
                 {bonsEnAttente.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
-                    Aucun bon en attente d'autorisation.
+                    {t('achatPage.authorizationQueue.empty')}
                   </div>
                 )}
                 {bonsEnAttente.slice(0, 5).map(bon => (
@@ -791,9 +891,9 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                       <div>
                         <p className="font-semibold text-slate-900">{bon.numero}</p>
                         <p className="text-sm text-slate-600">{bon.fournisseurNom}</p>
-                        <p className="text-xs text-slate-500">{bon.autorisations.filter(item => item.decision === 'en_attente').length} validation(s) restante(s)</p>
+                        <p className="text-xs text-slate-500">{t('achatPage.authorizationQueue.remainingValidations', { count: bon.autorisations.filter(item => item.decision === 'en_attente').length })}</p>
                       </div>
-                      <p className="text-sm font-semibold text-amber-700">{formatCurrency(bon.montantTotal)}</p>
+                      <p className="text-sm font-semibold text-amber-700">{formatCurrencyValue(bon.montantTotal)}</p>
                     </div>
                   </div>
                 ))}
@@ -806,31 +906,31 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
           <Card>
             <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <CardTitle>Gestion des bons d'achat</CardTitle>
-                <p className="text-sm text-slate-500">Création, validation, émission et réception des commandes fournisseurs</p>
+                <CardTitle>{t('achatPage.orders.title')}</CardTitle>
+                <p className="text-sm text-slate-500">{t('achatPage.orders.description')}</p>
               </div>
               {canCreateBon && (
                 <Button onClick={() => setDialogBonOpen(true)} className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Créer un bon d'achat
+                  {t('achatPage.orders.createOrder')}
                 </Button>
               )}
             </CardHeader>
             <CardContent>
               <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Filtrer par programme</p>
-                  <p className="text-sm text-slate-500">Isolez les bons rattachés à un programme d'achat précis.</p>
+                  <p className="text-sm font-semibold text-slate-900">{t('achatPage.orders.filterTitle')}</p>
+                  <p className="text-sm text-slate-500">{t('achatPage.orders.filterDescription')}</p>
                 </div>
                 <div className="w-full md:max-w-sm">
-                  <Label className="mb-2 block">Programme d'achat</Label>
+                  <Label className="mb-2 block">{t('achatPage.orders.programLabel')}</Label>
                   <Select value={bonsProgrammeFilter} onValueChange={setBonsProgrammeFilter}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tous les programmes</SelectItem>
-                      <SelectItem value="none">Sans programme</SelectItem>
+                      <SelectItem value="all">{t('achatPage.orders.allPrograms')}</SelectItem>
+                      <SelectItem value="none">{t('achatPage.orders.withoutProgram')}</SelectItem>
                       {programmeFilterOptions.map(programme => (
                         <SelectItem key={programme.id} value={programme.id}>
                           {programme.nom}
@@ -843,19 +943,19 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Bon</TableHead>
-                    <TableHead>Fournisseur</TableHead>
-                    <TableHead>Montant</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Autorisations</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('achatPage.orders.table.order')}</TableHead>
+                    <TableHead>{t('achatPage.orders.table.supplier')}</TableHead>
+                    <TableHead>{t('achatPage.orders.table.amount')}</TableHead>
+                    <TableHead>{t('achatPage.orders.table.status')}</TableHead>
+                    <TableHead>{t('achatPage.orders.table.authorizations')}</TableHead>
+                    <TableHead>{t('achatPage.orders.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBons.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-500">
-                        {bons.length === 0 ? 'Aucun bon d\'achat disponible.' : 'Aucun bon d\'achat ne correspond au programme sélectionné.'}
+                        {bons.length === 0 ? t('achatPage.orders.emptyNone') : t('achatPage.orders.emptyFiltered')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -865,7 +965,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                         <div>
                           <p className="font-semibold text-slate-900">{bon.numero}</p>
                           {bon.programmeAchatNom && <p className="text-xs text-slate-500">{bon.programmeAchatNom}</p>}
-                          <p className="text-xs text-slate-500">Créé le {formatDate(bon.dateCreation)}</p>
+                          <p className="text-xs text-slate-500">{t('achatPage.orders.createdOn', { date: formatDateValue(bon.dateCreation) })}</p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -874,7 +974,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                           <p className="text-xs text-slate-500">{bon.fournisseurEmail}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(bon.montantTotal)}</TableCell>
+                      <TableCell className="font-semibold">{formatCurrencyValue(bon.montantTotal)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={statutConfig[bon.statut].className}>
                           {statutConfig[bon.statut].label}
@@ -894,7 +994,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" variant="outline" onClick={() => setPreviewBon(bon)}>
                             <Eye className="mr-1 h-4 w-4" />
-                            Prévisualiser
+                            {t('achatPage.orders.preview')}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => handleExportBonPdf(bon)}>
                             <Download className="mr-1 h-4 w-4" />
@@ -902,33 +1002,33 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                           </Button>
                           {bon.statut === 'brouillon' && (
                             <Button size="sm" variant="outline" onClick={() => handleSubmitBon(bon.id)}>
-                              Soumettre
+                              {t('achatPage.orders.submit')}
                             </Button>
                           )}
                           {canAuthorize && bon.statut === 'en_attente' && (
                             <>
                               <Button size="sm" onClick={() => handleApprove(bon.id, true)}>
-                                Approuver
+                                {t('achatPage.orders.approve')}
                               </Button>
                               <Button size="sm" variant="outline" onClick={() => handleApprove(bon.id, false)}>
-                                Refuser
+                                {t('achatPage.orders.reject')}
                               </Button>
                             </>
                           )}
                           {bon.statut === 'approuve' && (
                             <Button size="sm" variant="outline" onClick={() => handleUpdateBonStatus(bon.id, 'commande')}>
-                              Marquer commandé
+                              {t('achatPage.orders.markOrdered')}
                             </Button>
                           )}
                           {bon.statut === 'commande' && (
                             <Button size="sm" variant="outline" onClick={() => handleUpdateBonStatus(bon.id, 'recu')}>
-                              Marquer reçu
+                              {t('achatPage.orders.markReceived')}
                             </Button>
                           )}
                           {bonPeutEtreAnnule(bon) && (
                             <Button size="sm" variant="outline" className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => handleCancelBon(bon.id)}>
                               <Ban className="mr-1 h-4 w-4" />
-                              Annuler
+                              {t('achatPage.orders.cancel')}
                             </Button>
                           )}
                         </div>
@@ -945,13 +1045,13 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
           <Card>
             <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <CardTitle>Base de données fournisseurs</CardTitle>
-                <p className="text-sm text-slate-500">Source centralisée utilisée pour la création des bons d'achat</p>
+                <CardTitle>{t('achatPage.suppliers.title')}</CardTitle>
+                <p className="text-sm text-slate-500">{t('achatPage.suppliers.description')}</p>
               </div>
               {onNavigate && (
                 <Button variant="outline" className="gap-2" onClick={() => onNavigate('donateurs-fournisseurs')}>
                   <Truck className="h-4 w-4" />
-                  Ouvrir la base fournisseurs
+                  {t('achatPage.suppliers.openDatabase')}
                 </Button>
               )}
             </CardHeader>
@@ -959,11 +1059,11 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {fournisseurs.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500 md:col-span-2 xl:col-span-3">
-                    <p>Aucun fournisseur actif n'est disponible dans la base de données actuelle.</p>
+                    <p>{t('achatPage.suppliers.empty')}</p>
                     {onNavigate && (
                       <Button variant="outline" className="mt-4 gap-2" onClick={() => onNavigate('donateurs-fournisseurs')}>
                         <Building2 className="h-4 w-4" />
-                        Accéder à la base fournisseurs
+                        {t('achatPage.suppliers.goToDatabase')}
                       </Button>
                     )}
                   </div>
@@ -973,22 +1073,22 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                     <CardContent className="space-y-3 p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-slate-900">{getSupplierLabel(fournisseur)}</p>
-                          <p className="text-xs text-slate-500">{fournisseur.tipoEmpresa || 'Fournisseur référencé'}</p>
+                          <p className="font-semibold text-slate-900">{getSupplierLabel(fournisseur, supplierFallback)}</p>
+                          <p className="text-xs text-slate-500">{fournisseur.tipoEmpresa || t('achatPage.suppliers.referencedSupplier')}</p>
                         </div>
-                        <Badge variant="outline" className="bg-slate-50">Base active</Badge>
+                        <Badge variant="outline" className="bg-slate-50">{t('achatPage.suppliers.activeBase')}</Badge>
                       </div>
                       <div className="space-y-1 text-sm text-slate-600">
-                        <p>{fournisseur.emailPrincipal || fournisseur.email || 'Sans email principal'}</p>
-                        <p>{fournisseur.telefonoPrincipal || fournisseur.telefono || 'Sans téléphone principal'}</p>
-                        <p>{fournisseur.direccion || 'Adresse non renseignée'}</p>
+                        <p>{fournisseur.emailPrincipal || fournisseur.email || t('achatPage.suppliers.noEmail')}</p>
+                        <p>{fournisseur.telefonoPrincipal || fournisseur.telefono || t('achatPage.suppliers.noPhone')}</p>
+                        <p>{fournisseur.direccion || t('achatPage.suppliers.noAddress')}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {(fournisseur.categoriaProductos || []).slice(0, 3).map(categorie => (
                           <Badge key={categorie} variant="secondary">{categorie}</Badge>
                         ))}
                         {(fournisseur.categoriaProductos || []).length === 0 && (
-                          <Badge variant="secondary">Catalogue à compléter</Badge>
+                          <Badge variant="secondary">{t('achatPage.suppliers.catalogPending')}</Badge>
                         )}
                       </div>
                     </CardContent>
@@ -1003,8 +1103,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
           <Card>
             <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <CardTitle>Programmes d'achat</CardTitle>
-                <p className="text-sm text-slate-500">Cadrez vos achats par programme, responsable et budget de référence</p>
+                <CardTitle>{t('achatPage.programs.title')}</CardTitle>
+                <p className="text-sm text-slate-500">{t('achatPage.programs.description')}</p>
               </div>
               <Button
                 className="gap-2"
@@ -1014,26 +1114,26 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                 }}
               >
                 <Plus className="h-4 w-4" />
-                Nouveau programme
+                {t('achatPage.actions.newProgram')}
               </Button>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Programme</TableHead>
-                    <TableHead>Responsable</TableHead>
-                    <TableHead>Budget annuel</TableHead>
-                    <TableHead>Consommation</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('achatPage.programs.table.program')}</TableHead>
+                    <TableHead>{t('achatPage.programs.table.manager')}</TableHead>
+                    <TableHead>{t('achatPage.programs.table.annualBudget')}</TableHead>
+                    <TableHead>{t('achatPage.programs.table.consumption')}</TableHead>
+                    <TableHead>{t('achatPage.programs.table.status')}</TableHead>
+                    <TableHead>{t('achatPage.programs.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {programmes.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-500">
-                        Aucun programme d'achat configuré.
+                        {t('achatPage.programs.empty')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -1056,17 +1156,17 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                             <p className="text-xs text-slate-500">{programme.code}{programme.description ? ` • ${programme.description}` : ''}</p>
                           </div>
                         </TableCell>
-                        <TableCell>{programme.responsable || 'Non assigné'}</TableCell>
-                        <TableCell>{programme.budgetAnnuel == null ? 'À définir' : formatCurrency(programme.budgetAnnuel)}</TableCell>
+                        <TableCell>{programme.responsable || t('achatPage.programs.unassigned')}</TableCell>
+                        <TableCell>{programme.budgetAnnuel == null ? t('achatPage.programs.toDefine') : formatCurrencyValue(programme.budgetAnnuel)}</TableCell>
                         <TableCell>
                           <div className="min-w-[240px] space-y-2">
                             <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="font-semibold text-slate-900">{formatCurrency(budgetMetrics.montantEngage)}</span>
+                              <span className="font-semibold text-slate-900">{formatCurrencyValue(budgetMetrics.montantEngage)}</span>
                               {budgetMetrics.budgetRestant == null ? (
-                                <span className="text-slate-500">Sans plafond défini</span>
+                                <span className="text-slate-500">{t('achatPage.programs.noCap')}</span>
                               ) : (
                                 <span className={budgetDepasse ? 'text-rose-600' : 'text-slate-500'}>
-                                  {budgetDepasse ? `${formatCurrency(Math.abs(budgetMetrics.budgetRestant))} de dépassement` : `${formatCurrency(budgetMetrics.budgetRestant)} restant`}
+                                  {budgetDepasse ? t('achatPage.programs.overrun', { amount: formatCurrencyValue(Math.abs(budgetMetrics.budgetRestant)) }) : t('achatPage.programs.remaining', { amount: formatCurrencyValue(budgetMetrics.budgetRestant) })}
                                 </span>
                               )}
                             </div>
@@ -1077,31 +1177,31 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                               />
                             </div>
                             <p className="text-xs text-slate-500">
-                              {budgetMetrics.bonsEngages} bon(s) engagé(s)
-                              {budgetMetrics.montantRecu > 0 ? ` • ${formatCurrency(budgetMetrics.montantRecu)} déjà reçus` : ''}
+                              {t('achatPage.programs.engagedOrders', { count: budgetMetrics.bonsEngages })}
+                              {budgetMetrics.montantRecu > 0 ? ` • ${t('achatPage.programs.alreadyReceived', { amount: formatCurrencyValue(budgetMetrics.montantRecu) })}` : ''}
                             </p>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={programme.actif ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}>
-                            {programme.actif ? 'Actif' : 'Inactif'}
+                            {programme.actif ? t('achatPage.programs.active') : t('achatPage.programs.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => openEditProgramme(programme)}>
-                              Modifier
+                              {t('achatPage.programs.edit')}
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => {
                                 eliminarProgrammeAchat(programme.id);
-                                toast.success('Programme d\'achat supprimé.');
+                                toast.success(t('achatPage.toasts.programDeleted'));
                                 loadModuleData();
                               }}
                             >
-                              Supprimer
+                              {t('achatPage.programs.delete')}
                             </Button>
                           </div>
                         </TableCell>
@@ -1120,8 +1220,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <CardContent className="flex items-start gap-3 p-5">
                 <ShieldCheck className="mt-1 h-5 w-5 text-emerald-600" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Circuit configurable</p>
-                  <p className="text-sm text-slate-500">Définissez des niveaux d'approbation par seuil financier.</p>
+                  <p className="text-sm font-semibold text-slate-900">{t('achatPage.authorizations.cards.configurableFlow.title')}</p>
+                  <p className="text-sm text-slate-500">{t('achatPage.authorizations.cards.configurableFlow.description')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1129,8 +1229,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <CardContent className="flex items-start gap-3 p-5">
                 <ClipboardCheck className="mt-1 h-5 w-5 text-sky-600" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Validation documentée</p>
-                  <p className="text-sm text-slate-500">Chaque décision est historisée dans le bon d'achat.</p>
+                  <p className="text-sm font-semibold text-slate-900">{t('achatPage.authorizations.cards.documentedValidation.title')}</p>
+                  <p className="text-sm text-slate-500">{t('achatPage.authorizations.cards.documentedValidation.description')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1138,8 +1238,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <CardContent className="flex items-start gap-3 p-5">
                 <AlertCircle className="mt-1 h-5 w-5 text-amber-600" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Conformité interne</p>
-                  <p className="text-sm text-slate-500">Les achats importants exigent une double validation.</p>
+                  <p className="text-sm font-semibold text-slate-900">{t('achatPage.authorizations.cards.internalCompliance.title')}</p>
+                  <p className="text-sm text-slate-500">{t('achatPage.authorizations.cards.internalCompliance.description')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1148,8 +1248,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
           <Card>
             <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <CardTitle>Règles d'autorisation</CardTitle>
-                <p className="text-sm text-slate-500">Seuils financiers et rôles responsables des approbations</p>
+                <CardTitle>{t('achatPage.rules.title')}</CardTitle>
+                <p className="text-sm text-slate-500">{t('achatPage.rules.description')}</p>
               </div>
               <Button
                 className="gap-2"
@@ -1159,18 +1259,18 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                 }}
               >
                 <Plus className="h-4 w-4" />
-                Nouvelle règle
+                {t('achatPage.actions.newRule')}
               </Button>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Règle</TableHead>
-                    <TableHead>Autorisateur</TableHead>
-                    <TableHead>Seuil</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('achatPage.rules.table.rule')}</TableHead>
+                    <TableHead>{t('achatPage.rules.table.authorizer')}</TableHead>
+                    <TableHead>{t('achatPage.rules.table.threshold')}</TableHead>
+                    <TableHead>{t('achatPage.rules.table.status')}</TableHead>
+                    <TableHead>{t('achatPage.rules.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1179,35 +1279,35 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                       <TableCell>
                         <div>
                           <p className="font-semibold text-slate-900">{regla.nom}</p>
-                          <p className="text-xs text-slate-500">{regla.description || 'Sans description'}</p>
+                          <p className="text-xs text-slate-500">{regla.description || t('achatPage.rules.noDescription')}</p>
                         </div>
                       </TableCell>
                       <TableCell>{regla.roleAutorisateur}</TableCell>
                       <TableCell>
-                        {formatCurrency(regla.montantMinimum)}
+                        {formatCurrencyValue(regla.montantMinimum)}
                         {' '}à{' '}
-                        {regla.montantMaximum == null ? 'et plus' : formatCurrency(regla.montantMaximum)}
+                        {regla.montantMaximum == null ? t('achatPage.rules.andMore') : formatCurrencyValue(regla.montantMaximum)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={regla.actif ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}>
-                          {regla.actif ? 'Actif' : 'Inactif'}
+                          {regla.actif ? t('achatPage.rules.active') : t('achatPage.rules.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" onClick={() => openEditRule(regla)}>
-                            Modifier
+                            {t('achatPage.rules.edit')}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => {
                               eliminarReglaAutorizacionAchat(regla.id);
-                              toast.success('Règle d\'autorisation supprimée.');
+                              toast.success(t('achatPage.toasts.ruleDeleted'));
                               loadModuleData();
                             }}
                           >
-                            Supprimer
+                              {t('achatPage.rules.delete')}
                           </Button>
                         </div>
                       </TableCell>
@@ -1225,9 +1325,9 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
           {previewBon && (
             <>
               <DialogHeader>
-                <DialogTitle>Prévisualisation du bon d'achat</DialogTitle>
+                <DialogTitle>{t('achatPage.preview.title')}</DialogTitle>
                 <DialogDescription>
-                  Vérifiez les détails complets du bon avant impression, envoi ou annulation.
+                  {t('achatPage.preview.description')}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1236,9 +1336,9 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                   <div className="rounded-2xl border border-slate-200 p-5">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Bon d'achat</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{t('achatPage.preview.orderLabel')}</p>
                         <p className="mt-2 text-2xl font-bold text-slate-900">{previewBon.numero}</p>
-                        <p className="mt-1 text-sm text-slate-600">Créé le {formatDate(previewBon.dateCreation)} par {previewBon.createdByName}</p>
+                        <p className="mt-1 text-sm text-slate-600">{t('achatPage.latestOrders.createdOnBy', { date: formatDateValue(previewBon.dateCreation), name: previewBon.createdByName })}</p>
                       </div>
                       <Badge variant="outline" className={statutConfig[previewBon.statut].className}>
                         {statutConfig[previewBon.statut].label}
@@ -1249,42 +1349,42 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                   <div className="grid gap-4 md:grid-cols-2">
                     <Card className="border-slate-200">
                       <CardHeader>
-                        <CardTitle className="text-base">Fournisseur</CardTitle>
+                        <CardTitle className="text-base">{t('achatPage.preview.supplier')}</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2 text-sm text-slate-600">
                         <p className="font-semibold text-slate-900">{previewBon.fournisseurNom}</p>
-                        <p>{previewBon.fournisseurEmail || 'Sans email'}</p>
-                        <p>{previewBon.fournisseurTelephone || 'Sans téléphone'}</p>
-                        <p>{previewBon.fournisseurAdresse || 'Adresse non renseignée'}</p>
+                        <p>{previewBon.fournisseurEmail || t('achatPage.preview.noEmail')}</p>
+                        <p>{previewBon.fournisseurTelephone || t('achatPage.preview.noPhone')}</p>
+                        <p>{previewBon.fournisseurAdresse || t('achatPage.preview.noAddress')}</p>
                       </CardContent>
                     </Card>
 
                     <Card className="border-slate-200">
                       <CardHeader>
-                        <CardTitle className="text-base">Contexte d'achat</CardTitle>
+                        <CardTitle className="text-base">{t('achatPage.preview.purchaseContext')}</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2 text-sm text-slate-600">
-                        <p><span className="font-semibold text-slate-900">Priorité:</span> {previewBon.priorite}</p>
-                        <p><span className="font-semibold text-slate-900">Livraison:</span> {formatDate(previewBon.dateLivraisonSouhaitee)}</p>
-                        <p><span className="font-semibold text-slate-900">Paiement:</span> {previewBon.conditionsPaiement || 'À confirmer'}</p>
-                        <p><span className="font-semibold text-slate-900">Programme:</span> {previewBon.programmeAchatNom || 'Non assigné'}</p>
+                        <p><span className="font-semibold text-slate-900">{t('achatPage.preview.priority')}:</span> {priorityLabels[previewBon.priorite]}</p>
+                        <p><span className="font-semibold text-slate-900">{t('achatPage.preview.delivery')}:</span> {formatDateValue(previewBon.dateLivraisonSouhaitee)}</p>
+                        <p><span className="font-semibold text-slate-900">{t('achatPage.preview.payment')}:</span> {previewBon.conditionsPaiement || t('achatPage.defaults.toConfirm')}</p>
+                        <p><span className="font-semibold text-slate-900">{t('achatPage.preview.program')}:</span> {previewBon.programmeAchatNom || t('achatPage.preview.unassigned')}</p>
                       </CardContent>
                     </Card>
                   </div>
 
                   <Card className="border-slate-200">
                     <CardHeader>
-                      <CardTitle className="text-base">Lignes du bon d'achat</CardTitle>
+                      <CardTitle className="text-base">{t('achatPage.preview.lineItems')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Qté</TableHead>
-                            <TableHead>Unité</TableHead>
-                            <TableHead>Prix unitaire</TableHead>
-                            <TableHead>Total</TableHead>
+                            <TableHead>{t('achatPage.pdf.headers.description')}</TableHead>
+                            <TableHead>{t('achatPage.pdf.headers.qty')}</TableHead>
+                            <TableHead>{t('achatPage.pdf.headers.unit')}</TableHead>
+                            <TableHead>{t('achatPage.pdf.headers.unitPrice')}</TableHead>
+                            <TableHead>{t('achatPage.pdf.headers.total')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1293,8 +1393,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                               <TableCell className="font-medium text-slate-900">{ligne.description}</TableCell>
                               <TableCell>{ligne.quantite}</TableCell>
                               <TableCell>{ligne.unite}</TableCell>
-                              <TableCell>{formatCurrency(ligne.prixUnitaire)}</TableCell>
-                              <TableCell className="font-semibold">{formatCurrency(ligne.total)}</TableCell>
+                              <TableCell>{formatCurrencyValue(ligne.prixUnitaire)}</TableCell>
+                              <TableCell className="font-semibold">{formatCurrencyValue(ligne.total)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1305,7 +1405,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                   {previewBon.notes && (
                     <Card className="border-slate-200">
                       <CardHeader>
-                        <CardTitle className="text-base">Notes</CardTitle>
+                        <CardTitle className="text-base">{t('achatPage.pdf.notes')}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-slate-600">{previewBon.notes}</p>
@@ -1317,21 +1417,21 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                 <div className="space-y-4">
                   <Card className="border-slate-200">
                     <CardHeader>
-                      <CardTitle className="text-base">Synthèse</CardTitle>
+                      <CardTitle className="text-base">{t('achatPage.preview.summary')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm text-slate-600">
                       <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Montant total</p>
-                        <p className="mt-2 text-2xl font-bold text-slate-900">{formatCurrency(previewBon.montantTotal)}</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{t('achatPage.preview.totalAmount')}</p>
+                        <p className="mt-2 text-2xl font-bold text-slate-900">{formatCurrencyValue(previewBon.montantTotal)}</p>
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">Autorisations</p>
+                        <p className="font-semibold text-slate-900">{t('achatPage.preview.authorizations')}</p>
                         <div className="mt-2 space-y-2">
                           {previewBon.autorisations.map(item => (
                             <div key={item.id} className="rounded-xl border border-slate-200 px-3 py-2">
                               <p className="text-sm font-medium text-slate-900">{item.nom}</p>
                               <p className="text-xs text-slate-500">{item.autorisateurNom || item.roleAutorisateur}</p>
-                              <p className="mt-1 text-xs text-slate-600">{item.decision === 'approuve' ? 'Approuvée' : item.decision === 'refuse' ? 'Refusée' : 'En attente'}</p>
+                              <p className="mt-1 text-xs text-slate-600">{item.decision === 'approuve' ? t('achatPage.pdf.approvalApproved') : item.decision === 'refuse' ? t('achatPage.pdf.approvalRejected') : t('achatPage.pdf.approvalPending')}</p>
                             </div>
                           ))}
                         </div>
@@ -1339,12 +1439,12 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                       <div className="flex flex-col gap-2 pt-2">
                         <Button variant="outline" className="gap-2" onClick={() => handleExportBonPdf(previewBon)}>
                           <Download className="h-4 w-4" />
-                          Exporter PDF
+                          {t('achatPage.preview.exportPdf')}
                         </Button>
                         {bonPeutEtreAnnule(previewBon) && (
                           <Button variant="outline" className="gap-2 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => handleCancelBon(previewBon.id)}>
                             <Ban className="h-4 w-4" />
-                            Annuler le bon
+                            {t('achatPage.preview.cancelOrder')}
                           </Button>
                         )}
                       </div>
@@ -1360,9 +1460,9 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
       <Dialog open={dialogBonOpen} onOpenChange={setDialogBonOpen}>
         <DialogContent className="max-h-[92vh] w-[96vw] overflow-y-auto sm:max-w-[1380px]">
           <DialogHeader>
-            <DialogTitle>Créer un bon d'achat</DialogTitle>
+            <DialogTitle>{t('achatPage.create.title')}</DialogTitle>
             <DialogDescription>
-              Sélectionnez un fournisseur depuis la base active, composez les lignes d'achat et choisissez le mode d'enregistrement.
+              {t('achatPage.create.description')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1370,10 +1470,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Programme d'achat</Label>
+                  <Label>{t('achatPage.create.program')}</Label>
                   <Select value={selectedProgrammeId} onValueChange={setSelectedProgrammeId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Choisir un programme" />
+                      <SelectValue placeholder={t('achatPage.create.chooseProgram')} />
                     </SelectTrigger>
                     <SelectContent>
                       {programmes.filter(programme => programme.actif).map(programme => (
@@ -1385,58 +1485,58 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Fournisseur</Label>
+                  <Label>{t('achatPage.create.supplier')}</Label>
                   <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Choisir un fournisseur" />
+                      <SelectValue placeholder={t('achatPage.create.chooseSupplier')} />
                     </SelectTrigger>
                     <SelectContent>
                       {fournisseurs.map(fournisseur => (
                         <SelectItem key={fournisseur.id} value={fournisseur.id}>
-                          {getSupplierLabel(fournisseur)}
+                          {getSupplierLabel(fournisseur, supplierFallback)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Livraison souhaitée</Label>
+                  <Label>{t('achatPage.create.desiredDelivery')}</Label>
                   <Input type="date" value={dateLivraisonSouhaitee} onChange={event => setDateLivraisonSouhaitee(event.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Priorité</Label>
+                  <Label>{t('achatPage.create.priority')}</Label>
                   <Select value={priorite} onValueChange={value => setPriorite(value as PrioriteBonAchat)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="normal">Normale</SelectItem>
-                      <SelectItem value="urgent">Urgente</SelectItem>
-                      <SelectItem value="critique">Critique</SelectItem>
+                      <SelectItem value="normal">{t('achatPage.create.priorityNormal')}</SelectItem>
+                      <SelectItem value="urgent">{t('achatPage.create.priorityUrgent')}</SelectItem>
+                      <SelectItem value="critique">{t('achatPage.create.priorityCritical')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Conditions de paiement</Label>
-                  <Input value={conditionsPaiement} onChange={event => setConditionsPaiement(event.target.value)} placeholder="Ex: 30 jours fin de mois" />
+                  <Label>{t('achatPage.create.paymentTerms')}</Label>
+                  <Input value={conditionsPaiement} onChange={event => setConditionsPaiement(event.target.value)} placeholder={t('achatPage.create.paymentPlaceholder')} />
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label>Lignes du bon d'achat</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setLignes(current => [...current, createEmptyLine()])}>
+                  <Label>{t('achatPage.create.lineItems')}</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setLignes(current => [...current, createEmptyLine(t('achatPage.defaults.unit'))])}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Ajouter une ligne
+                    {t('achatPage.create.addLine')}
                   </Button>
                 </div>
                 <p className="text-xs text-slate-500">
-                  La quantité peut être saisie manuellement sur chaque ligne, y compris en format décimal si nécessaire.
+                  {t('achatPage.create.quantityHelp')}
                 </p>
                 {lignes.map((ligne, index) => (
                   <div key={ligne.id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">Ligne {index + 1}</p>
+                      <p className="text-sm font-semibold text-slate-900">{t('achatPage.create.lineLabel', { index: index + 1 })}</p>
                       {lignes.length > 1 && (
                         <Button type="button" variant="ghost" size="sm" onClick={() => setLignes(current => current.filter(item => item.id !== ligne.id))}>
                           <X className="h-4 w-4" />
@@ -1444,12 +1544,12 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                       )}
                     </div>
                     <div className="grid gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(132px,0.9fr)_minmax(132px,0.9fr)_minmax(148px,1fr)_minmax(156px,1fr)]">
-                      <Input className="h-11" placeholder="Description de l'achat" value={ligne.description} onChange={event => handleChangeLine(ligne.id, 'description', event.target.value)} />
-                      <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder="Qté manuelle" value={ligne.quantite} onChange={event => handleChangeLine(ligne.id, 'quantite', event.target.value === '' ? '' : Number(event.target.value))} />
-                      <Input className="h-11" placeholder="Unité" value={ligne.unite} onChange={event => handleChangeLine(ligne.id, 'unite', event.target.value)} />
-                      <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder="Prix" value={ligne.prixUnitaire} onChange={event => handleChangeLine(ligne.id, 'prixUnitaire', Number(event.target.value))} />
+                      <Input className="h-11" placeholder={t('achatPage.create.purchaseDescription')} value={ligne.description} onChange={event => handleChangeLine(ligne.id, 'description', event.target.value)} />
+                      <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder={t('achatPage.create.manualQty')} value={ligne.quantite} onChange={event => handleChangeLine(ligne.id, 'quantite', event.target.value === '' ? '' : Number(event.target.value))} />
+                      <Input className="h-11" placeholder={t('achatPage.create.unit')} value={ligne.unite} onChange={event => handleChangeLine(ligne.id, 'unite', event.target.value)} />
+                      <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder={t('achatPage.create.price')} value={ligne.prixUnitaire} onChange={event => handleChangeLine(ligne.id, 'prixUnitaire', Number(event.target.value))} />
                       <div className="flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700">
-                        {formatCurrency(ligne.total)}
+                        {formatCurrencyValue(ligne.total)}
                       </div>
                     </div>
                   </div>
@@ -1457,60 +1557,60 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               </div>
 
               <div className="space-y-2">
-                <Label>Notes et contexte</Label>
-                <Textarea value={notes} onChange={event => setNotes(event.target.value)} placeholder="Motif de l'achat, budget lié, contraintes logistiques, commentaires complémentaires..." rows={4} />
+                <Label>{t('achatPage.create.notesAndContext')}</Label>
+                <Textarea value={notes} onChange={event => setNotes(event.target.value)} placeholder={t('achatPage.create.notesPlaceholder')} rows={4} />
               </div>
             </div>
 
             <Card className="h-fit border-slate-200">
               <CardHeader>
-                <CardTitle className="text-base">Résumé fournisseur</CardTitle>
+                <CardTitle className="text-base">{t('achatPage.create.supplierSummary')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-slate-600">
                 {fournisseurSeleccionado ? (
                   <>
                     {programmeSeleccionado && (
                       <div className="rounded-2xl bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Programme d'achat</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{t('achatPage.create.program')}</p>
                         <p className="mt-2 font-semibold text-slate-900">{programmeSeleccionado.nom}</p>
                         <p className="text-sm text-slate-600">{programmeSeleccionado.code}</p>
                       </div>
                     )}
                     <div>
-                      <p className="font-semibold text-slate-900">{getSupplierLabel(fournisseurSeleccionado)}</p>
-                      <p>{fournisseurSeleccionado.emailPrincipal || fournisseurSeleccionado.email || 'Sans email'}</p>
-                      <p>{fournisseurSeleccionado.telefonoPrincipal || fournisseurSeleccionado.telefono || 'Sans téléphone'}</p>
+                      <p className="font-semibold text-slate-900">{getSupplierLabel(fournisseurSeleccionado, supplierFallback)}</p>
+                      <p>{fournisseurSeleccionado.emailPrincipal || fournisseurSeleccionado.email || t('achatPage.preview.noEmail')}</p>
+                      <p>{fournisseurSeleccionado.telefonoPrincipal || fournisseurSeleccionado.telefono || t('achatPage.preview.noPhone')}</p>
                     </div>
                     <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Adresse</p>
-                      <p className="mt-2">{fournisseurSeleccionado.direccion || 'Adresse non renseignée'}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{t('achatPage.suppliers.address')}</p>
+                      <p className="mt-2">{fournisseurSeleccionado.direccion || t('achatPage.suppliers.noAddress')}</p>
                     </div>
                   </>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-center text-sm text-slate-500">
-                    Choisissez un fournisseur pour afficher ses coordonnées opérationnelles.
+                    {t('achatPage.create.chooseSupplierToShow')}
                   </div>
                 )}
 
                 {fournisseurs.length === 0 && onNavigate && (
                   <Button variant="outline" className="w-full gap-2" onClick={() => onNavigate('donateurs-fournisseurs')}>
                     <Building2 className="h-4 w-4" />
-                    Alimenter la base fournisseurs
+                    {t('achatPage.create.populateSupplierDatabase')}
                   </Button>
                 )}
 
                 <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Montant total</p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">{formatCurrency(montantTotalFormulaire)}</p>
-                  <p className="mt-2 text-xs text-slate-500">Le numéro du bon d'achat sera généré automatiquement à l'enregistrement.</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{t('achatPage.create.totalAmount')}</p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">{formatCurrencyValue(montantTotalFormulaire)}</p>
+                  <p className="mt-2 text-xs text-slate-500">{t('achatPage.create.orderNumberAuto')}</p>
                 </div>
 
                 <div className="space-y-2 rounded-2xl border border-slate-200 p-4">
-                  <p className="font-semibold text-slate-900">Autorisations prévues</p>
+                  <p className="font-semibold text-slate-900">{t('achatPage.create.plannedAuthorizations')}</p>
                   {obtenerReglasAutorizacionAchat().filter(regla => regla.actif).map(regla => (
                     <div key={regla.id} className="flex items-center justify-between gap-3 text-xs text-slate-500">
                       <span>{regla.nom}</span>
-                      <span>{formatCurrency(regla.montantMinimum)}{regla.montantMaximum == null ? '+' : ` - ${formatCurrency(regla.montantMaximum)}`}</span>
+                      <span>{formatCurrencyValue(regla.montantMinimum)}{regla.montantMaximum == null ? '+' : ` - ${formatCurrencyValue(regla.montantMaximum)}`}</span>
                     </div>
                   ))}
                 </div>
@@ -1518,11 +1618,11 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                 <div className="flex flex-col gap-2 pt-2">
                   <Button onClick={() => handleCreateBon('en_attente')} className="w-full gap-2">
                     <BadgeCheck className="h-4 w-4" />
-                    Soumettre à l'autorisation
+                    {t('achatPage.create.submitForAuthorization')}
                   </Button>
                   <Button variant="outline" onClick={() => handleCreateBon('brouillon')} className="w-full gap-2">
                     <CreditCard className="h-4 w-4" />
-                    Enregistrer en brouillon
+                    {t('achatPage.create.saveDraft')}
                   </Button>
                 </div>
               </CardContent>
@@ -1534,51 +1634,51 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
       <Dialog open={dialogProgrammeOpen} onOpenChange={setDialogProgrammeOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{programmeEnEdicion ? 'Modifier un programme' : 'Nouveau programme d\'achat'}</DialogTitle>
+            <DialogTitle>{programmeEnEdicion ? t('achatPage.programDialog.editTitle') : t('achatPage.programDialog.newTitle')}</DialogTitle>
             <DialogDescription>
-              Définissez le cadre du programme, son responsable et son budget annuel de référence.
+              {t('achatPage.programDialog.description')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Nom du programme</Label>
+                <Label>{t('achatPage.programDialog.name')}</Label>
                 <Input value={programmeForm.nom} onChange={event => setProgrammeForm(current => ({ ...current, nom: event.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>Code</Label>
-                <Input value={programmeForm.code} onChange={event => setProgrammeForm(current => ({ ...current, code: event.target.value.toUpperCase() }))} placeholder="Ex: PRA-OPS" />
+                <Label>{t('achatPage.programDialog.code')}</Label>
+                <Input value={programmeForm.code} onChange={event => setProgrammeForm(current => ({ ...current, code: event.target.value.toUpperCase() }))} placeholder={t('achatPage.programDialog.codePlaceholder')} />
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Responsable</Label>
-                <Input value={programmeForm.responsable} onChange={event => setProgrammeForm(current => ({ ...current, responsable: event.target.value }))} placeholder="Ex: Coordination des achats" />
+                <Label>{t('achatPage.programDialog.manager')}</Label>
+                <Input value={programmeForm.responsable} onChange={event => setProgrammeForm(current => ({ ...current, responsable: event.target.value }))} placeholder={t('achatPage.programDialog.managerPlaceholder')} />
               </div>
               <div className="space-y-2">
-                <Label>Budget annuel</Label>
-                <Input type="number" min="0" step="0.01" value={programmeForm.budgetAnnuel} onChange={event => setProgrammeForm(current => ({ ...current, budgetAnnuel: event.target.value }))} placeholder="Ex: 25000" />
+                <Label>{t('achatPage.programDialog.annualBudget')}</Label>
+                <Input type="number" min="0" step="0.01" value={programmeForm.budgetAnnuel} onChange={event => setProgrammeForm(current => ({ ...current, budgetAnnuel: event.target.value }))} placeholder={t('achatPage.programDialog.budgetPlaceholder')} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t('achatPage.programDialog.descriptionLabel')}</Label>
               <Textarea value={programmeForm.description} onChange={event => setProgrammeForm(current => ({ ...current, description: event.target.value }))} rows={4} />
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3">
               <div>
-                <p className="font-semibold text-slate-900">Programme actif</p>
-                <p className="text-sm text-slate-500">Disponible dans la création des bons d'achat</p>
+                <p className="font-semibold text-slate-900">{t('achatPage.programDialog.activeTitle')}</p>
+                <p className="text-sm text-slate-500">{t('achatPage.programDialog.activeDescription')}</p>
               </div>
               <Button variant={programmeForm.actif ? 'default' : 'outline'} onClick={() => setProgrammeForm(current => ({ ...current, actif: !current.actif }))}>
-                {programmeForm.actif ? 'Actif' : 'Inactif'}
+                {programmeForm.actif ? t('achatPage.programs.active') : t('achatPage.programs.inactive')}
               </Button>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => { setDialogProgrammeOpen(false); resetProgrammeForm(); }}>
-                Annuler
+                {t('achatPage.common.cancel')}
               </Button>
-              <Button onClick={handleSaveProgramme}>Enregistrer</Button>
+              <Button onClick={handleSaveProgramme}>{t('achatPage.common.save')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -1587,40 +1687,40 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
       <Dialog open={dialogReglaOpen} onOpenChange={setDialogReglaOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{reglaEnEdicion ? 'Modifier une règle' : 'Nouvelle règle d\'autorisation'}</DialogTitle>
+            <DialogTitle>{reglaEnEdicion ? t('achatPage.ruleDialog.editTitle') : t('achatPage.ruleDialog.newTitle')}</DialogTitle>
             <DialogDescription>
-              Définissez le rôle responsable et la plage financière couverte par cette règle.
+              {t('achatPage.ruleDialog.description')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label>Nom de la règle</Label>
+              <Label>{t('achatPage.ruleDialog.name')}</Label>
               <Input value={reglaForm.nom} onChange={event => setReglaForm(current => ({ ...current, nom: event.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label>Rôle autorisateur</Label>
-              <Input value={reglaForm.roleAutorisateur} onChange={event => setReglaForm(current => ({ ...current, roleAutorisateur: event.target.value }))} placeholder="Ex: Direction générale" />
+              <Label>{t('achatPage.ruleDialog.role')}</Label>
+              <Input value={reglaForm.roleAutorisateur} onChange={event => setReglaForm(current => ({ ...current, roleAutorisateur: event.target.value }))} placeholder={t('achatPage.ruleDialog.rolePlaceholder')} />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Montant minimum</Label>
+                <Label>{t('achatPage.ruleDialog.minAmount')}</Label>
                 <Input type="number" min="0" step="0.01" value={reglaForm.montantMinimum} onChange={event => setReglaForm(current => ({ ...current, montantMinimum: event.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>Montant maximum</Label>
-                <Input type="number" min="0" step="0.01" value={reglaForm.montantMaximum} onChange={event => setReglaForm(current => ({ ...current, montantMaximum: event.target.value }))} placeholder="Laisser vide pour sans plafond" />
+                <Label>{t('achatPage.ruleDialog.maxAmount')}</Label>
+                <Input type="number" min="0" step="0.01" value={reglaForm.montantMaximum} onChange={event => setReglaForm(current => ({ ...current, montantMaximum: event.target.value }))} placeholder={t('achatPage.ruleDialog.maxPlaceholder')} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t('achatPage.programDialog.descriptionLabel')}</Label>
               <Textarea value={reglaForm.description} onChange={event => setReglaForm(current => ({ ...current, description: event.target.value }))} rows={4} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => { setDialogReglaOpen(false); resetReglaForm(); }}>
-                Annuler
+                {t('achatPage.common.cancel')}
               </Button>
-              <Button onClick={handleSaveRule}>Enregistrer</Button>
+              <Button onClick={handleSaveRule}>{t('achatPage.common.save')}</Button>
             </div>
           </div>
         </DialogContent>

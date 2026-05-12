@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../../hooks/useBranding';
 import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
@@ -307,7 +307,7 @@ const mapContactFormToCandidate = (
 };
 
 export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const branding = useBranding();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -356,6 +356,51 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     { id: '4', nombre: 'Liaison', icono: '🤝', color: '#9C27B0', codigo: 'LIAISON' },
     { id: '8', nombre: 'Bénévoles', icono: '👥', color: '#4CAF50', codigo: 'BENEVOLES' },
   ];
+
+  const resolveIntlLocale = useCallback((language: string) => {
+    switch (language) {
+      case 'en':
+        return 'en-US';
+      case 'es':
+        return 'es-ES';
+      case 'ar':
+        return 'ar';
+      default:
+        return 'fr-CA';
+    }
+  }, []);
+
+  const currentLanguage = i18n.resolvedLanguage || i18n.language || 'fr';
+
+  const formatLocalizedDate = useCallback((value: string, options?: Intl.DateTimeFormatOptions) => {
+    if (!value) {
+      return '';
+    }
+
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return value;
+    }
+
+    return parsedDate.toLocaleDateString(resolveIntlLocale(currentLanguage), options);
+  }, [currentLanguage, resolveIntlLocale]);
+
+  const getCandidateStatusLabel = useCallback((status: string) => {
+    switch (status) {
+      case 'pending':
+        return t('recruitmentInternal.statuses.pending');
+      case 'reviewed':
+        return t('recruitmentInternal.statuses.reviewed');
+      case 'interview':
+        return t('recruitmentInternal.statuses.interview');
+      case 'accepted':
+        return t('recruitmentInternal.statuses.accepted');
+      case 'rejected':
+        return t('recruitmentInternal.statuses.rejected');
+      default:
+        return status;
+    }
+  }, [t]);
 
   const resolveDepartmentForCandidate = (candidate: Candidate) => {
     const positionLower = candidate.position.toLowerCase();
@@ -771,7 +816,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   const getTimesheetActorName = () => {
     if (isPublicAccess) {
-      return 'Accès public';
+      return t('recruitmentPublic.publicAccessActor');
     }
 
     const usuario = obtenerUsuarioSesion();
@@ -1051,25 +1096,26 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { label: 'En attente', color: 'bg-[#FFC107] text-[#333333]' },
-      reviewed: { label: 'Examiné', color: `text-white`, bgColor: branding.primaryColor },
-      interview: { label: 'Entretien', color: 'bg-[#9C27B0] text-white' },
-      accepted: { label: 'Accepté', color: `text-white`, bgColor: branding.secondaryColor },
-      rejected: { label: 'Rejeté', color: 'bg-[#DC3545] text-white' }
+      pending: { color: 'bg-[#FFC107] text-[#333333]' },
+      reviewed: { color: `text-white`, bgColor: branding.primaryColor },
+      interview: { color: 'bg-[#9C27B0] text-white' },
+      accepted: { color: `text-white`, bgColor: branding.secondaryColor },
+      rejected: { color: 'bg-[#DC3545] text-white' }
     };
 
     const config = statusConfig[status as keyof typeof statusConfig];
+    const label = getCandidateStatusLabel(status);
     if (status === 'reviewed' || status === 'accepted') {
       return (
         <Badge 
           className={config.color} 
           style={{ backgroundColor: config.bgColor }}
         >
-          {config.label}
+          {label}
         </Badge>
       );
     }
-    return <Badge className={config.color}>{config.label}</Badge>;
+    return <Badge className={config.color}>{label}</Badge>;
   };
 
   const filteredCandidates = candidates.filter(candidate => {
@@ -1448,29 +1494,29 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
-                    Bénévole sélectionné
+                    {t('recruitmentPublic.selectedVolunteer')}
                   </p>
                   <p className="mt-1 text-lg font-bold leading-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    {candidatoFeuilleTempsSeleccionado?.name || 'Sélectionnez un bénévole'}
+                    {candidatoFeuilleTempsSeleccionado?.name || t('recruitmentPublic.selectVolunteer')}
                   </p>
                   <p className="mt-1 text-sm text-gray-600">
                     {candidatoFeuilleTempsSeleccionado
-                      ? 'Choisissez un département puis utilisez Entrée ou Sortie.'
-                      : 'Recherchez un bénévole pour activer la feuille de temps.'}
+                      ? t('recruitmentPublic.chooseDepartmentThenEntryOrExit')
+                      : t('recruitmentPublic.searchVolunteerToEnableTimesheet')}
                   </p>
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-xl border border-slate-200 bg-white px-2 py-2">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Entrées</p>
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">{t('recruitmentPublic.entries')}</p>
                   <p className="mt-1 text-base font-semibold text-slate-900">{feuillesTempsSeleccionadas.length}</p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white px-2 py-2">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Total</p>
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">{t('recruitmentPublic.total')}</p>
                   <p className="mt-1 text-base font-semibold text-slate-900">{formatTimesheetHours(totalHeuresFeuilleTempsSeleccionada)}</p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white px-2 py-2">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Mois</p>
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500">{t('recruitmentPublic.month')}</p>
                   <p className="mt-1 text-base font-semibold" style={{ color: branding.secondaryColor }}>{formatTimesheetHours(heuresMoisFeuilleTempsSeleccionada)}</p>
                 </div>
               </div>
@@ -1478,7 +1524,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
             <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center justify-between gap-3">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Bénévoles</Label>
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">{t('recruitmentPublic.volunteers')}</Label>
                 <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-500">
                   {candidatosFeuilleTempsFiltrados.length}
                 </span>
@@ -1488,14 +1534,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 <Input
                   value={timesheetCandidateSearch}
                   onChange={(event) => setTimesheetCandidateSearch(event.target.value)}
-                  placeholder="Rechercher rapidement..."
+                  placeholder={t('recruitmentPublic.quickSearchPlaceholder')}
                   className="h-10 rounded-xl border-white bg-gray-50 pl-10 text-sm"
                 />
               </div>
               <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                 {candidatosFeuilleTempsFiltrados.length === 0 ? (
                   <div className="flex h-full min-h-[140px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-sm text-gray-500">
-                    Aucun bénévole trouvé.
+                    {t('recruitmentPublic.noVolunteerFound')}
                   </div>
                 ) : candidatosFeuilleTempsFiltrados.slice(0, 5).map(candidate => {
                   const isSelected = String(candidate.id) === selectedTimesheetCandidateId;
@@ -1508,7 +1554,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       key={candidate.id}
                       type="button"
                       onClick={() => setSelectedTimesheetCandidateId(String(candidate.id))}
-                      aria-label={`Sélectionner ${candidate.name}`}
+                      aria-label={t('recruitmentPublic.selectVolunteerAria', { name: candidate.name })}
                       className="w-full rounded-2xl border px-3 py-2.5 text-left transition-all duration-200"
                       style={{
                         borderColor: isSelected ? branding.primaryColor : '#E2E8F0',
@@ -1524,7 +1570,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <p className="mt-0.5 truncate text-xs text-gray-500">{candidate.email}</p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-[10px] uppercase tracking-wide text-gray-400">Heures</p>
+                          <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('recruitmentPublic.hours')}</p>
                           <p className="text-sm font-semibold" style={{ color: branding.secondaryColor }}>
                             {formatTimesheetHours(totalCandidateHours)}
                           </p>
@@ -1563,17 +1609,17 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
-                    Feuille de temps
+                    {t('recruitmentPublic.timesheet')}
                   </p>
                   <div className="mt-1 flex items-center gap-2">
                     <Clock className="h-4 w-4" style={{ color: branding.primaryColor }} />
                     <p className="text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Enregistrer une entrée
+                      {t('recruitmentPublic.registerEntry')}
                     </p>
                   </div>
                 </div>
                 <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 shadow-sm">
-                  Automatique
+                  {t('recruitmentPublic.automatic')}
                 </div>
               </div>
             </div>
@@ -1582,7 +1628,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <Label htmlFor="recruit-timesheet-department-public" className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
                   <Briefcase className="h-3.5 w-3.5" />
-                  Département
+                  {t('recruitmentPublic.department')}
                 </Label>
                 <Select
                   value={timesheetForm.departamentoId}
@@ -1590,10 +1636,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 >
                   <SelectTrigger
                     id="recruit-timesheet-department-public"
-                    aria-label="Sélectionner un département pour la feuille de temps"
+                    aria-label={t('recruitmentPublic.selectDepartmentForTimesheet')}
                     className="h-11 rounded-xl bg-white"
                   >
-                    <SelectValue placeholder="Sélectionner..." />
+                    <SelectValue placeholder={t('recruitmentPublic.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {departamentosFeuilleTemps.map(department => (
@@ -1625,7 +1671,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 <Input
                   id="recruit-timesheet-notes-public"
                   className="h-11 rounded-xl border-slate-200 bg-gray-50 text-sm"
-                  placeholder="Tâches effectuées..."
+                  placeholder={t('recruitmentPublic.notesPlaceholder')}
                   value={timesheetForm.notes}
                   onChange={(event) => setTimesheetForm(prev => ({ ...prev, notes: event.target.value }))}
                 />
@@ -1638,10 +1684,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   }}
                   onClick={handleRegisterTimesheetEntry}
                   disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId}
-                  title="Enregistrer l'arrivée maintenant"
+                  title={t('recruitmentPublic.registerArrivalNow')}
                 >
                   <LogIn className="mr-2 h-5 w-5" />
-                  Entrée
+                  {t('recruitmentPublic.entry')}
                 </Button>
               </div>
             </div>
@@ -1649,13 +1695,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             <div className="rounded-2xl border-l-4 border-amber-500 bg-amber-50/70 px-4 py-2.5 text-sm text-amber-900">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold leading-5">Entrée et sortie automatiques uniquement.</p>
+                  <p className="font-semibold leading-5">{t('recruitmentPublic.automaticEntryExitOnly')}</p>
                   <p className="mt-0.5 text-xs leading-4 text-amber-800">
-                    Pas de correction manuelle en accès public.
+                    {t('recruitmentPublic.noManualCorrectionPublic')}
                   </p>
                 </div>
                 <span className="rounded-full bg-white/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                  Public
+                  {t('recruitmentPublic.publicBadge')}
                 </span>
               </div>
             </div>
@@ -1665,19 +1711,21 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
-                      Sessions actives
+                      {t('recruitmentPublic.activeSessions')}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-gray-700">
-                      {feuillesTempsActivasSeleccionadas.length > 0 ? `${feuillesTempsActivasSeleccionadas.length} en cours` : 'Aucune session ouverte'}
+                      {feuillesTempsActivasSeleccionadas.length > 0
+                        ? t('recruitmentPublic.sessionsInProgress', { count: feuillesTempsActivasSeleccionadas.length })
+                        : t('recruitmentPublic.noOpenSession')}
                     </p>
                   </div>
                   {feuillesTempsActivasSeleccionadas.length > 0 ? (
                     <Badge className="border-0 px-2.5 py-1 text-xs text-white" style={{ backgroundColor: '#D97706' }}>
-                      En attente
+                      {t('recruitmentPublic.pending')}
                     </Badge>
                   ) : (
                     <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
-                      Prêt
+                      {t('recruitmentPublic.ready')}
                     </div>
                   )}
                 </div>
@@ -1686,7 +1734,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               <div className="mt-3 min-h-0 space-y-2 overflow-y-auto">
                 {publicActiveTimesheets.length === 0 ? (
                   <div className="flex h-[122px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 text-center text-sm text-gray-500">
-                    La sortie apparaîtra ici dès qu'une session sera ouverte.
+                    {t('recruitmentPublic.exitAppearsWhenSessionOpen')}
                   </div>
                 ) : publicActiveTimesheets.map(timesheet => {
                   const elapsedHours = calculateTimesheetDuration(timesheet.heureDebut, getCurrentLocalTime());
@@ -1712,7 +1760,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         style={{ backgroundColor: '#DC3545' }}
                       >
                         <LogOut className="mr-1.5 h-4 w-4" />
-                        Sortie
+                        {t('recruitmentPublic.exit')}
                       </Button>
                     </div>
                   );
@@ -1725,11 +1773,11 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
         <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] md:h-full">
           <CardContent className="flex h-full flex-col gap-3 p-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Vue d'ensemble</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">{t('recruitmentPublic.overview')}</p>
               <div className="mt-1 flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" style={{ color: branding.primaryColor }} />
                 <p className="text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  Heures accumulées
+                  {t('recruitmentPublic.accumulatedHours')}
                 </p>
               </div>
             </div>
@@ -1752,27 +1800,27 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-4 text-sm text-gray-600">
-                  <p className="text-center font-semibold text-slate-700">Aucune donnée d'heures disponible.</p>
+                  <p className="text-center font-semibold text-slate-700">{t('recruitmentPublic.noHoursData')}</p>
                   <p className="mt-1 text-center text-xs leading-4 text-gray-500">
-                    Le graphique apparaîtra dès qu'une entrée sera enregistrée.
+                    {t('recruitmentPublic.chartAppearsAfterEntry')}
                   </p>
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs">
-                      <span className="text-gray-500">Bénévole</span>
+                      <span className="text-gray-500">{t('recruitmentPublic.volunteer')}</span>
                       <span className="max-w-[55%] truncate font-medium text-slate-700">
-                        {candidatoFeuilleTempsSeleccionado?.name || 'Aucun'}
+                        {candidatoFeuilleTempsSeleccionado?.name || t('recruitmentPublic.none')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs">
-                      <span className="text-gray-500">Département</span>
+                      <span className="text-gray-500">{t('recruitmentPublic.department')}</span>
                       <span className="max-w-[55%] truncate font-medium text-slate-700">
                         {selectedDepartmentName}
                       </span>
                     </div>
                     <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs">
-                      <span className="text-gray-500">Session active</span>
+                      <span className="text-gray-500">{t('recruitmentPublic.activeSession')}</span>
                       <span className="font-medium text-slate-700">
-                        {feuillesTempsActivasSeleccionadas.length > 0 ? 'Oui' : 'Non'}
+                        {feuillesTempsActivasSeleccionadas.length > 0 ? t('recruitmentPublic.yes') : t('recruitmentPublic.no')}
                       </span>
                     </div>
                   </div>
@@ -1782,25 +1830,25 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
             <div className="grid grid-cols-1 gap-2">
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Bénévoles</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">{t('recruitmentPublic.volunteers')}</p>
                 <p className="mt-1 text-lg font-semibold text-slate-900">{candidatosFeuilleTemps.length}</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Entrées</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">{t('recruitmentPublic.entries')}</p>
                 <p className="mt-1 text-lg font-semibold text-slate-900">{totalEntreesFeuilleTemps}</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Total</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">{t('recruitmentPublic.total')}</p>
                 <p className="mt-1 text-lg font-semibold" style={{ color: branding.secondaryColor }}>{formatTimesheetHours(totalHeuresFeuilleTemps)}</p>
               </div>
             </div>
 
             <div className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Entrées récentes</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">{t('recruitmentPublic.recentEntries')}</p>
               <div className="mt-2 min-h-0 space-y-2 overflow-y-auto">
                 {publicRecentTimesheets.length === 0 ? (
                   <div className="flex h-[84px] items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white px-3 text-center text-sm text-gray-500">
-                    Aucune feuille de temps pour ce bénévole.
+                    {t('recruitmentPublic.noTimesheetForVolunteer')}
                   </div>
                 ) : publicRecentTimesheets.slice(0, 3).map(timesheet => (
                   <div key={timesheet.id} className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
@@ -1823,52 +1871,52 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   const handleExportTimesheets = async () => {
     if (feuillesTempsGlobalesFiltradas.length === 0) {
-      toast.error('Aucune feuille de temps à exporter avec les filtres actuels');
+      toast.error(t('recruitmentInternal.timesheets.toasts.noExportWithFilters'));
       return;
     }
 
     const exportColumns: TableColumn[] = [
-      { header: 'Bénévole', key: 'candidateName' },
-      { header: 'Email', key: 'candidateEmail' },
-      { header: 'Département', key: 'departement' },
-      { header: 'Date', key: 'date' },
-      { header: 'Début', key: 'heureDebut' },
-      { header: 'Fin', key: 'heureFin' },
-      { header: 'Durée', key: 'duree', format: (value) => formatTimesheetHours(Number(value) || 0) },
-      { header: 'Notes', key: 'notes' }
+      { header: t('recruitmentInternal.timesheets.csvHeaders.volunteer'), key: 'candidateName' },
+      { header: t('recruitmentInternal.timesheets.csvHeaders.email'), key: 'candidateEmail' },
+      { header: t('recruitmentInternal.timesheets.csvHeaders.department'), key: 'departement' },
+      { header: t('recruitmentInternal.timesheets.csvHeaders.date'), key: 'date' },
+      { header: t('recruitmentInternal.timesheets.csvHeaders.start'), key: 'heureDebut' },
+      { header: t('recruitmentInternal.timesheets.csvHeaders.end'), key: 'heureFin' },
+      { header: t('recruitmentInternal.timesheets.csvHeaders.duration'), key: 'duree', format: (value) => formatTimesheetHours(Number(value) || 0) },
+      { header: t('recruitmentInternal.timesheets.csvHeaders.notes'), key: 'notes' }
     ];
 
     await exportToCSV(feuillesTempsGlobalesFiltradas, exportColumns, {
       filename: `recrutement_feuilles_temps_${timesheetMonthFilter || getTodayLocalDate()}`,
       includeDate: true,
-      title: 'Feuilles de temps Recrutement'
+      title: t('recruitmentInternal.timesheets.csvTitle')
     });
 
-    toast.success(`Export CSV généré avec ${feuillesTempsGlobalesFiltradas.length} entrée(s)`);
+    toast.success(t('recruitmentInternal.timesheets.toasts.exportGenerated', { count: feuillesTempsGlobalesFiltradas.length }));
   };
 
   const handleExportRecruitmentReport = async () => {
     if (reportExportRows.length === 0) {
-      toast.error('Aucune donnée de rapport disponible à exporter');
+      toast.error(t('recruitmentInternal.reports.toasts.noDataToExport'));
       return;
     }
 
     const exportColumns: TableColumn[] = [
-      { header: 'Axe', key: 'axe' },
-      { header: 'Libellé', key: 'libelle' },
-      { header: 'Entrées feuille de temps', key: 'entrees' },
-      { header: 'Bénévoles', key: 'benevoles' },
-      { header: 'Départements', key: 'departements' },
-      { header: 'Heures cumulées', key: 'heures', format: (value) => formatTimesheetHours(Number(value) || 0) }
+      { header: t('recruitmentInternal.reports.csvHeaders.axis'), key: 'axe' },
+      { header: t('recruitmentInternal.reports.csvHeaders.label'), key: 'libelle' },
+      { header: t('recruitmentInternal.reports.csvHeaders.entries'), key: 'entrees' },
+      { header: t('recruitmentInternal.reports.csvHeaders.volunteers'), key: 'benevoles' },
+      { header: t('recruitmentInternal.reports.csvHeaders.departments'), key: 'departements' },
+      { header: t('recruitmentInternal.reports.csvHeaders.hours'), key: 'heures', format: (value) => formatTimesheetHours(Number(value) || 0) }
     ];
 
     await exportToCSV(reportExportRows, exportColumns, {
       filename: `recrutement_rapport_${getTodayLocalDate()}`,
       includeDate: true,
-      title: 'Rapport Recrutement'
+      title: t('recruitmentInternal.reports.csvTitle')
     });
 
-    toast.success(`Rapport CSV généré avec ${reportExportRows.length} ligne(s) de synthèse`);
+    toast.success(t('recruitmentInternal.reports.toasts.exportGenerated', { count: reportExportRows.length }));
   };
 
   const handleStatusChange = (candidateId: number, newStatus: string) => {
@@ -2394,20 +2442,20 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     const isEditingActiveTimesheet = Boolean(originalTimesheet?.enCours);
 
     if (!timesheetForm.departamentoId || !timesheetForm.date || !timesheetForm.heureDebut || (!timesheetForm.heureFin && !isEditingActiveTimesheet)) {
-      toast.error('Veuillez remplir tous les champs obligatoires de la feuille de temps');
+      toast.error(t('recruitmentInternal.timesheets.toasts.fillRequired'));
       return;
     }
 
     const isOpenEntry = isEditingActiveTimesheet && !timesheetForm.heureFin;
     const duration = isOpenEntry ? 0 : calculateTimesheetDuration(timesheetForm.heureDebut, timesheetForm.heureFin);
     if (!isOpenEntry && duration <= 0) {
-      toast.error('L\'heure de fin doit être après l\'heure de début');
+      toast.error(t('recruitmentInternal.timesheets.toasts.endAfterStart'));
       return;
     }
 
     const department = departamentosDisponibles.find(item => item.id === timesheetForm.departamentoId);
     if (!department) {
-      toast.error('Département non trouvé pour la feuille de temps');
+      toast.error(t('recruitmentInternal.timesheets.toasts.departmentNotFound'));
       return;
     }
 
@@ -2441,16 +2489,16 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     });
 
     if (!candidatoActualizado) {
-      toast.error('Erreur lors de la sauvegarde de la feuille de temps');
+      toast.error(t('recruitmentInternal.timesheets.toasts.saveError'));
       return;
     }
 
     toast.success(
       editingTimesheetId
         ? isOpenEntry
-          ? '✅ Entrée mise à jour avec succès'
-          : '✅ Feuille de temps mise à jour avec succès'
-        : `✅ Feuille de temps enregistrée: ${formatTimesheetHours(duration)}`
+          ? t('recruitmentInternal.timesheets.toasts.entryUpdated')
+          : t('recruitmentInternal.timesheets.toasts.timesheetUpdated')
+        : t('recruitmentInternal.timesheets.toasts.timesheetSaved', { duration: formatTimesheetHours(duration) })
     );
 
     resetTimesheetForm(candidatoActualizado);
@@ -2462,19 +2510,19 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     }
 
     if (!timesheetForm.departamentoId || !timesheetForm.date) {
-      toast.error('Veuillez sélectionner un département et une date');
+      toast.error(t('recruitmentInternal.timesheets.toasts.selectDepartmentAndDate'));
       return;
     }
 
     const hasActiveEntry = (candidatoFeuilleTempsSeleccionado.feuillesTemps || []).some(timesheet => timesheet.enCours);
     if (hasActiveEntry) {
-      toast.error('Ce bénévole a déjà une entrée active. Veuillez enregistrer la sortie d\'abord.');
+      toast.error(t('recruitmentInternal.timesheets.toasts.activeEntryExists'));
       return;
     }
 
     const department = departamentosDisponibles.find(item => item.id === timesheetForm.departamentoId);
     if (!department) {
-      toast.error('Département non trouvé pour la feuille de temps');
+      toast.error(t('recruitmentInternal.timesheets.toasts.departmentNotFound'));
       return;
     }
 
@@ -2496,12 +2544,12 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     });
 
     if (!candidatoActualizado) {
-      toast.error('Erreur lors de l\'enregistrement de l\'entrée');
+      toast.error(t('recruitmentInternal.timesheets.toasts.entrySaveError'));
       return;
     }
 
-    toast.success(`Entrée enregistrée à ${heureDebut}`, {
-      description: `${candidatoFeuilleTempsSeleccionado.name} pourra enregistrer la sortie plus tard`,
+    toast.success(t('recruitmentInternal.timesheets.toasts.entryRegisteredAt', { time: heureDebut }), {
+      description: t('recruitmentInternal.timesheets.toasts.entryRegisteredDescription', { name: candidatoFeuilleTempsSeleccionado.name }),
       duration: 4000
     });
 
@@ -2522,7 +2570,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     const heureFin = getCurrentLocalTime();
     const duree = calculateTimesheetDuration(timesheet.heureDebut, heureFin);
     if (duree <= 0) {
-      toast.error('L\'heure de sortie doit être après l\'heure d\'entrée');
+      toast.error(t('recruitmentInternal.timesheets.toasts.exitAfterEntry'));
       return;
     }
 
@@ -2535,12 +2583,16 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     });
 
     if (!candidatoActualizado) {
-      toast.error('Erreur lors de l\'enregistrement de la sortie');
+      toast.error(t('recruitmentInternal.timesheets.toasts.exitSaveError'));
       return;
     }
 
-    toast.success(`Sortie enregistrée: ${formatTimesheetHours(duree)}`, {
-      description: `${candidatoFeuilleTempsSeleccionado.name} - ${timesheet.heureDebut} à ${heureFin}`,
+    toast.success(t('recruitmentInternal.timesheets.toasts.exitRegistered', { duration: formatTimesheetHours(duree) }), {
+      description: t('recruitmentInternal.timesheets.toasts.exitRegisteredDescription', {
+        name: candidatoFeuilleTempsSeleccionado.name,
+        start: timesheet.heureDebut,
+        end: heureFin
+      }),
       duration: 4000
     });
   };
@@ -2550,7 +2602,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       return;
     }
 
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette feuille de temps?')) {
+    if (!window.confirm(t('recruitmentInternal.timesheets.toasts.confirmDelete'))) {
       return;
     }
 
@@ -2563,7 +2615,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     });
 
     if (!candidatoActualizado) {
-      toast.error('Erreur lors de la suppression de la feuille de temps');
+      toast.error(t('recruitmentInternal.timesheets.toasts.deleteError'));
       return;
     }
 
@@ -2571,7 +2623,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       resetTimesheetForm(candidatoActualizado);
     }
 
-    toast.success('🗑️ Feuille de temps supprimée avec succès');
+    toast.success(t('recruitmentInternal.timesheets.toasts.deleteSuccess'));
   };
 
   // 🔄 SINCRONIZAR números de archivo desde contactos a candidatos
@@ -2758,10 +2810,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       className="text-xs sm:text-sm font-bold"
                       style={{ fontFamily: 'Montserrat, sans-serif', color: '#0F172A' }}
                     >
-                      Feuilles de temps - Accès public
+                      {t('recruitmentPublic.headerTitle')}
                     </p>
                     <p className="text-[11px] text-gray-500 mt-0.5">
-                      Entrée et sortie des bénévoles
+                      {t('recruitmentPublic.headerSubtitle')}
                     </p>
                   </div>
                   <Button
@@ -2775,7 +2827,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     style={{ fontFamily: 'Montserrat, sans-serif' }}
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Retour à l'accueil
+                    {t('recruitmentPublic.backHome')}
                   </Button>
                 </div>
               </CardContent>
@@ -2797,7 +2849,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               
               <div className="relative">
-                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">Total Candidats</p>
+                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">{t('recruitmentInternal.dashboard.totalCandidates')}</p>
                 <div className="flex items-center justify-between">
                   <p 
                     className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
@@ -2821,7 +2873,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               
               <div className="relative">
-                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">En Attente</p>
+                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">{t('recruitmentInternal.dashboard.pending')}</p>
                 <div className="flex items-center justify-between">
                   <p 
                     className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
@@ -2845,7 +2897,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               
               <div className="relative">
-                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">Entretiens</p>
+                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">{t('recruitmentInternal.dashboard.interviews')}</p>
                 <div className="flex items-center justify-between">
                   <p 
                     className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
@@ -2869,7 +2921,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               
               <div className="relative">
-                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">Acceptés</p>
+                <p className="text-xs sm:text-sm text-white/90 mb-1 font-medium">{t('recruitmentInternal.dashboard.accepted')}</p>
                 <div className="flex items-center justify-between">
                   <p 
                     className="text-2xl sm:text-3xl md:text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-300" 
@@ -2895,7 +2947,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       style={{ fontFamily: 'Montserrat, sans-serif' }}
                     >
                       <Users className="w-4 h-4" />
-                      Candidatures
+                      {t('recruitmentInternal.tabs.candidates')}
                     </TabsTrigger>
                     <TabsTrigger
                       value="reports"
@@ -2903,7 +2955,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       style={{ fontFamily: 'Montserrat, sans-serif' }}
                     >
                       <BarChart3 className="w-4 h-4" />
-                      Rapport
+                      {t('recruitmentInternal.tabs.reports')}
                     </TabsTrigger>
                     <TabsTrigger
                       value="timesheets"
@@ -2911,7 +2963,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       style={{ fontFamily: 'Montserrat, sans-serif' }}
                     >
                       <Clock className="w-4 h-4" />
-                      Feuille de temps
+                      {t('recruitmentInternal.tabs.timesheets')}
                     </TabsTrigger>
                   </TabsList>
                 </ModuleControlSurfaceTabs>
@@ -2928,7 +2980,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         <div className="flex-1 relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 z-10" style={{ color: branding.primaryColor }} />
                           <Input
-                            placeholder="Rechercher par nom, poste ou email..."
+                            placeholder={t('recruitmentInternal.candidates.searchPlaceholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 h-11 border-gray-300 focus:border-[#1a4d7a] focus:ring-[#1a4d7a]"
@@ -2941,15 +2993,15 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             style={{ fontFamily: 'Roboto, sans-serif' }}
                           >
                             <Filter className="w-4 h-4 mr-2" />
-                            <SelectValue placeholder="Filtrer par statut" />
+                            <SelectValue placeholder={t('recruitmentInternal.candidates.filterByStatus')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">Tous les statuts</SelectItem>
-                            <SelectItem value="pending">En attente</SelectItem>
-                            <SelectItem value="reviewed">Examiné</SelectItem>
-                            <SelectItem value="interview">Entretien</SelectItem>
-                            <SelectItem value="accepted">Accepté</SelectItem>
-                            <SelectItem value="rejected">Rejeté</SelectItem>
+                            <SelectItem value="all">{t('recruitmentInternal.statuses.all')}</SelectItem>
+                            <SelectItem value="pending">{getCandidateStatusLabel('pending')}</SelectItem>
+                            <SelectItem value="reviewed">{getCandidateStatusLabel('reviewed')}</SelectItem>
+                            <SelectItem value="interview">{getCandidateStatusLabel('interview')}</SelectItem>
+                            <SelectItem value="accepted">{getCandidateStatusLabel('accepted')}</SelectItem>
+                            <SelectItem value="rejected">{getCandidateStatusLabel('rejected')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <Button
@@ -2964,7 +3016,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                           <span className="relative flex items-center">
                             <UserPlus className="w-5 h-5 mr-2" />
-                            Nouvelle candidature
+                            {t('recruitmentInternal.candidates.newCandidate')}
                           </span>
                         </Button>
                       </div>
@@ -3042,7 +3094,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           </div>
                           <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
                             <Calendar className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
-                            <span className="truncate">{new Date(candidate.applicationDate).toLocaleDateString('fr-FR')}</span>
+                            <span className="truncate">{formatLocalizedDate(candidate.applicationDate)}</span>
                           </div>
                           <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
                             <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
@@ -3059,7 +3111,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div className="flex flex-wrap gap-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200/50 px-2.5 py-2">
                             <span className="text-[11px] font-medium text-[#666666] flex items-center gap-1">
                               <Users className="w-3 h-3" style={{ color: branding.primaryColor }} />
-                              Département{candidate.departamentoIds.length > 1 ? 's' : ''}:
+                              {t('recruitmentInternal.candidates.assignedDepartments')}
                             </span>
                             {candidate.departamentoIds.map(deptId => {
                               const dept = departamentosDisponibles.find(d => d.id === deptId);
@@ -3102,7 +3154,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                         backgroundColor: `${branding.primaryColor}10`
                                       }}
                                       onClick={() => abrirDialogoAssignacion(candidate, 'modify')}
-                                      title="Modifier l'assignation de département"
+                                      title={t('recruitmentInternal.candidates.modifyDepartmentAssignment')}
                                     >
                                       <ArrowRightLeft className="w-3.5 h-3.5" />
                                     </Button>
@@ -3116,7 +3168,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                         borderColor: '#ff6b35'
                                       }}
                                       onClick={() => handleEliminarContacto(candidate)}
-                                      title="Supprimer le contact du département"
+                                      title={t('recruitmentInternal.candidates.removeDepartmentContact')}
                                     >
                                       <UserMinus className="w-3.5 h-3.5" />
                                     </Button>
@@ -3136,7 +3188,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                     backgroundColor: `${branding.secondaryColor}10`
                                   }}
                                   onClick={() => abrirDialogoAssignacion(candidate, 'assign')}
-                                  title="Assigner au département"
+                                  title={t('recruitmentInternal.candidates.assignDepartment')}
                                 >
                                   <Link className="w-3.5 h-3.5" />
                                 </Button>
@@ -3154,11 +3206,11 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="pending">En attente</SelectItem>
-                                <SelectItem value="reviewed">Examiné</SelectItem>
-                                <SelectItem value="interview">Entretien</SelectItem>
-                                <SelectItem value="accepted">Accepté</SelectItem>
-                                <SelectItem value="rejected">Rejeté</SelectItem>
+                                <SelectItem value="pending">{getCandidateStatusLabel('pending')}</SelectItem>
+                                <SelectItem value="reviewed">{getCandidateStatusLabel('reviewed')}</SelectItem>
+                                <SelectItem value="interview">{getCandidateStatusLabel('interview')}</SelectItem>
+                                <SelectItem value="accepted">{getCandidateStatusLabel('accepted')}</SelectItem>
+                                <SelectItem value="rejected">{getCandidateStatusLabel('rejected')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -3176,10 +3228,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               onClick={() => {
                                 setCandidatoParaPerfil(prev => prev?.id === candidate.id ? null : candidate);
                               }}
-                              title="Voir le profil détaillé"
+                              title={t('recruitmentInternal.candidates.viewProfile')}
                             >
                               <FileText className="w-3.5 h-3.5 mr-1.5" />
-                              Profil
+                              {t('recruitmentInternal.candidates.profile')}
                             </Button>
                             <Button
                               variant="outline"
@@ -3191,7 +3243,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 borderColor: '#1a4d7a'
                               }}
                               onClick={() => handleAbrirEdicion(candidate)}
-                              title="Éditer le candidat"
+                              title={t('recruitmentInternal.candidates.editCandidate')}
                             >
                               <Edit className="w-3.5 h-3.5" />
                             </Button>
@@ -3205,7 +3257,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 borderColor: '#DC3545'
                               }}
                               onClick={() => handleDeleteCandidate(candidate.id, candidate.name)}
-                              title="Supprimer la candidature"
+                              title={t('recruitmentInternal.candidates.deleteCandidate')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
@@ -3236,10 +3288,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             color: branding.primaryColor
                           }}
                         >
-                          Aucun candidat trouvé
+                          {t('recruitmentInternal.candidates.noCandidateFound')}
                         </p>
                         <p className="text-[#666666] text-sm">
-                          Essayez de modifier vos critères de recherche ou filtres
+                          {t('recruitmentInternal.candidates.adjustSearch')}
                         </p>
                       </CardContent>
                     </Card>
@@ -3274,10 +3326,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
                             >
                               <BarChart3 className="w-5 h-5" />
-                              Rapport de recrutement
+                              {t('recruitmentInternal.reports.ui.title')}
                             </h2>
                             <p className="text-sm text-gray-600 mt-1">
-                              Vue synthétique des candidatures, affectations et feuilles de temps du module.
+                              {t('recruitmentInternal.reports.ui.description')}
                             </p>
                           </div>
                           <div className="flex flex-col gap-3 lg:items-end">
@@ -3285,10 +3337,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             <Select value={reportYearFilter} onValueChange={setReportYearFilter}>
                               <SelectTrigger className="w-full sm:w-52 bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
                                 <Calendar className="w-4 h-4 mr-2" />
-                                <SelectValue placeholder="Filtrer par année" />
+                                <SelectValue placeholder={t('recruitmentInternal.reports.ui.filterByYear')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="all">Toutes les années</SelectItem>
+                                <SelectItem value="all">{t('recruitmentInternal.reports.ui.allYears')}</SelectItem>
                                 {reportYearOptions.map(year => (
                                   <SelectItem key={year} value={year}>{year}</SelectItem>
                                 ))}
@@ -3313,10 +3365,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             <Select value={reportVolunteerFilter} onValueChange={setReportVolunteerFilter}>
                               <SelectTrigger className="w-full bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
                                 <Users className="w-4 h-4 mr-2" />
-                                <SelectValue placeholder="Filtrer par bénévole" />
+                                <SelectValue placeholder={t('recruitmentInternal.reports.ui.filterByVolunteer')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="all">Tous les bénévoles</SelectItem>
+                                <SelectItem value="all">{t('recruitmentInternal.reports.ui.allVolunteers')}</SelectItem>
                                 {reportVolunteerOptions.map(option => (
                                   <SelectItem key={option.id} value={option.id}>{option.nom}</SelectItem>
                                 ))}
@@ -3325,10 +3377,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             <Select value={reportDepartmentFilter} onValueChange={setReportDepartmentFilter}>
                               <SelectTrigger className="w-full bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
                                 <Filter className="w-4 h-4 mr-2" />
-                                <SelectValue placeholder="Filtrer par département" />
+                                <SelectValue placeholder={t('recruitmentInternal.reports.ui.filterByDepartment')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="all">Tous les départements</SelectItem>
+                                <SelectItem value="all">{t('recruitmentInternal.reports.ui.allDepartments')}</SelectItem>
                                 {reportDepartmentOptions.map(option => (
                                   <SelectItem key={option.id} value={option.id}>{option.nombre}</SelectItem>
                                 ))}
@@ -3349,7 +3401,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               className="bg-white/90 border-white/70"
                               style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
                             >
-                              Réinitialiser
+                              {t('recruitmentInternal.reports.ui.reset')}
                             </Button>
                             <Button
                               onClick={handleExportRecruitmentReport}
@@ -3360,7 +3412,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               }}
                             >
                               <Download className="w-4 h-4 mr-2" />
-                              Exporter le rapport
+                              {t('recruitmentInternal.reports.ui.exportReport')}
                             </Button>
                             </div>
                           </div>
@@ -3372,30 +3424,30 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                     <Card className="border-gray-200/50 shadow-sm">
                       <CardContent className="p-4">
-                        <p className="text-xs text-gray-500 mb-1">Candidatures totales</p>
+                        <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.reports.cards.totalApplications')}</p>
                         <p className="text-3xl font-bold" style={{ color: branding.primaryColor }}>{stats.total}</p>
-                        <p className="text-sm text-gray-500 mt-2">Toutes les entrées enregistrées</p>
+                        <p className="text-sm text-gray-500 mt-2">{t('recruitmentInternal.reports.cards.totalApplicationsHint')}</p>
                       </CardContent>
                     </Card>
                     <Card className="border-gray-200/50 shadow-sm">
                       <CardContent className="p-4">
-                        <p className="text-xs text-gray-500 mb-1">Affectées</p>
+                        <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.reports.cards.assigned')}</p>
                         <p className="text-3xl font-bold" style={{ color: branding.secondaryColor }}>{candidatsAssignes.length}</p>
-                        <p className="text-sm text-gray-500 mt-2">Avec au moins un département</p>
+                        <p className="text-sm text-gray-500 mt-2">{t('recruitmentInternal.reports.cards.assignedHint')}</p>
                       </CardContent>
                     </Card>
                     <Card className="border-gray-200/50 shadow-sm">
                       <CardContent className="p-4">
-                        <p className="text-xs text-gray-500 mb-1">Feuilles de temps</p>
+                        <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.reports.cards.timesheets')}</p>
                         <p className="text-3xl font-bold text-amber-600">{reportEntreesTotales}</p>
-                        <p className="text-sm text-gray-500 mt-2">Entrées selon les filtres actifs</p>
+                        <p className="text-sm text-gray-500 mt-2">{t('recruitmentInternal.reports.cards.timesheetsHint')}</p>
                       </CardContent>
                     </Card>
                     <Card className="border-gray-200/50 shadow-sm">
                       <CardContent className="p-4">
-                        <p className="text-xs text-gray-500 mb-1">Heures cumulées</p>
+                        <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.reports.cards.accumulatedHours')}</p>
                         <p className="text-3xl font-bold text-emerald-600">{formatTimesheetHours(reportHeuresTotales)}</p>
-                        <p className="text-sm text-gray-500 mt-2">Volume selon les filtres actifs</p>
+                        <p className="text-sm text-gray-500 mt-2">{t('recruitmentInternal.reports.cards.accumulatedHoursHint')}</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -3404,13 +3456,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                       <CardHeader className="pb-3">
                         <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                          Heures par année
+                          {t('recruitmentInternal.reports.ui.hoursByYear')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-4">
                         {reportYearStats.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                            Aucune donnée annuelle disponible pour le rapport.
+                            {t('recruitmentInternal.reports.ui.noAnnualData')}
                           </div>
                         ) : (
                           <>
@@ -3421,7 +3473,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                   <XAxis dataKey="annee" tick={{ fill: '#666666', fontSize: 10 }} height={26} />
                                   <YAxis width={26} tick={{ fill: '#666666', fontSize: 10 }} />
                                   <Tooltip
-                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), 'Heures']}
+                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), t('recruitmentInternal.reports.ui.hoursLabel')]}
                                     contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px' }}
                                   />
                                   <Bar dataKey="heures" fill={branding.primaryColor} radius={[8, 8, 0, 0]} maxBarSize={38} />
@@ -3441,11 +3493,15 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                       {item.annee}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      {item.feuilles} entrée(s) • {item.benevoles} bénévole(s) • {item.departements} département(s)
+                                      {t('recruitmentInternal.reports.ui.yearSummary', {
+                                        entries: item.feuilles,
+                                        volunteers: item.benevoles,
+                                        departments: item.departements
+                                      })}
                                     </p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-xs text-gray-500">Heures</p>
+                                    <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.hoursLabel')}</p>
                                     <p className="font-semibold" style={{ color: branding.primaryColor }}>
                                       {formatTimesheetHours(item.heures)}
                                     </p>
@@ -3453,15 +3509,15 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 </div>
                                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                                   <div className="rounded-lg bg-white/80 px-2 py-2">
-                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Entrées</p>
+                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">{t('recruitmentPublic.entries')}</p>
                                     <p className="text-sm font-semibold text-gray-700">{item.feuilles}</p>
                                   </div>
                                   <div className="rounded-lg bg-white/80 px-2 py-2">
-                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Bénévoles</p>
+                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">{t('recruitmentPublic.volunteers')}</p>
                                     <p className="text-sm font-semibold text-gray-700">{item.benevoles}</p>
                                   </div>
                                   <div className="rounded-lg bg-white/80 px-2 py-2">
-                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Départements</p>
+                                    <p className="text-[11px] uppercase tracking-wide text-gray-400">{t('recruitmentInternal.reports.ui.departmentsLabel')}</p>
                                     <p className="text-sm font-semibold text-gray-700">{item.departements}</p>
                                   </div>
                                 </div>
@@ -3476,28 +3532,28 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                       <CardHeader className="pb-3">
                         <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                          État global
+                          {t('recruitmentInternal.reports.ui.globalState')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-3">
                         <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
-                          <p className="text-xs text-gray-500">En attente</p>
+                          <p className="text-xs text-gray-500">{getCandidateStatusLabel('pending')}</p>
                           <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
                         </div>
                         <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
-                          <p className="text-xs text-gray-500">En entretien</p>
+                          <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.inInterview')}</p>
                           <p className="text-2xl font-bold text-sky-600">{stats.interview}</p>
                         </div>
                         <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
-                          <p className="text-xs text-gray-500">Acceptés</p>
+                          <p className="text-xs text-gray-500">{t('recruitmentInternal.dashboard.accepted')}</p>
                           <p className="text-2xl font-bold text-emerald-600">{stats.accepted}</p>
                         </div>
                         <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
-                          <p className="text-xs text-gray-500">Sans affectation</p>
+                          <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.unassigned')}</p>
                           <p className="text-2xl font-bold text-rose-600">{candidatsSansAssignation.length}</p>
                         </div>
                         <div className="rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
-                          <p className="text-xs text-gray-500">Avec feuilles de temps</p>
+                          <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.withTimesheets')}</p>
                           <p className="text-2xl font-bold" style={{ color: branding.primaryColor }}>{reportVolunteerActifs}</p>
                         </div>
                       </CardContent>
@@ -3508,13 +3564,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                       <CardHeader className="pb-3">
                         <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                          Heures par département
+                          {t('recruitmentInternal.reports.ui.hoursByDepartment')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-4">
                         {reportDepartmentStats.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                            Aucune donnée départementale disponible pour le rapport.
+                            {t('recruitmentInternal.reports.ui.noDepartmentData')}
                           </div>
                         ) : (
                           <>
@@ -3525,7 +3581,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                   <XAxis dataKey="nom" tick={{ fill: '#666666', fontSize: 10 }} angle={-18} textAnchor="end" height={46} interval={0} />
                                   <YAxis width={26} tick={{ fill: '#666666', fontSize: 10 }} />
                                   <Tooltip
-                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), 'Heures']}
+                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), t('recruitmentInternal.reports.ui.hoursLabel')]}
                                     contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px' }}
                                   />
                                   <Bar dataKey="heures" fill={branding.secondaryColor} radius={[8, 8, 0, 0]} maxBarSize={34} />
@@ -3546,11 +3602,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                       {item.nom}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      {item.feuilles} entrée(s) • {item.benevoles} bénévole(s) actif(s)
+                                      {t('recruitmentInternal.reports.ui.departmentSummary', {
+                                        entries: item.feuilles,
+                                        volunteers: item.benevoles
+                                      })}
                                     </p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-xs text-gray-500">Heures</p>
+                                    <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.hoursLabel')}</p>
                                     <p className="font-semibold" style={{ color: item.color }}>
                                       {formatTimesheetHours(item.heures)}
                                     </p>
@@ -3567,13 +3626,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                       <CardHeader className="pb-3">
                         <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                          Heures par bénévole
+                          {t('recruitmentInternal.reports.ui.hoursByVolunteer')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-4">
                         {reportVolunteerStats.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                            Aucune donnée bénévole disponible pour le rapport.
+                            {t('recruitmentInternal.reports.ui.noVolunteerData')}
                           </div>
                         ) : (
                           <>
@@ -3584,7 +3643,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                   <XAxis dataKey="nom" tick={{ fill: '#666666', fontSize: 10 }} angle={-18} textAnchor="end" height={46} interval={0} />
                                   <YAxis width={26} tick={{ fill: '#666666', fontSize: 10 }} />
                                   <Tooltip
-                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), 'Heures']}
+                                    formatter={(value: number) => [formatTimesheetHours(Number(value)), t('recruitmentInternal.reports.ui.hoursLabel')]}
                                     contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px' }}
                                   />
                                   <Bar dataKey="heures" fill="#D97706" radius={[8, 8, 0, 0]} maxBarSize={34} />
@@ -3597,10 +3656,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="min-w-0">
                                     <p className="font-semibold text-sm text-[#333333] truncate">{item.nom}</p>
-                                    <p className="text-xs text-gray-500 truncate">{item.email || 'Sans email'} • {item.feuilles} entrée(s) • {item.departements} département(s)</p>
+                                    <p className="text-xs text-gray-500 truncate">{t('recruitmentInternal.reports.ui.volunteerSummary', {
+                                      email: item.email || t('recruitmentInternal.reports.ui.noEmail'),
+                                      entries: item.feuilles,
+                                      departments: item.departements
+                                    })}</p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-xs text-gray-500">Heures</p>
+                                    <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.hoursLabel')}</p>
                                     <p className="text-sm font-semibold" style={{ color: branding.primaryColor }}>
                                       {formatTimesheetHours(item.heures)}
                                     </p>
@@ -3619,13 +3682,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                       <CardHeader className="pb-3">
                         <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                          Candidatures récentes
+                          {t('recruitmentInternal.reports.ui.recentCandidates')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0">
                         {recentCandidates.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                            Aucune candidature récente.
+                            {t('recruitmentInternal.reports.ui.noRecentCandidates')}
                           </div>
                         ) : (
                           <div className="space-y-3">
@@ -3633,7 +3696,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               <div key={candidate.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
                                 <div className="min-w-0">
                                   <p className="font-semibold text-sm text-[#333333] truncate">{candidate.name}</p>
-                                  <p className="text-xs text-gray-500 truncate">{candidate.position} • {new Date(candidate.applicationDate).toLocaleDateString('fr-FR')}</p>
+                                  <p className="text-xs text-gray-500 truncate">{candidate.position} • {formatLocalizedDate(candidate.applicationDate)}</p>
                                 </div>
                                 {getStatusBadge(candidate.status)}
                               </div>
@@ -3646,13 +3709,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                       <CardHeader className="pb-3">
                         <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                          Dernières feuilles de temps
+                          {t('recruitmentInternal.reports.ui.latestTimesheets')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0">
                         {recentTimesheetEntries.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                            Aucune entrée de feuille de temps enregistrée.
+                            {t('recruitmentInternal.reports.ui.noRecentTimesheets')}
                           </div>
                         ) : (
                           <div className="space-y-3">
@@ -3664,7 +3727,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                     <p className="text-xs text-gray-500 truncate">{timesheet.departement} • {timesheet.date}</p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-xs text-gray-500">Durée</p>
+                                    <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.duration')}</p>
                                     <p className="text-sm font-semibold" style={{ color: branding.primaryColor }}>
                                       {formatTimesheetHours(timesheet.duree)}
                                     </p>
@@ -3683,24 +3746,24 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   <Card className="border-gray-200/50 shadow-sm overflow-hidden">
                     <CardHeader className="pb-3">
                       <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                        Points de contrôle
+                        {t('recruitmentInternal.reports.ui.controlPoints')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
                       <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                        <p className="text-xs text-gray-500">Taux d'affectation</p>
+                        <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.assignmentRate')}</p>
                         <p className="text-2xl font-bold" style={{ color: branding.primaryColor }}>
                           {stats.total > 0 ? `${Math.round((candidatsAssignes.length / stats.total) * 100)}%` : '0%'}
                         </p>
                       </div>
                       <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                        <p className="text-xs text-gray-500">Taux d'acceptation</p>
+                        <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.acceptanceRate')}</p>
                         <p className="text-2xl font-bold text-emerald-600">
                           {stats.total > 0 ? `${Math.round((stats.accepted / stats.total) * 100)}%` : '0%'}
                         </p>
                       </div>
                       <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                        <p className="text-xs text-gray-500">Moyenne heures / entrée</p>
+                        <p className="text-xs text-gray-500">{t('recruitmentInternal.reports.ui.averageHoursPerEntry')}</p>
                         <p className="text-2xl font-bold text-amber-600">
                           {reportEntreesTotales > 0 ? formatTimesheetHours(reportHeuresTotales / reportEntreesTotales) : '0h 00m'}
                         </p>
@@ -3734,28 +3797,28 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
                           >
                             <Clock className="w-5 h-5" />
-                            Gestion des feuilles de temps
+                            {t('recruitmentInternal.timesheets.managementTitle')}
                           </h2>
                           <p className="text-sm text-gray-600 mt-1">
-                            Gérez les heures des bénévoles assignés à un département depuis la page principale.
+                            {t('recruitmentInternal.timesheets.managementDescription')}
                           </p>
                         </div>
                         <div className="flex flex-col gap-2 lg:items-end">
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[460px]">
                             <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
-                              <p className="text-xs text-gray-500 mb-1">Bénévoles disponibles</p>
+                              <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.timesheets.availableVolunteers')}</p>
                               <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                                 {candidatosFeuilleTemps.length}
                               </p>
                             </div>
                             <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
-                              <p className="text-xs text-gray-500 mb-1">Entrées filtrées</p>
+                              <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.timesheets.filteredEntries')}</p>
                               <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                                 {totalEntreesFeuilleTemps}
                               </p>
                             </div>
                             <div className="p-3 rounded-xl bg-white/90 border border-white/70 shadow-sm">
-                              <p className="text-xs text-gray-500 mb-1">Heures filtrées</p>
+                              <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.timesheets.filteredHours')}</p>
                               <p className="text-xl font-semibold" style={{ color: branding.secondaryColor }}>
                                 {formatTimesheetHours(totalHeuresFeuilleTemps)}
                               </p>
@@ -3764,16 +3827,16 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
                           <div className="flex flex-col sm:flex-row gap-2 lg:min-w-[460px]">
                             <div className="flex-1">
-                              <Label htmlFor="recruit-timesheet-filter-department" className="text-xs font-semibold text-gray-600">Département</Label>
+                              <Label htmlFor="recruit-timesheet-filter-department" className="text-xs font-semibold text-gray-600">{t('recruitmentPublic.department')}</Label>
                               <Select
                                 value={timesheetDepartmentFilter}
                                 onValueChange={(value) => setTimesheetDepartmentFilter(value)}
                               >
                                 <SelectTrigger id="recruit-timesheet-filter-department" className="mt-1 bg-white/90">
-                                  <SelectValue placeholder="Tous les départements" />
+                                  <SelectValue placeholder={t('recruitmentInternal.timesheets.allDepartments')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="all">Tous les départements</SelectItem>
+                                  <SelectItem value="all">{t('recruitmentInternal.timesheets.allDepartments')}</SelectItem>
                                   {departamentosDisponibles.map(department => (
                                     <SelectItem key={department.id} value={department.id}>
                                       {department.icono} {department.nombre}
@@ -3783,16 +3846,16 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               </Select>
                             </div>
                             <div className="flex-1">
-                              <Label htmlFor="recruit-timesheet-filter-month" className="text-xs font-semibold text-gray-600">Mois</Label>
+                              <Label htmlFor="recruit-timesheet-filter-month" className="text-xs font-semibold text-gray-600">{t('recruitmentPublic.month')}</Label>
                               <Select
                                 value={timesheetMonthFilter || 'all'}
                                 onValueChange={(value) => setTimesheetMonthFilter(value === 'all' ? '' : value)}
                               >
                                 <SelectTrigger id="recruit-timesheet-filter-month" className="mt-1 bg-white/90">
-                                  <SelectValue placeholder="Tous les mois" />
+                                  <SelectValue placeholder={t('recruitmentInternal.timesheets.allMonths')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="all">Tous les mois</SelectItem>
+                                  <SelectItem value="all">{t('recruitmentInternal.timesheets.allMonths')}</SelectItem>
                                   {timesheetMonthOptions.map(month => (
                                     <SelectItem key={month} value={month}>
                                       {month}
@@ -3810,7 +3873,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 }}
                                 style={{ fontFamily: 'Montserrat, sans-serif' }}
                               >
-                                Réinitialiser
+                                {t('recruitmentInternal.timesheets.resetFilters')}
                               </Button>
                               <Button
                                 onClick={handleExportTimesheets}
@@ -3821,7 +3884,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 }}
                               >
                                 <Download className="w-4 h-4 mr-2" />
-                                Exporter CSV
+                                {t('recruitmentInternal.timesheets.exportCsv')}
                               </Button>
                             </div>
                           </div>
@@ -3835,7 +3898,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               {candidatosFeuilleTemps.length === 0 ? (
                 <Card className="border-amber-200 bg-amber-50/60">
                   <CardContent className="p-6 text-sm text-amber-900">
-                    Aucun bénévole assigné à un département n'est disponible pour la gestion des feuilles de temps.
+                    {t('recruitmentInternal.timesheets.emptyAssigned')}
                   </CardContent>
                 </Card>
               ) : (
@@ -3843,25 +3906,25 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   <Card className="border-gray-200/50 shadow-sm">
                     <CardHeader className="pb-3">
                       <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                        Bénévole sélectionné
+                        {t('recruitmentPublic.selectedVolunteer')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label className="text-xs font-semibold">Bénévoles *</Label>
+                        <Label className="text-xs font-semibold">{t('recruitmentPublic.volunteers')} *</Label>
                         <div className="mt-2 relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <Input
                             value={timesheetCandidateSearch}
                             onChange={(event) => setTimesheetCandidateSearch(event.target.value)}
-                            placeholder="Rechercher rapidement un bénévole..."
+                            placeholder={t('recruitmentPublic.quickSearchPlaceholder')}
                             className="pl-10 h-10"
                           />
                         </div>
                         <div className="mt-2 space-y-2 max-h-[240px] overflow-y-auto pr-1">
                           {candidatosFeuilleTempsFiltrados.length === 0 ? (
                             <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
-                              Aucun bénévole ne correspond à cette recherche.
+                              {t('recruitmentInternal.timesheets.noVolunteerMatchesSearch')}
                             </div>
                           ) : candidatosFeuilleTempsFiltrados.map(candidate => {
                             const isSelected = String(candidate.id) === selectedTimesheetCandidateId;
@@ -3874,7 +3937,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 key={candidate.id}
                                 type="button"
                                 onClick={() => setSelectedTimesheetCandidateId(String(candidate.id))}
-                                aria-label={`Sélectionner ${candidate.name}`}
+                                aria-label={t('recruitmentPublic.selectVolunteerAria', { name: candidate.name })}
                                 className="w-full text-left p-3 rounded-xl border transition-all duration-200"
                                 style={{
                                   borderColor: isSelected ? branding.primaryColor : '#E5E7EB',
@@ -3893,7 +3956,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                     <p className="text-xs text-gray-500 truncate mt-1">{candidate.email}</p>
                                   </div>
                                   <div className="text-right shrink-0">
-                                    <p className="text-xs text-gray-500">Heures</p>
+                                    <p className="text-xs text-gray-500">{t('recruitmentPublic.hours')}</p>
                                     <p className="text-sm font-semibold" style={{ color: branding.secondaryColor }}>
                                       {formatTimesheetHours(totalCandidateHours)}
                                     </p>
@@ -3932,19 +3995,19 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
-                              <p className="text-xs text-gray-500 mb-1">Entrées</p>
+                              <p className="text-xs text-gray-500 mb-1">{t('recruitmentPublic.entries')}</p>
                               <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                                 {feuillesTempsSeleccionadas.length}
                               </p>
                             </div>
                             <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
-                              <p className="text-xs text-gray-500 mb-1">Heures totales</p>
+                              <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.timesheets.totalHours')}</p>
                               <p className="text-xl font-semibold" style={{ color: branding.primaryColor }}>
                                 {formatTimesheetHours(totalHeuresFeuilleTempsSeleccionada)}
                               </p>
                             </div>
                             <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
-                              <p className="text-xs text-gray-500 mb-1">{timesheetMonthFilter ? 'Période filtrée' : 'Ce mois-ci'}</p>
+                              <p className="text-xs text-gray-500 mb-1">{timesheetMonthFilter ? t('recruitmentInternal.timesheets.filteredPeriod') : t('recruitmentInternal.timesheets.thisMonth')}</p>
                               <p className="text-xl font-semibold" style={{ color: branding.secondaryColor }}>
                                 {formatTimesheetHours(heuresMoisFeuilleTempsSeleccionada)}
                               </p>
@@ -3967,12 +4030,12 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <CardTitle className="flex items-center gap-2" style={{ color: branding.primaryColor }}>
                               <Clock className="w-5 h-5" />
-                              {editingTimesheetId ? 'Modifier une entrée' : 'Enregistrer une nouvelle entrée'}
+                              {editingTimesheetId ? t('recruitmentInternal.timesheets.editEntryTitle') : t('recruitmentInternal.timesheets.newEntryTitle')}
                             </CardTitle>
                             <p className="text-xs text-gray-500 mt-1">
                               {editingTimesheetId && feuillesTempsActivasSeleccionadas.some(timesheet => timesheet.id === editingTimesheetId)
-                                ? 'Laissez l\'heure de fin vide pour corriger uniquement l\'entrée et conserver la session en cours.'
-                                : 'Les heures sont enregistrées directement sur le bénévole sélectionné.'}
+                                ? t('recruitmentInternal.timesheets.editActiveDescription')
+                                : t('recruitmentInternal.timesheets.newEntryDescription')}
                             </p>
                           </div>
                           {editingTimesheetId && candidatoFeuilleTempsSeleccionado && (
@@ -3982,7 +4045,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               onClick={() => resetTimesheetForm(candidatoFeuilleTempsSeleccionado)}
                               style={{ fontFamily: 'Montserrat, sans-serif' }}
                             >
-                              Annuler
+                              {t('recruitmentInternal.timesheets.cancel')}
                             </Button>
                           )}
                         </div>
@@ -3992,7 +4055,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <Label htmlFor="recruit-timesheet-department" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <Briefcase className="w-3 h-3" />
-                              Département
+                              {t('recruitmentPublic.department')}
                             </Label>
                             <Select
                               value={timesheetForm.departamentoId}
@@ -4000,10 +4063,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             >
                               <SelectTrigger
                                 id="recruit-timesheet-department"
-                                aria-label="Sélectionner un département pour la feuille de temps"
+                                aria-label={t('recruitmentInternal.timesheets.selectDepartmentAria')}
                                 className="h-11"
                               >
-                                <SelectValue placeholder="Sélectionner..." />
+                                <SelectValue placeholder={t('recruitmentPublic.selectPlaceholder')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {departamentosFeuilleTemps.map(department => (
@@ -4017,7 +4080,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <Label htmlFor="recruit-timesheet-date" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              Date
+                              {t('recruitmentInternal.timesheets.date')}
                             </Label>
                             <Input
                               id="recruit-timesheet-date"
@@ -4033,7 +4096,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <Label htmlFor="recruit-timesheet-start" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              Heure de début
+                              {t('recruitmentInternal.timesheets.startTime')}
                             </Label>
                             <Input
                               id="recruit-timesheet-start"
@@ -4046,7 +4109,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <Label htmlFor="recruit-timesheet-end" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              Heure de fin
+                              {t('recruitmentInternal.timesheets.endTime')}
                             </Label>
                             <Input
                               id="recruit-timesheet-end"
@@ -4059,7 +4122,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <Timer className="w-3 h-3" style={{ color: branding.primaryColor }} />
-                              Temps (auto)
+                              {t('recruitmentInternal.timesheets.autoTime')}
                             </Label>
                             <div
                               className="h-11 px-4 rounded-lg flex items-center justify-center border-2"
@@ -4084,12 +4147,12 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div>
                             <Label htmlFor="recruit-timesheet-notes" className="text-xs font-semibold mb-1.5 flex items-center gap-1">
                               <FileText className="w-3 h-3" />
-                              Notes
+                              {t('recruitmentInternal.timesheets.notes')}
                             </Label>
                             <Input
                               id="recruit-timesheet-notes"
                               className="h-11"
-                              placeholder="Tâches effectuées..."
+                              placeholder={t('recruitmentPublic.notesPlaceholder')}
                               value={timesheetForm.notes}
                               onChange={(event) => setTimesheetForm(prev => ({ ...prev, notes: event.target.value }))}
                             />
@@ -4108,7 +4171,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               disabled={!candidatoFeuilleTempsSeleccionado}
                             >
                               <Plus className="w-4 h-4 mr-2" />
-                              Mettre à jour
+                              {t('recruitmentInternal.timesheets.updateEntry')}
                             </Button>
                           ) : (
                             <>
@@ -4120,10 +4183,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 }}
                                 onClick={handleRegisterTimesheetEntry}
                                 disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId}
-                                title="Enregistrer l'arrivée maintenant"
+                                title={t('recruitmentPublic.registerArrivalNow')}
                               >
                                 <LogIn className="w-4 h-4 mr-2" />
-                                Entrée
+                                {t('recruitmentPublic.entry')}
                               </Button>
                               <Button
                                 onClick={handleSaveTimesheet}
@@ -4133,10 +4196,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 }}
                                 className="h-11 text-white shadow-lg hover:shadow-xl transition-all"
                                 disabled={!candidatoFeuilleTempsSeleccionado || !timesheetForm.departamentoId || !timesheetForm.heureDebut || !timesheetForm.heureFin}
-                                title="Enregistrer une session complète"
+                                title={t('recruitmentInternal.timesheets.registerFullSession')}
                               >
                                 <Check className="w-4 h-4 mr-2" />
-                                Complet
+                                {t('recruitmentInternal.timesheets.complete')}
                               </Button>
                             </>
                           )}
@@ -4155,13 +4218,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div className="flex items-center justify-between">
                             <CardTitle className="flex items-center gap-2" style={{ color: '#D97706' }}>
                               <Timer className="w-5 h-5" />
-                              Sessions en cours ({feuillesTempsActivasSeleccionadas.length})
+                              {t('recruitmentInternal.timesheets.activeSessionsCount', { count: feuillesTempsActivasSeleccionadas.length })}
                             </CardTitle>
                             <Badge
                               className="text-xs px-3 py-1 animate-pulse"
                               style={{ backgroundColor: '#D97706', color: 'white' }}
                             >
-                              En attente de sortie
+                              {t('recruitmentInternal.timesheets.pendingExit')}
                             </Badge>
                           </div>
                         </CardHeader>
@@ -4202,7 +4265,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                         <div className="flex items-center gap-2">
                                           <Timer className="w-4 h-4" style={{ color: '#D97706' }} />
                                           <span className="font-mono text-sm" style={{ color: '#D97706' }}>
-                                            {formatTimesheetHours(elapsedHours)} écoulé
+                                            {t('recruitmentInternal.timesheets.elapsed', { duration: formatTimesheetHours(elapsedHours) })}
                                           </span>
                                         </div>
                                         {timesheet.notes && (
@@ -4221,7 +4284,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                         style={{ fontFamily: 'Montserrat, sans-serif' }}
                                       >
                                         <Edit className="w-4 h-4 mr-2" />
-                                        Modifier
+                                        {t('recruitmentInternal.timesheets.edit')}
                                       </Button>
                                       <Button
                                         onClick={() => handleRegisterTimesheetExit(timesheet.id)}
@@ -4229,7 +4292,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                         style={{ backgroundColor: '#DC3545' }}
                                       >
                                         <LogOut className="w-5 h-5 mr-2" />
-                                        Enregistrer Sortie
+                                        {t('recruitmentInternal.timesheets.registerExit')}
                                       </Button>
                                     </div>
                                   </div>
@@ -4245,13 +4308,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
                           <ClipboardList className="w-5 h-5" />
-                          Entrées récentes
+                          {t('recruitmentPublic.recentEntries')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         {feuillesTempsHistorialSeleccionadas.length === 0 ? (
                           <div className="p-4 rounded-xl bg-gray-50 border border-dashed border-gray-300 text-sm text-gray-600">
-                            Aucune feuille de temps ne correspond aux filtres actuels pour ce bénévole.
+                            {t('recruitmentInternal.timesheets.noEntriesForVolunteer')}
                           </div>
                         ) : (
                           renderTimesheetEntries(feuillesTempsHistorialSeleccionadas)

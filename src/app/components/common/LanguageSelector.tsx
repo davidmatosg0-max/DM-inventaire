@@ -11,6 +11,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Languages, Check } from 'lucide-react';
+import { applyLanguageToDocument, LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY, normalizeLanguageCode } from '../../../i18n/config';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -61,13 +62,12 @@ const LANGUAGES: Language[] = [
   }
 ];
 
-const LANGUAGE_STORAGE_KEY = 'banque_alimentaire_language';
-
 export function LanguageSelector() {
   const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const activeLanguageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   
-  const currentLanguage = LANGUAGES.find(lang => lang.code === i18n.language) || LANGUAGES[0];
+  const currentLanguage = LANGUAGES.find(lang => lang.code === activeLanguageCode) || LANGUAGES.find(lang => lang.code === 'fr') || LANGUAGES[0];
   
   const changeLanguage = async (langCode: string) => {
     try {
@@ -76,13 +76,11 @@ export function LanguageSelector() {
       
       // Guardar preferencia
       localStorage.setItem(LANGUAGE_STORAGE_KEY, langCode);
+      localStorage.setItem(LEGACY_LANGUAGE_STORAGE_KEY, langCode);
       
       // Aplicar dirección RTL si es necesario
-      const language = LANGUAGES.find(lang => lang.code === langCode);
-      if (language) {
-        document.documentElement.dir = language.isRTL ? 'rtl' : 'ltr';
-        document.documentElement.lang = langCode;
-      }
+      const language = LANGUAGES.find(lang => lang.code === normalizeLanguageCode(langCode));
+      applyLanguageToDocument(langCode);
       
       // Notificación de éxito
       toast.success(
@@ -123,7 +121,7 @@ export function LanguageSelector() {
         <DropdownMenuSeparator />
         
         {LANGUAGES.map((language) => {
-          const isActive = language.code === i18n.language;
+          const isActive = language.code === activeLanguageCode;
           
           return (
             <DropdownMenuItem
@@ -163,7 +161,8 @@ export function LanguageSelector() {
  */
 export function useCurrentLanguage() {
   const { i18n } = useTranslation();
-  return LANGUAGES.find(lang => lang.code === i18n.language) || LANGUAGES[0];
+  const activeLanguageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
+  return LANGUAGES.find(lang => lang.code === activeLanguageCode) || LANGUAGES.find(lang => lang.code === 'fr') || LANGUAGES[0];
 }
 
 /**
@@ -178,14 +177,10 @@ export function useIsRTL() {
  * Inicializar idioma desde localStorage
  */
 export function initializeLanguage() {
-  const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) || localStorage.getItem(LEGACY_LANGUAGE_STORAGE_KEY);
   
   if (savedLanguage) {
-    const language = LANGUAGES.find(lang => lang.code === savedLanguage);
-    if (language) {
-      document.documentElement.dir = language.isRTL ? 'rtl' : 'ltr';
-      document.documentElement.lang = savedLanguage;
-    }
+    applyLanguageToDocument(savedLanguage);
   }
 }
 

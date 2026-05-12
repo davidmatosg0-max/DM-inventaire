@@ -3665,7 +3665,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
           >
             <CardTitle className="flex items-center gap-2" style={{ color: accesLibreLectureSeule ? branding.warningColor : branding.primaryColor }}>
               {accesLibreLectureSeule ? <AlertCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-              {accesLibreLectureSeule ? 'Feuilles de temps en consultation' : 'Enregistrer une entrée'}
+              {accesLibreLectureSeule ? t('recruitmentPublic.consultationModeTitle') : t('recruitmentPublic.registerEntry')}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
@@ -3678,9 +3678,9 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                   color: '#5f6368'
                 }}
               >
-                <p className="font-semibold text-[#333333] mb-1">L’accès libre est en lecture seule.</p>
+                <p className="font-semibold text-[#333333] mb-1">{t('recruitmentPublic.readOnlyTitle')}</p>
                 <p>
-                  Cette page ne permet ni entrée, ni sortie, ni correction manuelle. La gestion des feuilles de temps se fait uniquement depuis l’espace interne.
+                  {t('recruitmentPublic.readOnlyDescription')}
                 </p>
               </div>
             ) : (
@@ -3999,7 +3999,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: branding.warningColor }} />
                 <span>
-                  <strong>Mode lecture seule:</strong> {accesLibreLectureSeule ? 'L’accès libre ne permet aucune gestion des feuilles de temps.' : 'Les corrections manuelles se gèrent uniquement dans Recrutement.'}
+                  <strong>{t('recruitmentPublic.readOnlyModeLabel')}</strong> {accesLibreLectureSeule ? t('recruitmentPublic.freeAccessNoManagement') : t('recruitmentPublic.manualCorrectionsInternalOnly')}
                 </span>
               </div>
             )}
@@ -5385,7 +5385,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                   color: branding.primaryColor 
                 }}
               >
-                Feuilles de Temps - Accès Public
+                {t('recruitmentPublic.headerTitle')}
               </h1>
               <Sparkles 
                 className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" 
@@ -5405,7 +5405,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                 }}
               >
                 <ShieldPlus className="w-4 h-4" />
-                Accès Libre • Sans Connexion
+                {t('recruitmentPublic.publicFreeAccessNoLogin')}
               </div>
             </div>
 
@@ -5427,7 +5427,7 @@ export function Benevoles({ isPublicAccess = false }: BenevolesProps) {
                 }}
               >
                 <LogOut className="w-4 h-4" />
-                Retour à la connexion
+                {t('recruitmentPublic.backToLogin')}
               </button>
             </div>
           </div>

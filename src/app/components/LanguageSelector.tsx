@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { applyLanguageToDocument, normalizeLanguageCode } from '../../i18n/config';
 
 const languages = [
   { code: 'es', name: 'Espagnol', flag: '🇪🇸' },
@@ -12,25 +13,19 @@ const languages = [
 
 export function LanguageSelector() {
   const { i18n } = useTranslation();
+  const activeLanguageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
-    // Para idiomas RTL como el árabe
-    if (langCode === 'ar') {
-      document.documentElement.dir = 'rtl';
-      document.documentElement.lang = 'ar';
-    } else {
-      document.documentElement.dir = 'ltr';
-      document.documentElement.lang = langCode;
-    }
+    applyLanguageToDocument(langCode);
   };
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  const currentLanguage = languages.find(lang => lang.code === activeLanguageCode) || languages.find(lang => lang.code === 'fr') || languages[0];
 
   return (
     <div className="flex items-center gap-1 sm:gap-2">
       <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-white hidden sm:block" />
-      <Select value={i18n.language} onValueChange={handleLanguageChange}>
+      <Select value={activeLanguageCode} onValueChange={handleLanguageChange}>
         <SelectTrigger className="w-[100px] sm:w-[140px] md:w-[160px] bg-white/10 border-white/20 text-white hover:bg-white/20 transition-colors text-xs sm:text-sm">
           <SelectValue>
             <div className="flex items-center gap-1 sm:gap-2">
