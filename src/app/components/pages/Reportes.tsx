@@ -1616,52 +1616,58 @@ export function Reportes() {
   ];
 
   const reportTabLabels: Record<ReportTab, string> = {
-    general: 'Vue générale',
-    operaciones: 'Opérations',
-    inventario: 'Inventaire',
-    comandas: 'Commandes',
+    general: t('reports.executive.tabs.general'),
+    operaciones: t('reports.executive.tabs.operations'),
+    inventario: t('reports.executive.tabs.inventory'),
+    comandas: t('reports.executive.tabs.orders'),
     prs: 'PRS',
-    auditoria: 'Audit',
+    auditoria: t('reports.executive.tabs.audit'),
   };
 
   const remotePrsStatusLabel = {
-    idle: 'En attente',
-    loading: 'Synchronisation',
-    ready: 'Disponible',
-    unavailable: 'Indisponible',
-    error: 'Erreur',
+    idle: t('reports.executive.prsStatus.idle'),
+    loading: t('reports.executive.prsStatus.loading'),
+    ready: t('reports.executive.prsStatus.ready'),
+    unavailable: t('reports.executive.prsStatus.unavailable'),
+    error: t('reports.executive.prsStatus.error'),
   }[remotePrsStatus];
 
   const reportsExecutiveMetrics = [
     {
       id: 'view',
-      label: 'Vue active',
+      label: t('reports.executive.metrics.activeView'),
       value: reportTabLabels[activeReportTab],
-      helper: exportableReportType ? `Type exportable: ${exportableReportType.toUpperCase()}` : 'Cette vue gère ses exports localement.',
+      helper: exportableReportType
+        ? t('reports.executive.metrics.exportableType', { type: exportableReportType.toUpperCase() })
+        : t('reports.executive.metrics.localExports'),
       icon: <BarChart3 className="h-4 w-4" />,
       accentColor: branding.primaryColor,
     },
     {
       id: 'range',
-      label: 'Période',
-      value: rangoValido ? `${fechaInicio} → ${fechaFin}` : 'À corriger',
-      helper: rangoValido ? 'Les graphiques et exports utilisent cette plage.' : 'Définissez une plage de dates valide.',
+      label: t('reports.executive.metrics.period'),
+      value: rangoValido ? `${fechaInicio} → ${fechaFin}` : t('reports.executive.metrics.invalidRange'),
+      helper: rangoValido
+        ? t('reports.executive.metrics.periodReady')
+        : t('reports.executive.metrics.periodInvalid'),
       icon: <FileText className="h-4 w-4" />,
       accentColor: branding.secondaryColor,
     },
     {
       id: 'entries',
-      label: 'Entrées actives',
+      label: t('reports.executive.metrics.activeEntries'),
       value: activeEntries.length,
-      helper: 'Base opérationnelle utilisée dans les vues générales et inventaire.',
+      helper: t('reports.executive.metrics.activeEntriesHelper'),
       icon: <Shield className="h-4 w-4" />,
       accentColor: '#f59e0b',
     },
     {
       id: 'prs-status',
-      label: 'Flux PRS',
+      label: t('reports.executive.metrics.prsFlow'),
       value: remotePrsStatusLabel,
-      helper: activeReportTab === 'prs' ? 'État du rapport PRS distant pour la période courante.' : 'Le statut PRS reste visible sans changer d’onglet.',
+      helper: activeReportTab === 'prs'
+        ? t('reports.executive.metrics.prsFlowActive')
+        : t('reports.executive.metrics.prsFlowPassive'),
       icon: <RefreshCcw className="h-4 w-4" />,
       accentColor: '#7c3aed',
     },
@@ -1724,9 +1730,9 @@ export function Reportes() {
         )}
 
         <ModuleExecutiveStrip
-          eyebrow="Centre de commandement"
-          title="Rapports prioritaires et export rapide"
-          description="Passez d'une vue à l'autre, verrouillez la période utile et déclenchez les exports clés sans quitter l'espace analytique."
+          eyebrow={t('reports.executive.eyebrow')}
+          title={t('reports.executive.title')}
+          description={t('reports.executive.description')}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
           metrics={reportsExecutiveMetrics}
@@ -1735,23 +1741,23 @@ export function Reportes() {
             <>
               <Button variant="outline" onClick={() => setActiveReportTab('general')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <BarChart3 className="mr-2 h-4 w-4" />
-                Vue générale
+                {t('reports.executive.actions.general')}
               </Button>
               <Button variant="outline" onClick={() => setActiveReportTab('operaciones')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <Shield className="mr-2 h-4 w-4" />
-                Opérations
+                {t('reports.executive.actions.operations')}
               </Button>
               <Button variant="outline" onClick={() => setActiveReportTab('inventario')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <FileText className="mr-2 h-4 w-4" />
-                Inventaire
+                {t('reports.executive.actions.inventory')}
               </Button>
               <Button variant="outline" onClick={() => handleApplyDatePreset('last30days')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <RefreshCcw className="mr-2 h-4 w-4" />
-                30 derniers jours
+                {t('reports.executive.actions.last30days')}
               </Button>
               <Button onClick={() => void handleGenerarReporte('pdf')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
                 <Download className="mr-2 h-4 w-4" />
-                Export PDF
+                {t('reports.exportPDF')}
               </Button>
             </>
           )}
@@ -1771,7 +1777,7 @@ export function Reportes() {
                       </h1>
                     )}
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
-                      {usesPageDateRange ? 'Période de la vue' : 'Export de la vue'}
+                      {usesPageDateRange ? t('reports.executive.viewPeriod') : t('reports.executive.viewExport')}
                     </p>
                     <p className={`${showCompactReportsOverview ? 'text-[11px]' : 'text-sm'} text-gray-600 mt-1`}>
                       {exportContextDescription}

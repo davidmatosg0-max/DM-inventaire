@@ -2444,12 +2444,12 @@ export function Inventario() {
   }, []);
 
   const inventoryTabLabels: Record<string, string> = {
-    productos: 'Produits',
-    movimientos: 'Mouvements',
-    conversions: 'Conversions',
-    entradas: 'Entrées',
-    validacion: 'Validation',
-    prediccion: 'Prévision',
+    productos: t('inventory.executive.tabs.products'),
+    movimientos: t('inventory.executive.tabs.movements'),
+    conversions: t('inventory.executive.tabs.conversions'),
+    entradas: t('inventory.executive.tabs.entries'),
+    validacion: t('inventory.executive.tabs.validation'),
+    prediccion: t('inventory.executive.tabs.forecast'),
   };
 
   const reservedProductsCount = Object.values(reservasInventario).filter((resumen) => (resumen?.totalReservado ?? 0) > 0).length;
@@ -2457,33 +2457,39 @@ export function Inventario() {
   const inventoryExecutiveMetrics = [
     {
       id: 'active-tab',
-      label: 'Vue active',
-      value: inventoryTabLabels[activeTab] || 'Produits',
-      helper: 'Le module garde votre contexte actif pour enchaîner les opérations.',
+      label: t('inventory.executive.metrics.activeView'),
+      value: inventoryTabLabels[activeTab] || t('inventory.executive.tabs.products'),
+      helper: t('inventory.executive.metrics.activeViewHelper'),
       icon: <Package className="h-4 w-4" />,
       accentColor: branding.primaryColor,
     },
     {
       id: 'low-stock',
-      label: 'Stock critique',
+      label: t('inventory.executive.metrics.lowStock'),
       value: compactLowStockProducts.length,
-      helper: compactLowStockProducts.length > 0 ? 'Produits sous seuil minimum à traiter rapidement.' : 'Aucune alerte critique détectée actuellement.',
+      helper: compactLowStockProducts.length > 0
+        ? t('inventory.executive.metrics.lowStockAlert')
+        : t('inventory.executive.metrics.lowStockClear'),
       icon: <CheckSquare className="h-4 w-4" />,
       accentColor: '#c23934',
     },
     {
       id: 'reserved',
-      label: 'Réservations',
+      label: t('inventory.executive.metrics.reservations'),
       value: reservedProductsCount,
-      helper: reservedProductsCount > 0 ? 'Produits actuellement réservés pour des commandes actives.' : 'Aucune réservation en attente.',
+      helper: reservedProductsCount > 0
+        ? t('inventory.executive.metrics.reservationsActive')
+        : t('inventory.executive.metrics.reservationsClear'),
       icon: <ShoppingCart className="h-4 w-4" />,
       accentColor: '#e8a419',
     },
     {
       id: 'group-distribution',
-      label: 'Distribution ancrée',
+      label: t('inventory.executive.metrics.anchoredDistribution'),
       value: ultimaDistribucionGrupoCreada ? ultimaDistribucionGrupoCreada.comandas.length : 0,
-      helper: ultimaDistribucionGrupoCreada ? ultimaDistribucionGrupoCreada.grupoDistribucionEtiqueta : 'Aucune distribution de groupe récente mémorisée.',
+      helper: ultimaDistribucionGrupoCreada
+        ? ultimaDistribucionGrupoCreada.grupoDistribucionEtiqueta
+        : t('inventory.executive.metrics.anchoredDistributionEmpty'),
       icon: <History className="h-4 w-4" />,
       accentColor: branding.secondaryColor,
     },
@@ -2507,19 +2513,19 @@ export function Inventario() {
                 variant="outline"
                 onClick={() => navigateToModule('reportes')}
                 className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 shrink-0 w-full sm:w-auto"
-                title="Ouvrir le module Rapports"
+                title={t('inventory.executive.openReportsModule')}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Module Rapports</span>
-                <span className="sm:hidden">Rapports</span>
+                <span className="hidden sm:inline">{t('inventory.executive.reportsModule')}</span>
+                <span className="sm:hidden">{t('nav.reports')}</span>
               </Button>
             )}
           />
 
           <ModuleExecutiveStrip
-            eyebrow="Pilotage opérationnel"
-            title="Console d'action Entrepôt"
-            description="Gardez les signaux critiques, l'onglet actif et les accès rapides au même endroit pour piloter l'inventaire sans changer de contexte."
+            eyebrow={t('inventory.executive.eyebrow')}
+            title={t('inventory.executive.title')}
+            description={t('inventory.executive.description')}
             accentColor={branding.primaryColor}
             secondaryColor={branding.secondaryColor}
             metrics={inventoryExecutiveMetrics}
@@ -2527,19 +2533,19 @@ export function Inventario() {
               <>
                 <Button variant="outline" onClick={() => setActiveTab('productos')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                   <Package className="mr-2 h-4 w-4" />
-                  Produits
+                  {t('inventory.executive.actions.products')}
                 </Button>
                 <Button variant="outline" onClick={() => setActiveTab('entradas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                   <History className="mr-2 h-4 w-4" />
-                  Entrées
+                  {t('inventory.executive.actions.entries')}
                 </Button>
                 <Button variant="outline" onClick={() => setActiveTab('validacion')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                   <CheckSquare className="mr-2 h-4 w-4" />
-                  Validation
+                  {t('inventory.executive.actions.validation')}
                 </Button>
                 <Button onClick={() => setActiveTab('prediccion')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Prévision
+                  {t('inventory.executive.actions.forecast')}
                 </Button>
               </>
             )}
@@ -2560,7 +2566,7 @@ export function Inventario() {
               accentColor={branding.primaryColor}
             />
             <ModuleStatCard
-              label="Sous-catégories"
+              label={t('inventory.subcategories')}
               value={subcategoriasInventario.length}
               icon={<Grid3x3 className="h-4 w-4 text-white" />}
               accentColor={branding.secondaryColor}

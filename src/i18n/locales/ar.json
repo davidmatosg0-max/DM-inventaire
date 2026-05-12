@@ -511,6 +511,95 @@
         "noDataToExport": "لا توجد بيانات تقرير متاحة للتصدير",
         "exportGenerated": "تم إنشاء تقرير CSV مع {{count}} صف/صفوف ملخصة"
       }
+    },
+    "candidateForm": {
+      "createTitle": "تسجيل ترشيح جديد",
+      "editTitle": "تعديل الترشيح",
+      "createDescription": "نموذج تسجيل ترشيح جديد",
+      "editDescription": "تعديل معلومات الترشيح",
+      "emptyTypeTitle": "لا يوجد نوع ترشيح مُنشأ",
+      "emptyTypeDescription": "النظام فارغ. أنشئ أول أنواع الترشيح للبدء.",
+      "createTypeButtonLabel": "إنشاء أنواع",
+      "photoLabel": "الصورة",
+      "typeLabel": "النوع",
+      "contactTypeLabel": "نوع الترشيح *",
+      "tabBase": "الأساسي",
+      "tabContact": "الاتصال",
+      "tabProfessional": "المهني",
+      "tabOther": "أخرى",
+      "genderPlaceholder": "اختر",
+      "genderMale": "ذكر",
+      "genderFemale": "أنثى",
+      "genderOther": "آخر",
+      "genderUnspecified": "غير محدد",
+      "firstNameLabel": "الاسم الأول *",
+      "lastNameLabel": "اسم العائلة *",
+      "birthDateLabel": "تاريخ الميلاد",
+      "genderLabel": "الجنس",
+      "startDateLabel": "تاريخ البدء",
+      "spokenLanguagesLabel": "اللغات المتحدث بها",
+      "languageSelectorAddButtonLabel": "إضافة",
+      "languageFrench": "الفرنسية",
+      "languageArabic": "العربية",
+      "languageEnglish": "الإنجليزية",
+      "languageSpanish": "الإسبانية",
+      "autoAssignedDepartmentLabel": "القسم المعيّن تلقائياً:",
+      "ethicsSectionTitle": "السجل القضائي والأخلاقيات",
+      "confirmationDateLabel": "تاريخ التأكيد",
+      "ethicsCodeSignedLabel": "تم توقيع ميثاق الأخلاقيات",
+      "ethicsUnspecifiedLabel": "غير محدد",
+      "cancelButtonLabel": "إلغاء",
+      "saveButtonLabel": "حفظ",
+      "updateButtonLabel": "تحديث"
+    },
+    "assignmentDialog": {
+      "modifyTitle": "تعديل إسناد القسم",
+      "assignTitle": "إسناد إلى القسم",
+      "modifyDescription": "اختر القسم الحالي ثم القسم الجديد الوجهة",
+      "assignDescription": "اختر القسم الذي سيُسند إليه المرشح كمتطوع",
+      "selectedCandidate": "المرشح المحدد",
+      "currentDepartmentToModify": "القسم الحالي المراد تعديله",
+      "selectCurrentDepartment": "اختر القسم الحالي",
+      "newDepartment": "قسم جديد",
+      "selectDepartment": "اختر القسم",
+      "currentDepartment": "القسم الحالي",
+      "alreadyAssigned": "مُسند بالفعل",
+      "cancel": "إلغاء",
+      "modifyAssignment": "تعديل الإسناد",
+      "assignToDepartment": "إسناد إلى القسم",
+      "currentDepartmentTitle": "القسم الحالي: {{department}}",
+      "alreadyAssignedTitle": "مُسند بالفعل إلى القسم {{department}}",
+      "assignDepartmentTitle": "إسناد إلى القسم {{department}}",
+      "fields": {
+        "name": "الاسم",
+        "position": "المنصب",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "availability": "التوفر"
+      }
+    },
+    "mockData": {
+      "positions": {
+        "distributionVolunteer": "متطوع - التوزيع",
+        "volunteerCoordinator": "منسق متطوعين",
+        "volunteerDriver": "سائق متطوع",
+        "kitchenVolunteer": "متطوع - المطبخ",
+        "warehouseVolunteer": "متطوع - المستودع"
+      },
+      "availability": {
+        "mondayWednesdayFriday": "الاثنين، الأربعاء، الجمعة",
+        "fullTime": "دوام كامل",
+        "tuesdayThursday": "الثلاثاء، الخميس",
+        "wednesdayFridaySaturday": "الأربعاء، الجمعة، السبت",
+        "flexible": "مرن"
+      },
+      "experience": {
+        "communityServiceTwoYears": "سنتان من الخبرة في الخدمة المجتمعية",
+        "teamManagementFiveYears": "5 سنوات من الخبرة في إدارة الفرق",
+        "professionalDriverThreeYears": "3 سنوات كسائق محترف",
+        "culinaryArtsGraduate": "خريجة فنون الطهي",
+        "logisticsOneYear": "سنة واحدة من الخبرة في اللوجستيات"
+      }
     }
   },
   "experience": {
@@ -540,13 +629,42 @@
     "users": "المستخدمين/الأدوار",
     "contacts": "جهات الاتصال",
     "liaison": "الاتصال",
-    "digitalID": "Comptoir",
+    "digitalID": "المنضدة",
     "branding": "لوحة العلامة التجارية",
+    "purchase": "المشتريات",
+    "messaging": "المراسلة",
+    "wasteComposting": "النفايات والتسميد",
+    "partnersSuppliers": "الشركاء والموردون",
+    "warehouseDirectory": "دليل المستودع",
+    "visualIdentity": "الهوية البصرية",
+    "apiIntegrations": "واجهات API والتكاملات",
     "configuration": "الإعدادات",
     "settings": "الإعدادات",
     "organismAccess": "دخول المنظمات",
     "recruitment": "التوظيف",
     "logout": "تسجيل الخروج"
+  },
+  "layout": {
+    "shellBadges": {
+      "operationsSuite": "منظومة تشغيلية",
+      "realTime": "وقت فعلي",
+      "secure": "آمن"
+    },
+    "professionalEnvironment": "بيئة احترافية",
+    "unifiedManagementPlatform": "منصة إدارة موحدة",
+    "mainNavigation": "التنقل الرئيسي",
+    "structuredByBusinessFunction": "وصول منظم حسب الوظيفة التشغيلية",
+    "activeModule": "الوحدة النشطة",
+    "activeWorkspace": "مساحة العمل النشطة",
+    "professionalInterface": "واجهة احترافية",
+    "unifiedJourneys": "مسارات موحدة",
+    "sections": {
+      "overview": "نظرة عامة",
+      "operations": "العمليات",
+      "coordination": "التنسيق",
+      "administration": "الإدارة",
+      "advanced": "أدوات متقدمة"
+    }
   },
   "fab": {
     "helpAndSupport": "المساعدة والدعم",
@@ -596,6 +714,40 @@
   "inventory": {
     "title": "إدارة المخزون",
     "subtitle": "تحكم كامل في المنتجات والحركات",
+    "subcategories": "الفئات الفرعية",
+    "executive": {
+      "eyebrow": "قيادة تشغيلية",
+      "title": "لوحة إجراءات المستودع",
+      "description": "اجمع الإشارات الحرجة والتبويب النشط ونقاط الوصول السريع في مكان واحد لإدارة المخزون من دون فقدان السياق.",
+      "openReportsModule": "فتح وحدة التقارير",
+      "reportsModule": "وحدة التقارير",
+      "tabs": {
+        "products": "المنتجات",
+        "movements": "الحركات",
+        "conversions": "التحويلات",
+        "entries": "الإدخالات",
+        "validation": "التحقق",
+        "forecast": "التوقع"
+      },
+      "metrics": {
+        "activeView": "العرض النشط",
+        "activeViewHelper": "تحافظ الوحدة على سياقك الحالي لتسلسل العمليات.",
+        "lowStock": "مخزون حرج",
+        "lowStockAlert": "منتجات دون الحد الأدنى وتحتاج إلى معالجة سريعة.",
+        "lowStockClear": "لا توجد أي إشارة حرجة حالياً.",
+        "reservations": "الحجوزات",
+        "reservationsActive": "منتجات محجوزة حالياً لطلبات نشطة.",
+        "reservationsClear": "لا توجد حجوزات معلقة.",
+        "anchoredDistribution": "توزيع مثبت",
+        "anchoredDistributionEmpty": "لا توجد أي عملية توزيع جماعي حديثة محفوظة."
+      },
+      "actions": {
+        "products": "المنتجات",
+        "entries": "الإدخالات",
+        "validation": "التحقق",
+        "forecast": "التوقع"
+      }
+    },
     "entryHistory": "سجل المدخلات",
     "movementsPanel": {
       "totalMovements": "إجمالي الحركات",
@@ -1394,6 +1546,32 @@
     "activeOrders": "الطلبات النشطة",
     "pendingOrders": "الطلبات المعلقة",
     "completedOrders": "الطلبات المكتملة",
+    "acceptedOrders": "الطلبات المقبولة",
+    "executive": {
+      "eyebrow": "قيادة التوزيع",
+      "title": "لوحة الطلبات السريعة",
+      "description": "اجمع الطلبات المعلقة ومداخل التوزيع وتدفقات التحكم السريعة من دون مغادرة العرض التشغيلي.",
+      "metrics": {
+        "activeView": "العرض النشط",
+        "ordersHelper": "متابعة مكثفة للحالات وإجراءات التوزيع.",
+        "offersHelper": "إدارة العروض والطلبات المرتبطة بها.",
+        "pending": "معلق",
+        "pendingBusy": "لا تزال بعض الطلبات تنتظر التأكيد أو المعالجة.",
+        "pendingClear": "لا يوجد طلب معلق بشكل فوري.",
+        "distributable": "جاهز للتوزيع",
+        "distributableHelper": "الحجم المتاح داخل قائمة التوزيع المصفاة.",
+        "offerRequests": "طلبات العروض",
+        "offerRequestsActive": "{{count}} عرض/عروض بطلبات نشطة.",
+        "offerRequestsIdle": "لا توجد طلبات نشطة على العروض الظاهرة."
+      },
+      "actions": {
+        "orders": "الطلبات",
+        "distributedList": "القائمة الموزعة",
+        "notifications": "الإشعارات",
+        "offers": "العروض",
+        "qrScanner": "ماسح QR"
+      }
+    },
     "viewOrder": "عرض الطلب",
     "editOrder": "تعديل الطلب",
     "printOrder": "طباعة الطلب",
@@ -2010,6 +2188,33 @@
     "selectDriver": "اختر سائق",
     "selectVehicle": "اختر مركبة",
     "drivers": "السائقون",
+    "executive": {
+      "eyebrow": "قيادة لوجستية",
+      "title": "نقل تشغيلي ووصول مباشر",
+      "description": "أطلق إضافة مركبة أو سائق بنقرة واحدة وانتقل مباشرة إلى التحقق أو التخطيط من دون فقدان سير العمل اللوجستي.",
+      "tabs": {
+        "routes": "المسارات",
+        "vehicles": "المركبات",
+        "drivers": "السائقون",
+        "verification": "التحقق"
+      },
+      "metrics": {
+        "activeView": "العرض النشط",
+        "activeViewHelper": "يبقى التدفق مركزاً على كتلة النقل التي تتم إدارتها حالياً.",
+        "toLaunch": "قيد الإطلاق",
+        "toLaunchHelper": "مسارات مخططة بانتظار الانطلاق.",
+        "fleet": "الأسطول",
+        "fleetHelper": "المركبات المتاحة داخل وحدة النقل.",
+        "drivers": "السائقون",
+        "driversHelper": "السائقون المسجلون حالياً في الوحدة."
+      },
+      "actions": {
+        "routes": "المسارات",
+        "newVehicle": "مركبة جديدة",
+        "newDriver": "سائق جديد",
+        "verification": "التحقق"
+      }
+    },
     "driversManagement": {
       "title": "إدارة السائقين",
       "totalDrivers": "إجمالي السائقين",
@@ -2288,6 +2493,47 @@
     "lastMonth": "الشهر الماضي",
     "thisYear": "هذا العام",
     "lastYear": "العام الماضي",
+    "executive": {
+      "eyebrow": "مركز القيادة",
+      "title": "تقارير ذات أولوية وتصدير سريع",
+      "description": "انتقل بين العروض المختلفة، وثبّت الفترة المفيدة، واطلق عمليات التصدير الرئيسية من دون مغادرة المساحة التحليلية.",
+      "viewPeriod": "فترة العرض",
+      "viewExport": "تصدير العرض",
+      "tabs": {
+        "general": "نظرة عامة",
+        "operations": "العمليات",
+        "inventory": "المخزون",
+        "orders": "الطلبات",
+        "audit": "التدقيق"
+      },
+      "prsStatus": {
+        "idle": "بانتظار",
+        "loading": "جاري المزامنة",
+        "ready": "متاح",
+        "unavailable": "غير متاح",
+        "error": "خطأ"
+      },
+      "metrics": {
+        "activeView": "العرض النشط",
+        "exportableType": "نوع قابل للتصدير: {{type}}",
+        "localExports": "هذا العرض يدير صادراته محلياً.",
+        "period": "الفترة",
+        "invalidRange": "بحاجة إلى تصحيح",
+        "periodReady": "تستخدم الرسوم البيانية وعمليات التصدير هذا النطاق.",
+        "periodInvalid": "حدّد نطاق تواريخ صالحاً.",
+        "activeEntries": "الإدخالات النشطة",
+        "activeEntriesHelper": "قاعدة تشغيلية مستخدمة في العرض العام وعرض المخزون.",
+        "prsFlow": "تدفق PRS",
+        "prsFlowActive": "حالة تقرير PRS البعيد للفترة الحالية.",
+        "prsFlowPassive": "تظل حالة PRS مرئية من دون تغيير علامة التبويب."
+      },
+      "actions": {
+        "general": "نظرة عامة",
+        "operations": "العمليات",
+        "inventory": "المخزون",
+        "last30days": "آخر 30 يوماً"
+      }
+    },
     "donors": "المتبرعون",
     "programs": "البرامج",
     "totalEntries": "الإدخالات",
@@ -2614,11 +2860,11 @@
     "detailComponentInDevelopment": "مكون التفاصيل قيد التطوير"
   },
   "digitalID": {
-    "title": "Comptoir",
-    "beneficiaryIDTitle": "Comptoir للمستفيدين",
+    "title": "المنضدة",
+    "beneficiaryIDTitle": "منضدة المستفيدين",
     "subtitle": "نظام تحديد الهوية الرقمية مع رمز QR",
-    "createID": "إنشاء Comptoir",
-    "generateNewID": "إنشاء Comptoir جديد",
+    "createID": "إنشاء منضدة",
+    "generateNewID": "إنشاء منضدة جديدة",
     "organism": "المنظمة",
     "selectOrganism": "اختر المنظمة",
     "beneficiaryName": "اسم المستفيد",
@@ -3362,7 +3608,7 @@
     "selectWorkDays": "اختر أيام وجداول العمل",
     "cancel": "إلغاء",
     "save": "حفظ",
-    "digitalID": "Comptoir",
+    "digitalID": "المنضدة",
     "manageDepartments": "إدارة الأقسام",
     "addDepartment": "إضافة قسم",
     "departmentName": "اسم القسم",
@@ -4190,6 +4436,38 @@
     "totalOrganisms": "إجمالي المؤسسات",
     "activeOrganisms": "المؤسسات النشطة",
     "totalBeneficiaries": "إجمالي المستفيدين",
+    "organismRequests": "طلبات المؤسسات",
+    "groupEmail": "بريد جماعي",
+    "hideStats": "إخفاء الإحصاءات",
+    "showStats": "إظهار الإحصاءات",
+    "liaisonAdministrator": "مسؤول الاتصال",
+    "readOnlyAccess": "وصول للقراءة فقط",
+    "noConnectedUser": "لا يوجد مستخدم متصل",
+    "onlyLiaisonAdmins": "يمكن فقط لمسؤولي الاتصال إنشاء المؤسسات",
+    "accessDenied": "تم رفض الوصول",
+    "accessDeniedDescription": "يمكن فقط لمسؤولي الاتصال إنشاء المؤسسات.",
+    "executive": {
+      "eyebrow": "تنسيق ذو أولوية",
+      "title": "اتصال نشط ومتابعة فورية ووصول سريع",
+      "description": "احتفظ بعرض العمل والطلبات الجديدة وأدوات التواصل الرئيسية في متناول اليد لتسريع التنسيق مع المؤسسات.",
+      "metrics": {
+        "activeView": "العرض النشط",
+        "liaisonHelper": "تنسيق مع المؤسسات ومتابعة التبادلات.",
+        "contactsHelper": "دليل تشغيلي لجهات الاتصال حسب القسم.",
+        "newRequests": "طلبات جديدة",
+        "newRequestsPending": "هناك طلبات حديثة بانتظار المراجعة.",
+        "newRequestsClear": "لا توجد طلبات جديدة للمعالجة حالياً.",
+        "stats": "إحصاءات",
+        "visible": "مرئية",
+        "hidden": "مخفية",
+        "statsHelper": "يمكن التحكم في اتجاهات النمو وعمليات التصدير من هنا.",
+        "accessLevel": "مستوى الوصول",
+        "administration": "إدارة",
+        "readOnly": "قراءة فقط",
+        "administrationHelper": "يُسمح بإنشاء المؤسسات وتحديثها.",
+        "readOnlyHelper": "المعاينة والتواصل متاحان من دون تعديل."
+      }
+    },
     "searchPlaceholder": "🔍 البحث عن مؤسسة بالاسم أو المسؤول...",
     "noOrganismsFound": "🔍 لم يتم العثور على مؤسسات",
     "tryOtherSearchTerms": "حاول استخدام مصطلحات بحث أخرى",

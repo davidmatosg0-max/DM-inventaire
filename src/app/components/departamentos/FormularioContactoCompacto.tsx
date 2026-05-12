@@ -168,6 +168,37 @@ interface FormularioContactoCompactoProps {
     emptyTypeTitle?: string;
     emptyTypeDescription?: string;
     createTypeButtonLabel?: string;
+    photoLabel?: string;
+    typeLabel?: string;
+    contactTypeLabel?: string;
+    tabBase?: string;
+    tabContact?: string;
+    tabProfessional?: string;
+    tabOther?: string;
+    genderPlaceholder?: string;
+    genderMale?: string;
+    genderFemale?: string;
+    genderOther?: string;
+    genderUnspecified?: string;
+    firstNameLabel?: string;
+    lastNameLabel?: string;
+    birthDateLabel?: string;
+    genderLabel?: string;
+    startDateLabel?: string;
+    spokenLanguagesLabel?: string;
+    languageSelectorAddButtonLabel?: string;
+    languageFrench?: string;
+    languageArabic?: string;
+    languageEnglish?: string;
+    languageSpanish?: string;
+    autoAssignedDepartmentLabel?: string;
+    ethicsSectionTitle?: string;
+    confirmationDateLabel?: string;
+    ethicsCodeSignedLabel?: string;
+    ethicsUnspecifiedLabel?: string;
+    cancelButtonLabel?: string;
+    saveButtonLabel?: string;
+    updateButtonLabel?: string;
   };
 }
 
@@ -575,7 +606,9 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
             <div className="flex-none w-full md:w-64 lg:w-72 border-b-2 md:border-b-0 md:border-r-2 border-[#E0E0E0] bg-[#F9FAFB] p-3 sm:p-4 overflow-y-auto max-h-[250px] md:max-h-full">
               {/* Photo de Profil */}
               <div className="mb-4 sm:mb-6">
-                <h4 className="text-xs sm:text-sm font-semibold text-[#666666] mb-2 sm:mb-3 uppercase tracking-wide">Photo</h4>
+                <h4 className="text-xs sm:text-sm font-semibold text-[#666666] mb-2 sm:mb-3 uppercase tracking-wide">
+                  {textOverrides?.photoLabel ?? 'Photo'}
+                </h4>
                 <div className="flex justify-center">
                   <div className="relative">
                     <div 
@@ -611,7 +644,9 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
               {/* Type de Contact */}
               <div>
                 <div className="flex items-center justify-between mb-2 sm:mb-3">
-                  <h4 className="text-xs sm:text-sm font-semibold text-[#666666] uppercase tracking-wide">Type</h4>
+                  <h4 className="text-xs sm:text-sm font-semibold text-[#666666] uppercase tracking-wide">
+                    {textOverrides?.typeLabel ?? 'Type'}
+                  </h4>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -735,7 +770,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                     <div className="space-y-2">
                       <Label className="text-xs sm:text-sm font-medium flex items-center gap-2">
                         <Building2 className="w-3 h-3 sm:w-4 sm:h-4" style={{ color: branding.primaryColor }} />
-                        Type de Contact *
+                        {textOverrides?.contactTypeLabel ?? 'Type de Contact *'}
                       </Label>
                       <div 
                         className="p-2.5 sm:p-3 border-2 rounded-lg"
@@ -1083,24 +1118,24 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                   <TabsList className="w-full justify-start rounded-none border-b bg-[#F9FAFB] px-3 sm:px-4 md:px-6 py-0 h-10 sm:h-12 overflow-x-auto">
                     <TabsTrigger value="base" className="data-[state=active]:border-b-2 text-xs sm:text-sm" style={{ borderColor: branding.primaryColor }}>
                       <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      Base
+                      {textOverrides?.tabBase ?? 'Base'}
                     </TabsTrigger>
                     <TabsTrigger value="contact" className="data-[state=active]:border-b-2 text-xs sm:text-sm" style={{ borderColor: branding.primaryColor }}>
                       <Phone className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      Contact
+                      {textOverrides?.tabContact ?? 'Contact'}
                     </TabsTrigger>
                     {/* Ocultar pestaña Professionnel para Donador */}
                     {mostrarPestana('pro') && (
                       <TabsTrigger value="pro" className="data-[state=active]:border-b-2 text-xs sm:text-sm" style={{ borderColor: branding.primaryColor }}>
                         <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                        Professionnel
+                        {textOverrides?.tabProfessional ?? 'Professionnel'}
                       </TabsTrigger>
                     )}
                     {/* Ocultar pestaña Autres para Donador */}
                     {mostrarPestana('autres') && (
                       <TabsTrigger value="autres" className="data-[state=active]:border-b-2 text-xs sm:text-sm" style={{ borderColor: branding.primaryColor }}>
                         <SettingsIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                        Autres
+                        {textOverrides?.tabOther ?? 'Autres'}
                       </TabsTrigger>
                     )}
                   </TabsList>
@@ -1110,7 +1145,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                   <div className="max-w-full sm:max-w-2xl lg:max-w-4xl space-y-3 sm:space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
-                        <Label htmlFor="nombre" className="text-xs">Prénom *</Label>
+                        <Label htmlFor="nombre" className="text-xs">{textOverrides?.firstNameLabel ?? 'Prénom *'}</Label>
                         <Input
                           id="nombre"
                           value={formulario.nombre}
@@ -1120,7 +1155,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                         />
                       </div>
                       <div>
-                        <Label htmlFor="apellido" className="text-xs">Nom de famille *</Label>
+                        <Label htmlFor="apellido" className="text-xs">{textOverrides?.lastNameLabel ?? 'Nom de famille *'}</Label>
                         <Input
                           id="apellido"
                           value={formulario.apellido}
@@ -1135,7 +1170,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                       {/* Ocultar fecha de nacimiento y género para donadores y proveedores (son empresas) */}
                       {formulario.tipo !== 'donador' && formulario.tipo !== 'fournisseur' && (
                         <div>
-                          <Label htmlFor="fechaNacimiento" className="text-xs">Date de Naissance</Label>
+                          <Label htmlFor="fechaNacimiento" className="text-xs">{textOverrides?.birthDateLabel ?? 'Date de Naissance'}</Label>
                           <Input
                             id="fechaNacimiento"
                             type="date"
@@ -1151,25 +1186,25 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                       {/* Ocultar género para donadores y proveedores (son empresas) */}
                       {formulario.tipo !== 'donador' && formulario.tipo !== 'fournisseur' && (
                         <div>
-                          <Label htmlFor="genero" className="text-xs">Genre</Label>
+                          <Label htmlFor="genero" className="text-xs">{textOverrides?.genderLabel ?? 'Genre'}</Label>
                           <Select
-                            value={formulario.genero || 'Non spécifié'}
+                            value={formulario.genero || (textOverrides?.genderUnspecified ?? 'Non spécifié')}
                             onValueChange={(value) => setFormulario({ ...formulario, genero: value as GeneroContacto })}
                           >
                             <SelectTrigger id="genero" className="h-9">
-                              <SelectValue placeholder="Sélectionner" />
+                              <SelectValue placeholder={textOverrides?.genderPlaceholder ?? 'Sélectionner'} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Homme">Homme</SelectItem>
-                              <SelectItem value="Femme">Femme</SelectItem>
-                              <SelectItem value="Autre">Autre</SelectItem>
-                              <SelectItem value="Non spécifié">Non spécifié</SelectItem>
+                              <SelectItem value="Homme">{textOverrides?.genderMale ?? 'Homme'}</SelectItem>
+                              <SelectItem value="Femme">{textOverrides?.genderFemale ?? 'Femme'}</SelectItem>
+                              <SelectItem value="Autre">{textOverrides?.genderOther ?? 'Autre'}</SelectItem>
+                              <SelectItem value="Non spécifié">{textOverrides?.genderUnspecified ?? 'Non spécifié'}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       )}
                       <div>
-                        <Label htmlFor="fechaInicio" className="text-xs">Date de Début</Label>
+                        <Label htmlFor="fechaInicio" className="text-xs">{textOverrides?.startDateLabel ?? 'Date de Début'}</Label>
                         <Input
                           id="fechaInicio"
                           type="date"
@@ -1184,15 +1219,17 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                     </div>
 
                     <div>
-                      <Label className="text-xs mb-2 block">Langues parlées</Label>
+                      <Label className="text-xs mb-2 block">{textOverrides?.spokenLanguagesLabel ?? 'Langues parlées'}</Label>
                       <LanguageSelector
                         selectedLanguages={formulario.idiomas || []}
                         onChange={(idiomas) => setFormulario({ ...formulario, idiomas })}
+                        label={textOverrides?.spokenLanguagesLabel}
+                        addButtonLabel={textOverrides?.languageSelectorAddButtonLabel}
                         predefinedLanguages={[
-                          { code: 'fr', label: 'Français', flag: '🇫🇷', color: branding.primaryColor },
-                          { code: 'ar', label: 'العربية', flag: '🇸🇦', color: '#F59E0B' },
-                          { code: 'en', label: 'English', flag: '🇬🇧', color: branding.secondaryColor },
-                          { code: 'es', label: 'Espagnol', flag: '🇪🇸', color: '#8B5CF6' }
+                          { code: 'fr', label: textOverrides?.languageFrench ?? 'Français', flag: '🇫🇷', color: branding.primaryColor },
+                          { code: 'ar', label: textOverrides?.languageArabic ?? 'العربية', flag: '🇸🇦', color: '#F59E0B' },
+                          { code: 'en', label: textOverrides?.languageEnglish ?? 'English', flag: '🇬🇧', color: branding.secondaryColor },
+                          { code: 'es', label: textOverrides?.languageSpanish ?? 'Espagnol', flag: '🇪🇸', color: '#8B5CF6' }
                         ]}
                       />
                     </div>
@@ -1203,7 +1240,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                         <Building2 className="w-5 h-5" style={{ color: branding.primaryColor }} />
                         <div className="flex-1">
                           <p className="text-xs font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                            Département assigné automatiquement:
+                            {textOverrides?.autoAssignedDepartmentLabel ?? 'Département assigné automatiquement:'}
                           </p>
                           <p className="text-sm font-bold mt-1" style={{ color: branding.primaryColor, fontFamily: 'Montserrat, sans-serif' }}>
                             {departamentoNombre}
@@ -1302,13 +1339,13 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                           style={{ backgroundColor: branding.primaryColor }}
                         ></div>
                         <h3 className="text-base font-semibold text-[#333333]">
-                          Casier Judiciaire et Éthique
+                          {textOverrides?.ethicsSectionTitle ?? 'Casier Judiciaire et Éthique'}
                         </h3>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="fechaConfirmacionCasier" className="text-xs">Date de Confirmation</Label>
+                          <Label htmlFor="fechaConfirmacionCasier" className="text-xs">{textOverrides?.confirmationDateLabel ?? 'Date de Confirmation'}</Label>
                           <Input
                             id="fechaConfirmacionCasier"
                             type="date"
@@ -1321,7 +1358,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                           />
                         </div>
                         <div>
-                          <Label htmlFor="codigoEthiqueSigne" className="text-xs mb-2 block">Code d'Éthique Signé</Label>
+                          <Label htmlFor="codigoEthiqueSigne" className="text-xs mb-2 block">{textOverrides?.ethicsCodeSignedLabel ?? "Code d'Éthique Signé"}</Label>
                           <Select
                             value={formulario.codigoEthiqueSigne === true ? 'oui' : formulario.codigoEthiqueSigne === false ? 'non' : 'non-specifie'}
                             onValueChange={(value) => {
@@ -1350,7 +1387,7 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                               </SelectItem>
                               <SelectItem value="non-specifie">
                                 <span className="flex items-center gap-2">
-                                  <span className="text-gray-400">—</span> Non spécifié
+                                  <span className="text-gray-400">—</span> {textOverrides?.ethicsUnspecifiedLabel ?? 'Non spécifié'}
                                 </span>
                               </SelectItem>
                             </SelectContent>
@@ -1836,14 +1873,16 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
               onClick={onCerrar}
               className="w-full sm:w-auto h-9 sm:h-10 text-sm sm:text-base"
             >
-              Annuler
+              {textOverrides?.cancelButtonLabel ?? 'Annuler'}
             </Button>
             <Button
               onClick={onGuardar}
               className="w-full sm:w-auto text-white h-9 sm:h-10 text-sm sm:text-base"
               style={{ backgroundColor: branding.secondaryColor }}
             >
-              {modoEdicion ? 'Mettre à jour' : 'Enregistrer'}
+              {modoEdicion
+                ? (textOverrides?.updateButtonLabel ?? 'Mettre à jour')
+                : (textOverrides?.saveButtonLabel ?? 'Enregistrer')}
             </Button>
           </div>
         </div>

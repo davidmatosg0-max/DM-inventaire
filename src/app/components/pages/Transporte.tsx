@@ -98,10 +98,10 @@ export function Transporte() {
   }, []);
 
   const transportTabLabels: Record<string, string> = {
-    rutas: 'Itinéraires',
-    vehiculos: 'Véhicules',
-    choferes: 'Chauffeurs',
-    verificacion: 'Vérification',
+    rutas: t('transport.executive.tabs.routes'),
+    vehiculos: t('transport.executive.tabs.vehicles'),
+    choferes: t('transport.executive.tabs.drivers'),
+    verificacion: t('transport.executive.tabs.verification'),
   };
 
   const openTransportQuickAction = (tab: string, eventName?: string) => {
@@ -117,33 +117,33 @@ export function Transporte() {
   const transportExecutiveMetrics = [
     {
       id: 'active-view',
-      label: 'Vue active',
-      value: transportTabLabels[activeTransportTab] || 'Itinéraires',
-      helper: 'Le flux reste centré sur la brique transport actuellement pilotée.',
+      label: t('transport.executive.metrics.activeView'),
+      value: transportTabLabels[activeTransportTab] || t('transport.executive.tabs.routes'),
+      helper: t('transport.executive.metrics.activeViewHelper'),
       icon: <MapPin className="h-4 w-4" />,
       accentColor: branding.primaryColor,
     },
     {
       id: 'planned-routes',
-      label: 'À lancer',
+      label: t('transport.executive.metrics.toLaunch'),
       value: resumen.rutasPlanificadas,
-      helper: 'Itinéraires planifiés en attente de départ.',
+      helper: t('transport.executive.metrics.toLaunchHelper'),
       icon: <Clock className="h-4 w-4" />,
       accentColor: '#f59e0b',
     },
     {
       id: 'fleet',
-      label: 'Flotte',
+      label: t('transport.executive.metrics.fleet'),
       value: resumen.totalVehiculos,
-      helper: 'Véhicules disponibles dans le module transport.',
+      helper: t('transport.executive.metrics.fleetHelper'),
       icon: <Truck className="h-4 w-4" />,
       accentColor: branding.secondaryColor,
     },
     {
       id: 'drivers',
-      label: 'Chauffeurs',
+      label: t('transport.executive.metrics.drivers'),
       value: totalChoferes,
-      helper: 'Conducteurs actuellement enregistrés dans le module.',
+      helper: t('transport.executive.metrics.driversHelper'),
       icon: <CheckCircle className="h-4 w-4" />,
       accentColor: '#7c3aed',
     },
@@ -160,9 +160,9 @@ export function Transporte() {
       />
 
       <ModuleExecutiveStrip
-        eyebrow="Pilotage logistique"
-        title="Transport opérationnel et accès directs"
-        description="Déclenchez l’ajout d’un véhicule ou d’un chauffeur en un clic et basculez immédiatement vers la vérification ou la planification sans perdre le fil logistique."
+        eyebrow={t('transport.executive.eyebrow')}
+        title={t('transport.executive.title')}
+        description={t('transport.executive.description')}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
         metrics={transportExecutiveMetrics}
@@ -170,19 +170,19 @@ export function Transporte() {
           <>
             <Button variant="outline" onClick={() => setActiveTransportTab('rutas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
               <MapPin className="mr-2 h-4 w-4" />
-              Itinéraires
+              {t('transport.executive.actions.routes')}
             </Button>
             <Button variant="outline" onClick={() => openTransportQuickAction('vehiculos', TRANSPORTE_OPEN_VEHICULO_DIALOG_EVENT)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
               <Truck className="mr-2 h-4 w-4" />
-              Nouveau véhicule
+              {t('transport.executive.actions.newVehicle')}
             </Button>
             <Button variant="outline" onClick={() => openTransportQuickAction('choferes', TRANSPORTE_OPEN_CHOFER_DIALOG_EVENT)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
               <CheckCircle className="mr-2 h-4 w-4" />
-              Nouveau chauffeur
+              {t('transport.executive.actions.newDriver')}
             </Button>
             <Button onClick={() => setActiveTransportTab('verificacion')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
               <Clock className="mr-2 h-4 w-4" />
-              Vérification
+              {t('transport.executive.actions.verification')}
             </Button>
           </>
         )}

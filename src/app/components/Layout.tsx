@@ -77,12 +77,6 @@ interface MenuSection {
   itemIds: string[];
 }
 
-const PROFESSIONAL_SHELL_BADGES = [
-  'Suite opérationnelle',
-  'Temps réel',
-  'Sécurisé',
-];
-
 export function Layout({ children, currentPage, onNavigate, onLogout, hideSidebar = false }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [expandedMenus, setExpandedMenus] = React.useState<string[]>([]);
@@ -124,6 +118,12 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const rolTraducido = usuarioActual?.rol
     ? obtenerNombreRol(usuarioActual.rol)
     : 'Utilisateur';
+
+  const professionalShellBadges = [
+    t('layout.shellBadges.operationsSuite'),
+    t('layout.shellBadges.realTime'),
+    t('layout.shellBadges.secure'),
+  ];
   
   // Funciones para drag del botón Guide Complet
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -401,21 +401,21 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
         { id: 'organismos', label: t('nav.organisms'), icon: <Building className="w-4 h-4" /> },
         { id: 'ofertas-organismo', label: t('nav.offers'), icon: <Tags className="w-4 h-4" /> },
         { id: 'transporte', label: t('nav.transport'), icon: <Truck className="w-4 h-4" /> },
-        { id: 'dechets-compostage', label: 'Déchets & compostage', icon: <Recycle className="w-4 h-4" /> },
-        { id: 'donateurs-fournisseurs', label: 'Partenaires & fournisseurs', icon: <Building className="w-4 h-4" /> },
-        { id: 'contactos-almacen', label: 'Annuaire Entrepôt', icon: <Users className="w-4 h-4" /> },
+        { id: 'dechets-compostage', label: t('nav.wasteComposting'), icon: <Recycle className="w-4 h-4" /> },
+        { id: 'donateurs-fournisseurs', label: t('nav.partnersSuppliers'), icon: <Building className="w-4 h-4" /> },
+        { id: 'contactos-almacen', label: t('nav.warehouseDirectory'), icon: <Users className="w-4 h-4" /> },
       ]
     },
     { id: 'cuisine', label: t('common.cuisine'), icon: <ChefHat className="w-5 h-5" /> },
-    { id: 'achat', label: 'Achats', icon: <ShoppingCart className="w-5 h-5" /> },
+    { id: 'achat', label: t('nav.purchase'), icon: <ShoppingCart className="w-5 h-5" /> },
     { id: 'id-digital', label: t('nav.digitalID'), icon: <Scale className="w-5 h-5" /> },
     { id: 'email-organismos', label: t('nav.liaison'), icon: <Users className="w-5 h-5" /> },
-    { id: 'communication', label: 'Messagerie', icon: <MessageSquare className="w-5 h-5" /> },
+    { id: 'communication', label: t('nav.messaging'), icon: <MessageSquare className="w-5 h-5" /> },
     { id: 'recrutement', label: t('nav.recruitment'), icon: <UserPlus className="w-5 h-5" /> },
     { id: 'usuarios', label: t('nav.users'), icon: <Users className="w-5 h-5" /> },
     { id: 'configuracion', label: t('nav.configuration'), icon: <Settings className="w-5 h-5" /> },
-    { id: 'panel-marca', label: 'Identité visuelle', icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
-    { id: 'api-keys', label: 'API & intégrations', icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
+    { id: 'panel-marca', label: t('nav.visualIdentity'), icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
+    { id: 'api-keys', label: t('nav.apiIntegrations'), icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
   ];
 
   const currentMenuItem = React.useMemo(() => {
@@ -437,7 +437,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     return findRecursive(menuItems);
   }, [currentPage, menuItems]);
 
-  const currentWorkspaceLabel = currentMenuItem?.label || 'Tableau de bord';
+  const currentWorkspaceLabel = currentMenuItem?.label || t('nav.mainDashboard');
 
   const entrepotModulePageIds = React.useMemo(
     () => menuItems.find(item => item.id === 'entrepot')?.children?.map(child => child.id) ?? [],
@@ -452,11 +452,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   };
 
   const menuSections: MenuSection[] = [
-    { id: 'overview', label: 'Vue d’ensemble', itemIds: ['dashboard'] },
-    { id: 'operations', label: 'Opérations', itemIds: ['entrepot', 'cuisine', 'achat', 'id-digital'] },
-    { id: 'coordination', label: 'Coordination', itemIds: ['email-organismos', 'communication', 'recrutement'] },
-    { id: 'administration', label: 'Administration', itemIds: ['usuarios', 'configuracion'] },
-    { id: 'advanced', label: 'Outils avancés', itemIds: ['panel-marca', 'api-keys'] },
+    { id: 'overview', label: t('layout.sections.overview'), itemIds: ['dashboard'] },
+    { id: 'operations', label: t('layout.sections.operations'), itemIds: ['entrepot', 'cuisine', 'achat', 'id-digital'] },
+    { id: 'coordination', label: t('layout.sections.coordination'), itemIds: ['email-organismos', 'communication', 'recrutement'] },
+    { id: 'administration', label: t('layout.sections.administration'), itemIds: ['usuarios', 'configuracion'] },
+    { id: 'advanced', label: t('layout.sections.advanced'), itemIds: ['panel-marca', 'api-keys'] },
   ];
 
   // Filtrar menú según permisos
@@ -602,10 +602,10 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
           <div className="mb-3 hidden lg:flex items-center justify-between gap-4 text-white/78">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
               <Zap className="h-3.5 w-3.5 text-white/90" />
-              Environnement Pro
+              {t('layout.professionalEnvironment')}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              {PROFESSIONAL_SHELL_BADGES.map((badge) => (
+              {professionalShellBadges.map((badge) => (
                 <span
                   key={badge}
                   className="rounded-full border border-white/18 bg-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/80 backdrop-blur-md"
@@ -663,7 +663,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                     <span className="rounded-full border border-white/16 bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] backdrop-blur-md" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                       {currentWorkspaceLabel}
                     </span>
-                    <span className="text-xs text-white/70">Plateforme de gestion unifiée</span>
+                    <span className="text-xs text-white/70">{t('layout.unifiedManagementPlatform')}</span>
                   </div>
                 </div>
               </div>
@@ -736,9 +736,9 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-white/72" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                    Navigation principale
+                    {t('layout.mainNavigation')}
                   </p>
-                  <p className="text-xs text-white/60 mt-1">Accès structuré par fonction métier</p>
+                  <p className="text-xs text-white/60 mt-1">{t('layout.structuredByBusinessFunction')}</p>
                 </div>
                 <span className="rounded-full border border-white/14 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-white/78" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                   Pro
@@ -746,7 +746,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               </div>
               <div className="mt-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-white/55" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                  Module actif
+                  {t('layout.activeModule')}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   {currentWorkspaceLabel}
@@ -784,7 +784,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
           <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                Espace de travail actif
+                {t('layout.activeWorkspace')}
               </p>
               <p className="mt-1 text-base font-semibold text-[#16324f]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 {currentWorkspaceLabel}
@@ -792,10 +792,10 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <span className="rounded-full border border-[#16324f]/10 bg-[#16324f]/5 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#16324f]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                Interface professionnelle
+                {t('layout.professionalInterface')}
               </span>
               <span className="rounded-full border border-[#2d9561]/15 bg-[#2d9561]/8 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#267d51]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                Parcours unifiés
+                {t('layout.unifiedJourneys')}
               </span>
             </div>
           </div>

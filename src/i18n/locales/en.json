@@ -509,6 +509,95 @@
         "noDataToExport": "No report data available to export.",
         "exportGenerated": "Report CSV generated with {{count}} summary row(s)."
       }
+    },
+    "candidateForm": {
+      "createTitle": "Register a new application",
+      "editTitle": "Edit application",
+      "createDescription": "Form to register a new application",
+      "editDescription": "Edit the application information",
+      "emptyTypeTitle": "No application type created",
+      "emptyTypeDescription": "The system is empty. Create your first application types to get started.",
+      "createTypeButtonLabel": "Create types",
+      "photoLabel": "Photo",
+      "typeLabel": "Type",
+      "contactTypeLabel": "Application type *",
+      "tabBase": "Base",
+      "tabContact": "Contact",
+      "tabProfessional": "Professional",
+      "tabOther": "Other",
+      "genderPlaceholder": "Select",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "genderOther": "Other",
+      "genderUnspecified": "Unspecified",
+      "firstNameLabel": "First name *",
+      "lastNameLabel": "Last name *",
+      "birthDateLabel": "Birth date",
+      "genderLabel": "Gender",
+      "startDateLabel": "Start date",
+      "spokenLanguagesLabel": "Spoken languages",
+      "languageSelectorAddButtonLabel": "Add",
+      "languageFrench": "French",
+      "languageArabic": "Arabic",
+      "languageEnglish": "English",
+      "languageSpanish": "Spanish",
+      "autoAssignedDepartmentLabel": "Department assigned automatically:",
+      "ethicsSectionTitle": "Criminal record and ethics",
+      "confirmationDateLabel": "Confirmation date",
+      "ethicsCodeSignedLabel": "Ethics code signed",
+      "ethicsUnspecifiedLabel": "Unspecified",
+      "cancelButtonLabel": "Cancel",
+      "saveButtonLabel": "Save",
+      "updateButtonLabel": "Update"
+    },
+    "assignmentDialog": {
+      "modifyTitle": "Modify department assignment",
+      "assignTitle": "Assign to department",
+      "modifyDescription": "Choose the current department and then the new destination department",
+      "assignDescription": "Select the department where the candidate will be assigned as a volunteer",
+      "selectedCandidate": "Selected candidate",
+      "currentDepartmentToModify": "Current department to modify",
+      "selectCurrentDepartment": "Select current department",
+      "newDepartment": "New department",
+      "selectDepartment": "Select department",
+      "currentDepartment": "Current department",
+      "alreadyAssigned": "Already assigned",
+      "cancel": "Cancel",
+      "modifyAssignment": "Modify assignment",
+      "assignToDepartment": "Assign to department",
+      "currentDepartmentTitle": "Current department: {{department}}",
+      "alreadyAssignedTitle": "Already assigned to department {{department}}",
+      "assignDepartmentTitle": "Assign to department {{department}}",
+      "fields": {
+        "name": "Name",
+        "position": "Position",
+        "email": "Email",
+        "phone": "Phone",
+        "availability": "Availability"
+      }
+    },
+    "mockData": {
+      "positions": {
+        "distributionVolunteer": "Volunteer - Distribution",
+        "volunteerCoordinator": "Volunteer coordinator",
+        "volunteerDriver": "Volunteer driver",
+        "kitchenVolunteer": "Volunteer - Kitchen",
+        "warehouseVolunteer": "Volunteer - Warehouse"
+      },
+      "availability": {
+        "mondayWednesdayFriday": "Monday, Wednesday, Friday",
+        "fullTime": "Full time",
+        "tuesdayThursday": "Tuesday, Thursday",
+        "wednesdayFridaySaturday": "Wednesday, Friday, Saturday",
+        "flexible": "Flexible"
+      },
+      "experience": {
+        "communityServiceTwoYears": "2 years of community service experience",
+        "teamManagementFiveYears": "5 years of team management experience",
+        "professionalDriverThreeYears": "3 years as a professional driver",
+        "culinaryArtsGraduate": "Culinary arts graduate",
+        "logisticsOneYear": "1 year of logistics experience"
+      }
     }
   },
   "experience": {
@@ -537,13 +626,42 @@
     "users": "Users/Roles",
     "contacts": "Contacts",
     "liaison": "Liaison",
-    "digitalID": "Comptoir",
+    "digitalID": "Counter",
     "branding": "Branding Panel",
+    "purchase": "Purchasing",
+    "messaging": "Messaging",
+    "wasteComposting": "Waste & composting",
+    "partnersSuppliers": "Partners & suppliers",
+    "warehouseDirectory": "Warehouse directory",
+    "visualIdentity": "Visual identity",
+    "apiIntegrations": "API & integrations",
     "configuration": "Configuration",
     "settings": "Settings",
     "organismAccess": "Organization Access",
     "recruitment": "Recruitment",
     "logout": "Log Out"
+  },
+  "layout": {
+    "shellBadges": {
+      "operationsSuite": "Operations Suite",
+      "realTime": "Real Time",
+      "secure": "Secure"
+    },
+    "professionalEnvironment": "Pro Environment",
+    "unifiedManagementPlatform": "Unified management platform",
+    "mainNavigation": "Main navigation",
+    "structuredByBusinessFunction": "Structured access by business function",
+    "activeModule": "Active module",
+    "activeWorkspace": "Active workspace",
+    "professionalInterface": "Professional interface",
+    "unifiedJourneys": "Unified journeys",
+    "sections": {
+      "overview": "Overview",
+      "operations": "Operations",
+      "coordination": "Coordination",
+      "administration": "Administration",
+      "advanced": "Advanced tools"
+    }
   },
   "fab": {
     "helpAndSupport": "Help and Support",
@@ -593,6 +711,40 @@
   "inventory": {
     "title": "Inventory Management",
     "subtitle": "Complete control of products and movements",
+    "subcategories": "Subcategories",
+    "executive": {
+      "eyebrow": "Operational control",
+      "title": "Warehouse action console",
+      "description": "Keep critical signals, the active tab, and quick access points in one place to run inventory without losing context.",
+      "openReportsModule": "Open Reports module",
+      "reportsModule": "Reports module",
+      "tabs": {
+        "products": "Products",
+        "movements": "Movements",
+        "conversions": "Conversions",
+        "entries": "Entries",
+        "validation": "Validation",
+        "forecast": "Forecast"
+      },
+      "metrics": {
+        "activeView": "Active view",
+        "activeViewHelper": "The module keeps your current context so you can chain operations.",
+        "lowStock": "Critical stock",
+        "lowStockAlert": "Products below minimum threshold to handle quickly.",
+        "lowStockClear": "No critical alert detected right now.",
+        "reservations": "Reservations",
+        "reservationsActive": "Products currently reserved for active orders.",
+        "reservationsClear": "No reservation pending.",
+        "anchoredDistribution": "Anchored distribution",
+        "anchoredDistributionEmpty": "No recent group distribution stored."
+      },
+      "actions": {
+        "products": "Products",
+        "entries": "Entries",
+        "validation": "Validation",
+        "forecast": "Forecast"
+      }
+    },
     "entryHistory": "Entry History",
     "entryHistoryCompact": {
       "tabDescription": "Complete Don/Purchase entry history",
@@ -1386,6 +1538,32 @@
     "activeOrders": "Active Orders",
     "pendingOrders": "Pending Orders",
     "completedOrders": "Completed Orders",
+    "acceptedOrders": "Accepted Orders",
+    "executive": {
+      "eyebrow": "Distribution control",
+      "title": "Fast orders console",
+      "description": "Centralize pending orders, distribution access, and quick control flows without leaving the operational view.",
+      "metrics": {
+        "activeView": "Active view",
+        "ordersHelper": "Dense monitoring of statuses and distribution actions.",
+        "offersHelper": "Control offers and their related requests.",
+        "pending": "Pending",
+        "pendingBusy": "Some orders are still waiting for confirmation or processing.",
+        "pendingClear": "No immediate pending order.",
+        "distributable": "Ready to distribute",
+        "distributableHelper": "Volume available in the filtered distribution list.",
+        "offerRequests": "Offer requests",
+        "offerRequestsActive": "{{count}} offer(s) with active requests.",
+        "offerRequestsIdle": "No active request on visible offers."
+      },
+      "actions": {
+        "orders": "Orders",
+        "distributedList": "Distributed list",
+        "notifications": "Notifications",
+        "offers": "Offers",
+        "qrScanner": "QR scanner"
+      }
+    },
     "viewOrder": "View order",
     "editOrder": "Edit order",
     "printOrder": "Print order",
@@ -1997,6 +2175,33 @@
     "selectDriver": "Select driver",
     "selectVehicle": "Select vehicle",
     "drivers": "Drivers",
+    "executive": {
+      "eyebrow": "Logistics control",
+      "title": "Operational transport and direct access",
+      "description": "Trigger a new vehicle or driver in one click and jump straight to verification or planning without losing the logistics flow.",
+      "tabs": {
+        "routes": "Routes",
+        "vehicles": "Vehicles",
+        "drivers": "Drivers",
+        "verification": "Verification"
+      },
+      "metrics": {
+        "activeView": "Active view",
+        "activeViewHelper": "The flow stays focused on the transport block currently being managed.",
+        "toLaunch": "To launch",
+        "toLaunchHelper": "Planned routes waiting to depart.",
+        "fleet": "Fleet",
+        "fleetHelper": "Vehicles available in the transport module.",
+        "drivers": "Drivers",
+        "driversHelper": "Drivers currently registered in the module."
+      },
+      "actions": {
+        "routes": "Routes",
+        "newVehicle": "New vehicle",
+        "newDriver": "New driver",
+        "verification": "Verification"
+      }
+    },
     "driversManagement": {
       "title": "Driver Management",
       "totalDrivers": "Total Drivers",
@@ -2270,6 +2475,47 @@
     "lastMonth": "Last month",
     "thisYear": "This year",
     "lastYear": "Last year",
+    "executive": {
+      "eyebrow": "Command center",
+      "title": "Priority reports and fast export",
+      "description": "Move from one view to another, lock the useful period, and trigger key exports without leaving the analytics space.",
+      "viewPeriod": "View period",
+      "viewExport": "View export",
+      "tabs": {
+        "general": "Overview",
+        "operations": "Operations",
+        "inventory": "Inventory",
+        "orders": "Orders",
+        "audit": "Audit"
+      },
+      "prsStatus": {
+        "idle": "Waiting",
+        "loading": "Syncing",
+        "ready": "Available",
+        "unavailable": "Unavailable",
+        "error": "Error"
+      },
+      "metrics": {
+        "activeView": "Active view",
+        "exportableType": "Exportable type: {{type}}",
+        "localExports": "This view manages its own exports locally.",
+        "period": "Period",
+        "invalidRange": "Needs correction",
+        "periodReady": "Charts and exports use this range.",
+        "periodInvalid": "Define a valid date range.",
+        "activeEntries": "Active entries",
+        "activeEntriesHelper": "Operational base used in overview and inventory views.",
+        "prsFlow": "PRS flow",
+        "prsFlowActive": "Status of the remote PRS report for the current period.",
+        "prsFlowPassive": "The PRS status stays visible without changing tabs."
+      },
+      "actions": {
+        "general": "Overview",
+        "operations": "Operations",
+        "inventory": "Inventory",
+        "last30days": "Last 30 days"
+      }
+    },
     "donors": "Donors",
     "programs": "Programs",
     "totalEntries": "Entries",
@@ -2596,11 +2842,11 @@
     "detailComponentInDevelopment": "Detail component in development"
   },
   "digitalID": {
-    "title": "Comptoir",
-    "beneficiaryIDTitle": "Beneficiary Comptoir",
+    "title": "Counter",
+    "beneficiaryIDTitle": "Counter beneficiary",
     "subtitle": "Digital identification system with QR code",
-    "createID": "Create Comptoir",
-    "generateNewID": "Generate New Comptoir",
+    "createID": "Create Counter",
+    "generateNewID": "Generate New Counter",
     "organism": "Organism",
     "selectOrganism": "Select organism",
     "beneficiaryName": "Beneficiary Name",
@@ -3344,7 +3590,7 @@
     "selectWorkDays": "Select work days and schedules",
     "cancel": "Cancel",
     "save": "Save",
-    "digitalID": "Comptoir",
+    "digitalID": "Counter",
     "manageDepartments": "Manage Departments",
     "addDepartment": "Add Department",
     "departmentName": "Department name",
@@ -3868,7 +4114,7 @@
     "searchPlaceholder": "Search by name, email or ID...",
     "export": "Export",
     "import": "Import",
-    "digitalID": "Comptoir",
+    "digitalID": "Counter",
     "viewProfile": "View Profile",
     "viewHistory": "View History",
     "delete": "Delete",
@@ -4286,6 +4532,38 @@
     "totalOrganisms": "Total Organizations",
     "activeOrganisms": "Active Organizations",
     "totalBeneficiaries": "Total Beneficiaries",
+    "organismRequests": "Organization requests",
+    "groupEmail": "Group email",
+    "hideStats": "Hide stats",
+    "showStats": "Show stats",
+    "liaisonAdministrator": "Liaison administrator",
+    "readOnlyAccess": "Read-only access",
+    "noConnectedUser": "No user connected",
+    "onlyLiaisonAdmins": "Only Liaison administrators can create organizations",
+    "accessDenied": "Access denied",
+    "accessDeniedDescription": "Only Liaison administrators can create organizations.",
+    "executive": {
+      "eyebrow": "Priority coordination",
+      "title": "Active liaison, instant follow-up, and quick access",
+      "description": "Keep the business view, new requests, and the main communication levers within immediate reach to speed up coordination with organizations.",
+      "metrics": {
+        "activeView": "Active view",
+        "liaisonHelper": "Coordination with organizations and tracking of exchanges.",
+        "contactsHelper": "Operational directory of contacts by department.",
+        "newRequests": "New requests",
+        "newRequestsPending": "Recent requests are waiting for review.",
+        "newRequestsClear": "No new request to process right now.",
+        "stats": "Statistics",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "statsHelper": "Growth trends and exports remain controllable from here.",
+        "accessLevel": "Access level",
+        "administration": "Administration",
+        "readOnly": "Read-only",
+        "administrationHelper": "Organization creation and update are allowed.",
+        "readOnlyHelper": "Consultation and communication are available without modification."
+      }
+    },
     "searchPlaceholder": "🔍 Search organization by name or contact person...",
     "noOrganismsFound": "🔍 No organizations found",
     "tryOtherSearchTerms": "Try other search terms",

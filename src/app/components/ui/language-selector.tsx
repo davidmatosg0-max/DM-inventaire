@@ -18,6 +18,8 @@ import {
 interface LanguageSelectorProps {
   selectedLanguages: string[];
   onChange: (languages: string[]) => void;
+  label?: string;
+  addButtonLabel?: string;
   predefinedLanguages?: Array<{
     code: string;
     label: string;
@@ -29,6 +31,8 @@ interface LanguageSelectorProps {
 export function LanguageSelector({ 
   selectedLanguages, 
   onChange,
+  label,
+  addButtonLabel,
   predefinedLanguages 
 }: LanguageSelectorProps) {
   const branding = useBranding();
@@ -115,7 +119,7 @@ export function LanguageSelector({
       <Label className="mb-3 block flex items-center justify-between">
         <span className="flex items-center gap-2">
           <Languages className="w-4 h-4" style={{ color: branding.primaryColor }} />
-          <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>Langues parlées</span>
+          <span style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>{label ?? 'Langues parlées'}</span>
         </span>
         <Button
           type="button"
@@ -130,7 +134,7 @@ export function LanguageSelector({
           style={{ borderColor: branding.primaryColor, color: branding.primaryColor }}
         >
           <Plus className="w-3 h-3" />
-          <span className="text-xs">Ajouter</span>
+          <span className="text-xs">{addButtonLabel ?? 'Ajouter'}</span>
         </Button>
       </Label>
 

@@ -91,6 +91,30 @@ interface RecrutementProps {
 
 const diasSemana = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
+const RECRUITMENT_MOCK_POSITION_KEYS: Record<string, string> = {
+  'Bénévole - Distribution': 'distributionVolunteer',
+  'Coordinateur bénévole': 'volunteerCoordinator',
+  'Chauffeur bénévole': 'volunteerDriver',
+  'Bénévole - Cuisine': 'kitchenVolunteer',
+  'Bénévole - Entrepôt': 'warehouseVolunteer'
+};
+
+const RECRUITMENT_MOCK_AVAILABILITY_KEYS: Record<string, string> = {
+  'Lundi, Mercredi, Vendredi': 'mondayWednesdayFriday',
+  'Temps plein': 'fullTime',
+  'Mardi, Jeudi': 'tuesdayThursday',
+  'Mercredi, Vendredi, Samedi': 'wednesdayFridaySaturday',
+  'Flexible': 'flexible'
+};
+
+const RECRUITMENT_MOCK_EXPERIENCE_KEYS: Record<string, string> = {
+  "2 ans d'expérience en service communautaire": 'communityServiceTwoYears',
+  "5 ans d'expérience en gestion d'équipe": 'teamManagementFiveYears',
+  '3 ans comme chauffeur professionnel': 'professionalDriverThreeYears',
+  'Diplômée en arts culinaires': 'culinaryArtsGraduate',
+  "1 an d'expérience en logistique": 'logisticsOneYear'
+};
+
 const cloneDisponibilidades = (disponibilidades?: DisponibilidadDia[]) =>
   (disponibilidades && disponibilidades.length > 0
     ? disponibilidades
@@ -349,12 +373,12 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   // ✅ LISTA CORRECTA DE DEPARTAMENTOS CON IDs NUMÉRICOS (coinciden con departamentosStorage.ts)
   const departamentosDisponibles = [
-    { id: '1', nombre: 'Entrepôt', icono: '📦', color: '#1a4d7a', codigo: 'ENTREPOT' },
-    { id: '7', nombre: 'Transport', icono: '🚚', color: '#2d9561', codigo: 'TRANSPORT' },
-    { id: '2', nombre: 'Comptoir', icono: '🏪', color: '#FF9800', codigo: 'COMPTOIR' },
-    { id: '3', nombre: 'Cuisine', icono: '🍳', color: '#E91E63', codigo: 'CUISINE' },
-    { id: '4', nombre: 'Liaison', icono: '🤝', color: '#9C27B0', codigo: 'LIAISON' },
-    { id: '8', nombre: 'Bénévoles', icono: '👥', color: '#4CAF50', codigo: 'BENEVOLES' },
+    { id: '1', nombre: t('nav.warehouse'), icono: '📦', color: '#1a4d7a', codigo: 'ENTREPOT' },
+    { id: '7', nombre: t('nav.transport'), icono: '🚚', color: '#2d9561', codigo: 'TRANSPORT' },
+    { id: '2', nombre: t('nav.digitalID'), icono: '🏪', color: '#FF9800', codigo: 'COMPTOIR' },
+    { id: '3', nombre: t('common.cuisine'), icono: '🍳', color: '#E91E63', codigo: 'CUISINE' },
+    { id: '4', nombre: t('nav.liaison'), icono: '🤝', color: '#9C27B0', codigo: 'LIAISON' },
+    { id: '8', nombre: t('recruitmentPublic.volunteers'), icono: '👥', color: '#4CAF50', codigo: 'BENEVOLES' },
   ];
 
   const resolveIntlLocale = useCallback((language: string) => {
@@ -401,6 +425,39 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
         return status;
     }
   }, [t]);
+
+  const getLocalizedRecruitmentMockValue = useCallback((
+    value: string,
+    scope: 'positions' | 'availability' | 'experience'
+  ) => {
+    if (!value) {
+      return value;
+    }
+
+    const scopeMaps = {
+      positions: RECRUITMENT_MOCK_POSITION_KEYS,
+      availability: RECRUITMENT_MOCK_AVAILABILITY_KEYS,
+      experience: RECRUITMENT_MOCK_EXPERIENCE_KEYS,
+    };
+
+    const translationKey = scopeMaps[scope][value.trim()];
+    return translationKey ? t(`recruitmentInternal.mockData.${scope}.${translationKey}`) : value;
+  }, [t]);
+
+  const getLocalizedCandidatePosition = useCallback(
+    (value: string) => getLocalizedRecruitmentMockValue(value, 'positions'),
+    [getLocalizedRecruitmentMockValue]
+  );
+
+  const getLocalizedCandidateAvailability = useCallback(
+    (value: string) => getLocalizedRecruitmentMockValue(value, 'availability'),
+    [getLocalizedRecruitmentMockValue]
+  );
+
+  const getLocalizedCandidateExperience = useCallback(
+    (value: string) => getLocalizedRecruitmentMockValue(value, 'experience'),
+    [getLocalizedRecruitmentMockValue]
+  );
 
   const resolveDepartmentForCandidate = (candidate: Candidate) => {
     const positionLower = candidate.position.toLowerCase();
@@ -1324,7 +1381,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   {candidatoParaPerfil.name}
                 </h3>
                 <p className="text-base mb-2" style={{ color: branding.secondaryColor }}>
-                  {candidatoParaPerfil.position}
+                  {getLocalizedCandidatePosition(candidatoParaPerfil.position)}
                 </p>
                 <div className="flex items-center gap-3 flex-wrap">
                   {getStatusBadge(candidatoParaPerfil.status)}
@@ -1406,7 +1463,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   <Clock className="w-5 h-5 flex-shrink-0 mt-1" style={{ color: cardColor }} />
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Disponibilité</p>
-                    <p className="text-sm font-medium">{candidatoParaPerfil.availability}</p>
+                    <p className="text-sm font-medium">{getLocalizedCandidateAvailability(candidatoParaPerfil.availability)}</p>
                   </div>
                 </div>
                 <div className="p-3 rounded-xl border-l-4" style={{ backgroundColor: `${branding.secondaryColor}10`, borderLeftColor: branding.secondaryColor }}>
@@ -1414,7 +1471,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     <Sparkles className="w-5 h-5" style={{ color: branding.secondaryColor }} />
                     <p className="text-sm font-semibold">Expérience</p>
                   </div>
-                  <p className="text-sm leading-relaxed">{candidatoParaPerfil.experience}</p>
+                  <p className="text-sm leading-relaxed">{getLocalizedCandidateExperience(candidatoParaPerfil.experience)}</p>
                 </div>
               </div>
             </div>
@@ -3065,7 +3122,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 {candidate.name}
                               </CardTitle>
                               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#666666]">
-                                <span className="truncate font-medium">{candidate.position}</span>
+                                <span className="truncate font-medium">{getLocalizedCandidatePosition(candidate.position)}</span>
                                 {numeroArchivo && (
                                   <span
                                     className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 font-mono font-semibold tracking-wide"
@@ -3098,13 +3155,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           </div>
                           <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
                             <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
-                            <span className="truncate">{candidate.availability}</span>
+                            <span className="truncate">{getLocalizedCandidateAvailability(candidate.availability)}</span>
                           </div>
                         </div>
 
                         <div className="flex items-start gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
                           <Briefcase className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: cardColor }} />
-                          <span className="line-clamp-2 leading-5">{candidate.experience}</span>
+                          <span className="line-clamp-2 leading-5">{getLocalizedCandidateExperience(candidate.experience)}</span>
                         </div>
 
                         {candidate.departamentoIds && candidate.departamentoIds.length > 0 && (
@@ -3696,7 +3753,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               <div key={candidate.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
                                 <div className="min-w-0">
                                   <p className="font-semibold text-sm text-[#333333] truncate">{candidate.name}</p>
-                                  <p className="text-xs text-gray-500 truncate">{candidate.position} • {formatLocalizedDate(candidate.applicationDate)}</p>
+                                  <p className="text-xs text-gray-500 truncate">{getLocalizedCandidatePosition(candidate.position)} • {formatLocalizedDate(candidate.applicationDate)}</p>
                                 </div>
                                 {getStatusBadge(candidate.status)}
                               </div>
@@ -4343,16 +4400,47 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
         updateDisponibilidad={updateDisponibilidad}
         tiposPermitidos={tiposPermitidos}
         departamentoId="7"
-        departamentoNombre="Recrutement"
+        departamentoNombre={t('nav.recruitment')}
         contactoId={candidatoParaEditar ? String(candidatoParaEditar.id) : undefined}
         textOverrides={{
-          createTitle: 'Enregistrer une nouvelle candidature',
-          editTitle: 'Modifier la candidature',
-          createDescription: 'Formulaire d\'enregistrement d\'une nouvelle candidature',
-          editDescription: 'Modifier les informations de la candidature',
-          emptyTypeTitle: 'Aucun type de candidature créé',
-          emptyTypeDescription: 'Le système est vide. Créez vos premiers types de candidature pour commencer.',
-          createTypeButtonLabel: 'Créer des types'
+          createTitle: t('recruitmentInternal.candidateForm.createTitle'),
+          editTitle: t('recruitmentInternal.candidateForm.editTitle'),
+          createDescription: t('recruitmentInternal.candidateForm.createDescription'),
+          editDescription: t('recruitmentInternal.candidateForm.editDescription'),
+          emptyTypeTitle: t('recruitmentInternal.candidateForm.emptyTypeTitle'),
+          emptyTypeDescription: t('recruitmentInternal.candidateForm.emptyTypeDescription'),
+          createTypeButtonLabel: t('recruitmentInternal.candidateForm.createTypeButtonLabel'),
+          photoLabel: t('recruitmentInternal.candidateForm.photoLabel'),
+          typeLabel: t('recruitmentInternal.candidateForm.typeLabel'),
+          contactTypeLabel: t('recruitmentInternal.candidateForm.contactTypeLabel'),
+          tabBase: t('recruitmentInternal.candidateForm.tabBase'),
+          tabContact: t('recruitmentInternal.candidateForm.tabContact'),
+          tabProfessional: t('recruitmentInternal.candidateForm.tabProfessional'),
+          tabOther: t('recruitmentInternal.candidateForm.tabOther'),
+          genderPlaceholder: t('recruitmentInternal.candidateForm.genderPlaceholder'),
+          genderMale: t('recruitmentInternal.candidateForm.genderMale'),
+          genderFemale: t('recruitmentInternal.candidateForm.genderFemale'),
+          genderOther: t('recruitmentInternal.candidateForm.genderOther'),
+          genderUnspecified: t('recruitmentInternal.candidateForm.genderUnspecified'),
+          firstNameLabel: t('recruitmentInternal.candidateForm.firstNameLabel'),
+          lastNameLabel: t('recruitmentInternal.candidateForm.lastNameLabel'),
+          birthDateLabel: t('recruitmentInternal.candidateForm.birthDateLabel'),
+          genderLabel: t('recruitmentInternal.candidateForm.genderLabel'),
+          startDateLabel: t('recruitmentInternal.candidateForm.startDateLabel'),
+          spokenLanguagesLabel: t('recruitmentInternal.candidateForm.spokenLanguagesLabel'),
+          languageSelectorAddButtonLabel: t('recruitmentInternal.candidateForm.languageSelectorAddButtonLabel'),
+          languageFrench: t('recruitmentInternal.candidateForm.languageFrench'),
+          languageArabic: t('recruitmentInternal.candidateForm.languageArabic'),
+          languageEnglish: t('recruitmentInternal.candidateForm.languageEnglish'),
+          languageSpanish: t('recruitmentInternal.candidateForm.languageSpanish'),
+          autoAssignedDepartmentLabel: t('recruitmentInternal.candidateForm.autoAssignedDepartmentLabel'),
+          ethicsSectionTitle: t('recruitmentInternal.candidateForm.ethicsSectionTitle'),
+          confirmationDateLabel: t('recruitmentInternal.candidateForm.confirmationDateLabel'),
+          ethicsCodeSignedLabel: t('recruitmentInternal.candidateForm.ethicsCodeSignedLabel'),
+          ethicsUnspecifiedLabel: t('recruitmentInternal.candidateForm.ethicsUnspecifiedLabel'),
+          cancelButtonLabel: t('recruitmentInternal.candidateForm.cancelButtonLabel'),
+          saveButtonLabel: t('recruitmentInternal.candidateForm.saveButtonLabel'),
+          updateButtonLabel: t('recruitmentInternal.candidateForm.updateButtonLabel')
         }}
       />
 
@@ -4369,12 +4457,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               <Link className="w-6 h-6" style={{ color: branding.primaryColor }} />
-              {assignationMode === 'modify' ? 'Modifier l\'assignation de Département' : 'Assigner au Département'}
+              {assignationMode === 'modify'
+                ? t('recruitmentInternal.assignmentDialog.modifyTitle')
+                : t('recruitmentInternal.assignmentDialog.assignTitle')}
             </DialogTitle>
             <DialogDescription id="assigner-departement-description">
               {assignationMode === 'modify'
-                ? 'Choisissez le département actuel puis le nouveau département de destination'
-                : 'Sélectionnez le département où le candidat sera assigné comme bénévole'}
+                ? t('recruitmentInternal.assignmentDialog.modifyDescription')
+                : t('recruitmentInternal.assignmentDialog.assignDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -4389,21 +4479,21 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 }}
               >
                 <h4 className="font-semibold mb-2" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                  Candidat Sélectionné
+                  {t('recruitmentInternal.assignmentDialog.selectedCandidate')}
                 </h4>
                 <div className="space-y-1 text-sm">
-                  <p><strong>Nom:</strong> {candidatoParaAssignar.name}</p>
-                  <p><strong>Poste:</strong> {candidatoParaAssignar.position}</p>
-                  <p><strong>Email:</strong> {candidatoParaAssignar.email}</p>
-                  <p><strong>Téléphone:</strong> {candidatoParaAssignar.phone}</p>
-                  <p><strong>Disponibilité:</strong> {candidatoParaAssignar.availability}</p>
+                  <p><strong>{t('recruitmentInternal.assignmentDialog.fields.name')}:</strong> {candidatoParaAssignar.name}</p>
+                  <p><strong>{t('recruitmentInternal.assignmentDialog.fields.position')}:</strong> {getLocalizedCandidatePosition(candidatoParaAssignar.position)}</p>
+                  <p><strong>{t('recruitmentInternal.assignmentDialog.fields.email')}:</strong> {candidatoParaAssignar.email}</p>
+                  <p><strong>{t('recruitmentInternal.assignmentDialog.fields.phone')}:</strong> {candidatoParaAssignar.phone}</p>
+                  <p><strong>{t('recruitmentInternal.assignmentDialog.fields.availability')}:</strong> {getLocalizedCandidateAvailability(candidatoParaAssignar.availability)}</p>
                 </div>
               </div>
 
               {assignationMode === 'modify' && (
                 <div className="space-y-3">
                   <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    Département actuel à modifier
+                    {t('recruitmentInternal.assignmentDialog.currentDepartmentToModify')}
                   </Label>
 
                   {(candidatoParaAssignar.departamentoIds || []).length > 1 ? (
@@ -4412,7 +4502,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       onValueChange={setDepartamentoOrigenSeleccionado}
                     >
                       <SelectTrigger style={{ fontFamily: 'Roboto, sans-serif' }}>
-                        <SelectValue placeholder="Sélectionner le département actuel" />
+                        <SelectValue placeholder={t('recruitmentInternal.assignmentDialog.selectCurrentDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
                         {(candidatoParaAssignar.departamentoIds || []).map(deptId => {
@@ -4459,7 +4549,9 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
               {/* Selector de département */}
               <div className="space-y-3">
                 <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {assignationMode === 'modify' ? 'Nouveau département' : 'Sélectionner le Département'}
+                  {assignationMode === 'modify'
+                    ? t('recruitmentInternal.assignmentDialog.newDepartment')
+                    : t('recruitmentInternal.assignmentDialog.selectDepartment')}
                 </Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {departamentosDisponibles.map((dept) => {
@@ -4498,10 +4590,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         }}
                         title={
                           assignationMode === 'modify' && esDepartamentoOrigen
-                            ? `Département actuel: ${dept.nombre}`
+                            ? t('recruitmentInternal.assignmentDialog.currentDepartmentTitle', { department: dept.nombre })
                             : yaAsignado
-                              ? `Déjà assigné au département ${dept.nombre}`
-                              : `Assigner au département ${dept.nombre}`
+                              ? t('recruitmentInternal.assignmentDialog.alreadyAssignedTitle', { department: dept.nombre })
+                              : t('recruitmentInternal.assignmentDialog.assignDepartmentTitle', { department: dept.nombre })
                         }
                       >
                         {/* Indicador de ya asignado */}
@@ -4529,11 +4621,11 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         {/* Texto de estado */}
                         {assignationMode === 'modify' && esDepartamentoOrigen ? (
                           <p className="text-xs mt-1" style={{ color: dept.color }}>
-                            Département actuel
+                            {t('recruitmentInternal.assignmentDialog.currentDepartment')}
                           </p>
                         ) : !puedeSeleccionarse ? (
                           <p className="text-xs mt-1" style={{ color: '#DC3545' }}>
-                            Déjà assigné
+                            {t('recruitmentInternal.assignmentDialog.alreadyAssigned')}
                           </p>
                         ) : null}
                       </button>
@@ -4549,7 +4641,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   onClick={resetAssignationDialog}
                   style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
-                  Annuler
+                  {t('recruitmentInternal.assignmentDialog.cancel')}
                 </Button>
                 <Button
                   className="text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
@@ -4561,7 +4653,9 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   disabled={!departamentoSeleccionado || (assignationMode === 'modify' && !departamentoOrigenSeleccionado)}
                 >
                   {assignationMode === 'modify' ? <ArrowRightLeft className="w-4 h-4 mr-2" /> : <Link className="w-4 h-4 mr-2" />}
-                  {assignationMode === 'modify' ? 'Modifier l\'assignation' : 'Assigner au Département'}
+                  {assignationMode === 'modify'
+                    ? t('recruitmentInternal.assignmentDialog.modifyAssignment')
+                    : t('recruitmentInternal.assignmentDialog.assignToDepartment')}
                 </Button>
               </div>
             </div>

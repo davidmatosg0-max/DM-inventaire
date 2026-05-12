@@ -858,33 +858,39 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   const liaisonExecutiveMetrics = [
     {
       id: 'active-tab',
-      label: 'Vue active',
-      value: tabActual === 'liaison' ? 'Liaison' : 'Contacts',
-      helper: tabActual === 'liaison' ? 'Coordination avec les organismes et suivi des échanges.' : 'Carnet opérationnel des contacts par département.',
+      label: t('liaison.executive.metrics.activeView'),
+      value: tabActual === 'liaison' ? t('nav.liaison') : t('nav.contacts'),
+      helper: tabActual === 'liaison'
+        ? t('liaison.executive.metrics.liaisonHelper')
+        : t('liaison.executive.metrics.contactsHelper'),
       icon: <Building2 className="h-4 w-4" />,
       accentColor: branding.primaryColor,
     },
     {
       id: 'requests',
-      label: 'Demandes nouvelles',
+      label: t('liaison.executive.metrics.newRequests'),
       value: nombreNouvellesDemandes,
-      helper: nombreNouvellesDemandes > 0 ? 'Des demandes récentes attendent une revue.' : 'Aucune nouvelle demande à traiter pour le moment.',
+      helper: nombreNouvellesDemandes > 0
+        ? t('liaison.executive.metrics.newRequestsPending')
+        : t('liaison.executive.metrics.newRequestsClear'),
       icon: <MessageSquare className="h-4 w-4" />,
       accentColor: '#7c3aed',
     },
     {
       id: 'stats-panel',
-      label: 'Statistiques',
-      value: mostrarEstadisticas ? 'Visibles' : 'Masquées',
-      helper: 'Les tendances et exports de croissance restent pilotables depuis ici.',
+      label: t('liaison.executive.metrics.stats'),
+      value: mostrarEstadisticas ? t('liaison.executive.metrics.visible') : t('liaison.executive.metrics.hidden'),
+      helper: t('liaison.executive.metrics.statsHelper'),
       icon: <BarChart3 className="h-4 w-4" />,
       accentColor: branding.secondaryColor,
     },
     {
       id: 'access-level',
-      label: 'Niveau d’accès',
-      value: puedeGestionarOrganismos ? 'Administration' : 'Lecture seule',
-      helper: puedeGestionarOrganismos ? 'Création et mise à jour des organismes autorisées.' : 'Consultation et communication disponibles sans modification.',
+      label: t('liaison.executive.metrics.accessLevel'),
+      value: puedeGestionarOrganismos ? t('liaison.executive.metrics.administration') : t('liaison.executive.metrics.readOnly'),
+      helper: puedeGestionarOrganismos
+        ? t('liaison.executive.metrics.administrationHelper')
+        : t('liaison.executive.metrics.readOnlyHelper'),
       icon: <Users className="h-4 w-4" />,
       accentColor: puedeGestionarOrganismos ? '#16a34a' : '#f97316',
     },
@@ -907,7 +913,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                 style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' }}
               >
                 <MessageSquare className="h-4 w-4" />
-                <span>Demandes des Organismes</span>
+                <span>{t('liaison.organismRequests')}</span>
                 {nombreNouvellesDemandes > 0 && (
                   <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg">
                     {nombreNouvellesDemandes}
@@ -927,8 +933,8 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
               <Button
                 onClick={() => {
                   if (!puedeGestionarOrganismos) {
-                    toast.error('⚠️ Accès refusé', {
-                      description: 'Seuls les administrateurs de Liaison peuvent créer des organismes.'
+                    toast.error(t('liaison.accessDenied'), {
+                      description: t('liaison.accessDeniedDescription')
                     });
                     return;
                   }
@@ -941,7 +947,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                 disabled={!puedeGestionarOrganismos}
                 className="gap-2 rounded-xl shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
                 style={puedeGestionarOrganismos ? { background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`, color: '#ffffff' } : undefined}
-                title={!puedeGestionarOrganismos ? 'Seuls les administrateurs de Liaison peuvent créer des organismes' : ''}
+                title={!puedeGestionarOrganismos ? t('liaison.onlyLiaisonAdmins') : ''}
               >
                 <Plus className="h-4 w-4" />
                 <span>{t('liaison.newOrganism')}</span>
@@ -951,9 +957,9 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
         />
 
         <ModuleExecutiveStrip
-          eyebrow="Coordination prioritaire"
-          title="Liaison active, suivi instantané et accès rapides"
-          description="Gardez la vue métier, les nouvelles demandes et les principaux leviers de communication à portée immédiate pour accélérer la coordination avec les organismes."
+          eyebrow={t('liaison.executive.eyebrow')}
+          title={t('liaison.executive.title')}
+          description={t('liaison.executive.description')}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
           metrics={liaisonExecutiveMetrics}
@@ -961,19 +967,19 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             <>
               <Button variant="outline" onClick={() => setTabActual('liaison')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <Building2 className="mr-2 h-4 w-4" />
-                Liaison
+                {t('nav.liaison')}
               </Button>
               <Button variant="outline" onClick={() => setTabActual('contactos')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <Users className="mr-2 h-4 w-4" />
-                Contacts
+                {t('nav.contacts')}
               </Button>
               <Button variant="outline" onClick={() => setMostrarEstadisticas((current) => !current)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <BarChart3 className="mr-2 h-4 w-4" />
-                {mostrarEstadisticas ? 'Masquer stats' : 'Afficher stats'}
+                {mostrarEstadisticas ? t('liaison.hideStats') : t('liaison.showStats')}
               </Button>
               <Button onClick={() => openEmailModal('group')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
                 <Mail className="mr-2 h-4 w-4" />
-                Email groupé
+                {t('liaison.groupEmail')}
               </Button>
             </>
           )}
@@ -988,18 +994,18 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
               </div>
               {puedeGestionarOrganismos ? (
                 <div className="inline-flex items-center gap-2 rounded-xl border border-blue-200/60 bg-blue-50/90 px-4 py-2 text-sm text-blue-700 shadow-sm">
-                  <span className="font-medium">Administrateur Liaison</span>
+                  <span className="font-medium">{t('liaison.liaisonAdministrator')}</span>
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-2 rounded-xl border border-orange-200/60 bg-orange-50/90 px-4 py-2 text-sm text-orange-700 shadow-sm">
-                  <span className="font-medium">Accès lecture seule</span>
+                  <span className="font-medium">{t('liaison.readOnlyAccess')}</span>
                 </div>
               )}
             </>
           ) : (
             <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200/60 bg-yellow-50/90 px-4 py-2 text-sm text-yellow-700 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
-              <span className="font-medium">Aucun utilisateur connecté</span>
+              <span className="font-medium">{t('liaison.noConnectedUser')}</span>
             </div>
           )}
         </div>

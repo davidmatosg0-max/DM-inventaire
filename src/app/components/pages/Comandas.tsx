@@ -1113,39 +1113,45 @@ export function Comandas() {
   const ofertasExpiradasCount = ofertasFiltradas.filter(oferta => !oferta.activa || new Date(oferta.fechaExpiracion) < new Date()).length;
   const solicitudesOfertaCount = ofertasFiltradas.reduce((sum, oferta) => sum + (oferta.solicitudes?.length || 0), 0);
   const ordersTabLabels: Record<string, string> = {
-    comandas: 'Commandes',
-    ofertas: 'Offres',
+    comandas: t('nav.orders'),
+    ofertas: t('nav.offers'),
   };
   const ordersExecutiveMetrics = [
     {
       id: 'active-view',
-      label: 'Vue active',
-      value: ordersTabLabels[tabActual] || 'Commandes',
-      helper: tabActual === 'comandas' ? 'Suivi dense des états et actions de distribution.' : 'Pilotage des offres et demandes associées.',
+      label: t('orders.executive.metrics.activeView'),
+      value: ordersTabLabels[tabActual] || t('nav.orders'),
+      helper: tabActual === 'comandas'
+        ? t('orders.executive.metrics.ordersHelper')
+        : t('orders.executive.metrics.offersHelper'),
       icon: <FileCheck className="h-4 w-4" />,
       accentColor: branding.primaryColor,
     },
     {
       id: 'pending-orders',
-      label: 'En attente',
+      label: t('orders.executive.metrics.pending'),
       value: comandasPendientesCount,
-      helper: comandasPendientesCount > 0 ? 'Des commandes attendent encore confirmation ou traitement.' : 'Aucune commande en attente immédiate.',
+      helper: comandasPendientesCount > 0
+        ? t('orders.executive.metrics.pendingBusy')
+        : t('orders.executive.metrics.pendingClear'),
       icon: <Bell className="h-4 w-4" />,
       accentColor: '#f59e0b',
     },
     {
       id: 'distributed-list',
-      label: 'Distribuables',
+      label: t('orders.executive.metrics.distributable'),
       value: comandasDistribuidasFiltradas.length,
-      helper: 'Volume disponible pour la liste des distributions filtrée.',
+      helper: t('orders.executive.metrics.distributableHelper'),
       icon: <Package className="h-4 w-4" />,
       accentColor: branding.secondaryColor,
     },
     {
       id: 'offers-demand',
-      label: 'Demandes offres',
+      label: t('orders.executive.metrics.offerRequests'),
       value: solicitudesOfertaCount,
-      helper: ofertasConSolicitudes > 0 ? `${ofertasConSolicitudes} offre(s) avec demandes actives.` : 'Aucune demande active sur les offres visibles.',
+      helper: ofertasConSolicitudes > 0
+        ? t('orders.executive.metrics.offerRequestsActive', { count: ofertasConSolicitudes })
+        : t('orders.executive.metrics.offerRequestsIdle'),
       icon: <Tag className="h-4 w-4" />,
       accentColor: '#7c3aed',
     },
@@ -1239,9 +1245,9 @@ export function Comandas() {
         />
 
         <ModuleExecutiveStrip
-          eyebrow="Pilotage distribution"
-          title="Console rapide des commandes"
-          description="Centralisez les commandes en attente, les accès de distribution et les flux rapides de contrôle sans quitter la vue opérationnelle."
+          eyebrow={t('orders.executive.eyebrow')}
+          title={t('orders.executive.title')}
+          description={t('orders.executive.description')}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
           metrics={ordersExecutiveMetrics}
@@ -1249,23 +1255,23 @@ export function Comandas() {
             <>
               <Button variant="outline" onClick={() => setTabActual('comandas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <FileCheck className="mr-2 h-4 w-4" />
-                Commandes
+                {t('orders.executive.actions.orders')}
               </Button>
               <Button variant="outline" onClick={() => setDialogListaDistribuidosOpen(true)} disabled={comandasDistribuidasFiltradas.length === 0} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:bg-white/60">
                 <Package className="mr-2 h-4 w-4" />
-                Liste distribuée
+                {t('orders.executive.actions.distributedList')}
               </Button>
               <Button variant="outline" onClick={() => setDialogNotificacionOpen(true)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <Bell className="mr-2 h-4 w-4" />
-                Notifications
+                {t('orders.executive.actions.notifications')}
               </Button>
               <Button variant="outline" onClick={() => setTabActual('ofertas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <Tag className="mr-2 h-4 w-4" />
-                Offres
+                {t('orders.executive.actions.offers')}
               </Button>
               <Button onClick={() => setEscanerQROpen(true)} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
                 <QrCode className="mr-2 h-4 w-4" />
-                Scanner QR
+                {t('orders.executive.actions.qrScanner')}
               </Button>
             </>
           )}
@@ -1296,7 +1302,7 @@ export function Comandas() {
             valueColor="#FFC107"
           />
           <ModuleStatCard
-            label="Commandes acceptées"
+            label={t('orders.acceptedOrders')}
             value={comandasAceptadasCount}
             icon={<Check className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
             accentColor="#7E57C2"

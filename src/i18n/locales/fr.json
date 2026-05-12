@@ -509,6 +509,95 @@
         "noDataToExport": "Aucune donnée de rapport disponible à exporter",
         "exportGenerated": "Rapport CSV généré avec {{count}} ligne(s) de synthèse"
       }
+    },
+    "candidateForm": {
+      "createTitle": "Enregistrer une nouvelle candidature",
+      "editTitle": "Modifier la candidature",
+      "createDescription": "Formulaire d'enregistrement d'une nouvelle candidature",
+      "editDescription": "Modifier les informations de la candidature",
+      "emptyTypeTitle": "Aucun type de candidature créé",
+      "emptyTypeDescription": "Le système est vide. Créez vos premiers types de candidature pour commencer.",
+      "createTypeButtonLabel": "Créer des types",
+      "photoLabel": "Photo",
+      "typeLabel": "Type",
+      "contactTypeLabel": "Type de candidature *",
+      "tabBase": "Base",
+      "tabContact": "Contact",
+      "tabProfessional": "Professionnel",
+      "tabOther": "Autres",
+      "genderPlaceholder": "Sélectionner",
+      "genderMale": "Homme",
+      "genderFemale": "Femme",
+      "genderOther": "Autre",
+      "genderUnspecified": "Non spécifié",
+      "firstNameLabel": "Prénom *",
+      "lastNameLabel": "Nom de famille *",
+      "birthDateLabel": "Date de naissance",
+      "genderLabel": "Genre",
+      "startDateLabel": "Date de début",
+      "spokenLanguagesLabel": "Langues parlées",
+      "languageSelectorAddButtonLabel": "Ajouter",
+      "languageFrench": "Français",
+      "languageArabic": "العربية",
+      "languageEnglish": "English",
+      "languageSpanish": "Espagnol",
+      "autoAssignedDepartmentLabel": "Département assigné automatiquement:",
+      "ethicsSectionTitle": "Casier judiciaire et éthique",
+      "confirmationDateLabel": "Date de confirmation",
+      "ethicsCodeSignedLabel": "Code d'éthique signé",
+      "ethicsUnspecifiedLabel": "Non spécifié",
+      "cancelButtonLabel": "Annuler",
+      "saveButtonLabel": "Enregistrer",
+      "updateButtonLabel": "Mettre à jour"
+    },
+    "assignmentDialog": {
+      "modifyTitle": "Modifier l'assignation de Département",
+      "assignTitle": "Assigner au Département",
+      "modifyDescription": "Choisissez le département actuel puis le nouveau département de destination",
+      "assignDescription": "Sélectionnez le département où le candidat sera assigné comme bénévole",
+      "selectedCandidate": "Candidat Sélectionné",
+      "currentDepartmentToModify": "Département actuel à modifier",
+      "selectCurrentDepartment": "Sélectionner le département actuel",
+      "newDepartment": "Nouveau département",
+      "selectDepartment": "Sélectionner le Département",
+      "currentDepartment": "Département actuel",
+      "alreadyAssigned": "Déjà assigné",
+      "cancel": "Annuler",
+      "modifyAssignment": "Modifier l'assignation",
+      "assignToDepartment": "Assigner au Département",
+      "currentDepartmentTitle": "Département actuel: {{department}}",
+      "alreadyAssignedTitle": "Déjà assigné au département {{department}}",
+      "assignDepartmentTitle": "Assigner au département {{department}}",
+      "fields": {
+        "name": "Nom",
+        "position": "Poste",
+        "email": "Email",
+        "phone": "Téléphone",
+        "availability": "Disponibilité"
+      }
+    },
+    "mockData": {
+      "positions": {
+        "distributionVolunteer": "Bénévole - Distribution",
+        "volunteerCoordinator": "Coordinateur bénévole",
+        "volunteerDriver": "Chauffeur bénévole",
+        "kitchenVolunteer": "Bénévole - Cuisine",
+        "warehouseVolunteer": "Bénévole - Entrepôt"
+      },
+      "availability": {
+        "mondayWednesdayFriday": "Lundi, Mercredi, Vendredi",
+        "fullTime": "Temps plein",
+        "tuesdayThursday": "Mardi, Jeudi",
+        "wednesdayFridaySaturday": "Mercredi, Vendredi, Samedi",
+        "flexible": "Flexible"
+      },
+      "experience": {
+        "communityServiceTwoYears": "2 ans d'expérience en service communautaire",
+        "teamManagementFiveYears": "5 ans d'expérience en gestion d'équipe",
+        "professionalDriverThreeYears": "3 ans comme chauffeur professionnel",
+        "culinaryArtsGraduate": "Diplômée en arts culinaires",
+        "logisticsOneYear": "1 an d'expérience en logistique"
+      }
     }
   },
   "experience": {
@@ -539,11 +628,40 @@
     "liaison": "Liaison",
     "digitalID": "Comptoir",
     "branding": "Panneau de Marque",
+    "purchase": "Achats",
+    "messaging": "Messagerie",
+    "wasteComposting": "Déchets & compostage",
+    "partnersSuppliers": "Partenaires & fournisseurs",
+    "warehouseDirectory": "Annuaire Entrepôt",
+    "visualIdentity": "Identité visuelle",
+    "apiIntegrations": "API & intégrations",
     "configuration": "Configuration",
     "settings": "Paramètres",
     "organismAccess": "Accès Organismes",
     "recruitment": "Recrutement",
     "logout": "Se déconnecter"
+  },
+  "layout": {
+    "shellBadges": {
+      "operationsSuite": "Suite opérationnelle",
+      "realTime": "Temps réel",
+      "secure": "Sécurisé"
+    },
+    "professionalEnvironment": "Environnement Pro",
+    "unifiedManagementPlatform": "Plateforme de gestion unifiée",
+    "mainNavigation": "Navigation principale",
+    "structuredByBusinessFunction": "Accès structuré par fonction métier",
+    "activeModule": "Module actif",
+    "activeWorkspace": "Espace de travail actif",
+    "professionalInterface": "Interface professionnelle",
+    "unifiedJourneys": "Parcours unifiés",
+    "sections": {
+      "overview": "Vue d’ensemble",
+      "operations": "Opérations",
+      "coordination": "Coordination",
+      "administration": "Administration",
+      "advanced": "Outils avancés"
+    }
   },
   "fab": {
     "helpAndSupport": "Aide et Support",
@@ -593,6 +711,40 @@
   "inventory": {
     "title": "Gestion de l'Inventaire",
     "subtitle": "Contrôle complet des produits et mouvements",
+    "subcategories": "Sous-catégories",
+    "executive": {
+      "eyebrow": "Pilotage opérationnel",
+      "title": "Console d'action Entrepôt",
+      "description": "Gardez les signaux critiques, l'onglet actif et les accès rapides au même endroit pour piloter l'inventaire sans changer de contexte.",
+      "openReportsModule": "Ouvrir le module Rapports",
+      "reportsModule": "Module Rapports",
+      "tabs": {
+        "products": "Produits",
+        "movements": "Mouvements",
+        "conversions": "Conversions",
+        "entries": "Entrées",
+        "validation": "Validation",
+        "forecast": "Prévision"
+      },
+      "metrics": {
+        "activeView": "Vue active",
+        "activeViewHelper": "Le module garde votre contexte actif pour enchaîner les opérations.",
+        "lowStock": "Stock critique",
+        "lowStockAlert": "Produits sous seuil minimum à traiter rapidement.",
+        "lowStockClear": "Aucune alerte critique détectée actuellement.",
+        "reservations": "Réservations",
+        "reservationsActive": "Produits actuellement réservés pour des commandes actives.",
+        "reservationsClear": "Aucune réservation en attente.",
+        "anchoredDistribution": "Distribution ancrée",
+        "anchoredDistributionEmpty": "Aucune distribution de groupe récente mémorisée."
+      },
+      "actions": {
+        "products": "Produits",
+        "entries": "Entrées",
+        "validation": "Validation",
+        "forecast": "Prévision"
+      }
+    },
     "entryHistory": "Historique des Entrées",
     "entryHistoryCompact": {
       "tabDescription": "Historique complet des entrées Don/Achat",
@@ -1366,6 +1518,32 @@
     "activeOrders": "Commandes Actives",
     "pendingOrders": "Commandes en Attente",
     "completedOrders": "Commandes Terminées",
+    "acceptedOrders": "Commandes acceptées",
+    "executive": {
+      "eyebrow": "Pilotage distribution",
+      "title": "Console rapide des commandes",
+      "description": "Centralisez les commandes en attente, les accès de distribution et les flux rapides de contrôle sans quitter la vue opérationnelle.",
+      "metrics": {
+        "activeView": "Vue active",
+        "ordersHelper": "Suivi dense des états et actions de distribution.",
+        "offersHelper": "Pilotage des offres et demandes associées.",
+        "pending": "En attente",
+        "pendingBusy": "Des commandes attendent encore confirmation ou traitement.",
+        "pendingClear": "Aucune commande en attente immédiate.",
+        "distributable": "Distribuables",
+        "distributableHelper": "Volume disponible pour la liste des distributions filtrée.",
+        "offerRequests": "Demandes offres",
+        "offerRequestsActive": "{{count}} offre(s) avec demandes actives.",
+        "offerRequestsIdle": "Aucune demande active sur les offres visibles."
+      },
+      "actions": {
+        "orders": "Commandes",
+        "distributedList": "Liste distribuée",
+        "notifications": "Notifications",
+        "offers": "Offres",
+        "qrScanner": "Scanner QR"
+      }
+    },
     "viewOrder": "Voir la commande",
     "editOrder": "Modifier la commande",
     "printOrder": "Imprimer la commande",
@@ -1893,6 +2071,33 @@
     "selectDriver": "Sélectionner un conducteur",
     "selectVehicle": "Sélectionner un véhicule",
     "drivers": "Conducteurs",
+    "executive": {
+      "eyebrow": "Pilotage logistique",
+      "title": "Transport opérationnel et accès directs",
+      "description": "Déclenchez l’ajout d’un véhicule ou d’un chauffeur en un clic et basculez immédiatement vers la vérification ou la planification sans perdre le fil logistique.",
+      "tabs": {
+        "routes": "Itinéraires",
+        "vehicles": "Véhicules",
+        "drivers": "Chauffeurs",
+        "verification": "Vérification"
+      },
+      "metrics": {
+        "activeView": "Vue active",
+        "activeViewHelper": "Le flux reste centré sur la brique transport actuellement pilotée.",
+        "toLaunch": "À lancer",
+        "toLaunchHelper": "Itinéraires planifiés en attente de départ.",
+        "fleet": "Flotte",
+        "fleetHelper": "Véhicules disponibles dans le module transport.",
+        "drivers": "Chauffeurs",
+        "driversHelper": "Conducteurs actuellement enregistrés dans le module."
+      },
+      "actions": {
+        "routes": "Itinéraires",
+        "newVehicle": "Nouveau véhicule",
+        "newDriver": "Nouveau chauffeur",
+        "verification": "Vérification"
+      }
+    },
     "driversManagement": {
       "title": "Gestion des Conducteurs",
       "totalDrivers": "Total Conducteurs",
@@ -2277,6 +2482,47 @@
     "lastMonth": "Mois dernier",
     "thisYear": "Cette année",
     "lastYear": "Année dernière",
+    "executive": {
+      "eyebrow": "Centre de commandement",
+      "title": "Rapports prioritaires et export rapide",
+      "description": "Passez d'une vue à l'autre, verrouillez la période utile et déclenchez les exports clés sans quitter l'espace analytique.",
+      "viewPeriod": "Période de la vue",
+      "viewExport": "Export de la vue",
+      "tabs": {
+        "general": "Vue générale",
+        "operations": "Opérations",
+        "inventory": "Inventaire",
+        "orders": "Commandes",
+        "audit": "Audit"
+      },
+      "prsStatus": {
+        "idle": "En attente",
+        "loading": "Synchronisation",
+        "ready": "Disponible",
+        "unavailable": "Indisponible",
+        "error": "Erreur"
+      },
+      "metrics": {
+        "activeView": "Vue active",
+        "exportableType": "Type exportable: {{type}}",
+        "localExports": "Cette vue gère ses exports localement.",
+        "period": "Période",
+        "invalidRange": "À corriger",
+        "periodReady": "Les graphiques et exports utilisent cette plage.",
+        "periodInvalid": "Définissez une plage de dates valide.",
+        "activeEntries": "Entrées actives",
+        "activeEntriesHelper": "Base opérationnelle utilisée dans les vues générales et inventaire.",
+        "prsFlow": "Flux PRS",
+        "prsFlowActive": "État du rapport PRS distant pour la période courante.",
+        "prsFlowPassive": "Le statut PRS reste visible sans changer d’onglet."
+      },
+      "actions": {
+        "general": "Vue générale",
+        "operations": "Opérations",
+        "inventory": "Inventaire",
+        "last30days": "30 derniers jours"
+      }
+    },
     "donors": "Donateurs",
     "programs": "Programmes",
     "totalEntries": "Entrées",
@@ -4188,6 +4434,38 @@
     "totalOrganisms": "Total des Organismes",
     "activeOrganisms": "Organismes Actifs",
     "totalBeneficiaries": "Total Bénéficiaires",
+    "organismRequests": "Demandes des Organismes",
+    "groupEmail": "Email groupé",
+    "hideStats": "Masquer stats",
+    "showStats": "Afficher stats",
+    "liaisonAdministrator": "Administrateur Liaison",
+    "readOnlyAccess": "Accès lecture seule",
+    "noConnectedUser": "Aucun utilisateur connecté",
+    "onlyLiaisonAdmins": "Seuls les administrateurs de Liaison peuvent créer des organismes",
+    "accessDenied": "Accès refusé",
+    "accessDeniedDescription": "Seuls les administrateurs de Liaison peuvent créer des organismes.",
+    "executive": {
+      "eyebrow": "Coordination prioritaire",
+      "title": "Liaison active, suivi instantané et accès rapides",
+      "description": "Gardez la vue métier, les nouvelles demandes et les principaux leviers de communication à portée immédiate pour accélérer la coordination avec les organismes.",
+      "metrics": {
+        "activeView": "Vue active",
+        "liaisonHelper": "Coordination avec les organismes et suivi des échanges.",
+        "contactsHelper": "Carnet opérationnel des contacts par département.",
+        "newRequests": "Demandes nouvelles",
+        "newRequestsPending": "Des demandes récentes attendent une revue.",
+        "newRequestsClear": "Aucune nouvelle demande à traiter pour le moment.",
+        "stats": "Statistiques",
+        "visible": "Visibles",
+        "hidden": "Masquées",
+        "statsHelper": "Les tendances et exports de croissance restent pilotables depuis ici.",
+        "accessLevel": "Niveau d’accès",
+        "administration": "Administration",
+        "readOnly": "Lecture seule",
+        "administrationHelper": "Création et mise à jour des organismes autorisées.",
+        "readOnlyHelper": "Consultation et communication disponibles sans modification."
+      }
+    },
     "searchPlaceholder": "🔍 Rechercher un organisme par nom ou responsable...",
     "noOrganismsFound": "🔍 Aucun organisme trouvé",
     "tryOtherSearchTerms": "Essayez avec d'autres termes de recherche",
