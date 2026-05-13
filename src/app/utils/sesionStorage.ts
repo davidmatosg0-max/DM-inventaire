@@ -154,8 +154,15 @@ export function tienePermiso(permiso: PermisoModulo): boolean {
   const usuario = obtenerUsuarioSesion();
   if (!usuario) return false;
   
-  // El administrador general tiene todos los permisos
-  if (usuario.permisos.includes('administrador_general')) return true;
+  // Mantener compatibilidad con componentes legados que siguen consultando
+  // permisos desde la sesión en lugar del sistema expandido.
+  if (
+    usuario.permisos.includes('administrador_general')
+    || usuario.permisos.includes('desarrollador')
+    || usuario.permisos.includes('acceso_total')
+  ) {
+    return true;
+  }
   
   return usuario.permisos.includes(permiso);
 }
