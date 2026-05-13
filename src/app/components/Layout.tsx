@@ -522,16 +522,24 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     const itemActivo = isMenuItemActive(item);
     const itemExpandido = Boolean(item.children) && (expandedMenus.includes(item.id) || item.children?.some(child => child.id === currentPage));
     const baseClasses = nested
-      ? `w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-sm group ${
+      ? `relative w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-all duration-200 text-[12px] leading-4 group overflow-hidden ${
           itemActivo
-            ? 'bg-white/95 shadow-md backdrop-blur-sm'
-            : 'hover:bg-white/10 text-white/90'
+            ? 'bg-white text-slate-900 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.8)]'
+            : 'text-white/84 hover:bg-white/10 hover:text-white hover:shadow-[0_14px_30px_-24px_rgba(15,23,42,0.55)]'
         }`
-      : `w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all text-sm sm:text-base group ${
+      : `relative w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl transition-all duration-200 text-[13px] leading-5 group overflow-hidden ${
           itemActivo
-            ? 'bg-white/95 shadow-lg backdrop-blur-sm'
-            : 'hover:bg-white/10 text-white'
+            ? 'bg-white text-slate-900 shadow-[0_18px_36px_-26px_rgba(15,23,42,0.85)]'
+            : 'text-white/88 hover:bg-white/10 hover:text-white hover:translate-x-[1px] hover:shadow-[0_18px_36px_-28px_rgba(15,23,42,0.6)]'
         }`;
+    const iconShellClasses = nested
+      ? 'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border'
+      : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border';
+    const iconShellStyle = {
+      backgroundColor: itemActivo ? `${branding.primaryColor}16` : 'rgba(255,255,255,0.06)',
+      borderColor: itemActivo ? `${branding.primaryColor}24` : 'rgba(255,255,255,0.08)',
+      color: itemActivo ? branding.primaryColor : 'inherit',
+    };
 
     if (item.children) {
       return (
@@ -545,11 +553,26 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               color: itemActivo ? branding.primaryColor : undefined,
             }}
           >
-            <div className={`transition-transform group-hover:scale-110 ${itemActivo ? 'scale-110' : ''}`}>
+            {itemActivo ? (
+              <span
+                className="absolute left-1 top-1 bottom-1 w-1 rounded-full"
+                style={{
+                  background: `linear-gradient(180deg, ${branding.secondaryColor} 0%, ${branding.primaryColor} 100%)`,
+                }}
+              />
+            ) : null}
+            <div
+              className={`${iconShellClasses} transition-transform duration-200 group-hover:scale-[1.04] ${itemActivo ? 'scale-[1.02]' : ''}`}
+              style={iconShellStyle}
+            >
               {item.icon}
             </div>
-            <span className="truncate">{item.label}</span>
-            {itemExpandido ? <ChevronDown className="w-4 h-4 ml-auto" /> : <ChevronRight className="w-4 h-4 ml-auto" />}
+            <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
+            <div
+              className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full transition-colors ${itemActivo ? 'bg-slate-100' : 'bg-white/8 group-hover:bg-white/12'}`}
+            >
+              {itemExpandido ? <ChevronDown className="h-3.5 w-3.5 opacity-70" /> : <ChevronRight className="h-3.5 w-3.5 opacity-70" />}
+            </div>
           </button>
           <AnimatePresence>
             {itemExpandido && (
@@ -557,7 +580,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="ml-4 mt-1.5 pl-3 border-l border-white/15 space-y-1"
+                className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2.5"
               >
                 {item.children.map(child => renderMenuItem(child, true))}
               </motion.div>
@@ -581,10 +604,21 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
           color: itemActivo ? branding.primaryColor : undefined,
         }}
       >
-        <div className={`transition-transform group-hover:scale-110 ${itemActivo ? 'scale-110' : ''}`}>
+        {itemActivo ? (
+          <span
+            className="absolute left-1 top-1 bottom-1 w-1 rounded-full"
+            style={{
+              background: `linear-gradient(180deg, ${branding.secondaryColor} 0%, ${branding.primaryColor} 100%)`,
+            }}
+          />
+        ) : null}
+        <div
+          className={`${iconShellClasses} transition-transform duration-200 group-hover:scale-[1.04] ${itemActivo ? 'scale-[1.02]' : ''}`}
+          style={iconShellStyle}
+        >
           {item.icon}
         </div>
-        <span className="truncate">{item.label}</span>
+        <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
       </button>
     );
   };
@@ -743,7 +777,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Sidebar con glassmorphism */}
       {!hideSidebar && (
         <aside
-          className={`app-pro-sidebar fixed top-[56px] sm:top-[72px] left-0 bottom-0 w-64 sm:w-72 shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
+          className={`app-pro-sidebar fixed top-[56px] sm:top-[72px] left-0 bottom-0 w-[244px] sm:w-[264px] shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
           style={{ 
@@ -751,37 +785,61 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             borderColor: `${branding.primaryColor}30`
           }}
         >
-          <nav className="p-3 sm:p-4 space-y-4">
-            <div className="app-pro-sidebar-panel px-3 sm:px-4 py-3 rounded-[22px] border border-white/12 bg-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <nav className="p-2.5 sm:p-3 space-y-3">
+            <div className="app-pro-sidebar-panel rounded-[20px] border border-white/10 bg-white/[0.07] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-white/72" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                     {t('layout.mainNavigation')}
                   </p>
-                  <p className="text-xs text-white/60 mt-1">{t('layout.structuredByBusinessFunction')}</p>
+                  <p className="mt-1 text-[11px] leading-4 text-white/58">{t('layout.structuredByBusinessFunction')}</p>
                 </div>
-                <span className="rounded-full border border-white/14 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-white/78" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+                <span className="rounded-full border border-white/12 bg-white/10 px-2 py-1 text-[9px] uppercase tracking-[0.16em] text-white/76" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                   Pro
                 </span>
               </div>
-              <div className="mt-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-white/55" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+              <div className="mt-2.5 rounded-xl border border-white/8 bg-black/10 px-3 py-2">
+                <p className="text-[9px] uppercase tracking-[0.18em] text-white/50" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                   {t('layout.activeModule')}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <p className="mt-1 truncate text-[13px] font-semibold text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   {currentWorkspaceLabel}
                 </p>
               </div>
             </div>
             {menuSectionsFiltradas.map((section) => (
-              <section key={section.id} className="space-y-1.5">
-                <div className="px-3 sm:px-4">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/55" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
+              <section
+                key={section.id}
+                className="rounded-[20px] px-2 py-2 transition-all duration-200"
+                style={{
+                  border: section.items.some(item => isMenuItemActive(item))
+                    ? `1px solid ${branding.secondaryColor}30`
+                    : '1px solid rgba(255,255,255,0.07)',
+                  background: section.items.some(item => isMenuItemActive(item))
+                    ? 'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.05) 100%)'
+                    : 'rgba(255,255,255,0.04)',
+                  boxShadow: section.items.some(item => isMenuItemActive(item))
+                    ? `0 20px 40px -34px ${branding.secondaryColor}80, inset 0 1px 0 rgba(255,255,255,0.08)`
+                    : 'inset 0 1px 0 rgba(255,255,255,0.04)',
+                }}
+              >
+                <div className="flex items-center justify-between px-2.5 pb-1.5">
+                  <p className="text-[9px] uppercase tracking-[0.18em] text-white/50" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                     {section.label}
                   </p>
-                  <div className="h-px bg-white/10 mt-2" />
+                  <div className="flex items-center gap-1.5">
+                    {section.items.some(item => isMenuItemActive(item)) ? (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: branding.secondaryColor }}
+                      />
+                    ) : null}
+                    <span className="rounded-full border border-white/10 bg-white/6 px-1.5 py-0.5 text-[9px] text-white/45">
+                      {section.items.length}
+                    </span>
+                  </div>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {section.items.map(item => renderMenuItem(item))}
                 </div>
               </section>
@@ -799,7 +857,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Main content */}
-      <main className={`app-main-stage pt-[56px] sm:pt-[72px] ${!hideSidebar ? 'lg:pl-64 xl:pl-72' : ''} min-h-screen relative z-10`}>
+      <main className={`app-main-stage pt-[56px] sm:pt-[72px] ${!hideSidebar ? 'lg:pl-[244px] xl:pl-[264px]' : ''} min-h-screen relative z-10`}>
         <div data-app-shell className="app-shell-content px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5">
           <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
             <div>
@@ -830,7 +888,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Botón flotante para acceso de organismos - Modernizado */}
       <button
         onClick={() => onNavigate('acceso-organismo')}
-        className={`app-floating-organism-access fixed bottom-4 sm:bottom-6 left-4 sm:left-6 ${!hideSidebar ? 'lg:left-[calc(256px+1.5rem)] xl:left-[calc(288px+1.5rem)]' : ''} text-white rounded-full p-3 sm:p-4 shadow-2xl transition-all hover:scale-110 z-40 flex items-center gap-2 backdrop-blur-xl border-2 border-white/30 group`}
+        className={`app-floating-organism-access fixed bottom-4 sm:bottom-6 left-4 sm:left-6 ${!hideSidebar ? 'lg:left-[calc(244px+1.5rem)] xl:left-[calc(264px+1.5rem)]' : ''} text-white rounded-full p-3 sm:p-4 shadow-2xl transition-all hover:scale-110 z-40 flex items-center gap-2 backdrop-blur-xl border-2 border-white/30 group`}
         style={{ 
           background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`
         }}
