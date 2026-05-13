@@ -37,7 +37,7 @@ import {
   type ClasificacionOrganismo,
   type IdiomaContactoOrganismo
 } from '../../utils/organismosStorage';
-import { esAdministradorLiaison } from '../../utils/sesionStorage';
+import { PERMISOS, tieneAlgunoDeEstosPermisos } from '../../utils/permisos';
 import { useBranding } from '../../../hooks/useBranding';
 import { AsignarRolContacto } from '../AsignarRolContacto';
 import { registrarActividad } from '../../utils/actividadLogger';
@@ -91,8 +91,16 @@ export function Organismos() {
     
   }, [branding, t]);
 
-  // Verificar permisos del usuario
-  const puedeGestionarOrganismos = esAdministradorLiaison();
+  // Usar el sistema de permisos expandido para no bloquear a desarrolladores
+  // ni a usuarios con acceso total cuando el módulo de Organismos sí está habilitado.
+  const puedeGestionarOrganismos = tieneAlgunoDeEstosPermisos([
+    PERMISOS.ORGANISMOS_CREAR,
+    PERMISOS.ORGANISMOS_EDITAR,
+    PERMISOS.ADMINISTRADOR_LIAISON,
+    PERMISOS.ADMINISTRADOR_GENERAL,
+    PERMISOS.DESARROLLADOR,
+    PERMISOS.ACCESO_TOTAL,
+  ]);
   
   // Cargar organismos desde el storage
   const [organismos, setOrganismos] = useState<Organismo[]>([]);
