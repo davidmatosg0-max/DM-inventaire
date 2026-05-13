@@ -37,7 +37,6 @@ const Transporte = lazyNamed(() => import('./components/pages/Transporte'), 'Tra
 const Reportes = lazyNamed(() => import('./components/pages/Reportes'), 'Reportes');
 const ReportesAvanzado = lazyNamed(() => import('./components/pages/ReportesAvanzado'), 'ReportesAvanzado');
 const Usuarios = lazyNamed(() => import('./components/pages/Usuarios'), 'Usuarios');
-const UsuariosInternos = lazyNamed(() => import('./components/pages/UsuariosInternos'), 'UsuariosInternos');
 const IDDigital = lazyNamed(() => import('./components/pages/IDDigital'), 'IDDigital');
 const APIKeysPage = lazyNamed(() => import('./components/pages/APIKeysPage'), 'APIKeysPage');
 const GestionAutenticacion = lazyNamed(() => import('./components/pages/GestionAutenticacion'), 'GestionAutenticacion');
@@ -45,7 +44,6 @@ const PanelMarca = lazyNamed(() => import('./components/pages/PanelMarca'), 'Pan
 const Configuracion = lazyNamed(() => import('./components/pages/Configuracion'), 'Configuracion');
 const AccesoOrganismo = lazyNamed(() => import('./components/pages/AccesoOrganismo'), 'AccesoOrganismo');
 const Departamentos = lazyNamed(() => import('./components/pages/Departamentos'), 'Departamentos');
-const Benevoles = lazyNamed(() => import('./components/pages/Benevoles'), 'Benevoles');
 const Recrutement = lazyNamed(() => import('./components/pages/Recrutement'), 'Recrutement');
 const AchatPage = lazyNamed(() => import('./components/pages/AchatPage'), 'AchatPage');
 const EmailOrganismos = lazyNamed(() => import('./components/pages/EmailOrganismos'), 'EmailOrganismos');
@@ -70,10 +68,10 @@ function PageLoadingState() {
 
 const PUBLIC_PAGE_IDS = new Set(['acceso-organismo', 'benevoles-public', 'recrutement-public']);
 const AUTH_UTILITY_PAGE_IDS = new Set(['contact', 'departamentos']);
+const REMOVED_PAGE_IDS = new Set(['benevoles', 'usuarios-internos']);
 const PAGE_PERMISSION_ALIASES: Record<string, string> = {
   liaison: 'email-organismos',
   'reportes-avanzado': 'reportes',
-  'usuarios-internos': 'usuarios',
   'gestion-autenticacion': 'usuarios',
   'dashboard-predictivo': 'dashboard',
   'dechets-compostage': 'inventario',
@@ -115,6 +113,20 @@ function AppContent() {
       document.documentElement.lang = i18n.language;
     }
   }, [i18n.language]);
+
+  useEffect(() => {
+    if (!REMOVED_PAGE_IDS.has(currentPage)) {
+      return;
+    }
+
+    setCurrentPage('dashboard');
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', 'dashboard');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [currentPage]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -168,8 +180,6 @@ function AppContent() {
         return renderWithSuspense(<ReportesAvanzado />);
       case 'usuarios':
         return renderWithSuspense(<Usuarios />);
-      case 'usuarios-internos':
-        return renderWithSuspense(<UsuariosInternos />);
       case 'id-digital':
         return renderWithSuspense(<IDDigital />);
       case 'api-keys':
@@ -188,8 +198,6 @@ function AppContent() {
         return renderWithSuspense(<Recrutement />);
       case 'achat':
         return renderWithSuspense(<AchatPage onNavigate={setCurrentPage} />);
-      case 'benevoles':
-        return renderWithSuspense(<Benevoles />);
       case 'liaison':
         return renderWithSuspense(<EmailOrganismos onNavigate={setCurrentPage} />);
       case 'email-organismos':

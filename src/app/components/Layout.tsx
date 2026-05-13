@@ -18,7 +18,6 @@ import {
   Truck, 
   FileText, 
   Users,
-  UserCog,
   QrCode,
   Menu,
   X,
@@ -79,7 +78,6 @@ interface MenuSection {
 
 const MENU_PERMISSION_ALIASES: Record<string, string> = {
   'reportes-avanzado': 'reportes',
-  'usuarios-internos': 'usuarios',
   'gestion-autenticacion': 'usuarios',
   'dashboard-predictivo': 'dashboard',
 };
@@ -425,10 +423,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     { id: 'id-digital', label: t('nav.digitalID'), icon: <Scale className="w-5 h-5" /> },
     { id: 'email-organismos', label: t('nav.liaison'), icon: <Users className="w-5 h-5" /> },
     { id: 'communication', label: t('nav.messaging'), icon: <MessageSquare className="w-5 h-5" /> },
-    { id: 'benevoles', label: t('nav.volunteers'), icon: <UserPlus className="w-5 h-5" />, soloDesarrollador: true },
     { id: 'recrutement', label: t('nav.recruitment'), icon: <UserPlus className="w-5 h-5" /> },
     { id: 'usuarios', label: t('nav.users'), icon: <Users className="w-5 h-5" /> },
-    { id: 'usuarios-internos', label: t('nav.internalUsers'), icon: <UserCog className="w-5 h-5" /> },
     { id: 'gestion-autenticacion', label: t('nav.authenticationManagement'), icon: <Key className="w-5 h-5" /> },
     { id: 'configuracion', label: t('nav.configuration'), icon: <Settings className="w-5 h-5" /> },
     { id: 'panel-marca', label: t('nav.visualIdentity'), icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
@@ -471,8 +467,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const menuSections: MenuSection[] = [
     { id: 'overview', label: t('layout.sections.overview'), itemIds: ['dashboard', 'dashboard-metricas', 'dashboard-predictivo'] },
     { id: 'operations', label: t('layout.sections.operations'), itemIds: ['entrepot', 'cuisine', 'achat', 'id-digital'] },
-    { id: 'coordination', label: t('layout.sections.coordination'), itemIds: ['email-organismos', 'communication', 'benevoles', 'recrutement'] },
-    { id: 'administration', label: t('layout.sections.administration'), itemIds: ['usuarios', 'usuarios-internos', 'gestion-autenticacion', 'configuracion'] },
+    { id: 'coordination', label: t('layout.sections.coordination'), itemIds: ['email-organismos', 'communication', 'recrutement'] },
+    { id: 'administration', label: t('layout.sections.administration'), itemIds: ['usuarios', 'gestion-autenticacion', 'configuracion'] },
     { id: 'advanced', label: t('layout.sections.advanced'), itemIds: ['panel-marca', 'api-keys'] },
   ];
 

@@ -93,12 +93,6 @@ export const LazyUsuarios = lazy(() =>
   import('../components/pages/Usuarios').then((module) => ({ default: module.Usuarios }))
 );
 
-export const LazyUsuariosInternos = lazy(() =>
-  import('../components/pages/UsuariosInternos').then((module) => ({
-    default: module.UsuariosInternos,
-  }))
-);
-
 export const LazyIDDigital = lazy(() =>
   import('../components/pages/IDDigital').then((module) => ({ default: module.IDDigital }))
 );
