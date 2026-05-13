@@ -256,29 +256,6 @@ export interface Benevole {
   };
 }
 
-export interface FormularioNouveauBenevole {
-  nom: string;
-  prenom: string;
-  dateNaissance?: string;
-  sexe?: string;
-  adresse?: string;
-  ville?: string;
-  codePostal?: string;
-  telephone?: string;
-  email?: string;
-  disponibilite?: string[];
-  competences?: string[];
-  langues?: string[];
-  statut?: 'actif' | 'inactif';
-  documents?: DocumentBenevole[];
-  notes?: string;
-  urgenceContact?: {
-    nom: string;
-    telephone: string;
-    relation: string;
-  };
-}
-
 // ============================================================================
 // CUISINE Y TRANSFORMACIONES
 // ============================================================================

@@ -72,21 +72,11 @@ export function checkTranslationCoverage(): TranslationCheckResult {
     'PanierProductos.tsx',
     'CarritoMejorado.tsx',
     
-    // Módulos de Backup
-    'BackupModule.tsx',
-    'BackupCreator.tsx',
-    'BackupRestorer.tsx',
-    'BackupHistory.tsx',
-    'BackupSettings.tsx',
-    'TextCorrector.tsx',
-    
     // Otros componentes
-    'FormularioNouveauBenevole.tsx',
     'FormularioOrganismoCompacto.tsx',
     'PerfilOrganismoDialog.tsx',
     'FormularioChoferCompacto.tsx',
     'FormularioVehiculoCompacto.tsx',
-    'FormularioUsuarioInternoCompacto.tsx',
     'FormularioBeneficiarioCompacto.tsx',
     'FormularioContactoCompacto.tsx',
     'EjemplosDeUso.tsx',
