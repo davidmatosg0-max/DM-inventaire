@@ -6,6 +6,8 @@ import {
   DAVID_DEVELOPPEUR_EMAIL,
   DAVID_DEVELOPPEUR_NOMBRE,
   DAVID_DEVELOPPEUR_USERNAME,
+  ROLES_CONFIG,
+  type RolUsuario,
 } from './usuarios';
 
 export type PermisoModulo = 'administrador_liaison' | 'coordinador' | 'almacenista' | 'transportista' | 'administrador_general' | 'desarrollador' | 'acceso_total';
@@ -16,12 +18,32 @@ export interface UsuarioSesion {
   nombre: string;
   apellido?: string;
   email: string;
-  rol: 'administrador' | 'coordinador' | 'almacenista' | 'transportista';
+  rol: RolUsuario | string;
   permisos: PermisoModulo[];
   foto?: string;
 }
 
 const STORAGE_KEY = 'usuario_sesion_banco_alimentos';
+
+function esRolSistema(rol?: string): rol is RolUsuario {
+  return Boolean(rol && rol in ROLES_CONFIG);
+}
+
+function expandirPermisosSegunRol(usuario: UsuarioSesion): UsuarioSesion {
+  if (!esRolSistema(usuario.rol)) {
+    return {
+      ...usuario,
+      permisos: [...new Set(usuario.permisos || [])] as PermisoModulo[],
+    };
+  }
+
+  const permisosDerivadosDelRol = ROLES_CONFIG[usuario.rol].permisos;
+
+  return {
+    ...usuario,
+    permisos: [...new Set([...(usuario.permisos || []), ...permisosDerivadosDelRol])] as PermisoModulo[],
+  };
+}
 
 function esSesionDavidDeveloppeur(usuario: Partial<UsuarioSesion> & { role?: string; rol?: string; username?: string }): boolean {
   const username = usuario.username?.trim().toLowerCase();
@@ -34,22 +56,22 @@ function esSesionDavidDeveloppeur(usuario: Partial<UsuarioSesion> & { role?: str
 
 function normalizarUsuarioSesion(usuario: UsuarioSesion): UsuarioSesion {
   const email = usuario.email?.trim();
-  const baseNormalizada = {
+  const baseNormalizada = expandirPermisosSegunRol({
     ...usuario,
     email: email || 'usuario@banquealimentaire.ca',
-  };
+  });
 
   if (!esSesionDavidDeveloppeur(baseNormalizada)) {
     return baseNormalizada;
   }
 
-  return {
+  return expandirPermisosSegunRol({
     ...baseNormalizada,
     username: DAVID_DEVELOPPEUR_USERNAME,
     nombre: DAVID_DEVELOPPEUR_NOMBRE,
     apellido: DAVID_DEVELOPPEUR_APELLIDO,
     email: DAVID_DEVELOPPEUR_EMAIL,
-  };
+  });
 }
 
 /**
