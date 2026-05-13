@@ -1,6 +1,6 @@
 // Sistema de Roles y Permisos del Banco de Alimentos
 
-import { ROLES_CONFIG, type RolUsuario } from '../utils/usuarios';
+import { SYSTEM_ROLES, type RolUsuario } from './systemRoles';
 
 export interface Permiso {
   id: string;
@@ -133,146 +133,14 @@ export const permisos: Permiso[] = [
 
 const permisosDisponibles = new Set(permisos.map((permiso) => permiso.id));
 
-const iconosRol: Record<RolUsuario, string> = {
-  desarrollador: '💻',
-  administrador: '👑',
-  coordinador: '📋',
-  responsable_entrepot: '📦',
-  responsable_comptoir: '🛒',
-  responsable_transport: '🚚',
-  liaison_organisme: '🏛️',
-  benevole_comptoir: '🤝',
-  benevole_entrepot: '🧺',
-  employe: '🧑‍💼',
-  visualizador: '👁️'
-};
-
-const permisosPorRolSistema: Record<RolUsuario, string[]> = {
-  desarrollador: permisos.map((permiso) => permiso.id),
-  administrador: permisos.map((permiso) => permiso.id),
-  coordinador: [
-    'dashboard.ver',
-    'dashboard.metricas',
-    'inventario.ver',
-    'inventario.editar',
-    'inventario.movimientos',
-    'comandas.ver',
-    'comandas.crear',
-    'comandas.editar',
-    'comandas.aprobar',
-    'prs.ver',
-    'prs.registrar',
-    'organismos.ver',
-    'organismos.crear',
-    'organismos.editar',
-    'organismos.perfil',
-    'ofertas.ver',
-    'partenaires.ver',
-    'annuaire_entrepot.ver',
-    'transporte.ver',
-    'cuisine.ver',
-    'communication.ver',
-    'reportes.ver',
-    'reportes.generar',
-    'reportes.exportar',
-    'reportes.avanzados',
-    'achat.ver',
-    'achat.crear'
-  ],
-  responsable_entrepot: [
-    'dashboard.ver',
-    'inventario.ver',
-    'inventario.crear',
-    'inventario.editar',
-    'inventario.movimientos',
-    'inventario.ajustes',
-    'comandas.ver',
-    'comandas.completar',
-    'prs.ver',
-    'prs.registrar',
-    'prs.editar',
-    'organismos.ver',
-    'partenaires.ver',
-    'annuaire_entrepot.ver',
-    'communication.ver',
-    'reportes.ver',
-    'achat.ver'
-  ],
-  responsable_comptoir: [
-    'dashboard.ver',
-    'comandas.ver',
-    'comandas.crear',
-    'comandas.editar',
-    'comptoir.ver',
-    'organismos.ver',
-    'communication.ver',
-    'reportes.ver',
-    'achat.ver'
-  ],
-  responsable_transport: [
-    'dashboard.ver',
-    'comandas.ver',
-    'organismos.ver',
-    'transporte.ver',
-    'transporte.crear',
-    'transporte.editar',
-    'transporte.entregar',
-    'transporte.vehiculos',
-    'reportes.ver'
-  ],
-  liaison_organisme: [
-    'dashboard.ver',
-    'organismos.ver',
-    'organismos.crear',
-    'organismos.editar',
-    'organismos.eliminar',
-    'organismos.perfil',
-    'organismos.documentos',
-    'ofertas.ver',
-    'ofertas.editar',
-    'liaison.ver',
-    'liaison.editar',
-    'communication.ver',
-    'communication.editar',
-    'comandas.ver',
-    'comandas.crear',
-    'comandas.editar',
-    'comandas.aprobar',
-    'reportes.ver',
-    'achat.ver',
-    'achat.crear'
-  ],
-  benevole_comptoir: [
-    'dashboard.ver',
-    'comandas.ver',
-    'organismos.ver'
-  ],
-  benevole_entrepot: [
-    'dashboard.ver',
-    'inventario.ver',
-    'prs.ver'
-  ],
-  employe: [
-    'dashboard.ver',
-    'inventario.ver',
-    'comandas.ver',
-    'organismos.ver',
-    'reportes.ver'
-  ],
-  visualizador: [
-    'dashboard.ver',
-    'reportes.ver',
-  ]
-};
-
 // Roles predeterminados del sistema
-export const rolesPredeterminados: Rol[] = (Object.entries(ROLES_CONFIG) as Array<[RolUsuario, typeof ROLES_CONFIG[RolUsuario]]>).map(([id, config], index) => ({
+export const rolesPredeterminados: Rol[] = (Object.entries(SYSTEM_ROLES) as Array<[RolUsuario, typeof SYSTEM_ROLES[RolUsuario]]>).map(([id, config], index) => ({
   id,
   nombre: config.nombre,
   descripcion: config.descripcion,
   color: config.color,
-  icono: iconosRol[id],
-  permisos: (permisosPorRolSistema[id] || []).filter((permisoId) => permisosDisponibles.has(permisoId)),
+  icono: config.icono,
+  permisos: config.canonicalPermissions.filter((permisoId) => permisosDisponibles.has(permisoId)),
   usuariosAsignados: index < 2 ? 1 : 0,
   activo: true,
   predeterminado: true

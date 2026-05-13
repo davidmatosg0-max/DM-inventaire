@@ -8,20 +8,9 @@ import {
   guardarUsuarioRemotoAdmin,
   listarUsuariosRemotosAdmin,
 } from './remoteUserAdmin';
+import { SYSTEM_ROLES, esRolSistema as esRolSistemaCatalogo, type RolUsuario } from '../data/systemRoles';
 
-// 🎭 ROLES DEL SISTEMA
-export type RolUsuario = 
-  | 'desarrollador'           // Acceso total al sistema, debugging, configuración avanzada
-  | 'administrador'           // Gestión completa del sistema
-  | 'coordinador'             // Coordinación de operaciones, inventario y comandas
-  | 'responsable_entrepot'    // Gestión del almacén e inventario
-  | 'responsable_comptoir'    // Gestión del comptoir y beneficiarios
-  | 'responsable_transport'   // Gestión de transporte y logística
-  | 'liaison_organisme'       // Comunicación y gestión de organismos
-  | 'benevole_comptoir'       // Voluntario del comptoir
-  | 'benevole_entrepot'       // Voluntario del almacén
-  | 'employe'                 // Empleado general
-  | 'visualizador';           // Solo lectura
+export type { RolUsuario } from '../data/systemRoles';
 
 // 🔐 PERMISOS DEL SISTEMA
 export const PERMISOS = {
@@ -92,172 +81,22 @@ export const ROLES_CONFIG: Record<RolUsuario, {
   descripcion: string;
   color: string;
   permisos: string[];
-}> = {
-  desarrollador: {
-    nombre: 'Développeur',
-    descripcion: 'Accès complet au système avec permissions de développement et debugging',
-    color: '#000000',
-    permisos: [
-      PERMISOS.DESARROLLADOR,
-      PERMISOS.ACCESO_TOTAL,
-      PERMISOS.DEBUG_MODE,
-      PERMISOS.ADMINISTRADOR_GENERAL,
-      PERMISOS.GESTION_USUARIOS,
-      PERMISOS.GESTION_ROLES,
-      PERMISOS.CONFIGURACION_SISTEMA,
-      PERMISOS.BACKUP_RESTAURACION
-    ]
-  },
-  
-  administrador: {
-    nombre: 'Administrateur',
-    descripcion: 'Gestion complète du système et de toutes les opérations',
-    color: '#DC3545',
-    permisos: [
-      PERMISOS.ADMINISTRADOR_GENERAL,
-      PERMISOS.GESTION_USUARIOS,
-      PERMISOS.GESTION_ROLES,
-      PERMISOS.CONFIGURACION_SISTEMA,
-      PERMISOS.BACKUP_RESTAURACION,
-      PERMISOS.COORDINADOR,
-      PERMISOS.GESTION_ORGANISMOS,
-      PERMISOS.GESTION_COMANDAS,
-      PERMISOS.GESTION_INVENTARIO,
-      PERMISOS.REPORTES_AVANZADOS,
-      PERMISOS.GESTION_PRODUCTOS,
-      PERMISOS.GESTION_BENEFICIARIOS,
-      PERMISOS.GESTION_VEHICULOS,
-      PERMISOS.GESTION_RUTAS,
-      PERMISOS.ADMINISTRADOR_LIAISON
-    ]
-  },
-  
-  coordinador: {
-    nombre: 'Coordinateur',
-    descripcion: 'Coordination des opérations, gestion des commandes et de l\'inventaire',
-    color: '#1E73BE',
-    permisos: [
-      PERMISOS.COORDINADOR,
-      PERMISOS.GESTION_ORGANISMOS,
-      PERMISOS.GESTION_COMANDAS,
-      PERMISOS.GESTION_INVENTARIO,
-      PERMISOS.REPORTES_AVANZADOS,
-      PERMISOS.MOVIMIENTOS_INVENTARIO,
-      PERMISOS.GESTION_OFERTAS,
-      PERMISOS.VER_DASHBOARD,
-      PERMISOS.VER_REPORTES
-    ]
-  },
-  
-  responsable_entrepot: {
-    nombre: 'Responsable Entrepôt',
-    descripcion: 'Gestion de l\'entrepôt, inventaire et réception des produits',
-    color: '#4CAF50',
-    permisos: [
-      PERMISOS.RESPONSABLE_ENTREPOT,
-      PERMISOS.GESTION_PRODUCTOS,
-      PERMISOS.MOVIMIENTOS_INVENTARIO,
-      PERMISOS.GESTION_PRS,
-      PERMISOS.RECEPCION_PRODUCTOS,
-      PERMISOS.GESTION_INVENTARIO,
-      PERMISOS.VER_DASHBOARD,
-      PERMISOS.VER_INVENTARIO
-    ]
-  },
-  
-  responsable_comptoir: {
-    nombre: 'Responsable Comptoir',
-    descripcion: 'Gestion du comptoir, bénéficiaires et distribution d\'aide',
-    color: '#2d9561',
-    permisos: [
-      PERMISOS.RESPONSABLE_COMPTOIR,
-      PERMISOS.GESTION_BENEFICIARIOS,
-      PERMISOS.GESTION_RENDEZ_VOUS,
-      PERMISOS.GESTION_AIDE_ALIMENTAIRE,
-      PERMISOS.REGISTRO_VISITAS,
-      PERMISOS.VER_DASHBOARD,
-      PERMISOS.VER_REPORTES
-    ]
-  },
-  
-  responsable_transport: {
-    nombre: 'Responsable Transport',
-    descripcion: 'Gestion du transport, véhicules, routes et livraisons',
-    color: '#FFC107',
-    permisos: [
-      PERMISOS.RESPONSABLE_TRANSPORT,
-      PERMISOS.GESTION_VEHICULOS,
-      PERMISOS.GESTION_RUTAS,
-      PERMISOS.GESTION_TRANSPORTES,
-      PERMISOS.TRACKING_GPS,
-      PERMISOS.VER_DASHBOARD,
-      PERMISOS.VER_REPORTES
-    ]
-  },
-  
-  liaison_organisme: {
-    nombre: 'Liaison Organisme',
-    descripcion: 'Communication avec les organismes et gestion des relations',
-    color: '#9C27B0',
-    permisos: [
-      PERMISOS.ADMINISTRADOR_LIAISON,
-      PERMISOS.COMUNICACION_ORGANISMOS,
-      PERMISOS.GESTION_OFERTAS,
-      PERMISOS.VERIFICACION_ORGANISMOS,
-      PERMISOS.GESTION_ORGANISMOS,
-      PERMISOS.VER_DASHBOARD,
-      PERMISOS.VER_REPORTES
-    ]
-  },
-  
-  benevole_comptoir: {
-    nombre: 'Bénévole Comptoir',
-    descripcion: 'Aide au comptoir et assistance aux bénéficiaires',
-    color: '#17A2B8',
-    permisos: [
-      PERMISOS.BENEVOLE_LECTEUR,
-      PERMISOS.AIDE_COMPTOIR,
-      PERMISOS.REGISTRO_VISITAS,
-      PERMISOS.VER_DASHBOARD
-    ]
-  },
-  
-  benevole_entrepot: {
-    nombre: 'Bénévole Entrepôt',
-    descripcion: 'Aide à l\'entrepôt et organisation des produits',
-    color: '#28A745',
-    permisos: [
-      PERMISOS.BENEVOLE_LECTEUR,
-      PERMISOS.AIDE_ENTREPOT,
-      PERMISOS.VER_INVENTARIO,
-      PERMISOS.VER_DASHBOARD
-    ]
-  },
-  
-  employe: {
-    nombre: 'Employé',
-    descripcion: 'Employé général avec accès aux fonctions courantes',
-    color: '#6C757D',
-    permisos: [
-      PERMISOS.EMPLOYE_GENERAL,
-      PERMISOS.VER_DASHBOARD,
-      PERMISOS.VER_INVENTARIO,
-      PERMISOS.VER_REPORTES
-    ]
-  },
-  
-  visualizador: {
-    nombre: 'Visualiseur',
-    descripcion: 'Accès en lecture seule au système',
-    color: '#9E9E9E',
-    permisos: [
-      PERMISOS.VISUALIZADOR,
-      PERMISOS.VER_DASHBOARD,
-      PERMISOS.VER_REPORTES,
-      PERMISOS.VER_INVENTARIO
-    ]
-  }
-};
+}> = Object.fromEntries(
+  Object.entries(SYSTEM_ROLES).map(([rol, config]) => [
+    rol,
+    {
+      nombre: config.nombre,
+      descripcion: config.descripcion,
+      color: config.color,
+      permisos: [...config.legacyPermissions],
+    },
+  ])
+) as Record<RolUsuario, {
+  nombre: string;
+  descripcion: string;
+  color: string;
+  permisos: string[];
+}>;
 
 export interface Usuario {
   id: string;
@@ -283,7 +122,7 @@ export const DAVID_DEVELOPPEUR_APELLIDO = 'Développeur';
 export const DAVID_DEVELOPPEUR_EMAIL = 'davidmatosg0@gmail.com';
 
 export function esRolSistema(rol: string): rol is RolUsuario {
-  return rol in ROLES_CONFIG;
+  return esRolSistemaCatalogo(rol);
 }
 
 export function obtenerEtiquetaRol(rol: string): string {

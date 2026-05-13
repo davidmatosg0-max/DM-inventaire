@@ -6,11 +6,16 @@ import {
   DAVID_DEVELOPPEUR_EMAIL,
   DAVID_DEVELOPPEUR_NOMBRE,
   DAVID_DEVELOPPEUR_USERNAME,
-  ROLES_CONFIG,
-  type RolUsuario,
 } from './usuarios';
+import {
+  SYSTEM_ROLES,
+  esRolSistema,
+  obtenerCanonicalPermissionsDelRol,
+  obtenerLegacyPermissionsDelRol,
+  type RolUsuario,
+} from '../data/systemRoles';
 
-export type PermisoModulo = 'administrador_liaison' | 'coordinador' | 'almacenista' | 'transportista' | 'administrador_general' | 'desarrollador' | 'acceso_total';
+export type PermisoModulo = string;
 
 export interface UsuarioSesion {
   id: string;
@@ -25,23 +30,22 @@ export interface UsuarioSesion {
 
 const STORAGE_KEY = 'usuario_sesion_banco_alimentos';
 
-function esRolSistema(rol?: string): rol is RolUsuario {
-  return Boolean(rol && rol in ROLES_CONFIG);
-}
-
 function expandirPermisosSegunRol(usuario: UsuarioSesion): UsuarioSesion {
+  const permisosExpandidos = new Set<string>(usuario.permisos || []);
+
   if (!esRolSistema(usuario.rol)) {
     return {
       ...usuario,
-      permisos: [...new Set(usuario.permisos || [])] as PermisoModulo[],
+      permisos: [...permisosExpandidos],
     };
   }
 
-  const permisosDerivadosDelRol = ROLES_CONFIG[usuario.rol].permisos;
+  obtenerLegacyPermissionsDelRol(usuario.rol).forEach((permiso) => permisosExpandidos.add(permiso));
+  obtenerCanonicalPermissionsDelRol(usuario.rol).forEach((permiso) => permisosExpandidos.add(permiso));
 
   return {
     ...usuario,
-    permisos: [...new Set([...(usuario.permisos || []), ...permisosDerivadosDelRol])] as PermisoModulo[],
+    permisos: [...permisosExpandidos],
   };
 }
 
@@ -85,16 +89,19 @@ export function guardarUsuarioSesion(usuarioOUsername: UsuarioSesion | string | 
     
     if (typeof usuarioOUsername === 'string') {
       // Crear usuario demo basado en el username
+      const esDavidDeveloppeur = usuarioOUsername.trim().toLowerCase() === DAVID_DEVELOPPEUR_USERNAME.toLowerCase();
       usuario = {
         id: '1',
         username: usuarioOUsername,
-        nombre: usuarioOUsername.trim().toLowerCase() === DAVID_DEVELOPPEUR_USERNAME.toLowerCase() ? DAVID_DEVELOPPEUR_NOMBRE : 'Administrateur',
-        apellido: usuarioOUsername.trim().toLowerCase() === DAVID_DEVELOPPEUR_USERNAME.toLowerCase() ? DAVID_DEVELOPPEUR_APELLIDO : 'Système',
-        email: usuarioOUsername.trim().toLowerCase() === DAVID_DEVELOPPEUR_USERNAME.toLowerCase()
+        nombre: esDavidDeveloppeur ? DAVID_DEVELOPPEUR_NOMBRE : 'Administrateur',
+        apellido: esDavidDeveloppeur ? DAVID_DEVELOPPEUR_APELLIDO : 'Système',
+        email: esDavidDeveloppeur
           ? DAVID_DEVELOPPEUR_EMAIL
           : `${usuarioOUsername.toLowerCase()}@banquealimentaire.ca`,
-        rol: 'administrador',
-        permisos: ['administrador_general', 'desarrollador', 'acceso_total'],
+        rol: esDavidDeveloppeur ? 'desarrollador' : 'administrador',
+        permisos: esDavidDeveloppeur
+          ? ['desarrollador', 'acceso_total']
+          : ['administrador_general'],
         foto: undefined
       };
     } else {
