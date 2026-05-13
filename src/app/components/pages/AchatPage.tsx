@@ -33,6 +33,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
+import { GestionUnidades } from '../inventario/GestionUnidades';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
@@ -58,15 +59,14 @@ import {
   type RegleAutorisationAchat,
   type StatutBonAchat
 } from '../../utils/achatsStorage';
+import { obtenerUnidadesParaSelector } from '../../utils/unidadStorage';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 
 interface LigneFormulaire extends Omit<LigneBonAchat, 'quantite'> {
   quantite: number | '';
 }
 
-const ACHAT_UNIT_VALUES = ['unit', 'box', 'case', 'bag', 'kg', 'litre', 'pallet'] as const;
-type AchatUnitValue = (typeof ACHAT_UNIT_VALUES)[number];
-const DEFAULT_ACHAT_UNIT: AchatUnitValue = 'unit';
+type UniteOptionAchat = ReturnType<typeof obtenerUnidadesParaSelector>[number];
 
 interface ReglaFormulaire {
   id?: string;
@@ -104,11 +104,7 @@ function resolveIntlLocale(language: string): string {
   }
 }
 
-function isAchatUnitValue(value: string): value is AchatUnitValue {
-  return ACHAT_UNIT_VALUES.includes(value as AchatUnitValue);
-}
-
-function createEmptyLine(defaultUnit = DEFAULT_ACHAT_UNIT): LigneFormulaire {
+function createEmptyLine(defaultUnit = ''): LigneFormulaire {
   return {
     id: `ligne-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     description: '',
@@ -143,6 +139,23 @@ function getSupplierLabel(contact: ContactoDepartamento, fallbackLabel = 'Suppli
   return contact.nombreEmpresa || `${contact.nombre} ${contact.apellido}`.trim() || fallbackLabel;
 }
 
+function resolveUnitId(value: string, unitOptions: UniteOptionAchat[]): string {
+  if (!value) {
+    return '';
+  }
+
+  const existingUnit = unitOptions.find(option => option.id === value);
+  if (existingUnit) {
+    return existingUnit.id;
+  }
+
+  const matchingLegacyValue = unitOptions.find(option =>
+    option.nombre.toLowerCase() === value.toLowerCase() || option.abreviatura.toLowerCase() === value.toLowerCase()
+  );
+
+  return matchingLegacyValue?.id || '';
+}
+
 export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
@@ -151,19 +164,15 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   const supplierFallback = t('achatPage.supplierFallback');
   const formatCurrencyValue = (value: number) => formatCurrency(value, currentLanguage);
   const formatDateValue = (value?: string) => formatDate(value, currentLanguage);
-  const unitOptions = useMemo(
-    () => ACHAT_UNIT_VALUES.map(value => ({
-      value,
-      label: t(`achatPage.create.unitOptions.${value}`)
-    })),
-    [currentLanguage, t]
-  );
+  const [unitOptions, setUnitOptions] = useState<UniteOptionAchat[]>([]);
+  const [showUnitManager, setShowUnitManager] = useState(false);
   const getUnitLabel = (value: string) => {
-    if (!isAchatUnitValue(value)) {
-      return value;
+    const selectedUnit = unitOptions.find(option => option.id === value);
+    if (selectedUnit) {
+      return selectedUnit.nombre;
     }
 
-    return t(`achatPage.create.unitOptions.${value}`);
+    return value;
   };
   const statutConfig = useMemo<Record<StatutBonAchat, { label: string; className: string }>>(() => ({
     brouillon: { label: t('achatPage.status.draft'), className: 'bg-slate-100 text-slate-700 border-slate-200' },
@@ -346,6 +355,29 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   }, []);
 
   useEffect(() => {
+    const syncUnits = () => {
+      const loadedUnits = obtenerUnidadesParaSelector();
+      const fallbackUnitId = loadedUnits[0]?.id || '';
+
+      setUnitOptions(loadedUnits);
+      setLignes(current => current.map(line => {
+        const resolvedUnitId = resolveUnitId(line.unite, loadedUnits);
+        return {
+          ...line,
+          unite: resolvedUnitId || fallbackUnitId
+        };
+      }));
+    };
+
+    syncUnits();
+    window.addEventListener('unidadesActualizadas', syncUnits as EventListener);
+
+    return () => {
+      window.removeEventListener('unidadesActualizadas', syncUnits as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
     if (bonsProgrammeFilter === 'all' || bonsProgrammeFilter === 'none') {
       return;
     }
@@ -368,7 +400,8 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     setPriorite('normal');
     setConditionsPaiement(t('achatPage.defaults.paymentTerms'));
     setNotes('');
-    setLignes([createEmptyLine()]);
+    setShowUnitManager(false);
+    setLignes([createEmptyLine(unitOptions[0]?.id || '')]);
   };
 
   const resetReglaForm = () => {
@@ -425,9 +458,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     }
 
     const lignesValides = lignes
-      .filter(line => line.description.trim() && (Number(line.quantite) || 0) > 0 && line.prixUnitaire > 0)
+      .filter(line => line.description.trim() && getUnitLabel(line.unite).trim() && (Number(line.quantite) || 0) > 0 && line.prixUnitaire > 0)
       .map(line => ({
         ...line,
+        unite: getUnitLabel(line.unite),
         quantite: Number(line.quantite) || 0,
         total: (Number(line.quantite) || 0) * line.prixUnitaire
       }));
@@ -1547,14 +1581,29 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>{t('achatPage.create.lineItems')}</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setLignes(current => [...current, createEmptyLine()])}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {t('achatPage.create.addLine')}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowUnitManager(current => !current)}>
+                      {t('common.manageUnits')}
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setLignes(current => [...current, createEmptyLine(unitOptions[0]?.id || '')])}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      {t('achatPage.create.addLine')}
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-xs text-slate-500">
                   {t('achatPage.create.quantityHelp')}
                 </p>
+                {showUnitManager && (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <GestionUnidades />
+                  </div>
+                )}
+                {unitOptions.length === 0 && (
+                  <p className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {t('inventory.unitManagement.empty')}
+                  </p>
+                )}
                 {lignes.map((ligne, index) => (
                   <div key={ligne.id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="mb-3 flex items-center justify-between">
@@ -1568,14 +1617,14 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                     <div className="grid gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(132px,0.9fr)_minmax(132px,0.9fr)_minmax(148px,1fr)_minmax(156px,1fr)]">
                       <Input className="h-11" placeholder={t('achatPage.create.purchaseDescription')} value={ligne.description} onChange={event => handleChangeLine(ligne.id, 'description', event.target.value)} />
                       <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder={t('achatPage.create.manualQty')} value={ligne.quantite} onChange={event => handleChangeLine(ligne.id, 'quantite', event.target.value === '' ? '' : Number(event.target.value))} />
-                      <Select value={isAchatUnitValue(ligne.unite) ? ligne.unite : DEFAULT_ACHAT_UNIT} onValueChange={value => handleChangeLine(ligne.id, 'unite', value)}>
+                      <Select value={resolveUnitId(ligne.unite, unitOptions) || undefined} onValueChange={value => handleChangeLine(ligne.id, 'unite', value)} disabled={unitOptions.length === 0}>
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder={t('achatPage.create.selectUnit')} />
                         </SelectTrigger>
                         <SelectContent>
                           {unitOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                            <SelectItem key={option.id} value={option.id}>
+                              {option.nombre}
                             </SelectItem>
                           ))}
                         </SelectContent>
