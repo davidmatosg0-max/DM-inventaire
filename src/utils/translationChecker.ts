@@ -61,7 +61,6 @@ export function checkTranslationCoverage(): TranslationCheckResult {
     'LanguageSelector.tsx',
     'CentroNotificaciones.tsx',
     'SystemAlerts.tsx',
-    'SystemDiagnostics.tsx',
     'VerificacionesRecientes.tsx',
     'IconSelector.tsx',
     'CountrySelect.tsx',

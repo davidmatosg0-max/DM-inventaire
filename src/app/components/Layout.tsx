@@ -431,7 +431,6 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     { id: 'usuarios-internos', label: t('nav.internalUsers'), icon: <UserCog className="w-5 h-5" /> },
     { id: 'gestion-autenticacion', label: t('nav.authenticationManagement'), icon: <Key className="w-5 h-5" /> },
     { id: 'configuracion', label: t('nav.configuration'), icon: <Settings className="w-5 h-5" /> },
-    { id: 'diagnosticos', label: t('nav.diagnostics'), icon: <Sparkles className="w-5 h-5" />, soloDesarrollador: true },
     { id: 'panel-marca', label: t('nav.visualIdentity'), icon: <Palette className="w-5 h-5" />, soloDesarrollador: true },
     { id: 'api-keys', label: t('nav.apiIntegrations'), icon: <Key className="w-5 h-5" />, soloDesarrollador: true },
   ];
@@ -474,7 +473,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     { id: 'operations', label: t('layout.sections.operations'), itemIds: ['entrepot', 'cuisine', 'achat', 'id-digital'] },
     { id: 'coordination', label: t('layout.sections.coordination'), itemIds: ['email-organismos', 'communication', 'benevoles', 'recrutement'] },
     { id: 'administration', label: t('layout.sections.administration'), itemIds: ['usuarios', 'usuarios-internos', 'gestion-autenticacion', 'configuracion'] },
-    { id: 'advanced', label: t('layout.sections.advanced'), itemIds: ['diagnosticos', 'panel-marca', 'api-keys'] },
+    { id: 'advanced', label: t('layout.sections.advanced'), itemIds: ['panel-marca', 'api-keys'] },
   ];
 
   const filtrarMenuItem = React.useCallback((item: MenuItem): MenuItem | null => {

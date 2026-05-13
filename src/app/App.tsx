@@ -55,7 +55,6 @@ const CuisinePage = lazyNamed(() => import('./components/pages/CuisinePage'), 'C
 const ContactosAlmacenPage = lazyNamed(() => import('./components/pages/ContactosAlmacenPage'), 'ContactosAlmacenPage');
 const DechetsCompostage = lazyNamed(() => import('./components/pages/DechetsCompostage'), 'DechetsCompostage');
 const CommunicationInterne = lazyNamed(() => import('./components/CommunicationInterne'), 'CommunicationInterne');
-const SystemDiagnostics = lazyNamed(() => import('./components/SystemDiagnostics'), 'SystemDiagnostics');
 const GestionDonateursFournisseurs = lazyNamed(
   () => import('./components/entrepot/GestionDonateursFournisseurs'),
   'GestionDonateursFournisseurs'
@@ -207,8 +206,6 @@ function AppContent() {
         return renderWithSuspense(<ContactosAlmacenPage onNavigate={setCurrentPage} />);
       case 'dechets-compostage':
         return renderWithSuspense(<DechetsCompostage />);
-      case 'diagnosticos':
-        return renderWithSuspense(<SystemDiagnostics />);
       default:
         return renderWithSuspense(<Dashboard />);
     }
