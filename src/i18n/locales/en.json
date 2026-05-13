@@ -3984,6 +3984,16 @@
       "purchaseDescription": "Purchase description",
       "manualQty": "Manual qty",
       "unit": "Unit",
+      "selectUnit": "Select a unit",
+      "unitOptions": {
+        "unit": "Unit",
+        "box": "Box",
+        "case": "Case",
+        "bag": "Bag",
+        "kg": "Kilogram",
+        "litre": "Litre",
+        "pallet": "Pallet"
+      },
       "price": "Price",
       "notesAndContext": "Notes and context",
       "notesPlaceholder": "Reason for the purchase, linked budget, logistics constraints, additional comments...",

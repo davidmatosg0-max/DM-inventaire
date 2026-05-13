@@ -64,6 +64,10 @@ interface LigneFormulaire extends Omit<LigneBonAchat, 'quantite'> {
   quantite: number | '';
 }
 
+const ACHAT_UNIT_VALUES = ['unit', 'box', 'case', 'bag', 'kg', 'litre', 'pallet'] as const;
+type AchatUnitValue = (typeof ACHAT_UNIT_VALUES)[number];
+const DEFAULT_ACHAT_UNIT: AchatUnitValue = 'unit';
+
 interface ReglaFormulaire {
   id?: string;
   nom: string;
@@ -100,7 +104,11 @@ function resolveIntlLocale(language: string): string {
   }
 }
 
-function createEmptyLine(defaultUnit = 'unit'): LigneFormulaire {
+function isAchatUnitValue(value: string): value is AchatUnitValue {
+  return ACHAT_UNIT_VALUES.includes(value as AchatUnitValue);
+}
+
+function createEmptyLine(defaultUnit = DEFAULT_ACHAT_UNIT): LigneFormulaire {
   return {
     id: `ligne-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     description: '',
@@ -143,6 +151,20 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   const supplierFallback = t('achatPage.supplierFallback');
   const formatCurrencyValue = (value: number) => formatCurrency(value, currentLanguage);
   const formatDateValue = (value?: string) => formatDate(value, currentLanguage);
+  const unitOptions = useMemo(
+    () => ACHAT_UNIT_VALUES.map(value => ({
+      value,
+      label: t(`achatPage.create.unitOptions.${value}`)
+    })),
+    [currentLanguage, t]
+  );
+  const getUnitLabel = (value: string) => {
+    if (!isAchatUnitValue(value)) {
+      return value;
+    }
+
+    return t(`achatPage.create.unitOptions.${value}`);
+  };
   const statutConfig = useMemo<Record<StatutBonAchat, { label: string; className: string }>>(() => ({
     brouillon: { label: t('achatPage.status.draft'), className: 'bg-slate-100 text-slate-700 border-slate-200' },
     en_attente: { label: t('achatPage.status.pending'), className: 'bg-amber-100 text-amber-800 border-amber-200' },
@@ -169,7 +191,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   const [priorite, setPriorite] = useState<PrioriteBonAchat>('normal');
   const [conditionsPaiement, setConditionsPaiement] = useState(t('achatPage.defaults.paymentTerms'));
   const [notes, setNotes] = useState('');
-  const [lignes, setLignes] = useState<LigneFormulaire[]>([createEmptyLine(t('achatPage.defaults.unit'))]);
+  const [lignes, setLignes] = useState<LigneFormulaire[]>([createEmptyLine()]);
   const [reglaForm, setReglaForm] = useState<ReglaFormulaire>({
     nom: '',
     roleAutorisateur: '',
@@ -346,7 +368,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     setPriorite('normal');
     setConditionsPaiement(t('achatPage.defaults.paymentTerms'));
     setNotes('');
-    setLignes([createEmptyLine(t('achatPage.defaults.unit'))]);
+    setLignes([createEmptyLine()]);
   };
 
   const resetReglaForm = () => {
@@ -551,7 +573,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
       body: bon.lignes.map(ligne => [
         ligne.description,
         `${ligne.quantite}`,
-        ligne.unite,
+        getUnitLabel(ligne.unite),
         formatCurrencyValue(ligne.prixUnitaire),
         formatCurrencyValue(ligne.total)
       ]),
@@ -1392,7 +1414,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                             <TableRow key={ligne.id}>
                               <TableCell className="font-medium text-slate-900">{ligne.description}</TableCell>
                               <TableCell>{ligne.quantite}</TableCell>
-                              <TableCell>{ligne.unite}</TableCell>
+                              <TableCell>{getUnitLabel(ligne.unite)}</TableCell>
                               <TableCell>{formatCurrencyValue(ligne.prixUnitaire)}</TableCell>
                               <TableCell className="font-semibold">{formatCurrencyValue(ligne.total)}</TableCell>
                             </TableRow>
@@ -1525,7 +1547,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>{t('achatPage.create.lineItems')}</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setLignes(current => [...current, createEmptyLine(t('achatPage.defaults.unit'))])}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setLignes(current => [...current, createEmptyLine()])}>
                     <Plus className="mr-2 h-4 w-4" />
                     {t('achatPage.create.addLine')}
                   </Button>
@@ -1546,7 +1568,18 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                     <div className="grid gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(132px,0.9fr)_minmax(132px,0.9fr)_minmax(148px,1fr)_minmax(156px,1fr)]">
                       <Input className="h-11" placeholder={t('achatPage.create.purchaseDescription')} value={ligne.description} onChange={event => handleChangeLine(ligne.id, 'description', event.target.value)} />
                       <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder={t('achatPage.create.manualQty')} value={ligne.quantite} onChange={event => handleChangeLine(ligne.id, 'quantite', event.target.value === '' ? '' : Number(event.target.value))} />
-                      <Input className="h-11" placeholder={t('achatPage.create.unit')} value={ligne.unite} onChange={event => handleChangeLine(ligne.id, 'unite', event.target.value)} />
+                      <Select value={isAchatUnitValue(ligne.unite) ? ligne.unite : DEFAULT_ACHAT_UNIT} onValueChange={value => handleChangeLine(ligne.id, 'unite', value)}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder={t('achatPage.create.selectUnit')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {unitOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder={t('achatPage.create.price')} value={ligne.prixUnitaire} onChange={event => handleChangeLine(ligne.id, 'prixUnitaire', Number(event.target.value))} />
                       <div className="flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700">
                         {formatCurrencyValue(ligne.total)}

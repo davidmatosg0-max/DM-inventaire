@@ -4002,6 +4002,16 @@
       "purchaseDescription": "وصف الشراء",
       "manualQty": "الكمية اليدوية",
       "unit": "الوحدة",
+      "selectUnit": "اختر وحدة",
+      "unitOptions": {
+        "unit": "وحدة",
+        "box": "صندوق",
+        "case": "علبة",
+        "bag": "كيس",
+        "kg": "كيلوغرام",
+        "litre": "لتر",
+        "pallet": "منصة"
+      },
       "price": "السعر",
       "notesAndContext": "ملاحظات وسياق",
       "notesPlaceholder": "سبب الشراء، الميزانية المرتبطة، القيود اللوجستية، ملاحظات إضافية...",

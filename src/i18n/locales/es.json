@@ -3828,6 +3828,16 @@
       "purchaseDescription": "Descripción de la compra",
       "manualQty": "Cant. manual",
       "unit": "Unidad",
+      "selectUnit": "Seleccionar una unidad",
+      "unitOptions": {
+        "unit": "Unidad",
+        "box": "Caja",
+        "case": "Cajón",
+        "bag": "Saco",
+        "kg": "Kilogramo",
+        "litre": "Litro",
+        "pallet": "Palé"
+      },
       "price": "Precio",
       "notesAndContext": "Notas y contexto",
       "notesPlaceholder": "Motivo de la compra, presupuesto asociado, restricciones logísticas, comentarios adicionales...",

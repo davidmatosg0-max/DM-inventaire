@@ -3834,6 +3834,16 @@
       "purchaseDescription": "Description de l'achat",
       "manualQty": "Qté manuelle",
       "unit": "Unité",
+      "selectUnit": "Sélectionner une unité",
+      "unitOptions": {
+        "unit": "Unité",
+        "box": "Boîte",
+        "case": "Caisse",
+        "bag": "Sac",
+        "kg": "Kilogramme",
+        "litre": "Litre",
+        "pallet": "Palette"
+      },
       "price": "Prix",
       "notesAndContext": "Notes et contexte",
       "notesPlaceholder": "Motif de l'achat, budget lié, contraintes logistiques, commentaires complémentaires...",
