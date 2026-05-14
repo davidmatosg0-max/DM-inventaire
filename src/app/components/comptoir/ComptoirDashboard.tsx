@@ -66,29 +66,54 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
   const aidRequests = obtenirDemandesAideComptoir();
   const distributions = obtenirDistributionsComptoir();
   const appointments = obtenirRendezVousComptoir();
+  const normalizarFechaDia = (value?: string) => {
+    if (!value) return '';
+    if (value.includes('T')) return value.split('T')[0];
+    if (value.includes(' ')) return value.split(' ')[0];
+    return value;
+  };
   const today = new Date().toISOString().split('T')[0];
   void refreshToken;
 
   const stats = {
     beneficiairesActifs: beneficiaries.filter((beneficiary) => beneficiary.statut === 'actif').length,
     rdvAujourdhui:
-      appointments.filter((appointment) => appointment.date === today && appointment.statut !== 'annule').length +
-      aidRequests.filter((request) => request.status === 'approved' && request.appointmentDate === today).length,
+      appointments.filter((appointment) => normalizarFechaDia(appointment.date) === today && appointment.statut !== 'annule').length +
+      aidRequests.filter((request) => request.status === 'approved' && normalizarFechaDia(request.appointmentDate) === today).length,
     aidesDistribuees: distributions.length,
   };
 
   const pendingRequests = aidRequests.filter((request) => request.status === 'pending').length;
+
+  const getSortTimestamp = (dateValue?: string, timeValue?: string) => {
+    if (!dateValue) {
+      return 0;
+    }
+
+    const normalizedDate = dateValue.includes('T') ? dateValue : `${dateValue}T${timeValue || '00:00'}:00`;
+    const parsedDate = new Date(normalizedDate);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return parsedDate.getTime();
+    }
+
+    const fallbackDate = new Date(dateValue);
+    return Number.isNaN(fallbackDate.getTime()) ? 0 : fallbackDate.getTime();
+  };
+
   const recentBeneficiaries = beneficiaries
     .slice()
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
     .slice(0, 3)
     .map((beneficiary) => ({
       id: beneficiary.id,
+      beneficiaireId: beneficiary.id,
       type: 'beneficiaire',
       nom: beneficiary.nom,
       action: `Dossier ${beneficiary.id} mis a jour`,
       date: new Date(beneficiary.updatedAt).toLocaleDateString('fr-CA'),
       priorite: beneficiary.priorite,
+      sortTs: getSortTimestamp(beneficiary.updatedAt),
     }));
 
   const recentDistributions = distributions
@@ -97,15 +122,17 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
     .slice(0, 5)
     .map((distribution) => ({
       id: distribution.id,
+      beneficiaireId: distribution.beneficiaireId,
       type: 'aide',
       nom: distribution.beneficiaire,
       action: `${distribution.type} • ${distribution.quantite} unite(s)`,
-      date: distribution.date,
+      date: `${normalizarFechaDia(distribution.date)}${distribution.time ? ` • ${distribution.time}` : ''}`,
       priorite: 'normale',
+      sortTs: getSortTimestamp(distribution.createdAt || distribution.date, distribution.time),
     }));
 
   const activitesRecentes = [...recentDistributions, ...recentBeneficiaries]
-    .sort((left, right) => right.date.localeCompare(left.date))
+    .sort((left, right) => right.sortTs - left.sortTs)
     .slice(0, 6);
 
   const getActivityIcon = (type: string) => {
@@ -172,7 +199,7 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
             helper={(
               <div className="flex items-center gap-1 text-xs text-[#4CAF50]">
                 <TrendingUp className="h-3 w-3" />
-                <span>{distributions.filter((distribution) => distribution.date === today).length} aujourd'hui</span>
+                <span>{distributions.filter((distribution) => normalizarFechaDia(distribution.date) === today).length} aujourd'hui</span>
               </div>
             )}
             className="cursor-pointer"
@@ -194,7 +221,9 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
                 key={activite.id} 
                 className="p-4 hover:bg-[#F4F4F4] transition-colors cursor-pointer"
                 onClick={() => {
-                  if (activite.type === 'beneficiaire') onNavigate('beneficiaires', activite.id.toString());
+                  if (activite.beneficiaireId) {
+                    onNavigate('fiche-beneficiaire', activite.beneficiaireId.toString());
+                  }
                 }}
               >
                 <div className="flex items-start gap-3">

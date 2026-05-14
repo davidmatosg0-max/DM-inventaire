@@ -4,9 +4,9 @@
  */
 
 export const APP_VERSION = {
-  version: '2.5.19',
-  releaseDate: '2026-05-12',
-  buildNumber: 269,
+  version: '2.5.21',
+  releaseDate: '2026-05-14',
+  buildNumber: 271,
   environment: 'production' as 'development' | 'staging' | 'production'
 };
 
@@ -45,8 +45,8 @@ export interface ReleaseNote {
  */
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: '2.5.19',
-    date: '2026-05-12',
+    version: '2.5.21',
+    date: '2026-05-14',
     type: 'patch',
     title: {
       fr: 'Système de Protection Totale des Données',

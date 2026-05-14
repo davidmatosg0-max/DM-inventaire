@@ -1,7 +1,7 @@
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
-const baseUrl = process.env.TRANSPORTE_BASE_URL || 'http://127.0.0.1:4177/';
+const baseUrl = process.env.TRANSPORTE_BASE_URL || 'http://127.0.0.1:5173/';
 const scripts = [
   'transporte-functional.cjs',
   'transporte-choferes-functional.cjs',

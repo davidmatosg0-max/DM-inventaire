@@ -147,6 +147,16 @@ function getMonthKey(date: Date | null): string | null {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function getDateKey(value?: string | null): string {
+  const parsedDate = parseDateValue(value);
+  if (!parsedDate) return '';
+  return formatDateInput(parsedDate);
+}
+
+function normalizeTypeName(value?: string | null): string {
+  return (value || '').trim().toLowerCase();
+}
+
 export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
   const { t } = useTranslation();
   const currentMonthRange = getPeriodRange('month');
@@ -197,6 +207,16 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
   const endDate = parseDateValue(dateFin, true);
   const selectedAidTypes = aidTypes.filter((type) => type.isActive !== false);
   const approvedRequests = aidRequests.filter((request) => request.status === 'approved');
+  const distributionOperationKeys = new Set(
+    distributions.map((distribution) => (
+      `${distribution.beneficiaireId || distribution.beneficiaire}__${normalizeTypeName(distribution.type)}__${distribution.quantite}__${getDateKey(distribution.date)}`
+    ))
+  );
+  const approvedRequestsWithoutDistribution = approvedRequests.filter((request) => {
+    const requestDateKey = getDateKey(request.appointmentDate || request.processedDate || request.dateRequested);
+    const operationKey = `${request.beneficiaireId || request.beneficiaire}__${normalizeTypeName(request.type)}__${request.quantite}__${requestDateKey}`;
+    return !distributionOperationKeys.has(operationKey);
+  });
   const reportRecords: ReportDistributionRecord[] = [
     ...distributions.map((distribution) => ({
       id: distribution.id,
@@ -208,7 +228,7 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
       date: distribution.date,
       source: 'distribution' as const,
     })),
-    ...approvedRequests.map((request) => ({
+    ...approvedRequestsWithoutDistribution.map((request) => ({
       id: request.id,
       beneficiaire: request.beneficiaire,
       beneficiaireId: request.beneficiaireId,

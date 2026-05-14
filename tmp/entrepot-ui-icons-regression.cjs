@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const baseUrl = (process.env.ENTREPOT_ICONS_BASE_URL || 'http://127.0.0.1:4177/').trim();
+const baseUrl = (process.env.ENTREPOT_ICONS_BASE_URL || 'http://127.0.0.1:5173/').trim();
 
 function logStep(step) {
   console.log(`STEP ${step}`);
@@ -37,7 +37,10 @@ async function login(page) {
   await page.getByLabel('Utilisateur').fill('David');
   await page.getByLabel('Mot de passe').fill('Lettycia26');
   await page.getByRole('button', { name: 'Connexion', exact: true }).click();
-  await page.getByRole('heading', { name: 'Tableau de Bord Principal - Entrepôt', exact: true }).waitFor({ timeout: 20000 });
+  await Promise.all([
+    page.locator('aside').first().waitFor({ timeout: 20000 }),
+    page.locator('main').first().waitFor({ timeout: 20000 })
+  ]);
 }
 
 async function ensurePrograms(page) {
@@ -116,8 +119,8 @@ async function openNewEntry(page) {
     return;
   }
 
-  await page.getByRole('button', { name: 'Nouvelle Entrée', exact: true }).click();
-  await page.getByRole('heading', { name: /Enregistrer Entrée Don\/Achat/i }).waitFor({ timeout: 10000 });
+  await page.getByRole('button', { name: /Nouvelle Entrée|Nueva Entrada|Registrer Entrée|Ajouter au stock/i }).first().click();
+  await page.locator('div[role="dialog"]').last().waitFor({ state: 'visible', timeout: 10000 });
 }
 
 async function selectEntryType(page, programName) {

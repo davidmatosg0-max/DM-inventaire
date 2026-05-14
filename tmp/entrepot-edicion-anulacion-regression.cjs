@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const baseUrl = process.env.ENTREPOT_EDICION_BASE_URL || 'http://127.0.0.1:4178/';
+const baseUrl = process.env.ENTREPOT_EDICION_BASE_URL || 'http://127.0.0.1:5173/';
 
 function logStep(step) {
   console.log(`STEP ${step}`);

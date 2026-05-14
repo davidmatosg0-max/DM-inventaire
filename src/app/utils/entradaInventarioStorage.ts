@@ -635,12 +635,19 @@ export function eliminarEntrada(id: string): boolean {
  */
 export function eliminarEntradaPermanente(id: string): boolean {
   const entradas = obtenerTodasLasEntradas();
+  const entradaEliminada = entradas.find(e => e.id === id);
   const nuevasEntradas = entradas.filter(e => e.id !== id);
   
   if (nuevasEntradas.length === entradas.length) return false;
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevasEntradas));
   queueStorageSync(STORAGE_KEY);
+
+  if (entradaEliminada) {
+    eliminarMovimientosPorDocumento(entradaEliminada.id);
+    recalcularProductoDesdeEntradas(entradaEliminada.productoId);
+  }
+
   return true;
 }
 
@@ -725,7 +732,19 @@ export function importarEntradasJSON(json: string): boolean {
  * Limpiar todas las entradas (requiere confirmación)
  */
 export function limpiarTodasLasEntradas(): boolean {
+  const entradas = obtenerTodasLasEntradas();
+  const productoIds = Array.from(new Set(entradas.map(entrada => entrada.productoId)));
+
   localStorage.removeItem(STORAGE_KEY);
   queueStorageSync(STORAGE_KEY);
+
+  entradas.forEach(entrada => {
+    eliminarMovimientosPorDocumento(entrada.id);
+  });
+
+  productoIds.forEach(productoId => {
+    recalcularProductoDesdeEntradas(productoId);
+  });
+
   return true;
 }

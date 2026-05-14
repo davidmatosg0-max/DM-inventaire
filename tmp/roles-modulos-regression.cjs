@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const baseUrl = process.env.ROLES_BASE_URL || 'http://127.0.0.1:4173/';
+const baseUrl = process.env.ROLES_BASE_URL || 'http://127.0.0.1:5173/';
 
 function logStep(step) {
   console.log(`STEP ${step}`);

@@ -151,22 +151,32 @@ export function IDDigital() {
   // Estado compartido para demandas de ayuda - VACÍO PARA PRODUCCIÓN
   const [aidRequests, setAidRequests] = useState<AidRequest[]>(() => obtenirDemandesAideComptoir());
 
+  const sonIguales = <T,>(left: T, right: T): boolean => JSON.stringify(left) === JSON.stringify(right);
+
   useEffect(() => {
-    sauvegarderTypesAidePersonnalises(managedAidTypes);
+    const actuales = obtenirTypesAidePersonnalises();
+    if (!sonIguales(actuales, managedAidTypes)) {
+      sauvegarderTypesAidePersonnalises(managedAidTypes);
+    }
   }, [managedAidTypes]);
 
   useEffect(() => {
-    sauvegarderDemandesAideComptoir(aidRequests);
+    const actuales = obtenirDemandesAideComptoir();
+    if (!sonIguales(actuales, aidRequests)) {
+      sauvegarderDemandesAideComptoir(aidRequests);
+    }
   }, [aidRequests]);
 
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === comptoirStorageKeys.customAidTypes) {
-        setManagedAidTypes(hydrateAidTypes());
+        const actualizados = hydrateAidTypes();
+        setManagedAidTypes((prev) => (sonIguales(prev, actualizados) ? prev : actualizados));
       }
 
       if (event.key === comptoirStorageKeys.aidRequests) {
-        setAidRequests(obtenirDemandesAideComptoir());
+        const actualizados = obtenirDemandesAideComptoir();
+        setAidRequests((prev) => (sonIguales(prev, actualizados) ? prev : actualizados));
       }
     };
 
@@ -174,11 +184,13 @@ export function IDDigital() {
       const { detail } = event as CustomEvent<{ key?: string }>;
 
       if (detail?.key === comptoirStorageKeys.customAidTypes) {
-        setManagedAidTypes(hydrateAidTypes());
+        const actualizados = hydrateAidTypes();
+        setManagedAidTypes((prev) => (sonIguales(prev, actualizados) ? prev : actualizados));
       }
 
       if (detail?.key === comptoirStorageKeys.aidRequests) {
-        setAidRequests(obtenirDemandesAideComptoir());
+        const actualizados = obtenirDemandesAideComptoir();
+        setAidRequests((prev) => (sonIguales(prev, actualizados) ? prev : actualizados));
       }
     };
 
@@ -230,7 +242,7 @@ export function IDDigital() {
       case 'contactos':
         return (
           <GestionContactosDepartamento 
-            departamentoId="4"
+            departamentoId="2"
             departamentoNombre="Comptoir"
           />
         );

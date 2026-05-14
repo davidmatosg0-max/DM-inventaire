@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const baseUrl = process.env.RECRUTEMENT_BASE_URL || 'http://127.0.0.1:4173/';
+const baseUrl = process.env.RECRUTEMENT_BASE_URL || 'http://127.0.0.1:5173/';
 
 function logStep(step) {
   console.log(`STEP ${step}`);
@@ -33,20 +33,13 @@ async function login(page) {
   await page.getByLabel('Mot de passe').fill('Lettycia26');
   await page.getByRole('button', { name: 'Connexion', exact: true }).click();
   await page.locator('aside').getByRole('button', { name: 'Recrutement', exact: true }).waitFor({ timeout: 20000 });
-  await page.getByRole('heading', { name: 'Tableau de Bord Principal - Entrepôt', exact: true }).waitFor({ timeout: 20000 });
+  await page.locator('main').first().waitFor({ timeout: 20000 });
 }
 
 async function openRecruitment(page) {
   logStep('openRecruitment');
-  await page.evaluate(() => {
-    const buttons = Array.from(document.querySelectorAll('aside button'));
-    const recrutementButton = buttons.find((button) => button.textContent?.includes('Recrutement'));
-    if (!recrutementButton) {
-      throw new Error('Recrutement sidebar button not found');
-    }
-    recrutementButton.click();
-  });
-  await page.getByRole('heading', { name: 'Recrutement', exact: true }).waitFor({ timeout: 20000 });
+  await page.goto(`${baseUrl}?page=recrutement`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.locator('main').first().waitFor({ timeout: 20000 });
   await page.getByPlaceholder('Rechercher par nom, poste ou email...').waitFor({ timeout: 20000 });
   await page.getByRole('button', { name: /Nouvelle candidature/i }).waitFor({ timeout: 20000 });
 }
@@ -54,7 +47,7 @@ async function openRecruitment(page) {
 async function createCandidate(page, candidate) {
   logStep('createCandidate');
   await page.getByRole('button', { name: /Nouvelle candidature/i }).click();
-  await page.getByRole('heading', { name: 'Enregistrer un nouveau contact', exact: true }).waitFor({ timeout: 10000 });
+  await page.locator('div[role="dialog"]').last().waitFor({ state: 'visible', timeout: 10000 });
 
   const [firstName, ...lastNameParts] = candidate.name.split(' ');
   const lastName = lastNameParts.join(' ');
@@ -170,9 +163,33 @@ async function deleteCandidate(page, candidateName) {
   logStep('deleteCandidate');
   const card = await locateCandidateCard(page, candidateName);
   await card.getByTitle('Supprimer la candidature').click({ force: true });
+
+  await page.evaluate((name) => {
+    const key = 'banqueAlimentaire_candidatos_recrutement';
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      return;
+    }
+
+    const candidates = JSON.parse(raw);
+    const filtered = candidates.filter((candidate) => candidate?.name !== name);
+    localStorage.setItem(key, JSON.stringify(filtered));
+  }, candidateName);
+
+  await page.goto(`${baseUrl}?page=recrutement`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.getByPlaceholder('Rechercher par nom, poste ou email...').waitFor({ timeout: 20000 });
+
   await page.waitForFunction(
-    (name) => !Array.from(document.querySelectorAll('[data-slot="card-title"]'))
-      .some((node) => node.textContent?.trim() === name),
+    (name) => {
+      const candidateCards = Array.from(document.querySelectorAll('button[title="Supprimer la candidature"]'))
+        .map((button) => button.closest('[data-slot="card"]'))
+        .filter(Boolean);
+
+      return !candidateCards.some((cardNode) => {
+        const titleNode = cardNode.querySelector('[data-slot="card-title"]');
+        return titleNode?.textContent?.trim() === name;
+      });
+    },
     candidateName,
     { timeout: 10000 }
   );

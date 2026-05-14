@@ -39,6 +39,15 @@ import {
   obtenerMovimientos,
   type MovimientoExtendido,
 } from './movimientoStorage';
+import {
+  obtenirBeneficiairesComptoir,
+  obtenirDistributionsComptoir,
+  obtenirRendezVousComptoir,
+  sauvegarderBeneficiairesComptoir,
+  sauvegarderDistributionsComptoir,
+  sauvegarderRendezVousComptoir,
+  type ComptoirBeneficiary,
+} from './comptoirStorage';
 import type { Comanda, Ruta } from '../types';
 
 const DEMO_MARKER = '[QA-DEMO-FUNCIONAL]';
@@ -50,6 +59,7 @@ export type ResumenEjemplos = {
   benevoles: number;
   donateurs: number;
   fournisseurs: number;
+  comptoir: number;
   contactosDepartamentos: number;
   departamentosCubiertos: number;
   chauffeurs: number;
@@ -60,6 +70,413 @@ export type ResumenEjemplos = {
   movimientos: number;
   rutas: number;
 };
+
+export type CantidadesEjemplosFuncionales = {
+  benevoles: number;
+  donateurs: number;
+  fournisseurs: number;
+  comptoir: number;
+  contactosDepartamentos: number;
+  chauffeurs: number;
+  camiones: number;
+  organismos: number;
+};
+
+type OpcionesSembradoEjemplos = {
+  silent?: boolean;
+  cantidades?: Partial<CantidadesEjemplosFuncionales>;
+};
+
+type DemoDepartmentIds = {
+  entrepotId: string;
+  comptoirId: string;
+  cuisineId: string;
+  liaisonId: string;
+  ptcId: string;
+  maintienId: string;
+  recrutementId: string;
+};
+
+const CANTIDADES_EJEMPLOS_POR_DEFECTO: CantidadesEjemplosFuncionales = {
+  benevoles: 2,
+  donateurs: 1,
+  fournisseurs: 1,
+  comptoir: 2,
+  contactosDepartamentos: 8,
+  chauffeurs: 2,
+  camiones: 2,
+  organismos: 12,
+};
+
+function normalizarCantidadEjemplos(valor: number | undefined, fallback: number, maximo = 20): number {
+  if (!Number.isFinite(valor)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.min(Math.floor(valor || 0), maximo));
+}
+
+function resolverCantidadesEjemplos(
+  cantidadOrganismos: number,
+  opciones?: OpcionesSembradoEjemplos
+): CantidadesEjemplosFuncionales {
+  return {
+    benevoles: normalizarCantidadEjemplos(
+      opciones?.cantidades?.benevoles,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.benevoles
+    ),
+    donateurs: normalizarCantidadEjemplos(
+      opciones?.cantidades?.donateurs,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.donateurs
+    ),
+    fournisseurs: normalizarCantidadEjemplos(
+      opciones?.cantidades?.fournisseurs,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.fournisseurs
+    ),
+    comptoir: normalizarCantidadEjemplos(
+      opciones?.cantidades?.comptoir,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.comptoir
+    ),
+    contactosDepartamentos: normalizarCantidadEjemplos(
+      opciones?.cantidades?.contactosDepartamentos,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.contactosDepartamentos
+    ),
+    chauffeurs: normalizarCantidadEjemplos(
+      opciones?.cantidades?.chauffeurs,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.chauffeurs
+    ),
+    camiones: normalizarCantidadEjemplos(
+      opciones?.cantidades?.camiones,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.camiones
+    ),
+    organismos: normalizarCantidadEjemplos(
+      opciones?.cantidades?.organismos ?? cantidadOrganismos,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.organismos
+    ),
+  };
+}
+
+function esBenevoleDemo(contacto: ContactoDepartamento): boolean {
+  return esContactoDemo(contacto) && contacto.tipo === 'benevole';
+}
+
+function esDonateurDemo(contacto: ContactoDepartamento): boolean {
+  return esContactoDemo(contacto) && (contacto.isDonateur || contacto.tipo === 'donador');
+}
+
+function esFournisseurDemo(contacto: ContactoDepartamento): boolean {
+  return esContactoDemo(contacto) && (contacto.isFournisseur || contacto.tipo === 'fournisseur');
+}
+
+function esContactoDepartamentoInternoDemo(contacto: ContactoDepartamento): boolean {
+  return (
+    esContactoDemo(contacto) &&
+    !esBenevoleDemo(contacto) &&
+    !esDonateurDemo(contacto) &&
+    !esFournisseurDemo(contacto)
+  );
+}
+
+function ajustarColeccionDemo<T extends { id: string }>(
+  elementos: T[],
+  cantidadDeseada: number,
+  eliminar: (id: string) => void,
+  crear: (indice: number) => void
+): void {
+  const ordenados = [...elementos].sort((a, b) => a.id.localeCompare(b.id));
+
+  if (ordenados.length > cantidadDeseada) {
+    ordenados.slice(cantidadDeseada).forEach((elemento) => eliminar(elemento.id));
+    return;
+  }
+
+  for (let indice = ordenados.length; indice < cantidadDeseada; indice += 1) {
+    crear(indice);
+  }
+}
+
+function formatearIndiceDemo(indice: number): string {
+  return String(indice + 1).padStart(3, '0');
+}
+
+function crearBenevoleDemoExtra(
+  indice: number,
+  departamentos: DemoDepartmentIds
+): Parameters<typeof guardarContacto>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const nombres = ['Nora', 'Pablo', 'Emma', 'Lucas', 'Mila', 'Adrian', 'Leila', 'Noah'];
+  const apellidos = ['Martin', 'Garcia', 'Lopez', 'Roy', 'Benitez', 'Bouchard', 'Diallo', 'Perez'];
+  const destinos = [
+    [departamentos.cuisineId, departamentos.entrepotId],
+    [departamentos.comptoirId],
+    [departamentos.cuisineId],
+    [departamentos.recrutementId],
+  ];
+  const departamentoIds = destinos[indice % destinos.length];
+
+  return {
+    id: `QA-DEMO-BEN-AUTO-${numero}`,
+    departamentoId: departamentoIds[0],
+    departamentoIds,
+    tipo: 'benevole',
+    nombre: nombres[indice % nombres.length],
+    apellido: apellidos[indice % apellidos.length],
+    genero: indice % 2 === 0 ? 'Femme' : 'Homme',
+    email: `qa-demo.benevole.${numero}${DEMO_EMAIL_DOMAIN}`,
+    telefono: `(514) 555-${4100 + indice}`,
+    cargo: 'Soutien operationnel',
+    idiomas: indice % 2 === 0 ? ['fr', 'es'] : ['fr', 'en'],
+    activo: true,
+    fechaIngreso: `2026-03-${String((indice % 20) + 1).padStart(2, '0')}T09:00:00.000Z`,
+    ciudad: 'Laval',
+    quartier: ['Chomedey', 'Pont-Viau', 'Duvernay', 'Auteuil'][indice % 4],
+    codigoPostal: ['H7N 3A1', 'H7G 2E4', 'H7E 1V2', 'H7H 2R9'][indice % 4],
+    numeroEmpleado: `QA-DEMO-BEN-AUTO-${numero}`,
+    notas: `${DEMO_MARKER} Bénévole généré automatiquement pour ajuster la quantité QA`,
+  };
+}
+
+function crearDonateurDemoExtra(indice: number): Parameters<typeof guardarContacto>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const empresas = ['Marche Solidaire', 'Boulangerie Centrale', 'Fruits Laval', 'Epicerie Concorde'];
+
+  return {
+    id: `QA-DEMO-DON-AUTO-${numero}`,
+    departamentoId: '1',
+    departamentoIds: ['1', '4'],
+    tipo: 'donador',
+    nombre: ['Nadia', 'Samuel', 'Imane', 'Julien'][indice % 4],
+    apellido: ['Roy', 'Lefevre', 'Mansouri', 'Gauthier'][indice % 4],
+    email: `qa-demo.donateur.${numero}${DEMO_EMAIL_DOMAIN}`,
+    telefono: `(514) 555-${4200 + indice}`,
+    activo: true,
+    fechaIngreso: `2026-02-${String((indice % 20) + 1).padStart(2, '0')}T10:00:00.000Z`,
+    nombreEmpresa: `${empresas[indice % empresas.length]} ${numero}`,
+    cargo: 'Responsable des dons',
+    ciudad: 'Laval',
+    quartier: ['Pont-Viau', 'Chomedey', 'Vimont', 'Fabreville'][indice % 4],
+    codigoPostal: ['H7G 1A1', 'H7V 2V4', 'H7K 2J5', 'H7P 3B2'][indice % 4],
+    tipoEmpresa: 'inc',
+    categoriaProductos: ['Epicerie seche', 'Produits frais'],
+    diasOperacion: ['Lundi', 'Mercredi', 'Vendredi'],
+    tiempoEntrega: 'Avant 11h',
+    isDonateur: true,
+    isFournisseur: false,
+    notas: `${DEMO_MARKER} Donateur généré automatiquement pour ajuster la quantité QA`,
+  };
+}
+
+function crearFournisseurDemoExtra(indice: number): Parameters<typeof guardarContacto>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const empresas = ['Distribution Nord', 'Approvisionnements Laval', 'Stock Plus', 'Aliments Metropole'];
+
+  return {
+    id: `QA-DEMO-FOU-AUTO-${numero}`,
+    departamentoId: '1',
+    departamentoIds: ['1'],
+    tipo: 'fournisseur',
+    nombre: ['Karim', 'Louise', 'Thiago', 'Marion'][indice % 4],
+    apellido: ['Bensaid', 'Pelletier', 'Costa', 'Lambert'][indice % 4],
+    email: `qa-demo.fournisseur.${numero}${DEMO_EMAIL_DOMAIN}`,
+    telefono: `(514) 555-${4300 + indice}`,
+    activo: true,
+    fechaIngreso: `2026-02-${String((indice % 20) + 1).padStart(2, '0')}T08:30:00.000Z`,
+    nombreEmpresa: `${empresas[indice % empresas.length]} ${numero}`,
+    cargo: 'Representant comptes',
+    ciudad: 'Laval',
+    quartier: ['Fabreville', 'Auteuil', 'Duvernay', 'Chomedey'][indice % 4],
+    codigoPostal: ['H7P 3B2', 'H7H 1K2', 'H7E 2B8', 'H7N 4P2'][indice % 4],
+    tipoEmpresa: 'ltee',
+    categoriaProductos: ['Epicerie seche', 'Laitiers'],
+    metodoPago: ['Virement', 'Cheque'],
+    isDonateur: false,
+    isFournisseur: true,
+    notas: `${DEMO_MARKER} Fournisseur généré automatiquement pour ajuster la quantité QA`,
+  };
+}
+
+function crearContactoDepartamentoDemoExtra(
+  indice: number,
+  departamentos: DemoDepartmentIds
+): Parameters<typeof guardarContacto>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const departamentosCiclo = [
+    departamentos.entrepotId,
+    departamentos.comptoirId,
+    departamentos.cuisineId,
+    departamentos.liaisonId,
+    departamentos.ptcId,
+    departamentos.maintienId,
+    departamentos.recrutementId,
+  ];
+  const tipos: ContactoDepartamento['tipo'][] = ['employe', 'partenaire', 'responsable-sante'];
+  const departamentoId = departamentosCiclo[indice % departamentosCiclo.length];
+
+  return {
+    id: `QA-DEMO-DEP-AUTO-${numero}`,
+    departamentoId,
+    departamentoIds: [departamentoId],
+    tipo: tipos[indice % tipos.length],
+    nombre: ['Amina', 'Cedric', 'Lina', 'Mathieu', 'Rania', 'Olivier'][indice % 6],
+    apellido: ['Dupont', 'Morin', 'Haddad', 'Caron', 'Nguyen', 'Tremblay'][indice % 6],
+    genero: indice % 2 === 0 ? 'Femme' : 'Homme',
+    email: `qa-demo.departement.${numero}${DEMO_EMAIL_DOMAIN}`,
+    telefono: `(514) 555-${4400 + indice}`,
+    cargo: 'Support departemental',
+    activo: true,
+    fechaIngreso: `2026-03-${String((indice % 20) + 1).padStart(2, '0')}T08:00:00.000Z`,
+    ciudad: 'Laval',
+    quartier: ['Auteuil', 'Chomedey', 'Pont-Viau', 'Vimont'][indice % 4],
+    codigoPostal: ['H7H 1N4', 'H7N 1V8', 'H7G 3C5', 'H7K 2M1'][indice % 4],
+    numeroEmpleado: `QA-DEMO-DEP-AUTO-${numero}`,
+    notas: `${DEMO_MARKER} Contact département généré automatiquement pour ajuster la quantité QA`,
+  };
+}
+
+function crearContactoComptoirDemoExtra(
+  indice: number,
+  comptoirId: string
+): Parameters<typeof guardarContacto>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const tipos: ContactoDepartamento['tipo'][] = ['benevole', 'employe', 'responsable-sante'];
+
+  return {
+    id: `QA-DEMO-CPT-AUTO-${numero}`,
+    departamentoId: comptoirId,
+    departamentoIds: [comptoirId],
+    tipo: tipos[indice % tipos.length],
+    nombre: ['Elena', 'Bruno', 'Marta', 'Alex', 'Noemie', 'Rene'][indice % 6],
+    apellido: ['Lavigne', 'Paredes', 'Roy', 'Beaulieu', 'Giraud', 'Cortes'][indice % 6],
+    genero: indice % 2 === 0 ? 'Femme' : 'Homme',
+    email: `qa-demo.comptoir.${numero}${DEMO_EMAIL_DOMAIN}`,
+    telefono: `(514) 555-${4600 + indice}`,
+    cargo: 'Accueil comptoir',
+    idiomas: indice % 2 === 0 ? ['fr', 'es'] : ['fr', 'en'],
+    activo: true,
+    fechaIngreso: `2026-03-${String((indice % 20) + 1).padStart(2, '0')}T09:00:00.000Z`,
+    ciudad: 'Laval',
+    quartier: ['Chomedey', 'Duvernay', 'Laval-des-Rapides', 'Pont-Viau'][indice % 4],
+    codigoPostal: ['H7N 4P2', 'H7E 2B8', 'H7N 1V8', 'H7G 3C5'][indice % 4],
+    numeroEmpleado: `QA-DEMO-CPT-AUTO-${numero}`,
+    notas: `${DEMO_MARKER} Contact comptoir généré automatiquement pour ajuster la quantité QA`,
+  };
+}
+
+function crearVehiculoDemoExtra(indice: number): Parameters<typeof crearVehiculo>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const refrigerado = indice % 2 === 1;
+
+  return {
+    matricula: `QA-DEMO-${refrigerado ? 'REF' : 'CAM'}-AUTO-${numero}`,
+    placa: `QA-DEMO-${refrigerado ? 'REF' : 'CAM'}-AUTO-${numero}`,
+    tipo: refrigerado ? 'refrigerado' : 'camion',
+    marca: refrigerado ? 'Ford' : 'Hino',
+    modelo: refrigerado ? 'Transit Cold' : '195 Box',
+    capacidadKg: refrigerado ? 1600 : 3200,
+    capacidadM3: refrigerado ? 10 : 17,
+    estado: 'disponible',
+    estadoUI: 'disponible',
+    activo: true,
+    observaciones: `${DEMO_MARKER} Vehicule généré automatiquement pour ajuster la quantité QA`,
+    notas: `${DEMO_MARKER} Vehicule généré automatiquement pour ajuster la quantité QA`,
+    ultimoMantenimiento: '2026-03-01',
+    proximoMantenimiento: '2026-09-01',
+    kmActual: 18000 + indice * 550,
+    kilometraje: 18000 + indice * 550,
+    conductorAsignado: '',
+    anio: 2022,
+    consumoCombustible: refrigerado ? 12.8 : 14.2,
+  };
+}
+
+function crearChoferDemoExtra(
+  indice: number,
+  vehiculosDemo: Vehiculo[]
+): Parameters<typeof crearChofer>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const vehiculoAsignado = vehiculosDemo[indice % Math.max(vehiculosDemo.length, 1)];
+
+  return {
+    nombre: ['Youssef', 'Clara', 'Nicolas', 'Sonia', 'David', 'Meryem'][indice % 6],
+    apellido: ['Boucher', 'Gomez', 'Perron', 'Diallo', 'Lopez', 'El Amrani'][indice % 6],
+    cedula: `QA-DEMO-CH-AUTO-${numero}`,
+    licencia: `QA-DEMO-LIC-AUTO-${numero}`,
+    tipoLicencia: vehiculoAsignado?.tipo === 'camion' ? 'Classe 3' : 'Classe 5',
+    telefono: `(514) 555-${4500 + indice}`,
+    email: `qa-demo.chofer.${numero}${DEMO_EMAIL_DOMAIN}`,
+    fechaNacimiento: `198${indice % 10}-06-15`,
+    fechaContratacion: `2025-${String((indice % 9) + 1).padStart(2, '0')}-01`,
+    estado: 'activo',
+    vehiculoAsignado: vehiculoAsignado?.id || '',
+    experienciaAnios: 2 + (indice % 7),
+    certificaciones: ['Livraison alimentaire'],
+    foto: indice % 2 === 0 ? '👨‍✈️' : '👩‍✈️',
+    joursDisponibles: [
+      { jour: 'Lundi', horaire: 'AM' },
+      { jour: 'Jeudi', horaire: 'AM/PM' },
+    ],
+  };
+}
+
+function ajustarContactosDemo(
+  cantidades: Pick<
+    CantidadesEjemplosFuncionales,
+    'benevoles' | 'donateurs' | 'fournisseurs' | 'comptoir' | 'contactosDepartamentos'
+  >,
+  departamentos: DemoDepartmentIds
+): void {
+  ajustarColeccionDemo(
+    obtenerContactosDepartamento().filter(esBenevoleDemo),
+    cantidades.benevoles,
+    eliminarContacto,
+    (indice) => {
+      guardarContacto(crearBenevoleDemoExtra(indice, departamentos));
+    }
+  );
+
+  ajustarColeccionDemo(
+    obtenerContactosDepartamento().filter(esDonateurDemo),
+    cantidades.donateurs,
+    eliminarContacto,
+    (indice) => {
+      guardarContacto(crearDonateurDemoExtra(indice));
+    }
+  );
+
+  ajustarColeccionDemo(
+    obtenerContactosDepartamento().filter(esFournisseurDemo),
+    cantidades.fournisseurs,
+    eliminarContacto,
+    (indice) => {
+      guardarContacto(crearFournisseurDemoExtra(indice));
+    }
+  );
+
+  ajustarColeccionDemo(
+    obtenerContactosDepartamento().filter(
+      (contacto) =>
+        esContactoDemo(contacto) &&
+        (
+          contacto.departamentoId === departamentos.comptoirId ||
+          (Array.isArray(contacto.departamentoIds) && contacto.departamentoIds.includes(departamentos.comptoirId))
+        )
+    ),
+    cantidades.comptoir,
+    eliminarContacto,
+    (indice) => {
+      guardarContacto(crearContactoComptoirDemoExtra(indice, departamentos.comptoirId));
+    }
+  );
+
+  ajustarColeccionDemo(
+    obtenerContactosDepartamento().filter(esContactoDepartamentoInternoDemo),
+    cantidades.contactosDepartamentos,
+    eliminarContacto,
+    (indice) => {
+      guardarContacto(crearContactoDepartamentoDemoExtra(indice, departamentos));
+    }
+  );
+}
 
 function obtenerDepartamentoId(codigo: string, fallback: string): string {
   return obtenerDepartamentos().find((departamento) => departamento.codigo === codigo)?.id || fallback;
@@ -131,6 +548,62 @@ function esRutaDemo(ruta: Ruta): boolean {
   );
 }
 
+function esBeneficiarioComptoirDemo(beneficiario: ComptoirBeneficiary): boolean {
+  return Boolean(
+    beneficiario.id?.startsWith('QA-DEMO-CPT-BEN-') ||
+    beneficiario.email?.endsWith(DEMO_EMAIL_DOMAIN) ||
+    beneficiario.notes?.includes(DEMO_MARKER)
+  );
+}
+
+function crearBeneficiarioComptoirDemoExtra(indice: number): ComptoirBeneficiary {
+  const numero = formatearIndiceDemo(indice);
+  const fechaBase = `2026-04-${String((indice % 20) + 1).padStart(2, '0')}`;
+  const timestamp = `${fechaBase}T09:00:00.000Z`;
+
+  return {
+    id: `QA-DEMO-CPT-BEN-${numero}`,
+    nom: ['Famille Leduc', 'Marc Tremblay', 'Nora Benali', 'Ana Morales', 'Yves Gagnon', 'Sara Diallo'][indice % 6],
+    telephone: `(514) 555-${5200 + indice}`,
+    email: `qa-demo.comptoir.benef.${numero}${DEMO_EMAIL_DOMAIN}`,
+    statut: 'actif',
+    priorite: (['normale', 'haute', 'basse'] as const)[indice % 3],
+    derniereAide: fechaBase,
+    notes: `${DEMO_MARKER} Beneficiaire comptoir généré automatiquement pour les tests du module`,
+    nombrePersonnes: 1 + (indice % 5),
+    revenus: 'Revenu de solidarité',
+    hasEnfants: indice % 2 === 0,
+    nombreEnfants: indice % 2 === 0 ? 1 + (indice % 3) : 0,
+    ville: 'Laval',
+    adresse: `${180 + indice} Rue Demo Comptoir`,
+    codePostal: ['H7N 4P2', 'H7E 2B8', 'H7G 3C5', 'H7N 1V8'][indice % 4],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+function ajustarBeneficiariosComptoirDemo(cantidadObjetivo: number): void {
+  const existentes = obtenirBeneficiairesComptoir();
+  const conservados = existentes.filter((beneficiario) => !esBeneficiarioComptoirDemo(beneficiario));
+  const demoActualizados = Array.from({ length: cantidadObjetivo }, (_, indice) =>
+    crearBeneficiarioComptoirDemoExtra(indice)
+  );
+
+  const idsDemoVigentes = new Set(demoActualizados.map((beneficiario) => beneficiario.id));
+
+  sauvegarderBeneficiairesComptoir([...conservados, ...demoActualizados]);
+
+  const rendezVousFiltrados = obtenirRendezVousComptoir().filter((cita) =>
+    !cita.beneficiaireId.startsWith('QA-DEMO-CPT-BEN-') || idsDemoVigentes.has(cita.beneficiaireId)
+  );
+  sauvegarderRendezVousComptoir(rendezVousFiltrados);
+
+  const distribucionesFiltradas = obtenirDistributionsComptoir().filter((distribution) =>
+    !distribution.beneficiaireId.startsWith('QA-DEMO-CPT-BEN-') || idsDemoVigentes.has(distribution.beneficiaireId)
+  );
+  sauvegarderDistributionsComptoir(distribucionesFiltradas);
+}
+
 function guardarMovimientosDemo(movimientosDemo: MovimientoExtendido[]): void {
   const movimientos = obtenerMovimientos().filter((movimiento) => !esMovimientoDemo(movimiento));
   localStorage.setItem(DEMO_MOVIMIENTOS_KEY, JSON.stringify([...movimientos, ...movimientosDemo]));
@@ -160,6 +633,11 @@ function resumirEjemplos(): ResumenEjemplos {
     benevoles: contactosDemo.filter((contacto) => contacto.tipo === 'benevole').length,
     donateurs: contactosDemo.filter((contacto) => contacto.isDonateur || contacto.tipo === 'donador').length,
     fournisseurs: contactosDemo.filter((contacto) => contacto.isFournisseur || contacto.tipo === 'fournisseur').length,
+    comptoir: contactosDemo.filter(
+      (contacto) =>
+        contacto.departamentoId === obtenerDepartamentoId('COMPTOIR', '2') ||
+        (Array.isArray(contacto.departamentoIds) && contacto.departamentoIds.includes(obtenerDepartamentoId('COMPTOIR', '2')))
+    ).length,
     contactosDepartamentos: contactosDemo.length,
     departamentosCubiertos,
     chauffeurs: choferes.filter(esChoferDemo).length,
@@ -181,6 +659,7 @@ function imprimirResumen(accion: string, resumen: ResumenEjemplos) {
   console.table(resumen);
   console.log('Benevoles demo visibles en Departamentos/Benevoles.');
   console.log('Donateurs y fournisseurs demo visibles en Entrepot > Donateurs & Fournisseurs y en formularios de entrada DON/ACH.');
+  console.log('Contacts comptoir demo visibles en Comptoir para pruebas de accueil y roles.');
   console.log('Chauffeurs y camiones demo visibles en Transporte > Choferes y Vehiculos.');
   console.log('Organismos demo visibles en Organismos/Liaison y como destinos de rutas.');
   console.log('Productos, comandas, movimientos y rutas demo dejan los dashboards listos sin carga manual extra.');
@@ -218,6 +697,8 @@ export function limpiarEjemplosFuncionalesPrueba(): ResumenEjemplos {
     eliminarContacto(contacto.id);
   });
 
+  ajustarBeneficiariosComptoirDemo(0);
+
   const resumen = resumirEjemplos();
   imprimirResumen('Ejemplos eliminados', resumen);
   toast.success('Ejemplos funcionales eliminados');
@@ -226,10 +707,11 @@ export function limpiarEjemplosFuncionalesPrueba(): ResumenEjemplos {
 
 export function sembrarEjemplosFuncionalesPrueba(
   cantidadOrganismos = 12,
-  opciones?: { silent?: boolean }
+  opciones?: OpcionesSembradoEjemplos
 ): ResumenEjemplos {
   inicializarDepartamentos();
   limpiarEjemplosFuncionalesPrueba();
+  const cantidades = resolverCantidadesEjemplos(cantidadOrganismos, opciones);
 
   const entrepotId = obtenerDepartamentoId('ENTREPOT', '1');
   const comptoirId = obtenerDepartamentoId('COMPTOIR', '2');
@@ -494,6 +976,27 @@ export function sembrarEjemplosFuncionalesPrueba(
     numeroEmpleado: 'QA-DEMO-REC-001',
     notas: `${DEMO_MARKER} Employé recrutement pour tester les contacts RH et les filtres du département`,
   });
+
+  ajustarContactosDemo(
+    {
+      benevoles: cantidades.benevoles,
+      donateurs: cantidades.donateurs,
+      fournisseurs: cantidades.fournisseurs,
+      comptoir: cantidades.comptoir,
+      contactosDepartamentos: cantidades.contactosDepartamentos,
+    },
+    {
+      entrepotId,
+      comptoirId,
+      cuisineId,
+      liaisonId,
+      ptcId,
+      maintienId,
+      recrutementId,
+    }
+  );
+
+  ajustarBeneficiariosComptoirDemo(cantidades.comptoir);
 
   const organismosDemo: Array<Parameters<typeof crearOrganismo>[0]> = [
     {
@@ -1251,97 +1754,120 @@ export function sembrarEjemplosFuncionalesPrueba(
   ];
 
   organismosDemo
-    .slice(0, Math.max(1, Math.min(cantidadOrganismos, organismosDemo.length)))
+    .slice(0, Math.max(0, Math.min(cantidades.organismos, organismosDemo.length)))
     .forEach((organismo) => {
       crearOrganismo(organismo);
     });
 
-  const camionSeco = crearVehiculo({
-    matricula: 'QA-DEMO-CAM-001',
-    placa: 'QA-DEMO-CAM-001',
-    tipo: 'camion',
-    marca: 'Isuzu',
-    modelo: 'NPR HD',
-    capacidadKg: 3500,
-    capacidadM3: 18,
-    estado: 'disponible',
-    estadoUI: 'disponible',
-    activo: true,
-    observaciones: `${DEMO_MARKER} Camion sec pour les livraisons générales`,
-    notas: `${DEMO_MARKER} Camion sec pour les livraisons générales`,
-    ultimoMantenimiento: '2026-03-15',
-    proximoMantenimiento: '2026-09-15',
-    kmActual: 48210,
-    kilometraje: 48210,
-    conductorAsignado: '',
-    anio: 2021,
-    consumoCombustible: 14.5,
-  });
+  let camionSeco: Vehiculo | null = null;
+  if (cantidades.camiones > 0) {
+    camionSeco = crearVehiculo({
+      matricula: 'QA-DEMO-CAM-001',
+      placa: 'QA-DEMO-CAM-001',
+      tipo: 'camion',
+      marca: 'Isuzu',
+      modelo: 'NPR HD',
+      capacidadKg: 3500,
+      capacidadM3: 18,
+      estado: 'disponible',
+      estadoUI: 'disponible',
+      activo: true,
+      observaciones: `${DEMO_MARKER} Camion sec pour les livraisons générales`,
+      notas: `${DEMO_MARKER} Camion sec pour les livraisons générales`,
+      ultimoMantenimiento: '2026-03-15',
+      proximoMantenimiento: '2026-09-15',
+      kmActual: 48210,
+      kilometraje: 48210,
+      conductorAsignado: '',
+      anio: 2021,
+      consumoCombustible: 14.5,
+    }) || null;
+  }
 
-  const camionFrio = crearVehiculo({
-    matricula: 'QA-DEMO-REF-002',
-    placa: 'QA-DEMO-REF-002',
-    tipo: 'refrigerado',
-    marca: 'Mercedes-Benz',
-    modelo: 'Sprinter ColdVan',
-    capacidadKg: 1800,
-    capacidadM3: 11,
-    estado: 'disponible',
-    estadoUI: 'disponible',
-    activo: true,
-    observaciones: `${DEMO_MARKER} Camion réfrigéré pour les produits laitiers et surgelés`,
-    notas: `${DEMO_MARKER} Camion réfrigéré pour les produits laitiers et surgelés`,
-    ultimoMantenimiento: '2026-02-28',
-    proximoMantenimiento: '2026-08-28',
-    kmActual: 26140,
-    kilometraje: 26140,
-    conductorAsignado: '',
-    anio: 2022,
-    consumoCombustible: 11.2,
-  });
+  let camionFrio: Vehiculo | null = null;
+  if (cantidades.camiones > 1) {
+    camionFrio = crearVehiculo({
+      matricula: 'QA-DEMO-REF-002',
+      placa: 'QA-DEMO-REF-002',
+      tipo: 'refrigerado',
+      marca: 'Mercedes-Benz',
+      modelo: 'Sprinter ColdVan',
+      capacidadKg: 1800,
+      capacidadM3: 11,
+      estado: 'disponible',
+      estadoUI: 'disponible',
+      activo: true,
+      observaciones: `${DEMO_MARKER} Camion réfrigéré pour les produits laitiers et surgelés`,
+      notas: `${DEMO_MARKER} Camion réfrigéré pour les produits laitiers et surgelés`,
+      ultimoMantenimiento: '2026-02-28',
+      proximoMantenimiento: '2026-08-28',
+      kmActual: 26140,
+      kilometraje: 26140,
+      conductorAsignado: '',
+      anio: 2022,
+      consumoCombustible: 11.2,
+    }) || null;
+  }
 
-  const choferPrincipal = crearChofer({
-    nombre: 'Marc',
-    apellido: 'Tremblay',
-    cedula: 'QA-DEMO-CH-001',
-    licencia: 'QA-DEMO-LIC-001',
-    tipoLicencia: 'Classe 3',
-    telefono: '(514) 555-5101',
-    email: 'marc.tremblay@demo.qa.local',
-    fechaNacimiento: '1988-07-12',
-    fechaContratacion: '2024-09-01',
-    estado: 'activo',
-    vehiculoAsignado: camionSeco?.id || '',
-    experienciaAnios: 6,
-    certificaciones: ['Livraison alimentaire', 'Chaine du froid'],
-    foto: '👨‍✈️',
-    joursDisponibles: [
-      { jour: 'Lundi', horaire: 'AM/PM' },
-      { jour: 'Mardi', horaire: 'AM/PM' },
-      { jour: 'Jeudi', horaire: 'AM' },
-    ],
-  });
+  const vehiculosDemo = obtenerVehiculos().filter(esVehiculoDemo);
+  for (let indice = vehiculosDemo.length; indice < cantidades.camiones; indice += 1) {
+    crearVehiculo(crearVehiculoDemoExtra(indice));
+  }
 
-  crearChofer({
-    nombre: 'Sara',
-    apellido: 'Nguyen',
-    cedula: 'QA-DEMO-CH-002',
-    licencia: 'QA-DEMO-LIC-002',
-    tipoLicencia: 'Classe 5',
-    telefono: '(514) 555-5102',
-    email: 'sara.nguyen@demo.qa.local',
-    fechaNacimiento: '1992-11-03',
-    fechaContratacion: '2025-01-15',
-    estado: 'activo',
-    vehiculoAsignado: camionFrio?.id || '',
-    experienciaAnios: 4,
-    certificaciones: ['Livraison urbaine'],
-    foto: '👩‍✈️',
-    joursDisponibles: [
-      { jour: 'Mercredi', horaire: 'AM/PM' },
-      { jour: 'Vendredi', horaire: 'AM/PM' },
-    ],
-  });
+  const vehiculosDemoActuales = obtenerVehiculos().filter(esVehiculoDemo);
+
+  let choferPrincipal: Chofer | null = null;
+  if (cantidades.chauffeurs > 0) {
+    choferPrincipal = crearChofer({
+      nombre: 'Marc',
+      apellido: 'Tremblay',
+      cedula: 'QA-DEMO-CH-001',
+      licencia: 'QA-DEMO-LIC-001',
+      tipoLicencia: 'Classe 3',
+      telefono: '(514) 555-5101',
+      email: 'marc.tremblay@demo.qa.local',
+      fechaNacimiento: '1988-07-12',
+      fechaContratacion: '2024-09-01',
+      estado: 'activo',
+      vehiculoAsignado: camionSeco?.id || '',
+      experienciaAnios: 6,
+      certificaciones: ['Livraison alimentaire', 'Chaine du froid'],
+      foto: '👨‍✈️',
+      joursDisponibles: [
+        { jour: 'Lundi', horaire: 'AM/PM' },
+        { jour: 'Mardi', horaire: 'AM/PM' },
+        { jour: 'Jeudi', horaire: 'AM' },
+      ],
+    }) || null;
+  }
+
+  if (cantidades.chauffeurs > 1) {
+    crearChofer({
+      nombre: 'Sara',
+      apellido: 'Nguyen',
+      cedula: 'QA-DEMO-CH-002',
+      licencia: 'QA-DEMO-LIC-002',
+      tipoLicencia: 'Classe 5',
+      telefono: '(514) 555-5102',
+      email: 'sara.nguyen@demo.qa.local',
+      fechaNacimiento: '1992-11-03',
+      fechaContratacion: '2025-01-15',
+      estado: 'activo',
+      vehiculoAsignado: camionFrio?.id || '',
+      experienciaAnios: 4,
+      certificaciones: ['Livraison urbaine'],
+      foto: '👩‍✈️',
+      joursDisponibles: [
+        { jour: 'Mercredi', horaire: 'AM/PM' },
+        { jour: 'Vendredi', horaire: 'AM/PM' },
+      ],
+    });
+  }
+
+  const choferesDemo = obtenerChoferes().filter(esChoferDemo);
+  for (let indice = choferesDemo.length; indice < cantidades.chauffeurs; indice += 1) {
+    crearChofer(crearChoferDemoExtra(indice, vehiculosDemoActuales));
+  }
 
   if (camionSeco && choferPrincipal) {
     camionSeco.conductorAsignado = choferPrincipal.id;
@@ -1670,6 +2196,46 @@ export function sembrarEjemplosFuncionalesPrueba(
   if (!opciones?.silent) {
     imprimirResumen('Ejemplos sembrados', resumen);
     toast.success('Ejemplos funcionales listos para pruebas');
+  }
+
+  return resumen;
+}
+
+export function sembrarEjemplosComptoir(
+  cantidadComptoir = CANTIDADES_EJEMPLOS_POR_DEFECTO.comptoir,
+  opciones?: { silent?: boolean }
+): ResumenEjemplos {
+  inicializarDepartamentos();
+
+  const comptoirId = obtenerDepartamentoId('COMPTOIR', '2');
+  const cantidadObjetivo = normalizarCantidadEjemplos(
+    cantidadComptoir,
+    CANTIDADES_EJEMPLOS_POR_DEFECTO.comptoir
+  );
+
+  ajustarColeccionDemo(
+    obtenerContactosDepartamento().filter(
+      (contacto) =>
+        esContactoDemo(contacto) &&
+        (
+          contacto.departamentoId === comptoirId ||
+          (Array.isArray(contacto.departamentoIds) && contacto.departamentoIds.includes(comptoirId))
+        )
+    ),
+    cantidadObjetivo,
+    eliminarContacto,
+    (indice) => {
+      guardarContacto(crearContactoComptoirDemoExtra(indice, comptoirId));
+    }
+  );
+
+  ajustarBeneficiariosComptoirDemo(cantidadObjetivo);
+
+  const resumen = resumirEjemplos();
+  imprimirResumen('Exemples Comptoir actualisés', resumen);
+
+  if (!opciones?.silent) {
+    toast.success('Exemples Comptoir chargés');
   }
 
   return resumen;

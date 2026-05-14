@@ -61,8 +61,22 @@ function formatDateLabel(dateValue?: string): string {
   return parsedDate.toLocaleDateString('fr-CA');
 }
 
-function getTimelineSortValue(dateValue?: string, timeValue?: string): string {
-  return `${dateValue || ''}T${timeValue || '00:00'}:00`;
+function getTimelineSortValue(dateValue?: string, timeValue?: string): number {
+  if (!dateValue) {
+    return 0;
+  }
+
+  const normalizedDate = dateValue.includes('T')
+    ? dateValue
+    : `${dateValue}T${timeValue || '00:00'}:00`;
+  const parsedDate = new Date(normalizedDate);
+
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.getTime();
+  }
+
+  const fallbackDate = new Date(dateValue);
+  return Number.isNaN(fallbackDate.getTime()) ? 0 : fallbackDate.getTime();
 }
 
 export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficiaireProps) {
@@ -167,7 +181,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
     ? distributions
         .filter((distribution) => distribution.beneficiaireId === beneficiaire.id)
         .slice()
-        .sort((left, right) => getTimelineSortValue(right.date, right.time).localeCompare(getTimelineSortValue(left.date, left.time)))
+        .sort((left, right) => getTimelineSortValue(right.date, right.time) - getTimelineSortValue(left.date, left.time))
         .map((distribution) => ({
           id: distribution.id,
           type: distribution.type,
@@ -182,7 +196,13 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
         .filter((appointment) => appointment.beneficiaireId === beneficiaire.id)
         .map((appointment) => ({
           id: appointment.id,
-          action: `Rendez-vous confirmé • ${appointment.motif}`,
+          action: `${
+            appointment.statut === 'annule'
+              ? 'Rendez-vous annulé'
+              : appointment.statut === 'attente'
+                ? 'Rendez-vous en attente'
+                : 'Rendez-vous confirmé'
+          } • ${appointment.motif}`,
           date: `${formatDateLabel(appointment.date)}${appointment.heure ? ` • ${appointment.heure}` : ''}`,
           user: 'Comptoir',
           sortValue: getTimelineSortValue(appointment.date, appointment.heure),
@@ -225,7 +245,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
           action: 'Dossier créé',
           date: formatDateLabel(beneficiaire.createdAt),
           user: 'Comptoir',
-          sortValue: beneficiaire.createdAt,
+          sortValue: getTimelineSortValue(beneficiaire.createdAt),
         },
         ...(beneficiaire.updatedAt !== beneficiaire.createdAt
           ? [
@@ -234,7 +254,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                 action: 'Dossier mis à jour',
                 date: formatDateLabel(beneficiaire.updatedAt),
                 user: 'Comptoir',
-                sortValue: beneficiaire.updatedAt,
+                sortValue: getTimelineSortValue(beneficiaire.updatedAt),
               },
             ]
           : []),
@@ -243,7 +263,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
         ...distributionTimeline,
       ]
         .slice()
-        .sort((left, right) => right.sortValue.localeCompare(left.sortValue))
+        .sort((left, right) => right.sortValue - left.sortValue)
     : [];
 
   const handleSave = () => {

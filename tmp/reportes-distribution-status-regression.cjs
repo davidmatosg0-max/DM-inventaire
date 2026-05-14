@@ -140,36 +140,21 @@ function validateStatusLogic() {
 }
 
 function validateWiring() {
-  const reportsModulePath = path.join(repoRoot, 'src', 'app', 'components', 'reports', 'ReportsModule.tsx');
-  const exitReportViewPath = path.join(repoRoot, 'src', 'app', 'components', 'reports', 'ExitReportView.tsx');
+  const reportsPagePath = path.join(repoRoot, 'src', 'app', 'components', 'pages', 'Reportes.tsx');
 
-  const reportsModuleContent = fs.readFileSync(reportsModulePath, 'utf8');
-  const exitReportViewContent = fs.readFileSync(exitReportViewPath, 'utf8');
+  const reportsPageContent = fs.readFileSync(reportsPagePath, 'utf8');
 
   assert(
-    reportsModuleContent.includes("from './reportComandaStatus'"),
-    'ReportsModule debe importar la regla compartida de estado de comandas'
+    reportsPageContent.includes("from '../reports/reportComandaStatus'"),
+    'Reportes debe importar la regla compartida de estado de comandas'
   );
   assert(
-    reportsModuleContent.includes('filter(isActiveReportComanda)'),
-    'ReportsModule debe usar isActiveReportComanda para su quick stat de distribution'
+    reportsPageContent.includes('filter(isActiveReportComanda)'),
+    'Reportes debe usar isActiveReportComanda para su quick stat de distribution'
   );
   assert(
-    !reportsModuleContent.includes("estado !== 'anulada'"),
-    'ReportsModule no debe volver a duplicar la exclusion inline de anuladas'
-  );
-
-  assert(
-    exitReportViewContent.includes("from './reportComandaStatus'"),
-    'ExitReportView debe importar la regla compartida de estado de comandas'
-  );
-  assert(
-    exitReportViewContent.includes('matchesReportComandaStatusFilter(comanda, statusFilter)'),
-    'ExitReportView debe usar la regla compartida en su filtro base'
-  );
-  assert(
-    !exitReportViewContent.includes('function matchesStatusFilter('),
-    'ExitReportView no debe redefinir localmente la logica del filtro de estado'
+    !reportsPageContent.includes("estado !== 'anulada'"),
+    'Reportes no debe volver a duplicar la exclusion inline de anuladas'
   );
 }
 
@@ -292,8 +277,7 @@ try {
       'status-helper-active-delivered',
       'status-helper-excludes-canceled-from-all',
       'status-helper-allows-explicit-canceled-filter',
-      'reports-module-shared-wiring',
-      'exit-report-view-shared-wiring',
+      'reportes-page-shared-wiring',
       'offer-requests-in-report-data'
     ]
   }, null, 2));

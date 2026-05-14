@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Package, Calendar, User, Filter, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { Package, Calendar, User, Filter, CheckCircle, XCircle, Clock, AlertCircle, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -338,7 +338,16 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
                     </div>
 
                     {/* Right side - Status and actions */}
-                    <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <div className="flex items-center gap-3 w-full lg:w-auto flex-wrap lg:flex-nowrap justify-end">
+                      <Button
+                        size="sm"
+                        className="bg-[#1E73BE] hover:bg-[#1557A0] text-white shadow-sm"
+                        onClick={() => onNavigate('fiche-beneficiaire', request.beneficiaireId)}
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Vérifier le dossier
+                      </Button>
+
                       {getStatusBadge(request.status)}
                       
                       {request.status === 'pending' && (

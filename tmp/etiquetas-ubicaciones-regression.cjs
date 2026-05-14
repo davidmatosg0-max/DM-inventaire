@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const baseUrl = process.env.ETIQUETAS_UBICACIONES_BASE_URL || 'http://127.0.0.1:4176/';
+const baseUrl = process.env.ETIQUETAS_UBICACIONES_BASE_URL || 'http://127.0.0.1:5173/';
 
 function buildProduct(id, ubicacion) {
   return {

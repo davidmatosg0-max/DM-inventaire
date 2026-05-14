@@ -49,8 +49,10 @@ import { RegistroActividades } from '../RegistroActividades';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import {
   limpiarEjemplosFuncionalesPrueba,
+  sembrarEjemplosComptoir,
   sembrarEjemplosFuncionalesPrueba,
   obtenerResumenEjemplosFuncionalesPrueba,
+  type CantidadesEjemplosFuncionales,
   type ResumenEjemplos,
 } from '../../utils/ejemplosFuncionalesPrueba';
 import type { Producto as ProductoTipo, Categoria as CategoriaTipo, Subcategoria as SubcategoriaTipo, Variante as VarianteTipo, Permiso } from '../../types';
@@ -261,6 +263,94 @@ const getSubcategoriaDisplayName = (value: string) => subcategoriaDisplayLabels[
 const getSubcategoriaDisplayDescription = (value?: string) => (value ? subcategoriaDisplayDescriptions[value] || value : '');
 const getProgramaDisplayDescription = (value?: string) => (value ? programaDisplayDescriptions[value] || value : '');
 
+const cantidadesEjemplosPorDefecto: Record<keyof CantidadesEjemplosFuncionales, string> = {
+  benevoles: '2',
+  donateurs: '1',
+  fournisseurs: '1',
+  comptoir: '2',
+  contactosDepartamentos: '8',
+  chauffeurs: '2',
+  camiones: '2',
+  organismos: '20',
+};
+
+const camposCantidadesEjemplos: Array<{
+  key: keyof CantidadesEjemplosFuncionales;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: 'benevoles',
+    label: 'Bénévoles',
+    description: 'Bénévoles visibles dans les départements et les fiches internes.',
+  },
+  {
+    key: 'donateurs',
+    label: 'Donateurs',
+    description: 'Contacts de dons pour les flux DON et la collecte.',
+  },
+  {
+    key: 'fournisseurs',
+    label: 'Fournisseurs',
+    description: 'Contacts fournisseurs pour les flux ACH.',
+  },
+  {
+    key: 'comptoir',
+    label: 'Comptoir',
+    description: 'Contacts et profils de démonstration spécifiques au module Comptoir.',
+  },
+  {
+    key: 'contactosDepartamentos',
+    label: 'Contacts départements',
+    description: 'Contacts internes additionnels hors bénévoles, donateurs et fournisseurs.',
+  },
+  {
+    key: 'chauffeurs',
+    label: 'Chauffeurs',
+    description: 'Chauffeurs de démonstration pour le module transport.',
+  },
+  {
+    key: 'camiones',
+    label: 'Camions',
+    description: 'Véhicules de démonstration créés pour le transport.',
+  },
+  {
+    key: 'organismos',
+    label: 'Organismes',
+    description: 'Destinations QA disponibles pour liaison, commandes et routes.',
+  },
+];
+
+const CANTIDADES_EJEMPLOS_STORAGE_KEY = 'configuracion_qa_examples_counts';
+
+function cargarCantidadesEjemplosPersistidas(): Record<keyof CantidadesEjemplosFuncionales, string> {
+  if (typeof window === 'undefined') {
+    return cantidadesEjemplosPorDefecto;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(CANTIDADES_EJEMPLOS_STORAGE_KEY);
+    if (!raw) {
+      return cantidadesEjemplosPorDefecto;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<Record<keyof CantidadesEjemplosFuncionales, unknown>>;
+
+    return {
+      benevoles: String(Math.max(0, Math.min(Number(parsed.benevoles) || Number(cantidadesEjemplosPorDefecto.benevoles), 20))),
+      donateurs: String(Math.max(0, Math.min(Number(parsed.donateurs) || Number(cantidadesEjemplosPorDefecto.donateurs), 20))),
+      fournisseurs: String(Math.max(0, Math.min(Number(parsed.fournisseurs) || Number(cantidadesEjemplosPorDefecto.fournisseurs), 20))),
+      comptoir: String(Math.max(0, Math.min(Number(parsed.comptoir) || Number(cantidadesEjemplosPorDefecto.comptoir), 20))),
+      contactosDepartamentos: String(Math.max(0, Math.min(Number(parsed.contactosDepartamentos) || Number(cantidadesEjemplosPorDefecto.contactosDepartamentos), 20))),
+      chauffeurs: String(Math.max(0, Math.min(Number(parsed.chauffeurs) || Number(cantidadesEjemplosPorDefecto.chauffeurs), 20))),
+      camiones: String(Math.max(0, Math.min(Number(parsed.camiones) || Number(cantidadesEjemplosPorDefecto.camiones), 20))),
+      organismos: String(Math.max(0, Math.min(Number(parsed.organismos) || Number(cantidadesEjemplosPorDefecto.organismos), 20))),
+    };
+  } catch {
+    return cantidadesEjemplosPorDefecto;
+  }
+}
+
 export function Configuracion() {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
@@ -277,7 +367,9 @@ export function Configuracion() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [resumenEjemplos, setResumenEjemplos] = useState<ResumenEjemplos>(() => obtenerResumenEjemplosFuncionalesPrueba());
   const [procesandoEjemplos, setProcesandoEjemplos] = useState(false);
-  const [cantidadOrganismosEjemplos, setCantidadOrganismosEjemplos] = useState('20');
+  const [cantidadesEjemplos, setCantidadesEjemplos] = useState<Record<keyof CantidadesEjemplosFuncionales, string>>(
+    () => cargarCantidadesEjemplosPersistidas()
+  );
 
   // Cargar unidades dinámicas
   useEffect(() => {
@@ -360,6 +452,13 @@ export function Configuracion() {
     setResumenEjemplos(obtenerResumenEjemplosFuncionalesPrueba());
   }, []);
 
+  useEffect(() => {
+    window.localStorage.setItem(
+      CANTIDADES_EJEMPLOS_STORAGE_KEY,
+      JSON.stringify(cantidadesEjemplos)
+    );
+  }, [cantidadesEjemplos]);
+
   // 💰 Migrar valores monetarios de productos existentes al cargar categorías
   useEffect(() => {
     if (categorias.length > 0 && productos.length > 0) {
@@ -393,12 +492,31 @@ export function Configuracion() {
     programa => programa.nombre.toUpperCase() === 'PRS' && programa.activo
   );
 
-  const ejecutarAccionEjemplos = (accion: 'sembrar' | 'limpiar' | 'actualizar') => {
+  const ejecutarAccionEjemplos = (accion: 'sembrar' | 'sembrar-comptoir' | 'limpiar' | 'actualizar') => {
     setProcesandoEjemplos(true);
+
+    const cantidadesEjemplosNormalizadas: CantidadesEjemplosFuncionales = {
+      benevoles: Math.max(0, Math.min(Number(cantidadesEjemplos.benevoles) || 0, 20)),
+      donateurs: Math.max(0, Math.min(Number(cantidadesEjemplos.donateurs) || 0, 20)),
+      fournisseurs: Math.max(0, Math.min(Number(cantidadesEjemplos.fournisseurs) || 0, 20)),
+      comptoir: Math.max(0, Math.min(Number(cantidadesEjemplos.comptoir) || 0, 20)),
+      contactosDepartamentos: Math.max(0, Math.min(Number(cantidadesEjemplos.contactosDepartamentos) || 0, 20)),
+      chauffeurs: Math.max(0, Math.min(Number(cantidadesEjemplos.chauffeurs) || 0, 20)),
+      camiones: Math.max(0, Math.min(Number(cantidadesEjemplos.camiones) || 0, 20)),
+      organismos: Math.max(0, Math.min(Number(cantidadesEjemplos.organismos) || 0, 20)),
+    };
 
     try {
       if (accion === 'sembrar') {
-        setResumenEjemplos(sembrarEjemplosFuncionalesPrueba(Number(cantidadOrganismosEjemplos) || 20));
+        setResumenEjemplos(
+          sembrarEjemplosFuncionalesPrueba(cantidadesEjemplosNormalizadas.organismos, {
+            cantidades: cantidadesEjemplosNormalizadas,
+          })
+        );
+      } else if (accion === 'sembrar-comptoir') {
+        setResumenEjemplos(
+          sembrarEjemplosComptoir(cantidadesEjemplosNormalizadas.comptoir)
+        );
       } else if (accion === 'limpiar') {
         setResumenEjemplos(limpiarEjemplosFuncionalesPrueba());
       } else {
@@ -407,6 +525,20 @@ export function Configuracion() {
     } finally {
       setProcesandoEjemplos(false);
     }
+  };
+
+  const handleCantidadEjemplosChange = (
+    key: keyof CantidadesEjemplosFuncionales,
+    value: string
+  ) => {
+    if (value === '') {
+      setCantidadesEjemplos((prev) => ({ ...prev, [key]: '' }));
+      return;
+    }
+
+    const numerico = value.replace(/[^0-9]/g, '');
+    const cantidad = Math.max(0, Math.min(Number(numerico || 0), 20));
+    setCantidadesEjemplos((prev) => ({ ...prev, [key]: String(cantidad) }));
   };
 
   // Filtrar categorías según disponibilidad del programa PRS
@@ -3537,27 +3669,36 @@ export function Configuracion() {
                 <CardContent className="space-y-6 p-6">
                   <div className="rounded-2xl border border-[#1a4d7a]/10 bg-gradient-to-br from-[#f8fbff] to-[#eef8f2] p-5">
                     <p className="text-sm text-gray-700 leading-relaxed" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      Charge un jeu de données réaliste pour bénévoles, donateurs, fournisseurs, organismes, chauffeurs, camions et plusieurs contacts de démonstration dans chaque département actif. Tu peux maintenant choisir jusqu'à 20 organismes de démonstration. La suppression retire uniquement les enregistrements balisés QA-DEMO.
+                      Charge un jeu de données réaliste pour bénévoles, donateurs, fournisseurs, organismes, chauffeurs, camions et contacts de démonstration par département. Tu peux maintenant définir manuellement la quantité à générer pour chaque catégorie, de 0 à 20 éléments. La suppression retire uniquement les enregistrements balisés QA-DEMO.
                     </p>
                   </div>
 
-                  <div className="max-w-xs space-y-2">
-                    <Label htmlFor="cantidad-organismos-demo">Organismes de démonstration à générer</Label>
-                    <Select value={cantidadOrganismosEjemplos} onValueChange={setCantidadOrganismosEjemplos}>
-                      <SelectTrigger id="cantidad-organismos-demo" className="bg-white/80">
-                        <SelectValue placeholder="Choisir une quantité" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="6">6 organismes</SelectItem>
-                        <SelectItem value="8">8 organismes</SelectItem>
-                        <SelectItem value="10">10 organismes</SelectItem>
-                        <SelectItem value="12">12 organismes</SelectItem>
-                        <SelectItem value="15">15 organismes</SelectItem>
-                        <SelectItem value="20">20 organismes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-gray-500" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      Le chargement recrée toujours le jeu QA-DEMO complet puis ajoute la quantité choisie d'organismes.
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {camposCantidadesEjemplos.map((campo) => (
+                      <div key={campo.key} className="rounded-2xl border border-white/70 bg-white/80 shadow-lg p-4 space-y-2">
+                        <Label htmlFor={`cantidad-demo-${campo.key}`} className="text-sm font-semibold text-[#1a4d7a]">
+                          {campo.label}
+                        </Label>
+                        <Input
+                          id={`cantidad-demo-${campo.key}`}
+                          type="number"
+                          min="0"
+                          max="20"
+                          inputMode="numeric"
+                          className="bg-white"
+                          value={cantidadesEjemplos[campo.key]}
+                          onChange={(e) => handleCantidadEjemplosChange(campo.key, e.target.value)}
+                        />
+                        <p className="text-xs text-gray-500" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                          {campo.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-2xl border border-[#2d9561]/15 bg-[#f7fcf8] p-4">
+                    <p className="text-xs text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                      Le chargement réinitialise toujours le jeu QA-DEMO avant de regénérer les catégories selon les quantités indiquées.
                     </p>
                   </div>
 
@@ -3566,6 +3707,7 @@ export function Configuracion() {
                       { label: 'Bénévoles', value: resumenEjemplos.benevoles },
                       { label: 'Donateurs', value: resumenEjemplos.donateurs },
                       { label: 'Fournisseurs', value: resumenEjemplos.fournisseurs },
+                      { label: 'Comptoir', value: resumenEjemplos.comptoir },
                       { label: 'Contacts départements', value: resumenEjemplos.contactosDepartamentos },
                       { label: 'Départements couverts', value: resumenEjemplos.departamentosCubiertos },
                       { label: 'Chauffeurs', value: resumenEjemplos.chauffeurs },
@@ -3592,6 +3734,16 @@ export function Configuracion() {
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
                       Charger les exemples
+                    </Button>
+                    <Button
+                      onClick={() => ejecutarAccionEjemplos('sembrar-comptoir')}
+                      disabled={procesandoEjemplos}
+                      variant="outline"
+                      className="rounded-xl border-[#2d9561]/30 text-[#2d9561] hover:bg-[#2d9561]/5"
+                      style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Semer seulement Comptoir
                     </Button>
                     <Button
                       onClick={() => ejecutarAccionEjemplos('actualizar')}

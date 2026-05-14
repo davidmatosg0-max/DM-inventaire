@@ -15,7 +15,9 @@ import {
   ajouterDistributionComptoir,
   comptoirStorageEvents,
   comptoirStorageKeys,
+  obtenirDemandesAideComptoir,
   obtenirBeneficiairesComptoir,
+  sauvegarderDemandesAideComptoir,
   type ComptoirBeneficiary,
   upsertBeneficiaireComptoir,
 } from '../../utils/comptoirStorage';
@@ -37,6 +39,20 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
   const [heureAide, setHeureAide] = useState(new Date().toTimeString().slice(0, 5));
   const [valeurEstimee, setValeurEstimee] = useState('');
   const [notes, setNotes] = useState('');
+
+  const generarSiguienteIdDemanda = () => {
+    const requests = obtenirDemandesAideComptoir();
+    const maxId = requests.reduce((maxValue, request) => {
+      const numericId = Number(request.id);
+      if (!Number.isFinite(numericId)) {
+        return maxValue;
+      }
+
+      return Math.max(maxValue, numericId);
+    }, 0);
+
+    return maxId + 1;
+  };
 
   // Obtener el tipo de ayuda seleccionado
   const currentAidType = aidTypes.find(type => type.id === selectedAidType);
@@ -124,9 +140,22 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
       return;
     }
 
-    const estimatedValue = valeurEstimee
-      ? Number.parseFloat(valeurEstimee)
-      : (currentAidType.defaultValue || 0) * quantity;
+    let estimatedValue: number;
+    if (valeurEstimee.trim()) {
+      const parsedValue = Number.parseFloat(valeurEstimee);
+      if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+        toast.error(t('common.error'), {
+          description: 'La valeur estimée doit être un nombre valide supérieur ou égal à 0.',
+        });
+        return;
+      }
+      estimatedValue = parsedValue;
+    } else {
+      estimatedValue = (currentAidType.defaultValue || 0) * quantity;
+    }
+
+    const demandasActuales = obtenirDemandesAideComptoir();
+    let siguienteIdDemanda = generarSiguienteIdDemanda();
 
     selectedBeneficiaires.forEach((beneficiaire) => {
       ajouterDistributionComptoir({
@@ -146,7 +175,23 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
         ...beneficiaire,
         derniereAide: dateAide,
       });
+
+      demandasActuales.push({
+        id: siguienteIdDemanda,
+        beneficiaire: beneficiaire.nom,
+        beneficiaireId: beneficiaire.id,
+        type: currentAidType.name,
+        quantite: quantity,
+        dateRequested: new Date().toISOString(),
+        status: 'pending',
+        notes,
+        estimatedValue,
+      });
+
+      siguienteIdDemanda += 1;
     });
+
+    sauvegarderDemandesAideComptoir(demandasActuales);
 
     setSelectedBeneficiaires([]);
     setSelectedAidType('');
