@@ -13,6 +13,7 @@
     "dev:recrutement": "vite --host 127.0.0.1 --port 4173 --strictPort",
     "preview": "vite preview",
     "test:reportes:distribution": "node tmp/reportes-distribution-status-regression.cjs",
+    "test:comandas:tabs": "node tmp/comandas-tabs-functional.cjs",
     "test:entrepot": "node tmp/contactos-entrepot-functional.cjs",
     "test:entrepot:inventario-guards": "node tmp/inventario-guards-regression.cjs",
     "test:entrepot:fusion": "node tmp/product-storage-canonical-merge-regression.cjs",

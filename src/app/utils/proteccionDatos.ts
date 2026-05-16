@@ -12,8 +12,8 @@ import { logger } from './logger';
 // Flag para permitir operaciones de mantenimiento (restauración de backups)
 let modoMantenimiento = false;
 
-// Lista de claves críticas que NUNCA deben ser eliminadas
-const CLAVES_CRITICAS = [
+// Lista de claves críticas exactas que NUNCA deben ser eliminadas
+const CLAVES_CRITICAS_EXACTAS = [
   'sistema_con_datos_reales',
   'limpieza_completa_ejecutada',
   'productos_inventario',
@@ -32,6 +32,9 @@ const CLAVES_CRITICAS = [
   'configuracion_branding',
   'productos_prs',
   'unidades_medida',
+];
+
+const PREFIJOS_CLAVES_CRITICAS = [
   'backup_',
 ];
 
@@ -90,7 +93,7 @@ function guardarRespaldoSeguro(clave: string, valor: string): boolean {
  * Verifica si una clave es crítica
  */
 function esClaveProtegida(clave: string): boolean {
-  return CLAVES_CRITICAS.some(critica => clave.startsWith(critica));
+  return CLAVES_CRITICAS_EXACTAS.includes(clave) || PREFIJOS_CLAVES_CRITICAS.some((prefijo) => clave.startsWith(prefijo));
 }
 
 /**
@@ -220,7 +223,7 @@ function protegerCierrePestana() {
       };
       
       // Respaldar todas las claves críticas
-      CLAVES_CRITICAS.forEach(prefijo => {
+      [...CLAVES_CRITICAS_EXACTAS, ...PREFIJOS_CLAVES_CRITICAS].forEach(prefijo => {
         Object.keys(localStorage).forEach(clave => {
           if (clave.startsWith(prefijo) && !esClaveExcluidaDeRespaldo(clave)) {
             backup.datos[clave] = localStorage.getItem(clave) || '';

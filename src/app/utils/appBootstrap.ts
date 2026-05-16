@@ -42,11 +42,6 @@ function limpiarDatosObsoletosCuisine(): void {
       logger.info(`🧹 Clave obsoleta eliminada: ${clave}`);
     }
   });
-
-  if (localStorage.getItem('comandas-tab-activo') === 'ofertas-cocina') {
-    localStorage.removeItem('comandas-tab-activo');
-    logger.info('🧹 Tab obsoleto de ofertas cuisine eliminado');
-  }
 }
 
 export async function runAppBootstrap() {
