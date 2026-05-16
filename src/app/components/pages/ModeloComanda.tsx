@@ -128,6 +128,7 @@ export function ModeloComanda({
   const [filtroRapidoProducto, setFiltroRapidoProducto] = useState('');
   const [cantidadAgregarProducto, setCantidadAgregarProducto] = useState('1');
   const distribucionGrupoFinalizada = ['entregada', 'anulada'].includes(String(comanda.estado || ''));
+  const edicionInternaBloqueada = ['entregada', 'anulada'].includes(String(comanda.estado || ''));
   
   // 🎯 NUEVO: Estado para marcar productos como completados durante la preparación
   const [productosCompletados, setProductosCompletados] = useState<{[key: string]: boolean}>({});
@@ -561,6 +562,11 @@ export function ModeloComanda({
   };
 
   const handleIniciarEdicionInterna = () => {
+    if (edicionInternaBloqueada) {
+      toast.error('Les articles ne peuvent plus être modifiés pour une commande livrée ou annulée.');
+      return;
+    }
+
     inicializarCantidadesEditadas(productosOrdenados);
     setCampoEditando(null);
     setModoEdicionInterna(true);
@@ -576,6 +582,11 @@ export function ModeloComanda({
   };
 
   const handleGuardarEdicionInterna = () => {
+    if (edicionInternaBloqueada) {
+      toast.error('Les articles ne peuvent plus être modifiés pour une commande livrée ou annulée.');
+      return;
+    }
+
     try {
       const itemsActualizados = construirItemsInternosEditados();
       const comandaActualizada = {
@@ -597,6 +608,11 @@ export function ModeloComanda({
   };
 
   const handleAgregarProductoInterno = () => {
+    if (edicionInternaBloqueada) {
+      toast.error('Impossible d’ajouter des articles à une commande livrée ou annulée.');
+      return;
+    }
+
     const producto = inventarioProductos.find((item: any) => item.id === productoAgregarId);
     const cantidad = Number(cantidadAgregarProducto);
 
@@ -733,7 +749,7 @@ export function ModeloComanda({
             Commande - {comanda.numero}
           </h2>
           <div className="flex gap-2 flex-wrap">
-            {!modoOrganismo && (
+            {!modoOrganismo && !edicionInternaBloqueada && (
               modoEdicionInterna ? (
                 <>
                   <Button

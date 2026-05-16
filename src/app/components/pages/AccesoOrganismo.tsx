@@ -35,7 +35,16 @@ export function AccesoOrganismo() {
 
   useEffect(() => {
     const recargarOrganismos = () => {
-      setOrganismosDisponibles(obtenerOrganismos().map(normalizarOrganismoPortal));
+      const organismosActualizados = obtenerOrganismos().map(normalizarOrganismoPortal);
+
+      setOrganismosDisponibles(organismosActualizados);
+      setOrganismoAutenticado((organismoActual) => {
+        if (!organismoActual) {
+          return organismoActual;
+        }
+
+        return organismosActualizados.find((organismo) => organismo.id === organismoActual.id) || null;
+      });
     };
 
     recargarOrganismos();

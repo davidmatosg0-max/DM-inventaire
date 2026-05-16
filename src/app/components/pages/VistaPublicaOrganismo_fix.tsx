@@ -30,6 +30,7 @@ import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/Select
 import { useBranding } from '../../../hooks/useBranding';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { obtenerUsuarios, type Usuario } from '../../utils/usuarios';
+import { actualizarOrganismo, type Organismo } from '../../utils/organismosStorage';
 import { 
   obtenerPersonasPorOrganismo, 
   guardarPersonaResponsable, 
@@ -53,9 +54,21 @@ interface DonadorPRSAsignado {
 }
 
 interface VistaPublicaOrganismoProps {
-  organismo: any;
+  organismo: Organismo & {
+    participaPRS?: boolean;
+  };
   onCerrarSesion: () => void;
 }
+
+type DatosEdicionOrganismo = {
+  responsable: string;
+  telefono: string;
+  email: string;
+  beneficiarios: number;
+  direccion: string;
+  codigoPostal: string;
+  quartier: string;
+};
 
 export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublicaOrganismoProps) {
   const { t, i18n } = useTranslation();
@@ -311,13 +324,14 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
   
   // Estados para edición de perfil
   const [editarPerfilOpen, setEditarPerfilOpen] = useState(false);
-  const [datosEdicion, setDatosEdicion] = useState({
+  const [datosEdicion, setDatosEdicion] = useState<DatosEdicionOrganismo>({
     responsable: organismo.responsable,
     telefono: organismo.telefono,
     email: organismo.email,
     beneficiarios: organismo.beneficiarios,
     direccion: organismo.direccion,
-    codigoPostal: organismo.codigoPostal || ''
+    codigoPostal: organismo.codigoPostal || '',
+    quartier: organismo.quartier || ''
   });
 
   // Estados para Reportes
@@ -579,15 +593,29 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
   };
 
   const handleGuardarCambios = () => {
-    // Aquí se enviaría la actualización al servidor
+    const organismoActualizado = actualizarOrganismo(organismo.id, {
+      responsable: datosEdicion.responsable.trim(),
+      telefono: datosEdicion.telefono.trim(),
+      email: datosEdicion.email.trim(),
+      beneficiarios: Math.max(0, Number(datosEdicion.beneficiarios) || 0),
+      direccion: datosEdicion.direccion.trim(),
+      codigoPostal: datosEdicion.codigoPostal.trim() || undefined,
+      quartier: datosEdicion.quartier.trim() || undefined,
+    });
+
+    if (!organismoActualizado) {
+      toast.error('Impossible de mettre a jour le profil de l\'organisme.', {
+        description: 'Veuillez reessayer ou contacter l\'administrateur si le probleme persiste.',
+        duration: 5000
+      });
+      return;
+    }
+
     toast.success(t('organismPortal.profileUpdated'), {
       description: t('organismPortal.profileUpdatedDescription'),
       duration: 5000
     });
     setEditarPerfilOpen(false);
-    
-    // Actualizar el organismo localmente (en producción esto vendría del servidor)
-    Object.assign(organismo, datosEdicion);
   };
 
   const reconstruirItemsAceptados = (itemsOriginales: any[], itemsAceptados: any[]) => {
@@ -815,6 +843,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     // Crear entrada
     const entrada = {
       fecha: new Date().toISOString(),
+      tipoEntrada: 'prs',
       programaNombre: 'Programme de Ramassage de Surplus',
       programaCodigo: 'prs',
       programaColor: branding.secondaryColor,
@@ -828,13 +857,17 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       nombreProducto: producto.nombre,
       categoria: producto.categoria,
       subcategoria: producto.subcategoria,
+      productoCategoria: producto.categoria,
+      productoSubcategoria: producto.subcategoria,
       productoIcono: producto.icono,
+      productoCodigo: producto.codigo,
       cantidad: cantidad,
       unidad: producto.unidad,
       pesoUnidad: producto.pesoUnitario || producto.peso || 0,
       pesoTotal: pesoTotal,
       temperatura: formEntrada.temperatura as 'ambiente' | 'refrigerado' | 'congelado',
       observaciones: `Entrada registrada por organismo ${organismo.nombre}. ${formEntrada.observaciones || ''}`.trim(),
+      creadoPor: organismo.nombre,
       registradoPor: organismo.nombre,
       organismoId: organismo.id
     };
@@ -1510,7 +1543,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                     email: organismo.email,
                     beneficiarios: organismo.beneficiarios,
                     direccion: organismo.direccion,
-                    codigoPostal: organismo.codigoPostal || ''
+                    codigoPostal: organismo.codigoPostal || '',
+                    quartier: organismo.quartier || ''
                   });
                   setEditarPerfilOpen(true);
                 }}
