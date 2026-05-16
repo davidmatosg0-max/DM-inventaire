@@ -185,9 +185,9 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
 
     toast.success(
       <div>
-        <div className="font-semibold">{t('comptoir.aidRecorded')}</div>
+        <div className="font-semibold">Demande enregistrée</div>
         <div className="text-sm text-[#666666] mt-1">
-          {selectedBeneficiaires.length} {selectedBeneficiaires.length === 1 ? 'bénéficiaire enregistré' : 'bénéficiaires enregistrés'}
+          {selectedBeneficiaires.length} {selectedBeneficiaires.length === 1 ? 'bénéficiaire ajouté à la file d\'attente' : 'bénéficiaires ajoutés à la file d\'attente'}
         </div>
       </div>,
       { duration: 5000 }
@@ -198,7 +198,7 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
     <>
       <BoutonRetourHeader 
         onClick={() => onNavigate('dashboard')} 
-        titre="Aide Alimentaire"
+        titre="Nouvelle demande d'aide"
       />
     <div className="space-y-6">
       {/* Formulaire central */}
@@ -206,7 +206,7 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
         <CardHeader className="bg-gradient-to-r from-[#1E73BE] to-[#1557A0] text-white">
           <CardTitle className="flex items-center gap-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             <Package className="w-6 h-6" />
-            {t('comptoir.recordFoodAid')}
+            Créer une demande d'aide
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
@@ -524,7 +524,7 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
                 onClick={handleEnregistrer}
               >
                 <Save className="w-5 h-5 mr-2" />
-                {t('comptoir.recordDistribution')}
+                Enregistrer la demande
               </Button>
             </div>
           </div>
