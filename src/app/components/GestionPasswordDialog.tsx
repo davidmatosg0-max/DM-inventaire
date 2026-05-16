@@ -33,6 +33,7 @@ export function GestionPasswordDialog({
   // Cargar la contraseña actual cuando se abre el diálogo
   React.useEffect(() => {
     if (!open) {
+      setMostrarPassword(false);
       return;
     }
 
@@ -167,7 +168,7 @@ export function GestionPasswordDialog({
               <Label htmlFor="nueva-password" className="text-sm">Nouveau mot de passe</Label>
               <Input
                 id="nueva-password"
-                type="password"
+                type={mostrarPassword ? 'text' : 'password'}
                 value={nuevaPassword}
                 onChange={(e) => setNuevaPassword(e.target.value)}
                 placeholder="Entrer nouveau mot de passe"
@@ -179,7 +180,7 @@ export function GestionPasswordDialog({
               <Label htmlFor="confirmar-password" className="text-sm">Confirmer le mot de passe</Label>
               <Input
                 id="confirmar-password"
-                type="password"
+                type={mostrarPassword ? 'text' : 'password'}
                 value={confirmarPassword}
                 onChange={(e) => setConfirmarPassword(e.target.value)}
                 placeholder="Confirmer le mot de passe"
