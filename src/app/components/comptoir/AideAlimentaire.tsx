@@ -12,14 +12,12 @@ import { toast } from 'sonner';
 import { BoutonRetourHeader } from '../shared/BoutonRetour';
 import { formatMoney } from '../../utils/formatUtils';
 import {
-  ajouterDistributionComptoir,
   comptoirStorageEvents,
   comptoirStorageKeys,
   obtenirDemandesAideComptoir,
   obtenirBeneficiairesComptoir,
   sauvegarderDemandesAideComptoir,
   type ComptoirBeneficiary,
-  upsertBeneficiaireComptoir,
 } from '../../utils/comptoirStorage';
 
 interface AideAlimentaireProps {
@@ -158,31 +156,13 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
     let siguienteIdDemanda = generarSiguienteIdDemanda();
 
     selectedBeneficiaires.forEach((beneficiaire) => {
-      ajouterDistributionComptoir({
-        beneficiaireId: beneficiaire.id,
-        beneficiaire: beneficiaire.nom,
-        aidTypeId: currentAidType.id,
-        type: currentAidType.name,
-        quantite: quantity,
-        date: dateAide,
-        time: heureAide,
-        estimatedValue,
-        notes,
-        source: 'direct',
-      });
-
-      upsertBeneficiaireComptoir({
-        ...beneficiaire,
-        derniereAide: dateAide,
-      });
-
       demandasActuales.push({
         id: siguienteIdDemanda,
         beneficiaire: beneficiaire.nom,
         beneficiaireId: beneficiaire.id,
         type: currentAidType.name,
         quantite: quantity,
-        dateRequested: new Date().toISOString(),
+        dateRequested: `${dateAide}${heureAide ? ` ${heureAide}` : ''}`,
         status: 'pending',
         notes,
         estimatedValue,
