@@ -61,6 +61,7 @@ import {
 } from '../../utils/achatsStorage';
 import { obtenerUnidadesParaSelector } from '../../utils/unidadStorage';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
+import { PERMISOS, tieneAlgunoDeEstosPermisos } from '../../utils/permisos';
 
 interface LigneFormulaire extends Omit<LigneBonAchat, 'quantite'> {
   quantite: number | '';
@@ -293,10 +294,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
 
     return bons.filter(bon => bon.programmeAchatId === bonsProgrammeFilter);
   }, [bons, bonsProgrammeFilter]);
-  const canCreateBon = Boolean(usuario);
-  const canAuthorize = Boolean(usuario?.permisos?.some(permiso =>
-    ['acceso_total', 'desarrollador', 'administrador_general'].includes(permiso)
-  ));
+  const canCreateBon = tieneAlgunoDeEstosPermisos([PERMISOS.ACHAT_CREAR]);
+  const canAuthorize = tieneAlgunoDeEstosPermisos([PERMISOS.ACHAT_AUTORISAR]);
+  const canManageBon = canCreateBon || canAuthorize;
+  const canManageAchatConfiguration = canAuthorize;
   const achatTabLabels: Record<string, string> = useMemo(() => ({
     overview: t('achatPage.tabs.overview'),
     bons: t('achatPage.tabs.orders'),
@@ -452,6 +453,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const handleCreateBon = (statutInitial: 'brouillon' | 'en_attente') => {
+    if (!canCreateBon) {
+      return;
+    }
+
     if (!fournisseurSeleccionado) {
       toast.error(t('achatPage.toasts.selectSupplier'));
       return;
@@ -501,13 +506,17 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const handleSubmitBon = (bonId: string) => {
+    if (!canCreateBon) {
+      return;
+    }
+
     soumettreBonAchat(bonId, usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : t('achatPage.defaults.systemActor'));
     toast.success(t('achatPage.toasts.sentForApproval'));
     loadModuleData();
   };
 
   const handleApprove = (bonId: string, approved: boolean) => {
-    if (!usuario) {
+    if (!usuario || !canAuthorize) {
       return;
     }
 
@@ -527,6 +536,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const handleUpdateBonStatus = (bonId: string, statut: StatutBonAchat) => {
+    if (!canManageBon) {
+      return;
+    }
+
     const actorName = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : t('achatPage.defaults.systemActor');
 
     if (statut === 'recu') {
@@ -544,6 +557,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const handleCancelBon = (bonId: string) => {
+    if (!canManageBon) {
+      return;
+    }
+
     const actorName = usuario ? `${usuario.nombre} ${usuario.apellido || ''}`.trim() : t('achatPage.defaults.systemActor');
     const bonAnnule = actualizarBonAchat(bonId, { statut: 'annule' }, actorName);
 
@@ -692,6 +709,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const openEditRule = (regla: RegleAutorisationAchat) => {
+    if (!canManageAchatConfiguration) {
+      return;
+    }
+
     setReglaEnEdicion(regla);
     setReglaForm({
       id: regla.id,
@@ -706,6 +727,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const handleSaveRule = () => {
+    if (!canManageAchatConfiguration) {
+      return;
+    }
+
     if (!reglaForm.nom.trim() || !reglaForm.roleAutorisateur.trim()) {
       toast.error(t('achatPage.toasts.ruleRequired'));
       return;
@@ -731,6 +756,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   const bonPeutEtreAnnule = (bon: BonAchat) => ['brouillon', 'en_attente', 'approuve', 'commande'].includes(bon.statut);
 
   const openEditProgramme = (programme: ProgrammeAchat) => {
+    if (!canManageAchatConfiguration) {
+      return;
+    }
+
     setProgrammeEnEdicion(programme);
     setProgrammeForm({
       id: programme.id,
@@ -745,6 +774,10 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
   };
 
   const handleSaveProgramme = () => {
+    if (!canManageAchatConfiguration) {
+      return;
+    }
+
     if (!programmeForm.nom.trim() || !programmeForm.code.trim()) {
       toast.error(t('achatPage.toasts.programRequired'));
       return;
@@ -793,11 +826,11 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <Plus className="mr-2 h-4 w-4" />
               {t('achatPage.actions.newOrder')}
             </Button>
-            <Button variant="outline" onClick={() => { setActiveAchatTab('programmes'); setDialogProgrammeOpen(true); }} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+            <Button variant="outline" onClick={() => { setActiveAchatTab('programmes'); setDialogProgrammeOpen(true); }} disabled={!canManageAchatConfiguration} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:opacity-60">
               <ClipboardCheck className="mr-2 h-4 w-4" />
               {t('achatPage.actions.newProgram')}
             </Button>
-            <Button variant="outline" onClick={() => { setActiveAchatTab('autorisations'); setDialogReglaOpen(true); }} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+            <Button variant="outline" onClick={() => { setActiveAchatTab('autorisations'); setDialogReglaOpen(true); }} disabled={!canManageAchatConfiguration} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:opacity-60">
               <ShieldCheck className="mr-2 h-4 w-4" />
               {t('achatPage.actions.newRule')}
             </Button>
@@ -1056,7 +1089,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                             <Download className="mr-1 h-4 w-4" />
                             PDF
                           </Button>
-                          {bon.statut === 'brouillon' && (
+                          {canCreateBon && bon.statut === 'brouillon' && (
                             <Button size="sm" variant="outline" onClick={() => handleSubmitBon(bon.id)}>
                               {t('achatPage.orders.submit')}
                             </Button>
@@ -1071,17 +1104,17 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                               </Button>
                             </>
                           )}
-                          {bon.statut === 'approuve' && (
+                          {canManageBon && bon.statut === 'approuve' && (
                             <Button size="sm" variant="outline" onClick={() => handleUpdateBonStatus(bon.id, 'commande')}>
                               {t('achatPage.orders.markOrdered')}
                             </Button>
                           )}
-                          {bon.statut === 'commande' && (
+                          {canManageBon && bon.statut === 'commande' && (
                             <Button size="sm" variant="outline" onClick={() => handleUpdateBonStatus(bon.id, 'recu')}>
                               {t('achatPage.orders.markReceived')}
                             </Button>
                           )}
-                          {bonPeutEtreAnnule(bon) && (
+                          {canManageBon && bonPeutEtreAnnule(bon) && (
                             <Button size="sm" variant="outline" className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => handleCancelBon(bon.id)}>
                               <Ban className="mr-1 h-4 w-4" />
                               {t('achatPage.orders.cancel')}
@@ -1168,6 +1201,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                   resetProgrammeForm();
                   setDialogProgrammeOpen(true);
                 }}
+                disabled={!canManageAchatConfiguration}
               >
                 <Plus className="h-4 w-4" />
                 {t('achatPage.actions.newProgram')}
@@ -1245,13 +1279,17 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => openEditProgramme(programme)}>
+                            <Button size="sm" variant="outline" onClick={() => openEditProgramme(programme)} disabled={!canManageAchatConfiguration}>
                               {t('achatPage.programs.edit')}
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
+                              disabled={!canManageAchatConfiguration}
                               onClick={() => {
+                                if (!canManageAchatConfiguration) {
+                                  return;
+                                }
                                 eliminarProgrammeAchat(programme.id);
                                 toast.success(t('achatPage.toasts.programDeleted'));
                                 loadModuleData();
@@ -1313,6 +1351,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                   resetReglaForm();
                   setDialogReglaOpen(true);
                 }}
+                disabled={!canManageAchatConfiguration}
               >
                 <Plus className="h-4 w-4" />
                 {t('achatPage.actions.newRule')}
@@ -1351,13 +1390,17 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => openEditRule(regla)}>
+                          <Button size="sm" variant="outline" onClick={() => openEditRule(regla)} disabled={!canManageAchatConfiguration}>
                             {t('achatPage.rules.edit')}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
+                            disabled={!canManageAchatConfiguration}
                             onClick={() => {
+                              if (!canManageAchatConfiguration) {
+                                return;
+                              }
                               eliminarReglaAutorizacionAchat(regla.id);
                               toast.success(t('achatPage.toasts.ruleDeleted'));
                               loadModuleData();

@@ -186,6 +186,25 @@ async function expandNav(page, labels) {
   }
 }
 
+async function clickNavButton(page, label) {
+  const clicked = await page.evaluate((targetLabel) => {
+    const buttons = Array.from(document.querySelectorAll('nav button'));
+    const button = buttons.find((element) => (element.textContent || '').replace(/\s+/g, ' ').trim() === targetLabel);
+    if (!button) {
+      return false;
+    }
+
+    button.click();
+    return true;
+  }, label);
+
+  if (!clicked) {
+    throw new Error(`Navigation button not found: ${label}`);
+  }
+
+  await page.waitForTimeout(250);
+}
+
 async function readNavText(page) {
   const navText = await page.locator('nav').innerText();
   return navText.replace(/\n{2,}/g, '\n').trim();
@@ -205,6 +224,48 @@ function assertExcludes(haystack, values, context) {
       throw new Error(`Unexpected nav item for ${context}: ${value}`);
     }
   }
+}
+
+async function expectButtonState(page, label, expectedEnabled, context) {
+  const buttons = page.getByRole('button', { name: label, exact: true });
+  const firstButton = buttons.first();
+  await firstButton.waitFor({ timeout: 20000 });
+
+  const count = await buttons.count();
+  let matchingStateFound = false;
+
+  for (let index = 0; index < count; index += 1) {
+    const disabled = await buttons.nth(index).isDisabled();
+    if (expectedEnabled ? !disabled : disabled) {
+      matchingStateFound = true;
+      break;
+    }
+  }
+
+  if (!matchingStateFound) {
+    throw new Error(`Unexpected button state for ${context}: ${label} expected ${expectedEnabled ? 'enabled' : 'disabled'}`);
+  }
+}
+
+async function openDialogFromButton(page, buttonLabel, dialogTitle, context) {
+  await page.getByRole('button', { name: buttonLabel, exact: true }).first().click();
+  const dialogHeading = page.getByRole('heading', { name: dialogTitle, exact: true });
+  await dialogHeading.waitFor({ timeout: 20000 });
+  await page.keyboard.press('Escape');
+  await dialogHeading.waitFor({ state: 'hidden', timeout: 20000 });
+  logStep(`dialog:${context}`);
+}
+
+async function openOrganismesModule(page) {
+  await expandNav(page, ['Tableau de bord', 'Entrepôt']);
+  await clickNavButton(page, 'Organismes');
+  await page.getByText('Organismes Bénéficiaires', { exact: true }).waitFor({ timeout: 20000 });
+}
+
+async function openAchatsModule(page) {
+  await expandNav(page, ['Tableau de bord', 'Entrepôt']);
+  await clickNavButton(page, 'Achats');
+  await page.getByText('Flux achats et décisions rapides', { exact: true }).waitFor({ timeout: 20000 });
 }
 
 async function assertViewerScope(page) {
@@ -237,6 +298,17 @@ async function assertCustomRoleScope(page) {
   assertExcludes(navText, ['Inventaire', 'Commandes', 'Transport', 'Utilisateurs/Rôles', 'Configuration'], 'custom-role');
 }
 
+async function assertCustomInternalActions(page) {
+  await login(page, 'roles-custom');
+  await openOrganismesModule(page);
+  await expectButtonState(page, 'Nouvel Organisme', false, 'custom-role organismes create');
+
+  await openAchatsModule(page);
+  await expectButtonState(page, 'Nouveau bon', false, 'custom-role achat create');
+  await expectButtonState(page, 'Nouveau programme', false, 'custom-role achat programs');
+  await expectButtonState(page, 'Nouvelle règle', false, 'custom-role achat rules');
+}
+
 async function assertCoordinatorScope(page) {
   await login(page, 'roles-coordinator');
   await expandNav(page, ['Tableau de bord', 'Entrepôt']);
@@ -247,6 +319,19 @@ async function assertCoordinatorScope(page) {
     'coordinador'
   );
   assertExcludes(navText, ['Utilisateurs/Rôles', 'Configuration', 'Comptoir', 'Liaison'], 'coordinador');
+}
+
+async function assertCoordinatorInternalActions(page) {
+  await login(page, 'roles-coordinator');
+  await openOrganismesModule(page);
+  await expectButtonState(page, 'Nouvel Organisme', true, 'coordinador organismes create');
+  await openDialogFromButton(page, 'Nouvel Organisme', 'Nouvel Organisme', 'coordinador-organismes');
+
+  await openAchatsModule(page);
+  await expectButtonState(page, 'Nouveau bon', true, 'coordinador achat create');
+  await openDialogFromButton(page, 'Nouveau bon', 'Créer un bon d\'achat', 'coordinador-achats');
+  await expectButtonState(page, 'Nouveau programme', false, 'coordinador achat programs');
+  await expectButtonState(page, 'Nouvelle règle', false, 'coordinador achat rules');
 }
 
 async function assertWarehouseScope(page) {
@@ -310,12 +395,14 @@ async function main() {
     await assertViewerScope(page);
     await assertTransportScope(page);
     await assertCustomRoleScope(page);
+    await assertCustomInternalActions(page);
     await assertCoordinatorScope(page);
+    await assertCoordinatorInternalActions(page);
     await assertWarehouseScope(page);
     await assertLiaisonScope(page);
-    await cleanupFixtures(page);
     console.log('ROLES_MODULOS_REGRESSION_OK');
   } finally {
+    await cleanupFixtures(page).catch(() => undefined);
     await browser.close();
   }
 }

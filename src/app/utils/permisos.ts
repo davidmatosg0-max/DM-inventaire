@@ -244,9 +244,6 @@ export function esCoordinador(): boolean {
 export function soloLectura(): boolean {
   const usuario = obtenerUsuarioSesion();
   if (!usuario) return true;
-  
-  // Coordinadores solo tienen lectura
-  if (esCoordinador()) return true;
 
   const permisosExpandidos = obtenerPermisosExpandidos(usuario);
   
