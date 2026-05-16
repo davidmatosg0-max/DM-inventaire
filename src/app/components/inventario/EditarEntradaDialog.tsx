@@ -3,6 +3,7 @@ import { Edit2, Calendar, Package, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
@@ -42,8 +43,8 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
     if (!entrada) return;
 
     // Validaciones
-    const cantidadNum = parseFloat(cantidad);
-    if (isNaN(cantidadNum) || cantidadNum <= 0) {
+    const cantidadNum = parseQuantityText(cantidad, false) || 0;
+    if (cantidadNum <= 0) {
       toast.error('La cantidad debe ser un número positivo');
       return;
     }
@@ -161,21 +162,20 @@ export function EditarEntradaDialog({ entrada, open, onOpenChange, onActualizar 
               <Package className="h-4 w-4 text-[#1E73BE]" />
               Quantité ({entrada.unidad}) <span className="text-red-500">*</span>
             </Label>
-            <Input
+            <QuantityInput
               id="cantidad"
-              type="number"
-              step="1"
-              min="0"
               value={cantidad}
-              onChange={(e) => setCantidad(e.target.value)}
+              onChangeText={setCantidad}
+              step={1}
+              min={0}
               placeholder="Exemple : 100"
               required
             />
             <p className="text-xs text-[#666666]">
               Poids unitaire : {formatQuantity(entrada.pesoUnidad)} kg/unité
-              {cantidad && !isNaN(parseFloat(cantidad)) && (
+              {cantidad && (parseQuantityText(cantidad, false) || 0) > 0 && (
                 <span className="ml-2 text-[#1E73BE] font-semibold">
-                  → Poids total : {formatQuantity(parseFloat(cantidad) * entrada.pesoUnidad)} kg
+                  → Poids total : {formatQuantity((parseQuantityText(cantidad, false) || 0) * entrada.pesoUnidad)} kg
                 </span>
               )}
             </p>

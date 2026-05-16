@@ -109,13 +109,6 @@ export function GuiaCompletaApp({ onClose }: GuiaCompletaAppProps) {
                 <p className="text-blue-100 text-sm">Système de Communication Interne - Réseau solidaire</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              className="text-white hover:bg-white/20"
-            >
-              <X className="w-6 h-6" />
-            </Button>
           </div>
 
           {/* Contenido scrollable */}

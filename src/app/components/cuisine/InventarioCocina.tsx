@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
@@ -502,13 +503,12 @@ export function InventarioCocina() {
 
             <div>
               <Label htmlFor="nuevoStock">Nouveau stock</Label>
-              <Input
+              <QuantityInput
                 id="nuevoStock"
-                type="number"
                 value={nuevoStock}
-                onChange={(e) => setNuevoStock(parseFloat(e.target.value) || 0)}
-                min="0"
-                step="0.01"
+                onChangeText={(value) => setNuevoStock(parseQuantityText(value) || 0)}
+                min={0}
+                step={0.01}
               />
               <p className="text-sm text-gray-600 mt-1">
                 Différence: {(nuevoStock - (productoSeleccionado?.stockActual || 0)).toFixed(2)} {productoSeleccionado?.unidad}
@@ -560,14 +560,13 @@ export function InventarioCocina() {
 
             <div>
               <Label htmlFor="cantidadMerma">Quantité perdue *</Label>
-              <Input
+              <QuantityInput
                 id="cantidadMerma"
-                type="number"
                 value={cantidadMerma}
-                onChange={(e) => setCantidadMerma(parseFloat(e.target.value) || 0)}
-                min="0"
+                onChangeText={(value) => setCantidadMerma(parseQuantityText(value) || 0)}
+                min={0}
                 max={productoSeleccionado?.stockActual}
-                step="0.01"
+                step={0.01}
               />
             </div>
 

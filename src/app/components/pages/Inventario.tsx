@@ -33,6 +33,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -535,7 +536,7 @@ export function Inventario() {
       return;
     }
 
-    const cantidad = Number.parseFloat(formAjoutStockExistant.cantidad);
+    const cantidad = parseQuantityText(formAjoutStockExistant.cantidad, false);
     if (!Number.isFinite(cantidad) || cantidad <= 0) {
       toast.error('Saisissez une quantité valide');
       return;
@@ -1269,7 +1270,7 @@ export function Inventario() {
       return;
     }
 
-    const cantidad = Number.parseInt(quickCartQuantity, 10);
+    const cantidad = parseQuantityText(quickCartQuantity, false) || 0;
     const cantidadDisponible = getQuickCartAvailableQuantity(quickCartProduct);
 
     if (!Number.isFinite(cantidad) || cantidad <= 0) {
@@ -2252,7 +2253,7 @@ export function Inventario() {
   const totalSeleccionados = productosSeleccionados.filter(p => p.seleccionado).length;
 
   const quickCartAvailableQuantity = quickCartProduct ? getQuickCartAvailableQuantity(quickCartProduct) : 0;
-  const quickCartRequestedQuantity = Number.parseInt(quickCartQuantity, 10);
+  const quickCartRequestedQuantity = parseQuantityText(quickCartQuantity, false) || 0;
   const quickCartHasTypedQuantity = quickCartQuantity.trim().length > 0;
   const quickCartQuantityInvalid = quickCartHasTypedQuantity && (!Number.isFinite(quickCartRequestedQuantity) || quickCartRequestedQuantity <= 0);
   const quickCartQuantityExceedsAvailable = Number.isFinite(quickCartRequestedQuantity) && quickCartRequestedQuantity > quickCartAvailableQuantity;
@@ -2752,19 +2753,9 @@ export function Inventario() {
 
                   <Button
                     size="icon"
-                    onClick={() => openInventoryScanner()}
-                    variant="outline"
-                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50 h-9 w-9"
-                    title={t('inventory.scanQrTitle')}
-                  >
-                    <QrCode className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    size="icon"
                     onClick={() => openInventoryScanner('agregar_carrito_rapido')}
                     variant="outline"
-                    className="border-[#2d9561] text-[#2d9561] hover:bg-green-50 h-9 w-9"
+                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50 h-9 w-9"
                     title="Scanner QR et saisir la quantité pour le panier"
                   >
                     <ShoppingCart className="h-4 w-4" />
@@ -4031,7 +4022,7 @@ export function Inventario() {
 
       {ajoutStockExistantOpen && (
       <Dialog open={ajoutStockExistantOpen} onOpenChange={handleAjoutStockExistantOpenChange}>
-        <DialogContent className="w-[min(92vw,720px)] max-w-[720px] overflow-hidden rounded-[28px] border-0 bg-white p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]">
+        <DialogContent className="w-[min(92vw,720px)] max-w-[720px] max-h-[92vh] overflow-y-auto rounded-[28px] border-0 bg-white p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]">
           <DialogHeader className="border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(45,149,97,0.08)_0%,rgba(26,77,122,0.06)_100%)] px-6 py-5 text-left">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Ajouter au stock existant</DialogTitle>
             <DialogDescription>
@@ -4064,7 +4055,7 @@ export function Inventario() {
                 <p className="mt-3 text-sm text-slate-500">Après ajout</p>
                 <p className="text-lg font-semibold text-emerald-700">
                   {productoAjoutStockSeleccionado
-                    ? `${formatQuantity(productoAjoutStockSeleccionado.stockActual + (Number.parseFloat(formAjoutStockExistant.cantidad) || 0))} ${productoAjoutStockSeleccionado.unidad}`
+                    ? `${formatQuantity(productoAjoutStockSeleccionado.stockActual + (parseQuantityText(formAjoutStockExistant.cantidad, false) || 0))} ${productoAjoutStockSeleccionado.unidad}`
                     : 'Sélection requise'}
                 </p>
               </div>
@@ -4073,14 +4064,15 @@ export function Inventario() {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                 <Label>Quantité à ajouter *</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
+                <QuantityInput
                   value={formAjoutStockExistant.cantidad}
-                  onChange={(event) => setFormAjoutStockExistant(prev => ({ ...prev, cantidad: event.target.value }))}
+                  onChangeText={(value) => setFormAjoutStockExistant(prev => ({ ...prev, cantidad: value }))}
+                  min={0}
+                  step={1}
                   placeholder="0"
-                  className="mt-2 rounded-2xl border-slate-200 bg-slate-50/70"
+                  wrapperClassName="mt-2"
+                  className="rounded-2xl border-slate-200 bg-slate-50/70"
+                  buttonClassName="border-slate-200 bg-slate-50/70 hover:bg-slate-100"
                 />
               </div>
               <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
@@ -4308,11 +4300,12 @@ export function Inventario() {
                   <Label htmlFor="varianteStockMinimo" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                     Stock Mínimo
                   </Label>
-                  <Input
+                  <QuantityInput
                     id="varianteStockMinimo"
-                    type="number"
                     value={formVariante.stockMinimo}
-                    onChange={(e) => setFormVariante({ ...formVariante, stockMinimo: parseInt(e.target.value) || 0 })}
+                    onChangeText={(value) => setFormVariante({ ...formVariante, stockMinimo: parseQuantityText(value, false) || 0 })}
+                    min={0}
+                    step={1}
                     placeholder="0"
                     style={{ fontFamily: 'Roboto, sans-serif' }}
                   />
@@ -4324,12 +4317,12 @@ export function Inventario() {
                     Peso Unitario (kg) *
                   </Label>
                   <div className="relative">
-                    <Input
+                    <QuantityInput
                       id="variantePesoUnitario"
-                      type="number"
-                      step="1"
                       value={formVariante.pesoUnitario}
-                      onChange={(e) => setFormVariante({ ...formVariante, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) })}
+                      onChangeText={(value) => setFormVariante({ ...formVariante, pesoUnitario: parseQuantityText(value, false) || 0 })}
+                      step={1}
+                      min={0}
                       placeholder="0"
                       style={{ fontFamily: 'Roboto, sans-serif' }}
                       className={formVariante.pesoUnitario !== productoBase?.pesoUnitario ? 'border-[#e8a419] border-2' : ''}

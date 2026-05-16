@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card } from '../ui/card';
 import { toast } from 'sonner';
@@ -158,7 +159,7 @@ export function ConversionUnidadesDialog({
 
   // Calcular cantidad destino cuando cambia cantidad origen o factor
   useEffect(() => {
-    const cantidad = parseFloat(cantidadOrigen);
+    const cantidad = parseQuantityText(cantidadOrigen, false);
     const factor = parseFloat(factorConversion);
 
     if (!isNaN(cantidad) && !isNaN(factor) && factor > 0) {
@@ -201,7 +202,7 @@ export function ConversionUnidadesDialog({
       return;
     }
 
-    const cantidad = parseFloat(cantidadOrigen);
+    const cantidad = parseQuantityText(cantidadOrigen, false);
     const factor = parseFloat(factorConversion);
 
     if (!isNaN(cantidad) && !isNaN(factor) && factor > 0 && cantidad > 0) {
@@ -217,7 +218,7 @@ export function ConversionUnidadesDialog({
   const handleConvertir = () => {
     if (!producto) return;
 
-    const cantidad = parseFloat(cantidadOrigen);
+    const cantidad = parseQuantityText(cantidadOrigen, false);
     const factor = parseFloat(factorConversion);
 
     // Validaciones
@@ -386,14 +387,13 @@ export function ConversionUnidadesDialog({
 
             <div className="space-y-2">
               <Label htmlFor="cantidadOrigen">{t('inventory.conversionDialog.amountToConvert')}</Label>
-              <Input
+              <QuantityInput
                 id="cantidadOrigen"
-                type="number"
-                step="1"
-                min="0"
-                max={producto?.stockActual}
                 value={cantidadOrigen}
-                onChange={(e) => setCantidadOrigen(e.target.value)}
+                onChangeText={setCantidadOrigen}
+                step={1}
+                min={0}
+                max={producto?.stockActual}
                 placeholder="0"
               />
               <p className="text-xs text-gray-500">
@@ -429,7 +429,7 @@ export function ConversionUnidadesDialog({
                 <div className="flex-1 text-sm">
                   <p className="font-medium text-blue-900">{t('inventory.conversionDialog.resultTitle')}</p>
                   <p className="text-blue-700 mt-1">
-                    {formatQuantity(parseFloat(cantidadOrigen) || 0)} {unidadOrigen} × {factorConversion} = <strong>{formatQuantity(cantidadDestino)} {unidadDestino}</strong>
+                    {formatQuantity(parseQuantityText(cantidadOrigen, false) || 0)} {unidadOrigen} × {factorConversion} = <strong>{formatQuantity(cantidadDestino)} {unidadDestino}</strong>
                   </p>
                   
                   {/* PESO UNITARIO DESTACADO */}

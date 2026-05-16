@@ -17,6 +17,7 @@ import {
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Textarea } from '../ui/textarea';
@@ -449,12 +450,11 @@ export function FormularioEntradaProductoCompacto({
                           <Package className="w-3 h-3 inline mr-1" />
                           {t('warehouse.quantity')} *
                         </Label>
-                        <Input
+                        <QuantityInput
                           id="cantidad"
-                          type="number"
                           value={formulario.cantidad}
-                          onChange={(e) => {
-                            const cantidad = parseInt(e.target.value) || 0;
+                          onChangeText={(value) => {
+                            const cantidad = parseQuantityText(value, false) || 0;
                             const valorUnitario = formulario.valorUnitario || 0;
                             setFormulario({ 
                               ...formulario, 
@@ -462,8 +462,11 @@ export function FormularioEntradaProductoCompacto({
                               valorTotal: cantidad * valorUnitario
                             });
                           }}
+                          step={1}
+                          min={0}
                           placeholder="10"
                           className="h-9"
+                          buttonClassName="h-9 w-9"
                         />
                       </div>
                       <div>
@@ -475,14 +478,15 @@ export function FormularioEntradaProductoCompacto({
                             return tieneTara ? 'Poids total (avec l\'unité)' : t('warehouse.weight');
                           })()} (kg) *
                         </Label>
-                        <Input
+                        <QuantityInput
                           id="peso"
-                          type="number"
-                          step="1"
                           value={formulario.peso}
-                          onChange={(e) => setFormulario({ ...formulario, peso: Math.round(parseFloat(e.target.value) || 0) })}
+                          onChangeText={(value) => setFormulario({ ...formulario, peso: parseQuantityText(value, false) || 0 })}
+                          step={1}
+                          min={0}
                           placeholder="26"
                           className="h-9"
+                          buttonClassName="h-9 w-9"
                         />
                       </div>
                     </div>

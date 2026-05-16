@@ -109,7 +109,7 @@ export function OfflineIndicator() {
       {/* Panel de detalles */}
       {showDetails && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg">
+          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">

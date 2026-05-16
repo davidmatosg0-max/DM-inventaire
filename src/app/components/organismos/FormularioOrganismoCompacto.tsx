@@ -23,6 +23,7 @@ import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -622,11 +623,11 @@ export function FormularioOrganismoCompacto({
                     <div className="grid gap-4 lg:grid-cols-3">
                       <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
                         <Label htmlFor="beneficiarios" className="text-xs">{t('organisms.beneficiaries')}</Label>
-                        <Input id="beneficiarios" type="number" value={formulario.beneficiarios || 0} onChange={(event) => actualizarFormulario({ beneficiarios: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        <QuantityInput id="beneficiarios" value={formulario.beneficiarios || 0} onChangeText={(value) => actualizarFormulario({ beneficiarios: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
                       </div>
                       <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
                         <Label htmlFor="personas-servidas" className="text-xs">{t('organisms.peopleServed')}</Label>
-                        <Input id="personas-servidas" type="number" value={formulario.personasServidas || 0} onChange={(event) => actualizarFormulario({ personasServidas: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        <QuantityInput id="personas-servidas" value={formulario.personasServidas || 0} onChangeText={(value) => actualizarFormulario({ personasServidas: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
                       </div>
                       <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
                         <Label htmlFor="porcentaje" className="text-xs">{t('organisms.distributionPercentage')}</Label>
@@ -637,11 +638,11 @@ export function FormularioOrganismoCompacto({
                     <div className="grid gap-4 lg:grid-cols-2">
                       <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
                         <Label htmlFor="colaciones" className="text-xs">{t('organisms.snacks')}</Label>
-                        <Input id="colaciones" type="number" value={formulario.cantidadColaciones || 0} onChange={(event) => actualizarFormulario({ cantidadColaciones: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        <QuantityInput id="colaciones" value={formulario.cantidadColaciones || 0} onChangeText={(value) => actualizarFormulario({ cantidadColaciones: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
                       </div>
                       <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
                         <Label htmlFor="almuerzos" className="text-xs">{t('organisms.lunches')}</Label>
-                        <Input id="almuerzos" type="number" value={formulario.cantidadAlmuerzos || 0} onChange={(event) => actualizarFormulario({ cantidadAlmuerzos: parseInt(event.target.value, 10) || 0 })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        <QuantityInput id="almuerzos" value={formulario.cantidadAlmuerzos || 0} onChangeText={(value) => actualizarFormulario({ cantidadAlmuerzos: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
                       </div>
                     </div>
 

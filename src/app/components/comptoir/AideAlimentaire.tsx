@@ -4,6 +4,7 @@ import { Package, Calendar, User, Hash, Save, History, Send, Settings, Search, X
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
@@ -130,7 +131,7 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
       return;
     }
 
-    const quantity = Number.parseInt(quantite, 10);
+    const quantity = parseQuantityText(quantite, false) || 0;
     if (!Number.isFinite(quantity) || quantity <= 0) {
       toast.error(t('common.error'), {
         description: 'La quantité doit être supérieure à 0.',
@@ -454,16 +455,12 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
               {/* Quantité */}
               <div>
                 <Label>{t('comptoir.quantity')} *</Label>
-                <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666666]" />
-                  <Input 
-                    type="number" 
-                    value={quantite}
-                    onChange={(event) => setQuantite(event.target.value)}
-                    min="1"
-                    className="pl-10"
-                  />
-                </div>
+                <QuantityInput
+                  value={quantite}
+                  onChangeText={setQuantite}
+                  min={1}
+                  step={1}
+                />
               </div>
 
               {/* Date */}

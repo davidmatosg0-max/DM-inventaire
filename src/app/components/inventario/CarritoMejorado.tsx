@@ -7,6 +7,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '../ui/sheet';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
@@ -480,11 +481,10 @@ export function CarritoMejorado({
                               <Minus className="w-4 h-4" />
                             </Button>
                             <div className="flex items-center gap-1 px-3 py-1 bg-[#F4F4F4] rounded-md min-w-[80px] justify-center">
-                              <Input
-                                type="number"
-                                value={formatQuantity(item.cantidad)}
-                                onChange={(e) => {
-                                  const nuevaCantidad = Math.round(parseFloat(e.target.value) || 0);
+                              <QuantityInput
+                                value={item.cantidad}
+                                onChangeText={(value) => {
+                                  const nuevaCantidad = parseQuantityText(value, false) || 0;
                                   if (nuevaCantidad > reserva.disponibleParaReservar) {
                                     toast.error(
                                       `Cantidad máxima reservable: ${formatQuantity(reserva.disponibleParaReservar)} ${producto?.unidad}`,
@@ -495,10 +495,12 @@ export function CarritoMejorado({
                                     actualizarCantidad(item.productoId, nuevaCantidad);
                                   }
                                 }}
-                                className="w-14 h-7 text-center font-bold border-none bg-transparent p-0"
-                                min="1"
-                                step="1"
+                                className="w-14 h-7 border-none bg-transparent p-0 text-center font-bold shadow-none hover:shadow-none focus-visible:ring-0"
+                                min={1}
+                                step={1}
                                 max={reserva.disponibleParaReservar}
+                                showButtons={false}
+                                wrapperClassName="contents"
                               />
                               <span className="text-sm font-medium text-[#666666]">{producto?.unidad}</span>
                             </div>

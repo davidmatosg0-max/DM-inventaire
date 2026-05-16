@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { Checkbox } from '../ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { ModeloComanda } from './ModeloComanda';
-import { actualizarComanda, obtenerComandas } from '../../utils/comandaStorage';
+import { actualizarComanda, esTransicionEstadoComandaValida, obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerProductos } from '../../utils/productStorage';
 import { AlertaComandasUrgentes } from '../AlertaComandasUrgentes';
 import { EtiquetaComanda } from '../comandas/EtiquetaComanda';
@@ -617,6 +617,11 @@ export function Comandas() {
 
   const handleCambiarEstado = (nuevoEstado: string) => {
     if (!comandaSeleccionada) {
+      return;
+    }
+
+    if (!esTransicionEstadoComandaValida(comandaSeleccionada.estado, nuevoEstado)) {
+      toast.error(`Transition de statut invalide: ${comandaSeleccionada.estado} → ${nuevoEstado}`);
       return;
     }
 
@@ -1228,20 +1233,6 @@ export function Comandas() {
           icon={<FileCheck className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
-          actions={(
-            <Button
-              onClick={() => setDialogNotificacionOpen(true)}
-              size="icon"
-              title={t('orders.notifyPendingOrders')}
-              className="text-[#333333] transition-all duration-300 hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, #FFC107 0%, #E6AC00 100%)',
-                boxShadow: '0 4px 15px rgba(255, 193, 7, 0.4)'
-              }}
-            >
-              <Bell className="w-4 h-4" />
-            </Button>
-          )}
         />
 
         <ModuleExecutiveStrip
@@ -1257,10 +1248,12 @@ export function Comandas() {
                 <FileCheck className="mr-2 h-4 w-4" />
                 {t('orders.executive.actions.orders')}
               </Button>
-              <Button variant="outline" onClick={() => setDialogListaDistribuidosOpen(true)} disabled={comandasDistribuidasFiltradas.length === 0} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:bg-white/60">
-                <Package className="mr-2 h-4 w-4" />
-                {t('orders.executive.actions.distributedList')}
-              </Button>
+              {tabActual !== 'comandas' && (
+                <Button variant="outline" onClick={() => setDialogListaDistribuidosOpen(true)} disabled={comandasDistribuidasFiltradas.length === 0} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:bg-white/60">
+                  <Package className="mr-2 h-4 w-4" />
+                  {t('orders.executive.actions.distributedList')}
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setDialogNotificacionOpen(true)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
                 <Bell className="mr-2 h-4 w-4" />
                 {t('orders.executive.actions.notifications')}

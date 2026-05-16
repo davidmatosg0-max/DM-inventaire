@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { toast } from 'sonner';
@@ -350,12 +351,13 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
                     <div>
                       <Label className="text-xs">Quantité</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <QuantityInput
                         value={nuevoIngrediente.cantidad}
-                        onChange={(e) => setNuevoIngrediente({ ...nuevoIngrediente, cantidad: parseFloat(e.target.value) || 0 })}
+                        onChangeText={(value) => setNuevoIngrediente({ ...nuevoIngrediente, cantidad: parseQuantityText(value) || 0 })}
+                        step={0.01}
+                        min={0}
                         className="text-sm"
+                        buttonClassName="h-9 w-9"
                       />
                     </div>
 
@@ -423,10 +425,11 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
                 <div>
                   <Label>Quantité Produite</Label>
-                  <Input
-                    type="number"
+                  <QuantityInput
                     value={formData.productoCantidad}
-                    onChange={(e) => setFormData({ ...formData, productoCantidad: parseInt(e.target.value) || 0 })}
+                    onChangeText={(value) => setFormData({ ...formData, productoCantidad: parseQuantityText(value, false) || 0 })}
+                    min={0}
+                    step={1}
                   />
                 </div>
 
@@ -445,11 +448,11 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
                 <div>
                   <Label>Poids Unitaire (kg)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
+                  <QuantityInput
                     value={formData.productoPesoUnitario}
-                    onChange={(e) => setFormData({ ...formData, productoPesoUnitario: parseFloat(e.target.value) || 0 })}
+                    onChangeText={(value) => setFormData({ ...formData, productoPesoUnitario: parseQuantityText(value) || 0 })}
+                    step={0.01}
+                    min={0}
                   />
                 </div>
 

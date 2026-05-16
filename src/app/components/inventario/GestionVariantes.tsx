@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Save, X, Package2, ChevronDown, ChevronUp } from '
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card } from '../ui/card';
@@ -112,7 +113,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
       activa: true,
       unidad: formData.unidad.trim() || undefined,
       valorPorKg: formData.valorPorKg ? parseFloat(formData.valorPorKg) : undefined,
-      pesoUnitario: formData.pesoUnitario ? parseFloat(formData.pesoUnitario) : undefined,
+      pesoUnitario: formData.pesoUnitario ? (parseQuantityText(formData.pesoUnitario) || 0) : undefined,
       descripcion: formData.descripcion.trim() || undefined
     };
 
@@ -232,15 +233,17 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
           {expandido ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
         
-        <Button
-          size="sm"
-          onClick={handleAbrirNuevo}
-          className="bg-[#9C27B0] hover:bg-[#7B1FA2]"
-          style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
-        >
-          <Plus className="w-3 h-3 mr-1" />
-          {t('inventory.variantManagement.newVariant')}
-        </Button>
+        {!(expandido && variantes.length === 0) && (
+          <Button
+            size="sm"
+            onClick={handleAbrirNuevo}
+            className="bg-[#9C27B0] hover:bg-[#7B1FA2]"
+            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            {t('inventory.variantManagement.newVariant')}
+          </Button>
+        )}
       </div>
 
       {/* Lista de variantes */}
@@ -391,11 +394,11 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
               {/* Peso Unitario */}
               <div className="space-y-2">
                 <Label>{t('inventory.variantManagement.form.unitWeight')}</Label>
-                <Input
-                  type="number"
-                  step="1"
+                <QuantityInput
                   value={formData.pesoUnitario}
-                  onChange={(e) => setFormData({ ...formData, pesoUnitario: e.target.value })}
+                  onChangeText={(value) => setFormData({ ...formData, pesoUnitario: value })}
+                  step={1}
+                  min={0}
                   placeholder="0"
                 />
                 <p className="text-xs text-[#666666]">

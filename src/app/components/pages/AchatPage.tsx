@@ -28,6 +28,7 @@ import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -822,18 +823,24 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               <Receipt className="mr-2 h-4 w-4" />
               {t('achatPage.actions.orders')}
             </Button>
-            <Button onClick={() => { setActiveAchatTab('bons'); setDialogBonOpen(true); }} disabled={!canCreateBon} className="text-white shadow-lg disabled:opacity-60" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('achatPage.actions.newOrder')}
-            </Button>
-            <Button variant="outline" onClick={() => { setActiveAchatTab('programmes'); setDialogProgrammeOpen(true); }} disabled={!canManageAchatConfiguration} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:opacity-60">
-              <ClipboardCheck className="mr-2 h-4 w-4" />
-              {t('achatPage.actions.newProgram')}
-            </Button>
-            <Button variant="outline" onClick={() => { setActiveAchatTab('autorisations'); setDialogReglaOpen(true); }} disabled={!canManageAchatConfiguration} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:opacity-60">
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              {t('achatPage.actions.newRule')}
-            </Button>
+            {activeAchatTab !== 'overview' && activeAchatTab !== 'bons' && (
+              <Button onClick={() => { setActiveAchatTab('bons'); setDialogBonOpen(true); }} disabled={!canCreateBon} className="text-white shadow-lg disabled:opacity-60" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t('achatPage.actions.newOrder')}
+              </Button>
+            )}
+            {activeAchatTab !== 'programmes' && (
+              <Button variant="outline" onClick={() => { setActiveAchatTab('programmes'); setDialogProgrammeOpen(true); }} disabled={!canManageAchatConfiguration} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:opacity-60">
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                {t('achatPage.actions.newProgram')}
+              </Button>
+            )}
+            {activeAchatTab !== 'autorisations' && (
+              <Button variant="outline" onClick={() => { setActiveAchatTab('autorisations'); setDialogReglaOpen(true); }} disabled={!canManageAchatConfiguration} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white disabled:opacity-60">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                {t('achatPage.actions.newRule')}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setActiveAchatTab('fournisseurs')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
               <Building2 className="mr-2 h-4 w-4" />
               {t('achatPage.actions.suppliers')}
@@ -1659,7 +1666,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                     </div>
                     <div className="grid gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(132px,0.9fr)_minmax(132px,0.9fr)_minmax(148px,1fr)_minmax(156px,1fr)]">
                       <Input className="h-11" placeholder={t('achatPage.create.purchaseDescription')} value={ligne.description} onChange={event => handleChangeLine(ligne.id, 'description', event.target.value)} />
-                      <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder={t('achatPage.create.manualQty')} value={ligne.quantite} onChange={event => handleChangeLine(ligne.id, 'quantite', event.target.value === '' ? '' : Number(event.target.value))} />
+                      <QuantityInput className="h-11 text-base" buttonClassName="h-11 w-11" min={0} step={0.01} placeholder={t('achatPage.create.manualQty')} value={ligne.quantite} onChangeText={value => handleChangeLine(ligne.id, 'quantite', value === '' ? '' : (parseQuantityText(value) ?? ''))} />
                       <Select value={resolveUnitId(ligne.unite, unitOptions) || undefined} onValueChange={value => handleChangeLine(ligne.id, 'unite', value)} disabled={unitOptions.length === 0}>
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder={t('achatPage.create.selectUnit')} />

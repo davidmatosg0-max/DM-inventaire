@@ -7,6 +7,7 @@ import {
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -456,16 +457,18 @@ export function PanierProductos({
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
-                  <Input
-                    type="number"
+                  <QuantityInput
                     value={cantidadTemp}
-                    onChange={(e) => setCantidadTemporal(prev => ({
+                    onChangeText={(value) => setCantidadTemporal(prev => ({
                       ...prev,
-                      [producto.id]: Math.min(parseFloat(e.target.value) || 1, Math.max(reserva.disponibleParaReservar, 1))
+                      [producto.id]: Math.min(parseQuantityText(value, false) || 1, Math.max(reserva.disponibleParaReservar, 1))
                     }))}
-                    className="w-16 h-8 text-center font-bold"
-                    min="1"
+                    min={1}
                     max={reserva.disponibleParaReservar}
+                    step={1}
+                    showButtons={false}
+                    wrapperClassName="contents"
+                    className="w-16 h-8 text-center font-bold"
                   />
                   <Button
                     variant="outline"

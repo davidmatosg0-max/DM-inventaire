@@ -1755,10 +1755,12 @@ export function Reportes() {
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 {t('reports.executive.actions.last30days')}
               </Button>
-              <Button onClick={() => void handleGenerarReporte('pdf')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
-                <Download className="mr-2 h-4 w-4" />
-                {t('reports.exportPDF')}
-              </Button>
+              {!exportableReportType && (
+                <Button onClick={() => void handleGenerarReporte('pdf')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {t('reports.exportPDF')}
+                </Button>
+              )}
             </>
           )}
         />

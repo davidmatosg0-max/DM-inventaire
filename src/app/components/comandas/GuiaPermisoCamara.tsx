@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Monitor, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Camera, Monitor, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface GuiaPermisoCamaraProps {
   onClose: () => void;
@@ -20,12 +20,6 @@ export function GuiaPermisoCamara({ onClose }: GuiaPermisoCamaraProps) {
               <p className="text-white/80 text-sm">Guide étape par étape</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="hover:bg-white/20 p-2 rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
 
         {/* Content */}

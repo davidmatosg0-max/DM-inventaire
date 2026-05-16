@@ -5,6 +5,7 @@ import { useBranding } from '../../../hooks/useBranding';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import {
@@ -321,7 +322,7 @@ export function DechetsCompostage() {
   const handleAjouter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const cantidadKg = Number(formulaire.cantidadKg);
+    const cantidadKg = parseQuantityText(formulaire.cantidadKg) || 0;
     if (!formulaire.fecha || !formulaire.tipo.trim() || !formulaire.categorie.trim() || !Number.isFinite(cantidadKg) || cantidadKg <= 0) {
       toast.error('Complétez la date, le type, la catégorie et un poids valide en kg.');
       return;
@@ -700,13 +701,12 @@ export function DechetsCompostage() {
 
                       <div className="space-y-2">
                         <Label>Poids (kg)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
+                        <QuantityInput
+                          min={0}
+                          step={0.01}
+                          placeholder="0,00"
                           value={formulaire.cantidadKg}
-                          onChange={(e) => handleFieldChange('cantidadKg', e.target.value)}
+                          onChangeText={(value) => handleFieldChange('cantidadKg', value)}
                         />
                       </div>
 

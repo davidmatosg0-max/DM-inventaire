@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -1209,12 +1210,11 @@ export function Etiquetas() {
 
                       <div className="space-y-2">
                         <Label>{t('labels.capacity')}</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          step="1"
+                        <QuantityInput
                           value={zoneForm.cantidad}
-                          onChange={(event) => setZoneForm((current) => ({ ...current, cantidad: Math.max(1, parseInt(event.target.value, 10) || 1) }))}
+                          onChangeText={(value) => setZoneForm((current) => ({ ...current, cantidad: Math.max(1, parseQuantityText(value, false) || 1) }))}
+                          min={1}
+                          step={1}
                         />
                       </div>
 

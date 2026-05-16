@@ -3,6 +3,7 @@ import { Edit, Phone, Mail, MapPin, Users, Bell, Calendar, Percent, UserCheck, U
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -942,12 +943,13 @@ export function PerfilOrganismoDialog({
                         <Users className="w-8 h-8 text-[#1E73BE] mx-auto mb-2" />
                         <Label className="text-sm">{t('organisms.profileDialog.peopleServedLabel')}</Label>
                         {enModoEdicion ? (
-                          <Input 
-                            type="number"
+                          <QuantityInput 
                             className="mt-2"
                             value={formOrganismo.personasServidas || ''}
-                            onChange={(e) => setFormOrganismo({ ...formOrganismo, personasServidas: parseInt(e.target.value) || 0 })}
+                            onChangeText={(value) => setFormOrganismo({ ...formOrganismo, personasServidas: parseQuantityText(value, false) || 0 })}
                             onBlur={calcularPorcentajeAutomatico}
+                            min={0}
+                            step={1}
                           />
                         ) : (
                           <p className="font-bold text-[#1E73BE] mt-2" style={{ fontSize: '1.5rem' }}>
@@ -964,12 +966,13 @@ export function PerfilOrganismoDialog({
                         <Coffee className="w-8 h-8 text-[#FFC107] mx-auto mb-2" />
                         <Label className="text-sm">{t('organisms.profileDialog.snacksLabel')}</Label>
                         {enModoEdicion ? (
-                          <Input 
-                            type="number"
+                          <QuantityInput 
                             className="mt-2"
                             value={formOrganismo.cantidadColaciones || ''}
-                            onChange={(e) => setFormOrganismo({ ...formOrganismo, cantidadColaciones: parseInt(e.target.value) || 0 })}
+                            onChangeText={(value) => setFormOrganismo({ ...formOrganismo, cantidadColaciones: parseQuantityText(value, false) || 0 })}
                             onBlur={calcularPorcentajeAutomatico}
+                            min={0}
+                            step={1}
                           />
                         ) : (
                           <p className="font-bold text-[#FFC107] mt-2" style={{ fontSize: '1.5rem' }}>
@@ -986,12 +989,13 @@ export function PerfilOrganismoDialog({
                         <UtensilsCrossed className="w-8 h-8 text-[#4CAF50] mx-auto mb-2" />
                         <Label className="text-sm">{t('organisms.profileDialog.lunchesLabel')}</Label>
                         {enModoEdicion ? (
-                          <Input 
-                            type="number"
+                          <QuantityInput 
                             className="mt-2"
                             value={formOrganismo.cantidadAlmuerzos || ''}
-                            onChange={(e) => setFormOrganismo({ ...formOrganismo, cantidadAlmuerzos: parseInt(e.target.value) || 0 })}
+                            onChangeText={(value) => setFormOrganismo({ ...formOrganismo, cantidadAlmuerzos: parseQuantityText(value, false) || 0 })}
                             onBlur={calcularPorcentajeAutomatico}
+                            min={0}
+                            step={1}
                           />
                         ) : (
                           <p className="font-bold text-[#4CAF50] mt-2" style={{ fontSize: '1.5rem' }}>

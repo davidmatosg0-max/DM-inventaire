@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -400,14 +401,15 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
                                   >
                                     <Minus className="w-3 h-3" />
                                   </Button>
-                                  <Input
-                                    type="number"
-                                    value={formatQuantity(cantidadMostrada)}
-                                    onChange={(e) => actualizarCantidad(item.productoId, parseInt(e.target.value, 10) || 0, item.cantidad)}
+                                  <QuantityInput
+                                    value={cantidadMostrada}
+                                    onChangeText={(value) => actualizarCantidad(item.productoId, parseQuantityText(value, false) || 0, item.cantidad)}
                                     className={`w-20 h-7 text-center ${cantidadModificada ? 'border-[#4CAF50] border-2 font-bold' : ''}`}
-                                    min="0"
+                                    min={0}
                                     max={Math.round(item.cantidad)}
-                                    step="1"
+                                    step={1}
+                                    showButtons={false}
+                                    wrapperClassName="contents"
                                   />
                                   <span className="text-xs text-gray-500 w-16">(Max : {formatQuantity(item.cantidad)})</span>
                                 </div>

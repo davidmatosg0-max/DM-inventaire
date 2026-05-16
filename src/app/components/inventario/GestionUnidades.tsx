@@ -173,14 +173,16 @@ export function GestionUnidades() {
             {t('inventory.unitManagement.description')}
           </p>
         </div>
-        <Button
-          onClick={handleAbrirNuevo}
-          className="bg-[#1E73BE] hover:bg-[#1557A0]"
-          style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          {t('inventory.unitManagement.newUnit')}
-        </Button>
+        {unidades.length > 0 && (
+          <Button
+            onClick={handleAbrirNuevo}
+            className="bg-[#1E73BE] hover:bg-[#1557A0]"
+            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {t('inventory.unitManagement.newUnit')}
+          </Button>
+        )}
       </div>
 
       {/* Grid de Unidades */}

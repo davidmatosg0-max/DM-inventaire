@@ -152,7 +152,7 @@ async function createPrsEntry(page) {
 
   await selectComboboxOption(page, dialog, 0, DONOR_CONTACT_NAME);
   await selectComboboxOption(page, dialog, 1, PRODUCT_NAME);
-  await dialog.getByLabel(/Quantité/i).fill(String(QUANTITY));
+  await dialog.locator('input[inputmode="numeric"], input[inputmode="decimal"], input[type="number"]').first().fill(String(QUANTITY));
   await selectComboboxOption(page, dialog, 2, 'Réfrigéré');
   await dialog.getByLabel(/Observations/i).fill('Smoke PRS portal vers inventaire');
   await dialog.getByRole('button', { name: "Enregistrer l'entrée", exact: true }).click();

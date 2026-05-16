@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Printer, X, Thermometer, Snowflake, Sun, Maximize2, Minimize2, Check, Ban, Edit2, Box, AlertCircle, Plus } from 'lucide-react';
+import { Printer, X, Thermometer, Snowflake, Sun, Maximize2, Minimize2, Check, Ban, Edit2, Box, AlertCircle, Minus, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Input } from '../ui/input';
+import { QuantityInput } from '../ui/quantity-input';
 import { Textarea } from '../ui/textarea';
 import { mockProductos } from '../../data/mockData';
 import { obtenerProductos } from '../../utils/productStorage';
@@ -19,7 +20,7 @@ import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { buildComandaQRData, COMANDA_QR_SVG_LEVEL } from '../../utils/comandaQr';
 import { useTranslation } from 'react-i18next';
 import { BrandedQRCode } from '../shared/BrandedQRCode';
-import { actualizarComanda, actualizarComandasGrupo } from '../../utils/comandaStorage';
+import { actualizarComanda, actualizarComandasGrupo, obtenerComandaPorId, obtenerEstadosDisponiblesComanda } from '../../utils/comandaStorage';
 import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
 import { obtenerReservaInventarioProducto } from '../../utils/inventoryReservations';
 import { useBranding } from '../../../hooks/useBranding';
@@ -119,6 +120,7 @@ export function ModeloComanda({
   const [modoEdicion, setModoEdicion] = useState(false);
   const [modoEdicionInterna, setModoEdicionInterna] = useState(false);
   const [cantidadesEditadas, setCantidadesEditadas] = useState<{[key: string]: number}>({});
+  const [cantidadesEditadasTexto, setCantidadesEditadasTexto] = useState<{[key: string]: string}>({});
   const [campoEditando, setCampoEditando] = useState<string | null>(null); // Para edición inline
   const [modoEdicionGrupo, setModoEdicionGrupo] = useState(false);
   const [fechaCaducidadGrupoEditada, setFechaCaducidadGrupoEditada] = useState('');
@@ -129,15 +131,52 @@ export function ModeloComanda({
   const [cantidadAgregarProducto, setCantidadAgregarProducto] = useState('1');
   const distribucionGrupoFinalizada = ['entregada', 'anulada'].includes(String(comanda.estado || ''));
   const edicionInternaBloqueada = ['entregada', 'anulada'].includes(String(comanda.estado || ''));
+  const autoCompletarPreparacionRef = useRef<string | null>(null);
   
   // 🎯 NUEVO: Estado para marcar productos como completados durante la preparación
   const [productosCompletados, setProductosCompletados] = useState<{[key: string]: boolean}>({});
 
+  function completarPreparacionAutomaticamente() {
+    const marcaAutoCompletado = `${comanda.id}:${totalProductos}`;
+    if (autoCompletarPreparacionRef.current === marcaAutoCompletado) {
+      return;
+    }
+
+    autoCompletarPreparacionRef.current = marcaAutoCompletado;
+
+    try {
+      const comandaActualizada = {
+        ...comanda,
+        estado: 'completada',
+        fechaModificacion: new Date().toISOString(),
+      };
+
+      actualizarComanda(comandaActualizada);
+      onComandaActualizada?.(obtenerComandaPorId(comanda.id) || comandaActualizada);
+      toast.success('Tous les produits sont prêts. La commande est passée à « Complétée ».');
+    } catch (error) {
+      autoCompletarPreparacionRef.current = null;
+      toast.error('Impossible de compléter automatiquement la commande.');
+    }
+  }
+
   const toggleProductoCompletado = (itemKey: string) => {
-    setProductosCompletados((prev) => ({
-      ...prev,
-      [itemKey]: !prev[itemKey],
-    }));
+    setProductosCompletados((prev) => {
+      const siguiente = {
+        ...prev,
+        [itemKey]: !prev[itemKey],
+      };
+      const totalMarcados = productosOrdenados.reduce((total: number, item: any, index: number) => {
+        const claveActual = getItemKey(item, index);
+        return total + (siguiente[claveActual] ? 1 : 0);
+      }, 0);
+
+      if (!mostrar || modoOrganismo || comanda.estado !== 'en_preparacion' || totalMarcados < totalProductos) {
+        autoCompletarPreparacionRef.current = null;
+      }
+
+      return siguiente;
+    });
   };
 
   const inventarioProductos = React.useMemo(() => {
@@ -239,12 +278,63 @@ export function ModeloComanda({
     return item.cantidad;
   };
 
+  const normalizarTextoCantidad = (value: string) => {
+    const normalizado = value.replace(/\./g, ',').replace(/[^0-9,]/g, '');
+    const partes = normalizado.split(',');
+
+    return partes.length > 2 ? `${partes[0]},${partes.slice(1).join('')}` : normalizado;
+  };
+
+  const parsearCantidadEntrada = (value: string): number | null => {
+    const textoNormalizado = normalizarTextoCantidad(value).replace(',', '.');
+
+    if (!textoNormalizado || textoNormalizado === '.') {
+      return null;
+    }
+
+    const cantidad = Number(textoNormalizado);
+    return Number.isFinite(cantidad) ? cantidad : null;
+  };
+
+  const formatearCantidadInput = (value: number) => String(value).replace('.', ',');
+
+  const obtenerPrecisionCantidad = (texto: string) => {
+    const textoNormalizado = normalizarTextoCantidad(texto);
+    const decimales = textoNormalizado.split(',')[1] || '';
+
+    return decimales.length > 0 ? Math.min(decimales.length, 3) : 0;
+  };
+
+  const ajustarCantidadTexto = (textoActual: string, delta: number, minimo = 0) => {
+    const precision = obtenerPrecisionCantidad(textoActual);
+    const paso = precision > 0 ? 1 / (10 ** precision) : 1;
+    const cantidadBase = parsearCantidadEntrada(textoActual) ?? 0;
+    const siguienteCantidad = Math.max(Number((cantidadBase + (delta * paso)).toFixed(precision)), minimo);
+    const siguienteTexto = precision > 0
+      ? siguienteCantidad.toFixed(precision).replace('.', ',')
+      : String(siguienteCantidad);
+
+    return {
+      cantidad: siguienteCantidad,
+      texto: siguienteTexto,
+    };
+  };
+
+  const getCantidadInputValue = (itemKey: string, item: any, index: number) => {
+    if (cantidadesEditadasTexto[itemKey] !== undefined) {
+      return cantidadesEditadasTexto[itemKey];
+    }
+
+    return formatearCantidadInput(getCantidadVisible(item, index));
+  };
+
   const inicializarCantidadesEditadas = (items: any[]) => {
     const cantidadesIniciales: {[key: string]: number} = {};
     items.forEach((item: any, index: number) => {
       cantidadesIniciales[getItemKey(item, index)] = Number(item.cantidad || 0);
     });
     setCantidadesEditadas(cantidadesIniciales);
+    setCantidadesEditadasTexto({});
   };
 
   const normalizarTemperaturaPersistida = (temperatura?: string) => {
@@ -354,8 +444,12 @@ export function ModeloComanda({
 
   // 🎯 NUEVO: Calcular progreso de preparación (DESPUÉS de productosOrdenados)
   const totalProductos = productosOrdenados.length;
-  const productosCompletadosCount = Object.values(productosCompletados).filter(Boolean).length;
+  const productosCompletadosCount = productosOrdenados.reduce((total: number, item: any, index: number) => {
+    const itemKey = getItemKey(item, index);
+    return total + (productosCompletados[itemKey] ? 1 : 0);
+  }, 0);
   const porcentajeCompletado = totalProductos > 0 ? (productosCompletadosCount / totalProductos) * 100 : 0;
+  const todosLosProductosPreparados = totalProductos > 0 && productosCompletadosCount === totalProductos;
   const hayCambiosCantidad = productosOrdenados.some((item: any, index: number) => {
     const itemKey = getItemKey(item, index);
     return cantidadesEditadas[itemKey] !== undefined && cantidadesEditadas[itemKey] !== item.cantidad;
@@ -466,6 +560,10 @@ export function ModeloComanda({
     { valor: 'entregada', label: 'Livrée', color: 'bg-[#2E7D32]' },
     { valor: 'anulada', label: 'Annulée', color: 'bg-[#DC3545]' }
   ];
+  const estadosAccionables = new Set(obtenerEstadosDisponiblesComanda(comanda.estado));
+  if (comanda.estado === 'en_preparacion' && !todosLosProductosPreparados) {
+    estadosAccionables.delete('completada');
+  }
 
   const estadoActual = estadosDisponibles.find(e => e.valor === comanda.estado);
   const tamanoQr = vistaCompacta ? 104 : 144;
@@ -494,6 +592,49 @@ export function ModeloComanda({
       setCantidadesEditadas(cantidadesIniciales);
     }
   }, [mostrar, modoOrganismo, productosOrdenados]);
+
+  useEffect(() => {
+    if (!mostrar) {
+      setProductosCompletados({});
+      autoCompletarPreparacionRef.current = null;
+      return;
+    }
+
+    setProductosCompletados({});
+    autoCompletarPreparacionRef.current = null;
+  }, [mostrar, comanda.id]);
+
+  useEffect(() => {
+    setProductosCompletados((prev) => {
+      const clavesValidas = new Set(productosOrdenados.map((item: any, index: number) => getItemKey(item, index)));
+      let cambio = false;
+      const siguiente: {[key: string]: boolean} = {};
+
+      Object.entries(prev).forEach(([key, value]) => {
+        if (clavesValidas.has(key)) {
+          siguiente[key] = value;
+        } else {
+          cambio = true;
+        }
+      });
+
+      return cambio ? siguiente : prev;
+    });
+  }, [productosOrdenados]);
+
+  useEffect(() => {
+    if (!mostrar || modoOrganismo || comanda.estado !== 'en_preparacion') {
+      autoCompletarPreparacionRef.current = null;
+      return;
+    }
+
+    if (!todosLosProductosPreparados) {
+      autoCompletarPreparacionRef.current = null;
+      return;
+    }
+
+    completarPreparacionAutomaticamente();
+  }, [mostrar, modoOrganismo, comanda.estado, comanda.id, totalProductos, todosLosProductosPreparados]);
 
   useEffect(() => {
     if (mostrar) {
@@ -548,7 +689,23 @@ export function ModeloComanda({
   };
 
   // Función para cambiar cantidad
-  const handleCambioCantidad = (itemKey: string, nuevaCantidad: number, cantidadOriginal: number) => {
+  const handleCambioCantidad = (itemKey: string, nuevoTexto: string, cantidadOriginal: number) => {
+    const textoNormalizado = normalizarTextoCantidad(nuevoTexto);
+    setCantidadesEditadasTexto(prev => ({
+      ...prev,
+      [itemKey]: textoNormalizado,
+    }));
+
+    const nuevaCantidad = parsearCantidadEntrada(textoNormalizado);
+
+    if (textoNormalizado === '') {
+      setCantidadesEditadas(prev => ({
+        ...prev,
+        [itemKey]: 0,
+      }));
+      return;
+    }
+
     if (nuevaCantidad < 0 || Number.isNaN(nuevaCantidad)) {
       return;
     }
@@ -559,6 +716,59 @@ export function ModeloComanda({
         [itemKey]: nuevaCantidad
       }));
     }
+  };
+
+  const handleBlurCantidad = (itemKey: string, cantidadOriginal: number) => {
+    const textoActual = cantidadesEditadasTexto[itemKey];
+
+    if (textoActual === undefined) {
+      if (!modoEdicionInterna) {
+        setCampoEditando(null);
+      }
+      return;
+    }
+
+    const cantidadParseada = parsearCantidadEntrada(textoActual);
+    const cantidadFinal = cantidadParseada !== null && cantidadParseada >= 0
+      ? ((modoEdicionInterna || cantidadParseada <= cantidadOriginal) ? cantidadParseada : cantidadOriginal)
+      : cantidadOriginal;
+
+    setCantidadesEditadas(prev => ({
+      ...prev,
+      [itemKey]: cantidadFinal,
+    }));
+    setCantidadesEditadasTexto(prev => ({
+      ...prev,
+      [itemKey]: formatearCantidadInput(cantidadFinal),
+    }));
+
+    if (!modoEdicionInterna) {
+      setCampoEditando(null);
+    }
+  };
+
+  const handleAjustarCantidad = (itemKey: string, delta: number, cantidadOriginal: number, item: any, index: number) => {
+    const textoBase = getCantidadInputValue(itemKey, item, index);
+    const { cantidad, texto } = ajustarCantidadTexto(textoBase, delta, 0);
+
+    if (!modoEdicionInterna && cantidad > cantidadOriginal) {
+      return;
+    }
+
+    setCantidadesEditadasTexto(prev => ({
+      ...prev,
+      [itemKey]: texto,
+    }));
+    setCantidadesEditadas(prev => ({
+      ...prev,
+      [itemKey]: cantidad,
+    }));
+  };
+
+  const handleAjustarCantidadAgregar = (delta: number) => {
+    const textoBase = cantidadAgregarProducto || '0';
+    const { texto } = ajustarCantidadTexto(textoBase, delta, 0);
+    setCantidadAgregarProducto(texto);
   };
 
   const handleIniciarEdicionInterna = () => {
@@ -576,6 +786,7 @@ export function ModeloComanda({
     setModoEdicionInterna(false);
     setCampoEditando(null);
     setCantidadesEditadas({});
+    setCantidadesEditadasTexto({});
     setProductoAgregarId('');
     setFiltroRapidoProducto('');
     setCantidadAgregarProducto('1');
@@ -600,6 +811,7 @@ export function ModeloComanda({
       setModoEdicionInterna(false);
       setCampoEditando(null);
       setCantidadesEditadas({});
+      setCantidadesEditadasTexto({});
       toast.success('Les articles de la commande ont été mis à jour.');
     } catch (error) {
       console.error('Erreur lors de la mise à jour interne de la commande:', error);
@@ -614,7 +826,7 @@ export function ModeloComanda({
     }
 
     const producto = inventarioProductos.find((item: any) => item.id === productoAgregarId);
-    const cantidad = Number(cantidadAgregarProducto);
+    const cantidad = parsearCantidadEntrada(cantidadAgregarProducto);
 
     if (!producto) {
       toast.error('Sélectionnez un produit à ajouter.');
@@ -679,6 +891,7 @@ export function ModeloComanda({
       setFiltroRapidoProducto('');
       setCantidadAgregarProducto('1');
       setCantidadesEditadas({});
+      setCantidadesEditadasTexto({});
       toast.success('Produit ajouté à la commande.');
     } catch (error) {
       console.error('Erreur lors de l’ajout interne de produit:', error);
@@ -820,7 +1033,7 @@ export function ModeloComanda({
               État de préparation
             </p>
             <div className="flex flex-wrap gap-2">
-              {estadosDisponibles.map((estado) => (
+              {estadosDisponibles.filter((estado) => estadosAccionables.has(estado.valor as any)).map((estado) => (
                 <Button
                   key={estado.valor}
                   onClick={() => onCambiarEstado(estado.valor)}
@@ -909,13 +1122,36 @@ export function ModeloComanda({
               </div>
               <div className="space-y-2 lg:w-40">
                 <p className="text-sm font-medium text-slate-700">Quantité</p>
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={cantidadAgregarProducto}
-                  onChange={(e) => setCantidadAgregarProducto(e.target.value)}
-                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Diminuer la quantité à ajouter"
+                    className="h-10 w-10 shrink-0 border-[#dbe4ee] bg-white text-slate-600 hover:bg-slate-100"
+                    onClick={() => handleAjustarCantidadAgregar(-1)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <QuantityInput
+                    value={cantidadAgregarProducto}
+                    onChangeText={(value) => setCantidadAgregarProducto(normalizarTextoCantidad(value))}
+                    step={0.01}
+                    showButtons={false}
+                    wrapperClassName="flex-1"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Augmenter la quantité à ajouter"
+                    className="h-10 w-10 shrink-0 border-[#dbe4ee] bg-white text-slate-600 hover:bg-slate-100"
+                    onClick={() => handleAjustarCantidadAgregar(1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <Button onClick={handleAgregarProductoInterno} className="bg-[#1E73BE] text-white hover:bg-[#1557A0]">
                 <Plus className="w-4 h-4 mr-2" />
@@ -1365,7 +1601,8 @@ export function ModeloComanda({
                       </TableHeader>
                       <TableBody>
                         {items.map((item: any, index: number) => {
-                                  const itemKey = getItemKey(item, index);
+                            const itemIndexGlobal = productosOrdenados.indexOf(item);
+                            const itemKey = getItemKey(item, itemIndexGlobal >= 0 ? itemIndexGlobal : index);
                           return (
                             <TableRow key={itemKey} className={vistaCompacta ? 'border-b border-[#edf2f7] last:border-b-0 hover:bg-[#f8fbff]' : 'hover:bg-gray-50'}>
                               {/* 🎯 NUEVO: Checkbox para marcar producto como completado */}
@@ -1412,36 +1649,58 @@ export function ModeloComanda({
                               </TableCell>
                               <TableCell className={`text-center ${vistaCompacta ? 'px-3 py-3' : ''}`}>
                                 {modoEdicionInterna || modoEdicion || campoEditando === itemKey ? (
-                                  <Input
-                                    type="number"
-                                    min={modoEdicionInterna ? '0.01' : '0'}
-                                    step="0.01"
-                                    max={modoEdicionInterna ? undefined : String(Math.round(item.cantidad))}
-                                    value={String(getCantidadVisible(item, index))}
-                                    onChange={(e) => handleCambioCantidad(itemKey, Number(e.target.value), item.cantidad)}
-                                    onBlur={() => {
-                                      if (!modoEdicionInterna) {
-                                        setCampoEditando(null);
-                                      }
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        if (!modoEdicionInterna) {
-                                          setCampoEditando(null);
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      aria-label="Diminuer la quantité de l'article"
+                                      className={`${vistaCompacta ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 border-[#dbe4ee] bg-white text-slate-600 hover:bg-slate-100`}
+                                      onClick={() => handleAjustarCantidad(itemKey, -1, item.cantidad, item, itemIndexGlobal >= 0 ? itemIndexGlobal : index)}
+                                    >
+                                      <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <QuantityInput
+                                      min={modoEdicionInterna ? 0.01 : 0}
+                                      max={modoEdicionInterna ? undefined : Math.round(item.cantidad)}
+                                      value={getCantidadInputValue(itemKey, item, itemIndexGlobal >= 0 ? itemIndexGlobal : index)}
+                                      onChangeText={(value) => handleCambioCantidad(itemKey, value, item.cantidad)}
+                                      onBlur={() => handleBlurCantidad(itemKey, item.cantidad)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleBlurCantidad(itemKey, item.cantidad);
+                                        } else if (e.key === 'Escape') {
+                                          setCantidadesEditadas(prev => ({
+                                            ...prev,
+                                            [itemKey]: item.cantidad
+                                          }));
+                                          setCantidadesEditadasTexto(prev => ({
+                                            ...prev,
+                                            [itemKey]: formatearCantidadInput(item.cantidad)
+                                          }));
+                                          if (!modoEdicionInterna) {
+                                            setCampoEditando(null);
+                                          }
                                         }
-                                      } else if (e.key === 'Escape') {
-                                        setCantidadesEditadas(prev => ({
-                                          ...prev,
-                                          [itemKey]: item.cantidad
-                                        }));
-                                        if (!modoEdicionInterna) {
-                                          setCampoEditando(null);
-                                        }
-                                      }
-                                    }}
-                                    autoFocus={!modoEdicionInterna}
-                                    className={`${vistaCompacta ? 'w-16 h-8 text-sm' : 'w-20'} text-center font-bold text-[#1E73BE]`}
-                                  />
+                                      }}
+                                      autoFocus={!modoEdicionInterna}
+                                      step={modoEdicionInterna ? 0.01 : 1}
+                                      clampOnBlur={false}
+                                      showButtons={false}
+                                      wrapperClassName="contents"
+                                      className={`${vistaCompacta ? 'w-16 h-8 text-sm' : 'w-20'} text-center font-bold text-[#1E73BE]`}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      aria-label="Augmenter la quantité de l'article"
+                                      className={`${vistaCompacta ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 border-[#dbe4ee] bg-white text-slate-600 hover:bg-slate-100`}
+                                      onClick={() => handleAjustarCantidad(itemKey, 1, item.cantidad, item, itemIndexGlobal >= 0 ? itemIndexGlobal : index)}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 ) : (
                                   <span
                                     className={`font-bold text-[#1E73BE] ${modoOrganismo && comanda.estado !== 'anulada' && comanda.estado !== 'completada' && comanda.estado !== 'entregada' ? 'cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition-colors' : ''}`}

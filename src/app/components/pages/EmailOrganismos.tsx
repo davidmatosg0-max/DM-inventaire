@@ -977,10 +977,6 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                 <BarChart3 className="mr-2 h-4 w-4" />
                 {mostrarEstadisticas ? t('liaison.hideStats') : t('liaison.showStats')}
               </Button>
-              <Button onClick={() => openEmailModal('group')} className="text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}>
-                <Mail className="mr-2 h-4 w-4" />
-                {t('liaison.groupEmail')}
-              </Button>
             </>
           )}
         />

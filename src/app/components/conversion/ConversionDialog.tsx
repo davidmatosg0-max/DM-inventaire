@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
@@ -161,15 +162,15 @@ export function ConversionDialog({
               <Label htmlFor="cantidadOrigen" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                 Quantité à convertir <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <QuantityInput
                 id="cantidadOrigen"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formConversion.cantidadOrigen || ''}
-                onChange={(e) => setFormConversion({ ...formConversion, cantidadOrigen: parseFloat(e.target.value) || 0 })}
-                placeholder="0.00"
+                value={formConversion.cantidadOrigen > 0 ? formConversion.cantidadOrigen : ''}
+                onChangeText={(value) => setFormConversion({ ...formConversion, cantidadOrigen: parseQuantityText(value) || 0 })}
+                step={0.01}
+                min={0}
+                placeholder="0,00"
                 className="h-11"
+                buttonClassName="h-11 w-11"
               />
             </div>
 
@@ -179,15 +180,15 @@ export function ConversionDialog({
                 <TrendingDown className="w-4 h-4 inline mr-1" />
                 Merma/Pérdida (opcional)
               </Label>
-              <Input
+              <QuantityInput
                 id="merma"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formConversion.merma || ''}
-                onChange={(e) => setFormConversion({ ...formConversion, merma: parseFloat(e.target.value) || 0 })}
-                placeholder="0.00"
+                value={formConversion.merma > 0 ? formConversion.merma : ''}
+                onChangeText={(value) => setFormConversion({ ...formConversion, merma: parseQuantityText(value) || 0 })}
+                step={0.01}
+                min={0}
+                placeholder="0,00"
                 className="h-11"
+                buttonClassName="h-11 w-11"
               />
               {formConversion.merma > 0 && productoOrigen && (
                 <p className="text-xs text-[#DC3545]">

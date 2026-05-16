@@ -4,6 +4,7 @@ import { ArrowRight, Package, Shuffle, Plus, Minus, Info, History, Check, Buildi
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
@@ -344,20 +345,20 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                       <div className="space-y-2">
                         <Label>{t('inventory.transformationDialog.quantityToTransform')}</Label>
                         <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={productoOrigen.stockActual}
-                            step="1"
+                          <QuantityInput
                             value={cantidadOrigen || ''}
-                            onChange={(e) => {
-                              const val = Math.round(parseFloat(e.target.value) || 0);
+                            onChangeText={(value) => {
+                              const val = parseQuantityText(value, false) || 0;
                               setCantidadOrigen(val);
-                              if (!ratioPersonalizado && cantidadDestino > 0) {
+                              if (!ratioPersonalizado && cantidadDestino > 0 && cantidadOrigen > 0) {
                                 const ratio = cantidadDestino / cantidadOrigen;
                                 setCantidadDestino(Math.round(val * ratio));
                               }
                             }}
+                            min={0}
+                            max={productoOrigen.stockActual}
+                            step={1}
+                            wrapperClassName="flex-1"
                             className="flex-1"
                           />
                           <Badge variant="outline" className="flex items-center px-3">
@@ -488,15 +489,15 @@ export function TransformarProductoDialog({ open, onOpenChange, productoInicial 
                           </Button>
                         </div>
                         <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="1"
+                          <QuantityInput
                             value={cantidadDestino || ''}
-                            onChange={(e) => {
-                              setCantidadDestino(Math.round(parseFloat(e.target.value) || 0));
+                            onChangeText={(value) => {
+                              setCantidadDestino(parseQuantityText(value, false) || 0);
                               setRatioPersonalizado(true);
                             }}
+                            min={0}
+                            step={1}
+                            wrapperClassName="flex-1"
                             className="flex-1"
                           />
                           <Badge variant="outline" className="flex items-center px-3">

@@ -18,6 +18,14 @@ const ESTADOS_COMANDA_LEGACY: Record<EstadoComandaLegacy, EstadoComanda> = {
   en_transito: 'entregada',
   cancelada: 'anulada'
 };
+const TRANSICIONES_ESTADO_COMANDA: Record<EstadoComanda, EstadoComanda[]> = {
+  pendiente: ['confirmada', 'anulada'],
+  confirmada: ['pendiente', 'en_preparacion', 'anulada'],
+  en_preparacion: ['confirmada', 'completada', 'anulada'],
+  completada: ['en_preparacion', 'entregada', 'anulada'],
+  entregada: [],
+  anulada: [],
+};
 
 function construirEtiquetaGrupoDistribucion(
   modalidadDistribucion?: string,
@@ -105,6 +113,23 @@ function normalizarEstadoComanda(estado?: string): EstadoComanda {
   return estadosValidos.has(estado as EstadoComanda) ? (estado as EstadoComanda) : 'pendiente';
 }
 
+export function obtenerEstadosDisponiblesComanda(estadoActual?: string): EstadoComanda[] {
+  const estadoNormalizado = normalizarEstadoComanda(estadoActual);
+
+  return [estadoNormalizado, ...TRANSICIONES_ESTADO_COMANDA[estadoNormalizado]];
+}
+
+export function esTransicionEstadoComandaValida(estadoActual: string | undefined, nuevoEstado: string): boolean {
+  const estadoOrigen = normalizarEstadoComanda(estadoActual);
+  const estadoDestino = normalizarEstadoComanda(nuevoEstado);
+
+  if (estadoOrigen === estadoDestino) {
+    return true;
+  }
+
+  return TRANSICIONES_ESTADO_COMANDA[estadoOrigen].includes(estadoDestino);
+}
+
 function normalizarComanda(comanda: ComandaPersistida, productos = obtenerProductos()): Comanda {
   return {
     ...comanda,
@@ -137,6 +162,21 @@ function sumarCantidadesComanda(comanda: Comanda) {
   });
 
   return Array.from(cantidades.entries()).map(([productoId, cantidad]) => ({ productoId, cantidad }));
+}
+
+function obtenerCantidadesAdicionalesReserva(comandaAnterior: Comanda, comandaNueva: Comanda) {
+  const cantidadesAnteriores = new Map<string, number>();
+
+  sumarCantidadesComanda(comandaAnterior).forEach((item) => {
+    cantidadesAnteriores.set(item.productoId, item.cantidad);
+  });
+
+  return sumarCantidadesComanda(comandaNueva)
+    .map((item) => ({
+      productoId: item.productoId,
+      cantidad: Number((item.cantidad - (cantidadesAnteriores.get(item.productoId) || 0)).toFixed(4)),
+    }))
+    .filter((item) => item.productoId && item.cantidad > 0);
 }
 
 function obtenerNombreUsuarioMovimiento(comanda: Comanda): string {
@@ -261,6 +301,12 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
     if (index !== -1) {
       const comandaAnterior = normalizarComanda(comandas[index]);
 
+      if (!esTransicionEstadoComandaValida(comandaAnterior.estado, comandaNormalizada.estado)) {
+        const mensaje = `Transition de statut invalide: ${comandaAnterior.estado} → ${comandaNormalizada.estado}`;
+        toast.error(mensaje);
+        throw new Error(mensaje);
+      }
+
       if (comandaAnterior.estado === 'entregada' && comandaNormalizada.estado !== 'entregada') {
         const mensaje = 'Una comanda expedida no puede volver a un estado anterior';
         toast.error(mensaje);
@@ -268,14 +314,20 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
       }
 
       if (comandaExigeReserva(comandaNormalizada.estado)) {
-        const validacion = validarReservaInventario(extraerCantidadesComanda(comandaNormalizada), {
-          excludeComandaId: comandaNormalizada.id
-        });
+        const cantidadesReserva = comandaExigeReserva(comandaAnterior.estado)
+          ? obtenerCantidadesAdicionalesReserva(comandaAnterior, comandaNormalizada)
+          : sumarCantidadesComanda(comandaNormalizada);
 
-        if (!validacion.ok) {
-          const mensaje = validacion.errores[0] || 'No fue posible mantener la reserva de inventario para la comanda';
-          toast.error(mensaje);
-          throw new Error(mensaje);
+        if (cantidadesReserva.length > 0) {
+          const validacion = validarReservaInventario(cantidadesReserva, {
+            excludeComandaId: comandaNormalizada.id
+          });
+
+          if (!validacion.ok) {
+            const mensaje = validacion.errores[0] || 'No fue posible mantener la reserva de inventario para la comanda';
+            toast.error(mensaje);
+            throw new Error(mensaje);
+          }
         }
       }
 

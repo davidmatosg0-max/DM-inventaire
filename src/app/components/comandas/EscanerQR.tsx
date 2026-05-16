@@ -418,7 +418,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
       )}
       
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden max-h-[95vh] overflow-y-auto">
+        <div className="bg-white rounded-xl shadow-2xl max-w-[640px] w-full h-[min(80vh,640px)] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="bg-[#1E73BE] text-white p-4 flex items-center justify-between sticky top-0 z-10">
             <div className="flex items-center gap-3">
@@ -445,7 +445,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="flex-1 min-h-0 p-4 md:p-5">
             <input
               ref={fileInputRef}
               type="file"
@@ -457,9 +457,9 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
 
             {resultado ? (
               // Success state - Menú de acciones
-              <div className="py-6">
-                <div className="text-center mb-6">
-                  <CheckCircle className="w-16 h-16 text-[#4CAF50] mx-auto mb-4" />
+              <div className="flex h-full flex-col">
+                <div className="text-center mb-4 shrink-0">
+                  <CheckCircle className="w-14 h-14 text-[#4CAF50] mx-auto mb-3" />
                   <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
                   <p className="text-gray-600 text-sm">
                     {showingLocationActions
@@ -471,7 +471,8 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                 </div>
                 
                 {/* Información escaneada */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.15fr)]">
+                <div className="bg-gray-50 rounded-lg p-4">
                   {showingLocationActions ? (
                     <>
                       {(detectedLocation?.codigo || resultado?.codigo) && (
@@ -551,7 +552,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                 </div>
 
                 {/* Menú de acciones */}
-                <div className="max-w-md mx-auto space-y-3 mb-6">
+                <div className="min-h-0">
                   <h3 className="font-bold text-[#333] text-center mb-4" style={{ fontFamily: 'Montserrat' }}>
                     {showingLocationActions
                       ? 'Actions disponibles pour cet emplacement'
@@ -559,6 +560,8 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                         ? 'Actions disponibles pour ce produit'
                         : 'Que souhaitez-vous faire?'}
                   </h3>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
 
                   {showingLocationActions ? (
                     <>
@@ -729,10 +732,12 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   </button>
                     </>
                   )}
+                  </div>
+                </div>
                 </div>
 
                 {/* Botones secundarios */}
-                <div className="flex justify-center gap-3 pt-4 border-t border-gray-200">
+                <div className="mt-4 flex justify-center gap-3 pt-4 border-t border-gray-200 shrink-0">
                   <button
                     onClick={escanearNuevamente}
                     className="px-6 py-2 border-2 border-[#1E73BE] text-[#1E73BE] rounded-lg hover:bg-[#1E73BE] hover:text-white transition-colors font-medium flex items-center gap-2"
@@ -750,7 +755,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
               </div>
             ) : modoEscaneo === null ? (
               // Selection mode
-              <div className="py-6">
+              <div className="h-full flex flex-col justify-center">
                 <div className="text-center mb-6">
                   <QrCode className="w-16 h-16 text-[#1E73BE] mx-auto mb-3" />
                   <h3 className="text-lg font-bold text-[#333] mb-2" style={{ fontFamily: 'Montserrat' }}>
@@ -800,7 +805,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
               </div>
             ) : modoEscaneo === 'preparandoCamara' ? (
               // Preparando cámara
-              <div className="py-6">
+              <div className="h-full flex flex-col justify-center">
                 <div className="text-center mb-6">
                   <Shield className="w-20 h-20 text-[#1E73BE] mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-[#333] mb-3" style={{ fontFamily: 'Montserrat' }}>
@@ -874,7 +879,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
               </div>
             ) : modoEscaneo === 'camara' ? (
               // Camera mode
-              <div>
+              <div className="h-full flex flex-col justify-center">
                 {!error ? (
                   <>
                     <div className="mb-4 text-center">
@@ -888,7 +893,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                     </div>
 
                     <div className="relative rounded-lg overflow-hidden border-4 border-[#1E73BE] bg-black">
-                      <div id="qr-reader-camera" className="w-full min-h-[300px]"></div>
+                      <div id="qr-reader-camera" className="h-[min(44vh,340px)] w-full"></div>
                       
                       {escaneando && (
                         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
@@ -921,7 +926,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
               </div>
             ) : (
               // File mode
-              <div className="text-center py-8">
+              <div className="h-full flex flex-col justify-center text-center py-8">
                 <div id="qr-reader-file" className="hidden"></div>
                 
                 {!error ? (

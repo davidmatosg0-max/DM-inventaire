@@ -12,6 +12,7 @@ import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { AddressAutocomplete } from '../ui/address-autocomplete';
 import { Textarea } from '../ui/textarea';
@@ -819,7 +820,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       toast.error('Produit obligatoire', { description: 'Veuillez selectionner un produit.' });
       return;
     }
-    if (!formEntrada.cantidad || parseFloat(formEntrada.cantidad) <= 0) {
+    if (!formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0) {
       toast.error('Quantite invalide', { description: 'Veuillez saisir une quantite valide.' });
       return;
     }
@@ -837,7 +838,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       return;
     }
 
-    const cantidad = parseFloat(formEntrada.cantidad);
+    const cantidad = parseQuantityText(formEntrada.cantidad) || 0;
     const pesoTotal = cantidad * (producto.pesoUnitario || producto.peso || 0);
 
     // Crear entrada
@@ -2569,14 +2570,16 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                               >
                                 <Minus className="w-4 h-4" />
                               </Button>
-                              <Input
-                                type="number"
+                              <QuantityInput
                                 value={producto.cantidadSolicitada}
-                                onChange={(e) => actualizarCantidad(producto.id, parseFloat(e.target.value) || 0)}
+                                onChangeText={(value) => actualizarCantidad(producto.id, parseQuantityText(value, false) || 0)}
                                 disabled={!producto.seleccionado}
                                 className="w-20 text-center h-8"
-                                min="0"
+                                min={0}
                                 max={producto.cantidadMaxima}
+                                step={1}
+                                showButtons={false}
+                                wrapperClassName="contents"
                               />
                               <Button
                                 size="sm"
@@ -3229,18 +3232,18 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   </div>
                   Quantité <span className="text-red-500 ml-1">*</span>
                 </Label>
-                <Input
+                <QuantityInput
                   id="cantidad"
-                  type="number"
-                  step="0.01"
-                  min="0"
                   value={formEntrada.cantidad}
-                  onChange={(e) => setFormEntrada({ ...formEntrada, cantidad: e.target.value })}
+                  onChangeText={(value) => setFormEntrada({ ...formEntrada, cantidad: value })}
+                  step={0.01}
+                  min={0}
                   placeholder="Ex: 100"
-                  className="border-2 h-12 bg-white text-lg transition-all"
+                  className="h-12 border-2 bg-white text-lg transition-all"
+                  buttonClassName="border-2"
                   style={{ borderColor: `${branding.secondaryColor}30` }}
                 />
-                {formEntrada.productoId && formEntrada.cantidad && parseFloat(formEntrada.cantidad) > 0 && (
+                {formEntrada.productoId && formEntrada.cantidad && (parseQuantityText(formEntrada.cantidad) || 0) > 0 && (
                   <div 
                     className="flex items-center gap-2 p-3 rounded-lg"
                     style={{ backgroundColor: `${branding.secondaryColor}10` }}
@@ -3254,7 +3257,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                     <div>
                       <p className="text-xs text-[#666666]">Poids total estimé</p>
                       <p className="font-bold text-sm" style={{ color: branding.secondaryColor }}>
-                        {formatQuantity(parseFloat(formEntrada.cantidad) * (productosPRS.find(p => p.id === formEntrada.productoId)?.pesoUnitario || productosPRS.find(p => p.id === formEntrada.productoId)?.peso || 0))} kg
+                        {formatQuantity((parseQuantityText(formEntrada.cantidad) || 0) * (productosPRS.find(p => p.id === formEntrada.productoId)?.pesoUnitario || productosPRS.find(p => p.id === formEntrada.productoId)?.peso || 0))} kg
                       </p>
                     </div>
                   </div>
@@ -3395,9 +3398,9 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
                 fontFamily: 'Montserrat, sans-serif',
                 fontWeight: 600,
-                opacity: (!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || parseFloat(formEntrada.cantidad) <= 0 || !formEntrada.temperatura) ? 0.5 : 1
+                opacity: (!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0 || !formEntrada.temperatura) ? 0.5 : 1
               }}
-              disabled={!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || parseFloat(formEntrada.cantidad) <= 0 || !formEntrada.temperatura}
+              disabled={!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0 || !formEntrada.temperatura}
             >
               <Save className="w-4 h-4 mr-2" />
               Enregistrer l'entrée

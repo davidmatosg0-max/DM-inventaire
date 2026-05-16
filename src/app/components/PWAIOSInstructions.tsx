@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from './ui/button';
-import { X, Smartphone } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface PWAIOSInstructionsProps {
@@ -16,14 +16,6 @@ export function PWAIOSInstructions({ isOpen, onClose }: PWAIOSInstructionsProps)
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-4">
       <div className="bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in slide-in-from-bottom-5">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label={t('common.close')}
-        >
-          <X className="h-5 w-5" />
-        </button>
-        
         <div className="flex items-center gap-3 mb-4">
           <div className="bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl p-3">
             <Smartphone className="h-6 w-6 text-white" />

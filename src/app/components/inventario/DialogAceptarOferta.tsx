@@ -10,6 +10,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Checkbox } from '../ui/checkbox';
 import { toast } from 'sonner';
 import { 
@@ -377,14 +378,16 @@ export function DialogAceptarOferta({
                           >
                             <Minus className="w-4 h-4" />
                           </Button>
-                          <Input
-                            type="number"
-                            value={formatQuantity(producto.cantidadAceptada)}
-                            onChange={(e) => ajustarCantidad(producto.productoId, parseFloat(e.target.value) || 0)}
+                          <QuantityInput
+                            value={producto.cantidadAceptada}
+                            onChangeText={(value) => ajustarCantidad(producto.productoId, parseQuantityText(value) || 0)}
                             className="w-20 text-center"
                             disabled={!producto.seleccionado}
                             min={0}
                             max={producto.cantidadDisponible}
+                            step={0.01}
+                            showButtons={false}
+                            wrapperClassName="contents"
                           />
                           <Button
                             variant="outline"

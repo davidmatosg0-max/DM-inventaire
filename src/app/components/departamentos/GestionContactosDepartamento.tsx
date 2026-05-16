@@ -1445,17 +1445,19 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                     <Link className="w-4 h-4 mr-2" />
                     <span className="truncate">Assigner un bénévole</span>
                   </Button>
-                  <Button
-                    onClick={abrirDialogoNuevo}
-                    className="text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl w-full sm:w-auto text-sm sm:text-base"
-                    style={{ 
-                      backgroundColor: branding.secondaryColor,
-                      fontFamily: 'Montserrat, sans-serif'
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nouveau contact
-                  </Button>
+                  {tiposPermitidos.length > 0 && (
+                    <Button
+                      onClick={abrirDialogoNuevo}
+                      className="text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl w-full sm:w-auto text-sm sm:text-base"
+                      style={{ 
+                        backgroundColor: branding.secondaryColor,
+                        fontFamily: 'Montserrat, sans-serif'
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Nouveau contact
+                    </Button>
+                  )}
                 </>
               )}
               {departamentoId === 'todos' && (

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
@@ -1125,14 +1126,15 @@ export function DialogDistribuirProductos({
                                     <Minus className="w-4 h-4" />
                                   </Button>
                                   <div className="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-md min-w-[100px] justify-center">
-                                    <Input
-                                      type="number"
+                                    <QuantityInput
                                       value={item.cantidad}
-                                      onChange={(e) => actualizarCantidadProducto(item.productoId, parseFloat(e.target.value) || 0)}
-                                      className="w-16 h-7 text-center font-bold border-none bg-transparent p-0"
-                                      min="0"
-                                      step="1"
+                                      onChangeText={(value) => actualizarCantidadProducto(item.productoId, parseQuantityText(value, false) || 0)}
+                                      min={0}
                                       max={item.stockReservable}
+                                      step={1}
+                                      showButtons={false}
+                                      wrapperClassName="contents"
+                                      className="w-16 h-7 border-none bg-transparent p-0 text-center font-bold shadow-none hover:shadow-none focus-visible:ring-0"
                                     />
                                     <span className="text-sm font-medium text-gray-600">{item.unidad}</span>
                                   </div>

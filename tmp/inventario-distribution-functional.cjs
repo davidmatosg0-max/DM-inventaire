@@ -173,7 +173,7 @@ async function openDistributionWizard(page, mode) {
 async function setEditQuantity(page, quantity, mode) {
   logStep(`setEditQuantity:${mode}`);
   const dialog = getActiveDialog(page);
-  const quantityInput = dialog.locator('input[type="number"]').first();
+  const quantityInput = dialog.locator('input[inputmode="numeric"], input[inputmode="decimal"], input[type="number"]').first();
   await quantityInput.fill(String(quantity));
   await quantityInput.blur();
 }

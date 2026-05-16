@@ -6,6 +6,7 @@ import '../../../styles/configuracion-elegante.css';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -4097,10 +4098,11 @@ export function Configuracion() {
                 <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                   {t('inventory.currentStock')}
                 </Label>
-                <Input
-                  type="number"
+                <QuantityInput
                   value={formProducto.stockActual}
-                  onChange={(e) => setFormProducto({ ...formProducto, stockActual: parseFloat(e.target.value) || 0 })}
+                  onChangeText={(value) => setFormProducto({ ...formProducto, stockActual: parseQuantityText(value, false) || 0 })}
+                  min={0}
+                  step={1}
                   style={{ fontFamily: 'Roboto, sans-serif' }}
                 />
               </div>
@@ -4109,10 +4111,11 @@ export function Configuracion() {
                 <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                   {t('inventory.minStock')}
                 </Label>
-                <Input
-                  type="number"
+                <QuantityInput
                   value={formProducto.stockMinimo}
-                  onChange={(e) => setFormProducto({ ...formProducto, stockMinimo: parseFloat(e.target.value) || 0 })}
+                  onChangeText={(value) => setFormProducto({ ...formProducto, stockMinimo: parseQuantityText(value, false) || 0 })}
+                  min={0}
+                  step={1}
                   style={{ fontFamily: 'Roboto, sans-serif' }}
                 />
               </div>

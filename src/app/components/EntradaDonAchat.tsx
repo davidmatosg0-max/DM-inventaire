@@ -12,6 +12,7 @@ import { printStandardLabel, type ProductLabelData } from './etiquetas/StandardP
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from './ui/dialog';
 import { Input } from './ui/input';
+import { QuantityInput, parseQuantityText } from './ui/quantity-input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
@@ -763,7 +764,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           icono: formVariante.icono || '🏷️',
           unidad: formVariante.unidad,
           valorPorKg: formVariante.valorPorKg ? parseFloat(formVariante.valorPorKg) : undefined,
-          pesoUnitario: formVariante.pesoUnitario ? parseFloat(formVariante.pesoUnitario) : undefined,
+          pesoUnitario: formVariante.pesoUnitario ? (parseQuantityText(formVariante.pesoUnitario, false) || 0) : undefined,
           descripcion: formVariante.descripcion,
         }
       );
@@ -2180,14 +2181,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                     <Label>Quantité *</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
+                    <QuantityInput
                       value={formData.cantidad || ''}
-                      onChange={(e) => handleFieldChange('cantidad', parseFloat(e.target.value) || 0)}
+                      onChangeText={(value) => handleFieldChange('cantidad', parseQuantityText(value, false) || 0)}
+                      min={0}
+                      step={1}
                       placeholder="0"
-                      className="mt-2 rounded-2xl border-slate-200 bg-slate-50/60"
+                      wrapperClassName="mt-2"
+                      className="rounded-2xl border-slate-200 bg-slate-50/60"
+                      buttonClassName="border-slate-200 bg-slate-50/60 hover:bg-slate-100"
                     />
                   </div>
                   <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
@@ -2211,14 +2213,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 {/* Peso Unitario */}
                 <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                   <Label>Poids Unitaire (kg/unité)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
+                  <QuantityInput
                     value={formData.pesoUnitario || ''}
-                    onChange={(e) => handleFieldChange('pesoUnitario', Math.round(parseFloat(e.target.value) || 0))}
+                    onChangeText={(value) => handleFieldChange('pesoUnitario', parseQuantityText(value, false) || 0)}
+                    min={0}
+                    step={1}
                     placeholder="0"
-                    className="mt-2 rounded-2xl border-slate-200 bg-slate-50/60"
+                    wrapperClassName="mt-2"
+                    className="rounded-2xl border-slate-200 bg-slate-50/60"
+                    buttonClassName="border-slate-200 bg-slate-50/60 hover:bg-slate-100"
                   />
                   {formData.pesoUnitario > 0 && formData.cantidad > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -2435,15 +2438,17 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
               {/* SECTION 5: Botones de acción */}
               <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={annulerEtFermer}
-                  className="rounded-2xl border-slate-300"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Annuler
-                </Button>
+                {productosAgregados.length === 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={annulerEtFermer}
+                    className="rounded-2xl border-slate-300"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Annuler
+                  </Button>
+                )}
                 <Button
                   onClick={agregarProductoALista}
                   className="flex-1 rounded-2xl bg-[#2d9561] shadow-sm hover:bg-[#267d50]"
@@ -2781,12 +2786,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </div>
                 <div>
                   <Label>Poids Unitaire (kg) (optionnel)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
+                  <QuantityInput
                     value={formVariante.pesoUnitario}
-                    onChange={(e) => setFormVariante(prev => ({ ...prev, pesoUnitario: e.target.value }))}
+                    onChangeText={(value) => setFormVariante(prev => ({ ...prev, pesoUnitario: value }))}
+                    min={0}
+                    step={1}
                     placeholder="0"
                   />
                 </div>
@@ -2911,15 +2915,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
               <div>
                 <Label htmlFor="peso-unitario-input" className="font-semibold">⚖️ Poids unitaire (kg) - Optionnel</Label>
-                <Input
+                <QuantityInput
                   id="peso-unitario-input"
-                  type="number"
-                  step="1"
-                  min="0"
                   value={formSubcategoria.pesoUnitario || ''}
-                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
+                  onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseQuantityText(value, false) || 0 }))}
+                  min={0}
+                  step={1}
                   placeholder="0"
                   className="border-2 border-blue-300 focus:border-blue-500"
+                  buttonClassName="border-blue-300 hover:bg-blue-50"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   💡 Poids moyen d'une unité de ce produit (exemple: 0.500 kg pour une boîte de 500g)
@@ -2928,12 +2932,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
               <div>
                 <Label>Poids Unitaire Héritage (kg) (optionnel)</Label>
-                <Input
-                  type="number"
-                  step="1"
-                  min="0"
+                <QuantityInput
                   value={formSubcategoria.pesoUnitario || ''}
-                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: Math.round(parseFloat(e.target.value) || 0) }))}
+                  onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseQuantityText(value, false) || 0 }))}
+                  min={0}
+                  step={1}
                   placeholder="0"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -2943,11 +2946,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
               <div>
                 <Label>Stock Minimum (optionnel)</Label>
-                <Input
-                  type="number"
-                  min="0"
+                <QuantityInput
                   value={formSubcategoria.stockMinimo || ''}
-                  onChange={(e) => setFormSubcategoria(prev => ({ ...prev, stockMinimo: parseInt(e.target.value) || 0 }))}
+                  onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, stockMinimo: parseQuantityText(value, false) || 0 }))}
+                  min={0}
+                  step={1}
                   placeholder="0"
                 />
               </div>
@@ -2979,67 +2982,61 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Palette (PLT)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
+                  <QuantityInput
                     value={formSubcategoria.pesoPLT || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoPLT: Math.round(parseFloat(e.target.value) || 0) }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoPLT: parseQuantityText(value, false) || 0 }))}
+                    min={0}
+                    step={1}
                     placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Boîte (CJA)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
+                  <QuantityInput
                     value={formSubcategoria.pesoCJA || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoCJA: Math.round(parseFloat(e.target.value) || 0) }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoCJA: parseQuantityText(value, false) || 0 }))}
+                    min={0}
+                    step={1}
                     placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Unité (UND)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
+                  <QuantityInput
                     value={formSubcategoria.pesoUND || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoUND: Math.round(parseFloat(e.target.value) || 0) }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUND: parseQuantityText(value, false) || 0 }))}
+                    min={0}
+                    step={1}
                     placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Sac (SAC)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
+                  <QuantityInput
                     value={formSubcategoria.pesoSAC || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoSAC: Math.round(parseFloat(e.target.value) || 0) }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoSAC: parseQuantityText(value, false) || 0 }))}
+                    min={0}
+                    step={1}
                     placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Bac Noir (BN)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
+                  <QuantityInput
                     value={formSubcategoria.pesoBN || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoBN: Math.round(parseFloat(e.target.value) || 0) }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoBN: parseQuantityText(value, false) || 0 }))}
+                    min={0}
+                    step={1}
                     placeholder="0"
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Kilogramme (kg)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
+                  <QuantityInput
                     value={formSubcategoria.pesoKg || ''}
-                    onChange={(e) => setFormSubcategoria(prev => ({ ...prev, pesoKg: Math.round(parseFloat(e.target.value) || 0) }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoKg: parseQuantityText(value, false) || 0 }))}
+                    min={0}
+                    step={1}
                     placeholder="1"
                   />
                 </div>
