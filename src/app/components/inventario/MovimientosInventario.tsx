@@ -11,7 +11,8 @@ import {
   Search,
   TrendingUp,
   TrendingDown,
-  AlertCircle
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
@@ -24,7 +25,19 @@ import { obtenerUsuarios } from '../../utils/usuarios';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 
-export type TipoMovimiento = 'entrada' | 'salida' | 'ajuste' | 'transferencia' | 'merma' | 'donacion';
+export type TipoMovimiento =
+  | 'entrada'
+  | 'salida'
+  | 'ajuste'
+  | 'transferencia'
+  | 'merma'
+  | 'donacion'
+  | 'distribucion'
+  | 'distribucion_completada'
+  | 'transformacion'
+  | 'correccion'
+  | 'ajuste_stock'
+  | 'conversion_unidad';
 
 export interface Movimiento {
   id: string;
@@ -44,6 +57,29 @@ export interface Movimiento {
   valorMonetario?: number;
 }
 
+const CANONICAL_STORAGE_KEY = 'banco_alimentos_movimientos';
+const LEGACY_STORAGE_KEY = 'movimientos_inventario';
+
+function normalizarTipoMovimiento(valor: unknown): TipoMovimiento {
+  const tipo = typeof valor === 'string' ? valor : 'ajuste';
+  const tiposValidos: TipoMovimiento[] = [
+    'entrada',
+    'salida',
+    'ajuste',
+    'transferencia',
+    'merma',
+    'donacion',
+    'distribucion',
+    'distribucion_completada',
+    'transformacion',
+    'correccion',
+    'ajuste_stock',
+    'conversion_unidad'
+  ];
+
+  return tiposValidos.includes(tipo as TipoMovimiento) ? (tipo as TipoMovimiento) : 'ajuste';
+}
+
 interface MovimientosInventarioProps {
   productos?: any[];
 }
@@ -57,14 +93,44 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
   const locale = i18n.resolvedLanguage || i18n.language || 'fr';
 
   const cargarMovimientos = useCallback(() => {
-    const movimientosGuardados = localStorage.getItem('movimientos_inventario');
+    const productosPorId = new Map((productos || []).map((producto) => [producto.id, producto]));
+
+    const mapearMovimiento = (movimiento: any): Movimiento => {
+      const producto = productosPorId.get(movimiento?.productoId);
+
+      return {
+        id: movimiento?.id || `mov-${Date.now()}`,
+        fecha: movimiento?.fecha || new Date().toISOString(),
+        tipo: normalizarTipoMovimiento(movimiento?.tipo),
+        productoId: movimiento?.productoId || '',
+        productoNombre: movimiento?.productoNombre || producto?.nombre || movimiento?.numeroComanda || t('inventory.product'),
+        categoria: movimiento?.categoria || producto?.categoria || '',
+        cantidad: Number(movimiento?.cantidad || 0),
+        unidad: movimiento?.unidad || producto?.unidad || 'unidad',
+        stockAnterior: Number(movimiento?.stockAnterior ?? movimiento?.cantidadAnterior ?? 0),
+        stockNuevo: Number(movimiento?.stockNuevo ?? movimiento?.cantidadActual ?? producto?.stockActual ?? 0),
+        usuario: movimiento?.usuario || t('inventory.movementsPanel.systemUser'),
+        motivo: movimiento?.motivo || movimiento?.observaciones,
+        referencia: movimiento?.referencia || movimiento?.documentoReferencia,
+        destino: movimiento?.destino || movimiento?.organismoNombre,
+        valorMonetario: movimiento?.valorMonetario,
+      };
+    };
+
+    const movimientosCanonicos = localStorage.getItem(CANONICAL_STORAGE_KEY);
+    if (movimientosCanonicos) {
+      setMovimientos(JSON.parse(movimientosCanonicos).map(mapearMovimiento));
+      return;
+    }
+
+    const movimientosGuardados = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (movimientosGuardados) {
       setMovimientos(JSON.parse(movimientosGuardados));
       return;
     }
 
     generarMovimientosEjemplo();
-  }, [t]);
+  }, [productos, t]);
 
   // Cargar movimientos desde localStorage
   useEffect(() => {
@@ -205,6 +271,17 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
         return { icon: TrendingDown, color: 'text-orange-600', bg: 'bg-orange-50', label: t('inventory.movementsPanel.loss') };
       case 'donacion':
         return { icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50', label: t('inventory.movementsPanel.donation') };
+      case 'distribucion':
+        return { icon: ArrowDownCircle, color: 'text-rose-600', bg: 'bg-rose-50', label: 'Distribution reservée' };
+      case 'distribucion_completada':
+        return { icon: Check, color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Distribution livrée' };
+      case 'transformacion':
+        return { icon: RefreshCw, color: 'text-cyan-600', bg: 'bg-cyan-50', label: 'Transformation' };
+      case 'correccion':
+      case 'ajuste_stock':
+        return { icon: RefreshCw, color: 'text-sky-600', bg: 'bg-sky-50', label: 'Correction de stock' };
+      case 'conversion_unidad':
+        return { icon: RefreshCw, color: 'text-violet-600', bg: 'bg-violet-50', label: 'Conversion unité' };
       default:
         return { icon: Package, color: 'text-gray-600', bg: 'bg-gray-50', label: tipo };
     }
@@ -232,7 +309,7 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
       .reduce((acc, m) => acc + m.cantidad, 0);
     
     const totalSalidas = movimientosFiltrados
-      .filter(m => m.tipo === 'salida' || m.tipo === 'donacion')
+      .filter(m => m.tipo === 'salida' || m.tipo === 'donacion' || m.tipo === 'distribucion' || m.tipo === 'distribucion_completada')
       .reduce((acc, m) => acc + m.cantidad, 0);
     
     const totalMermas = movimientosFiltrados
@@ -399,6 +476,8 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
                 <SelectItem value="transferencia">{t('inventory.movementsPanel.transfer')}</SelectItem>
                 <SelectItem value="merma">{t('inventory.movementsPanel.loss')}</SelectItem>
                 <SelectItem value="donacion">{t('inventory.movementsPanel.donation')}</SelectItem>
+                <SelectItem value="distribucion">Distribution reservée</SelectItem>
+                <SelectItem value="distribucion_completada">Distribution livrée</SelectItem>
               </SelectContent>
             </Select>
 
@@ -475,10 +554,10 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
                         <TableCell className="text-right">
                           <span className={`font-semibold ${
                             movimiento.tipo === 'entrada' ? 'text-green-600' : 
-                            movimiento.tipo === 'salida' || movimiento.tipo === 'donacion' ? 'text-red-600' : 
+                            movimiento.tipo === 'salida' || movimiento.tipo === 'donacion' || movimiento.tipo === 'distribucion' || movimiento.tipo === 'distribucion_completada' ? 'text-red-600' : 
                             'text-blue-600'
                           }`}>
-                            {movimiento.tipo === 'entrada' ? '+' : movimiento.tipo === 'salida' || movimiento.tipo === 'donacion' ? '-' : '±'}
+                            {movimiento.tipo === 'entrada' ? '+' : movimiento.tipo === 'salida' || movimiento.tipo === 'donacion' || movimiento.tipo === 'distribucion' || movimiento.tipo === 'distribucion_completada' ? '-' : '±'}
                             {formatQuantity(movimiento.cantidad)} {movimiento.unidad}
                           </span>
                         </TableCell>

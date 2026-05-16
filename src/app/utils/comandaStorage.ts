@@ -4,6 +4,8 @@ import { registrarActividad } from './actividadLogger';
 import { descontarInventarioReservado, validarReservaInventario } from './inventoryReservations';
 import { obtenerProductos } from './productStorage';
 import { queueStorageSync } from './cloudPersistence';
+import { registrarDistribucionCompletada } from './movimientoStorage';
+import { obtenerUsuarioSesion } from './sesionStorage';
 import {
   resolverTemperaturaProductoCanonica,
   resolverTemperaturaOriginalEntradaProducto,
@@ -123,6 +125,69 @@ function extraerCantidadesComanda(comanda: Comanda) {
   }));
 }
 
+function sumarCantidadesComanda(comanda: Comanda) {
+  const cantidades = new Map<string, number>();
+
+  extraerCantidadesComanda(comanda).forEach((item) => {
+    if (!item.productoId || item.cantidad <= 0) {
+      return;
+    }
+
+    cantidades.set(item.productoId, Number(((cantidades.get(item.productoId) || 0) + item.cantidad).toFixed(4)));
+  });
+
+  return Array.from(cantidades.entries()).map(([productoId, cantidad]) => ({ productoId, cantidad }));
+}
+
+function obtenerNombreUsuarioMovimiento(comanda: Comanda): string {
+  const usuarioSesion = obtenerUsuarioSesion();
+  const nombreSesion = [usuarioSesion?.nombre, usuarioSesion?.apellido].filter(Boolean).join(' ').trim();
+
+  return nombreSesion || comanda.usuarioCreacion || comanda.creadoPor || 'Système';
+}
+
+function emitirActualizacionInventario(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new Event('productos-actualizados'));
+}
+
+function registrarMovimientosEntregaComanda(
+  comanda: Comanda,
+  itemsEntregados: Array<{ productoId: string; cantidad: number }>,
+  productosAntes = obtenerProductos(),
+  productosDespues = obtenerProductos()
+): void {
+  const usuario = obtenerNombreUsuarioMovimiento(comanda);
+  const numeroComanda = comanda.numero || comanda.numeroComanda || comanda.id;
+  const organismoNombre = comanda.organismoNombre || comanda.nombreOrganismo || '';
+  const productosAntesPorId = new Map(productosAntes.map((producto) => [producto.id, producto]));
+  const productosDespuesPorId = new Map(productosDespues.map((producto) => [producto.id, producto]));
+
+  itemsEntregados.forEach((item) => {
+    if (!item.productoId || item.cantidad <= 0) {
+      return;
+    }
+
+    const productoAntes = productosAntesPorId.get(item.productoId);
+    const productoDespues = productosDespuesPorId.get(item.productoId);
+
+    registrarDistribucionCompletada(
+      item.productoId,
+      item.cantidad,
+      comanda.organismoId,
+      organismoNombre,
+      numeroComanda,
+      usuario,
+      `Commande ${numeroComanda} livrée`,
+      productoAntes?.stockActual,
+      productoDespues?.stockActual
+    );
+  });
+}
+
 function comandaExigeReserva(estado?: string): boolean {
   return !['entregada', 'anulada', 'cancelada', 'rechazada'].includes(estado || '');
 }
@@ -215,11 +280,19 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
       }
 
       if (comandaAnterior.estado !== 'entregada' && comandaNormalizada.estado === 'entregada') {
-        const resultado = descontarInventarioReservado(extraerCantidadesComanda(comandaNormalizada));
+        const itemsEntregados = sumarCantidadesComanda(comandaNormalizada);
+        const productosAntes = obtenerProductos();
+        const resultado = descontarInventarioReservado(itemsEntregados);
         if (!resultado.ok) {
           const mensaje = resultado.error || 'No fue posible descontar inventario al expedir la comanda';
           toast.error(mensaje);
           throw new Error(mensaje);
+        }
+
+        try {
+          registrarMovimientosEntregaComanda(comandaNormalizada, itemsEntregados, productosAntes, obtenerProductos());
+        } catch (movementError) {
+          console.error('Erreur lors de l’enregistrement des mouvements de livraison :', movementError);
         }
       }
 
@@ -227,6 +300,7 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
       localStorage.setItem(COMANDAS_KEY, JSON.stringify(comandas));
       queueStorageSync(COMANDAS_KEY);
       emitirActualizacionComandas();
+      emitirActualizacionInventario();
       
       // Registrar actividad con cambios
       const cambios = [];

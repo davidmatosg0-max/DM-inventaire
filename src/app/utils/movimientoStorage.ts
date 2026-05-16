@@ -252,7 +252,9 @@ export function registrarDistribucionCompletada(
   organismoNombre: string,
   numeroComanda: string,
   usuario: string,
-  observaciones?: string
+  observaciones?: string,
+  cantidadAnterior?: number,
+  cantidadActual?: number
 ): MovimientoExtendido {
   return registrarMovimiento({
     tipo: 'distribucion_completada',
@@ -264,7 +266,9 @@ export function registrarDistribucionCompletada(
     organismoNombre,
     numeroComanda,
     documentoReferencia: numeroComanda,
-    observaciones
+    observaciones,
+    cantidadAnterior,
+    cantidadActual
   });
 }
 

@@ -9,6 +9,7 @@ const inventoryReservationsPath = path.join(repoRoot, 'src', 'app', 'utils', 'in
 const comandaStoragePath = path.join(repoRoot, 'src', 'app', 'utils', 'comandaStorage.ts');
 const ofertaStoragePath = path.join(repoRoot, 'src', 'app', 'utils', 'ofertaStorage.ts');
 const productStoragePath = path.join(repoRoot, 'src', 'app', 'utils', 'productStorage.ts');
+const movementStorageKey = 'banco_alimentos_movimientos';
 
 function assert(condition, message) {
   if (!condition) {
@@ -295,6 +296,10 @@ function readOfertas(storage) {
   return JSON.parse(storage.getItem('ofertas_sistema') || '[]');
 }
 
+function readMovimientos(storage) {
+  return JSON.parse(storage.getItem(movementStorageKey) || '[]');
+}
+
 async function validateAtomicDiscountGuard() {
   const storage = createStorage();
   seedUser(storage);
@@ -332,9 +337,13 @@ async function validateComandaDeliveryFlow() {
 
   const comandaActualizada = readComandas(storage).find(comanda => comanda.id === 'cmd-test');
   const productoActualizado = readProducts(storage).find(producto => producto.id === 'prod-test');
+  const movimientoEntrega = readMovimientos(storage).find((movimiento) => movimiento.numeroComanda === 'CMD-TEST-001');
 
   assertEqual(comandaActualizada.estado, 'entregada', 'La comanda debe persistir el estado entregada');
   assertEqual(productoActualizado.stockActual, 3, 'Entregar una comanda debe descontar el stock reservado exactamente una vez');
+  assert(Boolean(movimientoEntrega), 'Entregar una comanda debe registrar un movimiento de inventario');
+  assertEqual(movimientoEntrega.tipo, 'distribucion_completada', 'La entrega debe registrar un movimiento de distribución completada');
+  assertEqual(movimientoEntrega.cantidad, 2, 'El movimiento de entrega debe reflejar la cantidad entregada');
 }
 
 async function validateOfferDeliveryFlow() {
@@ -385,6 +394,7 @@ async function main() {
     checks: [
       'atomic-discount-prevents-partial-write',
       'comanda-delivery-updates-stock',
+      'comanda-delivery-registers-movement',
       'offer-delivery-updates-stock',
       'inventory-reservations-uses-atomic-helper'
     ]
