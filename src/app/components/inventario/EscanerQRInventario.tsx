@@ -153,12 +153,11 @@ export function EscanerQRInventario({
       await scanner.start(
         selectedCamera.id,
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          videoConstraints: {
-            facingMode: { ideal: 'environment' }
-          }
+          fps: 12,
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+            const edge = Math.max(180, Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72));
+            return { width: edge, height: edge };
+          },
         },
         (decodedText) => {
           handleScanSuccess(decodedText);
@@ -183,12 +182,11 @@ export function EscanerQRInventario({
 
     try {
       const data = JSON.parse(decodedText);
+      const scannedLocation = normalizeScannedLocationQR(data, knownLocationCodes);
+      const scannedProduct = normalizeScannedProductQR(data);
+      const scannedComanda = normalizeScannedComandaQR(data);
 
       if (defaultProductAction && !pendingLocationAction) {
-        const scannedLocation = normalizeScannedLocationQR(data, knownLocationCodes);
-        const scannedProduct = normalizeScannedProductQR(data);
-        const scannedComanda = normalizeScannedComandaQR(data);
-
         if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
           onScanSuccess(data, defaultProductAction);
           setResultado(null);
@@ -203,10 +201,6 @@ export function EscanerQRInventario({
       }
 
       if (pendingLocationAction) {
-        const scannedLocation = normalizeScannedLocationQR(data, knownLocationCodes);
-        const scannedProduct = normalizeScannedProductQR(data);
-        const scannedComanda = normalizeScannedComandaQR(data);
-
         if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
           onScanSuccess(data, pendingLocationAction.action);
           setResultado(null);
@@ -215,15 +209,21 @@ export function EscanerQRInventario({
         }
       }
 
+      if (scannedComanda?.comanda && !scannedLocation && !scannedProduct) {
+        onScanSuccess(data, 'ver_detalles');
+        setResultado(null);
+        setError(null);
+        return;
+      }
+
       setResultado(data);
     } catch (e) {
       const fallbackData = { text: decodedText };
+      const scannedLocation = normalizeScannedLocationQR(fallbackData, knownLocationCodes);
+      const scannedProduct = normalizeScannedProductQR(fallbackData);
+      const scannedComanda = normalizeScannedComandaQR(fallbackData);
 
       if (defaultProductAction && !pendingLocationAction) {
-        const scannedLocation = normalizeScannedLocationQR(fallbackData, knownLocationCodes);
-        const scannedProduct = normalizeScannedProductQR(fallbackData);
-        const scannedComanda = normalizeScannedComandaQR(fallbackData);
-
         if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
           onScanSuccess(fallbackData, defaultProductAction);
           setResultado(null);
@@ -238,16 +238,19 @@ export function EscanerQRInventario({
       }
 
       if (pendingLocationAction) {
-        const scannedLocation = normalizeScannedLocationQR(fallbackData, knownLocationCodes);
-        const scannedProduct = normalizeScannedProductQR(fallbackData);
-        const scannedComanda = normalizeScannedComandaQR(fallbackData);
-
         if (scannedProduct && !scannedLocation && !scannedComanda?.comanda) {
           onScanSuccess(fallbackData, pendingLocationAction.action);
           setResultado(null);
           setError(null);
           return;
         }
+      }
+
+      if (scannedComanda?.comanda && !scannedLocation && !scannedProduct) {
+        onScanSuccess(fallbackData, 'ver_detalles');
+        setResultado(null);
+        setError(null);
+        return;
       }
 
       setResultado(fallbackData);
@@ -533,10 +536,10 @@ export function EscanerQRInventario({
 
             {resultado ? (
               // Success state - Menú de acciones para inventario
-              <div className="flex h-full flex-col">
-                <div className="text-center mb-4 shrink-0">
-                  <CheckCircle className="w-14 h-14 text-[#4CAF50] mx-auto mb-3" />
-                  <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="mb-3 shrink-0 text-center">
+                  <CheckCircle className="mx-auto mb-2 h-10 w-10 text-[#4CAF50]" />
+                  <p className="mb-1 text-lg font-bold text-[#4CAF50]">Code QR scanné avec succès!</p>
                   <p className="text-gray-600 text-sm">
                     {showingComandaActions
                       ? 'Choisissez l\'action à effectuer pour cette commande.'
@@ -549,36 +552,36 @@ export function EscanerQRInventario({
                 </div>
                 
                 {/* Información escaneada */}
-                <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.15fr)]">
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1 lg:grid-cols-[minmax(220px,0.78fr)_minmax(0,1.22fr)]">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm shadow-sm">
                   {showingComandaActions ? (
                     <>
                       {detectedComanda?.comanda && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">N° Commande: </span>
                           <span className="text-[#1E73BE] font-bold text-lg">{detectedComanda.comanda}</span>
                         </div>
                       )}
                       {detectedComanda?.organismo && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Organisme: </span>
                           <span className="text-[#333]">{detectedComanda.organismo}</span>
                         </div>
                       )}
                       {detectedComanda?.fecha && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Date: </span>
                           <span className="text-[#333]">{detectedComanda.fecha}</span>
                         </div>
                       )}
                       {detectedComanda?.items !== undefined && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Articles: </span>
                           <span className="text-[#4CAF50] font-bold">{detectedComanda.items}</span>
                         </div>
                       )}
                       {resultado.text && !detectedComanda?.comanda && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Données: </span>
                           <span className="text-[#333] text-sm break-all">{resultado.text}</span>
                         </div>
@@ -587,25 +590,25 @@ export function EscanerQRInventario({
                   ) : (
                     <>
                       {resultado.producto && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Produit: </span>
                           <span className="text-[#1E73BE] font-bold text-lg">{resultado.producto}</span>
                         </div>
                       )}
                       {resultado.categoria && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Catégorie: </span>
                           <span className="text-[#333]">{resultado.categoria}</span>
                         </div>
                       )}
                       {resultado.codigo && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Code: </span>
                           <span className="text-[#333] font-mono">{resultado.codigo}</span>
                         </div>
                       )}
                       {resultado.stock !== undefined && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Stock actuel: </span>
                           <span className={`font-bold ${resultado.stock > 0 ? 'text-[#4CAF50]' : 'text-[#DC3545]'}`}>
                             {resultado.stock} {resultado.unidad || 'unités'}
@@ -613,13 +616,13 @@ export function EscanerQRInventario({
                         </div>
                       )}
                       {resultado.ubicacion && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Emplacement: </span>
                           <span className="text-[#333]">{resultado.ubicacion}</span>
                         </div>
                       )}
                       {resultado.text && !resultado.producto && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Données: </span>
                           <span className="text-[#333] text-sm break-all">{resultado.text}</span>
                         </div>
@@ -630,75 +633,75 @@ export function EscanerQRInventario({
 
                 {/* Menú de acciones para inventario */}
                 <div className="min-h-0">
-                  <h3 className="font-bold text-[#333] text-center mb-4" style={{ fontFamily: 'Montserrat' }}>
+                  <h3 className="mb-3 text-center text-lg font-bold text-[#333]" style={{ fontFamily: 'Montserrat' }}>
                     {showingComandaActions ? 'Actions disponibles pour cette commande' : 'Actions disponibles'}
                   </h3>
 
-                  <div className={`grid gap-3 ${showingPendingLocationConfirmation ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
+                  <div className={`grid gap-2 ${showingPendingLocationConfirmation ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
 
                   {showingComandaActions ? (
                     <>
                       <button
                         onClick={() => handleAction('ver_detalles')}
-                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#1E73BE] p-3 text-left transition-all hover:bg-[#1E73BE] hover:shadow-lg"
                       >
-                        <Eye className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                        <Eye className="h-5 w-5 text-[#1E73BE] group-hover:text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Voir les détails</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Consulter toutes les informations de la commande
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Voir les détails</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                            Ouvrir la commande.
                           </p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleAction('marcar_entregado')}
-                        className="w-full group border-2 border-[#4CAF50] hover:bg-[#4CAF50] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#4CAF50] p-3 text-left transition-all hover:bg-[#4CAF50] hover:shadow-lg"
                       >
-                        <Package className="w-6 h-6 text-[#4CAF50] group-hover:text-white transition-colors" />
+                        <Package className="h-5 w-5 text-[#4CAF50] group-hover:text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Marquer comme livré</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Confirmer la livraison de cette commande
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Marquer comme livré</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                            Confirmer la livraison.
                           </p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleAction('gestionar_transporte')}
-                        className="w-full group border-2 border-[#FFC107] hover:bg-[#FFC107] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#FFC107] p-3 text-left transition-all hover:bg-[#FFC107] hover:shadow-lg"
                       >
-                        <Truck className="w-6 h-6 text-[#FFC107] group-hover:text-white transition-colors" />
+                        <Truck className="h-5 w-5 text-[#FFC107] group-hover:text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Gérer le transport</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Assigner ou modifier les informations de transport
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Gérer le transport</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                            Modifier le transport.
                           </p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleAction('modificar')}
-                        className="w-full group border-2 border-[#666] hover:bg-[#666] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#666] p-3 text-left transition-all hover:bg-[#666] hover:shadow-lg"
                       >
-                        <Edit className="w-6 h-6 text-[#666] group-hover:text-white transition-colors" />
+                        <Edit className="h-5 w-5 text-[#666] group-hover:text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier la commande</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Éditer les détails ou articles de la commande
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Modifier la commande</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                            Éditer la commande.
                           </p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleAction('cancelar')}
-                        className="w-full group border-2 border-[#DC3545] hover:bg-[#DC3545] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#DC3545] p-3 text-left transition-all hover:bg-[#DC3545] hover:shadow-lg"
                       >
-                        <XCircle className="w-6 h-6 text-[#DC3545] group-hover:text-white transition-colors" />
+                        <XCircle className="h-5 w-5 text-[#DC3545] group-hover:text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Annuler la commande</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Annuler ou supprimer cette commande
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Annuler la commande</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                            Annuler la commande.
                           </p>
                         </div>
                       </button>
@@ -707,39 +710,39 @@ export function EscanerQRInventario({
                     <>
                       <button
                         onClick={() => handleAction('agregar_o_modificar_ubicacion_producto')}
-                        className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#4CAF50] bg-[#4CAF50] p-3 text-left shadow-lg transition-all hover:bg-[#45A049] hover:shadow-xl"
                       >
-                        <MapPin className="w-7 h-7 text-white transition-colors" />
+                        <MapPin className="h-5 w-5 text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-white transition-colors text-lg">Ajouter ou modifier l'emplacement d'un produit</h4>
-                          <p className="text-sm text-white/90 transition-colors">
-                            Scanner ensuite le produit à ajouter ou à déplacer vers {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
+                          <h4 className="text-[15px] font-bold leading-5 text-white transition-colors">Ajouter ou modifier l'emplacement</h4>
+                          <p className="mt-1 text-xs leading-4 text-white/90 transition-colors">
+                            Scanner le produit vers {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}.
                           </p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleAction('delocalizar_productos')}
-                        className="w-full group border-2 border-[#DC3545] hover:bg-[#DC3545] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#DC3545] p-3 text-left transition-all hover:bg-[#DC3545] hover:shadow-lg"
                       >
-                        <XCircle className="w-6 h-6 text-[#DC3545] group-hover:text-white transition-colors" />
+                        <XCircle className="h-5 w-5 text-[#DC3545] group-hover:text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Délocaliser un produit</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Scanner ensuite le produit à retirer de {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Délocaliser un produit</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                            Retirer depuis {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}.
                           </p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleAction('modificar_productos_ubicacion')}
-                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#1E73BE] p-3 text-left transition-all hover:bg-[#1E73BE] hover:shadow-lg"
                       >
-                        <Edit className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                        <Edit className="h-5 w-5 text-[#1E73BE] group-hover:text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier les produits de cet emplacement</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Filtrer Inventaire pour modifier tous les produits situés à {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Modifier les produits de cet emplacement</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                            Filtrer sur {detectedLocation?.ubicacion || resultado?.text || resultado?.codigo}.
                           </p>
                         </div>
                       </button>
@@ -748,30 +751,30 @@ export function EscanerQRInventario({
                     <>
                       <button
                         onClick={() => handleAction(pendingLocationAction?.action || 'localizar_productos')}
-                        className="w-full group border-2 border-[#1E73BE] bg-[#1E73BE] hover:bg-[#1764a6] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#1E73BE] bg-[#1E73BE] p-3 text-left shadow-lg transition-all hover:bg-[#1764a6] hover:shadow-xl"
                       >
-                        <MapPin className="w-7 h-7 text-white transition-colors" />
+                        <MapPin className="h-5 w-5 text-white transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-white transition-colors text-lg">
+                          <h4 className="text-[15px] font-bold leading-5 text-white transition-colors">
                             {pendingLocationAction?.action === 'delocalizar_productos'
                               ? `Délocaliser depuis ${pendingLocationAction?.ubicacion}`
                               : `Ajouter ou modifier vers ${pendingLocationAction?.ubicacion}`}
                           </h4>
-                          <p className="text-sm text-white/90 transition-colors">
-                            Appliquer cette action au produit scanné
+                          <p className="mt-1 text-xs leading-4 text-white/90 transition-colors">
+                            Appliquer au produit scanné.
                           </p>
                         </div>
                       </button>
 
                       <button
                         onClick={() => handleAction('annuler_accion_ubicacion')}
-                        className="w-full group border-2 border-gray-300 hover:bg-gray-100 rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                        className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-gray-300 p-3 text-left transition-all hover:bg-gray-100 hover:shadow-lg"
                       >
-                        <X className="w-6 h-6 text-gray-500 transition-colors" />
+                        <X className="h-5 w-5 text-gray-500 transition-colors" />
                         <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] transition-colors">Annuler l'action d'emplacement</h4>
-                          <p className="text-sm text-gray-600 transition-colors">
-                            Revenir au scan normal des produits
+                          <h4 className="text-[15px] font-bold leading-5 text-[#333] transition-colors">Annuler l'action d'emplacement</h4>
+                          <p className="mt-1 text-xs leading-4 text-gray-600 transition-colors">
+                            Revenir au scan normal.
                           </p>
                         </div>
                       </button>
@@ -782,13 +785,13 @@ export function EscanerQRInventario({
                   {/* Agregar al carrito - ACCIÓN PRINCIPAL */}
                   <button
                     onClick={() => handleAction('agregar_carrito')}
-                    className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#4CAF50] bg-[#4CAF50] p-3 text-left shadow-lg transition-all hover:bg-[#45A049] hover:shadow-xl"
                   >
-                    <ShoppingCart className="w-7 h-7 text-white transition-colors" />
+                    <ShoppingCart className="h-5 w-5 text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-white transition-colors text-lg">Ajouter au panier</h4>
-                      <p className="text-sm text-white/90 transition-colors">
-                        Choisir la quantité à ajouter au panier pour distribution
+                      <h4 className="text-[15px] font-bold leading-5 text-white transition-colors">Ajouter au panier</h4>
+                      <p className="mt-1 text-xs leading-4 text-white/90 transition-colors">
+                        Choisir la quantité.
                       </p>
                     </div>
                   </button>
@@ -796,13 +799,13 @@ export function EscanerQRInventario({
                   {/* Ver ubicación */}
                   <button
                     onClick={() => handleAction('ver_ubicacion')}
-                    className="w-full group border-2 border-[#9C27B0] hover:bg-[#9C27B0] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#9C27B0] p-3 text-left transition-all hover:bg-[#9C27B0] hover:shadow-lg"
                   >
-                    <MapPin className="w-6 h-6 text-[#9C27B0] group-hover:text-white transition-colors" />
+                    <MapPin className="h-5 w-5 text-[#9C27B0] group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier ou ajouter l'emplacement</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Ouvrir la gestion d'emplacement du produit scanné
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Modifier ou ajouter l'emplacement</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Gérer l'emplacement.
                       </p>
                     </div>
                   </button>
@@ -810,13 +813,13 @@ export function EscanerQRInventario({
                   {/* Modificar producto */}
                   <button
                     onClick={() => handleAction('modificar_producto')}
-                    className="w-full group border-2 border-gray-400 hover:bg-gray-400 rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-gray-400 p-3 text-left transition-all hover:bg-gray-400 hover:shadow-lg"
                   >
-                    <Edit className="w-6 h-6 text-gray-500 group-hover:text-white transition-colors" />
+                    <Edit className="h-5 w-5 text-gray-500 group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier le produit</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Ouvrir le produit dans Inventaire pour modification
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Modifier le produit</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Modifier le produit.
                       </p>
                     </div>
                   </button>
@@ -824,13 +827,13 @@ export function EscanerQRInventario({
                   {/* Imprimir etiqueta */}
                   <button
                     onClick={() => handleAction('imprimir_etiqueta')}
-                    className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#1E73BE] p-3 text-left transition-all hover:bg-[#1E73BE] hover:shadow-lg"
                   >
-                    <Printer className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                    <Printer className="h-5 w-5 text-[#1E73BE] group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Imprimer l'étiquette</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Générer et imprimer l'étiquette standard du produit
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Imprimer l'étiquette</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Imprimer l'étiquette.
                       </p>
                     </div>
                   </button>
@@ -841,17 +844,17 @@ export function EscanerQRInventario({
                 </div>
 
                 {/* Botones secundarios */}
-                <div className="mt-4 flex justify-center gap-3 pt-4 border-t border-gray-200 shrink-0">
+                <div className="mt-3 flex shrink-0 flex-wrap justify-center gap-2 pt-3 border-t border-gray-200">
                   <button
                     onClick={escanearNuevamente}
-                    className="px-6 py-2 border-2 border-[#1E73BE] text-[#1E73BE] rounded-lg hover:bg-[#1E73BE] hover:text-white transition-colors font-medium flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-lg border-2 border-[#1E73BE] px-4 py-2 text-sm font-medium text-[#1E73BE] transition-colors hover:bg-[#1E73BE] hover:text-white"
                   >
                     <QrCode className="w-4 h-4" />
                     {showingLocationActions ? 'Scanner un autre emplacement' : 'Scanner un autre produit'}
                   </button>
                   <button
                     onClick={handleCerrar}
-                    className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="rounded-lg border-2 border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                   >
                     Fermer
                   </button>

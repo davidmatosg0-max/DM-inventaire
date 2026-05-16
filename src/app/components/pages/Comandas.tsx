@@ -44,9 +44,7 @@ import { normalizeScannedComandaQR } from '../../utils/comandaQr';
 import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 import {
   clearPendingQrNavigation,
-  navigateToQrPage,
   readPendingQrNavigation,
-  savePendingQrNavigation,
 } from '../../utils/pendingQrNavigation';
 import { formatNumberSimple } from '../../utils/formatUtils';
 import { sortByTemperature } from '../../utils/temperatureSort';
@@ -811,14 +809,7 @@ export function Comandas() {
 
     if (ubicacion) {
       setEscanerQROpen(false);
-      savePendingQrNavigation({
-        targetPage: 'inventario',
-        qrType: 'ubicacion',
-        rawData,
-        action,
-      });
-      toast.success(`Emplacement ${ubicacion} détecté, redirection vers Inventaire`);
-      navigateToQrPage('inventario');
+      toast.info(`Emplacement ${ubicacion} détecté. Vous restez dans le module Commandes.`);
       return;
     }
 
@@ -838,14 +829,7 @@ export function Comandas() {
 
     if (producto) {
       setEscanerQROpen(false);
-      savePendingQrNavigation({
-        targetPage: 'inventario',
-        qrType: 'producto',
-        rawData,
-        action,
-      });
-      toast.success('Produit détecté, redirection vers Inventaire');
-      navigateToQrPage('inventario');
+      toast.info('Produit détecté. Aucune redirection automatique vers Inventaire depuis Commandes.');
       return;
     }
 

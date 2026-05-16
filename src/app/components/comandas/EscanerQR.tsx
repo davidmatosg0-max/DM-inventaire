@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, Package, Eye, Truck, XCircle, Edit, ShoppingCart, MapPin, Printer } from 'lucide-react';
+import { QrCode, X, CheckCircle, AlertCircle, Camera, Upload, HelpCircle, Shield, Package, Eye, Truck, XCircle, Edit } from 'lucide-react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
 import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 
@@ -31,6 +31,7 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
   const detectedProduct = normalizeScannedProductQR(resultado);
   const showingLocationActions = explicitTipo === 'ubicacion' || Boolean(detectedLocation?.ubicacion);
   const showingProductActions = explicitTipo === 'producto' || Boolean(resultado?.codigo || resultado?.producto || resultado?.nombre || detectedProduct);
+  const showingInventoryQr = showingLocationActions || showingProductActions;
 
   useEffect(() => {
     return () => {
@@ -149,12 +150,11 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
       await scanner.start(
         selectedCamera.id,
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          videoConstraints: {
-            facingMode: { ideal: 'environment' } // Forzar cámara trasera
-          }
+          fps: 12,
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+            const edge = Math.max(180, Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72));
+            return { width: edge, height: edge };
+          },
         },
         (decodedText) => {
           handleScanSuccess(decodedText);
@@ -457,32 +457,30 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
 
             {resultado ? (
               // Success state - Menú de acciones
-              <div className="flex h-full flex-col">
-                <div className="text-center mb-4 shrink-0">
-                  <CheckCircle className="w-14 h-14 text-[#4CAF50] mx-auto mb-3" />
-                  <p className="text-[#4CAF50] font-bold text-xl mb-2">Code QR scanné avec succès!</p>
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="mb-3 shrink-0 text-center">
+                  <CheckCircle className="mx-auto mb-2 h-10 w-10 text-[#4CAF50]" />
+                  <p className="mb-1 text-lg font-bold text-[#4CAF50]">Code QR scanné avec succès!</p>
                   <p className="text-gray-600 text-sm">
-                    {showingLocationActions
-                      ? 'Choisissez l\'action à effectuer pour cet emplacement.'
-                      : showingProductActions
-                        ? 'Choisissez l\'action à effectuer pour ce produit.'
-                        : 'Choisissez l\'action à effectuer'}
+                    {showingInventoryQr
+                      ? 'Ce QR a été lu correctement, mais ses actions appartiennent au module Inventaire.'
+                      : 'Choisissez l\'action à effectuer pour cette commande.'}
                   </p>
                 </div>
                 
                 {/* Información escaneada */}
-                <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.15fr)]">
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1 lg:grid-cols-[minmax(220px,0.78fr)_minmax(0,1.22fr)]">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm shadow-sm">
                   {showingLocationActions ? (
                     <>
                       {(detectedLocation?.codigo || resultado?.codigo) && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Code: </span>
                           <span className="text-[#333] font-mono">{detectedLocation?.codigo || resultado?.codigo}</span>
                         </div>
                       )}
                       {(detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text) && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Emplacement: </span>
                           <span className="text-[#1E73BE] font-black text-lg">{detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text}</span>
                         </div>
@@ -491,25 +489,25 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   ) : showingProductActions ? (
                     <>
                       {(detectedProduct?.producto || detectedProduct?.nombre) && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Produit: </span>
                           <span className="text-[#1E73BE] font-black text-lg">{detectedProduct?.producto || detectedProduct?.nombre}</span>
                         </div>
                       )}
                       {detectedProduct?.codigo && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Code: </span>
                           <span className="text-[#333] font-mono">{detectedProduct.codigo}</span>
                         </div>
                       )}
                       {detectedProduct?.ubicacion && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Emplacement: </span>
                           <span className="text-[#333]">{detectedProduct.ubicacion}</span>
                         </div>
                       )}
                       {resultado.text && !detectedProduct?.producto && !detectedProduct?.nombre && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Données: </span>
                           <span className="text-[#333] text-sm break-all">{resultado.text}</span>
                         </div>
@@ -518,31 +516,31 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   ) : (
                     <>
                       {resultado.comanda && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">N° Commande: </span>
                           <span className="text-[#1E73BE] font-black text-lg">{resultado.comanda}</span>
                         </div>
                       )}
                       {resultado.organismo && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Organisme: </span>
                           <span className="text-[#333]">{resultado.organismo}</span>
                         </div>
                       )}
                       {resultado.fecha && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Date: </span>
                           <span className="text-[#333]">{resultado.fecha}</span>
                         </div>
                       )}
                       {resultado.items !== undefined && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Articles: </span>
                           <span className="text-[#4CAF50] font-bold">{resultado.items}</span>
                         </div>
                       )}
                       {resultado.text && !resultado.comanda && (
-                        <div className="mb-2">
+                        <div className="mb-1.5">
                           <span className="font-bold text-[#666]">Données: </span>
                           <span className="text-[#333] text-sm break-all">{resultado.text}</span>
                         </div>
@@ -553,124 +551,44 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
 
                 {/* Menú de acciones */}
                 <div className="min-h-0">
-                  <h3 className="font-bold text-[#333] text-center mb-4" style={{ fontFamily: 'Montserrat' }}>
-                    {showingLocationActions
-                      ? 'Actions disponibles pour cet emplacement'
-                      : showingProductActions
-                        ? 'Actions disponibles pour ce produit'
-                        : 'Que souhaitez-vous faire?'}
+                  <h3 className="mb-3 text-center text-lg font-bold text-[#333]" style={{ fontFamily: 'Montserrat' }}>
+                    {showingInventoryQr ? 'QR d\'un autre module' : 'Que souhaitez-vous faire?'}
                   </h3>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
 
-                  {showingLocationActions ? (
-                    <>
-                      <button
-                        onClick={() => handleAction('agregar_o_modificar_ubicacion_producto')}
-                        className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
-                      >
-                        <MapPin className="w-7 h-7 text-white transition-colors" />
-                        <div className="flex-1 text-left">
-                          <h4 className="font-bold text-white transition-colors text-lg">Ajouter ou modifier l'emplacement d'un produit</h4>
-                          <p className="text-sm text-white/90 transition-colors">
-                            Continuer dans Inventaire pour scanner le produit vers {detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text || resultado?.codigo}
+                  {showingInventoryQr ? (
+                    <div className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left shadow-sm">
+                      <div className="flex items-start gap-2.5">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                        <div className="space-y-1.5">
+                          <h4 className="text-[15px] font-bold leading-5 text-amber-900">
+                            {showingLocationActions ? 'QR d\'emplacement détecté' : 'QR de produit détecté'}
+                          </h4>
+                          <p className="text-xs leading-4 text-amber-900/90">
+                            Ce QR est informatif dans Commandes.
+                          </p>
+                          <p className="text-xs leading-4 text-amber-900/80">
+                            {showingLocationActions
+                              ? 'Pour gérer l\'emplacement, ouvrez Inventaire.'
+                              : 'Pour gérer le produit, ouvrez Inventaire.'}
                           </p>
                         </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleAction('delocalizar_productos')}
-                        className="w-full group border-2 border-[#DC3545] hover:bg-[#DC3545] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
-                      >
-                        <XCircle className="w-6 h-6 text-[#DC3545] group-hover:text-white transition-colors" />
-                        <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Délocaliser un produit</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Continuer dans Inventaire pour retirer un produit de cet emplacement
-                          </p>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleAction('modificar_productos_ubicacion')}
-                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
-                      >
-                        <Edit className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
-                        <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier les produits de cet emplacement</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Ouvrir Inventaire filtré sur {detectedLocation?.ubicacion || resultado?.ubicacion || resultado?.text || resultado?.codigo}
-                          </p>
-                        </div>
-                      </button>
-                    </>
-                  ) : showingProductActions ? (
-                    <>
-                      <button
-                        onClick={() => handleAction('agregar_carrito')}
-                        className="w-full group border-2 border-[#4CAF50] bg-[#4CAF50] hover:bg-[#45A049] rounded-lg p-4 transition-all shadow-lg hover:shadow-xl flex items-center gap-3"
-                      >
-                        <ShoppingCart className="w-7 h-7 text-white transition-colors" />
-                        <div className="flex-1 text-left">
-                          <h4 className="font-bold text-white transition-colors text-lg">Ajouter au panier</h4>
-                          <p className="text-sm text-white/90 transition-colors">
-                            Ajouter ce produit au panier pour distribution
-                          </p>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleAction('ver_ubicacion')}
-                        className="w-full group border-2 border-[#9C27B0] hover:bg-[#9C27B0] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
-                      >
-                        <MapPin className="w-6 h-6 text-[#9C27B0] group-hover:text-white transition-colors" />
-                        <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier ou ajouter l'emplacement</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Ouvrir la gestion d'emplacement du produit scanné
-                          </p>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleAction('modificar_producto')}
-                        className="w-full group border-2 border-gray-400 hover:bg-gray-400 rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
-                      >
-                        <Edit className="w-6 h-6 text-gray-500 group-hover:text-white transition-colors" />
-                        <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier le produit</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Ouvrir le produit dans Inventaire pour modification
-                          </p>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleAction('imprimir_etiqueta')}
-                        className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
-                      >
-                        <Printer className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
-                        <div className="flex-1 text-left">
-                          <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Imprimer l'étiquette</h4>
-                          <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                            Générer et imprimer l'étiquette standard du produit
-                          </p>
-                        </div>
-                      </button>
-                    </>
+                      </div>
+                    </div>
                   ) : (
                     <>
 
                   {/* Ver detalles */}
                   <button
                     onClick={() => handleAction('ver_detalles')}
-                    className="w-full group border-2 border-[#1E73BE] hover:bg-[#1E73BE] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#1E73BE] p-3 text-left transition-all hover:bg-[#1E73BE] hover:shadow-lg"
                   >
-                    <Eye className="w-6 h-6 text-[#1E73BE] group-hover:text-white transition-colors" />
+                    <Eye className="h-5 w-5 text-[#1E73BE] group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Voir les détails</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Consulter toutes les informations de la commande
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Voir les détails</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Ouvrir la commande.
                       </p>
                     </div>
                   </button>
@@ -678,13 +596,13 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   {/* Marcar como entregado */}
                   <button
                     onClick={() => handleAction('marcar_entregado')}
-                    className="w-full group border-2 border-[#4CAF50] hover:bg-[#4CAF50] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#4CAF50] p-3 text-left transition-all hover:bg-[#4CAF50] hover:shadow-lg"
                   >
-                    <Package className="w-6 h-6 text-[#4CAF50] group-hover:text-white transition-colors" />
+                    <Package className="h-5 w-5 text-[#4CAF50] group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Marquer comme livré</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Confirmer la livraison de cette commande
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Marquer comme livré</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Confirmer la livraison.
                       </p>
                     </div>
                   </button>
@@ -692,13 +610,13 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   {/* Gestionar transporte */}
                   <button
                     onClick={() => handleAction('gestionar_transporte')}
-                    className="w-full group border-2 border-[#FFC107] hover:bg-[#FFC107] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#FFC107] p-3 text-left transition-all hover:bg-[#FFC107] hover:shadow-lg"
                   >
-                    <Truck className="w-6 h-6 text-[#FFC107] group-hover:text-white transition-colors" />
+                    <Truck className="h-5 w-5 text-[#FFC107] group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Gérer le transport</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Assigner ou modifier les informations de transport
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Gérer le transport</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Modifier le transport.
                       </p>
                     </div>
                   </button>
@@ -706,13 +624,13 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   {/* Modificar */}
                   <button
                     onClick={() => handleAction('modificar')}
-                    className="w-full group border-2 border-[#666] hover:bg-[#666] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#666] p-3 text-left transition-all hover:bg-[#666] hover:shadow-lg"
                   >
-                    <Edit className="w-6 h-6 text-[#666] group-hover:text-white transition-colors" />
+                    <Edit className="h-5 w-5 text-[#666] group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Modifier la commande</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Éditer les détails ou articles de la commande
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Modifier la commande</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Éditer la commande.
                       </p>
                     </div>
                   </button>
@@ -720,13 +638,13 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                   {/* Cancelar */}
                   <button
                     onClick={() => handleAction('cancelar')}
-                    className="w-full group border-2 border-[#DC3545] hover:bg-[#DC3545] rounded-lg p-4 transition-all hover:shadow-lg flex items-center gap-3"
+                    className="w-full group flex items-start gap-2.5 rounded-xl border-2 border-[#DC3545] p-3 text-left transition-all hover:bg-[#DC3545] hover:shadow-lg"
                   >
-                    <XCircle className="w-6 h-6 text-[#DC3545] group-hover:text-white transition-colors" />
+                    <XCircle className="h-5 w-5 text-[#DC3545] group-hover:text-white transition-colors" />
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-[#333] group-hover:text-white transition-colors">Annuler la commande</h4>
-                      <p className="text-sm text-gray-600 group-hover:text-white/80 transition-colors">
-                        Annuler ou supprimer cette commande
+                      <h4 className="text-[15px] font-bold leading-5 text-[#333] group-hover:text-white transition-colors">Annuler la commande</h4>
+                      <p className="mt-1 text-xs leading-4 text-gray-600 group-hover:text-white/80 transition-colors">
+                        Annuler la commande.
                       </p>
                     </div>
                   </button>
@@ -737,17 +655,17 @@ export function EscanerQR({ onScanSuccess, onClose, autoStartCamera = false }: E
                 </div>
 
                 {/* Botones secundarios */}
-                <div className="mt-4 flex justify-center gap-3 pt-4 border-t border-gray-200 shrink-0">
+                <div className="mt-3 flex shrink-0 flex-wrap justify-center gap-2 pt-3 border-t border-gray-200">
                   <button
                     onClick={escanearNuevamente}
-                    className="px-6 py-2 border-2 border-[#1E73BE] text-[#1E73BE] rounded-lg hover:bg-[#1E73BE] hover:text-white transition-colors font-medium flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-lg border-2 border-[#1E73BE] px-4 py-2 text-sm font-medium text-[#1E73BE] transition-colors hover:bg-[#1E73BE] hover:text-white"
                   >
                     <QrCode className="w-4 h-4" />
                     Scanner un autre QR
                   </button>
                   <button
                     onClick={handleCerrar}
-                    className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="rounded-lg border-2 border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                   >
                     Fermer
                   </button>
