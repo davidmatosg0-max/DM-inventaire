@@ -17,6 +17,7 @@
     "test:entrepot:inventario-guards": "node tmp/inventario-guards-regression.cjs",
     "test:entrepot:fusion": "node tmp/product-storage-canonical-merge-regression.cjs",
     "test:entrepot:edicion": "node tmp/entrepot-edicion-anulacion-regression.cjs",
+    "test:entrepot:distribution": "node tmp/inventario-distribution-functional.cjs",
     "test:entrepot:icons": "node tmp/entrepot-ui-icons-regression.cjs",
     "test:entrepot:reservas": "node tmp/inventory-reservations-atomic-regression.cjs",
     "test:entrepot:valor": "node tmp/distribution-value-regression.cjs",

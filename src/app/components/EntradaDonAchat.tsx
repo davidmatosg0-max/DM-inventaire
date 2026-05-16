@@ -1358,8 +1358,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
         duration: 4000
       });
       
-      // Disparar evento de actualización
+      // Disparar eventos de actualización para inventario, historial y vistas derivadas.
       window.dispatchEvent(new Event('productos-actualizados'));
+      window.dispatchEvent(new Event('entradaGuardada'));
 
       // Resetear formulario y cerrar ventana
       setFormData(FORM_DATA_INICIAL);

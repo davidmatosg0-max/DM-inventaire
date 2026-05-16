@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowUpCircle,
@@ -56,16 +56,36 @@ export function MovimientosInventario({ productos = [] }: MovimientosInventarioP
   const [busqueda, setBusqueda] = useState('');
   const locale = i18n.resolvedLanguage || i18n.language || 'fr';
 
-  // Cargar movimientos desde localStorage
-  useEffect(() => {
+  const cargarMovimientos = useCallback(() => {
     const movimientosGuardados = localStorage.getItem('movimientos_inventario');
     if (movimientosGuardados) {
       setMovimientos(JSON.parse(movimientosGuardados));
-    } else {
-      // Generar movimientos de ejemplo
-      generarMovimientosEjemplo();
+      return;
     }
-  }, []);
+
+    generarMovimientosEjemplo();
+  }, [t]);
+
+  // Cargar movimientos desde localStorage
+  useEffect(() => {
+    cargarMovimientos();
+
+    const handleRefresh = () => {
+      cargarMovimientos();
+    };
+
+    window.addEventListener('entradaGuardada', handleRefresh);
+    window.addEventListener('productos-actualizados', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+
+    return () => {
+      window.removeEventListener('entradaGuardada', handleRefresh);
+      window.removeEventListener('productos-actualizados', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+    };
+  }, [cargarMovimientos]);
 
   const generarMovimientosEjemplo = () => {
     const tiposMovimiento: TipoMovimiento[] = ['entrada', 'salida', 'ajuste', 'transferencia', 'merma', 'donacion'];

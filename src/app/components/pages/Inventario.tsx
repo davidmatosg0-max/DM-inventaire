@@ -580,6 +580,8 @@ export function Inventario() {
       registradoPor: usuarioActual,
     });
 
+    window.dispatchEvent(new Event('productos-actualizados'));
+    window.dispatchEvent(new Event('entradaGuardada'));
     setRefreshKey(prev => prev + 1);
     setAjoutStockExistantOpen(false);
     setFormAjoutStockExistant(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
@@ -1023,24 +1025,26 @@ export function Inventario() {
     const plantillas = obtenerPlantillasConversion();
     setPlantillasConversion(plantillas);
     
-    // 🔄 Escuchar evento de restauración de backup para recargar datos
-    const handleBackupRestored = () => {
-      console.log('🔄 Backup restaurado - Recargando inventario...');
+    const handleInventoryRefresh = (reason: string) => {
+      console.log(`🔄 ${reason} - Recargando inventario...`);
       setRefreshKey(prev => prev + 1);
     };
 
-    // 🔄 Escuchar evento de actualización de categorías
-    const handleCategoriasActualizadas = () => {
-      console.log('🔄 Categorías actualizadas - Recargando inventario...');
-      setRefreshKey(prev => prev + 1);
-    };
+    const handleBackupRestored = () => handleInventoryRefresh('Backup restaurado');
+    const handleCategoriasActualizadas = () => handleInventoryRefresh('Categorías actualizadas');
+    const handleProductosActualizados = () => handleInventoryRefresh('Productos actualizados');
+    const handleEntradaGuardada = () => handleInventoryRefresh('Entrada guardada');
 
     window.addEventListener('backupRestored', handleBackupRestored);
     window.addEventListener('categorias-actualizadas', handleCategoriasActualizadas);
+    window.addEventListener('productos-actualizados', handleProductosActualizados);
+    window.addEventListener('entradaGuardada', handleEntradaGuardada);
 
     return () => {
       window.removeEventListener('backupRestored', handleBackupRestored);
       window.removeEventListener('categorias-actualizadas', handleCategoriasActualizadas);
+      window.removeEventListener('productos-actualizados', handleProductosActualizados);
+      window.removeEventListener('entradaGuardada', handleEntradaGuardada);
     };
   }, []);
 
