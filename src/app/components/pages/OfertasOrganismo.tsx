@@ -14,7 +14,9 @@ import { toast } from 'sonner';
 import { 
   obtenerOfertasParaOrganismo,
   actualizarEstadoOferta,
-  type Oferta 
+  type EstadoSolicitud,
+  type Oferta,
+  type SolicitudOferta
 } from '../../utils/ofertaStorage';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import {
@@ -47,6 +49,29 @@ export function OfertasOrganismo() {
     },
   });
   const organismoActual = React.useMemo(() => obtenerOrganismos().find(organismo => organismo.activo) || null, []);
+  const productosCatalogo = React.useMemo(() => obtenerProductos(), []);
+  const productosCatalogoPorId = React.useMemo(() => {
+    return new Map(
+      productosCatalogo.map(producto => {
+        const rawProducto = producto as unknown as Record<string, unknown>;
+        const imageField = ['photo', 'foto', 'imageUrl', 'imagenUrl', 'imagen', 'thumbnail'].find(field => {
+          const candidate = rawProducto[field];
+          return typeof candidate === 'string' && candidate.trim().length > 0;
+        });
+
+        return [
+          producto.id,
+          {
+            nombre: producto.nombre,
+            categoria: producto.categoria,
+            subcategoria: producto.subcategoria,
+            icono: producto.icono,
+            photoUrl: imageField ? String(rawProducto[imageField]) : undefined,
+          },
+        ];
+      })
+    );
+  }, [productosCatalogo]);
   const tipoAsistenciaOrganismo = typeof organismoActual?.tipoAsistencia === 'string'
     ? organismoActual.tipoAsistencia
     : undefined;
@@ -57,6 +82,8 @@ export function OfertasOrganismo() {
   const [ofertaSeleccionada, setOfertaSeleccionada] = useState<Oferta | null>(null);
   const [dialogDetalleOpen, setDialogDetalleOpen] = useState(false);
   const [dialogAceptarOpen, setDialogAceptarOpen] = useState(false);
+  const [solicitudReutilizada, setSolicitudReutilizada] = useState<SolicitudOferta | null>(null);
+  const [filtroHistorial, setFiltroHistorial] = useState<'todas' | EstadoSolicitud>('todas');
 
   // Cargar ofertas y notificaciones
   useEffect(() => {
@@ -152,9 +179,9 @@ export function OfertasOrganismo() {
     setDialogDetalleOpen(true);
   };
 
-  const aceptarOferta = (oferta: Oferta, cantidadParcial?: boolean) => {
-    // Abrir el diálogo de aceptación de oferta
+  const aceptarOferta = (oferta: Oferta, solicitudBase?: SolicitudOferta) => {
     setOfertaSeleccionada(oferta);
+    setSolicitudReutilizada(solicitudBase || null);
     setDialogAceptarOpen(true);
   };
 
@@ -490,8 +517,498 @@ export function OfertasOrganismo() {
           </DialogHeader>
           {ofertaSeleccionada && (
             <div className="space-y-6 py-4">
-              {/* Aquí iría el contenido detallado de la oferta */}
-              <p className="text-center text-gray-500">{t('offers.detailComponentInDevelopment')}</p>
+              {(() => {
+                const estadoOferta = calcularEstadoOferta(ofertaSeleccionada);
+                const fechaExpiracion = new Date(ofertaSeleccionada.fechaExpiracion);
+                const solicitudesOrganismo = (ofertaSeleccionada.solicitudes || [])
+                  .filter(solicitud => solicitud.organismoId === organismoActual?.id)
+                  .sort((left, right) => {
+                    const leftDate = new Date(left.fechaActualizacion || left.fechaSolicitud).getTime();
+                    const rightDate = new Date(right.fechaActualizacion || right.fechaSolicitud).getTime();
+                    return rightDate - leftDate;
+                  });
+                const solicitudesFiltradas = filtroHistorial === 'todas'
+                  ? solicitudesOrganismo
+                  : solicitudesOrganismo.filter(solicitud => solicitud.estado === filtroHistorial);
+                const categoriasAgrupadas = ofertaSeleccionada.productos.reduce<Array<{
+                  categoria: string;
+                  icono: string;
+                  cantidadProductos: number;
+                  disponibles: number;
+                  reservados: number;
+                  subcategorias: string[];
+                }>>((groups, producto) => {
+                  const existingGroup = groups.find(group => group.categoria === producto.categoria);
+                  const reservados = producto.cantidadOfrecida - producto.cantidadDisponible;
+
+                  if (existingGroup) {
+                    existingGroup.cantidadProductos += 1;
+                    existingGroup.disponibles += producto.cantidadDisponible;
+                    existingGroup.reservados += reservados;
+                    if (producto.subcategoria && !existingGroup.subcategorias.includes(producto.subcategoria)) {
+                      existingGroup.subcategorias.push(producto.subcategoria);
+                    }
+                    return groups;
+                  }
+
+                  groups.push({
+                    categoria: producto.categoria,
+                    icono: producto.icono || '📦',
+                    cantidadProductos: 1,
+                    disponibles: producto.cantidadDisponible,
+                    reservados,
+                    subcategorias: producto.subcategoria ? [producto.subcategoria] : [],
+                  });
+
+                  return groups;
+                }, []);
+                const estadoSolicitudUi: Record<string, { label: string; className: string; dotColor: string }> = {
+                  pendiente: { label: 'En attente', className: 'border-[#fcd34d] bg-[#fff7e8] text-[#b45309]', dotColor: '#f59e0b' },
+                  aceptada: { label: 'Acceptée', className: 'border-[#bbf7d0] bg-[#ecfdf3] text-[#15803d]', dotColor: '#22c55e' },
+                  entregada: { label: 'Livrée', className: 'border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8]', dotColor: '#2563eb' },
+                  rechazada: { label: 'Refusée', className: 'border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]', dotColor: '#ef4444' },
+                  anulada: { label: 'Annulée', className: 'border-[#d1d5db] bg-[#f3f4f6] text-[#4b5563]', dotColor: '#94a3b8' },
+                };
+                const filtrosHistorial: Array<{ value: 'todas' | EstadoSolicitud; label: string; count: number }> = [
+                  { value: 'todas', label: 'Toutes', count: solicitudesOrganismo.length },
+                  { value: 'pendiente', label: 'En attente', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'pendiente').length },
+                  { value: 'aceptada', label: 'Acceptées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'aceptada').length },
+                  { value: 'entregada', label: 'Livrées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'entregada').length },
+                  { value: 'rechazada', label: 'Refusées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'rechazada').length },
+                  { value: 'anulada', label: 'Annulées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'anulada').length },
+                ];
+
+                return (
+                  <>
+                    <div className="rounded-2xl border border-white/80 bg-gradient-to-br from-[#f8fbff] via-white to-[#eef6ff] p-5 shadow-[0_18px_40px_-32px_rgba(15,45,71,0.24)]">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Tag className="h-5 w-5 text-[#FFC107]" />
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64748b]">
+                              {ofertaSeleccionada.numeroOferta}
+                            </p>
+                          </div>
+                          <h3 className="text-xl font-bold text-[#0f172a]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            {ofertaSeleccionada.titulo}
+                          </h3>
+                          <p className="max-w-2xl text-sm text-[#475569]">
+                            {ofertaSeleccionada.descripcion || 'Aucune description supplémentaire pour cette offre.'}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                          <Badge className="border border-transparent px-3 py-1 text-xs font-semibold" style={{ backgroundColor: `${estadoOferta.color}22`, color: estadoOferta.color }}>
+                            {estadoOferta.label}
+                          </Badge>
+                          <Badge variant="outline" className="border-[#dbe4ee] bg-white px-3 py-1 text-xs text-[#475569]">
+                            Créée par {ofertaSeleccionada.creadoPor}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                        <div className="rounded-xl bg-white/80 p-3 shadow-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-[#64748b]">Produits</p>
+                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{ofertaSeleccionada.totalProductos}</p>
+                        </div>
+                        <div className="rounded-xl bg-white/80 p-3 shadow-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-[#64748b]">Poids</p>
+                          <p className="mt-1 text-lg font-bold text-[#0f172a]">{formatQuantity(ofertaSeleccionada.totalKilos)} kg</p>
+                        </div>
+                        <div className="rounded-xl bg-white/80 p-3 shadow-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-[#64748b]">Valeur</p>
+                          <p className="mt-1 text-lg font-bold text-[#0f172a]">CAD$ {formatMoney(ofertaSeleccionada.valorMonetarioTotal)}</p>
+                        </div>
+                        <div className="rounded-xl bg-white/80 p-3 shadow-sm">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-[#64748b]">Expire le</p>
+                          <p className="mt-1 text-sm font-bold text-[#0f172a]">
+                            {fechaExpiracion.toLocaleDateString('fr-CA', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(260px,0.7fr)]">
+                      <div className="rounded-2xl border border-white/80 bg-white p-4 shadow-[0_16px_36px_-30px_rgba(15,45,71,0.2)]">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <h4 className="text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            Produits inclus
+                          </h4>
+                          <span className="text-xs text-[#64748b]">{ofertaSeleccionada.productos.length} lignes</span>
+                        </div>
+
+                        <div className="space-y-3">
+                          {ofertaSeleccionada.productos.map((producto, index) => {
+                            const cantidadReservada = producto.cantidadOfrecida - producto.cantidadDisponible;
+                            const porcentajeDisponible = producto.cantidadOfrecida > 0
+                              ? Math.round((producto.cantidadDisponible / producto.cantidadOfrecida) * 100)
+                              : 0;
+                            const productoCatalogo = productosCatalogoPorId.get(producto.productoId);
+                            const miniaturaProducto = productoCatalogo?.photoUrl;
+
+                            return (
+                              <div key={`${ofertaSeleccionada.id}-detail-${producto.productoId}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white bg-white shadow-sm">
+                                        {miniaturaProducto ? (
+                                          <img
+                                            src={miniaturaProducto}
+                                            alt={producto.productoNombre}
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          <span className="text-2xl">{productoCatalogo?.icono || producto.icono || '📦'}</span>
+                                        )}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="truncate text-sm font-bold text-[#0f172a]">{producto.productoNombre}</p>
+                                        <p className="text-xs text-[#64748b]">
+                                          {producto.productoCodigo} • {producto.categoria}
+                                          {producto.subcategoria ? ` • ${producto.subcategoria}` : ''}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className="shrink-0 border-[#dbe4ee] bg-white text-[#475569]">
+                                    {producto.unidad}
+                                  </Badge>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                                  <div className="rounded-lg bg-white px-2 py-2">
+                                    <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Offert</p>
+                                    <p className="mt-0.5 text-sm font-bold text-[#0f172a]">{producto.cantidadOfrecida}</p>
+                                  </div>
+                                  <div className="rounded-lg bg-white px-2 py-2">
+                                    <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Disponible</p>
+                                    <p className="mt-0.5 text-sm font-bold text-[#2E7D32]">{producto.cantidadDisponible}</p>
+                                  </div>
+                                  <div className="rounded-lg bg-white px-2 py-2">
+                                    <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Réservé</p>
+                                    <p className="mt-0.5 text-sm font-bold text-[#B45309]">{cantidadReservada}</p>
+                                  </div>
+                                </div>
+
+                                <div className="mt-3">
+                                  <div className="mb-1 flex items-center justify-between text-xs text-[#64748b]">
+                                    <span>Disponibilité</span>
+                                    <span>{porcentajeDisponible}%</span>
+                                  </div>
+                                  <div className="h-2 w-full rounded-full bg-slate-200">
+                                    <div
+                                      className="h-2 rounded-full transition-all"
+                                      style={{
+                                        width: `${porcentajeDisponible}%`,
+                                        backgroundColor: porcentajeDisponible > 50 ? '#4CAF50' : porcentajeDisponible > 20 ? '#FFC107' : '#DC3545',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="rounded-2xl border border-white/80 bg-white p-4 shadow-[0_16px_36px_-30px_rgba(15,45,71,0.2)]">
+                          <h4 className="text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            Informations utiles
+                          </h4>
+                          <div className="mt-3 space-y-3 text-sm text-[#475569]">
+                            <div className="flex items-start gap-2">
+                              <Building2 className="mt-0.5 h-4 w-4 text-[#1E73BE]" />
+                              <div>
+                                <p className="font-semibold text-[#0f172a]">Organisme</p>
+                                <p>{organismoActual?.nombre || 'Organisme non configuré'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <Calendar className="mt-0.5 h-4 w-4 text-[#1E73BE]" />
+                              <div>
+                                <p className="font-semibold text-[#0f172a]">Date limite</p>
+                                <p>
+                                  {fechaExpiracion.toLocaleDateString('fr-CA', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="mt-0.5 h-4 w-4 text-[#1E73BE]" />
+                              <div>
+                                <p className="font-semibold text-[#0f172a]">Disponibilité</p>
+                                <p>
+                                  {ofertaSeleccionada.productos.some(producto => producto.cantidadDisponible > 0)
+                                    ? 'Des quantités sont encore disponibles pour demande.'
+                                    : 'Cette offre n’a plus de quantités disponibles.'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-white/80 bg-white p-4 shadow-[0_16px_36px_-30px_rgba(15,45,71,0.2)]">
+                          <h4 className="text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            Catégories représentées
+                          </h4>
+                          <div className="mt-3 space-y-2">
+                            {categoriasAgrupadas.map(categorie => (
+                              <div key={`${ofertaSeleccionada.id}-${categorie.categoria}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                <div className="flex items-start gap-2.5">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm">
+                                    {categorie.icono}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-bold text-[#0f172a]">{categorie.categoria}</p>
+                                    <p className="mt-0.5 text-xs text-[#64748b]">
+                                      {categorie.cantidadProductos} produits • {categorie.disponibles} disponibles • {categorie.reservados} réservés
+                                    </p>
+                                    {categorie.subcategorias.length > 0 && (
+                                      <div className="mt-2 flex flex-wrap gap-1">
+                                        {categorie.subcategorias.slice(0, 3).map(subcategorie => (
+                                          <Badge key={`${categorie.categoria}-${subcategorie}`} variant="outline" className="border-[#dbe4ee] bg-white text-[10px] text-[#475569]">
+                                            {subcategorie}
+                                          </Badge>
+                                        ))}
+                                        {categorie.subcategorias.length > 3 && (
+                                          <Badge variant="outline" className="border-[#dbe4ee] bg-white text-[10px] text-[#475569]">
+                                            +{categorie.subcategorias.length - 3}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {calcularEstadoOferta(ofertaSeleccionada).estado === 'activa' && (
+                          <Button
+                            className="w-full bg-[#4CAF50] hover:bg-[#45A049]"
+                            onClick={() => {
+                              setDialogDetalleOpen(false);
+                              aceptarOferta(ofertaSeleccionada);
+                            }}
+                          >
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            {t('offers.acceptOffer')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/80 bg-white p-4 shadow-[0_16px_36px_-30px_rgba(15,45,71,0.2)]">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <div>
+                          <h4 className="text-base font-bold text-[#0f172a]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            Historique de vos demandes
+                          </h4>
+                          <p className="mt-1 text-xs text-[#64748b]">
+                            {solicitudesFiltradas.length} résultat{solicitudesFiltradas.length > 1 ? 's' : ''} sur {solicitudesOrganismo.length}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-[#64748b]">
+                          <Filter className="h-4 w-4 text-[#1E73BE]" />
+                          Filtrer
+                        </div>
+                      </div>
+
+                      {solicitudesOrganismo.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-[#64748b]">
+                          Aucune demande n'a encore été enregistrée pour cette offre avec votre organisme.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            {filtrosHistorial.map(filtroItem => (
+                              <button
+                                key={`history-filter-${filtroItem.value}`}
+                                type="button"
+                                onClick={() => setFiltroHistorial(filtroItem.value)}
+                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                  filtroHistorial === filtroItem.value
+                                    ? 'border-[#1E73BE] bg-[#E3F2FD] text-[#1E73BE]'
+                                    : 'border-slate-200 bg-white text-[#64748b] hover:border-[#cfe0f7] hover:text-[#1E73BE]'
+                                }`}
+                              >
+                                {filtroItem.label} ({filtroItem.count})
+                              </button>
+                            ))}
+                          </div>
+
+                          {solicitudesFiltradas.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-[#64748b]">
+                              Aucun historique ne correspond au filtre sélectionné.
+                            </div>
+                          ) : (
+                        <div className="relative pl-6">
+                          <div className="absolute bottom-2 left-[11px] top-2 w-px bg-gradient-to-b from-[#bfdbfe] via-[#dbeafe] to-transparent" />
+                          <div className="space-y-4">
+                          {solicitudesFiltradas.map(solicitud => {
+                            const totalItems = solicitud.productosAceptados.reduce((sum, producto) => sum + producto.cantidadAceptada, 0);
+                            const estadoUi = estadoSolicitudUi[solicitud.estado] || estadoSolicitudUi.pendiente;
+                            const fechaTimeline = solicitud.fechaActualizacion || solicitud.fechaSolicitud;
+                            const produitsCompatibilite = solicitud.productosAceptados.map(productoAceptado => {
+                              const productoOferta = ofertaSeleccionada.productos.find(producto => producto.productoId === productoAceptado.productoId);
+                              const cantidadDisponibleActual = productoOferta?.cantidadDisponible || 0;
+
+                              return {
+                                productoAceptado,
+                                productoOferta,
+                                cantidadDisponibleActual,
+                                requiereAjuste: cantidadDisponibleActual < productoAceptado.cantidadAceptada,
+                                sinDisponibilidad: cantidadDisponibleActual <= 0,
+                              };
+                            });
+                            const produitsReutilisables = produitsCompatibilite.filter(item => item.cantidadDisponibleActual > 0);
+                            const lignesAjustees = produitsCompatibilite.filter(item => item.requiereAjuste);
+                            const lignesIndisponibles = produitsCompatibilite.filter(item => item.sinDisponibilidad);
+                            const esRepetibleCompleta = lignesAjustees.length === 0;
+                            const peutReprendreSelection = estadoOferta.estado === 'activa' && produitsReutilisables.length > 0;
+
+                            return (
+                              <div key={`${ofertaSeleccionada.id}-history-${solicitud.id}`} className="relative">
+                                <span
+                                  className="absolute -left-[23px] top-5 h-4 w-4 rounded-full border-[3px] border-white shadow-sm"
+                                  style={{ backgroundColor: estadoUi.dotColor }}
+                                />
+                              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.45)]">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                  <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="rounded-full bg-[#e0f2fe] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0369a1]">
+                                        Étape dossier
+                                      </span>
+                                      <p className="text-sm font-bold text-[#0f172a]">Activité du {new Date(fechaTimeline).toLocaleDateString('fr-CA', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                      })}</p>
+                                      <Badge className={`border ${estadoUi.className}`}>
+                                        {estadoUi.label}
+                                      </Badge>
+                                      <Badge
+                                        variant="outline"
+                                        className={esRepetibleCompleta
+                                          ? 'border-[#bbf7d0] bg-[#ecfdf3] text-[#15803d]'
+                                          : 'border-[#fde68a] bg-[#fff7e8] text-[#b45309]'}
+                                      >
+                                        {esRepetibleCompleta
+                                          ? 'Stock actuel suffisant'
+                                          : `${lignesAjustees.length} ajustement${lignesAjustees.length > 1 ? 's' : ''} requis`}
+                                      </Badge>
+                                    </div>
+                                    <p className="mt-1 text-xs text-[#64748b]">
+                                      Demande initiale: {new Date(solicitud.fechaSolicitud).toLocaleDateString('fr-CA', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })} • {solicitud.productosAceptados.length} produits • quantité totale: {totalItems}
+                                    </p>
+                                  </div>
+                                  {solicitud.fechaActualizacion && (
+                                    <p className="text-xs text-[#64748b]">
+                                      Mise à jour: {new Date(solicitud.fechaActualizacion).toLocaleDateString('fr-CA', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                  {produitsCompatibilite.map(({ productoAceptado, productoOferta, cantidadDisponibleActual, requiereAjuste, sinDisponibilidad }) => {
+                                    return (
+                                      <Badge
+                                        key={`${solicitud.id}-${productoAceptado.productoId}`}
+                                        variant="outline"
+                                        className={sinDisponibilidad
+                                          ? 'border-[#fecaca] bg-[#fef2f2] text-xs text-[#b91c1c]'
+                                          : requiereAjuste
+                                            ? 'border-[#fde68a] bg-[#fff7e8] text-xs text-[#b45309]'
+                                            : 'border-[#dbe4ee] bg-white text-xs text-[#334155]'}
+                                      >
+                                        {productoOferta?.icono || '📦'} {productoOferta?.productoNombre || productoAceptado.productoId} × {productoAceptado.cantidadAceptada}
+                                        {' '}
+                                        <span className="opacity-80">
+                                          • stock actuel {cantidadDisponibleActual}/{productoAceptado.cantidadAceptada}
+                                        </span>
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+
+                                {solicitud.observaciones && (
+                                  <div className="mt-3 rounded-lg border border-[#f1f5f9] bg-white px-3 py-2 text-xs text-[#475569]">
+                                    {solicitud.observaciones}
+                                  </div>
+                                )}
+
+                                {solicitud.motivoRechazo && (
+                                  <div className="mt-3 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-xs text-[#991b1b]">
+                                    Motif du refus: {solicitud.motivoRechazo}
+                                  </div>
+                                )}
+
+                                {!esRepetibleCompleta && (
+                                  <div className="mt-3 rounded-lg border border-[#fde68a] bg-[#fff7e8] px-3 py-2 text-xs text-[#92400E]">
+                                    Cette demande n’est plus totalement reproductible avec le stock actuel.
+                                    {lignesIndisponibles.length > 0 ? ` ${lignesIndisponibles.length} ligne${lignesIndisponibles.length > 1 ? 's sont' : ' est'} désormais indisponible${lignesIndisponibles.length > 1 ? 's' : ''}.` : ''}
+                                    {lignesAjustees.length > lignesIndisponibles.length ? ` ${lignesAjustees.length - lignesIndisponibles.length} ligne${lignesAjustees.length - lignesIndisponibles.length > 1 ? 's devront être réduites' : ' devra être réduite'}.` : ''}
+                                  </div>
+                                )}
+
+                                {estadoOferta.estado === 'activa' && (
+                                  <div className="mt-3 flex justify-end">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className={peutReprendreSelection
+                                        ? 'border-[#cfe0f7] bg-white text-[#1E73BE] hover:bg-[#eef6ff]'
+                                        : 'border-slate-200 bg-slate-100 text-slate-400 hover:bg-slate-100'}
+                                      disabled={!peutReprendreSelection}
+                                      onClick={() => {
+                                        if (!peutReprendreSelection) {
+                                          return;
+                                        }
+                                        setDialogDetalleOpen(false);
+                                        aceptarOferta(ofertaSeleccionada, solicitud);
+                                      }}
+                                    >
+                                      <ShoppingCart className="mr-2 h-4 w-4" />
+                                      {peutReprendreSelection ? 'Reprendre cette sélection' : 'Aucune ligne disponible'}
+                                      {peutReprendreSelection && lignesAjustees.length > 0 ? ` (${lignesAjustees.length} ajustement${lignesAjustees.length > 1 ? 's' : ''})` : ''}
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                              </div>
+                            );
+                          })}
+                          </div>
+                        </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </DialogContent>
@@ -501,12 +1018,20 @@ export function OfertasOrganismo() {
       {ofertaSeleccionada && (
         <DialogAceptarOferta
           open={dialogAceptarOpen}
-          onOpenChange={setDialogAceptarOpen}
+          onOpenChange={(open) => {
+            setDialogAceptarOpen(open);
+            if (!open) {
+              setSolicitudReutilizada(null);
+            }
+          }}
           ofertaId={ofertaSeleccionada.id}
           organismoId={organismoActual?.id || ''}
           organismoNombre={organismoActual?.nombre || 'Organisme'}
+          initialProductosAceptados={solicitudReutilizada?.productosAceptados}
+          initialObservaciones={solicitudReutilizada?.observaciones}
           onOfertaAceptada={() => {
             cargarDatos();
+            setSolicitudReutilizada(null);
             setDialogAceptarOpen(false);
           }}
         />

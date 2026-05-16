@@ -40,12 +40,14 @@ interface EtiquetaComandaData {
   // Traducciones
   translations?: {
     foodBank?: string;
+    brandSubtitle?: string;
     orderLabel?: string;
     orderNumber?: string;
     deliveryDate?: string;
     status?: string;
     products?: string;
     articles?: string;
+    productDetailsTitle?: string;
     recipient?: string;
     name?: string;
     type?: string;
@@ -79,12 +81,14 @@ export async function generateStandardOrderLabel(
   // Traducciones por defecto (francés)
   const t = {
     foodBank: data.translations?.foodBank || nombreSistemaImpresion,
+    brandSubtitle: data.translations?.brandSubtitle || 'Système de gestion des commandes',
     orderLabel: data.translations?.orderLabel || 'Étiquette de Commande',
     orderNumber: data.translations?.orderNumber || 'N° Commande',
     deliveryDate: data.translations?.deliveryDate || 'Livraison',
     status: data.translations?.status || 'Statut',
     products: data.translations?.products || 'Produits',
     articles: data.translations?.articles || 'articles',
+    productDetailsTitle: data.translations?.productDetailsTitle || '',
     recipient: data.translations?.recipient || 'Organisme Destinataire',
     name: data.translations?.name || 'Nom',
     type: data.translations?.type || 'Type',
@@ -133,6 +137,25 @@ export async function generateStandardOrderLabel(
     anulada: { label: t.cancelled, color: '#DC3545' }
   };
   const estadoInfo = estadoConfig[data.estado] || estadoConfig.pendiente;
+  const esEtiquetaCompacta = Boolean(t.productDetailsTitle);
+  const productosPreview = data.items.slice(0, esEtiquetaCompacta ? 3 : 4);
+  const productosRestantes = Math.max(0, data.items.length - productosPreview.length);
+  const detallesProductosHtml = t.productDetailsTitle
+    ? `
+        <div class="details-title">${t.productDetailsTitle}</div>
+        <div class="details-list">
+          ${productosPreview.map(item => `
+            <div class="product-line">
+              <span class="product-name">${item.icono ? `${item.icono} ` : ''}${item.nombre}</span>
+              <span class="product-qty">${item.cantidad} ${item.unidad}</span>
+            </div>
+          `).join('')}
+          ${productosRestantes > 0 ? `
+            <div class="product-more">+${productosRestantes} article${productosRestantes > 1 ? 's' : ''}</div>
+          ` : ''}
+        </div>
+    `
+    : '';
 
   // Calcular peso total
   const pesoTotal = data.items.reduce((sum, item) => sum + (item.peso || 0) * item.cantidad, 0);
@@ -168,7 +191,7 @@ export async function generateStandardOrderLabel(
   <style>
     @page {
       size: letter;
-      margin: 0.4in 0.5in;
+      margin: ${esEtiquetaCompacta ? '0.28in 0.35in' : '0.4in 0.5in'};
     }
     
     * {
@@ -197,6 +220,10 @@ export async function generateStandardOrderLabel(
       overflow: hidden;
       background: white;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .etiqueta-container.compact-print {
+      border-width: 2px;
     }
     
     /* HEADER */
@@ -320,6 +347,219 @@ export async function generateStandardOrderLabel(
       font-size: 11px;
       color: #666666;
       font-weight: 500;
+    }
+
+    .productos-box .details-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #2E7D32;
+      margin-top: 6px;
+      margin-bottom: 4px;
+    }
+
+    .productos-box .details-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(76, 175, 80, 0.24);
+    }
+
+    .productos-box .product-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 9px;
+      color: #334155;
+    }
+
+    .productos-box .product-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .productos-box .product-qty {
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+    }
+
+    .productos-box .product-more {
+      font-family: 'Roboto', sans-serif;
+      font-size: 8px;
+      color: #64748b;
+      text-align: right;
+      margin-top: 1px;
+    }
+
+    .etiqueta-container.compact-print .etiqueta-header {
+      padding: 10px 12px;
+    }
+
+    .etiqueta-container.compact-print .brand-panel {
+      gap: 2px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      box-shadow: 0 8px 18px rgba(15, 45, 71, 0.06);
+    }
+
+    .etiqueta-container.compact-print .etiqueta-header h1 {
+      font-size: 26px;
+    }
+
+    .etiqueta-container.compact-print .etiqueta-header p {
+      font-size: 12px;
+    }
+
+    .etiqueta-container.compact-print .etiqueta-header .brand-subtitle {
+      font-size: 15px;
+    }
+
+    .etiqueta-container.compact-print .etiqueta-header .document-label {
+      margin-top: 6px;
+      font-size: 11px;
+    }
+
+    .etiqueta-container.compact-print .grid-superior,
+    .etiqueta-container.compact-print .grid-comanda {
+      gap: 8px;
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    .etiqueta-container.compact-print .grid-superior {
+      padding-top: 8px;
+      padding-bottom: 8px;
+      align-items: stretch;
+    }
+
+    .etiqueta-container.compact-print .grid-comanda {
+      padding-bottom: 8px;
+    }
+
+    .etiqueta-container.compact-print .qr-section {
+      padding: 8px;
+    }
+
+    .etiqueta-container.compact-print .qr-section img {
+      width: 98px;
+      height: 98px;
+    }
+
+    .etiqueta-container.compact-print .qr-id {
+      font-size: 9px;
+      margin-top: 4px;
+    }
+
+    .etiqueta-container.compact-print .productos-box {
+      align-items: flex-start;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 8px 10px;
+    }
+
+    .etiqueta-container.compact-print .productos-box .icon {
+      font-size: 22px;
+      margin-bottom: 2px;
+    }
+
+    .etiqueta-container.compact-print .productos-box .label {
+      font-size: 8px;
+      margin-bottom: 2px;
+    }
+
+    .etiqueta-container.compact-print .productos-box .number {
+      font-size: 28px;
+      line-height: 0.95;
+    }
+
+    .etiqueta-container.compact-print .productos-box .sublabel {
+      font-size: 9px;
+    }
+
+    .etiqueta-container.compact-print .comanda-box,
+    .etiqueta-container.compact-print .estado-box {
+      padding: 10px;
+    }
+
+    .etiqueta-container.compact-print .comanda-box .number {
+      font-size: 22px;
+    }
+
+    .etiqueta-container.compact-print .estado-badge {
+      font-size: 11px;
+      padding: 5px 10px;
+    }
+
+    .etiqueta-container.compact-print .fecha-entrega-section,
+    .etiqueta-container.compact-print .organismo-section,
+    .etiqueta-container.compact-print .firmas-section,
+    .etiqueta-container.compact-print .etiqueta-footer {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    .etiqueta-container.compact-print .fecha-entrega-section {
+      padding-top: 8px;
+      padding-bottom: 8px;
+      gap: 8px;
+    }
+
+    .etiqueta-container.compact-print .fecha-entrega-section .icon {
+      font-size: 20px;
+    }
+
+    .etiqueta-container.compact-print .fecha-entrega-section .fecha {
+      font-size: 17px;
+    }
+
+    .etiqueta-container.compact-print .organismo-section {
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    .etiqueta-container.compact-print .organismo-title {
+      margin-bottom: 6px;
+    }
+
+    .etiqueta-container.compact-print .organismo-grid {
+      gap: 5px;
+    }
+
+    .etiqueta-container.compact-print .organismo-field {
+      padding: 5px 7px;
+    }
+
+    .etiqueta-container.compact-print .organismo-field .value {
+      font-size: 10px;
+    }
+
+    .etiqueta-container.compact-print .organismo-field .value.highlight {
+      font-size: 11px;
+    }
+
+    .etiqueta-container.compact-print .firmas-section {
+      gap: 8px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    .etiqueta-container.compact-print .firma-line {
+      height: 22px;
+    }
+
+    .etiqueta-container.compact-print .etiqueta-footer {
+      padding-top: 6px;
+      padding-bottom: 6px;
     }
     
     /* GRID COMANDA + ESTADO */
@@ -617,12 +857,12 @@ export async function generateStandardOrderLabel(
   </style>
 </head>
 <body>
-  <div class="etiqueta-container">
+  <div class="etiqueta-container${esEtiquetaCompacta ? ' compact-print' : ''}">
     <!-- HEADER -->
     <div class="etiqueta-header">
       <div class="brand-panel">
         <h1>${t.foodBank}</h1>
-        <p class="brand-subtitle">Système de gestion des commandes</p>
+        <p class="brand-subtitle">${t.brandSubtitle}</p>
         ${brandingPrint.address ? `<p>${brandingPrint.address}</p>` : ''}
         ${brandingPrint.phone ? `<p>${brandingPrint.phone}</p>` : ''}
       </div>
@@ -643,6 +883,7 @@ export async function generateStandardOrderLabel(
         <div class="label">${t.products}</div>
         <div class="number">${data.items.length}</div>
         <div class="sublabel">${t.articles}</div>
+        ${detallesProductosHtml}
       </div>
     </div>
     

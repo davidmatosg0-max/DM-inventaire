@@ -12,6 +12,7 @@ import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Checkbox } from '../ui/checkbox';
+import { Textarea } from '../ui/textarea';
 import { toast } from 'sonner';
 import { 
   obtenerOfertaPorId,
@@ -24,6 +25,9 @@ import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 type ProductoSeleccionado = ProductoOferta & {
   cantidadAceptada: number;
   seleccionado: boolean;
+  cantidadSolicitadaOriginal?: number;
+  cantidadAjustada?: boolean;
+  sinDisponibilidadActual?: boolean;
 };
 
 interface DialogAceptarOfertaProps {
@@ -33,6 +37,11 @@ interface DialogAceptarOfertaProps {
   organismoId: string;
   organismoNombre: string;
   onOfertaAceptada: () => void;
+  initialProductosAceptados?: Array<{
+    productoId: string;
+    cantidadAceptada: number;
+  }>;
+  initialObservaciones?: string;
 }
 
 export function DialogAceptarOferta({
@@ -41,7 +50,9 @@ export function DialogAceptarOferta({
   ofertaId,
   organismoId,
   organismoNombre,
-  onOfertaAceptada
+  onOfertaAceptada,
+  initialProductosAceptados,
+  initialObservaciones
 }: DialogAceptarOfertaProps) {
   const { t } = useTranslation();
   
@@ -56,17 +67,35 @@ export function DialogAceptarOferta({
       const ofertaData = obtenerOfertaPorId(ofertaId);
       if (ofertaData) {
         setOferta(ofertaData);
-        
-        // Inicializar productos con cantidades disponibles
-        const productosIniciales: ProductoSeleccionado[] = ofertaData.productos.map(p => ({
-          ...p,
-          cantidadAceptada: p.cantidadDisponible,
-          seleccionado: true
-        }));
+        const cantidadesIniciales = new Map(
+          (initialProductosAceptados || []).map(producto => [producto.productoId, producto.cantidadAceptada])
+        );
+
+        // Inicializar productos con cantidades disponibles o con la última selección reutilizada.
+        const productosIniciales: ProductoSeleccionado[] = ofertaData.productos.map(p => {
+          const cantidadPrefijada = cantidadesIniciales.get(p.productoId);
+          const hayPrefijado = typeof cantidadPrefijada === 'number';
+          const cantidadAceptada = hayPrefijado
+            ? Math.max(0, Math.min(cantidadPrefijada, p.cantidadDisponible))
+            : p.cantidadDisponible;
+          const cantidadAjustada = hayPrefijado && cantidadPrefijada !== cantidadAceptada;
+
+          return {
+            ...p,
+            cantidadAceptada,
+            seleccionado: hayPrefijado ? cantidadAceptada > 0 : true,
+            cantidadSolicitadaOriginal: hayPrefijado ? cantidadPrefijada : undefined,
+            cantidadAjustada,
+            sinDisponibilidadActual: hayPrefijado && p.cantidadDisponible <= 0,
+          };
+        });
+
         setProductos(productosIniciales);
+        setModoAceptacion(initialProductosAceptados?.length ? 'parcial' : 'completa');
+        setNotasAdicionales(initialObservaciones || '');
       }
     }
-  }, [open, ofertaId]);
+  }, [open, ofertaId, initialObservaciones, initialProductosAceptados]);
 
   // Calcular totales según productos seleccionados
   const calcularTotales = () => {
@@ -203,6 +232,8 @@ export function DialogAceptarOferta({
 
   const totales = calcularTotales();
   const productosSeleccionadosCount = productos.filter(p => p.seleccionado).length;
+  const productosReutilizadosAjustados = productos.filter(producto => producto.cantidadAjustada);
+  const productosSinDisponibilidadActual = productosReutilizadosAjustados.filter(producto => producto.sinDisponibilidadActual);
 
   if (!oferta) {
     return null;
@@ -300,6 +331,23 @@ export function DialogAceptarOferta({
             </CardContent>
           </Card>
 
+          {productosReutilizadosAjustados.length > 0 && (
+            <Card className="border-l-4 border-l-[#F59E0B] bg-[#FFF7E8]">
+              <CardContent className="p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#D97706]" />
+                  <div className="text-sm text-[#92400E]">
+                    <p className="font-semibold">Certaines quantités ont été ajustées</p>
+                    <p className="mt-1">
+                      {productosReutilizadosAjustados.length} produit{productosReutilizadosAjustados.length > 1 ? 's ont été ajustés' : ' a été ajusté'} selon la disponibilité actuelle.
+                      {productosSinDisponibilidadActual.length > 0 ? ` ${productosSinDisponibilidadActual.length} ne sont plus disponibles aujourd’hui.` : ''}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Productos */}
           <Card className="border-2 border-[#4CAF50]">
             <CardContent className="p-4">
@@ -335,7 +383,9 @@ export function DialogAceptarOferta({
                   <div
                     key={`${producto.productoId}-${index}`}
                     className={`p-4 rounded-lg border-2 transition-all ${
-                      producto.seleccionado
+                      producto.cantidadAjustada
+                        ? 'border-[#F59E0B] bg-[#FFF7E8]'
+                        : producto.seleccionado
                         ? 'border-[#4CAF50] bg-[#E8F5E9]'
                         : 'border-gray-200 bg-white'
                     }`}
@@ -364,7 +414,22 @@ export function DialogAceptarOferta({
                           <Badge variant="outline">
                             Disponible: {formatQuantity(producto.cantidadDisponible)} {producto.unidad}
                           </Badge>
+                          {producto.cantidadAjustada && (
+                            <Badge className="border-[#FCD34D] bg-[#FFF7E8] text-[#B45309]">
+                              Ajusté: {formatQuantity(producto.cantidadSolicitadaOriginal || 0)} → {formatQuantity(producto.cantidadAceptada)}
+                            </Badge>
+                          )}
+                          {producto.sinDisponibilidadActual && (
+                            <Badge className="border-[#FECACA] bg-[#FEF2F2] text-[#B91C1C]">
+                              Indisponible aujourd’hui
+                            </Badge>
+                          )}
                         </div>
+                        {producto.cantidadAjustada && (
+                          <p className="mt-2 text-xs text-[#92400E]">
+                            La quantité reprise depuis la demande précédente a été réduite pour respecter la disponibilité actuelle.
+                          </p>
+                        )}
                       </div>
 
                       {/* Controles de cantidad */}
@@ -459,6 +524,35 @@ export function DialogAceptarOferta({
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-slate-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Observations
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    {initialObservaciones
+                      ? 'Les observations de la demande précédente ont été reprises et peuvent être modifiées.'
+                      : 'Ajoutez une note à transmettre avec votre demande si nécessaire.'}
+                  </p>
+                </div>
+                {initialObservaciones && (
+                  <Badge variant="outline" className="border-[#cfe0f7] bg-[#eef6ff] text-[#1E73BE]">
+                    Note réutilisée
+                  </Badge>
+                )}
+              </div>
+
+              <Textarea
+                value={notasAdicionales}
+                onChange={(event) => setNotasAdicionales(event.target.value)}
+                className="mt-3 min-h-[96px] border-slate-200"
+                placeholder="Précisez un besoin particulier, une contrainte de livraison ou une information utile pour la banque alimentaire."
+              />
             </CardContent>
           </Card>
 
