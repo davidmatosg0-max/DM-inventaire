@@ -34,17 +34,28 @@ export function GestionPasswordDialog({
   React.useEffect(() => {
     if (!open) {
       setMostrarPassword(false);
+      setCopied(false);
       return;
     }
 
+    const usuariosLocales = obtenerUsuarios();
+    const usuarioLocal = usuariosLocales.find((item) => (
+      item.id === usuarioId || item.username.toLowerCase() === username.toLowerCase()
+    ));
+    const passwordLocal = usuarioLocal?.password || '';
+
+    setPasswordActual(passwordLocal);
+
     void (async () => {
       const usuarios = await sincronizarUsuariosConProveedor();
-      const usuario = usuarios.find(u => u.id === usuarioId);
+      const usuario = usuarios.find((item) => (
+        item.id === usuarioId || item.username.toLowerCase() === username.toLowerCase()
+      ));
       if (usuario) {
-        setPasswordActual(usuario.password || '');
+        setPasswordActual(usuario.password || passwordLocal);
       }
     })();
-  }, [open, usuarioId]);
+  }, [open, usuarioId, username]);
 
   const handleCopy = async (text: string) => {
     try {

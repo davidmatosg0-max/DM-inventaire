@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { GestionRoles } from '../usuarios/GestionRoles';
 import { GestionDepartamentos } from '../usuarios/GestionDepartamentos';
-import { guardarUsuarioEnProveedor, eliminarUsuarioEnProveedor, sincronizarUsuariosConProveedor, type Usuario } from '../../utils/usuarios';
+import { guardarUsuarioEnProveedor, eliminarUsuarioEnProveedor, obtenerUsuarios, sincronizarUsuariosConProveedor, type Usuario } from '../../utils/usuarios';
 import { esRolValido, tienePermiso } from '../../utils/permisos';
 import { obtenerRoles, ROLES_UPDATED_EVENT } from '../../utils/rolesStorage';
 import { useBranding } from '../../../hooks/useBranding';
@@ -94,6 +94,11 @@ export function Usuarios() {
   );
 
   const handleAbrirEdicion = (usuario: Usuario) => {
+    const usuarioActual = obtenerUsuarios().find((item) => (
+      item.id === usuario.id || item.username.toLowerCase() === usuario.username.toLowerCase()
+    ));
+    const passwordActual = usuario.password || usuarioActual?.password || '';
+
     setUsuarioSeleccionado(usuario);
     setFormUsuario({
       username: usuario.username,
@@ -101,8 +106,8 @@ export function Usuarios() {
       apellido: usuario.apellido,
       email: usuario.email,
       rol: usuario.rol,
-      password: '',
-      confirmPassword: '',
+      password: passwordActual,
+      confirmPassword: passwordActual,
       permisos: usuario.permisos || [],
       descripcion: usuario.descripcion || ''
     });
