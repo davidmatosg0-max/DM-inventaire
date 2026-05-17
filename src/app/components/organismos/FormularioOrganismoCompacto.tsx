@@ -480,6 +480,7 @@ export function FormularioOrganismoCompacto({
                             disabled={esConsulta}
                             initialQuartier={formulario.quartier || ''}
                             initialPostalCode={formulario.codigoPostal || ''}
+                            showAdditionalFields={false}
                             onChange={(value, details) => actualizarFormulario({
                               direccion: value,
                               codigoPostal: details?.postalCode || formulario.codigoPostal,

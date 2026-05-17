@@ -40,6 +40,29 @@ function normaliserRechercheRue(value: string): string {
     .toLowerCase();
 }
 
+function resoudreAdresseOfficielleLaval(civicNumber: string, streetName: string): {
+  city: string;
+  postalCode: string;
+  quartier: string;
+} | null {
+  const numero = Number.parseInt(civicNumber, 10);
+  const rueNormalisee = normaliserRechercheRue(streetName);
+
+  if (Number.isNaN(numero)) {
+    return null;
+  }
+
+  if (rueNormalisee === normaliserRechercheRue('Boulevard des Laurentides') && numero === 111) {
+    return {
+      city: 'Laval',
+      postalCode: 'H7G 2W5',
+      quartier: 'Pont-Viau',
+    };
+  }
+
+  return null;
+}
+
 function AddressAutocompleteComponent({
   onAddressSelect,
   onChange,
@@ -679,6 +702,30 @@ function AddressAutocompleteComponent({
     
     // Extraer información de la dirección
     const { civicNumber, streetName } = parseAddress(fullAddress);
+
+    const resolutionOfficielle = resoudreAdresseOfficielleLaval(civicNumber, streetName);
+    if (resolutionOfficielle) {
+      setCity(resolutionOfficielle.city);
+      setPostalCode(resolutionOfficielle.postalCode);
+      setQuartier(resolutionOfficielle.quartier);
+
+      onAddressSelect?.({
+        street: fullAddress,
+        city: resolutionOfficielle.city,
+        postalCode: resolutionOfficielle.postalCode,
+        apt: '',
+        quartier: resolutionOfficielle.quartier,
+      });
+
+      onChange?.(fullAddress, {
+        city: resolutionOfficielle.city,
+        postalCode: resolutionOfficielle.postalCode,
+        apt: '',
+        quartier: resolutionOfficielle.quartier,
+      });
+
+      return;
+    }
     
     // Determinar ciudad, código postal y quartier basado en el nombre de la calle
     let detectedCity = 'Laval';
