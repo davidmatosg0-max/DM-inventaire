@@ -147,6 +147,13 @@ export function obtenerUsuarioSesion(): UsuarioSesion | null {
   }
 }
 
+export function obtenerNombreUsuarioSesion(fallback = 'Système'): string {
+  const usuario = obtenerUsuarioSesion();
+  const nombreCompleto = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim();
+
+  return nombreCompleto || usuario?.username || fallback;
+}
+
 /**
  * Elimina el usuario de la sesión (logout)
  */

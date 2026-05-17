@@ -561,7 +561,14 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     }));
     
     // Crear solicitud para revisión administrativa sin reservar stock todavía
-    const observacionesCompletas = `Solicitud desde el portal del organismo. Total: ${totales.totalProductos} productos, ${formatQuantity(totales.totalKilos)} kg. Fecha de recogida: ${new Date(fechaRecogida).toLocaleDateString(i18n.language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Persona que recogerá: ${personaRecogida}${telefonoRecogida ? ` (Tel: ${telefonoRecogida})` : ''}`;
+    const fechaRecogidaFormateada = new Date(fechaRecogida).toLocaleDateString('fr', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const etiquetaProductos = totales.totalProductos === 1 ? 'produit' : 'produits';
+    const observacionesCompletas = `Demande soumise depuis le portail de l’organisme. Total : ${totales.totalProductos} ${etiquetaProductos}, ${formatQuantity(totales.totalKilos)} kg. Date de collecte : ${fechaRecogidaFormateada}. Personne qui récupérera : ${personaRecogida}${telefonoRecogida ? ` (Tél. : ${telefonoRecogida})` : ''}`;
     
     const exito = crearSolicitudOferta(
       ofertaSeleccionada.id,
@@ -572,8 +579,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     );
     
     if (exito) {
-      toast.success('Solicitud de oferta confirmada', {
-        description: `${totales.totalProductos} productos • ${formatQuantity(totales.totalKilos)} kg • Valor: CAD$ ${formatMoney(totales.totalValor)} • Fecha de recogida: ${new Date(fechaRecogida).toLocaleDateString(i18n.language)} • Recogerá: ${personaRecogida}. La solicitud fue enviada a ${branding.systemName} para validación.`,
+      toast.success('Demande d’offre confirmée', {
+        description: `${totales.totalProductos} ${etiquetaProductos} • ${formatQuantity(totales.totalKilos)} kg • Valeur : CAD$ ${formatMoney(totales.totalValor)} • Date de collecte : ${new Date(fechaRecogida).toLocaleDateString('fr')} • Personne prévue : ${personaRecogida}. La demande a été envoyée à ${branding.systemName} pour validation.`,
         duration: 6000
       });
       

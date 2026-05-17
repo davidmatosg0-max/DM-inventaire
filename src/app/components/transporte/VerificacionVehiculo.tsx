@@ -54,7 +54,6 @@ export function VerificacionVehiculo() {
   const [verDetalle, setVerDetalle] = useState<VerificacionVehiculo | null>(null);
   const [detalleOpen, setDetalleOpen] = useState(false);
 
-  // Cargar historial
   useEffect(() => {
     cargarHistorial();
   }, []);
@@ -371,118 +370,575 @@ export function VerificacionVehiculo() {
       return null;
     }
 
+    const vehiculoDetalle = vehiculos.find(v => v.id === verDetalle.vehiculoId);
+    const tituloVehiculo = vehiculoDetalle
+      ? obtenerDescripcionVehiculo(vehiculoDetalle)
+      : verDetalle.vehiculoPlaca;
+    const itemsConformes = verDetalle.items.filter(i => i.estado === 'conforme').length;
+    const itemsReparar = verDetalle.items.filter(i => i.estado === 'reparar').length;
+    const itemsNoConformes = verDetalle.items.filter(i => i.estado === 'no_conforme').length;
+    const itemsProblema = itemsReparar + itemsNoConformes;
+    const fechaImpresion = new Date(`${verDetalle.fecha}T00:00:00`).toLocaleDateString('fr-CA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const actionsRequises = verDetalle.accionesRequeridas || [];
+
     return (
       <div data-verificacion-print-root className="print-verificacion-root">
+        <style>
+          {`
+            .print-verificacion-root {
+              position: fixed;
+              inset: 0;
+              pointer-events: none;
+              opacity: 0;
+              z-index: -1;
+            }
+
+            .print-verificacion-documento {
+              width: 190mm;
+              margin: 0 auto;
+              padding: 10mm 10mm 8mm;
+              background: #ffffff;
+              color: #0f172a;
+              font-family: 'Montserrat', 'Segoe UI', sans-serif;
+              font-size: 12pt;
+              line-height: 1.5;
+            }
+
+            .print-verificacion-documento-shell {
+              border: 1px solid #d9e2ec;
+              border-radius: 18px;
+              overflow: hidden;
+              box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            }
+
+            .print-verificacion-documento-header {
+              display: grid;
+              grid-template-columns: minmax(0, 1.5fr) minmax(185px, 0.8fr);
+              gap: 14px;
+              padding: 14px 16px 12px;
+              background:
+                radial-gradient(circle at top right, rgba(76, 175, 80, 0.18), transparent 34%),
+                linear-gradient(135deg, #eff6ff 0%, #ffffff 62%, #f8fff6 100%);
+              border-bottom: 1px solid #dbe7f3;
+            }
+
+            .print-verificacion-documento-kicker {
+              margin: 0 0 4px;
+              font-size: 10pt;
+              font-weight: 700;
+              letter-spacing: 0.18em;
+              text-transform: uppercase;
+              color: #145ca1;
+            }
+
+            .print-verificacion-documento-subtitulo {
+              margin: 0;
+              font-size: 12pt;
+              line-height: 1.6;
+              color: #334155;
+            }
+
+            .print-verificacion-documento-encabezado {
+              margin: 8px 0 2px;
+              font-size: 22pt;
+              line-height: 1.08;
+              font-weight: 700;
+              color: #0f1f33;
+            }
+
+            .print-verificacion-documento-titulo {
+              margin: 10px 0 6px;
+              font-size: 16pt;
+              line-height: 1.35;
+              font-weight: 700;
+              color: #0f172a;
+            }
+
+            .print-verificacion-documento-resumen-header {
+              margin: 0;
+              font-size: 12pt;
+              line-height: 1.6;
+              color: #243447;
+            }
+
+            .print-verificacion-documento-status {
+              display: flex;
+              flex-direction: column;
+              gap: 10px;
+              align-self: stretch;
+              padding: 12px 14px;
+              border-radius: 16px;
+              background: linear-gradient(180deg, rgba(8, 23, 43, 1) 0%, rgba(14, 42, 74, 1) 100%);
+              border: 1px solid rgba(255, 255, 255, 0.12);
+              color: #f8fbff;
+            }
+
+            .print-verificacion-documento-status-label {
+              margin: 0;
+              font-size: 10pt;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: rgba(255, 255, 255, 0.82);
+            }
+
+            .print-verificacion-documento-status-value {
+              margin: 2px 0 0;
+              font-size: 18pt;
+              line-height: 1.15;
+              font-weight: 700;
+              color: #ffffff;
+            }
+
+            .print-verificacion-documento-badges {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+            }
+
+            .print-verificacion-documento-badge {
+              display: inline-flex;
+              align-items: center;
+              padding: 7px 11px;
+              border-radius: 999px;
+              border: 1px solid rgba(255, 255, 255, 0.24);
+              background: rgba(255, 255, 255, 0.16);
+              font-size: 10pt;
+              font-weight: 700;
+              letter-spacing: 0.04em;
+              text-transform: uppercase;
+              color: #ffffff;
+            }
+
+            .print-verificacion-documento-badge--estado {
+              background: rgba(76, 175, 80, 0.28);
+              border-color: rgba(76, 175, 80, 0.45);
+            }
+
+            .print-verificacion-documento-meta {
+              display: grid;
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+              gap: 10px;
+              padding: 12px 16px 0;
+            }
+
+            .print-verificacion-documento-meta-card,
+            .print-verificacion-documento-resumen div,
+            .print-verificacion-documento-footer-card {
+              border: 1px solid #dbe4ee;
+              border-radius: 14px;
+              background: #f9fbfd;
+              padding: 10px 12px;
+            }
+
+            .print-verificacion-documento-meta-card span,
+            .print-verificacion-documento-resumen span,
+            .print-verificacion-documento-footer-card span {
+              display: block;
+              font-size: 12pt;
+              font-weight: 700;
+              letter-spacing: 0.08em;
+              text-transform: uppercase;
+              color: #475569;
+            }
+
+            .print-verificacion-documento-meta-card strong,
+            .print-verificacion-documento-resumen strong,
+            .print-verificacion-documento-footer-card strong {
+              display: block;
+              margin-top: 5px;
+              font-size: 12pt;
+              line-height: 1.45;
+              color: #0f172a;
+            }
+
+            .print-verificacion-documento-resumen {
+              display: grid;
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+              gap: 10px;
+              padding: 12px 16px 0;
+            }
+
+            .print-verificacion-documento-resumen div {
+              position: relative;
+              overflow: hidden;
+            }
+
+            .print-verificacion-documento-resumen div::before {
+              content: '';
+              position: absolute;
+              inset: 0 auto 0 0;
+              width: 4px;
+              border-radius: 14px 0 0 14px;
+              background: #1e73be;
+            }
+
+            .print-verificacion-documento-resumen div:nth-child(2)::before {
+              background: #4caf50;
+            }
+
+            .print-verificacion-documento-resumen div:nth-child(3)::before {
+              background: #f5a524;
+            }
+
+            .print-verificacion-documento-resumen div:nth-child(4)::before {
+              background: #dc3545;
+            }
+
+            .print-verificacion-documento-notas {
+              display: grid;
+              grid-template-columns: ${actionsRequises.length > 0 && verDetalle.observacionesGenerales ? '1.15fr 0.85fr' : '1fr'};
+              gap: 10px;
+              padding: 12px 16px 0;
+            }
+
+            .print-verificacion-documento-nota {
+              border: 1px solid #ead9b2;
+              border-radius: 14px;
+              background: linear-gradient(180deg, #fff8e8 0%, #fffdf7 100%);
+              padding: 11px 12px;
+            }
+
+            .print-verificacion-documento-nota--observaciones {
+              border-color: #c8ddf4;
+              background: linear-gradient(180deg, #f3f8ff 0%, #fbfdff 100%);
+            }
+
+            .print-verificacion-documento-nota-titulo {
+              margin: 0 0 6px;
+              font-size: 12pt;
+              font-weight: 700;
+              letter-spacing: 0.08em;
+              text-transform: uppercase;
+              color: #7b5b15;
+            }
+
+            .print-verificacion-documento-nota--observaciones .print-verificacion-documento-nota-titulo {
+              color: #1e73be;
+            }
+
+            .print-verificacion-documento-nota p:last-child,
+            .print-verificacion-documento-nota ul {
+              margin: 0;
+              font-size: 12pt;
+              line-height: 1.6;
+              color: #1f2f43;
+            }
+
+            .print-verificacion-documento-nota ul {
+              padding-left: 16px;
+            }
+
+            .print-verificacion-documento-categorias {
+              columns: 2;
+              column-gap: 12px;
+              padding: 12px 16px 14px;
+            }
+
+            .print-verificacion-documento-categoria {
+              break-inside: avoid;
+              margin-bottom: 12px;
+              border: 1px solid #dbe4ee;
+              border-radius: 14px;
+              overflow: hidden;
+              background: #ffffff;
+            }
+
+            .print-verificacion-documento-categoria-header {
+              display: flex;
+              align-items: flex-start;
+              justify-content: space-between;
+              gap: 12px;
+              padding: 10px 12px;
+              background: linear-gradient(180deg, #f7fbff 0%, #eff5fb 100%);
+              border-bottom: 1px solid #dbe4ee;
+            }
+
+            .print-verificacion-documento-categoria-header h3 {
+              margin: 0;
+              font-size: 13pt;
+              line-height: 1.35;
+              font-weight: 800;
+              color: #10253d;
+            }
+
+            .print-verificacion-documento-categoria-header p {
+              margin: 3px 0 0;
+              font-size: 12pt;
+              color: #334155;
+            }
+
+            .print-verificacion-documento-tabla {
+              display: grid;
+            }
+
+            .print-verificacion-documento-fila {
+              display: grid;
+              grid-template-columns: minmax(0, 1.55fr) 0.72fr minmax(0, 1fr);
+              gap: 8px;
+              align-items: start;
+              padding: 8px 12px;
+              border-bottom: 1px solid #eef2f7;
+            }
+
+            .print-verificacion-documento-fila:last-child {
+              border-bottom: none;
+            }
+
+            .print-verificacion-documento-fila--cabecera {
+              padding-top: 8px;
+              padding-bottom: 8px;
+              background: #f8fafc;
+              font-size: 12pt;
+              font-weight: 800;
+              letter-spacing: 0.06em;
+              text-transform: uppercase;
+              color: #334155;
+            }
+
+            .print-verificacion-documento-fila--conforme {
+              background: rgba(76, 175, 80, 0.05);
+            }
+
+            .print-verificacion-documento-fila--reparar {
+              background: rgba(255, 193, 7, 0.09);
+            }
+
+            .print-verificacion-documento-fila--no_conforme {
+              background: rgba(220, 53, 69, 0.08);
+            }
+
+            .print-verificacion-documento-col {
+              font-size: 12pt;
+              line-height: 1.6;
+              color: #162436;
+            }
+
+            .print-verificacion-documento-col--descripcion {
+              font-weight: 700;
+              color: #0f172a;
+            }
+
+            .print-verificacion-documento-col--estado {
+              font-weight: 800;
+              color: #0b1f36;
+            }
+
+            .print-verificacion-documento-col--observacion {
+              color: #243447;
+            }
+
+            .print-verificacion-documento-footer {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              padding: 0 16px 16px;
+            }
+
+            .print-verificacion-documento-footer-card {
+              min-height: 72px;
+            }
+
+            .print-verificacion-documento-footer-card em {
+              display: block;
+              margin-top: 22px;
+              border-top: 1px solid #cfd8e3;
+            }
+
+            @page {
+              size: auto;
+              margin: 8mm;
+            }
+
+            @media print {
+              html,
+              body {
+                background: #ffffff !important;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+              }
+
+              body[data-print-mode='completo'] > :not([data-verificacion-print-root]) {
+                display: none !important;
+              }
+
+              body[data-print-mode='completo'] [data-verificacion-print-root] {
+                position: static !important;
+                inset: auto !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                z-index: auto !important;
+              }
+
+              .print-verificacion-documento {
+                width: 100%;
+                padding: 0;
+              }
+
+              .print-verificacion-documento-shell {
+                box-shadow: none;
+              }
+            }
+          `}
+        </style>
         <div className="print-verificacion-documento">
-          <div className="print-verificacion-documento-header">
-            <div>
-              <p className="print-verificacion-documento-kicker">{nombreSistemaImpresion}</p>
-              {brandingContactLine && (
-                <p className="print-verificacion-documento-subtitulo">{brandingContactLine}</p>
-              )}
-              <h1 className="print-verificacion-documento-encabezado">Détail de la Vérification SAAQ</h1>
-              <p className="print-verificacion-documento-subtitulo">Format compact complet pour impression</p>
-              <h2 className="print-verificacion-documento-titulo">
-                {(() => {
-                  const vehiculo = vehiculos.find(v => v.id === verDetalle.vehiculoId);
-                  return vehiculo ? obtenerDescripcionVehiculo(vehiculo) : verDetalle.vehiculoPlaca;
-                })()}
-              </h2>
-              <p className="print-verificacion-documento-resumen-header">
-                Chauffeur: {verDetalle.conductorNombre} | Date: {new Date(verDetalle.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' })} {verDetalle.hora} | Odometre: {verDetalle.odometro.toLocaleString()} km | Controle: {verDetalle.items.length} points
-              </p>
-            </div>
-            <div className="print-verificacion-documento-badges">
-              <span className="print-verificacion-documento-badge">
-                {getTipoVerificacionTexto(verDetalle.tipoVerificacion)}
-              </span>
-              <span className="print-verificacion-documento-badge print-verificacion-documento-badge--estado">
-                {getEstadoGeneralTexto(verDetalle.estadoGeneral)}
-              </span>
-            </div>
-          </div>
-
-          <div className="print-verificacion-documento-resumen">
-            <div>
-              <span>Controle</span>
-              <strong>{verDetalle.items.length}</strong>
-            </div>
-            <div>
-              <span>Conformes</span>
-              <strong>{verDetalle.items.filter(i => i.estado === 'conforme').length}</strong>
-            </div>
-            <div>
-              <span>A reparer</span>
-              <strong>{verDetalle.items.filter(i => i.estado === 'reparar').length}</strong>
-            </div>
-            <div>
-              <span>Non conformes</span>
-              <strong>{verDetalle.items.filter(i => i.estado === 'no_conforme').length}</strong>
-            </div>
-          </div>
-
-          {(verDetalle.accionesRequeridas && verDetalle.accionesRequeridas.length > 0) || verDetalle.observacionesGenerales ? (
-            <div className="print-verificacion-documento-notas">
-              {verDetalle.accionesRequeridas && verDetalle.accionesRequeridas.length > 0 && (
-                <div className="print-verificacion-documento-nota">
-                  <p className="print-verificacion-documento-nota-titulo">
-                    {t('transport.saaqVerification.requiredActions')}
-                  </p>
-                  <p>{verDetalle.accionesRequeridas.join(' | ')}</p>
+          <div className="print-verificacion-documento-shell">
+            <div className="print-verificacion-documento-header">
+              <div>
+                <p className="print-verificacion-documento-kicker">{nombreSistemaImpresion}</p>
+                {brandingContactLine && (
+                  <p className="print-verificacion-documento-subtitulo">{brandingContactLine}</p>
+                )}
+                <h1 className="print-verificacion-documento-encabezado">Verification de vehicule SAAQ</h1>
+                <p className="print-verificacion-documento-subtitulo">Modele d'impression compact, professionnel et archive</p>
+                <h2 className="print-verificacion-documento-titulo">{tituloVehiculo}</h2>
+                <p className="print-verificacion-documento-resumen-header">
+                  Controle realise par {verDetalle.conductorNombre} le {fechaImpresion} a {verDetalle.hora}. Document concu pour impression rapide, lecture terrain et classement administratif.
+                </p>
+              </div>
+              <div className="print-verificacion-documento-status">
+                <div>
+                  <p className="print-verificacion-documento-status-label">Statut final</p>
+                  <p className="print-verificacion-documento-status-value">{getEstadoGeneralTexto(verDetalle.estadoGeneral)}</p>
                 </div>
-              )}
-
-              {verDetalle.observacionesGenerales && (
-                <div className="print-verificacion-documento-nota print-verificacion-documento-nota--observaciones">
-                  <p className="print-verificacion-documento-nota-titulo">
-                    {t('transport.saaqVerification.observations')}
-                  </p>
-                  <p>{verDetalle.observacionesGenerales}</p>
+                <div className="print-verificacion-documento-badges">
+                  <span className="print-verificacion-documento-badge">
+                    {getTipoVerificacionTexto(verDetalle.tipoVerificacion)}
+                  </span>
+                  <span className="print-verificacion-documento-badge print-verificacion-documento-badge--estado">
+                    {itemsProblema} point{itemsProblema > 1 ? 's' : ''} a traiter
+                  </span>
                 </div>
-              )}
+              </div>
             </div>
-          ) : null}
 
-          <div className="print-verificacion-documento-categorias">
-            {Object.keys(checklistSAAQ).map((categoria) => {
-              const itemsCategoria = verDetalle.items.filter(i => i.categoria === categoria);
-              const itemsConformes = itemsCategoria.filter(i => i.estado === 'conforme').length;
-              const itemsConObservaciones = itemsCategoria.length - itemsConformes;
+            <div className="print-verificacion-documento-meta">
+              <div className="print-verificacion-documento-meta-card">
+                <span>Chauffeur</span>
+                <strong>{verDetalle.conductorNombre}</strong>
+              </div>
+              <div className="print-verificacion-documento-meta-card">
+                <span>Date et heure</span>
+                <strong>{fechaImpresion} • {verDetalle.hora}</strong>
+              </div>
+              <div className="print-verificacion-documento-meta-card">
+                <span>Odometre</span>
+                <strong>{verDetalle.odometro.toLocaleString()} km</strong>
+              </div>
+              <div className="print-verificacion-documento-meta-card">
+                <span>Plaque</span>
+                <strong>{verDetalle.vehiculoPlaca}</strong>
+              </div>
+            </div>
 
-              return (
-                <section key={`print-${categoria}`} className="print-verificacion-documento-categoria">
-                  <div className="print-verificacion-documento-categoria-header">
-                    <h3>{getCategoriaLabel(categoria)}</h3>
-                    <p>
-                      {itemsCategoria.length} {t('transport.saaqVerification.elements')} • {itemsConformes} OK • {itemsConObservaciones} a revisar
+            <div className="print-verificacion-documento-resumen">
+              <div>
+                <span>Points controles</span>
+                <strong>{verDetalle.items.length}</strong>
+              </div>
+              <div>
+                <span>Conformes</span>
+                <strong>{itemsConformes}</strong>
+              </div>
+              <div>
+                <span>A reparer</span>
+                <strong>{itemsReparar}</strong>
+              </div>
+              <div>
+                <span>Non conformes</span>
+                <strong>{itemsNoConformes}</strong>
+              </div>
+            </div>
+
+            {(actionsRequises.length > 0) || verDetalle.observacionesGenerales ? (
+              <div className="print-verificacion-documento-notas">
+                {actionsRequises.length > 0 && (
+                  <div className="print-verificacion-documento-nota">
+                    <p className="print-verificacion-documento-nota-titulo">
+                      {t('transport.saaqVerification.requiredActions')}
                     </p>
+                    <ul>
+                      {actionsRequises.map((accion, idx) => (
+                        <li key={`print-action-${idx}`}>{accion}</li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className="print-verificacion-documento-tabla">
-                    <div className="print-verificacion-documento-fila print-verificacion-documento-fila--cabecera">
-                      <span>Point controle</span>
-                      <span>Etat</span>
-                      <span>Observations</span>
-                    </div>
-                    {itemsCategoria.map((item) => (
-                      <div
-                        key={`print-item-${item.id}`}
-                        className={`print-verificacion-documento-fila print-verificacion-documento-fila--${item.estado}`}
-                      >
-                        <span className="print-verificacion-documento-col print-verificacion-documento-col--descripcion">
-                          {item.descripcion}
-                        </span>
-                        <span className="print-verificacion-documento-col print-verificacion-documento-col--estado">
-                          {getEstadoTexto(item.estado)}
-                        </span>
-                        <span className="print-verificacion-documento-col print-verificacion-documento-col--observacion">
-                          {item.observaciones && item.observaciones.trim() !== '' ? item.observaciones : 'Aucune'}
-                        </span>
+                )}
+
+                {verDetalle.observacionesGenerales && (
+                  <div className="print-verificacion-documento-nota print-verificacion-documento-nota--observaciones">
+                    <p className="print-verificacion-documento-nota-titulo">
+                      {t('transport.saaqVerification.observations')}
+                    </p>
+                    <p>{verDetalle.observacionesGenerales}</p>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            <div className="print-verificacion-documento-categorias">
+              {Object.keys(checklistSAAQ).map((categoria) => {
+                const itemsCategoria = verDetalle.items.filter(i => i.categoria === categoria);
+                const itemsCategoriaConformes = itemsCategoria.filter(i => i.estado === 'conforme').length;
+                const itemsConObservaciones = itemsCategoria.length - itemsCategoriaConformes;
+
+                return (
+                  <section key={`print-${categoria}`} className="print-verificacion-documento-categoria">
+                    <div className="print-verificacion-documento-categoria-header">
+                      <div>
+                        <h3>{getCategoriaIcono(categoria)} {getCategoriaLabel(categoria)}</h3>
+                        <p>
+                          {itemsCategoria.length} {t('transport.saaqVerification.elements')} • {itemsCategoriaConformes} OK • {itemsConObservaciones} a revoir
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
+                      <div>
+                        <p>{Math.round((itemsCategoriaConformes / Math.max(itemsCategoria.length, 1)) * 100)}% conforme</p>
+                      </div>
+                    </div>
+                    <div className="print-verificacion-documento-tabla">
+                      <div className="print-verificacion-documento-fila print-verificacion-documento-fila--cabecera">
+                        <span>Point controle</span>
+                        <span>Etat</span>
+                        <span>Observation</span>
+                      </div>
+                      {itemsCategoria.map((item) => (
+                        <div
+                          key={`print-item-${item.id}`}
+                          className={`print-verificacion-documento-fila print-verificacion-documento-fila--${item.estado}`}
+                        >
+                          <span className="print-verificacion-documento-col print-verificacion-documento-col--descripcion">
+                            {item.descripcion}
+                          </span>
+                          <span className="print-verificacion-documento-col print-verificacion-documento-col--estado">
+                            {getEstadoTexto(item.estado)}
+                          </span>
+                          <span className="print-verificacion-documento-col print-verificacion-documento-col--observacion">
+                            {item.observaciones && item.observaciones.trim() !== '' ? item.observaciones : 'Aucune remarque'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+
+            <div className="print-verificacion-documento-footer">
+              <div className="print-verificacion-documento-footer-card">
+                <span>Validation du conducteur</span>
+                <strong>{verDetalle.conductorNombre}</strong>
+                <em aria-hidden="true" />
+              </div>
+              <div className="print-verificacion-documento-footer-card">
+                <span>Validation responsable transport</span>
+                <strong>{nombreSistemaImpresion}</strong>
+                <em aria-hidden="true" />
+              </div>
+            </div>
           </div>
         </div>
       </div>

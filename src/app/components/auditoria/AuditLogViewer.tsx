@@ -51,7 +51,17 @@ import {
 } from '../../utils/auditStorage';
 import { toast } from 'sonner';
 
-export function AuditLogViewer() {
+interface AuditLogViewerProps {
+  fechaInicioExterna?: string;
+  fechaFinExterna?: string;
+  onFilteredLogsChange?: (logs: AuditLog[]) => void;
+}
+
+export function AuditLogViewer({
+  fechaInicioExterna,
+  fechaFinExterna,
+  onFilteredLogsChange,
+}: AuditLogViewerProps = {}) {
   const { t } = useTranslation();
   
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -62,13 +72,15 @@ export function AuditLogViewer() {
   const [expandido, setExpandido] = useState<string | null>(null);
   
   // Filtros
-  const [filtros, setFiltros] = useState<FiltrosAudit>({});
   const [busqueda, setBusqueda] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [moduloFiltro, setModuloFiltro] = useState('todos');
   const [severidadFiltro, setSeveridadFiltro] = useState('todos');
   const [exitoFiltro, setExitoFiltro] = useState('todos');
+  const usaRangoExterno = fechaInicioExterna !== undefined || fechaFinExterna !== undefined;
+  const fechaInicioActiva = usaRangoExterno ? (fechaInicioExterna || '') : fechaInicio;
+  const fechaFinActiva = usaRangoExterno ? (fechaFinExterna || '') : fechaFin;
   
   // Estadísticas
   const estadisticas = useMemo(() => {
@@ -76,12 +88,12 @@ export function AuditLogViewer() {
   }, [logsFiltrados]);
   
   const usuariosActivos = useMemo(() => {
-    return obtenerUsuariosMasActivos(5);
-  }, [logs]);
+    return obtenerUsuariosMasActivos(5, logsFiltrados);
+  }, [logsFiltrados]);
   
   const modulosPopulares = useMemo(() => {
-    return obtenerModulosMasUtilizados(5);
-  }, [logs]);
+    return obtenerModulosMasUtilizados(5, logsFiltrados);
+  }, [logsFiltrados]);
   
   const tamañoStorage = useMemo(() => {
     return obtenerTamañoLogs();
@@ -95,7 +107,11 @@ export function AuditLogViewer() {
   // Aplicar filtros
   useEffect(() => {
     aplicarFiltros();
-  }, [logs, filtros, busqueda, fechaInicio, fechaFin, moduloFiltro, severidadFiltro, exitoFiltro]);
+  }, [logs, busqueda, fechaInicioActiva, fechaFinActiva, moduloFiltro, severidadFiltro, exitoFiltro]);
+
+  useEffect(() => {
+    onFilteredLogsChange?.(logsFiltrados);
+  }, [logsFiltrados, onFilteredLogsChange]);
   
   const cargarLogs = () => {
     setCargando(true);
@@ -113,8 +129,8 @@ export function AuditLogViewer() {
   const aplicarFiltros = () => {
     const filtrosActualizados: FiltrosAudit = {
       busqueda: busqueda || undefined,
-      fechaInicio: fechaInicio || undefined,
-      fechaFin: fechaFin || undefined,
+      fechaInicio: fechaInicioActiva || undefined,
+      fechaFin: fechaFinActiva || undefined,
       modulo: moduloFiltro !== 'todos' ? moduloFiltro : undefined,
       severidad: severidadFiltro !== 'todos' ? (severidadFiltro as any) : undefined,
       exito: exitoFiltro !== 'todos' ? exitoFiltro === 'si' : undefined
@@ -126,8 +142,10 @@ export function AuditLogViewer() {
   
   const limpiarFiltros = () => {
     setBusqueda('');
-    setFechaInicio('');
-    setFechaFin('');
+    if (!usaRangoExterno) {
+      setFechaInicio('');
+      setFechaFin('');
+    }
     setModuloFiltro('todos');
     setSeveridadFiltro('todos');
     setExitoFiltro('todos');
@@ -335,7 +353,7 @@ export function AuditLogViewer() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className={`grid grid-cols-1 md:grid-cols-2 ${usaRangoExterno ? 'lg:grid-cols-3' : 'lg:grid-cols-5'} gap-4`}>
                 {/* Búsqueda */}
                 <div className="col-span-full">
                   <Label>{t('audit.search', 'Rechercher')}</Label>
@@ -350,27 +368,31 @@ export function AuditLogViewer() {
                   </div>
                 </div>
                 
-                {/* Fecha Inicio */}
-                <div>
-                  <Label>{t('audit.dateFrom', 'Du')}</Label>
-                  <Input
-                    type="date"
-                    value={fechaInicio}
-                    onChange={(e) => setFechaInicio(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                
-                {/* Fecha Fin */}
-                <div>
-                  <Label>{t('audit.dateTo', 'Au')}</Label>
-                  <Input
-                    type="date"
-                    value={fechaFin}
-                    onChange={(e) => setFechaFin(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
+                {!usaRangoExterno && (
+                  <>
+                    {/* Fecha Inicio */}
+                    <div>
+                      <Label>{t('audit.dateFrom', 'Du')}</Label>
+                      <Input
+                        type="date"
+                        value={fechaInicio}
+                        onChange={(e) => setFechaInicio(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    {/* Fecha Fin */}
+                    <div>
+                      <Label>{t('audit.dateTo', 'Au')}</Label>
+                      <Input
+                        type="date"
+                        value={fechaFin}
+                        onChange={(e) => setFechaFin(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </>
+                )}
                 
                 {/* Módulo */}
                 <div>
@@ -403,6 +425,20 @@ export function AuditLogViewer() {
                       <SelectItem value="warning">Avertissement</SelectItem>
                       <SelectItem value="error">Error</SelectItem>
                       <SelectItem value="critical">Critique</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>{t('audit.status', 'Statut')}</Label>
+                  <Select value={exitoFiltro} onValueChange={setExitoFiltro}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Tous</SelectItem>
+                      <SelectItem value="si">Réussis</SelectItem>
+                      <SelectItem value="no">En erreur</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

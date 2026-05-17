@@ -24,7 +24,7 @@ export interface ReportComanda {
   totalValorMonetario: number;
 }
 
-type ReportOfferRequestStatus = Extract<SolicitudOferta['estado'], 'aceptada' | 'entregada'>;
+type ReportOfferRequestStatus = Extract<SolicitudOferta['estado'], 'aceptada' | 'en_preparacion' | 'entregada'>;
 
 function readFiniteNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -81,7 +81,15 @@ function getOfferRequestDate(solicitud: SolicitudOferta): string {
 }
 
 function mapOfferRequestStatusToReportStatus(status: ReportOfferRequestStatus): ReportComanda['estado'] {
-  return status === 'entregada' ? 'entregada' : 'confirmada';
+  if (status === 'entregada') {
+    return 'entregada';
+  }
+
+  if (status === 'en_preparacion') {
+    return 'en_preparacion';
+  }
+
+  return 'confirmada';
 }
 
 function getOfferProductWeight(producto: OfertaSistema['productos'][number], cantidad: number): number {
@@ -114,7 +122,7 @@ function adaptOfferRequestToReport(
   oferta: OfertaSistema,
   solicitud: SolicitudOferta,
 ): ReportComanda | null {
-  if (solicitud.estado !== 'aceptada' && solicitud.estado !== 'entregada') {
+  if (solicitud.estado !== 'aceptada' && solicitud.estado !== 'en_preparacion' && solicitud.estado !== 'entregada') {
     return null;
   }
 

@@ -12,7 +12,7 @@ import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
 import { obtenerRecetas, obtenerTransformaciones, type Transformacion } from '../../utils/recetaStorage';
 import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
-import { obtenerLogs } from '../../utils/auditStorage';
+import { obtenerLogs, type AuditLog } from '../../utils/auditStorage';
 import { obtenerEtiquetaModalidadDistribucion, resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import { 
   exportarOrganismosPDF,
@@ -103,7 +103,7 @@ const REPORT_TAB_TO_TYPE: Partial<Record<ReportTab, ExportableReportType>> = {
   auditoria: 'auditoria',
 };
 
-const PAGE_RANGE_REPORT_TYPES: ExportableReportType[] = ['general', 'inventario', 'comandas', 'prs'];
+const PAGE_RANGE_REPORT_TYPES: ExportableReportType[] = ['general', 'operaciones', 'inventario', 'comandas', 'prs', 'auditoria'];
 
 const DATE_PRESET_OPTIONS: Array<{ value: DatePreset; label: string }> = [
   { value: 'today', label: "Aujourd'hui" },
@@ -554,6 +554,7 @@ export function Reportes() {
   const [organismos, setOrganismos] = useState<Organismo[]>([]);
   const [recetas, setRecetas] = useState(obtenerRecetas());
   const [transformaciones, setTransformaciones] = useState<Transformacion[]>([]);
+  const [auditLogsVisibles, setAuditLogsVisibles] = useState<AuditLog[] | null>(null);
   const [remotePrsReport, setRemotePrsReport] = useState<RemotePRSReport | null>(null);
   const [remotePrsStatus, setRemotePrsStatus] = useState<'idle' | 'loading' | 'ready' | 'unavailable' | 'error'>('idle');
   const [remotePrsError, setRemotePrsError] = useState('');
@@ -605,7 +606,7 @@ export function Reportes() {
     || exportableReportType === 'comandas';
   const showActorFilter = exportableReportType === 'general' || exportableReportType === 'operaciones';
   const exportContextDescription = exportableReportType === 'operaciones'
-    ? 'Télécharge un résumé consolidé du mois en cours pour les rapports opérationnels.'
+    ? 'Télécharge un résumé opérationnel consolidé pour la plage de dates et les filtres actifs.'
     : exportableReportType === 'auditoria'
       ? 'Télécharge l\'état actuel du registre d\'audit.'
       : 'Les graphiques et exports de cette vue utilisent cette plage de dates.';
@@ -813,6 +814,10 @@ export function Reportes() {
   };
 
   useEffect(() => {
+    setAuditLogsVisibles(null);
+  }, [fechaInicio, fechaFin, activeReportTab]);
+
+  useEffect(() => {
     if (activeReportTab !== 'prs' || !rangoValido) {
       return;
     }
@@ -836,67 +841,11 @@ export function Reportes() {
     try {
       switch (exportableReportType) {
         case 'operaciones': {
-          const currentMonthRange = getCurrentMonthReportRange();
-          const operationalEntries = activeEntries.filter((entry) =>
-            isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end)
-            && (selectedCategory === 'all' || getEntryCategoryLabel(entry, productIndex) === selectedCategory)
-            && (selectedActor === 'all' || (entry.donadorNombre || '').trim() === selectedActor)
-          );
-          const operationalDistributions = obtenerComandasReporte()
-            .filter(isActiveReportComanda)
-            .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end))
-            .map((comanda) => {
-              const filteredPeso = selectedCategory === 'all'
-                ? getSafeNumericValue(comanda.totalPeso)
-                : comanda.productos.reduce((sum, item) => (
-                    getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory
-                      ? sum + getReportProductWeight(item, productIndex)
-                      : sum
-                  ), 0);
-              const totalPeso = getSafeNumericValue(comanda.totalPeso);
-              const filteredValor = selectedCategory === 'all'
-                ? getSafeNumericValue(comanda.totalValorMonetario)
-                : (totalPeso > 0 ? getSafeNumericValue(comanda.totalValorMonetario) * (filteredPeso / totalPeso) : 0);
-
-              return {
-                ...comanda,
-                filteredPeso: Number(filteredPeso.toFixed(1)),
-                filteredValor: Number(filteredValor.toFixed(2)),
-              };
-            })
-            .filter((comanda) => selectedCategory === 'all' || comanda.filteredPeso > 0);
-
-          const procurementValue = operationalEntries.reduce(
-            (sum, entry) => sum + getEntryMonetaryValue(entry, productIndex),
-            0,
-          );
-          const distributionValue = operationalDistributions.reduce(
-            (sum, comanda) => sum + getSafeNumericValue(comanda.filteredValor),
-            0,
-          );
-          const activeDonors = new Set(
-            operationalEntries.map((entry) => entry.donadorNombre).filter(Boolean)
-          ).size;
-          const activePrograms = new Set(
-            operationalEntries.map((entry) => entry.programaCodigo || entry.programaNombre).filter(Boolean)
-          ).size;
-          const operationalSummary = [
-            { Indicateur: 'Période', Valeur: currentMonthRange.label },
-            { Indicateur: 'Catégorie', Valeur: selectedCategory === 'all' ? 'Toutes' : selectedCategory },
-            { Indicateur: 'Donateur / fournisseur', Valeur: selectedActor === 'all' ? 'Tous' : selectedActor },
-            { Indicateur: 'Approvisionnements', Valeur: operationalEntries.length },
-            { Indicateur: 'Valeur approvisionnement', Valeur: `CAD$ ${procurementValue.toFixed(2)}` },
-            { Indicateur: 'Distributions', Valeur: operationalDistributions.length },
-            { Indicateur: 'Valeur distribution', Valeur: `CAD$ ${distributionValue.toFixed(2)}` },
-            { Indicateur: 'Donateurs actifs', Valeur: activeDonors },
-            { Indicateur: 'Programmes actifs', Valeur: activePrograms },
-          ];
-
           if (formato === 'pdf') {
             await exportReportRowsToPdf(
               'rapport_operaciones',
               'Rapports opérationnels',
-              `Résumé consolidé du mois en cours (${currentMonthRange.label})`,
+              `Résumé consolidé de la période filtrée (${operationalRangeLabel})`,
               [
                 ...operationalSummary.map((row) => ({ Section: 'Résumé opérationnel', ...row })),
                 ...(operationalEntries.length > 0
@@ -961,7 +910,7 @@ export function Reportes() {
               formato,
               'rapport_operaciones',
               'Rapports opérationnels',
-              `Résumé consolidé du mois en cours (${currentMonthRange.label})`,
+              `Résumé consolidé de la période filtrée (${operationalRangeLabel})`,
               [
                 ...operationalSummary.map((row) => ({ Section: 'Résumé opérationnel', ...row })),
                 ...(operationalEntries.length > 0
@@ -1172,7 +1121,6 @@ export function Reportes() {
           break;
 
         case 'auditoria': {
-          const auditLogs = obtenerLogs();
           const successfulLogs = auditLogs.filter((log) => log.exito).length;
           const errorLogs = auditLogs.filter((log) => !log.exito).length;
           const criticalLogs = auditLogs.filter((log) => log.severidad === 'critical').length;
@@ -1187,7 +1135,7 @@ export function Reportes() {
             await exportReportRowsToPdf(
               'rapport_audit',
               'Rapport d\'audit',
-              `Export du registre courant (${auditLogs.length} événements)`,
+              `Export du registre filtré (${auditLogs.length} événements)`,
               [
                 ...auditSummary.map((row) => ({ Section: 'Résumé audit', ...row })),
                 ...(auditLogs.length > 0
@@ -1226,7 +1174,7 @@ export function Reportes() {
               formato,
               'rapport_audit',
               'Rapport d\'audit',
-              `Export du registre courant (${auditLogs.length} événements)`,
+              `Export du registre filtré (${auditLogs.length} événements)`,
               [
                 ...auditSummary.map((row) => ({ Section: 'Résumé audit', ...row })),
                 ...(auditLogs.length > 0
@@ -1411,15 +1359,15 @@ export function Reportes() {
   const stockTotal = productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0);
   const totalBeneficiarios = organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0);
   const activeOrganisms = organismos.filter((organismo) => organismo.activo);
-  const currentMonthRange = getCurrentMonthReportRange();
+  const operationalRangeLabel = rangoValido ? `${fechaInicio} - ${fechaFin}` : 'Plage invalide';
   const operationalEntries = activeEntries.filter((entry) =>
-    isDateInRange(entry.fecha, currentMonthRange.start, currentMonthRange.end)
+    isDateInRange(entry.fecha, rangoInicio, rangoFin)
     && (selectedCategory === 'all' || getEntryCategoryLabel(entry, productIndex) === selectedCategory)
     && (selectedActor === 'all' || (entry.donadorNombre || '').trim() === selectedActor)
   );
   const operationalDistributions = obtenerComandasReporte()
     .filter(isActiveReportComanda)
-    .filter((comanda) => isDateInRange(comanda.fecha, currentMonthRange.start, currentMonthRange.end))
+    .filter((comanda) => isDateInRange(comanda.fecha, rangoInicio, rangoFin))
     .map((comanda) => {
       const filteredPeso = selectedCategory === 'all'
         ? getSafeNumericValue(comanda.totalPeso)
@@ -1454,8 +1402,23 @@ export function Reportes() {
   const operationalDistributionsKg = Number(
     operationalDistributions.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.filteredPeso), 0).toFixed(1)
   );
+  const operationalBalanceValue = procurementValue - distributionValue;
   const operationalDonors = new Set(operationalEntries.map((entry) => entry.donadorNombre).filter(Boolean)).size;
   const operationalPrograms = new Set(operationalEntries.map((entry) => entry.programaCodigo || entry.programaNombre).filter(Boolean)).size;
+  const operationalSummary = [
+    { Indicateur: 'Période', Valeur: operationalRangeLabel },
+    { Indicateur: 'Catégorie', Valeur: selectedCategory === 'all' ? 'Toutes' : selectedCategory },
+    { Indicateur: 'Donateur / fournisseur', Valeur: selectedActor === 'all' ? 'Tous' : selectedActor },
+    { Indicateur: 'Entrées', Valeur: operationalEntries.length },
+    { Indicateur: 'Kg entrants', Valeur: `${operationalEntriesKg.toFixed(1)} kg` },
+    { Indicateur: 'Valeur entrante', Valeur: `CAD$ ${procurementValue.toFixed(2)}` },
+    { Indicateur: 'Distributions', Valeur: operationalDistributions.length },
+    { Indicateur: 'Kg distribués', Valeur: `${operationalDistributionsKg.toFixed(1)} kg` },
+    { Indicateur: 'Valeur distribuée', Valeur: `CAD$ ${distributionValue.toFixed(2)}` },
+    { Indicateur: 'Balance monétaire', Valeur: `CAD$ ${operationalBalanceValue.toFixed(2)}` },
+    { Indicateur: 'Donateurs actifs', Valeur: operationalDonors },
+    { Indicateur: 'Programmes actifs', Valeur: operationalPrograms },
+  ];
   const lowStockProducts = productos
     .filter((producto) => producto.stockActual <= producto.stockMinimo)
     .sort((left, right) => (left.stockActual - left.stockMinimo) - (right.stockActual - right.stockMinimo))
@@ -1506,7 +1469,10 @@ export function Reportes() {
         : remotePrsStatus === 'idle'
           ? 'Sélectionnez l’onglet PRS avec une plage valide pour charger le rapport distant.'
           : '';
-  const auditLogs = obtenerLogs();
+  const auditLogsBase = rangoValido
+    ? obtenerLogs().filter((log) => isDateInRange(log.fecha, rangoInicio, rangoFin))
+    : [];
+  const auditLogs = auditLogsVisibles ?? auditLogsBase;
   const auditSuccessCount = auditLogs.filter((log) => log.exito).length;
   const auditErrorCount = auditLogs.filter((log) => !log.exito).length;
   const auditCriticalCount = auditLogs.filter((log) => log.severidad === 'critical').length;
@@ -1534,7 +1500,7 @@ export function Reportes() {
     {
       label: 'Flux physiques',
       value: `${formatWeightSummary(operationalEntriesKg)} / ${formatWeightSummary(operationalDistributionsKg)}`,
-      helper: `${operationalEntries.length} entrées • ${operationalDistributions.length} distributions sur la fenêtre mensuelle courante.`,
+      helper: `${operationalEntries.length} entrées • ${operationalDistributions.length} distributions sur la plage filtrée.`,
     },
     {
       label: 'Attention immédiate',
@@ -1544,11 +1510,12 @@ export function Reportes() {
   ];
   const compactOperationsItems: ReportDetailItem[] = [
     {
-      label: 'Flux physiques',
-      value: `${formatWeightSummary(operationalEntriesKg)} / ${formatWeightSummary(operationalDistributionsKg)}`,
-      helper: `${operationalEntries.length} entrées actives • ${operationalDistributions.length} distributions actives`,
+      label: 'Entrant',
+      value: `${formatWeightSummary(operationalEntriesKg)} • ${formatCurrencySummary(procurementValue)}`,
+      helper: `${operationalEntries.length} entrées retenues sur la plage filtrée.`,
     },
-    { label: 'Balance', value: formatCurrencySummary(procurementValue - distributionValue), helper: `${formatCurrencySummary(procurementValue)} entrants • ${formatCurrencySummary(distributionValue)} sortants` },
+    { label: 'Distribué', value: `${formatWeightSummary(operationalDistributionsKg)} • ${formatCurrencySummary(distributionValue)}`, helper: `${operationalDistributions.length} distributions retenues sur la plage filtrée.` },
+    { label: 'Balance', value: formatCurrencySummary(operationalBalanceValue), helper: `${formatCurrencySummary(procurementValue)} entrants • ${formatCurrencySummary(distributionValue)} distribués` },
     { label: 'Acteurs', value: `${operationalDonors} donateurs`, helper: `${operationalPrograms} programmes actifs` },
     { label: 'Distribution', value: `${operationalDistributions.length} commandas`, helper: topOrderingOrganisms[0] ? `${topOrderingOrganisms[0][0]} en tête` : 'Aucun organisme servi sur la période.' },
   ];
@@ -2094,44 +2061,49 @@ export function Reportes() {
             {showCompactReportsOverview ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  <ReportStatCard label="Kg entrants" value={formatWeightSummary(operationalEntriesKg)} helper={`${operationalEntries.length} entrées`} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
-                  <ReportStatCard label="Kg distribués" value={formatWeightSummary(operationalDistributionsKg)} helper={`${operationalDistributions.length} distributions`} accentColor="#e8a419" valueColor="#e8a419" compact />
+                  <ReportStatCard label="Kg entrants" value={formatWeightSummary(operationalEntriesKg)} helper={`${operationalEntries.length} entrées sur la plage filtrée`} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Kg distribués" value={formatWeightSummary(operationalDistributionsKg)} helper={`${operationalDistributions.length} distributions sur la plage filtrée`} accentColor="#e8a419" valueColor="#e8a419" compact />
                 </div>
-                <ReportDetailPanel title="Lecture opérationnelle" description="Synthèse courte des flux en cours." items={compactOperationsItems} compact />
+                <ReportDetailPanel title="Résumé opérationnel" description="Synthèse courte des flux entrants et distribués sur la plage choisie." items={compactOperationsItems} compact />
               </>
             ) : (
             <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
-              <ReportStatCard label="Kg entrants du mois" value={formatWeightSummary(operationalEntriesKg)} helper={`${operationalEntries.length} entrées actives`} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Kg entrants" value={formatWeightSummary(operationalEntriesKg)} helper={`${operationalEntries.length} entrées sur la plage filtrée`} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
               <ReportStatCard label="Valeur entrante" value={formatCurrencySummary(procurementValue)} accentColor="#2d9561" valueColor="#2d9561" />
-              <ReportStatCard label="Kg distribués du mois" value={formatWeightSummary(operationalDistributionsKg)} helper={`${operationalDistributions.length} distributions actives`} accentColor="#e8a419" valueColor="#e8a419" />
-              <ReportStatCard label="Valeur sortante" value={formatCurrencySummary(distributionValue)} accentColor="#c23934" valueColor="#c23934" />
+              <ReportStatCard label="Kg distribués" value={formatWeightSummary(operationalDistributionsKg)} helper={`${operationalDistributions.length} distributions sur la plage filtrée`} accentColor="#e8a419" valueColor="#e8a419" />
+              <ReportStatCard label="Valeur distribuée" value={formatCurrencySummary(distributionValue)} accentColor="#c23934" valueColor="#c23934" />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               <ReportDetailPanel
-                title="Lecture opérationnelle"
-                description="Indicateurs mensuels pour suivre l’équilibre entre approvisionnement et distribution."
+                title="Résumé opérationnel"
+                description="Indicateurs filtrés entre les deux dates pour suivre l’équilibre entre l’entrant et le distribué."
                 items={[
                   {
-                    label: 'Période de pilotage',
-                    value: currentMonthRange.label,
-                    helper: 'Cette synthèse reste calée sur le mois en cours pour comparer les flux actifs.',
+                    label: 'Période filtrée',
+                    value: operationalRangeLabel,
+                    helper: 'Les totaux ci-dessous suivent exactement les deux dates sélectionnées.',
                   },
                   {
-                    label: 'Flux physiques',
-                    value: `${formatWeightSummary(operationalEntriesKg)} / ${formatWeightSummary(operationalDistributionsKg)}`,
-                    helper: `${operationalEntries.length} entrées actives contre ${operationalDistributions.length} distributions actives.`,
+                    label: 'Entrant total',
+                    value: `${formatWeightSummary(operationalEntriesKg)} • ${formatCurrencySummary(procurementValue)}`,
+                    helper: `${operationalEntries.length} entrées retenues dans le filtre.`,
+                  },
+                  {
+                    label: 'Distribué total',
+                    value: `${formatWeightSummary(operationalDistributionsKg)} • ${formatCurrencySummary(distributionValue)}`,
+                    helper: `${operationalDistributions.length} distributions retenues dans le filtre.`,
                   },
                   {
                     label: 'Balance financière',
-                    value: formatCurrencySummary(procurementValue - distributionValue),
-                    helper: `${formatCurrencySummary(procurementValue)} d’entrées contre ${formatCurrencySummary(distributionValue)} de sorties valorisées.`,
+                    value: formatCurrencySummary(operationalBalanceValue),
+                    helper: `${formatCurrencySummary(procurementValue)} d’entrées contre ${formatCurrencySummary(distributionValue)} distribués.`,
                   },
                   {
                     label: 'Acteurs engagés',
                     value: `${operationalDonors} donateurs`,
-                    helper: `${operationalPrograms} programmes ou campagnes actifs sur le mois courant.`,
+                    helper: `${operationalPrograms} programmes ou campagnes actifs sur la plage filtrée.`,
                   },
                   {
                     label: 'Rythme de distribution',
@@ -2594,7 +2566,11 @@ export function Reportes() {
               />
             </div>
 
-            <AuditLogViewer />
+            <AuditLogViewer
+              fechaInicioExterna={fechaInicio}
+              fechaFinExterna={fechaFin}
+              onFilteredLogsChange={setAuditLogsVisibles}
+            />
             </>
             )}
           </TabsContent>

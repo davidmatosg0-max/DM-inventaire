@@ -233,7 +233,8 @@ export function filtrarLogs(filtros: FiltrosAudit): AuditLog[] {
   
   // Filtrar por fecha de fin
   if (filtros.fechaFin) {
-    const fechaFin = new Date(filtros.fechaFin).getTime();
+    const fechaFin = new Date(filtros.fechaFin);
+    fechaFin.setHours(23, 59, 59, 999);
     logs = logs.filter(log => new Date(log.fecha).getTime() <= fechaFin);
   }
   
@@ -384,11 +385,11 @@ export function obtenerEstadisticasLogs(logs?: AuditLog[]) {
 /**
  * Obtener usuarios más activos
  */
-export function obtenerUsuariosMasActivos(limite: number = 10): Array<{usuario: string, acciones: number}> {
-  const logs = obtenerLogs();
+export function obtenerUsuariosMasActivos(limite: number = 10, logs?: AuditLog[]): Array<{usuario: string, acciones: number}> {
+  const logsAnalizados = logs || obtenerLogs();
   const contador: Record<string, number> = {};
   
-  logs.forEach(log => {
+  logsAnalizados.forEach(log => {
     contador[log.usuario] = (contador[log.usuario] || 0) + 1;
   });
   
@@ -401,11 +402,11 @@ export function obtenerUsuariosMasActivos(limite: number = 10): Array<{usuario: 
 /**
  * Obtener módulos más utilizados
  */
-export function obtenerModulosMasUtilizados(limite: number = 10): Array<{modulo: string, acciones: number}> {
-  const logs = obtenerLogs();
+export function obtenerModulosMasUtilizados(limite: number = 10, logs?: AuditLog[]): Array<{modulo: string, acciones: number}> {
+  const logsAnalizados = logs || obtenerLogs();
   const contador: Record<string, number> = {};
   
-  logs.forEach(log => {
+  logsAnalizados.forEach(log => {
     contador[log.modulo] = (contador[log.modulo] || 0) + 1;
   });
   

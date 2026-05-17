@@ -12,6 +12,7 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { toast } from 'sonner';
 import { 
+  obtenerOfertaPorId,
   obtenerOfertasParaOrganismo,
   actualizarEstadoOferta,
   type EstadoSolicitud,
@@ -72,6 +73,11 @@ export function OfertasOrganismo() {
       })
     );
   }, [productosCatalogo]);
+  const organismosPorId = React.useMemo(() => {
+    return new Map(
+      obtenerOrganismos().map(organismo => [organismo.id, organismo.nombre])
+    );
+  }, []);
   const tipoAsistenciaOrganismo = typeof organismoActual?.tipoAsistencia === 'string'
     ? organismoActual.tipoAsistencia
     : undefined;
@@ -175,9 +181,85 @@ export function OfertasOrganismo() {
   });
 
   const verDetalleOferta = (oferta: Oferta) => {
-    setOfertaSeleccionada(oferta);
+    const ofertaActualizada = obtenerOfertaPorId(oferta.id);
+    setOfertaSeleccionada(ofertaActualizada || oferta);
     setDialogDetalleOpen(true);
   };
+
+  const resolverDestinoOferta = (oferta: Oferta) => {
+    if (oferta.organismosDestino === 'todos') {
+      return {
+        mode: 'todos' as const,
+        title: 'Tous les organismes',
+        subtitle: 'Diffusion groupée'
+      };
+    }
+
+    if (Array.isArray(oferta.organismosDestino)) {
+      const nombres = oferta.organismosDestino
+        .map(organismoId => organismosPorId.get(organismoId))
+        .filter((nombre): nombre is string => Boolean(nombre));
+
+      if (oferta.organismosDestino.length <= 1) {
+        return {
+          mode: 'individual' as const,
+          title: nombres[0] || organismoActual?.nombre || t('offers.organismNotConfigured'),
+          subtitle: 'Offre individuelle'
+        };
+      }
+
+      return {
+        mode: 'groupe' as const,
+        title: `Groupe de ${oferta.organismosDestino.length} organismes`,
+        subtitle: nombres.length > 0
+          ? `${nombres.slice(0, 3).join(', ')}${nombres.length > 3 ? ` +${nombres.length - 3}` : ''}`
+          : 'Offre groupée'
+      };
+    }
+
+    return {
+      mode: 'individual' as const,
+      title: organismoActual?.nombre || t('offers.organismNotConfigured'),
+      subtitle: 'Offre individuelle'
+    };
+  };
+
+  const resumenDestinatario = React.useMemo(() => {
+    if (ofertasFiltradas.length === 0) {
+      return {
+        label: t('offers.organism'),
+        value: organismoActual?.nombre || t('offers.organismNotConfigured')
+      };
+    }
+
+    const modos = new Set(ofertasFiltradas.map(oferta => resolverDestinoOferta(oferta).mode));
+
+    if (modos.size === 1 && modos.has('individual')) {
+      return {
+        label: t('offers.organism'),
+        value: organismoActual?.nombre || t('offers.organismNotConfigured')
+      };
+    }
+
+    if (modos.size === 1 && modos.has('todos')) {
+      return {
+        label: 'Diffusion',
+        value: 'Tous les organismes'
+      };
+    }
+
+    if (modos.size === 1 && modos.has('groupe')) {
+      return {
+        label: 'Diffusion',
+        value: 'Groupe d\'organismes'
+      };
+    }
+
+    return {
+      label: 'Diffusion',
+      value: 'Individuelle et groupée'
+    };
+  }, [ofertasFiltradas, organismoActual?.nombre, t]);
 
   const aceptarOferta = (oferta: Oferta, solicitudBase?: SolicitudOferta) => {
     setOfertaSeleccionada(oferta);
@@ -245,7 +327,7 @@ export function OfertasOrganismo() {
                 🏷️ {t('offers.availableOffers')}
               </h1>
               <p className="text-gray-700 mt-1 text-sm sm:text-base">
-                {t('offers.organism')}: <span className="font-semibold">{organismoActual?.nombre || t('offers.organismNotConfigured')}</span>
+                {resumenDestinatario.label}: <span className="font-semibold">{resumenDestinatario.value}</span>
               </p>
             </div>
           </div>
@@ -365,6 +447,7 @@ export function OfertasOrganismo() {
             const estadoOferta = calcularEstadoOferta(oferta);
             const totalDisponible = oferta.productos.reduce((sum, p) => sum + p.cantidadDisponible, 0);
             const porcentajeDisponible = (totalDisponible / oferta.productos.reduce((sum, p) => sum + p.cantidadOfrecida, 0)) * 100;
+            const destinoOferta = resolverDestinoOferta(oferta);
 
             return (
               <div 
@@ -401,6 +484,15 @@ export function OfertasOrganismo() {
                         {oferta.titulo}
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-600 mt-1">{oferta.numeroOferta}</p>
+                      <div className="mt-2 flex items-start gap-2 text-xs sm:text-sm text-gray-600">
+                        <Building2 className="mt-0.5 h-4 w-4 text-[#1E73BE]" />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[#0f172a]">
+                            {destinoOferta.mode === 'individual' ? 'Organisme ciblé' : 'Diffusion'}
+                          </p>
+                          <p className="truncate">{destinoOferta.title}</p>
+                        </div>
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="text-xl sm:text-2xl">🏷️</div>
@@ -520,8 +612,20 @@ export function OfertasOrganismo() {
               {(() => {
                 const estadoOferta = calcularEstadoOferta(ofertaSeleccionada);
                 const fechaExpiracion = new Date(ofertaSeleccionada.fechaExpiracion);
+                const destinoOferta = resolverDestinoOferta(ofertaSeleccionada);
+                const nombreOrganismoActual = organismoActual?.nombre?.trim().toLowerCase();
                 const solicitudesOrganismo = (ofertaSeleccionada.solicitudes || [])
-                  .filter(solicitud => solicitud.organismoId === organismoActual?.id)
+                  .filter(solicitud => {
+                    if (organismoActual?.id && solicitud.organismoId === organismoActual.id) {
+                      return true;
+                    }
+
+                    if (!nombreOrganismoActual) {
+                      return false;
+                    }
+
+                    return solicitud.organismoNombre?.trim().toLowerCase() === nombreOrganismoActual;
+                  })
                   .sort((left, right) => {
                     const leftDate = new Date(left.fechaActualizacion || left.fechaSolicitud).getTime();
                     const rightDate = new Date(right.fechaActualizacion || right.fechaSolicitud).getTime();
@@ -565,6 +669,7 @@ export function OfertasOrganismo() {
                 const estadoSolicitudUi: Record<string, { label: string; className: string; dotColor: string }> = {
                   pendiente: { label: 'En attente', className: 'border-[#fcd34d] bg-[#fff7e8] text-[#b45309]', dotColor: '#f59e0b' },
                   aceptada: { label: 'Acceptée', className: 'border-[#bbf7d0] bg-[#ecfdf3] text-[#15803d]', dotColor: '#22c55e' },
+                  en_preparacion: { label: 'En préparation', className: 'border-[#bae6fd] bg-[#ecfeff] text-[#0f766e]', dotColor: '#06b6d4' },
                   entregada: { label: 'Livrée', className: 'border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8]', dotColor: '#2563eb' },
                   rechazada: { label: 'Refusée', className: 'border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]', dotColor: '#ef4444' },
                   anulada: { label: 'Annulée', className: 'border-[#d1d5db] bg-[#f3f4f6] text-[#4b5563]', dotColor: '#94a3b8' },
@@ -573,6 +678,7 @@ export function OfertasOrganismo() {
                   { value: 'todas', label: 'Toutes', count: solicitudesOrganismo.length },
                   { value: 'pendiente', label: 'En attente', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'pendiente').length },
                   { value: 'aceptada', label: 'Acceptées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'aceptada').length },
+                  { value: 'en_preparacion', label: 'En préparation', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'en_preparacion').length },
                   { value: 'entregada', label: 'Livrées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'entregada').length },
                   { value: 'rechazada', label: 'Refusées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'rechazada').length },
                   { value: 'anulada', label: 'Annulées', count: solicitudesOrganismo.filter(solicitud => solicitud.estado === 'anulada').length },
@@ -726,8 +832,13 @@ export function OfertasOrganismo() {
                             <div className="flex items-start gap-2">
                               <Building2 className="mt-0.5 h-4 w-4 text-[#1E73BE]" />
                               <div>
-                                <p className="font-semibold text-[#0f172a]">Organisme</p>
-                                <p>{organismoActual?.nombre || 'Organisme non configuré'}</p>
+                                <p className="font-semibold text-[#0f172a]">
+                                  {destinoOferta.mode === 'individual' ? 'Organisme ciblé' : 'Diffusion'}
+                                </p>
+                                <p>{destinoOferta.title}</p>
+                                {destinoOferta.mode !== 'individual' && (
+                                  <p className="mt-1 text-xs text-[#64748b]">{destinoOferta.subtitle}</p>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-start gap-2">
@@ -918,6 +1029,11 @@ export function OfertasOrganismo() {
                                         day: 'numeric',
                                       })} • {solicitud.productosAceptados.length} produits • quantité totale: {totalItems}
                                     </p>
+                                    {solicitud.preparadoPor && (solicitud.estado === 'en_preparacion' || solicitud.estado === 'entregada') && (
+                                      <p className="mt-1 text-xs font-medium text-[#0f766e]">
+                                        Préparée par : {solicitud.preparadoPor}
+                                      </p>
+                                    )}
                                   </div>
                                   {solicitud.fechaActualizacion && (
                                     <p className="text-xs text-[#64748b]">

@@ -29,6 +29,9 @@ import { filterByThreeLettersMultiple } from '../../utils/searchUtils';
 import { 
   obtenerOfertas, 
   aceptarSolicitud,
+  actualizarFechaExpiracionOferta,
+  anularOferta,
+  marcarSolicitudEnPreparacion,
   marcarSolicitudEntregada,
   rechazarSolicitud,
   anularSolicitud,
@@ -54,6 +57,7 @@ import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 
 export function Comandas() {
   const { t, i18n } = useTranslation();
+  const tFr = i18n.getFixedT('fr');
   const branding = useBranding();
   const [tabActual, setTabActual] = useState('comandas');
   const {
@@ -117,6 +121,36 @@ export function Comandas() {
 
   const formatLocalizedDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
     parseDateForDisplay(value).toLocaleDateString(currentLocale, options);
+  const formatFrenchDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
+    parseDateForDisplay(value).toLocaleDateString('fr', options);
+  const formatOfferObservation = (value?: string | null) => {
+    if (!value) {
+      return '';
+    }
+
+    return value
+      .replace(/^Solicitud desde el portal del organismo\.\s*/i, 'Demande soumise depuis le portail de l’organisme. ')
+      .replace(/Total:\s*(\d+)\s+productos?,\s*/i, (_match, totalProductos: string) => {
+        const total = Number(totalProductos);
+        const label = total === 1 ? 'produit' : 'produits';
+        return `Total : ${totalProductos} ${label}, `;
+      })
+      .replace(/Fecha de recogida:\s*/i, 'Date de collecte : ')
+      .replace(/Persona que recogerá:\s*/i, 'Personne qui récupérera : ')
+      .replace(/\(Tel:\s*/i, '(Tél. : ');
+  };
+  const formatDateInputValue = (value: string) => {
+    const fecha = parseDateForDisplay(value);
+
+    if (Number.isNaN(fecha.getTime())) {
+      return '';
+    }
+
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${año}-${mes}-${dia}`;
+  };
   const searchByNumberPlaceholder = t('orders.searchByNumber');
   const [searchTerm, setSearchTerm] = useState('');
   const [comandaDialogOpen, setComandaDialogOpen] = useState(false);
@@ -152,6 +186,10 @@ export function Comandas() {
   // Estados para ofertas
   const [estadoFiltroOferta, setEstadoFiltroOferta] = useState('todos');
   const [ofertaSeleccionada, setOfertaSeleccionada] = useState<Oferta | null>(null);
+  const [ofertaEnGestion, setOfertaEnGestion] = useState<Oferta | null>(null);
+  const [dialogEditarCaducidadOfertaOpen, setDialogEditarCaducidadOfertaOpen] = useState(false);
+  const [dialogAnularOfertaOpen, setDialogAnularOfertaOpen] = useState(false);
+  const [nuevaFechaCaducidadOferta, setNuevaFechaCaducidadOferta] = useState('');
   const [refreshOfertas, setRefreshOfertas] = useState(0);
   
   // Obtener ofertas actualizadas
@@ -908,7 +946,24 @@ export function Comandas() {
       toast.success(t('orders.requestDeliveredSuccess', { organism: organismoNombre }));
       setRefreshOfertas(prev => prev + 1);
     } else {
-      toast.error(t('orders.markDeliveredOnlyAcceptedError'));
+      toast.error('Seules les demandes en préparation peuvent être marquées comme livrées.');
+    }
+  };
+
+  const handleMarcarSolicitudEnPreparacion = (ofertaId: string, solicitudId: string, organismoNombre: string) => {
+    const exito = marcarSolicitudEnPreparacion(ofertaId, solicitudId);
+    if (exito) {
+      registrarActividad(
+        'Commandes',
+        'modificar',
+        `Offre en préparation - Organisme: ${organismoNombre}`,
+        { ofertaId, solicitudId, organismoNombre }
+      );
+
+      toast.success(`Demande de ${organismoNombre} passée en préparation.`);
+      setRefreshOfertas(prev => prev + 1);
+    } else {
+      toast.error('Seules les demandes acceptées peuvent passer en préparation.');
     }
   };
 
@@ -928,6 +983,78 @@ export function Comandas() {
     } else {
       toast.error(t('orders.cancelRequestError'));
     }
+  };
+
+  const abrirDialogEditarCaducidadOferta = (oferta: Oferta) => {
+    setOfertaEnGestion(oferta);
+    setNuevaFechaCaducidadOferta(formatDateInputValue(oferta.fechaExpiracion));
+    setDialogEditarCaducidadOfertaOpen(true);
+  };
+
+  const handleGuardarNuevaCaducidadOferta = () => {
+    if (!ofertaEnGestion || !nuevaFechaCaducidadOferta) {
+      toast.error('Veuillez sélectionner une date de caducité valide.');
+      return;
+    }
+
+    const fechaNueva = new Date(nuevaFechaCaducidadOferta);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    if (Number.isNaN(fechaNueva.getTime()) || fechaNueva < hoy) {
+      toast.error('La nouvelle date de caducité doit être aujourd’hui ou dans le futur.');
+      return;
+    }
+
+    const exito = actualizarFechaExpiracionOferta(ofertaEnGestion.id, nuevaFechaCaducidadOferta);
+
+    if (!exito) {
+      toast.error('Impossible de mettre à jour la date de caducité de l’offre.');
+      return;
+    }
+
+    registrarActividad(
+      'Commandes',
+      'modificar',
+      `Date de caducité d'offre modifiée - Offre: ${ofertaEnGestion.numeroOferta}`,
+      { ofertaId: ofertaEnGestion.id, numeroOferta: ofertaEnGestion.numeroOferta, nuevaFechaCaducidadOferta }
+    );
+
+    toast.success('Date de caducité de l’offre mise à jour.');
+    setDialogEditarCaducidadOfertaOpen(false);
+    setOfertaEnGestion(null);
+    setNuevaFechaCaducidadOferta('');
+    setRefreshOfertas(prev => prev + 1);
+  };
+
+  const abrirDialogAnularOferta = (oferta: Oferta) => {
+    setOfertaEnGestion(oferta);
+    setDialogAnularOfertaOpen(true);
+  };
+
+  const handleConfirmarAnularOferta = () => {
+    if (!ofertaEnGestion) {
+      return;
+    }
+
+    const exito = anularOferta(ofertaEnGestion.id);
+
+    if (!exito) {
+      toast.error('Impossible d’annuler l’offre sélectionnée.');
+      return;
+    }
+
+    registrarActividad(
+      'Commandes',
+      'eliminar',
+      `Offre annulée - Offre: ${ofertaEnGestion.numeroOferta}`,
+      { ofertaId: ofertaEnGestion.id, numeroOferta: ofertaEnGestion.numeroOferta }
+    );
+
+    toast.success('Offre annulée avec succès.');
+    setDialogAnularOfertaOpen(false);
+    setOfertaEnGestion(null);
+    setRefreshOfertas(prev => prev + 1);
   };
   
   // Función para imprimir etiqueta estandarizada
@@ -1043,7 +1170,12 @@ export function Comandas() {
       organismoId: organismo?.id || '',
       fechaCreacion: solicitud.fechaSolicitud,
       fechaEntrega: solicitud.fechaSolicitud, // Usar la fecha de solicitud como referencia
-      estado: 'completada',
+      estado: solicitud.estado === 'entregada'
+        ? 'entregada'
+        : solicitud.estado === 'en_preparacion'
+        ? 'en_preparacion'
+        : 'confirmada',
+      preparadoPor: solicitud.preparadoPor,
       items: items,
       observaciones: solicitud.observaciones || ''
     };
@@ -1053,6 +1185,7 @@ export function Comandas() {
     const config = {
       pendiente: { bg: 'bg-[#FFC107]', text: t('orders.requestPending') },
       aceptada: { bg: 'bg-[#4CAF50]', text: t('orders.requestAccepted') },
+      en_preparacion: { bg: 'bg-[#1E73BE]', text: 'En préparation' },
       entregada: { bg: 'bg-[#1E73BE]', text: t('orders.requestDelivered') },
       rechazada: { bg: 'bg-[#DC3545]', text: t('orders.requestRejected') },
       anulada: { bg: 'bg-[#666666]', text: t('orders.requestCancelled') }
@@ -1518,6 +1651,11 @@ export function Comandas() {
                                             <span className="text-[#cbd5e1]">•</span>
                                             <span>{comanda.items?.length || 0} {t('inventory.products')}</span>
                                           </div>
+                                          {comanda.preparadoPor && ['en_preparacion', 'completada', 'entregada'].includes(comanda.estado) && (
+                                            <p className="mt-1 text-[11px] font-medium text-[#0f766e]">
+                                              Préparée par : {comanda.preparadoPor}
+                                            </p>
+                                          )}
                                         </div>
                                         <div className="shrink-0">
                                           {getEstadoBadge(comanda.estado)}
@@ -1621,6 +1759,11 @@ export function Comandas() {
                                           </p>
                                         </div>
                                       </div>
+                                      {comanda.preparadoPor && ['en_preparacion', 'completada', 'entregada'].includes(comanda.estado) && (
+                                        <div className="mt-2 rounded-lg bg-[#ecfeff] px-2.5 py-2 text-xs text-[#0f766e]">
+                                          <span className="font-semibold">Préparée par :</span> {comanda.preparadoPor}
+                                        </div>
+                                      )}
 
                                       <div className="mt-3 flex flex-wrap gap-1.5">
                                         <Button
@@ -1697,15 +1840,15 @@ export function Comandas() {
                 <div className="app-compact-filters">
                   <Select value={estadoFiltroOferta} onValueChange={setEstadoFiltroOferta}>
                     <SelectTrigger className="w-[250px] h-9 text-xs">
-                      <SelectValue placeholder={t('orders.offerStatusFilter')} />
+                      <SelectValue placeholder={tFr('orders.offerStatusFilter')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">{t('orders.allOffers')}</SelectItem>
-                      <SelectItem value="pendientes">{t('orders.pending')}</SelectItem>
-                      <SelectItem value="con_solicitudes">{t('orders.withRequests')}</SelectItem>
-                      <SelectItem value="entregadas">{t('orders.deliveredOffers')}</SelectItem>
-                      <SelectItem value="activas">{t('orders.activeOffers')}</SelectItem>
-                      <SelectItem value="expiradas">{t('orders.expiredOffers')}</SelectItem>
+                      <SelectItem value="todos">{tFr('orders.allOffers')}</SelectItem>
+                      <SelectItem value="pendientes">{tFr('orders.pending')}</SelectItem>
+                      <SelectItem value="con_solicitudes">{tFr('orders.withRequests')}</SelectItem>
+                      <SelectItem value="entregadas">{tFr('orders.deliveredOffers')}</SelectItem>
+                      <SelectItem value="activas">{tFr('orders.activeOffers')}</SelectItem>
+                      <SelectItem value="expiradas">{tFr('orders.expiredOffers')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1719,7 +1862,7 @@ export function Comandas() {
                   Avec demandes: {ofertasConSolicitudes}
                 </div>
                 <div className="rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm" style={{ color: '#b45309', background: '#fff7e8', border: '1px solid #fcd34d' }}>
-                  Sollicitudes: {solicitudesOfertaCount}
+                  Demandes: {solicitudesOfertaCount}
                 </div>
                 <div className="rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm" style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca' }}>
                   Expirées: {ofertasExpiradasCount}
@@ -1733,11 +1876,13 @@ export function Comandas() {
             {ofertasFiltradas.map(oferta => {
                 const totalSolicitudes = oferta.solicitudes?.length || 0;
                 const fechaExpiracion = new Date(oferta.fechaExpiracion);
-                const estaExpirada = fechaExpiracion < new Date();
+                const estaAnulada = oferta.estado === 'anulada';
+                const estaExpirada = !estaAnulada && (!oferta.activa || fechaExpiracion < new Date());
+                const ofertaBloqueada = estaAnulada || estaExpirada;
                 const diasRestantes = Math.ceil((fechaExpiracion.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                 
                 return (
-                  <Card key={oferta.id} className={`overflow-hidden border-white/75 bg-white/88 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl ${estaExpirada ? 'opacity-70' : ''}`}>
+                  <Card key={oferta.id} className={`overflow-hidden border-white/75 bg-white/88 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl ${ofertaBloqueada ? 'opacity-70' : ''}`}>
                     <CardContent className="pt-5">
                       <div className="space-y-4">
                         {/* Header de la oferta */}
@@ -1755,23 +1900,50 @@ export function Comandas() {
                             )}
                           </div>
                           <div className="flex flex-col gap-2 items-end">
-                            <Badge className={estaExpirada ? 'bg-[#DC3545]' : diasRestantes <= 3 ? 'bg-[#FFC107]' : 'bg-[#4CAF50]'}>
-                              {estaExpirada
-                                ? t('orders.expired')
-                                : t('orders.expiresOn', { date: formatLocalizedDate(oferta.fechaExpiracion) })}
+                            <Badge className={estaAnulada ? 'bg-[#64748b]' : estaExpirada ? 'bg-[#DC3545]' : diasRestantes <= 3 ? 'bg-[#FFC107]' : 'bg-[#4CAF50]'}>
+                              {estaAnulada
+                                ? 'Annulée'
+                                : estaExpirada
+                                ? tFr('orders.expired')
+                                : tFr('orders.expiresOn', { date: formatFrenchDate(oferta.fechaExpiracion) })}
                             </Badge>
                             {totalSolicitudes > 0 && (
                               <Badge className="bg-[#1E73BE]">
-                                {totalSolicitudes} {totalSolicitudes === 1 ? t('orders.requestCountSingular') : t('orders.requestCountPlural')}
+                                {totalSolicitudes} {totalSolicitudes === 1 ? tFr('orders.requestCountSingular') : tFr('orders.requestCountPlural')}
                               </Badge>
                             )}
                           </div>
                         </div>
 
+                        <div className="flex flex-wrap gap-2 border-t border-[#e5edf5] pt-4">
+                          {!estaAnulada && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-[#1E73BE] text-[#1E73BE] hover:bg-[#1E73BE] hover:text-white"
+                              onClick={() => abrirDialogEditarCaducidadOferta(oferta)}
+                            >
+                              <Edit2 className="w-4 h-4 mr-1" />
+                              Modifier l'échéance
+                            </Button>
+                          )}
+                          {!estaAnulada && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-[#DC3545] text-[#DC3545] hover:bg-[#DC3545] hover:text-white"
+                              onClick={() => abrirDialogAnularOferta(oferta)}
+                            >
+                              <Ban className="w-4 h-4 mr-1" />
+                              Annuler l'offre
+                            </Button>
+                          )}
+                        </div>
+
                         {/* Productos de la oferta */}
                         <div className="rounded-[22px] border border-white/75 bg-[#f8fbff]/92 p-4 shadow-[0_16px_34px_-30px_rgba(15,45,71,0.16)]">
                           <h4 className="font-semibold text-[#333333] mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                            {t('orders.offeredProducts')}
+                            {tFr('orders.offeredProducts')}
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {sortByTemperature(
@@ -1798,14 +1970,14 @@ export function Comandas() {
                                   </div>
                                   <div className="space-y-1">
                                     <div className="flex justify-between text-xs">
-                                      <span className="text-[#666666]">{t('orders.available')}</span>
+                                      <span className="text-[#666666]">{tFr('orders.available')}</span>
                                       <span className="font-semibold text-[#4CAF50]">
                                         {producto.cantidadDisponible} / {producto.cantidadOfrecida} {producto.unidad}
                                       </span>
                                     </div>
                                     {cantidadReservada > 0 && (
                                       <div className="flex justify-between text-xs">
-                                        <span className="text-[#666666]">{t('orders.reserved')}</span>
+                                        <span className="text-[#666666]">{tFr('orders.reserved')}</span>
                                         <span className="font-semibold text-[#FFC107]">
                                           {cantidadReservada} {producto.unidad}
                                         </span>
@@ -1833,7 +2005,7 @@ export function Comandas() {
                           <div className="border-t border-[#e5edf5] pt-4">
                             <h4 className="font-semibold text-[#333333] mb-3 flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                               <Users className="w-4 h-4 text-[#1E73BE]" />
-                              {t('orders.requestsReceived')} ({totalSolicitudes})
+                              {tFr('orders.requestsReceived')} ({totalSolicitudes})
                             </h4>
                             <div className="space-y-2">
                               {oferta.solicitudes?.map((solicitud, idx) => {
@@ -1854,7 +2026,7 @@ export function Comandas() {
                                       <div className="flex-1">
                                         <p className="font-semibold text-[#333333]">{solicitud.organismoNombre}</p>
                                         <p className="text-xs text-[#666666]">
-                                          {formatLocalizedDate(solicitud.fechaSolicitud, { 
+                                          {formatFrenchDate(solicitud.fechaSolicitud, { 
                                             weekday: 'long', 
                                             year: 'numeric', 
                                             month: 'long', 
@@ -1863,6 +2035,11 @@ export function Comandas() {
                                             minute: '2-digit'
                                           })}
                                         </p>
+                                        {solicitud.preparadoPor && (solicitud.estado === 'en_preparacion' || solicitud.estado === 'entregada') && (
+                                          <p className="mt-1 text-xs font-medium text-[#0f766e]">
+                                            Préparée par : {solicitud.preparadoPor}
+                                          </p>
+                                        )}
                                       </div>
                                       <div className="flex items-center gap-2">
                                         {getEstadoSolicitudBadge(solicitud.estado)}
@@ -1875,10 +2052,11 @@ export function Comandas() {
                                         <Button
                                           size="sm"
                                           className="flex-1 bg-[#4CAF50] hover:bg-[#45A049]"
+                                          disabled={ofertaBloqueada}
                                           onClick={() => handleAceptarSolicitud(oferta.id, solicitud.id, solicitud.organismoNombre)}
                                         >
                                           <Check className="w-4 h-4 mr-1" />
-                                          {t('orders.accept')}
+                                          {tFr('orders.accept')}
                                         </Button>
                                         <Button
                                           size="sm"
@@ -1892,12 +2070,12 @@ export function Comandas() {
                                           }}
                                         >
                                           <X className="w-4 h-4 mr-1" />
-                                          {t('orders.reject')}
+                                          {tFr('orders.reject')}
                                         </Button>
                                       </div>
                                     )}
 
-                                    {solicitud.estado === 'aceptada' && (
+                                    {(solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion') && (
                                       <div className="flex flex-col sm:flex-row gap-2 mb-3">
                                         <Button
                                           size="sm"
@@ -1910,7 +2088,7 @@ export function Comandas() {
                                           }}
                                         >
                                           <Eye className="w-4 h-4 mr-1" />
-                                          {t('orders.view')}
+                                          {tFr('orders.view')}
                                         </Button>
                                         <Button
                                           size="sm"
@@ -1923,7 +2101,7 @@ export function Comandas() {
                                           }}
                                         >
                                           <Printer className="w-4 h-4 mr-1" />
-                                          {t('orders.print')}
+                                          {tFr('orders.print')}
                                         </Button>
                                         <Button
                                           size="sm"
@@ -1936,20 +2114,32 @@ export function Comandas() {
                                           }}
                                         >
                                           <Calendar className="w-4 h-4 mr-1" />
-                                          {t('orders.proposeDate')}
+                                          {tFr('orders.proposeDate')}
                                         </Button>
-                                        <Button
-                                          size="sm"
-                                          className="flex-1 bg-[#1E73BE] hover:bg-[#175a95]"
-                                          onClick={() => handleMarcarSolicitudEntregada(oferta.id, solicitud.id, solicitud.organismoNombre)}
-                                        >
-                                          <FileCheck className="w-4 h-4 mr-1" />
-                                          {t('orders.markDelivered')}
-                                        </Button>
+                                        {solicitud.estado === 'aceptada' && (
+                                          <Button
+                                            size="sm"
+                                            className="flex-1 bg-[#1E73BE] hover:bg-[#175a95]"
+                                            onClick={() => handleMarcarSolicitudEnPreparacion(oferta.id, solicitud.id, solicitud.organismoNombre)}
+                                          >
+                                            <Package className="w-4 h-4 mr-1" />
+                                            En préparation
+                                          </Button>
+                                        )}
+                                        {solicitud.estado === 'en_preparacion' && (
+                                          <Button
+                                            size="sm"
+                                            className="flex-1 bg-[#0f766e] hover:bg-[#115e59]"
+                                            onClick={() => handleMarcarSolicitudEntregada(oferta.id, solicitud.id, solicitud.organismoNombre)}
+                                          >
+                                            <FileCheck className="w-4 h-4 mr-1" />
+                                            {tFr('orders.markDelivered')}
+                                          </Button>
+                                        )}
                                       </div>
                                     )}
 
-                                    {solicitud.estado === 'aceptada' && (
+                                    {(solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion') && (
                                       <div className="flex flex-col sm:flex-row gap-2 mb-3">
                                         <Button
                                           size="sm"
@@ -1958,7 +2148,7 @@ export function Comandas() {
                                           onClick={() => handleAnularSolicitud(oferta.id, solicitud.id, solicitud.organismoNombre)}
                                         >
                                           <Ban className="w-4 h-4 mr-1" />
-                                          {t('orders.cancelOrder')}
+                                          {tFr('orders.cancelOrder')}
                                         </Button>
                                       </div>
                                     )}
@@ -1979,7 +2169,7 @@ export function Comandas() {
 
                                     {/* Productos solicitados */}
                                     <div className="rounded-lg border border-white/80 bg-white p-3 mb-3">
-                                      <p className="text-xs font-semibold text-[#666666] mb-2">{t('orders.requestedProducts')}</p>
+                                      <p className="text-xs font-semibold text-[#666666] mb-2">{tFr('orders.requestedProducts')}</p>
                                       <div className="space-y-1">
                                         {solicitud.productosAceptados.map((prodAceptado, pIdx) => {
                                           const producto = oferta.productos.find(p => p.productoId === prodAceptado.productoId);
@@ -2001,15 +2191,15 @@ export function Comandas() {
                                     {/* Totales */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
                                       <div className="rounded-lg bg-white p-2 text-center shadow-sm">
-                                        <p className="text-xs text-[#666666]">{t('orders.products')}</p>
+                                        <p className="text-xs text-[#666666]">{tFr('orders.products')}</p>
                                         <p className="font-bold text-[#1E73BE]">{solicitud.productosAceptados.length}</p>
                                       </div>
                                       <div className="rounded-lg bg-white p-2 text-center shadow-sm">
-                                        <p className="text-xs text-[#666666]">{t('orders.totalWeight')}</p>
+                                        <p className="text-xs text-[#666666]">{tFr('orders.totalWeight')}</p>
                                         <p className="font-bold text-[#4CAF50]">{Math.round(totalKilos)} kg</p>
                                       </div>
                                       <div className="rounded-lg bg-white p-2 text-center shadow-sm">
-                                        <p className="text-xs text-[#666666]">{t('orders.value')}</p>
+                                        <p className="text-xs text-[#666666]">{tFr('orders.value')}</p>
                                         <p className="font-bold text-[#FFC107]">CAD$ {formatNumberSimple(totalValor)}</p>
                                       </div>
                                     </div>
@@ -2017,8 +2207,8 @@ export function Comandas() {
                                     {/* Observaciones y fecha de recogida */}
                                     {solicitud.observaciones && (
                                       <div className="bg-yellow-50 border border-[#FFC107] rounded p-3">
-                                        <p className="text-xs font-semibold text-[#666666] mb-1">{t('orders.detailsLabel')}</p>
-                                        <p className="text-sm text-[#333333]">{solicitud.observaciones}</p>
+                                        <p className="text-xs font-semibold text-[#666666] mb-1">{tFr('orders.detailsLabel')}</p>
+                                        <p className="text-sm text-[#333333]">{formatOfferObservation(solicitud.observaciones)}</p>
                                       </div>
                                     )}
                                   </div>
@@ -2029,9 +2219,9 @@ export function Comandas() {
                         )}
 
                         {/* Mensaje si no hay solicitudes */}
-                        {totalSolicitudes === 0 && !estaExpirada && (
+                        {totalSolicitudes === 0 && !ofertaBloqueada && (
                           <div className="text-center py-4 text-[#666666]">
-                            <p className="text-sm">{t('orders.noRequestsYet')}</p>
+                            <p className="text-sm">{tFr('orders.noRequestsYet')}</p>
                           </div>
                         )}
                       </div>
@@ -2136,10 +2326,10 @@ export function Comandas() {
         <DialogContent className="app-dialog-comfort max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="ver-solicitud-description">
           <DialogHeader>
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>
-              {t('orders.requestDialogTitle')}
+              {tFr('orders.requestDialogTitle')}
             </DialogTitle>
             <DialogDescription id="solicitud-dialog-description">
-              {t('orders.requestDialogDescription')}
+              {tFr('orders.requestDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           {solicitudSeleccionada && ofertaParaSolicitud && (
@@ -2147,12 +2337,12 @@ export function Comandas() {
               {/* Info del organismo */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-bold text-[#333333] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {t('orders.organism')}
+                  {tFr('orders.organism')}
                 </h3>
                 <p className="text-lg font-semibold text-[#1E73BE]">{solicitudSeleccionada.organismoNombre}</p>
                 <p className="text-sm text-[#666666] mt-1">
-                  {t('orders.requestMadeOn', {
-                    date: formatLocalizedDate(solicitudSeleccionada.fechaSolicitud, {
+                  {tFr('orders.requestMadeOn', {
+                    date: formatFrenchDate(solicitudSeleccionada.fechaSolicitud, {
                       weekday: 'long', 
                       year: 'numeric', 
                       month: 'long', 
@@ -2165,10 +2355,15 @@ export function Comandas() {
                 <div className="mt-2">
                   {getEstadoSolicitudBadge(solicitudSeleccionada.estado)}
                 </div>
+                {solicitudSeleccionada.preparadoPor && (solicitudSeleccionada.estado === 'en_preparacion' || solicitudSeleccionada.estado === 'entregada') && (
+                  <p className="text-sm text-[#0f766e] mt-2 font-medium">
+                    Préparée par : {solicitudSeleccionada.preparadoPor}
+                  </p>
+                )}
                 {solicitudSeleccionada.estado === 'entregada' && solicitudSeleccionada.fechaActualizacion && (
                   <p className="text-sm text-[#1E73BE] mt-2 font-medium">
-                    {t('orders.deliveryRecordedOn', {
-                      date: formatLocalizedDate(solicitudSeleccionada.fechaActualizacion, {
+                    {tFr('orders.deliveryRecordedOn', {
+                      date: formatFrenchDate(solicitudSeleccionada.fechaActualizacion, {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -2184,7 +2379,7 @@ export function Comandas() {
               {/* Productos solicitados */}
               <div className="border rounded-lg p-4">
                 <h3 className="font-bold text-[#333333] mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {t('orders.requestedProductsTitle')} ({solicitudSeleccionada.productosAceptados.length})
+                  {tFr('orders.requestedProductsTitle')} ({solicitudSeleccionada.productosAceptados.length})
                 </h3>
                 <div className="space-y-2">
                   {solicitudSeleccionada.productosAceptados.map((prodAceptado: ProductoAceptado, idx: number) => {
@@ -2207,15 +2402,15 @@ export function Comandas() {
                         </div>
                         <div className="grid grid-cols-3 gap-2 mt-2">
                           <div className="text-center">
-                            <p className="text-xs text-[#666666]">{t('orders.totalWeight')}</p>
+                            <p className="text-xs text-[#666666]">{tFr('orders.totalWeight')}</p>
                             <p className="font-semibold text-[#4CAF50]">{Math.round(pesoTotal)} kg</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-xs text-[#666666]">{t('orders.valuePerKg')}</p>
+                            <p className="text-xs text-[#666666]">{tFr('orders.valuePerKg')}</p>
                             <p className="font-semibold text-[#FFC107]">CAD$ {formatNumberSimple(producto?.valorUnitario || 0)}</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-xs text-[#666666]">{t('orders.valueTotal')}</p>
+                            <p className="text-xs text-[#666666]">{tFr('orders.valueTotal')}</p>
                             <p className="font-semibold text-[#FFC107]">CAD$ {formatNumberSimple(valorTotal)}</p>
                           </div>
                         </div>
@@ -2228,17 +2423,17 @@ export function Comandas() {
               {/* Totales generales */}
               <div className="bg-green-50 border-2 border-[#4CAF50] rounded-lg p-4">
                 <h3 className="font-bold text-[#333333] mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {t('orders.totals')}
+                  {tFr('orders.totals')}
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
-                    <p className="text-sm text-[#666666] mb-1">{t('orders.totalProductsLabel')}</p>
+                    <p className="text-sm text-[#666666] mb-1">{tFr('orders.totalProductsLabel')}</p>
                     <p className="text-2xl font-bold text-[#1E73BE]">
                       {solicitudSeleccionada.productosAceptados.length}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-[#666666] mb-1">{t('orders.totalWeight')}</p>
+                    <p className="text-sm text-[#666666] mb-1">{tFr('orders.totalWeight')}</p>
                     <p className="text-2xl font-bold text-[#4CAF50]">
                       {formatNumberSimple(solicitudSeleccionada.productosAceptados.reduce((sum: number, p: ProductoAceptado) => {
                         const producto = ofertaParaSolicitud.productos.find((prod: ProductoOferta) => prod.productoId === p.productoId);
@@ -2247,7 +2442,7 @@ export function Comandas() {
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-[#666666] mb-1">{t('orders.valueTotal')}</p>
+                    <p className="text-sm text-[#666666] mb-1">{tFr('orders.valueTotal')}</p>
                     <p className="text-2xl font-bold text-[#FFC107]">
                       CAD$ {formatNumberSimple(solicitudSeleccionada.productosAceptados.reduce((sum: number, p: ProductoAceptado) => {
                         const producto = ofertaParaSolicitud.productos.find((prod: ProductoOferta) => prod.productoId === p.productoId);
@@ -2262,10 +2457,10 @@ export function Comandas() {
               {solicitudSeleccionada.observaciones && (
                 <div className="bg-yellow-50 border border-[#FFC107] rounded-lg p-4">
                   <h3 className="font-bold text-[#333333] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    {t('orders.detailsAndObservations')}
+                    {tFr('orders.detailsAndObservations')}
                   </h3>
                   <p className="text-sm text-[#333333] whitespace-pre-wrap">
-                    {solicitudSeleccionada.observaciones}
+                    {formatOfferObservation(solicitudSeleccionada.observaciones)}
                   </p>
                 </div>
               )}
@@ -2277,11 +2472,69 @@ export function Comandas() {
                   onClick={() => setDialogVerSolicitudOpen(false)}
                   className="min-w-[120px]"
                 >
-                  {t('common.close')}
+                  {tFr('common.close')}
                 </Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogEditarCaducidadOfertaOpen} onOpenChange={setDialogEditarCaducidadOfertaOpen}>
+        <DialogContent className="app-dialog-comfort max-w-md" aria-describedby="editar-caducidad-oferta-description">
+          <DialogHeader>
+            <DialogTitle>Modifier la date de caducité</DialogTitle>
+            <DialogDescription id="editar-caducidad-oferta-description">
+              Ajustez l’échéance de l’offre pour prolonger sa disponibilité administrative.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="oferta-nueva-caducidad">Nouvelle date de caducité</Label>
+              <Input
+                id="oferta-nueva-caducidad"
+                type="date"
+                value={nuevaFechaCaducidadOferta}
+                onChange={(e) => setNuevaFechaCaducidadOferta(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDialogEditarCaducidadOfertaOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={handleGuardarNuevaCaducidadOferta} className="bg-[#1E73BE] hover:bg-[#175a95]">
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogAnularOfertaOpen} onOpenChange={setDialogAnularOfertaOpen}>
+        <DialogContent className="app-dialog-comfort max-w-md" aria-describedby="anular-oferta-description">
+          <DialogHeader>
+            <DialogTitle>Annuler l'offre</DialogTitle>
+            <DialogDescription id="anular-oferta-description">
+              Cette action rendra l’offre invisible pour les organismes et annulera les demandes encore en attente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] p-4 text-sm text-[#991b1b]">
+              Les demandes déjà acceptées restent historiques et ne seront pas supprimées automatiquement.
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDialogAnularOfertaOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmarAnularOferta}>
+                Confirmer l'annulation
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

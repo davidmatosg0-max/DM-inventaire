@@ -10,9 +10,12 @@ import { Textarea } from '../ui/textarea';
 import { mockProductos } from '../../data/mockData';
 import { obtenerProductos } from '../../utils/productStorage';
 import {
-  resolverTemperaturaAlmacenamientoProducto,
-  resolverTemperaturaOriginalEntradaProducto,
-} from '../../utils/productTemperature';
+  COMANDA_TEMPERATURE_GROUPS,
+  formatComandaTemperatureGroup,
+  resolveComandaTemperatureKey,
+  resolveComandaOriginalEntryTemperature,
+  resolveComandaStorageTemperature,
+} from '../../utils/comandaTemperature';
 import { sortByTemperature } from '../../utils/temperatureSort';
 import { NotificacionComanda } from '../NotificacionComanda';
 import { obtenerPersonaPrincipal } from '../../utils/personasResponsablesStorage';
@@ -360,7 +363,7 @@ export function ModeloComanda({
       cantidad,
       cantidadAceptada: typeof item.cantidadAceptada === 'number' ? Math.min(item.cantidadAceptada, cantidad) : item.cantidadAceptada,
       unidad: item.unidad || item.producto?.unidad || 'kg',
-      icono: item.icono || item.producto?.icono,
+      icono: item.producto?.icono || item.icono,
       valorUnitario: typeof item.valorUnitario === 'number' ? item.valorUnitario : item.producto?.valorUnitario,
       temperatura: normalizarTemperaturaPersistida(item.temperaturaOriginalEntrada || item.temperatura),
       temperaturaOriginalEntrada: normalizarTemperaturaPersistida(item.temperaturaOriginalEntrada || item.temperatura),
@@ -396,33 +399,17 @@ export function ModeloComanda({
       const productoPersistido = todosLosProductos.find(p => p.id === item.productoId);
       const productoEnMemoria = mockProductos.find(p => p.id === item.productoId);
       const producto = productoPersistido || productoEnMemoria;
-      const temperaturaFuente = resolverTemperaturaAlmacenamientoProducto({
-        ...(producto || {}),
-        categoria: (producto as any)?.categoria || item?.categoria,
-        subcategoria: (producto as any)?.subcategoria || item?.subcategoria,
-        nombre: (producto as any)?.nombre || item?.nombreProducto || item?.productoNombre,
-        temperatura: (producto as any)?.temperatura || item?.temperatura,
-        temperaturaAlmacenamiento: (producto as any)?.temperaturaAlmacenamiento,
-      });
-
-      const temperatura =
-        String(temperaturaFuente).toLowerCase().includes('congel')
-          ? 'Congelé'
-          : String(temperaturaFuente).toLowerCase().includes('refrig')
-            ? 'Réfrigéré'
-            : 'Température ambiante';
-      const temperaturaOriginalEntrada = resolverTemperaturaOriginalEntradaProducto({
-        ...(producto || {}),
-        categoria: (producto as any)?.categoria || item?.categoria,
-        subcategoria: (producto as any)?.subcategoria || item?.subcategoria,
-        nombre: (producto as any)?.nombre || item?.nombreProducto || item?.productoNombre,
-        temperatura: (producto as any)?.temperatura || item?.temperatura,
-        temperaturaAlmacenamiento: (producto as any)?.temperaturaAlmacenamiento,
-        temperaturaOriginalEntrada:
-          (item as any)?.temperaturaOriginalEntrada ||
-          (productoPersistido as any)?.temperaturaOriginalEntrada ||
-          (productoEnMemoria as any)?.temperaturaOriginalEntrada,
-      });
+      const temperatura = resolveComandaStorageTemperature(item, producto);
+      const temperaturaOriginalEntrada = resolveComandaOriginalEntryTemperature(
+        {
+          ...(item || {}),
+          temperaturaOriginalEntrada:
+            (item as any)?.temperaturaOriginalEntrada ||
+            (productoPersistido as any)?.temperaturaOriginalEntrada ||
+            (productoEnMemoria as any)?.temperaturaOriginalEntrada,
+        },
+        producto,
+      );
 
       return {
         ...item,
@@ -457,37 +444,14 @@ export function ModeloComanda({
 
   // Agrupar por temperatura para mostrar secciones
   const productosAgrupados = React.useMemo(() => {
-    const grupos: { [key: string]: any[] } = {
-      'Température ambiante': [],
-      'Réfrigéré': [],
-      'Congelé': []
-    };
-
-    productosOrdenados.forEach((item: any) => {
-      const temperatura = typeof item.temperatura === 'string' ? item.temperatura : 'Température ambiante';
-      if (!grupos[temperatura]) {
-        grupos[temperatura] = [];
-      }
-      grupos[temperatura].push(item);
-    });
-
-    return grupos;
+    return COMANDA_TEMPERATURE_GROUPS.map((grupo) => ({
+      ...grupo,
+      items: productosOrdenados.filter((item: any) => resolveComandaTemperatureKey(item.temperatura) === grupo.key),
+    }));
   }, [productosOrdenados]);
 
   const obtenerEtiquetaTemperatura = (temperatura: string) => {
-    if (temperatura === 'Température ambiante') {
-      return 'Ambiante';
-    }
-
-    if (temperatura === 'Réfrigéré') {
-      return 'Réfrigéré';
-    }
-
-    if (temperatura === 'Congelé') {
-      return 'Congelé';
-    }
-
-    return temperatura;
+    return formatComandaTemperatureGroup(temperatura);
   };
 
   const obtenerNombreOriginalTemperatura = (temperatura?: string) => {
@@ -857,7 +821,7 @@ export function ModeloComanda({
       const itemsBase = construirItemsInternosEditados();
       const indiceExistente = itemsBase.findIndex((item: any) => item.productoId === producto.id);
       const temperaturaOriginal = normalizarTemperaturaPersistida(
-        resolverTemperaturaOriginalEntradaProducto(producto as any),
+        resolveComandaOriginalEntryTemperature(producto as any),
       );
 
       if (indiceExistente >= 0) {
@@ -1424,7 +1388,7 @@ export function ModeloComanda({
               </p>
               <div className={`space-y-1.5 ${vistaCompacta ? 'text-[13px]' : 'text-sm sm:text-base'}`}>
                 <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
-                  <strong>Préparée par :</strong> {comanda.usuarioCreacion || 'Non attribué'}
+                  <strong>Préparée par :</strong> {comanda.preparadoPor || comanda.usuarioCreacion || 'Non attribué'}
                 </p>
                 <p className={vistaCompacta ? 'text-slate-700 leading-5' : 'text-[#333333]'}>
                   <strong>Date de création :</strong> {formatDisplayDate(comanda.fecha)}
@@ -1542,7 +1506,7 @@ export function ModeloComanda({
               Produits par température d'entreposage
             </h2>
 
-            {Object.entries(productosAgrupados).map(([temperatura, items]) => {
+            {productosAgrupados.map(({ key, label, items }) => {
               if (items.length === 0) return null;
               
               const colorConfig = {
@@ -1566,14 +1530,14 @@ export function ModeloComanda({
                 }
               };
 
-              const config = colorConfig[temperatura as keyof typeof colorConfig];
+              const config = colorConfig[label as keyof typeof colorConfig];
               
               return (
-                <div key={temperatura} className={`${vistaCompacta ? 'mb-4' : 'mb-8'} break-inside-avoid`}>
+                <div key={key} className={`${vistaCompacta ? 'mb-4' : 'mb-8'} break-inside-avoid`}>
                   <div className={`flex items-center gap-3 mb-3 ${config.bg} border ${config.border} ${vistaCompacta ? 'rounded-2xl p-3 shadow-sm' : 'p-4 rounded-lg border-2'}`}>
                     {config.icon}
                     <h3 className={`font-bold ${config.text} ${vistaCompacta ? 'text-sm sm:text-base' : 'text-base sm:text-lg lg:text-xl'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {obtenerEtiquetaTemperatura(temperatura)}
+                      {obtenerEtiquetaTemperatura(label)}
                     </h3>
                     <Badge className="bg-[#4CAF50] ml-auto text-xs sm:text-sm border-0 shadow-sm" style={{ padding: '0.3rem 0.6rem' }}>
                       {items.length} produit{items.length > 1 ? 's' : ''}
@@ -1775,13 +1739,13 @@ export function ModeloComanda({
               <div className={`${vistaCompacta ? 'rounded-2xl border border-[#f2e2b4] bg-[#fffbed] p-3 shadow-sm' : 'bg-yellow-50 border-2 border-[#FFC107] rounded-lg p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Ambiante</p>
                 <p className="font-bold text-[#FFC107]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
-                  {productosAgrupados['Température ambiante'].length}
+                  {productosAgrupados.find((grupo) => grupo.key === 'ambiente')?.items.length || 0}
                 </p>
               </div>
               <div className={`${vistaCompacta ? 'rounded-2xl border border-[#d6e6f3] bg-[#f2f9ff] p-3 shadow-sm' : 'bg-blue-50 border-2 border-[#0288D1] rounded-lg p-5'}`}>
                 <p className="text-sm text-[#666666] mb-1 uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>Réfrigéré/Congelé</p>
                 <p className="font-bold text-[#0288D1]" style={{ fontSize: vistaCompacta ? '1.2rem' : '1.5rem', fontFamily: 'Montserrat, sans-serif' }}>
-                  {productosAgrupados['Réfrigéré'].length + productosAgrupados['Congelé'].length}
+                  {(productosAgrupados.find((grupo) => grupo.key === 'refrigerado')?.items.length || 0) + (productosAgrupados.find((grupo) => grupo.key === 'congelado')?.items.length || 0)}
                 </p>
               </div>
             </div>
@@ -1805,7 +1769,7 @@ export function ModeloComanda({
               </p>
               <div className="border-b-2 border-gray-400 mb-3" style={{ height: vistaCompacta ? '44px' : '60px' }}></div>
               <div className="text-sm text-[#333333] space-y-1">
-                <p><strong>Nom :</strong> {comanda.usuarioCreacion || '_____________________'}</p>
+                <p><strong>Nom :</strong> {comanda.preparadoPor || comanda.usuarioCreacion || '_____________________'}</p>
                 <p><strong>Date :</strong> {new Date(comanda.fecha).toLocaleDateString(defaultLocale)}</p>
                 <p><strong>Heure :</strong> {new Date(comanda.fecha).toLocaleTimeString(defaultLocale, { hour: '2-digit', minute: '2-digit' })}</p>
               </div>

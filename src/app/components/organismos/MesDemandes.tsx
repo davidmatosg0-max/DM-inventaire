@@ -143,6 +143,7 @@ export const MesDemandes: React.FC<MesDemandesProps> = ({ organismeId, organisme
     const configs = {
       pendiente: { color: 'bg-yellow-100 text-yellow-700 border-yellow-300', icon: '⏳', text: 'Réclamation en attente' },
       aceptada: { color: 'bg-green-100 text-green-700 border-green-300', icon: '✅', text: 'Offre acceptée' },
+      en_preparacion: { color: 'bg-cyan-100 text-cyan-700 border-cyan-300', icon: '📦', text: 'En préparation' },
       entregada: { color: 'bg-blue-100 text-blue-700 border-blue-300', icon: '🚚', text: 'Offre livrée' },
       rechazada: { color: 'bg-red-100 text-red-700 border-red-300', icon: '❌', text: 'Offre refusée' },
       anulada: { color: 'bg-gray-100 text-gray-700 border-gray-300', icon: '🚫', text: 'Réclamation annulée' }
@@ -482,6 +483,11 @@ export const MesDemandes: React.FC<MesDemandesProps> = ({ organismeId, organisme
                       <span className="text-xs text-gray-500">
                         Demandée le {new Date(solicitud.fechaSolicitud).toLocaleDateString('fr-FR')}
                       </span>
+                      {solicitud.preparadoPor && (solicitud.estado === 'en_preparacion' || solicitud.estado === 'entregada') && (
+                        <span className="text-xs font-medium text-[#0f766e]">
+                          Préparée par : {solicitud.preparadoPor}
+                        </span>
+                      )}
                     </div>
                   </div>
 

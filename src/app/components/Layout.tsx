@@ -852,7 +852,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Main content */}
-      <main className={`app-main-stage pt-[56px] sm:pt-[72px] ${!hideSidebar ? 'lg:pl-[244px] xl:pl-[264px]' : ''} min-h-screen relative z-10`}>
+      <main className={`app-main-stage pt-[56px] sm:pt-[72px] ${!hideSidebar ? 'lg:pl-[244px] xl:pl-[264px]' : ''} relative z-10 h-screen overflow-y-auto overflow-x-hidden`}>
         <div data-app-shell className="app-shell-content px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5">
           <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
             <div>

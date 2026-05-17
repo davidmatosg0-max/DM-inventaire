@@ -24,6 +24,7 @@ import {
   obtenerProductos, 
   guardarProducto, 
   actualizarProducto, 
+  sincronizarProductosPorVariante,
   eliminarProducto,
   obtenerProductosActivos,
   type ProductoCreado 
@@ -1468,6 +1469,15 @@ export function Configuracion() {
 
       guardarCategorias(categoriasActualizadas);
       setCategorias(categoriasActualizadas);
+      sincronizarProductosPorVariante({
+        varianteId: editandoVariante.variante.id,
+        varianteNombreAnterior: editandoVariante.variante.nombre,
+        varianteNombreNuevo: varianteActualizada.nombre,
+        categoria: categoria.nombre,
+        subcategoria: subcategoria.nombre,
+        icono: varianteActualizada.icono,
+      });
+      setProductos(obtenerProductos());
       
       // Disparar evento de actualización
       window.dispatchEvent(new Event('categorias-actualizadas'));

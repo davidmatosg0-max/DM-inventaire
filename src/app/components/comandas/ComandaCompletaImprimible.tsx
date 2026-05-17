@@ -6,9 +6,10 @@ import { buildComandaQRData, COMANDA_QR_DATA_URL_OPTIONS, COMANDA_QR_SVG_LEVEL }
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { obtenerProductos } from '../../utils/productStorage';
 import {
-  resolverTemperaturaAlmacenamientoProducto,
-  resolverTemperaturaOriginalEntradaProducto,
-} from '../../utils/productTemperature';
+  formatComandaTemperatureGroup,
+  resolveComandaOriginalEntryTemperature,
+  resolveComandaStorageTemperature,
+} from '../../utils/comandaTemperature';
 import { sortByTemperature } from '../../utils/temperatureSort';
 import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 import { formatBrandingContactLine, normalizeBrandingPrintConfig } from '../../utils/brandingPrint';
@@ -46,16 +47,11 @@ function getFirstText(...values: unknown[]): string {
 }
 
 function formatTemperature(temperature?: string): string {
-  switch (temperature) {
-    case 'congelado':
-      return 'Congelé';
-    case 'refrigerado':
-      return 'Réfrigéré';
-    case 'ambiente':
-      return 'Ambiante';
-    default:
-      return temperature || '-';
+  if (!temperature) {
+    return '-';
   }
+
+  return formatComandaTemperatureGroup(temperature);
 }
 
 function formatDate(value: unknown, locale: string, withTime = false): string {
@@ -145,41 +141,6 @@ type PrintPayload = {
     grupoTemperatura: string;
   }>;
 };
-
-function resolveStorageTemperature(item: any, product?: any): string {
-  const temperaturaFuente = resolverTemperaturaAlmacenamientoProducto({
-    ...(product || {}),
-    categoria: product?.categoria || item?.categoria,
-    subcategoria: product?.subcategoria || item?.subcategoria,
-    nombre: product?.nombre || item?.nombreProducto || item?.productoNombre,
-    temperatura: product?.temperatura || item?.temperatura,
-    temperaturaAlmacenamiento: product?.temperaturaAlmacenamiento,
-  });
-
-  if (String(temperaturaFuente).toLowerCase().includes('congel')) {
-    return 'Congelé';
-  }
-
-  if (String(temperaturaFuente).toLowerCase().includes('refrig')) {
-    return 'Réfrigéré';
-  }
-
-  return 'Température ambiante';
-}
-
-function resolveOriginalEntryTemperature(item: any, product?: any): string {
-  return resolverTemperaturaOriginalEntradaProducto({
-    ...(product || {}),
-    categoria: product?.categoria || item?.categoria,
-    subcategoria: product?.subcategoria || item?.subcategoria,
-    nombre: product?.nombre || item?.nombreProducto || item?.productoNombre,
-    temperatura: product?.temperatura || item?.temperatura,
-    temperaturaAlmacenamiento: product?.temperaturaAlmacenamiento,
-    temperaturaOriginalEntrada:
-      item?.temperaturaOriginalEntrada ||
-      product?.temperaturaOriginalEntrada,
-  });
-}
 
 async function generatePrintableComandaHtml(payload: PrintPayload): Promise<string> {
   let qrImage = '';
@@ -949,8 +910,8 @@ export function ComandaCompletaImprimible({ comanda, organismo, onClose }: Coman
   const printableItemsData = React.useMemo(() => {
     const enrichedItems = items.map((item: any) => {
       const product = productosCatalogoMap.get(item?.productoId);
-      const temperatura = resolveStorageTemperature(item, product);
-      const temperaturaOriginalEntrada = resolveOriginalEntryTemperature(item, product);
+      const temperatura = resolveComandaStorageTemperature(item, product);
+      const temperaturaOriginalEntrada = resolveComandaOriginalEntryTemperature(item, product);
 
       return {
         item,

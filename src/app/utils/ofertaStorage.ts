@@ -6,10 +6,11 @@
 import { obtenerProductos } from './productStorage';
 import { calcularValorMonetario, obtenerValorPorKg } from './categoriaStorage';
 import { descontarInventarioReservado, validarReservaInventario } from './inventoryReservations';
+import { obtenerNombreUsuarioSesion } from './sesionStorage';
 
-export type EstadoOferta = 'pendiente' | 'aceptada' | 'rechazada' | 'parcial' | 'expirada';
+export type EstadoOferta = 'pendiente' | 'aceptada' | 'rechazada' | 'parcial' | 'expirada' | 'anulada';
 
-export type EstadoSolicitud = 'pendiente' | 'aceptada' | 'entregada' | 'rechazada' | 'anulada';
+export type EstadoSolicitud = 'pendiente' | 'aceptada' | 'en_preparacion' | 'entregada' | 'rechazada' | 'anulada';
 
 export type ProductoOferta = {
   productoId: string;
@@ -49,6 +50,7 @@ export type SolicitudOferta = {
   estado: EstadoSolicitud;
   motivoRechazo?: string;
   fechaActualizacion?: string;
+  preparadoPor?: string;
 };
 
 export type Oferta = {
@@ -87,6 +89,14 @@ export type Oferta = {
 
 const STORAGE_KEY = 'ofertas_sistema';
 
+function ofertaEstaExpirada(oferta: Pick<Oferta, 'fechaExpiracion'>, referencia = new Date()): boolean {
+  return new Date(oferta.fechaExpiracion).getTime() <= referencia.getTime();
+}
+
+function ofertaPuedeRecibirSolicitudes(oferta: Oferta, referencia = new Date()): boolean {
+  return oferta.visible && oferta.activa && oferta.estado !== 'anulada' && !ofertaEstaExpirada(oferta, referencia);
+}
+
 // Generar número de oferta único
 export function generarNumeroOferta(): string {
   const fecha = new Date();
@@ -102,7 +112,13 @@ export function generarNumeroOferta(): string {
 export function obtenerOfertas(): Oferta[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    const ofertas: Oferta[] = data ? JSON.parse(data) : [];
+
+    if (ofertas.length > 0 && sincronizarEstadosCaducidad(ofertas)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(ofertas));
+    }
+
+    return ofertas;
   } catch (error) {
     console.error('Error al obtener ofertas:', error);
     return [];
@@ -112,12 +128,8 @@ export function obtenerOfertas(): Oferta[] {
 // Obtener ofertas activas
 export function obtenerOfertasActivas(): Oferta[] {
   const ofertas = obtenerOfertas();
-  const ahora = new Date();
-  
-  return ofertas.filter(o => {
-    const fechaExpiracion = new Date(o.fechaExpiracion);
-    return o.activa && o.visible && fechaExpiracion > ahora;
-  });
+
+  return ofertas.filter(o => ofertaPuedeRecibirSolicitudes(o));
 }
 
 // Obtener oferta por ID
@@ -193,13 +205,67 @@ export function actualizarOferta(id: string, cambios: Partial<Oferta>): boolean 
 
 // Actualizar estado de oferta (función auxiliar)
 export function actualizarEstadoOferta(id: string, estado: EstadoOferta): boolean {
+  if (estado === 'anulada') {
+    return actualizarOferta(id, { estado, activa: false, visible: false });
+  }
+
   return actualizarOferta(id, { estado });
+}
+
+export function actualizarFechaExpiracionOferta(id: string, nuevaFechaExpiracion: string): boolean {
+  const ofertas = obtenerOfertas();
+  const oferta = ofertas.find(item => item.id === id);
+
+  if (!oferta) return false;
+
+  const nuevaFecha = new Date(nuevaFechaExpiracion);
+  if (Number.isNaN(nuevaFecha.getTime())) {
+    return false;
+  }
+
+  oferta.fechaExpiracion = nuevaFecha.toISOString();
+
+  if (oferta.estado !== 'anulada') {
+    oferta.activa = true;
+    oferta.visible = true;
+    actualizarEstadoDerivadoOferta(oferta);
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ofertas));
+  console.log('✅ Fecha de expiración de oferta actualizada:', { id, fechaExpiracion: oferta.fechaExpiracion });
+  return true;
+}
+
+export function anularOferta(id: string): boolean {
+  const ofertas = obtenerOfertas();
+  const oferta = ofertas.find(item => item.id === id);
+
+  if (!oferta) return false;
+
+  oferta.estado = 'anulada';
+  oferta.activa = false;
+  oferta.visible = false;
+
+  (oferta.solicitudes || []).forEach(solicitud => {
+    if (solicitud.estado === 'pendiente') {
+      solicitud.estado = 'anulada';
+      solicitud.fechaActualizacion = new Date().toISOString();
+    }
+  });
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ofertas));
+  console.log('✅ Oferta anulada:', { id });
+  return true;
 }
 
 function validarProductosDisponibles(
   oferta: Oferta,
   productos: { productoId: string; cantidadAceptada: number }[]
 ): boolean {
+  if (!ofertaPuedeRecibirSolicitudes(oferta)) {
+    return false;
+  }
+
   for (const item of productos) {
     const producto = oferta.productos.find(p => p.productoId === item.productoId);
     if (!producto) return false;
@@ -211,11 +277,20 @@ function validarProductosDisponibles(
 }
 
 function actualizarEstadoDerivadoOferta(oferta: Oferta): void {
+  if (oferta.estado === 'anulada' || oferta.activa === false) {
+    return;
+  }
+
+  if (ofertaEstaExpirada(oferta)) {
+    oferta.estado = 'expirada';
+    return;
+  }
+
   const todosLosProductosAgotados = oferta.productos.every(p => p.cantidadDisponible === 0);
   const tieneReservasAceptadas =
     oferta.aceptaciones.length > 0 ||
     (oferta.solicitudes || []).some(
-      solicitud => solicitud.estado === 'aceptada' || solicitud.estado === 'entregada'
+      solicitud => solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion' || solicitud.estado === 'entregada'
     );
 
   if (todosLosProductosAgotados) {
@@ -224,6 +299,35 @@ function actualizarEstadoDerivadoOferta(oferta: Oferta): void {
   }
 
   oferta.estado = tieneReservasAceptadas ? 'parcial' : 'pendiente';
+}
+
+function sincronizarEstadosCaducidad(ofertas: Oferta[]): boolean {
+  let actualizadas = false;
+
+  ofertas.forEach(oferta => {
+    if (oferta.estado === 'anulada' || oferta.activa === false) {
+      return;
+    }
+
+    const estadoAnterior = oferta.estado;
+
+    if (ofertaEstaExpirada(oferta)) {
+      if (oferta.estado !== 'expirada') {
+        oferta.estado = 'expirada';
+        actualizadas = true;
+      }
+      return;
+    }
+
+    if (estadoAnterior === 'expirada') {
+      actualizarEstadoDerivadoOferta(oferta);
+      if (oferta.estado !== estadoAnterior) {
+        actualizadas = true;
+      }
+    }
+  });
+
+  return actualizadas;
 }
 
 export function crearSolicitudOferta(
@@ -237,12 +341,13 @@ export function crearSolicitudOferta(
   const oferta = ofertas.find(o => o.id === ofertaId);
 
   if (!oferta) return false;
+  if (!ofertaPuedeRecibirSolicitudes(oferta)) return false;
   if (!validarProductosDisponibles(oferta, productosAceptados)) return false;
 
   const solicitudExistente = (oferta.solicitudes || []).find(
     solicitud =>
       solicitud.organismoId === organismoId &&
-      (solicitud.estado === 'pendiente' || solicitud.estado === 'aceptada')
+      (solicitud.estado === 'pendiente' || solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion')
   );
 
   if (solicitudExistente) {
@@ -280,6 +385,7 @@ export function aceptarOferta(
   const oferta = ofertas.find(o => o.id === ofertaId);
   
   if (!oferta) return false;
+  if (!ofertaPuedeRecibirSolicitudes(oferta)) return false;
   if (!validarProductosDisponibles(oferta, productosAceptados)) return false;
   
   // Crear aceptación
@@ -337,12 +443,10 @@ export function rechazarOferta(ofertaId: string, organismoId: string, observacio
 // Marcar ofertas expiradas
 export function marcarOfertasExpiradas(): number {
   const ofertas = obtenerOfertas();
-  const ahora = new Date();
   let contador = 0;
   
   ofertas.forEach(o => {
-    const fechaExpiracion = new Date(o.fechaExpiracion);
-    if (o.estado === 'pendiente' && fechaExpiracion < ahora) {
+    if (o.estado !== 'anulada' && o.activa !== false && ofertaEstaExpirada(o) && o.estado !== 'expirada') {
       o.estado = 'expirada';
       contador++;
     }
@@ -378,6 +482,7 @@ export function obtenerEstadisticasOfertas() {
     aceptadas: ofertas.filter(o => o.estado === 'aceptada').length,
     parciales: ofertas.filter(o => o.estado === 'parcial').length,
     expiradas: ofertas.filter(o => o.estado === 'expirada').length,
+    anuladas: ofertas.filter(o => o.estado === 'anulada').length,
     rechazadas: ofertas.filter(o => o.estado === 'rechazada').length,
   };
 }
@@ -727,8 +832,13 @@ export function actualizarEstadoSolicitud(
     return false;
   }
 
-  if (nuevoEstado === 'entregada' && estadoAnterior !== 'aceptada') {
-    console.error('Solo se pueden marcar como entregadas las solicitudes aceptadas');
+  if (nuevoEstado === 'en_preparacion' && estadoAnterior !== 'aceptada') {
+    console.error('Solo las solicitudes aceptadas pueden pasar a preparación');
+    return false;
+  }
+
+  if (nuevoEstado === 'entregada' && estadoAnterior !== 'en_preparacion') {
+    console.error('Solo se pueden marcar como entregadas las solicitudes en preparación');
     return false;
   }
 
@@ -748,13 +858,17 @@ export function actualizarEstadoSolicitud(
 
   solicitud.estado = nuevoEstado;
   solicitud.fechaActualizacion = new Date().toISOString();
+
+  if (nuevoEstado === 'en_preparacion') {
+    solicitud.preparadoPor = obtenerNombreUsuarioSesion(solicitud.preparadoPor || 'Système');
+  }
   
   if (motivoRechazo) {
     solicitud.motivoRechazo = motivoRechazo;
   }
   
   // Aceptar una solicitud reserva cantidades si antes no estaban reservadas
-  if (nuevoEstado === 'aceptada' && estadoAnterior !== 'aceptada') {
+  if (nuevoEstado === 'aceptada' && estadoAnterior !== 'aceptada' && estadoAnterior !== 'en_preparacion') {
     if (!validarProductosDisponibles(oferta, solicitud.productosAceptados)) {
       console.error('No hay suficiente cantidad disponible');
       solicitud.estado = estadoAnterior;
@@ -771,7 +885,7 @@ export function actualizarEstadoSolicitud(
   }
   
   // Si se anula o rechaza una solicitud que estaba aceptada, devolver cantidades
-  if ((nuevoEstado === 'anulada' || nuevoEstado === 'rechazada') && estadoAnterior === 'aceptada') {
+  if ((nuevoEstado === 'anulada' || nuevoEstado === 'rechazada') && (estadoAnterior === 'aceptada' || estadoAnterior === 'en_preparacion')) {
     for (const prod of solicitud.productosAceptados) {
       const producto = oferta.productos.find(p => p.productoId === prod.productoId);
       if (producto) {
@@ -803,7 +917,7 @@ export function editarSolicitud(
   if (!solicitud) return false;
   
   // Si la solicitud estaba aceptada, devolver las cantidades anteriores
-  if (solicitud.estado === 'aceptada') {
+  if (solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion') {
     for (const prod of solicitud.productosAceptados) {
       const producto = oferta.productos.find(p => p.productoId === prod.productoId);
       if (producto) {
@@ -830,7 +944,7 @@ export function editarSolicitud(
   solicitud.fechaActualizacion = new Date().toISOString();
   
   // Si la solicitud estaba aceptada, reservar las nuevas cantidades
-  if (solicitud.estado === 'aceptada') {
+  if (solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion') {
     for (const prod of nuevosProductos) {
       const producto = oferta.productos.find(p => p.productoId === prod.productoId);
       if (producto) {
@@ -852,6 +966,11 @@ export function anularSolicitud(ofertaId: string, solicitudId: string): boolean 
 // Aceptar solicitud
 export function aceptarSolicitud(ofertaId: string, solicitudId: string): boolean {
   return actualizarEstadoSolicitud(ofertaId, solicitudId, 'aceptada');
+}
+
+// Marcar solicitud en preparación
+export function marcarSolicitudEnPreparacion(ofertaId: string, solicitudId: string): boolean {
+  return actualizarEstadoSolicitud(ofertaId, solicitudId, 'en_preparacion');
 }
 
 // Marcar solicitud como entregada

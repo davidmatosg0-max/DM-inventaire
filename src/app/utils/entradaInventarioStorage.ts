@@ -141,7 +141,7 @@ function sincronizarProductoEnMemoria(productoId: string): void {
   mockProductos.push(productoActualizado as any);
 }
 
-function recalcularProductoDesdeEntradas(productoId: string): void {
+function recalcularProductoDesdeEntradas(productoId: string, entradaReferencia?: EntradaInventario): void {
   const producto = obtenerProductoPorId(productoId);
   if (!producto) return;
 
@@ -180,8 +180,23 @@ function recalcularProductoDesdeEntradas(productoId: string): void {
     if (!reciente) return actual;
     return new Date(actual.fecha).getTime() > new Date(reciente.fecha).getTime() ? actual : reciente;
   }, undefined);
+  const entradaFuente = entradaReferencia?.activo && entradaReferencia.productoId === productoId
+    ? entradaReferencia
+    : entradaMasReciente;
+  const categoriaFuente = entradaFuente?.categoria || entradaFuente?.productoCategoria || producto.categoria;
+  const subcategoriaFuente = entradaFuente?.subcategoria || entradaFuente?.productoSubcategoria || producto.subcategoria;
 
   actualizarProducto(productoId, {
+    codigo: entradaFuente?.productoCodigo || producto.codigo,
+    nombre: entradaFuente?.nombreProducto || producto.nombre,
+    categoria: categoriaFuente,
+    subcategoria: subcategoriaFuente,
+    varianteId: entradaFuente?.varianteId || producto.varianteId,
+    varianteNombre: entradaFuente?.variante?.nombre || producto.varianteNombre,
+    unidad: entradaFuente?.unidad || producto.unidad,
+    peso: entradaFuente?.pesoUnidad ?? producto.peso,
+    pesoUnitario: entradaFuente?.pesoUnidad ?? producto.pesoUnitario,
+    icono: entradaFuente?.variante?.icono || entradaFuente?.productoIcono || producto.icono,
     stockActual,
     pesoRegistrado,
     lote: entradaMasReciente?.lote || '',
@@ -600,7 +615,7 @@ export function actualizarEntrada(id: string, datos: Partial<EntradaInventario>)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entradas));
   queueStorageSync(STORAGE_KEY);
 
-  recalcularProductoDesdeEntradas(entradaActualizada.productoId);
+  recalcularProductoDesdeEntradas(entradaActualizada.productoId, entradaActualizada);
 
   if (entradaAnterior.productoId !== entradaActualizada.productoId) {
     recalcularProductoDesdeEntradas(entradaAnterior.productoId);

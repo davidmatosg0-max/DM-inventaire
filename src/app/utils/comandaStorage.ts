@@ -5,7 +5,7 @@ import { descontarInventarioReservado, validarReservaInventario } from './invent
 import { obtenerProductos } from './productStorage';
 import { queueStorageSync } from './cloudPersistence';
 import { registrarDistribucionCompletada } from './movimientoStorage';
-import { obtenerUsuarioSesion } from './sesionStorage';
+import { obtenerNombreUsuarioSesion, obtenerUsuarioSesion } from './sesionStorage';
 import {
   resolverTemperaturaProductoCanonica,
   resolverTemperaturaOriginalEntradaProducto,
@@ -73,9 +73,9 @@ function normalizarItemComanda(item: any, productos = obtenerProductos()) {
     productoNombre,
     categoria: producto?.categoria || item?.categoria,
     subcategoria: producto?.subcategoria || item?.subcategoria,
-    temperatura: item?.temperatura || producto?.temperatura,
-    temperaturaAlmacenamiento: producto?.temperaturaAlmacenamiento,
-    temperaturaOriginalEntrada: item?.temperaturaOriginalEntrada || producto?.temperaturaOriginalEntrada,
+    temperatura: producto?.temperatura || item?.temperatura,
+    temperaturaAlmacenamiento: producto?.temperaturaAlmacenamiento || item?.temperaturaAlmacenamiento,
+    temperaturaOriginalEntrada: producto?.temperaturaOriginalEntrada || item?.temperaturaOriginalEntrada,
   });
   const temperaturaOriginalEntrada = resolverTemperaturaOriginalEntradaProducto({
     ...(producto || {}),
@@ -84,9 +84,9 @@ function normalizarItemComanda(item: any, productos = obtenerProductos()) {
     productoNombre,
     categoria: producto?.categoria || item?.categoria,
     subcategoria: producto?.subcategoria || item?.subcategoria,
-    temperatura: item?.temperatura || producto?.temperatura,
-    temperaturaAlmacenamiento: producto?.temperaturaAlmacenamiento,
-    temperaturaOriginalEntrada: item?.temperaturaOriginalEntrada || producto?.temperaturaOriginalEntrada,
+    temperatura: producto?.temperatura || item?.temperatura,
+    temperaturaAlmacenamiento: producto?.temperaturaAlmacenamiento || item?.temperaturaAlmacenamiento,
+    temperaturaOriginalEntrada: producto?.temperaturaOriginalEntrada || item?.temperaturaOriginalEntrada,
   });
 
   return {
@@ -94,7 +94,7 @@ function normalizarItemComanda(item: any, productos = obtenerProductos()) {
     nombreProducto,
     productoNombre,
     unidad: item?.unidad || producto?.unidad || 'kg',
-    icono: item?.icono || producto?.icono,
+    icono: producto?.icono || item?.icono,
     temperatura,
     temperaturaOriginalEntrada,
   };
@@ -300,6 +300,12 @@ export function actualizarComanda(comandaActualizada: Comanda): void {
     
     if (index !== -1) {
       const comandaAnterior = normalizarComanda(comandas[index]);
+
+      if (comandaAnterior.estado !== 'en_preparacion' && comandaNormalizada.estado === 'en_preparacion') {
+        comandaNormalizada.preparadoPor = obtenerNombreUsuarioSesion(
+          comandaNormalizada.preparadoPor || comandaNormalizada.usuarioCreacion || comandaNormalizada.creadoPor || 'Système'
+        );
+      }
 
       if (!esTransicionEstadoComandaValida(comandaAnterior.estado, comandaNormalizada.estado)) {
         const mensaje = `Transition de statut invalide: ${comandaAnterior.estado} → ${comandaNormalizada.estado}`;

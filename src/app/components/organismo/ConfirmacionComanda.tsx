@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, XCircle, Edit2, Minus, Plus, Package, AlertCircle, Calendar, FileText, Box, Users, Phone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -19,8 +19,13 @@ import {
 } from '../../utils/notificacionStorage';
 import { mockProductos } from '../../data/mockData';
 import { obtenerProductos } from '../../utils/productStorage';
+import {
+  formatComandaTemperatureGroup,
+  resolveComandaStorageTemperatureKey,
+} from '../../utils/comandaTemperature';
 import { obtenerPersonasPorOrganismo, type PersonaResponsable } from '../../utils/personasResponsablesStorage';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { sortByTemperature } from '../../utils/temperatureSort';
 import type { Comanda } from '../../types';
 import { SimulacionRecepcionNotificacion } from './SimulacionRecepcionNotificacion';
 import { useBranding } from '../../../hooks/useBranding';
@@ -28,6 +33,52 @@ import { useBranding } from '../../../hooks/useBranding';
 interface ConfirmacionComandaProps {
   organismoId: string;
   organismo?: any;
+}
+
+type ItemComandaPendienteAgrupado = {
+  item: any;
+  producto: any;
+  temperaturaKey: string;
+  temperaturaLabel: string;
+  key: string;
+};
+
+function agruparItemsPendientesPorTemperatura(
+  items: any[],
+  productosCatalogoMap: Map<string, any>,
+) {
+  const itemsOrdenados = sortByTemperature(
+    items.map((item: any, index: number) => {
+      const producto = productosCatalogoMap.get(item.productoId);
+
+      return {
+        item,
+        producto,
+        temperaturaKey: resolveComandaStorageTemperatureKey(item, producto),
+        temperaturaLabel: formatComandaTemperatureGroup(resolveComandaStorageTemperatureKey(item, producto)),
+        key: `${item.productoId || 'producto'}-${index}`,
+      } satisfies ItemComandaPendienteAgrupado;
+    }),
+    entry => entry.temperaturaKey,
+    (left, right) => String(
+      left.item?.nombreProducto || left.item?.productoNombre || left.producto?.nombre || ''
+    ).localeCompare(
+      String(right.item?.nombreProducto || right.item?.productoNombre || right.producto?.nombre || ''),
+      'fr',
+    ),
+  );
+
+  return itemsOrdenados.reduce((grupos, entry) => {
+    const ultimoGrupo = grupos[grupos.length - 1];
+
+    if (!ultimoGrupo || ultimoGrupo.key !== entry.temperaturaKey) {
+      grupos.push({ key: entry.temperaturaKey, label: entry.temperaturaLabel, items: [entry] });
+      return grupos;
+    }
+
+    ultimoGrupo.items.push(entry);
+    return grupos;
+  }, [] as Array<{ key: string; label: string; items: ItemComandaPendienteAgrupado[] }>);
 }
 
 export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComandaProps) {
@@ -68,6 +119,12 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
   const [personasResponsables, setPersonasResponsables] = useState<PersonaResponsable[]>([]);
   const [ultimaNotificacion, setUltimaNotificacion] = useState<NotificacionOrganismo | null>(null);
   const [notificacionReciente, setNotificacionReciente] = useState(false);
+  const productosCatalogoMap = useMemo(() => new Map(
+    [
+      ...obtenerProductos(),
+      ...mockProductos.filter(mockProducto => !obtenerProductos().some(producto => producto.id === mockProducto.id)),
+    ].map(producto => [producto.id, producto]),
+  ), []);
 
   const cargarUltimaNotificacion = () => {
     const notificaciones = obtenerNotificacionesPorOrganismo(organismoId);
@@ -316,6 +373,7 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
 
           {comandasPendientes.map((comanda) => {
             const esEdicion = comandaEnEdicion === comanda.id;
+            const gruposTemperatura = agruparItemsPendientesPorTemperatura(comanda.items || [], productosCatalogoMap);
             
             return (
               <Card key={comanda.id} className="border-2 border-[#FFC107]">
@@ -361,75 +419,87 @@ export function ConfirmacionComanda({ organismoId, organismo }: ConfirmacionComa
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {comanda.items.map((item) => {
-                        const todosLosProductos = obtenerProductos();
-                        const producto = todosLosProductos.find(p => p.id === item.productoId) || 
-                                        mockProductos.find(p => p.id === item.productoId);
-                        const cantidadMostrada = esEdicion 
-                          ? (cantidadesEditadas[item.productoId] ?? Math.round(item.cantidad))
-                          : Math.round(item.cantidad);
-                        const cantidadModificada = esEdicion && cantidadesEditadas[item.productoId] !== undefined && cantidadesEditadas[item.productoId] !== item.cantidad;
-
-                        return (
-                          <TableRow key={item.productoId}>
-                            <TableCell className="text-center">
-                              {producto?.icono ? (
-                                <span className="text-2xl">{producto.icono}</span>
-                              ) : (
-                                <Box className="w-6 h-6 text-gray-400 mx-auto" />
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{obtenerEtiquetaProducto(producto, item.nombreProducto)}</span>
-                                {obtenerPoidsUnitaire(producto) && (
-                                  <span className="text-xs text-gray-500 mt-0.5">
-                                    {obtenerPoidsUnitaire(producto)}
-                                  </span>
-                                )}
+                      {gruposTemperatura.map((grupo) => (
+                        <React.Fragment key={grupo.key}>
+                          <TableRow className="bg-slate-100/85 hover:bg-slate-100/85">
+                            <TableCell colSpan={esEdicion ? 6 : 5} className="py-2.5">
+                              <div className="flex items-center gap-2 text-sm font-semibold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                <Package className="h-4 w-4" />
+                                {grupo.label}
+                                <Badge className="bg-[#1E73BE] text-white border-0 ml-2">
+                                  {grupo.items.length} produit{grupo.items.length > 1 ? 's' : ''}
+                                </Badge>
                               </div>
                             </TableCell>
-                            <TableCell className="text-gray-600">{producto?.codigo || '-'}</TableCell>
-                            <TableCell className="text-right">
-                              {esEdicion ? (
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    size="icon"
-                                    variant="outline"
-                                    className="h-7 w-7 border-[#DC3545] text-[#DC3545] hover:bg-[#DC3545] hover:text-white"
-                                    onClick={() => actualizarCantidad(item.productoId, cantidadMostrada - 1, item.cantidad)}
-                                  >
-                                    <Minus className="w-3 h-3" />
-                                  </Button>
-                                  <QuantityInput
-                                    value={cantidadMostrada}
-                                    onChangeText={(value) => actualizarCantidad(item.productoId, parseQuantityText(value, false) || 0, item.cantidad)}
-                                    className={`w-20 h-7 text-center ${cantidadModificada ? 'border-[#4CAF50] border-2 font-bold' : ''}`}
-                                    min={0}
-                                    max={Math.round(item.cantidad)}
-                                    step={1}
-                                    showButtons={false}
-                                    wrapperClassName="contents"
-                                  />
-                                  <span className="text-xs text-gray-500 w-16">(Max : {formatQuantity(item.cantidad)})</span>
-                                </div>
-                              ) : (
-                                <span className="font-bold">{formatQuantity(cantidadMostrada)}</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{producto?.unidad || '-'}</TableCell>
-                            {esEdicion && (
-                              <TableCell className="text-center">
-                                {cantidadModificada && (
-                                  <Badge className="bg-[#4CAF50] text-white">
-                                    Modifié
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            )}
                           </TableRow>
-                        );
-                      })}
+                          {grupo.items.map(({ item, producto, key }) => {
+                            const cantidadMostrada = esEdicion
+                              ? (cantidadesEditadas[item.productoId] ?? Math.round(item.cantidad))
+                              : Math.round(item.cantidad);
+                            const cantidadModificada = esEdicion && cantidadesEditadas[item.productoId] !== undefined && cantidadesEditadas[item.productoId] !== item.cantidad;
+
+                            return (
+                              <TableRow key={key}>
+                                <TableCell className="text-center">
+                                  {producto?.icono ? (
+                                    <span className="text-2xl">{producto.icono}</span>
+                                  ) : (
+                                    <Box className="w-6 h-6 text-gray-400 mx-auto" />
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{obtenerEtiquetaProducto(producto, item.nombreProducto)}</span>
+                                    {obtenerPoidsUnitaire(producto) && (
+                                      <span className="text-xs text-gray-500 mt-0.5">
+                                        {obtenerPoidsUnitaire(producto)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-gray-600">{producto?.codigo || '-'}</TableCell>
+                                <TableCell className="text-right">
+                                  {esEdicion ? (
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-7 w-7 border-[#DC3545] text-[#DC3545] hover:bg-[#DC3545] hover:text-white"
+                                        onClick={() => actualizarCantidad(item.productoId, cantidadMostrada - 1, item.cantidad)}
+                                      >
+                                        <Minus className="w-3 h-3" />
+                                      </Button>
+                                      <QuantityInput
+                                        value={cantidadMostrada}
+                                        onChangeText={(value) => actualizarCantidad(item.productoId, parseQuantityText(value, false) || 0, item.cantidad)}
+                                        className={`w-20 h-7 text-center ${cantidadModificada ? 'border-[#4CAF50] border-2 font-bold' : ''}`}
+                                        min={0}
+                                        max={Math.round(item.cantidad)}
+                                        step={1}
+                                        showButtons={false}
+                                        wrapperClassName="contents"
+                                      />
+                                      <span className="text-xs text-gray-500 w-16">(Max : {formatQuantity(item.cantidad)})</span>
+                                    </div>
+                                  ) : (
+                                    <span className="font-bold">{formatQuantity(cantidadMostrada)}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>{producto?.unidad || '-'}</TableCell>
+                                {esEdicion && (
+                                  <TableCell className="text-center">
+                                    {cantidadModificada && (
+                                      <Badge className="bg-[#4CAF50] text-white">
+                                        Modifié
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            );
+                          })}
+                        </React.Fragment>
+                      ))}
                     </TableBody>
                   </Table>
 

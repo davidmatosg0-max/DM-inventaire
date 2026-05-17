@@ -14,6 +14,7 @@ import { cn } from '../ui/utils';
 import { type Subcategoria, type Variante } from '../../data/configuracionData';
 import { obtenerCategorias, guardarCategorias } from '../../utils/categoriaStorage';
 import { obtenerUnidades, type Unidad } from '../../utils/unidadStorage';
+import { sincronizarProductosPorVariante } from '../../utils/productStorage';
 
 type GestionVariantesProps = {
   subcategoria: Subcategoria;
@@ -135,9 +136,18 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
         if (subIndex >= 0) {
           categoria.subcategorias[subIndex].variantes = variantesActualizadas;
           guardarCategorias(categorias);
+          sincronizarProductosPorVariante({
+            varianteId: modoEdicion && varianteEditando ? varianteEditando.id : nuevaVariante.id,
+            varianteNombreAnterior: modoEdicion && varianteEditando ? varianteEditando.nombre : undefined,
+            varianteNombreNuevo: nuevaVariante.nombre,
+            categoria: categoria.nombre,
+            subcategoria: subcategoria.nombre,
+            icono: nuevaVariante.icono,
+          });
           
           // Disparar evento de actualización
           window.dispatchEvent(new Event('categorias-actualizadas'));
+          window.dispatchEvent(new Event('productos-actualizados'));
           
           setVariantes(variantesActualizadas);
           setDialogOpen(false);

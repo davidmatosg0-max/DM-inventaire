@@ -3,6 +3,7 @@
 import { registrarActividad } from './actividadLogger';
 import { buildLocationOptions, loadLocationZones, resolveLegacyLocation } from './locationZones';
 import { queueStorageSync } from './cloudPersistence';
+import { sincronizarProductoEnComandasYOfertas } from './productReferenceSync';
 import {
   aplicarTemperaturaProducto,
   type TemperaturaProductoCanonica,
@@ -57,7 +58,14 @@ type GuardarProductoOpciones = {
 const STORAGE_KEY = 'banco_alimentos_productos';
 
 function normalizeProductNameToken(value?: string): string {
-  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').toLowerCase() : '';
+  return typeof value === 'string'
+    ? value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLowerCase()
+    : '';
 }
 
 function normalizeProductWeight(value?: number): string {
@@ -327,9 +335,21 @@ export function actualizarProducto(id: string, productoActualizado: Partial<Prod
     const index = productos.findIndex(p => p.id === id);
     if (index !== -1) {
       const productoAnterior = { ...productos[index] };
-      productos[index] = aplicarTemperaturaProducto(normalizeStoredProduct({ ...productos[index], ...productoActualizado }, standardLocations));
+      const productoFusionado: Partial<ProductoCreado> = { ...productos[index], ...productoActualizado };
+      const tieneCambioExplicitoTemperatura = (
+        productoActualizado.temperatura !== undefined ||
+        productoActualizado.temperaturaAlmacenamiento !== undefined ||
+        productoActualizado.temperaturaOriginalEntrada !== undefined
+      );
+
+      if (tieneCambioExplicitoTemperatura && productoActualizado.temperaturaOriginalEntrada === undefined) {
+        productoFusionado.temperaturaOriginalEntrada = undefined;
+      }
+
+      productos[index] = aplicarTemperaturaProducto(normalizeStoredProduct(productoFusionado as ProductoCreado, standardLocations));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
       queueStorageSync(STORAGE_KEY);
+      sincronizarProductoEnComandasYOfertas(productos[index]);
       
       // Registrar actividad solo si hay cambios significativos
       const cambiosSignificativos = [];
@@ -352,6 +372,61 @@ export function actualizarProducto(id: string, productoActualizado: Partial<Prod
   } catch (error) {
     console.error('Error al actualizar producto:', error);
   }
+}
+
+type SincronizarVarianteProductosArgs = {
+  varianteId?: string;
+  varianteNombreAnterior?: string;
+  varianteNombreNuevo?: string;
+  categoria: string;
+  subcategoria: string;
+  icono?: string;
+};
+
+export function sincronizarProductosPorVariante({
+  varianteId,
+  varianteNombreAnterior,
+  varianteNombreNuevo,
+  categoria,
+  subcategoria,
+  icono,
+}: SincronizarVarianteProductosArgs): number {
+  const productos = obtenerProductos();
+  const categoriaNormalizada = normalizeProductNameToken(categoria);
+  const subcategoriaNormalizada = normalizeProductNameToken(subcategoria);
+  const nombresCompatibles = new Set(
+    [varianteNombreAnterior, varianteNombreNuevo]
+      .map((value) => normalizeProductNameToken(value))
+      .filter(Boolean),
+  );
+
+  const productosCoincidentes = productos.filter((producto) => {
+    const coincidePorVarianteId = Boolean(varianteId) && producto.varianteId === varianteId;
+    const coincideCategoriaSubcategoria = !producto.varianteId
+      && normalizeProductNameToken(producto.categoria) === categoriaNormalizada
+      && normalizeProductNameToken(producto.subcategoria) === subcategoriaNormalizada;
+    const varianteNombreProducto = normalizeProductNameToken(producto.varianteNombre);
+    const nombreProducto = normalizeProductNameToken(producto.nombre);
+    const coincidePorNombreLegacy = coincideCategoriaSubcategoria && (
+      (Boolean(varianteNombreProducto) && nombresCompatibles.has(varianteNombreProducto))
+      || (!varianteNombreProducto && (
+        nombresCompatibles.size === 0
+        || nombresCompatibles.has(subcategoriaNormalizada)
+        || nombresCompatibles.has(nombreProducto)
+      ))
+    );
+
+    return coincidePorVarianteId || coincidePorNombreLegacy;
+  });
+
+  productosCoincidentes.forEach((producto) => {
+    actualizarProducto(producto.id, {
+      icono: icono || producto.icono,
+      varianteNombre: varianteNombreNuevo || producto.varianteNombre,
+    });
+  });
+
+  return productosCoincidentes.length;
 }
 
 export function descontarStockProductosAtomico(items: ProductoCantidadOperacion[]): { ok: boolean; error?: string } {

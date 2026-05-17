@@ -121,6 +121,7 @@ export interface Comanda {
   fechaModificacion?: string;
   creadoPor?: string;
   modificadoPor?: string;
+  preparadoPor?: string;
 }
 
 export type EstadoComanda =

@@ -79,13 +79,33 @@ function CommandList({
   className,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.List>) {
+  const handleWheelCapture = React.useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    const list = event.currentTarget;
+    const maxScrollTop = list.scrollHeight - list.clientHeight;
+
+    if (maxScrollTop <= 0) {
+      return;
+    }
+
+    const nextScrollTop = Math.max(0, Math.min(list.scrollTop + event.deltaY, maxScrollTop));
+
+    if (nextScrollTop === list.scrollTop) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    list.scrollTop = nextScrollTop;
+  }, []);
+
   return (
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto",
+        "max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto overscroll-contain",
         className,
       )}
+      onWheelCapture={handleWheelCapture}
       {...props}
     />
   );

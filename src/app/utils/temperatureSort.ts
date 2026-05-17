@@ -7,7 +7,11 @@ const TEMPERATURE_ORDER = {
 } as const;
 
 export function normalizeTemperatureValue(value: TemperatureValue): keyof typeof TEMPERATURE_ORDER {
-  const normalized = String(value || '').trim().toLowerCase();
+  const normalized = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
 
   if (normalized.includes('congel')) {
     return 'congelado';
@@ -17,7 +21,7 @@ export function normalizeTemperatureValue(value: TemperatureValue): keyof typeof
     return 'refrigerado';
   }
 
-  if (normalized.includes('seco')) {
+  if (normalized.includes('seco') || normalized.includes('ambian')) {
     return 'ambiente';
   }
 
