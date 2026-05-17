@@ -16,6 +16,10 @@ import { RUES_COMPLETES_LAVAL } from './ruesCompletesLaval';
 // ============================================================================
 const STORAGE_KEY = 'villes_quartiers_adresses';
 const STORAGE_INITIALIZED_KEY = 'villes_quartiers_initialized';
+const LAVAL_ADRESSES_GEOJSON_URL = 'https://www.donneesquebec.ca/recherche/dataset/8cd81673-5b0b-4050-b4a6-aed80975158a/resource/7ccb7a8b-18bb-4818-b0f1-beb9b05dbe41/download/adressecivique.geojson';
+const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search';
+const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
+const QUARTIER_SYNC_INTERNET = 'Rues synchronisées Internet';
 
 type ReconciliationStats = {
   villesAjoutees: number;
@@ -58,6 +62,46 @@ export interface Ville {
   dateCreation: string;
   dateModification: string;
 }
+
+type LavalGeoJsonFeatureProperties = {
+  RUE?: string;
+  EX_VILLE?: string;
+  GENERIQUE?: string;
+  NOM_ADRESSE?: string;
+};
+
+type LavalGeoJson = {
+  features?: Array<{
+    properties?: LavalGeoJsonFeatureProperties;
+  }>;
+};
+
+type NominatimCityResult = {
+  lat?: string;
+  lon?: string;
+  boundingbox?: string[];
+  display_name?: string;
+};
+
+type OverpassElement = {
+  type?: string;
+  tags?: Record<string, string>;
+};
+
+type OverpassResponse = {
+  elements?: OverpassElement[];
+};
+
+type ResultatSynchronisationVille = {
+  success: boolean;
+  message: string;
+  quartiersAjoutes: number;
+  ruesAjoutees: number;
+  ruesSupprimees: number;
+  codesPostauxMisAJour: number;
+  villesAjoutees: number;
+  source: 'laval-officiel' | 'openstreetmap';
+};
 
 function lireVillesBrutes(): Ville[] {
   try {
@@ -688,6 +732,76 @@ function resoudreCleQuartierLaval(key: string): string {
   return LAVAL_QUARTIERS_ALIASES[key] || key;
 }
 
+function trouverValeurQuartierLavalParCle<T>(source: Record<string, T>, quartierKey: string): T | undefined {
+  return Object.entries(source).find(([nomQuartier]) => (
+    resoudreCleQuartierLaval(normaliserTexteAdresse(nomQuartier)) === quartierKey
+  ))?.[1];
+}
+
+function trouverNomQuartierLavalParCle(quartierKey: string, fallback?: string): string {
+  const sources = new Set<string>([
+    ...Object.keys(LAVAL_CODES_POSTAUX_COMPLETS),
+    ...Object.keys(RUES_PRINCIPALES_LAVAL),
+    ...Object.keys(RUES_COMPLETES_LAVAL),
+    ...Object.keys(obtenirRuesLavalParQuartier()),
+  ]);
+
+  const trouve = Array.from(sources).find((nomQuartier) => (
+    resoudreCleQuartierLaval(normaliserTexteAdresse(nomQuartier)) === quartierKey
+  ));
+
+  return trouve || nettoyerTexteAffichage(fallback) || quartierKey;
+}
+
+function construireRuesCanoniquesDepuisGeoJsonLaval(data: LavalGeoJson): Record<string, QuartierCanonique> {
+  const resultat: Record<string, QuartierCanonique> = {};
+
+  (data.features || []).forEach((feature) => {
+    const properties = feature.properties;
+    const quartierBrut = nettoyerTexteAffichage(properties?.EX_VILLE);
+    const rueNom = nettoyerTexteAffichage(properties?.RUE || properties?.NOM_ADRESSE);
+
+    if (!quartierBrut || !rueNom) {
+      return;
+    }
+
+    const quartierKey = resoudreCleQuartierLaval(normaliserTexteAdresse(quartierBrut));
+    if (!quartierKey) {
+      return;
+    }
+
+    const nomQuartier = trouverNomQuartierLavalParCle(quartierKey, quartierBrut);
+    const codesPostaux = (trouverValeurQuartierLavalParCle(LAVAL_CODES_POSTAUX_COMPLETS, quartierKey) || [])
+      .map((code) => normaliserCodePostalToken(code))
+      .filter((code): code is string => Boolean(code));
+
+    if (!resultat[quartierKey]) {
+      resultat[quartierKey] = {
+        nom: nomQuartier,
+        codesPostaux: Array.from(new Set(codesPostaux)).sort((a, b) => a.localeCompare(b, 'fr')),
+        rues: [],
+      };
+    }
+
+    const rueKey = normaliserTexteAdresse(rueNom);
+    if (!rueKey || resultat[quartierKey].rues.some((rue) => normaliserTexteAdresse(rue.nom) === rueKey)) {
+      return;
+    }
+
+    resultat[quartierKey].rues.push({
+      nom: rueNom,
+      type: normaliserTypeRue(properties?.GENERIQUE),
+    });
+  });
+
+  Object.values(resultat).forEach((quartier) => {
+    quartier.rues.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+    quartier.codesPostaux.sort((a, b) => a.localeCompare(b, 'fr'));
+  });
+
+  return resultat;
+}
+
 function extraireNomRueComparable(value?: string): string {
   const normalise = normaliserTexteAdresse(value);
 
@@ -709,6 +823,16 @@ function normaliserTypeRue(value?: string): Rue['type'] {
   if (type === 'rue' || type === 'ru') return 'rue';
 
   return 'autre';
+}
+
+function infererTypeRueDepuisNom(value?: string): Rue['type'] {
+  const nom = nettoyerTexteAffichage(value);
+  if (!nom) {
+    return 'autre';
+  }
+
+  const premierMot = nom.split(/\s+/)[0];
+  return normaliserTypeRue(premierMot);
 }
 
 function normaliserCodePostalToken(value?: string): string | undefined {
@@ -863,20 +987,21 @@ function trouverRueCanoniqueDansListe(
   return undefined;
 }
 
-function construireDonneesCanoniquesLaval(): Record<string, QuartierCanonique> {
+function construireDonneesCanoniquesLaval(donneesInternet: Record<string, QuartierCanonique> = {}): Record<string, QuartierCanonique> {
   const quartiers = new Set<string>([
-    ...Object.keys(LAVAL_CODES_POSTAUX_COMPLETS),
-    ...Object.keys(RUES_PRINCIPALES_LAVAL),
-    ...Object.keys(RUES_COMPLETES_LAVAL),
-    ...Object.keys(obtenirRuesLavalParQuartier()),
+    ...Object.keys(LAVAL_CODES_POSTAUX_COMPLETS).map((nomQuartier) => resoudreCleQuartierLaval(normaliserTexteAdresse(nomQuartier))),
+    ...Object.keys(RUES_PRINCIPALES_LAVAL).map((nomQuartier) => resoudreCleQuartierLaval(normaliserTexteAdresse(nomQuartier))),
+    ...Object.keys(RUES_COMPLETES_LAVAL).map((nomQuartier) => resoudreCleQuartierLaval(normaliserTexteAdresse(nomQuartier))),
+    ...Object.keys(obtenirRuesLavalParQuartier()).map((nomQuartier) => resoudreCleQuartierLaval(normaliserTexteAdresse(nomQuartier))),
+    ...Object.keys(donneesInternet),
   ]);
   const ruesFallback = obtenirRuesLavalParQuartier();
   const resultat: Record<string, QuartierCanonique> = {};
 
-  quartiers.forEach((nomQuartier) => {
-    const key = resoudreCleQuartierLaval(normaliserTexteAdresse(nomQuartier));
+  quartiers.forEach((key) => {
+    const nomQuartier = trouverNomQuartierLavalParCle(key, donneesInternet[key]?.nom);
     const codes = new Set<string>(
-      (LAVAL_CODES_POSTAUX_COMPLETS[nomQuartier as keyof typeof LAVAL_CODES_POSTAUX_COMPLETS] || [])
+      (trouverValeurQuartierLavalParCle(LAVAL_CODES_POSTAUX_COMPLETS, key) || [])
         .map((code) => normaliserCodePostalToken(code))
         .filter((code): code is string => Boolean(code)),
     );
@@ -909,11 +1034,12 @@ function construireDonneesCanoniquesLaval(): Record<string, QuartierCanonique> {
       });
     };
 
-    ajouterRues(RUES_PRINCIPALES_LAVAL[nomQuartier]);
-    ajouterRues(RUES_COMPLETES_LAVAL[nomQuartier]);
+    ajouterRues(trouverValeurQuartierLavalParCle(RUES_PRINCIPALES_LAVAL, key));
+    ajouterRues(trouverValeurQuartierLavalParCle(RUES_COMPLETES_LAVAL, key));
+    ajouterRues(donneesInternet[key]?.rues);
 
     const ruesCanoniquesExistantes = Array.from(ruesMap.values());
-    const ruesFallbackQuartier = ruesFallback[nomQuartier];
+    const ruesFallbackQuartier = trouverValeurQuartierLavalParCle(ruesFallback, key);
 
     if (ruesCanoniquesExistantes.length === 0) {
       ajouterRues(
@@ -1121,7 +1247,10 @@ function fusionnerQuartiers(quartiers: Quartier[]): Quartier[] {
   return Array.from(fusion.values());
 }
 
-function reconcilierBaseAdresses(villesSource: Ville[]): { villes: Ville[]; stats: ReconciliationStats } {
+function reconcilierBaseAdresses(
+  villesSource: Ville[],
+  baseCanoniqueLaval: Record<string, QuartierCanonique> = construireDonneesCanoniquesLaval(),
+): { villes: Ville[]; stats: ReconciliationStats } {
   const stats: ReconciliationStats = {
     villesAjoutees: 0,
     villesFusionnees: 0,
@@ -1131,7 +1260,6 @@ function reconcilierBaseAdresses(villesSource: Ville[]): { villes: Ville[]; stat
     codesPostauxCorriges: 0,
   };
   const now = new Date().toISOString();
-  const baseCanoniqueLaval = construireDonneesCanoniquesLaval();
   const villesParNom = new Map<string, Ville>();
 
   villesSource.forEach((ville) => {
@@ -1292,29 +1420,351 @@ export function synchroniserRuesLaval(): {
   }
 }
 
+async function telechargerBaseCanoniqueLavalDepuisInternet(): Promise<Record<string, QuartierCanonique>> {
+  const response = await fetch(LAVAL_ADRESSES_GEOJSON_URL, {
+    method: 'GET',
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Téléchargement Laval impossible (${response.status})`);
+  }
+
+  const data = await response.json() as LavalGeoJson;
+  const baseInternet = construireRuesCanoniquesDepuisGeoJsonLaval(data);
+
+  if (Object.keys(baseInternet).length === 0) {
+    throw new Error('Aucune donnée de rues valide reçue depuis la source officielle de Laval');
+  }
+
+  return baseInternet;
+}
+
+async function telechargerRuesVilleDepuisOpenStreetMap(ville: Ville): Promise<RueCanonique[]> {
+  const searchParams = new URLSearchParams({
+    city: ville.nom,
+    state: ville.province || 'Québec',
+    country: ville.pays || 'Canada',
+    format: 'jsonv2',
+    limit: '1',
+  });
+
+  const nominatimResponse = await fetch(`${NOMINATIM_SEARCH_URL}?${searchParams.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!nominatimResponse.ok) {
+    throw new Error(`Localisation Internet impossible pour ${ville.nom} (${nominatimResponse.status})`);
+  }
+
+  const nominatimData = await nominatimResponse.json() as NominatimCityResult[];
+  const cityMatch = nominatimData[0];
+
+  if (!cityMatch?.boundingbox || cityMatch.boundingbox.length < 4) {
+    throw new Error(`Ville introuvable sur Internet: ${ville.nom}`);
+  }
+
+  const [sud, nord, ouest, est] = cityMatch.boundingbox;
+  const overpassQuery = `[out:json][timeout:45];(way["highway"]["name"](${sud},${ouest},${nord},${est});relation["highway"]["name"](${sud},${ouest},${nord},${est}););out tags;`;
+
+  const overpassResponse = await fetch(OVERPASS_API_URL, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      Accept: 'application/json',
+    },
+    body: `data=${encodeURIComponent(overpassQuery)}`,
+  });
+
+  if (!overpassResponse.ok) {
+    throw new Error(`Téléchargement des rues impossible pour ${ville.nom} (${overpassResponse.status})`);
+  }
+
+  const overpassData = await overpassResponse.json() as OverpassResponse;
+  const ruesMap = new Map<string, RueCanonique>();
+
+  (overpassData.elements || []).forEach((element) => {
+    const nom = nettoyerTexteAffichage(element.tags?.name);
+    if (!nom) {
+      return;
+    }
+
+    const rueKey = normaliserTexteAdresse(nom);
+    if (!ruesMap.has(rueKey)) {
+      ruesMap.set(rueKey, {
+        nom,
+        type: infererTypeRueDepuisNom(nom),
+      });
+    }
+  });
+
+  const rues = Array.from(ruesMap.values()).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  if (rues.length === 0) {
+    throw new Error(`Aucune rue exploitable reçue depuis OpenStreetMap pour ${ville.nom}`);
+  }
+
+  return rues;
+}
+
+function synchroniserQuartierInternetAvecRues(quartierExistant: Quartier | undefined, ruesInternet: RueCanonique[]): {
+  quartier: Quartier;
+  ruesAjoutees: number;
+  ruesSupprimees: number;
+} {
+  const now = new Date().toISOString();
+  const ruesExistantes = Array.isArray(quartierExistant?.rues) ? quartierExistant.rues : [];
+  const ruesExistantesMap = new Map(
+    ruesExistantes.map((rue) => [normaliserTexteAdresse(rue.nom), rue]),
+  );
+  const ruesInternetKeys = new Set(ruesInternet.map((rue) => normaliserTexteAdresse(rue.nom)));
+
+  const rues = ruesInternet.map((rueInternet) => {
+    const key = normaliserTexteAdresse(rueInternet.nom);
+    const rueExistante = ruesExistantesMap.get(key);
+    return {
+      id: rueExistante?.id || genererId('rue'),
+      nom: rueInternet.nom,
+      type: rueInternet.type,
+      codePostal: rueExistante?.codePostal,
+      dateCreation: rueExistante?.dateCreation || now,
+      dateModification:
+        !rueExistante || rueExistante.nom !== rueInternet.nom || rueExistante.type !== rueInternet.type
+          ? now
+          : rueExistante.dateModification,
+    };
+  });
+
+  const ruesAjoutees = rues.filter((rue) => !ruesExistantesMap.has(normaliserTexteAdresse(rue.nom))).length;
+  const ruesSupprimees = ruesExistantes.filter((rue) => !ruesInternetKeys.has(normaliserTexteAdresse(rue.nom))).length;
+
+  return {
+    quartier: {
+      id: quartierExistant?.id || genererId('quartier'),
+      nom: quartierExistant?.nom || QUARTIER_SYNC_INTERNET,
+      codePostal: quartierExistant?.codePostal,
+      description: 'Quartier technique alimenté par la synchronisation Internet OpenStreetMap',
+      rues,
+      dateCreation: quartierExistant?.dateCreation || now,
+      dateModification: now,
+    },
+    ruesAjoutees,
+    ruesSupprimees,
+  };
+}
+
+async function synchroniserRuesLavalDepuisInternet(): Promise<{
+  success: boolean;
+  quartiersAjoutes: number;
+  ruesAjoutees: number;
+  ruesSupprimees: number;
+  codesPostauxMisAJour: number;
+  villesAjoutees: number;
+  source: 'laval-officiel';
+  message: string;
+}> {
+  try {
+    const baseInternet = await telechargerBaseCanoniqueLavalDepuisInternet();
+    const villesBrutes = lireVillesBrutes();
+    const lavalAvant = villesBrutes.find((ville) => normaliserTexteAdresse(ville.nom) === normaliserTexteAdresse('Laval'));
+    const baseCanoniqueLaval = construireDonneesCanoniquesLaval(baseInternet);
+    const { villes, stats } = reconcilierBaseAdresses(villesBrutes, baseCanoniqueLaval);
+    const laval = villes.find((ville) => normaliserTexteAdresse(ville.nom) === normaliserTexteAdresse('Laval'));
+
+    if (!laval) {
+      return {
+        success: false,
+        quartiersAjoutes: 0,
+        ruesAjoutees: 0,
+        ruesSupprimees: 0,
+        codesPostauxMisAJour: 0,
+        villesAjoutees: 0,
+        source: 'laval-officiel',
+        message: 'Ville de Laval non trouvée',
+      };
+    }
+
+    const quartiersAjoutes = compterQuartiersModifies(lavalAvant?.quartiers || [], laval.quartiers || []);
+    const hayCambios = JSON.stringify(villesBrutes) !== JSON.stringify(villes);
+
+    if (hayCambios) {
+      ecrireVillesBrutes(villes);
+    }
+
+    return {
+      success: true,
+      quartiersAjoutes,
+      ruesAjoutees: stats.ruesAjoutees,
+      ruesSupprimees: stats.ruesSupprimees,
+      codesPostauxMisAJour: stats.codesPostauxCorriges,
+      villesAjoutees: stats.villesAjoutees,
+      source: 'laval-officiel',
+      message: hayCambios
+        ? 'Synchronisation Internet réussie avec les données officielles de Laval'
+        : 'Les données officielles de Laval sont déjà à jour',
+    };
+  } catch (error) {
+    console.error('Erreur lors de la synchronisation Internet Laval:', error);
+    return {
+      success: false,
+      quartiersAjoutes: 0,
+      ruesAjoutees: 0,
+      ruesSupprimees: 0,
+      codesPostauxMisAJour: 0,
+      villesAjoutees: 0,
+      source: 'laval-officiel',
+      message: `Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+    };
+  }
+}
+
+async function synchroniserVilleGeneriqueDepuisInternet(villeId: string): Promise<ResultatSynchronisationVille> {
+  const villes = lireVillesBrutes();
+  const indexVille = villes.findIndex((item) => item.id === villeId);
+
+  if (indexVille === -1) {
+    return {
+      success: false,
+      message: 'Ville non trouvée',
+      quartiersAjoutes: 0,
+      ruesAjoutees: 0,
+      ruesSupprimees: 0,
+      codesPostauxMisAJour: 0,
+      villesAjoutees: 0,
+      source: 'openstreetmap',
+    };
+  }
+
+  try {
+    const ville = villes[indexVille];
+    const ruesInternet = await telechargerRuesVilleDesdeOpenStreetMap(ville);
+    const quartiers = Array.isArray(ville.quartiers) ? [...ville.quartiers] : [];
+    const quartierIndex = quartiers.findIndex((quartier) => normaliserTexteAdresse(quartier.nom) === normaliserTexteAdresse(QUARTIER_SYNC_INTERNET));
+    const quartierExistant = quartierIndex >= 0 ? quartiers[quartierIndex] : undefined;
+    const { quartier, ruesAjoutees, ruesSupprimees } = synchroniserQuartierInternetAvecRues(quartierExistant, ruesInternet);
+
+    if (quartierIndex >= 0) {
+      quartiers[quartierIndex] = quartier;
+    } else {
+      quartiers.push(quartier);
+    }
+
+    villes[indexVille] = {
+      ...ville,
+      quartiers,
+      dateModification: new Date().toISOString(),
+    };
+
+    const sauvegardeOk = sauvegarderVilles(villes);
+    if (!sauvegardeOk) {
+      throw new Error(`Sauvegarde impossible après synchronisation de ${ville.nom}`);
+    }
+
+    return {
+      success: true,
+      message: ruesAjoutees > 0 || ruesSupprimees > 0 || quartierIndex === -1
+        ? `Synchronisation Internet réussie pour ${ville.nom}`
+        : `Les rues Internet de ${ville.nom} sont déjà à jour`,
+      quartiersAjoutes: quartierIndex === -1 ? 1 : 0,
+      ruesAjoutees,
+      ruesSupprimees,
+      codesPostauxMisAJour: 0,
+      villesAjoutees: 0,
+      source: 'openstreetmap',
+    };
+  } catch (error) {
+    console.error('Erreur lors de la synchronisation Internet générique:', error);
+    return {
+      success: false,
+      message: `Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+      quartiersAjoutes: 0,
+      ruesAjoutees: 0,
+      ruesSupprimees: 0,
+      codesPostauxMisAJour: 0,
+      villesAjoutees: 0,
+      source: 'openstreetmap',
+    };
+  }
+}
+
+async function synchroniserVilleDepuisInternet(villeId: string): Promise<ResultatSynchronisationVille> {
+  const villes = obtenirVilles();
+  const ville = villes.find((item) => item.id === villeId);
+
+  if (!ville) {
+    return {
+      success: false,
+      message: 'Ville non trouvée',
+      quartiersAjoutes: 0,
+      ruesAjoutees: 0,
+      ruesSupprimees: 0,
+      codesPostauxMisAJour: 0,
+      villesAjoutees: 0,
+      source: 'openstreetmap',
+    };
+  }
+
+  if (normaliserTexteAdresse(ville.nom) === normaliserTexteAdresse('Laval')) {
+    return synchroniserRuesLavalDepuisInternet();
+  }
+
+  return synchroniserVilleGeneriqueDepuisInternet(villeId);
+}
+
 /**
  * Synchroniser tous les quartiers de toutes les villes
  */
-export function synchroniserAvecInternet(): {
+export async function synchroniserAvecInternet(): Promise<{
   success: boolean;
   message: string;
   villesSynchronisees: number;
   villesAjoutees: number;
   quartiersAjoutes: number;
+  ruesAjoutees: number;
   ruesSupprimees: number;
   villesMisesAJour: number;
-} {
+}> {
   try {
-    const resultat = synchroniserRuesLaval();
+    const villes = obtenirVilles();
+    let villesSynchronisees = 0;
+    let villesAjoutees = 0;
+    let quartiersAjoutes = 0;
+    let ruesAjoutees = 0;
+    let ruesSupprimees = 0;
+    let villesMisesAJour = 0;
+    const erreurs: string[] = [];
+
+    for (const ville of villes) {
+      const resultat = await synchroniserVilleDepuisInternet(ville.id);
+      if (resultat.success) {
+        villesSynchronisees += 1;
+        villesAjoutees += resultat.villesAjoutees;
+        quartiersAjoutes += resultat.quartiersAjoutes;
+        ruesAjoutees += resultat.ruesAjoutees;
+        ruesSupprimees += resultat.ruesSupprimees;
+        if (resultat.quartiersAjoutes > 0 || resultat.ruesAjoutees > 0 || resultat.ruesSupprimees > 0 || resultat.codesPostauxMisAJour > 0) {
+          villesMisesAJour += 1;
+        }
+      } else {
+        erreurs.push(`${ville.nom}: ${resultat.message}`);
+      }
+    }
     
     return {
-      success: resultat.success,
-      message: resultat.message,
-      villesSynchronisees: resultat.quartiersUpdates > 0 ? 1 : 0,
-      villesAjoutees: 0,
-      quartiersAjoutes: resultat.quartiersUpdates,
-      ruesSupprimees: resultat.ruesSupprimees,
-      villesMisesAJour: resultat.codesPostauxMisAJour > 0 ? 1 : 0
+      success: villesSynchronisees > 0,
+      message: erreurs.length > 0
+        ? `Synchronisation terminée avec avertissements: ${erreurs.join(' | ')}`
+        : 'Synchronisation Internet terminée pour toutes les villes créées',
+      villesSynchronisees,
+      villesAjoutees,
+      quartiersAjoutes,
+      ruesAjoutees,
+      ruesSupprimees,
+      villesMisesAJour,
     };
   } catch (error) {
     return {
@@ -1323,6 +1773,7 @@ export function synchroniserAvecInternet(): {
       villesSynchronisees: 0,
       villesAjoutees: 0,
       quartiersAjoutes: 0,
+      ruesAjoutees: 0,
       ruesSupprimees: 0,
       villesMisesAJour: 0
     };
@@ -1332,44 +1783,20 @@ export function synchroniserAvecInternet(): {
 /**
  * Synchroniser les quartiers d'une ville spécifique
  */
-export function synchroniserQuartiersVille(villeId: string): {
+export async function synchroniserQuartiersVille(villeId: string): Promise<{
   success: boolean;
   message: string;
   quartiersAjoutes: number;
   ruesAjoutees: number;
   ruesSupprimees: number;
-} {
-  const villes = obtenirVilles();
-  const ville = villes.find(v => v.id === villeId);
-  
-  if (!ville) {
-    return {
-      success: false,
-      message: 'Ville non trouvée',
-      quartiersAjoutes: 0,
-      ruesAjoutees: 0,
-      ruesSupprimees: 0
-    };
-  }
-  
-  // Si c'est Laval, synchroniser avec les données réelles
-  if (ville.nom === 'Laval') {
-    const resultat = synchroniserRuesLaval();
-    return {
-      success: resultat.success,
-      message: resultat.message,
-      quartiersAjoutes: resultat.quartiersUpdates,
-      ruesAjoutees: resultat.ruesAjoutees,
-      ruesSupprimees: resultat.ruesSupprimees
-    };
-  }
-  
+}> {
+  const resultat = await synchroniserVilleDepuisInternet(villeId);
   return {
-    success: true,
-    message: 'Aucune synchronisation disponible pour cette ville',
-    quartiersAjoutes: 0,
-    ruesAjoutees: 0,
-    ruesSupprimees: 0
+    success: resultat.success,
+    message: resultat.message,
+    quartiersAjoutes: resultat.quartiersAjoutes,
+    ruesAjoutees: resultat.ruesAjoutees,
+    ruesSupprimees: resultat.ruesSupprimees
   };
 }
 

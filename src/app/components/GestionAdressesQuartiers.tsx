@@ -286,21 +286,28 @@ export function GestionAdressesQuartiers() {
   // Synchronisation
   const handleSynchroniser = async () => {
     setSyncLoading(true);
-    
-    // Simular delay de red
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     try {
-      const resultado = synchroniserAvecInternet();
-      
-      if (resultado.villesAjoutees === 0 && resultado.quartiersAjoutes === 0 && resultado.ruesSupprimees === 0 && resultado.villesMisesAJour === 0) {
+      const resultado = await synchroniserAvecInternet();
+
+      if (!resultado.success) {
+        throw new Error(resultado.message);
+      }
+
+      if (resultado.villesAjoutees === 0 && resultado.quartiersAjoutes === 0 && resultado.ruesAjoutees === 0 && resultado.ruesSupprimees === 0 && resultado.villesMisesAJour === 0) {
         toast.info('Les données sont déjà à jour', {
-          description: 'Toutes les rues et codes postaux sont synchronisés'
+          description: 'Aucune nouvelle rue officielle à importer depuis Laval'
         });
       } else {
         const messages = [];
+        if (resultado.villesSynchronisees > 0) {
+          messages.push(`${resultado.villesSynchronisees} ville(s) synchronisée(s)`);
+        }
         if (resultado.villesAjoutees > 0) {
           messages.push(`${resultado.villesAjoutees} ville(s) ajoutée(s)`);
+        }
+        if (resultado.ruesAjoutees > 0) {
+          messages.push(`${resultado.ruesAjoutees} rues téléchargées`);
         }
         if (resultado.quartiersAjoutes > 0) {
           messages.push(`${resultado.quartiersAjoutes} quartier(s) mis à jour`);
@@ -309,11 +316,11 @@ export function GestionAdressesQuartiers() {
           messages.push(`${resultado.ruesSupprimees} rues invalides supprimées`);
         }
         if (resultado.villesMisesAJour > 0) {
-          messages.push(`Codes postaux actualisés`);
+          messages.push(`${resultado.villesMisesAJour} ville(s) mise(s) à jour`);
         }
         
         toast.success('🌐 Synchronisation Internet réussie!', {
-          description: `${messages.join(' • ')} - Données téléchargées depuis Internet`,
+          description: `${messages.join(' • ')} - Sources Internet appliquées aux villes créées`,
           duration: 5000
         });
       }
@@ -331,17 +338,20 @@ export function GestionAdressesQuartiers() {
 
   const handleSynchroniserVille = async (villeId: string) => {
     setSyncVilleLoading(villeId);
-    
-    // Simular delay de red
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     try {
-      const resultado = synchroniserQuartiersVille(villeId);
+      const resultado = await synchroniserQuartiersVille(villeId);
       const ville = villes.find(v => v.id === villeId);
+
+      if (!resultado.success) {
+        throw new Error(resultado.message);
+      }
       
       if (resultado.quartiersAjoutes === 0 && resultado.ruesAjoutees === 0 && resultado.ruesSupprimees === 0) {
         toast.info(`${ville?.nom || 'Ville'} - Données à jour`, {
-          description: 'Toutes les rues disponibles sont déjà synchronisées'
+          description: ville?.nom === 'Laval'
+            ? 'Aucune nouvelle rue officielle à importer'
+            : 'Aucune source Internet officielle configurée pour cette ville'
         });
       } else {
         const messages = [];
@@ -356,7 +366,7 @@ export function GestionAdressesQuartiers() {
         }
         
         toast.success(`🌐 ${ville?.nom || 'Ville'} - Synchronisation réussie!`, {
-          description: messages.join(' • '),
+          description: `${messages.join(' • ')}${ville?.nom === 'Laval' ? ' • Source officielle téléchargée' : ''}`,
           duration: 5000
         });
       }
