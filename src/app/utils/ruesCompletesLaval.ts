@@ -328,7 +328,6 @@ export const RUES_COMPLETES_LAVAL: Record<string, RueData[]> = {
     { nom: 'Rue Principale', type: 'rue', codePostal: 'H7M' },
     { nom: 'Boulevard Cléroux', type: 'boulevard', codePostal: 'H7M' },
     { nom: 'Avenue de l\'Église', type: 'avenue', codePostal: 'H7M' },
-    // *** RUE DE BRUXELLES - ADRESSE RÉELLE À VIMONT H7M ***
     { nom: 'Rue de Bruxelles', type: 'rue', codePostal: 'H7M' },
     { nom: 'Rue de Vimont', type: 'rue', codePostal: 'H7M' },
     { nom: 'Rue Sylvie', type: 'rue', codePostal: 'H7M' },

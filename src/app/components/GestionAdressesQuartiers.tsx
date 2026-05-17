@@ -22,6 +22,7 @@ import {
   synchroniserAvecInternet,
   synchroniserQuartiersVille,
   corrigerCodesPostauxExistants,
+  verifierEtReparerAdresses,
   type Ville,
   type Quartier
 } from '../utils/adressesQuartiersStorage';
@@ -29,6 +30,7 @@ import {
 export function GestionAdressesQuartiers() {
   const [villes, setVilles] = useState<Ville[]>([]);
   const [villesExpandidas, setVillesExpandidas] = useState<Set<string>>(new Set());
+  const [quartiersExpandidos, setQuartiersExpandidos] = useState<Set<string>>(new Set());
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncVilleLoading, setSyncVilleLoading] = useState<string | null>(null);
   
@@ -57,6 +59,7 @@ export function GestionAdressesQuartiers() {
   }, []);
 
   const cargarVilles = () => {
+    verifierEtReparerAdresses();
     const villesData = obtenirVilles();
     if (villesData.length === 0 && !sontDonneesInitialisees()) {
       initialiserDonneesExemple();
@@ -75,6 +78,54 @@ export function GestionAdressesQuartiers() {
       newSet.add(villeId);
     }
     setVillesExpandidas(newSet);
+  };
+
+  const toggleQuartier = (quartierId: string) => {
+    const newSet = new Set(quartiersExpandidos);
+    if (newSet.has(quartierId)) {
+      newSet.delete(quartierId);
+    } else {
+      newSet.add(quartierId);
+    }
+    setQuartiersExpandidos(newSet);
+  };
+
+  const getTypeIcon = (type?: string) => {
+    switch (type) {
+      case 'chemin':
+        return '🛣️';
+      case 'montée':
+        return '⛰️';
+      case 'boulevard':
+        return '🌆';
+      case 'avenue':
+        return '🌳';
+      case 'place':
+        return '📍';
+      case 'rue':
+        return '🏠';
+      default:
+        return '📌';
+    }
+  };
+
+  const getTypeLabel = (type?: string) => {
+    switch (type) {
+      case 'chemin':
+        return 'Chemins';
+      case 'montée':
+        return 'Montées';
+      case 'boulevard':
+        return 'Boulevards';
+      case 'avenue':
+        return 'Avenues';
+      case 'place':
+        return 'Places';
+      case 'rue':
+        return 'Rues';
+      default:
+        return 'Autres';
+    }
   };
 
   // Gestión de Villes
@@ -242,7 +293,7 @@ export function GestionAdressesQuartiers() {
     try {
       const resultado = synchroniserAvecInternet();
       
-      if (resultado.villesAjoutees === 0 && resultado.quartiersAjoutes === 0 && resultado.villesMisesAJour === 0) {
+      if (resultado.villesAjoutees === 0 && resultado.quartiersAjoutes === 0 && resultado.ruesSupprimees === 0 && resultado.villesMisesAJour === 0) {
         toast.info('Les données sont déjà à jour', {
           description: 'Toutes les rues et codes postaux sont synchronisés'
         });
@@ -253,6 +304,9 @@ export function GestionAdressesQuartiers() {
         }
         if (resultado.quartiersAjoutes > 0) {
           messages.push(`${resultado.quartiersAjoutes} quartier(s) mis à jour`);
+        }
+        if (resultado.ruesSupprimees > 0) {
+          messages.push(`${resultado.ruesSupprimees} rues invalides supprimées`);
         }
         if (resultado.villesMisesAJour > 0) {
           messages.push(`Codes postaux actualisés`);
@@ -285,7 +339,7 @@ export function GestionAdressesQuartiers() {
       const resultado = synchroniserQuartiersVille(villeId);
       const ville = villes.find(v => v.id === villeId);
       
-      if (resultado.quartiersAjoutes === 0 && resultado.ruesAjoutees === 0) {
+      if (resultado.quartiersAjoutes === 0 && resultado.ruesAjoutees === 0 && resultado.ruesSupprimees === 0) {
         toast.info(`${ville?.nom || 'Ville'} - Données à jour`, {
           description: 'Toutes les rues disponibles sont déjà synchronisées'
         });
@@ -296,6 +350,9 @@ export function GestionAdressesQuartiers() {
         }
         if (resultado.quartiersAjoutes > 0) {
           messages.push(`${resultado.quartiersAjoutes} quartier(s) mis à jour`);
+        }
+        if (resultado.ruesSupprimees > 0) {
+          messages.push(`${resultado.ruesSupprimees} rues invalides supprimées`);
         }
         
         toast.success(`🌐 ${ville?.nom || 'Ville'} - Synchronisation réussie!`, {
@@ -423,12 +480,18 @@ export function GestionAdressesQuartiers() {
               villes.map((ville) => (
                 <Card key={ville.id} className="border-l-4 border-l-[#1E73BE]">
                   <CardContent className="pt-4">
+                    {(() => {
+                      const totalRues = ville.quartiers.reduce((sum, quartier) => sum + (quartier.rues?.length || 0), 0);
+                      const quartiersSansRues = ville.quartiers.filter((quartier) => !quartier.rues || quartier.rues.length === 0).length;
+
+                      return (
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <button
                             onClick={() => toggleVille(ville.id)}
                             className="text-[#1E73BE] hover:text-[#1557A0]"
+                            aria-label={`Afficher les quartiers de ${ville.nom}`}
                           >
                             {villesExpandidas.has(ville.id) ? (
                               <ChevronDown className="w-5 h-5" />
@@ -445,9 +508,19 @@ export function GestionAdressesQuartiers() {
                             </p>
                           </div>
                         </div>
-                        <Badge className="bg-[#E3F2FD] text-[#1E73BE]">
-                          {ville.quartiers.length} quartier{ville.quartiers.length !== 1 ? 's' : ''}
-                        </Badge>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge className="bg-[#E3F2FD] text-[#1E73BE]">
+                            {ville.quartiers.length} quartier{ville.quartiers.length !== 1 ? 's' : ''}
+                          </Badge>
+                          <Badge className="bg-[#EEF8EF] text-[#2E7D32]">
+                            {totalRues} voie{totalRues !== 1 ? 's' : ''}
+                          </Badge>
+                          {quartiersSansRues > 0 && (
+                            <Badge className="bg-[#FFF4E5] text-[#B45309]">
+                              {quartiersSansRues} sans rues visibles
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -476,6 +549,8 @@ export function GestionAdressesQuartiers() {
                         </Button>
                       </div>
                     </div>
+                      );
+                    })()}
 
                     {villesExpandidas.has(ville.id) && (
                       <div className="mt-4 ml-8 space-y-3">
@@ -500,39 +575,94 @@ export function GestionAdressesQuartiers() {
                           ville.quartiers.map((quartier) => (
                             <div
                               key={quartier.id}
-                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                              className="rounded-lg border bg-gray-50 p-3"
                             >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="w-4 h-4 text-[#4CAF50]" />
-                                  <span className="font-medium text-[#333333]">{quartier.nom}</span>
-                                  {quartier.codePostal && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {quartier.codePostal}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                      onClick={() => toggleQuartier(quartier.id)}
+                                      className="text-[#2E7D32] hover:text-[#256b28]"
+                                      aria-label={`Afficher les rues de ${quartier.nom}`}
+                                    >
+                                      {quartiersExpandidos.has(quartier.id) ? (
+                                        <ChevronDown className="w-4 h-4" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                    <MapPin className="w-4 h-4 text-[#4CAF50]" />
+                                    <span className="font-medium text-[#333333]">{quartier.nom}</span>
+                                    {quartier.codePostal && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {quartier.codePostal}
+                                      </Badge>
+                                    )}
+                                    <Badge className="bg-white text-[#2E7D32] border border-[#CDE9D1]">
+                                      {quartier.rues?.length || 0} voie{(quartier.rues?.length || 0) !== 1 ? 's' : ''}
                                     </Badge>
+                                  </div>
+                                  {quartier.description && (
+                                    <p className="text-sm text-[#666666] mt-1 ml-6">{quartier.description}</p>
+                                  )}
+                                  {quartier.rues && quartier.rues.length > 0 && (
+                                    <div className="mt-2 ml-6 flex flex-wrap gap-2">
+                                      {Array.from(new Set(quartier.rues.map((rue) => rue.type))).map((type) => {
+                                        const total = quartier.rues?.filter((rue) => rue.type === type).length || 0;
+                                        return (
+                                          <Badge key={`${quartier.id}-${type}`} variant="outline" className="bg-white text-xs">
+                                            {getTypeIcon(type)} {getTypeLabel(type)}: {total}
+                                          </Badge>
+                                        );
+                                      })}
+                                    </div>
                                   )}
                                 </div>
-                                {quartier.description && (
-                                  <p className="text-sm text-[#666666] mt-1 ml-6">{quartier.description}</p>
-                                )}
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleAbrirDialogQuartier(ville, quartier)}
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEliminarQuartier(ville, quartier)}
+                                    className="text-[#DC3545] hover:text-[#c82333]"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleAbrirDialogQuartier(ville, quartier)}
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleEliminarQuartier(ville, quartier)}
-                                  className="text-[#DC3545] hover:text-[#c82333]"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
+
+                              {quartiersExpandidos.has(quartier.id) && (
+                                <div className="mt-3 ml-6 rounded-lg border border-dashed border-[#D7E6F5] bg-white/90 p-3">
+                                  {!quartier.rues || quartier.rues.length === 0 ? (
+                                    <p className="text-sm italic text-[#999999]">Aucune rue, avenue, chemin ou montée synchronisé(e) pour ce quartier.</p>
+                                  ) : (
+                                    <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                                      {quartier.rues
+                                        .slice()
+                                        .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
+                                        .map((rue) => (
+                                          <div key={rue.id} className="flex items-center justify-between gap-3 rounded-md border border-[#EEF2F7] bg-[#FAFCFE] px-3 py-2">
+                                            <div className="min-w-0">
+                                              <p className="truncate text-sm font-medium text-[#334155]">
+                                                {getTypeIcon(rue.type)} {rue.nom}
+                                              </p>
+                                              <p className="text-xs text-[#64748B]">{getTypeLabel(rue.type).slice(0, -1) || rue.type}</p>
+                                            </div>
+                                            <Badge variant="outline" className="shrink-0 text-[11px]">
+                                              {rue.codePostal || 'Sans code postal'}
+                                            </Badge>
+                                          </div>
+                                        ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ))
                         )}

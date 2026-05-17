@@ -1,5 +1,6 @@
 node_modules/
 dist/
+tmp/official-address-sources/
 .DS_Store
 Thumbs.db
 .vscode/

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "update-version": "node scripts/update-version.js",
+    "addresses:download:qc": "node scripts/download-qc-address-sources.mjs",
+    "addresses:index:qc": "node scripts/download-qc-address-sources.mjs --build-indexes",
     "prebuild": "node scripts/update-version.js",
     "build": "vite build",
     "predeploy": "npm run build",
