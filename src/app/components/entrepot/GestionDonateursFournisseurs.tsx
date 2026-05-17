@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
+import { AddressAutocomplete } from '../ui/address-autocomplete';
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
@@ -1265,16 +1266,14 @@ export function GestionDonateursFournisseurs() {
                           Adresse Complète
                           <span className="text-red-500">*</span>
                         </Label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999999]" />
-                          <Input
-                            id="adresse"
-                            value={formulaire.adresse}
-                            onChange={(e) => setFormulaire({ ...formulaire, adresse: e.target.value })}
-                            placeholder="123 Rue Example, Laval, QC H7G 2W5"
-                            className="pl-10 h-11"
-                          />
-                        </div>
+                        <AddressAutocomplete
+                          value={formulaire.adresse}
+                          onChange={(value) => setFormulaire({ ...formulaire, adresse: value })}
+                          placeholder="123 Rue Example, Laval, QC H7G 2W5"
+                          label=""
+                          required={true}
+                          showAdditionalFields={false}
+                        />
                       </div>
                     </div>
 

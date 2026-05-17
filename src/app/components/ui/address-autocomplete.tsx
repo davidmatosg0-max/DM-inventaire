@@ -28,6 +28,18 @@ interface AddressAutocompleteProps {
   initialQuartier?: string;
 }
 
+function normaliserRechercheRue(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\bA\.(?=\s)/gi, 'autoroute ')
+    .replace(/\bAv\.(?=\s)/gi, 'avenue ')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 function AddressAutocompleteComponent({
   onAddressSelect,
   onChange,
@@ -132,6 +144,8 @@ function AddressAutocompleteComponent({
     'Boulevard René-Laennec',
     'Boulevard Arthur-Sauvé',
     'Boulevard Saint-François',
+    'Autoroute Jean-Noël-Lavoie',
+    'A. Jean-Noël-Lavoie',
     
     // ========================================
     // QUARTIER: AUTEUIL
@@ -643,9 +657,9 @@ function AddressAutocompleteComponent({
         filtered = streets.slice(0, 10);
       } else {
         // Filtrar calles según lo que escribió
-        const searchTerm = streetName.toLowerCase();
+        const searchTerm = normaliserRechercheRue(streetName);
         filtered = streets.filter(street => 
-          street.toLowerCase().includes(searchTerm)
+          normaliserRechercheRue(street).includes(searchTerm)
         ).slice(0, 10);
       }
       
@@ -686,6 +700,7 @@ function AddressAutocompleteComponent({
     }
     // LAVAL - CHOMEDEY
     else if (streetName.includes('Desmarteau') ||
+         streetName.includes('Jean-Noël-Lavoie') ||
              streetName.includes('Le Corbusier') ||
              streetName.includes('Cartier Ouest') ||
              streetName.includes('Samson') ||
