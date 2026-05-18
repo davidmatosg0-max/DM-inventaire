@@ -241,12 +241,32 @@ function esEntradaPRS(entrada: EntradaInventario): boolean {
 }
 
 function calcularValorEntrada(entrada: EntradaInventario): number {
-  if (typeof entrada.valorTotal === 'number') {
-    return entrada.valorTotal;
+  const valorTotal = normalizarNumero(entrada.valorTotal);
+  if (valorTotal > 0) {
+    return valorTotal;
   }
 
-  if (typeof entrada.valorUnitario === 'number') {
-    return entrada.valorUnitario * entrada.cantidad;
+  const valorUnitario = normalizarNumero(entrada.valorUnitario);
+  if (valorUnitario > 0) {
+    return valorUnitario * normalizarNumero(entrada.cantidad);
+  }
+
+  return 0;
+}
+
+function normalizarNumero(value: unknown): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 0;
+    }
+
+    const parsed = Number(trimmed.replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   return 0;
@@ -575,6 +595,8 @@ export function generarReportePRS(
 
   const detalles = entradas
     .map((entrada) => {
+      const cantidad = normalizarNumero(entrada.cantidad);
+      const pesoTotal = normalizarNumero(entrada.pesoTotal);
       const organismoId = entrada.organismoId || '';
       const organismoNombre = entrada.registradoPor || organismos.get(organismoId) || 'Sin organismo';
       const valorTotalEstimado = calcularValorEntrada(entrada);
@@ -597,8 +619,8 @@ export function generarReportePRS(
         valorTotalEstimado: 0,
       };
       organismoActual.totalEntradas += 1;
-      organismoActual.totalCantidad += entrada.cantidad;
-      organismoActual.totalPesoKg += entrada.pesoTotal || 0;
+      organismoActual.totalCantidad += cantidad;
+      organismoActual.totalPesoKg += pesoTotal;
       organismoActual.valorTotalEstimado += valorTotalEstimado;
       porOrganismoMap.set(organismoId || organismoNombre, organismoActual);
 
@@ -611,8 +633,8 @@ export function generarReportePRS(
         valorTotalEstimado: 0,
       };
       donadorActual.totalEntradas += 1;
-      donadorActual.totalCantidad += entrada.cantidad;
-      donadorActual.totalPesoKg += entrada.pesoTotal || 0;
+      donadorActual.totalCantidad += cantidad;
+      donadorActual.totalPesoKg += pesoTotal;
       donadorActual.valorTotalEstimado += valorTotalEstimado;
       porDonadorMap.set(entrada.donadorId || entrada.donadorNombre, donadorActual);
 
@@ -625,8 +647,8 @@ export function generarReportePRS(
         valorTotalEstimado: 0,
       };
       productoActual.totalEntradas += 1;
-      productoActual.totalCantidad += entrada.cantidad;
-      productoActual.totalPesoKg += entrada.pesoTotal || 0;
+      productoActual.totalCantidad += cantidad;
+      productoActual.totalPesoKg += pesoTotal;
       productoActual.valorTotalEstimado += valorTotalEstimado;
       porProductoMap.set(entrada.productoId || entrada.nombreProducto, productoActual);
 
@@ -638,8 +660,8 @@ export function generarReportePRS(
         valorTotalEstimado: 0,
       };
       mesActual.totalEntradas += 1;
-      mesActual.totalCantidad += entrada.cantidad;
-      mesActual.totalPesoKg += entrada.pesoTotal || 0;
+      mesActual.totalCantidad += cantidad;
+      mesActual.totalPesoKg += pesoTotal;
       mesActual.valorTotalEstimado += valorTotalEstimado;
       porMesMap.set(mes, mesActual);
 
@@ -654,9 +676,9 @@ export function generarReportePRS(
         participantePRSNombre: entrada.participantePRSNombre || '',
         productoId: entrada.productoId || '',
         productoNombre: entrada.nombreProducto || 'Sin producto',
-        cantidad: entrada.cantidad,
+        cantidad,
         unidad: entrada.unidad,
-        pesoTotal: entrada.pesoTotal || 0,
+        pesoTotal,
         valorTotalEstimado,
       };
     })
@@ -665,8 +687,8 @@ export function generarReportePRS(
   return {
     resumen: {
       totalEntradas: entradas.length,
-      totalCantidad: entradas.reduce((total, entrada) => total + entrada.cantidad, 0),
-      totalPesoKg: entradas.reduce((total, entrada) => total + (entrada.pesoTotal || 0), 0),
+      totalCantidad: entradas.reduce((total, entrada) => total + normalizarNumero(entrada.cantidad), 0),
+      totalPesoKg: entradas.reduce((total, entrada) => total + normalizarNumero(entrada.pesoTotal), 0),
       valorTotalEstimado: entradas.reduce((total, entrada) => total + calcularValorEntrada(entrada), 0),
       donadoresUnicos: donadoresUnicos.size,
       productosUnicos: productosUnicos.size,

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { formatQuantity } from '../../utils/formatUtils';
 import { obtenerProductos, type ProductoCreado } from '../../utils/productStorage';
 import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
@@ -14,6 +15,7 @@ import { obtenerRecetas, obtenerTransformaciones, type Transformacion } from '..
 import { obtenerTodasLasEntradas } from '../../utils/entradaInventarioStorage';
 import { obtenerLogs, type AuditLog } from '../../utils/auditStorage';
 import { obtenerEtiquetaModalidadDistribucion, resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
+import { generarReportePRS } from '../../utils/reportesLogic';
 import { 
   exportarOrganismosPDF,
 } from '../../utils/exportarPDF';
@@ -620,6 +622,9 @@ export function Reportes() {
   const transformacionesTerminadas = rangoValido
     ? transformaciones.filter((transformacion) => isDateInRange(transformacion.fecha, rangoInicio, rangoFin) && transformacion.estado === 'terminée')
     : [];
+  const reportePrsLocal = rangoValido
+    ? generarReportePRS(rangoInicio, rangoFin)
+    : generarReportePRS();
 
   const productosFiltrados = productos.filter((producto) => (
     selectedCategory === 'all' || getProductCategoryLabel(producto) === selectedCategory
@@ -656,26 +661,20 @@ export function Reportes() {
     .slice(0, 10);
 
   const datosPRS = monthBuckets.map((bucket) => {
-    const delMes = transformaciones.filter((transformacion) => getMonthKey(transformacion.fecha) === bucket.key && transformacion.estado === 'terminée');
+    const delMes = reportePrsLocal.porMes.find((entry) => entry.mes === bucket.key);
     return {
       mes: bucket.label,
-      kg: Number(
-        delMes
-          .reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0)
-          .toFixed(1)
-      ),
+      kg: Number((delMes?.totalPesoKg || 0).toFixed(1)),
+      rescates: delMes?.totalEntradas || 0,
     };
   });
 
-  const datosPrsCategoria = Array.from(
-    transformacionesTerminadas.reduce((mapa, transformacion) => {
-      const categoria = getPrsCategoryLabel(recipeIndex.get(transformacion.recetaId)?.categoria);
-      const totalKg = transformacion.productosGenerados.reduce((sum, producto) => sum + producto.pesoTotal, 0);
-      mapa.set(categoria, (mapa.get(categoria) || 0) + totalKg);
-      return mapa;
-    }, new Map<string, number>())
-  )
-    .map(([categoria, kg]) => ({ categoria, kg: Number(kg.toFixed(1)) }))
+  const datosPrsCategoria = reportePrsLocal.porProducto
+    .map((producto) => ({
+      categoria: producto.productoNombre,
+      kg: Number(producto.totalPesoKg.toFixed(1)),
+      entradas: producto.totalEntradas,
+    }))
     .sort((left, right) => right.kg - left.kg);
 
   const comandasExportables: ComandaExportable[] = comandasFiltradas.map((comanda) => ({
@@ -1050,21 +1049,32 @@ export function Reportes() {
                 },
                 {
                   Section: 'Résumé PRS',
-                  Indicateur: 'Transformations terminées',
-                  Valeur: transformacionesTerminadas.length,
+                  Indicateur: 'Entrées PRS',
+                  Valeur: reportePrsLocal.resumen.totalEntradas,
                 },
                 {
                   Section: 'Résumé PRS',
-                  Indicateur: 'Production totale (kg)',
-                  Valeur: Number(transformacionesTerminadas.reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0).toFixed(1)),
+                  Indicateur: 'Poids total (kg)',
+                  Valeur: totalPrsKg,
+                },
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Organismes couverts',
+                  Valeur: reportePrsLocal.resumen.organismosUnicos,
+                },
+                {
+                  Section: 'Résumé PRS',
+                  Indicateur: 'Donateurs PRS',
+                  Valeur: reportePrsLocal.resumen.donadoresUnicos,
                 },
                 ...(datosPRS.length > 0
                   ? datosPRS.map((entry) => ({
-                      Section: 'Production mensuelle',
+                      Section: 'Entrées mensuelles',
                       Mois: entry.mes,
-                      ProductionKg: entry.kg,
+                      PoidsKg: entry.kg,
+                      Entrees: entry.rescates,
                     }))
-                  : [{ Section: 'Production mensuelle', Note: 'Aucune donnée disponible.' }]),
+                  : [{ Section: 'Entrées mensuelles', Note: 'Aucune donnée disponible.' }]),
               ],
               activePdfCharts,
             );
@@ -1074,16 +1084,27 @@ export function Reportes() {
                 nombre: 'Résumé PRS',
                 datos: [
                   { Indicateur: 'Période', Valeur: `${fechaInicio} - ${fechaFin}` },
-                  { Indicateur: 'Transformations terminées', Valeur: transformacionesTerminadas.length },
-                  {
-                    Indicateur: 'Production totale (kg)',
-                    Valeur: Number(transformacionesTerminadas.reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0).toFixed(1)),
-                  },
+                  { Indicateur: 'Entrées PRS', Valeur: reportePrsLocal.resumen.totalEntradas },
+                  { Indicateur: 'Poids total (kg)', Valeur: totalPrsKg },
+                  { Indicateur: 'Organismes couverts', Valeur: reportePrsLocal.resumen.organismosUnicos },
+                  { Indicateur: 'Donateurs PRS', Valeur: reportePrsLocal.resumen.donadoresUnicos },
                 ],
               },
               {
-                nombre: 'Production mensuelle',
-                datos: datosPRS.length > 0 ? datosPRS.map((entry) => ({ Mois: entry.mes, 'Production (kg)': entry.kg })) : [{ Note: 'Aucune donnée disponible.' }],
+                nombre: 'Entrées mensuelles',
+                datos: datosPRS.length > 0 ? datosPRS.map((entry) => ({ Mois: entry.mes, 'Poids (kg)': entry.kg, Entrées: entry.rescates })) : [{ Note: 'Aucune donnée disponible.' }],
+              },
+              {
+                nombre: 'Détail des entrées PRS',
+                datos: reportePrsLocal.detalles.length > 0 ? reportePrsLocal.detalles.map((entry) => ({
+                  Date: formatReportDate(entry.fecha),
+                  Organisme: entry.organismoNombre,
+                  Donateur: entry.donadorNombre,
+                  Produit: entry.productoNombre,
+                  Quantité: entry.cantidad,
+                  Unité: entry.unidad,
+                  'Poids (kg)': Number(entry.pesoTotal.toFixed(1)),
+                })) : [{ Note: 'Aucune donnée disponible.' }],
               },
             ]);
           } else {
@@ -1100,21 +1121,22 @@ export function Reportes() {
                 },
                 {
                   Section: 'Résumé PRS',
-                  Indicateur: 'Transformations terminées',
-                  Valeur: transformacionesTerminadas.length,
+                  Indicateur: 'Entrées PRS',
+                  Valeur: reportePrsLocal.resumen.totalEntradas,
                 },
                 {
                   Section: 'Résumé PRS',
-                  Indicateur: 'Production totale (kg)',
-                  Valeur: Number(transformacionesTerminadas.reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0).toFixed(1)),
+                  Indicateur: 'Poids total (kg)',
+                  Valeur: totalPrsKg,
                 },
                 ...(datosPRS.length > 0
                   ? datosPRS.map((entry) => ({
-                      Section: 'Production mensuelle',
+                      Section: 'Entrées mensuelles',
                       Mois: entry.mes,
-                      ProductionKg: entry.kg,
+                      PoidsKg: entry.kg,
+                      Entrees: entry.rescates,
                     }))
-                  : [{ Section: 'Production mensuelle', Note: 'Aucune donnée disponible.' }]),
+                  : [{ Section: 'Entrées mensuelles', Note: 'Aucune donnée disponible.' }]),
               ],
             );
           }
@@ -1446,15 +1468,12 @@ export function Reportes() {
     .slice(0, 5);
   const commandasTotalValue = comandasExportablesFiltradas.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.valorTotal), 0);
   const averageOrderValue = comandasExportablesFiltradas.length > 0 ? commandasTotalValue / comandasExportablesFiltradas.length : 0;
-  const totalPrsKg = Number(
-    transformacionesTerminadas
-      .reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0)
-      .toFixed(1)
-  );
-  const participatingPrsCount = organismos.filter((organismo) => organismo.participantePRS).length;
-  const latestTransformations = [...transformacionesTerminadas]
-    .sort((left, right) => new Date(right.fecha).getTime() - new Date(left.fecha).getTime())
-    .slice(0, 5);
+  const totalPrsKg = Number(reportePrsLocal.resumen.totalPesoKg.toFixed(1));
+  const participatingPrsCount = reportePrsLocal.resumen.organismosUnicos;
+  const latestPrsEntries = reportePrsLocal.detalles.slice(0, 5);
+  const averagePrsEntryWeight = reportePrsLocal.resumen.totalEntradas > 0
+    ? (totalPrsKg / reportePrsLocal.resumen.totalEntradas).toFixed(1)
+    : '0.0';
   const remotePrsTopOrganism = remotePrsReport?.porOrganismo?.[0];
   const remotePrsTopDonor = remotePrsReport?.porDonador?.[0];
   const remotePrsUpdatedAt = remotePrsReport?.generadoEn
@@ -1536,11 +1555,11 @@ export function Reportes() {
     },
   ];
   const compactPrsItems: ReportDetailItem[] = [
-    { label: 'Production', value: `${totalPrsKg} kg`, helper: `${transformacionesTerminadas.length} transformations terminées` },
-    ...latestTransformations.slice(0, 2).map((transformacion) => ({
-      label: transformacion.recetaNombre,
-      value: `${transformacion.productosGenerados.reduce((sum, producto) => sum + producto.pesoTotal, 0).toFixed(1)} kg`,
-      helper: `${formatReportDate(transformacion.fecha)} • ${transformacion.responsable}`,
+    { label: 'Entrées PRS', value: reportePrsLocal.resumen.totalEntradas, helper: `${totalPrsKg} kg enregistrés sur la période.` },
+    ...latestPrsEntries.slice(0, 2).map((entry) => ({
+      label: entry.productoNombre,
+      value: `${formatQuantity(entry.pesoTotal)} kg`,
+      helper: `${formatReportDate(entry.fecha)} • ${entry.organismoNombre || 'Sans organisme'} • ${entry.donadorNombre}`,
     })),
   ];
   const compactAuditItems: ReportDetailItem[] = [
@@ -2015,7 +2034,7 @@ export function Reportes() {
                   {
                     label: 'Activité PRS',
                     value: `${totalPrsKg} kg`,
-                    helper: `${transformacionesTerminadas.length} transformations terminées sur la période filtrée.`,
+                    helper: `${reportePrsLocal.resumen.totalEntradas} entrées PRS sur la période filtrée.`,
                   },
                   {
                     label: 'Audit critique',
@@ -2324,10 +2343,10 @@ export function Reportes() {
             {showCompactReportsOverview ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
-                  <ReportStatCard label="Production" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" compact />
-                  <ReportStatCard label="Transformations" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Entrées PRS" value={reportePrsLocal.resumen.totalEntradas} accentColor={branding.primaryColor} valueColor={branding.primaryColor} compact />
+                  <ReportStatCard label="Poids PRS" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" compact />
                 </div>
-                <ReportDetailPanel title="Dernières transformations" description="Résumé PRS en petit format." items={compactPrsItems} compact />
+                <ReportDetailPanel title="Dernières entrées PRS" description="Résumé PRS local en petit format." items={compactPrsItems} compact />
                 <div className={LEGACY_PANEL_CLASSNAME}>
                   <div className="flex items-center justify-between gap-2">
                     <div>
@@ -2348,7 +2367,7 @@ export function Reportes() {
                     <p className="mt-3 text-[11px] text-gray-500">{remotePrsStatusMessage}</p>
                   )}
                 </div>
-                <ReportChartCard chartId="report-chart-prs-category-compact" title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={160}>
+                <ReportChartCard chartId="report-chart-prs-category-compact" title="Entrées PRS par produit" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={160}>
                     <ResponsiveContainer width="100%" height={160} key="barchart-prs-category-compact">
                       <BarChart data={datosPrsCategoria}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -2362,8 +2381,8 @@ export function Reportes() {
                           tick={{ fontSize: 10 }}
                         />
                         <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Production']} />
-                        <Bar dataKey="kg" fill="#2d9561" name="Production PRS" radius={[6, 6, 0, 0]} />
+                        <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Poids PRS']} />
+                        <Bar dataKey="kg" fill="#2d9561" name="Poids PRS" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                 </ReportChartCard>
@@ -2371,10 +2390,10 @@ export function Reportes() {
             ) : (
             <>
             <div className={`grid gap-3 ${isCompactReportsViewport ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'}`}>
-              <ReportStatCard label="Transformations terminées" value={transformacionesTerminadas.length} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
-              <ReportStatCard label="Production totale" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" />
+              <ReportStatCard label="Entrées PRS" value={reportePrsLocal.resumen.totalEntradas} accentColor={branding.primaryColor} valueColor={branding.primaryColor} />
+              <ReportStatCard label="Poids total PRS" value={`${totalPrsKg} kg`} accentColor="#2d9561" valueColor="#2d9561" />
               <ReportStatCard label="Organismes PRS" value={participatingPrsCount} accentColor="#e8a419" valueColor="#e8a419" />
-              <ReportStatCard label="Moyenne par transformation" value={`${transformacionesTerminadas.length > 0 ? (totalPrsKg / transformacionesTerminadas.length).toFixed(1) : '0.0'} kg`} accentColor="#c23934" valueColor="#c23934" />
+              <ReportStatCard label="Moyenne par entrée" value={`${averagePrsEntryWeight} kg`} accentColor="#c23934" valueColor="#c23934" />
             </div>
 
             <div className={LEGACY_PANEL_CLASSNAME}>
@@ -2457,38 +2476,38 @@ export function Reportes() {
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
               <ReportDetailPanel
-                title="Dernières transformations"
-                description="Opérations PRS terminées les plus récentes avec responsable et production générée."
-                items={latestTransformations.map((transformacion) => ({
-                  label: transformacion.recetaNombre,
-                  value: `${transformacion.productosGenerados.reduce((sum, producto) => sum + producto.pesoTotal, 0).toFixed(1)} kg`,
-                  helper: `${formatReportDate(transformacion.fecha)} • ${transformacion.responsable}`,
+                title="Dernières entrées PRS"
+                description="Entrées PRS locales les plus récentes enregistrées sur la période filtrée."
+                items={latestPrsEntries.map((entry) => ({
+                  label: entry.productoNombre,
+                  value: `${formatQuantity(entry.pesoTotal)} kg`,
+                  helper: `${formatReportDate(entry.fecha)} • ${entry.organismoNombre} • ${entry.donadorNombre}`,
                 }))}
               />
 
               <ReportDetailPanel
-                title="Production mensuelle"
-                description="Lecture détaillée des volumes PRS sur les derniers mois calculés."
+                title="Entrées mensuelles"
+                description="Lecture détaillée des volumes d'entrées PRS sur les derniers mois calculés."
                 items={datosPRS.map((entry) => ({
                   label: entry.mes,
                   value: `${entry.kg} kg`,
-                  helper: entry.kg > 0 ? 'Production enregistrée sur la période.' : 'Aucune transformation terminée sur ce mois.',
+                  helper: entry.rescates > 0 ? `${entry.rescates} entrée(s) PRS enregistrée(s).` : 'Aucune entrée PRS sur ce mois.',
                 }))}
               />
 
               <ReportDetailPanel
-                title="Production par catégorie"
-                description="Répartition PRS par catégorie de recette sur la période filtrée."
+                title="Entrées PRS par produit"
+                description="Répartition des entrées PRS par produit sur la période filtrée."
                 items={datosPrsCategoria.map((entry) => ({
                   label: entry.categoria,
                   value: `${entry.kg} kg`,
-                  helper: 'Poids total des produits générés pour cette catégorie.',
+                  helper: `${entry.entradas} entrée(s) pour ce produit.`,
                 }))}
               />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-              <ReportChartCard chartId="report-chart-prs-monthly" title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
+              <ReportChartCard chartId="report-chart-prs-monthly" title="Entrées PRS par mois" titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
                   <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="linechart-prs">
                     <LineChart data={datosPRS}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -2496,12 +2515,12 @@ export function Reportes() {
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name={t('reports.rescuedKg')} />
+                      <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name="Poids PRS" />
                     </LineChart>
                   </ResponsiveContainer>
               </ReportChartCard>
 
-              <ReportChartCard chartId="report-chart-prs-category" title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
+              <ReportChartCard chartId="report-chart-prs-category" title="Entrées PRS par produit" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 320}>
                   <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 400} key="barchart-prs-category">
                     <BarChart data={datosPrsCategoria}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -2515,9 +2534,9 @@ export function Reportes() {
                         tick={{ fontSize: isCompactReportsViewport ? 10 : 11 }}
                       />
                       <YAxis />
-                      <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Production']} />
+                      <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Poids PRS']} />
                       <Legend />
-                      <Bar dataKey="kg" fill="#2d9561" name="Production PRS" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="kg" fill="#2d9561" name="Poids PRS" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
               </ReportChartCard>
@@ -2722,7 +2741,7 @@ export function Reportes() {
 
           {activeReportTab === 'prs' && (
             <div className="grid grid-cols-1 gap-4">
-              <ExportChartCard chartId="pdf-chart-prs-monthly" title={t('reports.prsRescueMonth')} titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={320}>
+              <ExportChartCard chartId="pdf-chart-prs-monthly" title="Entrées PRS par mois" titleColor={branding.primaryColor} hasData={datosPRS.length > 0} emptyHeight={320}>
                 <ResponsiveContainer width="100%" height={400}>
                   <LineChart data={datosPRS}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2730,12 +2749,12 @@ export function Reportes() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name={t('reports.rescuedKg')} />
+                    <Line type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name="Poids PRS" />
                   </LineChart>
                 </ResponsiveContainer>
               </ExportChartCard>
 
-              <ExportChartCard chartId="pdf-chart-prs-category" title="Production PRS par catégorie" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={320}>
+              <ExportChartCard chartId="pdf-chart-prs-category" title="Entrées PRS par produit" titleColor={branding.primaryColor} hasData={datosPrsCategoria.length > 0} emptyHeight={320}>
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={datosPrsCategoria}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2749,9 +2768,9 @@ export function Reportes() {
                       tick={{ fontSize: 11 }}
                     />
                     <YAxis />
-                    <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Production']} />
+                    <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Poids PRS']} />
                     <Legend />
-                    <Bar dataKey="kg" fill="#2d9561" name="Production PRS" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="kg" fill="#2d9561" name="Poids PRS" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </ExportChartCard>
