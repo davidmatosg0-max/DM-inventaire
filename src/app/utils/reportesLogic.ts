@@ -272,6 +272,23 @@ function normalizarNumero(value: unknown): number {
   return 0;
 }
 
+function parseLocalDateBoundary(value: string, endOfDay = false): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  if (endOfDay) {
+    date.setHours(23, 59, 59, 999);
+  }
+
+  return date;
+}
+
 // ==================== GENERADORES DE REPORTES ====================
 
 export function generarReporteInventario(
@@ -366,12 +383,15 @@ export function generarReporteComandas(
 
   // Filtrar por fecha si se proporciona
   if (fechaInicio && fechaFin) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    comandas = comandas.filter(c => {
-      const fecha = new Date(c.fecha);
-      return fecha >= inicio && fecha <= fin;
-    });
+    const inicio = parseLocalDateBoundary(fechaInicio);
+    const fin = parseLocalDateBoundary(fechaFin, true);
+
+    if (inicio && fin) {
+      comandas = comandas.filter(c => {
+        const fecha = new Date(c.fecha);
+        return fecha >= inicio && fecha <= fin;
+      });
+    }
   }
 
   // Calcular totales
@@ -478,12 +498,15 @@ export function generarReporteTransporte(
 
   // Filtrar por fecha si se proporciona
   if (fechaInicio && fechaFin) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    rutas = rutas.filter(r => {
-      const fecha = new Date(r.fecha);
-      return fecha >= inicio && fecha <= fin;
-    });
+    const inicio = parseLocalDateBoundary(fechaInicio);
+    const fin = parseLocalDateBoundary(fechaFin, true);
+
+    if (inicio && fin) {
+      rutas = rutas.filter(r => {
+        const fecha = new Date(r.fecha);
+        return fecha >= inicio && fecha <= fin;
+      });
+    }
   }
 
   // Calcular paradas realizadas y eficiencia
@@ -561,14 +584,15 @@ export function generarReportePRS(
   const organismos = new Map(obtenerOrganismos().map((organismo) => [organismo.id, organismo.nombre]));
 
   if (fechaInicio && fechaFin) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    fin.setHours(23, 59, 59, 999);
+    const inicio = parseLocalDateBoundary(fechaInicio);
+    const fin = parseLocalDateBoundary(fechaFin, true);
 
-    entradas = entradas.filter((entrada) => {
-      const fecha = new Date(entrada.fecha);
-      return fecha >= inicio && fecha <= fin;
-    });
+    if (inicio && fin) {
+      entradas = entradas.filter((entrada) => {
+        const fecha = new Date(entrada.fecha);
+        return fecha >= inicio && fecha <= fin;
+      });
+    }
   }
 
   if (filtros?.organismoId) {

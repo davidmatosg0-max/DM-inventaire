@@ -8,6 +8,7 @@
 import type { EventoSistema } from '../types';
 
 const AUDIT_STORAGE_KEY = 'banque_alimentaire_audit_logs';
+const LEGACY_ACTIVITY_STORAGE_KEY = 'registroActividades';
 const MAX_LOGS = 10000; // Máximo de logs almacenados
 
 export type TipoAccion = 
@@ -110,6 +111,19 @@ export interface FiltrosAudit {
   busqueda?: string;
 }
 
+type LegacyActividadLog = {
+  id?: string;
+  fecha?: string;
+  hora?: string;
+  usuario?: string;
+  usuarioId?: string;
+  modulo?: string;
+  accion?: 'crear' | 'modificar' | 'eliminar' | string;
+  descripcion?: string;
+  detalles?: any;
+  ipAddress?: string;
+};
+
 // ============================================================================
 // FUNCIONES PRINCIPALES
 // ============================================================================
@@ -120,10 +134,13 @@ export interface FiltrosAudit {
 export function obtenerLogs(): AuditLog[] {
   try {
     const data = localStorage.getItem(AUDIT_STORAGE_KEY);
-    if (!data) return [];
-    
-    const logs = JSON.parse(data);
-    return Array.isArray(logs) ? logs : [];
+    const rawAuditLogs = data ? JSON.parse(data) : [];
+    const auditLogs = Array.isArray(rawAuditLogs) ? rawAuditLogs : [];
+    const legacyLogs = obtenerLogsActividadLegados();
+
+    return [...auditLogs, ...legacyLogs]
+      .filter((log): log is AuditLog => Boolean(log?.fecha && log?.modulo && log?.accion))
+      .sort((left, right) => new Date(right.fecha).getTime() - new Date(left.fecha).getTime());
   } catch (error) {
     console.error('Erreur lors de la récupération des journaux d’audit :', error);
     return [];
@@ -227,15 +244,18 @@ export function filtrarLogs(filtros: FiltrosAudit): AuditLog[] {
   
   // Filtrar por fecha de inicio
   if (filtros.fechaInicio) {
-    const fechaInicio = new Date(filtros.fechaInicio).getTime();
-    logs = logs.filter(log => new Date(log.fecha).getTime() >= fechaInicio);
+    const fechaInicio = construirLimiteFiltroFecha(filtros.fechaInicio, 'inicio');
+    if (fechaInicio !== null) {
+      logs = logs.filter(log => new Date(log.fecha).getTime() >= fechaInicio);
+    }
   }
   
   // Filtrar por fecha de fin
   if (filtros.fechaFin) {
-    const fechaFin = new Date(filtros.fechaFin);
-    fechaFin.setHours(23, 59, 59, 999);
-    logs = logs.filter(log => new Date(log.fecha).getTime() <= fechaFin);
+    const fechaFin = construirLimiteFiltroFecha(filtros.fechaFin, 'fin');
+    if (fechaFin !== null) {
+      logs = logs.filter(log => new Date(log.fecha).getTime() <= fechaFin);
+    }
   }
   
   // Filtrar por usuario
@@ -570,6 +590,105 @@ function obtenerDispositivoId(): string {
   }
   
   return id;
+}
+
+function obtenerLogsActividadLegados(): AuditLog[] {
+  try {
+    const data = localStorage.getItem(LEGACY_ACTIVITY_STORAGE_KEY);
+    if (!data) {
+      return [];
+    }
+
+    const actividades = JSON.parse(data);
+    if (!Array.isArray(actividades)) {
+      return [];
+    }
+
+    return actividades
+      .map(adaptarActividadLegadaAAuditLog)
+      .filter((log): log is AuditLog => Boolean(log));
+  } catch (error) {
+    console.error('Erreur lors de la lecture des activités legacy :', error);
+    return [];
+  }
+}
+
+function adaptarActividadLegadaAAuditLog(actividad: LegacyActividadLog): AuditLog | null {
+  if (!actividad?.fecha || !actividad?.modulo || !actividad?.accion) {
+    return null;
+  }
+
+  const fecha = construirFechaLegacy(actividad.fecha, actividad.hora);
+  if (!fecha) {
+    return null;
+  }
+
+  return {
+    id: actividad.id || `legacy-${actividad.modulo}-${actividad.accion}-${fecha}`,
+    fecha,
+    tipo: 'accion',
+    usuario: actividad.usuario || 'Système',
+    modulo: actividad.modulo,
+    accion: construirAccionLegacy(actividad.modulo, actividad.accion),
+    detalles: {
+      descripcion: actividad.descripcion || '',
+      origen: 'registroActividades',
+      ...(actividad.detalles || {}),
+    },
+    exito: true,
+    severidad: 'info',
+    ip: actividad.ipAddress,
+  } as AuditLog;
+}
+
+function construirFechaLegacy(fecha?: string, hora?: string): string | null {
+  if (!fecha) {
+    return null;
+  }
+
+  const normalizedHour = hora && hora.trim() ? hora.trim() : '00:00:00';
+  const candidate = `${fecha}T${normalizedHour}`;
+  const parsed = new Date(candidate);
+
+  if (Number.isNaN(parsed.getTime())) {
+    const parsedDateOnly = new Date(fecha);
+    return Number.isNaN(parsedDateOnly.getTime()) ? null : parsedDateOnly.toISOString();
+  }
+
+  return parsed.toISOString();
+}
+
+function construirLimiteFiltroFecha(valor: string, limite: 'inicio' | 'fin'): number | null {
+  const onlyDateMatch = valor.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (onlyDateMatch) {
+    const [, year, month, day] = onlyDateMatch;
+    const parsed = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      limite === 'inicio' ? 0 : 23,
+      limite === 'inicio' ? 0 : 59,
+      limite === 'inicio' ? 0 : 59,
+      limite === 'inicio' ? 0 : 999,
+    );
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+  }
+
+  const parsed = new Date(valor);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+}
+
+function construirAccionLegacy(modulo: string, accion: string): string {
+  const moduloNormalizado = modulo
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return `${moduloNormalizado || 'sistema'}.${accion}`;
 }
 
 // ============================================================================

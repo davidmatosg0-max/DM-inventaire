@@ -28,7 +28,8 @@ import {
   HelpCircle,
   QrCode,
   MapPin,
-  Sparkles
+  Sparkles,
+  Pencil
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
@@ -47,6 +48,7 @@ import { toast } from 'sonner';
 import { COMANDAS_UPDATED_EVENT, obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerProductos, guardarProducto, actualizarProducto } from '../../utils/productStorage';
 import { guardarEntrada } from '../../utils/entradaInventarioStorage';
+import { registrarMovimiento } from '../../utils/movimientoStorage';
 import { mockProductos } from '../../data/mockData';
 import { calcularValorMonetario, obtenerCategorias, actualizarPesoUnitarioSubcategoria, actualizarPesoUnitarioVariante } from '../../utils/categoriaStorage';
 import { registrarActividad } from '../../utils/actividadLogger';
@@ -56,8 +58,8 @@ import type { Producto, ProductoCreado, HistorialEntrada, ProductoConversion, Fo
 import { filterByThreeLettersMultiple } from '../../utils/searchUtils';
 import { formatLargeNumber, formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { loadLazyNamedModule } from '../../utils/lazyImportRecovery';
-import { 
-  guardarConversion, 
+import {
+  guardarConversion,
   revertirConversion,
   obtenerConversionesRecientes,
   obtenerPlantillasConversion,
@@ -70,7 +72,7 @@ import {
 } from '../../utils/conversionStorage';
 import { useBranding } from '../../../hooks/useBranding';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
-import { 
+import {
   migrarValoresMonetariosDesdeEntradas,
   recalcularValoresTotales,
   obtenerEstadisticasValoresMonetarios
@@ -93,6 +95,7 @@ import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/Mod
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 import { ListaProductosDistribuidosDialog } from '../comandas/ListaProductosDistribuidosDialog';
+import { PERMISOS, tienePermiso as tienePermisoSistema } from '../../utils/permisos';
 
 type CarritoItem = {
   productoId: string;
@@ -130,11 +133,23 @@ type FormAjoutStockExistant = {
   fechaCaducidad: string;
 };
 
+type FormCorrectionStockExistant = {
+  productoId: string;
+  cantidadObjetivo: string;
+  motivo: string;
+};
+
 const FORM_AJOUT_STOCK_EXISTANT_INITIAL: FormAjoutStockExistant = {
   productoId: '',
   cantidad: '',
   lote: '',
   fechaCaducidad: '',
+};
+
+const FORM_CORRECTION_STOCK_EXISTANT_INITIAL: FormCorrectionStockExistant = {
+  productoId: '',
+  cantidadObjetivo: '',
+  motivo: '',
 };
 
 const categoriasInfo: Record<string, { icono: string; valorMonetario: number; color: string; label: string }> = {
@@ -260,6 +275,15 @@ function cargarUltimaDistribucionGrupo(): UltimaDistribucionGrupoResumen | null 
 export function Inventario() {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
+  const puedeModificarProductos = tienePermisoSistema(PERMISOS.INVENTARIO_EDITAR);
+  const validarPermisoModificacionProducto = (accion = 'modifier les produits') => {
+    if (puedeModificarProductos) {
+      return true;
+    }
+
+    toast.error(`Seuls les roles Responsable Entrepot et superieurs peuvent ${accion}`);
+    return false;
+  };
   const currentLocale = i18n.language || 'fr';
   const translatedNewEntry = t('newEntry');
   const isFrenchLocale = !i18n.resolvedLanguage || i18n.resolvedLanguage.startsWith('fr');
@@ -346,6 +370,8 @@ export function Inventario() {
   const [entradaDonAchatOpen, setEntradaDonAchatOpen] = useState(false);
   const [ajoutStockExistantOpen, setAjoutStockExistantOpen] = useState(false);
   const [formAjoutStockExistant, setFormAjoutStockExistant] = useState<FormAjoutStockExistant>(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
+  const [correctionStockExistantOpen, setCorrectionStockExistantOpen] = useState(false);
+  const [formCorrectionStockExistant, setFormCorrectionStockExistant] = useState<FormCorrectionStockExistant>(FORM_CORRECTION_STOCK_EXISTANT_INITIAL);
   
   // Estado para escáner QR
   const [escanerQROpen, setEscanerQROpen] = useState(false);
@@ -376,14 +402,42 @@ export function Inventario() {
   };
 
   const abrirAjoutStockExistant = () => {
+    if (!validarPermisoModificacionProducto('ajuster le stock')) {
+      return;
+    }
+
     setFormAjoutStockExistant(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
     setAjoutStockExistantOpen(true);
+  };
+
+  const abrirCorrectionStockExistant = (producto?: ProductoCreado | null) => {
+    if (!validarPermisoModificacionProducto('corriger la quantite des produits')) {
+      return;
+    }
+
+    setFormCorrectionStockExistant(
+      producto
+        ? {
+            productoId: producto.id,
+            cantidadObjetivo: `${Number(producto.stockActual || 0)}`,
+            motivo: '',
+          }
+        : FORM_CORRECTION_STOCK_EXISTANT_INITIAL
+    );
+    setCorrectionStockExistantOpen(true);
   };
 
   const handleAjoutStockExistantOpenChange = (open: boolean) => {
     setAjoutStockExistantOpen(open);
     if (!open) {
       setFormAjoutStockExistant(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
+    }
+  };
+
+  const handleCorrectionStockExistantOpenChange = (open: boolean) => {
+    setCorrectionStockExistantOpen(open);
+    if (!open) {
+      setFormCorrectionStockExistant(FORM_CORRECTION_STOCK_EXISTANT_INITIAL);
     }
   };
   
@@ -505,6 +559,11 @@ export function Inventario() {
     [productosCreados, formAjoutStockExistant.productoId]
   );
 
+  const productoCorrectionStockSeleccionado = React.useMemo(
+    () => productosDisponiblesParaAjout.find(producto => producto.id === formCorrectionStockExistant.productoId) || null,
+    [productosDisponiblesParaAjout, formCorrectionStockExistant.productoId]
+  );
+
   const handleProductoAjoutStockChange = (productoId: string) => {
     const producto = productosCreados.find(item => item.id === productoId)
       || productosDisponiblesParaAjout.find(item => item.id === productoId);
@@ -514,6 +573,16 @@ export function Inventario() {
       productoId,
       lote: producto?.lote || '',
       fechaCaducidad: producto?.fechaVencimiento || '',
+    }));
+  };
+
+  const handleProductoCorrectionStockChange = (productoId: string) => {
+    const producto = productosDisponiblesParaAjout.find(item => item.id === productoId);
+
+    setFormCorrectionStockExistant(prev => ({
+      ...prev,
+      productoId,
+      cantidadObjetivo: producto ? `${Number(producto.stockActual || 0)}` : '',
     }));
   };
 
@@ -542,6 +611,10 @@ export function Inventario() {
   };
 
   const handleGuardarAjoutStockExistant = () => {
+    if (!validarPermisoModificacionProducto('ajuster le stock')) {
+      return;
+    }
+
     if (!productoAjoutStockSeleccionado) {
       toast.error('Sélectionnez un produit existant');
       return;
@@ -598,6 +671,79 @@ export function Inventario() {
     setAjoutStockExistantOpen(false);
     setFormAjoutStockExistant(FORM_AJOUT_STOCK_EXISTANT_INITIAL);
     toast.success(`Stock ajouté à ${productoAjoutStockSeleccionado.nombre}`);
+  };
+
+  const handleGuardarCorrectionStockExistant = () => {
+    if (!validarPermisoModificacionProducto('corriger la quantite des produits')) {
+      return;
+    }
+
+    if (!productoCorrectionStockSeleccionado) {
+      toast.error('Sélectionnez un produit à corriger');
+      return;
+    }
+
+    const cantidadObjetivo = parseQuantityText(formCorrectionStockExistant.cantidadObjetivo, false);
+    if (!Number.isFinite(cantidadObjetivo) || cantidadObjetivo < 0) {
+      toast.error('Saisissez une quantité cible valide');
+      return;
+    }
+
+    const stockAnterior = Number(productoCorrectionStockSeleccionado.stockActual || 0);
+    if (cantidadObjetivo === stockAnterior) {
+      toast.info('La quantité est déjà à jour');
+      return;
+    }
+
+    const usuarioActual = obtenerUsuarioInventarioActual();
+    const pesoPorUnidad = Number(
+      productoCorrectionStockSeleccionado.pesoUnitario
+      || productoCorrectionStockSeleccionado.peso
+      || 0
+    );
+    const nuevoPesoRegistrado = pesoPorUnidad > 0 ? pesoPorUnidad * cantidadObjetivo : 0;
+    const actualizacion: Partial<ProductoCreado> = {
+      stockActual: cantidadObjetivo,
+      pesoRegistrado: nuevoPesoRegistrado,
+    };
+
+    if (!productoCorrectionStockSeleccionado.pesoUnitario || productoCorrectionStockSeleccionado.pesoUnitario === 0) {
+      actualizacion.peso = nuevoPesoRegistrado;
+    }
+
+    if (typeof productoCorrectionStockSeleccionado.valorUnitario === 'number' && productoCorrectionStockSeleccionado.valorUnitario > 0) {
+      actualizacion.valorTotal = productoCorrectionStockSeleccionado.valorUnitario * cantidadObjetivo;
+    } else if (typeof productoCorrectionStockSeleccionado.valorTotal === 'number' && productoCorrectionStockSeleccionado.valorTotal > 0) {
+      const valorUnitarioEstimado = stockAnterior > 0
+        ? productoCorrectionStockSeleccionado.valorTotal / stockAnterior
+        : 0;
+
+      if (valorUnitarioEstimado > 0) {
+        actualizacion.valorTotal = valorUnitarioEstimado * cantidadObjetivo;
+      } else if (cantidadObjetivo === 0) {
+        actualizacion.valorTotal = 0;
+      }
+    }
+
+    actualizarProducto(productoCorrectionStockSeleccionado.id, actualizacion);
+
+    registrarMovimiento({
+      tipo: 'correccion',
+      productoId: productoCorrectionStockSeleccionado.id,
+      cantidad: Math.abs(cantidadObjetivo - stockAnterior),
+      motivo: `Correction manuelle du stock (${formatQuantity(stockAnterior)} → ${formatQuantity(cantidadObjetivo)} ${productoCorrectionStockSeleccionado.unidad})`,
+      usuario: usuarioActual,
+      observaciones: formCorrectionStockExistant.motivo.trim() || undefined,
+      cantidadAnterior: stockAnterior,
+      cantidadActual: cantidadObjetivo,
+      pesoUnitario: pesoPorUnidad > 0 ? pesoPorUnidad : undefined,
+    });
+
+    window.dispatchEvent(new Event('productos-actualizados'));
+    setRefreshKey(prev => prev + 1);
+    setCorrectionStockExistantOpen(false);
+    setFormCorrectionStockExistant(FORM_CORRECTION_STOCK_EXISTANT_INITIAL);
+    toast.success(`Quantité corrigée pour ${productoCorrectionStockSeleccionado.nombre}`);
   };
 
   const organismosActivos = React.useMemo(
@@ -923,10 +1069,16 @@ export function Inventario() {
         toast.info('Produit ajouté au panier. Continuez la distribution depuis le panier');
         return;
       case 'ajustar_stock':
+        if (!validarPermisoModificacionProducto('ajuster le stock')) {
+          return;
+        }
         focusProductFromQr(producto);
         toast.info('Produit filtré dans Inventaire pour ajuster le stock');
         return;
       case 'modificar_producto':
+        if (!validarPermisoModificacionProducto('modifier les produits')) {
+          return;
+        }
         focusProductFromQr(producto);
         toast.info('Produit filtré dans Inventaire pour modification');
         return;
@@ -1589,6 +1741,10 @@ export function Inventario() {
   };
 
   const abrirConversionUnidades = (producto: ProductoCreado) => {
+    if (!validarPermisoModificacionProducto('convertir les unites et modifier le stock')) {
+      return;
+    }
+
     // Buscar el producto en localStorage para obtener todos los datos actualizados
     const productosLS = obtenerProductos();
     const productoCompleto = productosLS.find(p => p.id === producto.id) || producto;
@@ -1603,6 +1759,10 @@ export function Inventario() {
   };
 
   const actualizarUbicacionProducto = (producto: ProductoCreado, ubicacion: string) => {
+    if (!validarPermisoModificacionProducto('modifier l emplacement des produits')) {
+      return false;
+    }
+
     const productosLocalStorage = obtenerProductos();
     const productoEnStorage = productosLocalStorage.find(p => p.id === producto.id);
 
@@ -1732,6 +1892,10 @@ export function Inventario() {
   };
 
   const handleLocalizarProducto = (ubicacion: string) => {
+    if (!validarPermisoModificacionProducto('modifier l emplacement des produits')) {
+      return;
+    }
+
     if (!productoEscaneado) return;
 
     const ubicacionEstandar = resolveStandardLocation(ubicacion, ubicacionesEscaneables);
@@ -1752,6 +1916,10 @@ export function Inventario() {
   };
 
   const handleDeslocalizarProducto = () => {
+    if (!validarPermisoModificacionProducto('modifier l emplacement des produits')) {
+      return;
+    }
+
     if (!productoEscaneado) return;
 
     const actualizado = deslocalizarProductoEscaneado(productoEscaneado);
@@ -1771,6 +1939,10 @@ export function Inventario() {
     cantidadDestino: number,
     unidadDestino: string
   ) => {
+    if (!validarPermisoModificacionProducto('convertir les unites et modifier le stock')) {
+      return;
+    }
+
     if (!Number.isFinite(cantidadOrigen) || !Number.isFinite(cantidadDestino) || cantidadOrigen <= 0 || cantidadDestino <= 0) {
       toast.error(t('inventory.errors.quantityMustBePositive'));
       return;
@@ -2771,14 +2943,28 @@ export function Inventario() {
                     </Button>
                   )}
 
-                  <Button
-                    onClick={abrirAjoutStockExistant}
-                    className="h-9 gap-2 bg-[#2d9561] px-3 text-white hover:bg-[#24794f]"
-                    title="Ajouter au stock existant"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span className="text-xs font-semibold">Ajouter au stock</span>
-                  </Button>
+                  {puedeModificarProductos && (
+                    <>
+                      <Button
+                        onClick={abrirAjoutStockExistant}
+                        className="h-9 gap-2 bg-[#2d9561] px-3 text-white hover:bg-[#24794f]"
+                        title="Ajouter au stock existant"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span className="text-xs font-semibold">Ajouter au stock</span>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => abrirCorrectionStockExistant()}
+                        className="h-9 gap-2 border-[#c23934] px-3 text-[#c23934] hover:bg-red-50"
+                        title="Corriger la quantité réelle"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="text-xs font-semibold">Corriger quantité</span>
+                      </Button>
+                    </>
+                  )}
 
                   <Button
                     size="icon"
@@ -3184,28 +3370,41 @@ export function Inventario() {
                               </Badge>
                             </TableCell>
                             <TableCell className="py-1 px-1.5 align-top">
-                              <div className="grid grid-cols-2 gap-1 justify-center">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setProductoEscaneado(producto);
-                                    setDialogLocalizacionOpen(true);
-                                  }}
-                                  title="Localiser le produit"
-                                  className="hover:bg-green-50 hover:border-[#2d9561] transition-all h-7 w-full min-w-0 p-0"
-                                >
-                                  <MapPin className="h-3 w-3 text-[#2d9561]" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => abrirConversionUnidades(producto)}
-                                  title={t('inventory.convertUnits')}
-                                  className="hover:bg-blue-50 hover:border-[#1a4d7a] transition-all h-7 w-full min-w-0 p-0"
-                                >
-                                  <ArrowLeftRight className="h-3 w-3 text-[#1a4d7a]" />
-                                </Button>
+                              <div className={`grid gap-1 justify-center ${puedeModificarProductos ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                                {puedeModificarProductos && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => abrirCorrectionStockExistant(producto)}
+                                      title="Corriger la quantité réelle"
+                                      className="hover:bg-red-50 hover:border-[#c23934] transition-all h-7 w-full min-w-0 p-0"
+                                    >
+                                      <Pencil className="h-3 w-3 text-[#c23934]" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setProductoEscaneado(producto);
+                                        setDialogLocalizacionOpen(true);
+                                      }}
+                                      title="Localiser le produit"
+                                      className="hover:bg-green-50 hover:border-[#2d9561] transition-all h-7 w-full min-w-0 p-0"
+                                    >
+                                      <MapPin className="h-3 w-3 text-[#2d9561]" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => abrirConversionUnidades(producto)}
+                                      title={t('inventory.convertUnits')}
+                                      className="hover:bg-blue-50 hover:border-[#1a4d7a] transition-all h-7 w-full min-w-0 p-0"
+                                    >
+                                      <ArrowLeftRight className="h-3 w-3 text-[#1a4d7a]" />
+                                    </Button>
+                                  </>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -3391,28 +3590,41 @@ export function Inventario() {
                           })()}
 
                           {/* Acciones */}
-                          <div className="grid grid-cols-4 gap-1 pt-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setProductoEscaneado(producto);
-                                setDialogLocalizacionOpen(true);
-                              }}
-                              title="Localiser le produit"
-                              className="h-8 p-0 hover:bg-green-50 hover:border-[#2d9561]"
-                            >
-                              <MapPin className="h-4 w-4 text-[#2d9561]" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => abrirConversionUnidades(producto)}
-                              title={t('inventory.convertUnits')}
-                              className="h-8 p-0 hover:bg-blue-50 hover:border-[#1a4d7a]"
-                            >
-                              <ArrowLeftRight className="h-4 w-4 text-[#1a4d7a]" />
-                            </Button>
+                          <div className={`grid gap-1 pt-1 ${puedeModificarProductos ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                            {puedeModificarProductos && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => abrirCorrectionStockExistant(producto)}
+                                  title="Corriger la quantité réelle"
+                                  className="h-8 p-0 hover:bg-red-50 hover:border-[#c23934]"
+                                >
+                                  <Pencil className="h-4 w-4 text-[#c23934]" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setProductoEscaneado(producto);
+                                    setDialogLocalizacionOpen(true);
+                                  }}
+                                  title="Localiser le produit"
+                                  className="h-8 p-0 hover:bg-green-50 hover:border-[#2d9561]"
+                                >
+                                  <MapPin className="h-4 w-4 text-[#2d9561]" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => abrirConversionUnidades(producto)}
+                                  title={t('inventory.convertUnits')}
+                                  className="h-8 p-0 hover:bg-blue-50 hover:border-[#1a4d7a]"
+                                >
+                                  <ArrowLeftRight className="h-4 w-4 text-[#1a4d7a]" />
+                                </Button>
+                              </>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
@@ -4168,6 +4380,101 @@ export function Inventario() {
               className="bg-[#2d9561] hover:bg-[#24794f]"
             >
               Ajouter au stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      )}
+
+      {correctionStockExistantOpen && (
+      <Dialog open={correctionStockExistantOpen} onOpenChange={handleCorrectionStockExistantOpenChange}>
+        <DialogContent className="w-[min(92vw,720px)] max-w-[720px] max-h-[92vh] overflow-y-auto rounded-[28px] border-0 bg-white p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]">
+          <DialogHeader className="border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(194,57,52,0.07)_0%,rgba(26,77,122,0.06)_100%)] px-6 py-5 text-left">
+            <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Corriger la quantité du produit</DialogTitle>
+            <DialogDescription>
+              Définissez la quantité physique réelle du produit pour corriger l’inventaire sans recréer une entrée complète.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 px-6 py-5">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(220px,0.8fr)]">
+              <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_16px_34px_-30px_rgba(15,23,42,0.3)]">
+                <Label>Produit à corriger *</Label>
+                <Select value={formCorrectionStockExistant.productoId} onValueChange={handleProductoCorrectionStockChange}>
+                  <SelectTrigger className="mt-2 min-h-[54px] rounded-2xl border-slate-200 bg-slate-50/70">
+                    <SelectValue placeholder="Sélectionner un produit..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[320px]">
+                    {productosDisponiblesParaAjout.map((producto) => (
+                      <SelectItem key={producto.id} value={producto.id}>
+                        {producto.icono || '📦'} {producto.nombre} • {producto.categoria} • Stock: {formatQuantity(producto.stockActual)} {producto.unidad}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-[24px] border border-rose-200 bg-[linear-gradient(145deg,#ffffff_0%,#fff6f5_100%)] p-4 shadow-[0_16px_34px_-30px_rgba(194,57,52,0.28)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-700">Résumé rapide</p>
+                <p className="mt-3 text-sm text-slate-500">Stock actuel</p>
+                <p className="text-2xl font-bold text-slate-900">{productoCorrectionStockSeleccionado ? formatQuantity(productoCorrectionStockSeleccionado.stockActual) : '0'} <span className="text-sm font-medium text-slate-500">{productoCorrectionStockSeleccionado?.unidad || ''}</span></p>
+                <p className="mt-3 text-sm text-slate-500">Quantité corrigée</p>
+                <p className="text-lg font-semibold text-rose-700">
+                  {productoCorrectionStockSeleccionado
+                    ? `${formatQuantity(parseQuantityText(formCorrectionStockExistant.cantidadObjetivo, false) || 0)} ${productoCorrectionStockSeleccionado.unidad}`
+                    : 'Sélection requise'}
+                </p>
+                {productoCorrectionStockSeleccionado && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Écart: {formatQuantity((parseQuantityText(formCorrectionStockExistant.cantidadObjetivo, false) || 0) - Number(productoCorrectionStockSeleccionado.stockActual || 0))} {productoCorrectionStockSeleccionado.unidad}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                <Label>Quantité réelle *</Label>
+                <QuantityInput
+                  value={formCorrectionStockExistant.cantidadObjetivo}
+                  onChangeText={(value) => setFormCorrectionStockExistant(prev => ({ ...prev, cantidadObjetivo: value }))}
+                  min={0}
+                  step={1}
+                  placeholder="0"
+                  wrapperClassName="mt-2"
+                  className="rounded-2xl border-slate-200 bg-slate-50/70"
+                  buttonClassName="border-slate-200 bg-slate-50/70 hover:bg-slate-100"
+                />
+              </div>
+              <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                <Label>Motif de correction</Label>
+                <Input
+                  value={formCorrectionStockExistant.motivo}
+                  onChange={(event) => setFormCorrectionStockExistant(prev => ({ ...prev, motivo: event.target.value }))}
+                  placeholder="Ex.: inventaire physique, erreur de saisie, produit abîmé"
+                  className="mt-2 rounded-2xl border-slate-200 bg-slate-50/70"
+                />
+              </div>
+            </div>
+
+            {productoCorrectionStockSeleccionado && (
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600">
+                <p className="font-semibold text-slate-900">{productoCorrectionStockSeleccionado.icono || '📦'} {productoCorrectionStockSeleccionado.nombre}</p>
+                <p className="mt-1">{productoCorrectionStockSeleccionado.categoria} • {productoCorrectionStockSeleccionado.subcategoria || 'Sans sous-catégorie'} • {productoCorrectionStockSeleccionado.codigo}</p>
+                <p className="mt-2 text-xs text-slate-500">Cette action corrige la quantité physique du produit et enregistre un mouvement séparé de correction dans l’historique.</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+            <Button variant="outline" onClick={() => handleCorrectionStockExistantOpenChange(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleGuardarCorrectionStockExistant}
+              className="bg-[#c23934] hover:bg-[#a92f2b]"
+            >
+              Corriger la quantité
             </Button>
           </DialogFooter>
         </DialogContent>

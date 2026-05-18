@@ -285,7 +285,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       // 7. Cargar programa predeterminado
       const programaPredeterminado = localStorage.getItem('programaPredeterminado');
       if (programaPredeterminado) {
-        setFormData(prev => ({ ...prev, tipoEntrada: programaPredeterminado }));
+        setFormData(prev => ({ ...prev, tipoEntrada: programaPredeterminado.toLowerCase() }));
       }
       
       console.log('✅ Carga de datos completada');
@@ -379,6 +379,20 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
   useEffect(() => {
     setProductosAgregados([]);
   }, [formData.donadorId]);
+
+  useEffect(() => {
+    setFormData(prev => {
+      const participantePRSId = prev.tipoEntrada === 'prs' ? prev.donadorId : '';
+      if ((prev.participantePRSId || '') === participantePRSId) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        participantePRSId,
+      };
+    });
+  }, [formData.tipoEntrada, formData.donadorId]);
 
   // Limpiar producto seleccionado cuando cambia el programa
   useEffect(() => {
@@ -510,6 +524,25 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       'notas'
     ]);
   }, [searchContactoQuery, contactosDisponibles]);
+
+  const productosPRSDisponibles = useMemo(() => (
+    productosDB.filter((producto) => producto.activo && producto.esPRS === true)
+  ), [productosDB]);
+
+  const productosFiltrados = useMemo(() => {
+    if (!searchProductoPRSQuery || searchProductoPRSQuery.length < 3) {
+      return productosPRSDisponibles;
+    }
+
+    return filterByThreeLetters(searchProductoPRSQuery, productosPRSDisponibles, [
+      'nombre',
+      'codigo',
+      'categoria',
+      'subcategoria',
+      'lote',
+      'ubicacion',
+    ]);
+  }, [searchProductoPRSQuery, productosPRSDisponibles]);
 
   // ========== FILTROS EN CASCADA: CATEGORÍA → SUBCATEGORÍA → VARIANTE ==========
   
@@ -695,6 +728,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     setFormData(prev => ({
       ...prev,
       donadorId: contactoId,
+      participantePRSId: prev.tipoEntrada === 'prs' ? contactoId : prev.participantePRSId,
     }));
 
     setSelectContactoOpen(false);
@@ -1184,6 +1218,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       return;
     }
 
+    if (formData.tipoEntrada === 'prs' && !formData.participantePRSId) {
+      toast.error('Sélectionnez un participant PRS');
+      return;
+    }
+
     // Validar que al menos tenga categoría y subcategoría
     if (!formData.categoriaId || !formData.categoriaNombre) {
       toast.error("Sélectionnez une catégorie");
@@ -1279,6 +1318,12 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       const programaCodigo = programa?.codigo?.toUpperCase() || 'DON';
       const programaColor = programa?.color || '#2d9561';
       const programaIcono = programa?.icono || '🎁';
+      const participantePrsId = formData.tipoEntrada === 'prs'
+        ? (formData.participantePRSId || formData.donadorId)
+        : undefined;
+      const participantePrsNombre = formData.tipoEntrada === 'prs'
+        ? nombreCompleto
+        : undefined;
 
       console.log(`📝 Finalizando entrada de ${productosAgregados.length} producto(s)...`);
 
@@ -1326,6 +1371,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           donadorId: formData.donadorId,
           donadorNombre: nombreCompleto,
           donadorEsCustom: false,
+          participantePRSId: participantePrsId,
+          participantePRSNombre: participantePrsNombre,
           productoId: prod.productoId || `TEMP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporal, se actualizará automáticamente
           nombreProducto: nombreParaInventario, // 🎯 Usar nombre base sin sufijo
           productoIcono: prod.productoIcono,

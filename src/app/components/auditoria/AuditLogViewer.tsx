@@ -102,6 +102,17 @@ export function AuditLogViewer({
   // Cargar logs
   useEffect(() => {
     cargarLogs();
+
+    const handleStorage = () => cargarLogs();
+    const handleActividadRegistrada = () => cargarLogs();
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('actividadRegistrada', handleActividadRegistrada as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('actividadRegistrada', handleActividadRegistrada as EventListener);
+    };
   }, []);
   
   // Aplicar filtros

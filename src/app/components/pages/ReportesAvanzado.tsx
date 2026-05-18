@@ -48,7 +48,6 @@ import { formatQuantity } from '../../utils/formatUtils';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { obtenerProductos, type ProductoCreado } from '../../utils/productStorage';
-import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, obtenerOrganismosPRS, type Organismo } from '../../utils/organismosStorage';
 import { obtenerMovimientos, type MovimientoExtendido } from '../../utils/movimientoStorage';
 import { obtenerTransformaciones, type Transformacion } from '../../utils/recetaStorage';
@@ -57,6 +56,10 @@ import { exportarComandasPDF, exportarInventarioPDF, exportarOrganismosPDF, expo
 import { exportarComandasExcel, exportarDatosPersonalizados, exportarInventarioExcel, exportarOrganismosExcel } from '../../utils/exportarExcel';
 import { obtenerEtiquetaModalidadDistribucion, resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import { obtenerReportePRSRemoto } from '../../utils/remoteReports';
+import { generarReportePRS } from '../../utils/reportesLogic';
+import { obtenerComandas as obtenerComandasBase } from '../../utils/comandaStorage';
+import { obtenerComandasReporte, type ReportComanda } from '../reports/reportComandas';
+import { isActiveReportComanda } from '../reports/reportComandaStatus';
 import type { Comanda } from '../../types';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 
@@ -69,11 +72,19 @@ type MovimientoReporte = MovimientoExtendido & {
   cantidad?: number;
   productoNombre?: string;
 };
-type ComandaExportable = Comanda & {
+type ComandaExportable = ReportComanda & {
   organismo?: {
     nombre?: string;
   };
   modalidadDistribucionLabel?: string;
+  productos: Array<{
+    nombre: string;
+    cantidad: number;
+    unidad: string;
+    valorUnitario?: number;
+    valorTotal?: number;
+  }>;
+  valorTotal?: number;
 };
 type RemotePRSReport = {
   resumen: {
@@ -254,12 +265,14 @@ function renderEmptyState(message: string) {
 
 export function ReportesAvanzado() {
   const { t } = useTranslation();
+  const initialRange = getDatePresetRange('month');
   const [tipoReporte, setTipoReporte] = useState<TipoReporte>('general');
-  const [fechaInicio, setFechaInicio] = useState('2025-01-01');
-  const [fechaFin, setFechaFin] = useState('2025-01-31');
+  const [fechaInicio, setFechaInicio] = useState(initialRange.start);
+  const [fechaFin, setFechaFin] = useState(initialRange.end);
   const [periodoComparacion, setPeriodoComparacion] = useState<PeriodoComparacion>('mes');
   const [productos, setProductos] = useState<ProductoCreado[]>([]);
-  const [comandas, setComandas] = useState<Comanda[]>([]);
+  const [comandasBase, setComandasBase] = useState<Comanda[]>([]);
+  const [comandas, setComandas] = useState<ReportComanda[]>([]);
   const [organismos, setOrganismos] = useState<Organismo[]>([]);
   const [movimientos, setMovimientos] = useState<MovimientoExtendido[]>([]);
   const [transformaciones, setTransformaciones] = useState<Transformacion[]>([]);
@@ -274,7 +287,8 @@ export function ReportesAvanzado() {
 
   const cargarDatos = () => {
     setProductos(obtenerProductos());
-    setComandas(obtenerComandas());
+    setComandasBase(obtenerComandasBase());
+    setComandas(obtenerComandasReporte());
     setOrganismos(obtenerOrganismos());
     setMovimientos(obtenerMovimientos());
     setTransformaciones(obtenerTransformaciones());
@@ -300,6 +314,8 @@ export function ReportesAvanzado() {
   const comparacionInicio = rangoInicio ? shiftDate(rangoInicio, periodoComparacion) : null;
   const comparacionFin = rangoFin ? shiftDate(rangoFin, periodoComparacion) : null;
   const movimientosReporte = movimientos as MovimientoReporte[];
+  const comandaBasePorId = new Map(comandasBase.map((comanda) => [comanda.id, comanda]));
+  const reportePrsLocal = rangoValido ? generarReportePRS(fechaInicio, fechaFin) : generarReportePRS();
 
   useEffect(() => {
     if (tipoReporte !== 'prs' || !rangoValido) {
@@ -310,10 +326,10 @@ export function ReportesAvanzado() {
   }, [tipoReporte, fechaInicio, fechaFin, rangoValido]);
 
   const comandasFiltradas = rangoValido
-    ? comandas.filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha, rangoInicio, rangoFin))
+    ? comandas.filter((comanda) => isActiveReportComanda(comanda) && isDateInRange(comanda.fechaEntrega || comanda.fecha, rangoInicio, rangoFin))
     : [];
   const comandasComparacion = rangoValido
-    ? comandas.filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha, comparacionInicio, comparacionFin))
+    ? comandas.filter((comanda) => isActiveReportComanda(comanda) && isDateInRange(comanda.fechaEntrega || comanda.fecha, comparacionInicio, comparacionFin))
     : [];
   const movimientosFiltrados = rangoValido
     ? movimientosReporte.filter((movimiento) => isDateInRange(movimiento.fecha, rangoInicio, rangoFin))
@@ -344,8 +360,8 @@ export function ReportesAvanzado() {
 
   const productoIdsConActividad = new Set(movimientosFiltrados.map((movimiento) => movimiento.productoId).filter(Boolean));
   const productoIdsConActividadComparacion = new Set(movimientosComparacion.map((movimiento) => movimiento.productoId).filter(Boolean));
-  const productosSeguidos = productoIdsConActividad.size || productos.length;
-  const productosSeguidosComparacion = productoIdsConActividadComparacion.size || productos.length;
+  const productosSeguidos = productoIdsConActividad.size;
+  const productosSeguidosComparacion = productoIdsConActividadComparacion.size;
 
   const organismoIdsServidos = Array.from(new Set(comandasFiltradas.map((comanda) => comanda.organismoId).filter(Boolean)));
   const organismoIdsServidosComparacion = Array.from(new Set(comandasComparacion.map((comanda) => comanda.organismoId).filter(Boolean)));
@@ -368,6 +384,11 @@ export function ReportesAvanzado() {
     (sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0),
     0
   );
+  const totalPrsKgLocal = Number(reportePrsLocal.resumen.totalPesoKg.toFixed(1));
+  const latestPrsEntries = reportePrsLocal.detalles.slice(0, 5);
+  const averagePrsEntryWeight = reportePrsLocal.resumen.totalEntradas > 0
+    ? Number((totalPrsKgLocal / reportePrsLocal.resumen.totalEntradas).toFixed(1))
+    : 0;
 
   const rutasCompletadas = rutasFiltradas.filter((ruta) => ruta.estado === 'completada').length;
   const rutasCompletadasComparacion = rutasComparacion.filter((ruta) => ruta.estado === 'completada').length;
@@ -400,7 +421,7 @@ export function ReportesAvanzado() {
 
   const monthBuckets = getMonthBuckets(referenciaFin, 6);
   const datosComandasMes = monthBuckets.map((bucket) => {
-    const delMes = comandas.filter((comanda) => getMonthKey(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha) === bucket.key);
+    const delMes = comandas.filter((comanda) => getMonthKey(comanda.fechaEntrega || comanda.fecha) === bucket.key);
     return {
       mes: bucket.label,
       comandas: delMes.length,
@@ -409,7 +430,24 @@ export function ReportesAvanzado() {
     };
   });
 
-  const datosPRSMes = monthBuckets.map((bucket) => {
+  const datosEntradasPRSMes = monthBuckets.map((bucket) => {
+    const delMes = reportePrsLocal.porMes.find((entry) => entry.mes === bucket.key);
+    return {
+      mes: bucket.label,
+      kg: Number((delMes?.totalPesoKg || 0).toFixed(1)),
+      entradas: delMes?.totalEntradas || 0,
+    };
+  });
+
+  const datosPrsProducto = reportePrsLocal.porProducto
+    .slice(0, 8)
+    .map((entry) => ({
+      producto: entry.productoNombre.length > 20 ? `${entry.productoNombre.slice(0, 20)}...` : entry.productoNombre,
+      kg: Number(entry.totalPesoKg.toFixed(1)),
+      entradas: entry.totalEntradas,
+    }));
+
+  const datosCuisineMes = monthBuckets.map((bucket) => {
     const delMes = transformaciones.filter((transformacion) => getMonthKey(transformacion.fecha) === bucket.key && transformacion.estado === 'terminée');
     return {
       mes: bucket.label,
@@ -429,7 +467,11 @@ export function ReportesAvanzado() {
     { tipo: 'Corrections', cantidad: movimientosFiltrados.filter((movimiento) => ['correccion', 'ajuste_stock'].includes(movimiento.tipo)).length, color: '#FFC107' },
   ].filter((entry) => entry.cantidad > 0);
 
-  const datosOrganismosBeneficiarios = organismos
+  const organismosReportados = organismoIdsServidos
+    .map((organismoId) => organismosPorId.get(organismoId))
+    .filter((organismo): organismo is Organismo => Boolean(organismo));
+  const organismosAnalizados = organismosReportados.length > 0 ? organismosReportados : organismos;
+  const datosOrganismosBeneficiarios = organismosAnalizados
     .map((organismo) => ({
       nombre: organismo.nombre.length > 20 ? `${organismo.nombre.slice(0, 20)}...` : organismo.nombre,
       beneficiarios: organismo.beneficiarios,
@@ -470,7 +512,7 @@ export function ReportesAvanzado() {
 
   const totalCargaRutas = rutasFiltradas.reduce((sum, ruta) => sum + (ruta.pesoTotalKg || 0), 0);
   const choferesActifs = choferes.filter((chofer) => chofer.estado === 'activo').length;
-  const organismosPRS = obtenerOrganismosPRS().length;
+  const organismosPRS = reportePrsLocal.resumen.organismosUnicos || obtenerOrganismosPRS().length;
   const remotePrsTopOrganism = remotePrsReport?.porOrganismo?.[0];
   const remotePrsTopDonor = remotePrsReport?.porDonador?.[0];
   const remotePrsUpdatedAt = remotePrsReport?.generadoEn
@@ -495,22 +537,26 @@ export function ReportesAvanzado() {
     general: `${productosSeguidos} produits suivis`,
     inventario: `${datosInventarioCategoria.length} catégories d'inventaire`,
     comandas: `${comandasFiltradas.length} commandes dans la période`,
-    prs: `${formatQuantity(totalKgPRS)} kg produits`,
+    prs: `${reportePrsLocal.resumen.totalEntradas} entrées • ${formatQuantity(totalPrsKgLocal)} kg`,
     organismos: `${organismoIdsServidos.length} organismes desservis`,
     transporte: `${rutasFiltradas.length} routes analysées`,
   }[tipoReporte];
 
   const comandasExportables: ComandaExportable[] = comandasFiltradas.map((comanda) => ({
     ...comanda,
-    organismo: (comanda as ComandaExportable).organismo ?? (comanda.organismoId ? { nombre: organismosPorId.get(comanda.organismoId)?.nombre || 'N/A' } : undefined),
-    modalidadDistribucionLabel: obtenerEtiquetaModalidadDistribucion(resolverModalidadDistribucionComanda(comanda)),
+    organismo: { nombre: comanda.organismoNombre || organismosPorId.get(comanda.organismoId)?.nombre || 'N/A' },
+    modalidadDistribucionLabel: comanda.id.startsWith('OFE-SOL-')
+      ? 'Offre'
+      : obtenerEtiquetaModalidadDistribucion(resolverModalidadDistribucionComanda(comandaBasePorId.get(comanda.id) || { items: [] } as Comanda)),
+    productos: comanda.productos.map((producto) => ({
+      nombre: producto.productoNombre,
+      cantidad: producto.cantidad,
+      unidad: producto.unidad,
+    })),
+    valorTotal: comanda.totalValorMonetario,
   }));
 
-  const organismosReportados = organismoIdsServidos
-    .map((organismoId) => organismosPorId.get(organismoId))
-    .filter((organismo): organismo is Organismo => Boolean(organismo));
-
-  const organismosExportables = (organismosReportados.length > 0 ? organismosReportados : organismos).map((organismo) => ({
+  const organismosExportables = organismosAnalizados.map((organismo) => ({
     ...organismo,
     contacto: {
       telefono: organismo.telefono || 'N/A',
@@ -542,6 +588,16 @@ export function ReportesAvanzado() {
       transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0).toFixed(1)
     ),
     État: transformacion.estado,
+  }));
+
+  const detallePRSLocalExportable = reportePrsLocal.detalles.map((entry, index) => ({
+    Référence: entry.id || `PRS-${index + 1}`,
+    Date: new Date(entry.fecha).toLocaleDateString('fr-CA'),
+    Produit: entry.productoNombre,
+    Organisme: entry.organismoNombre || 'Sans organisme',
+    Donateur: entry.donadorNombre || 'Sans donateur',
+    'Poids total (kg)': Number(entry.pesoTotal.toFixed(1)),
+    Quantité: entry.cantidad,
   }));
 
   const detalleTransportExportable = rutasFiltradas.map((ruta) => ({
@@ -630,11 +686,20 @@ export function ReportesAvanzado() {
                 titulo: 'Résumé PRS',
                 columnas: ['Indicateur', 'Valeur'],
                 datos: [
+                  ['Entrées PRS locales', String(reportePrsLocal.resumen.totalEntradas)],
+                  ['Poids PRS local (kg)', formatQuantity(totalPrsKgLocal)],
                   ['Transformations terminées', String(transformacionesTerminadas.length)],
-                  ['Production totale (kg)', formatQuantity(totalKgPRS)],
+                  ['Production cuisine (kg)', formatQuantity(totalKgPRS)],
                   ['Organismes PRS actifs', String(organismosPRS)],
                   ['Comparaison', PERIOD_LABELS[periodoComparacion]],
                 ],
+              },
+              {
+                titulo: 'Entrées PRS locales',
+                columnas: ['Référence', 'Date', 'Produit', 'Organisme', 'Donateur', 'Poids total (kg)', 'Quantité'],
+                datos: detallePRSLocalExportable.length > 0
+                  ? detallePRSLocalExportable.map((item) => [item.Référence, item.Date, item.Produit, item.Organisme, item.Donateur, item['Poids total (kg)'], item.Quantité])
+                  : [['Aucune donnée', '-', '-', '-', '-', '0', '0']],
               },
               {
                 titulo: 'Transformations terminées',
@@ -647,11 +712,15 @@ export function ReportesAvanzado() {
           } else {
             exportarDatosPersonalizados('rapport-prs', [
               { nombre: 'Résumé PRS', datos: resumenGeneralExportable.filter((item) => ['Période analysée', 'Production cuisine (kg)'].includes(String(item.Indicateur))).concat([
+                { Indicateur: 'Entrées PRS locales', Valeur: reportePrsLocal.resumen.totalEntradas },
+                { Indicateur: 'Poids PRS local (kg)', Valeur: formatQuantity(totalPrsKgLocal) },
                 { Indicateur: 'Transformations terminées', Valeur: transformacionesTerminadas.length },
                 { Indicateur: 'Organismes PRS actifs', Valeur: organismosPRS },
               ]) },
+              { nombre: 'Entrées PRS locales', datos: detallePRSLocalExportable.length > 0 ? detallePRSLocalExportable : [{ Note: 'Aucune entrée PRS locale sur la période.' }] },
               { nombre: 'Transformations', datos: detallePRSExportable.length > 0 ? detallePRSExportable : [{ Note: 'Aucune transformation terminée sur la période.' }] },
-              { nombre: 'Tendance mensuelle', datos: datosPRSMes.map((item) => ({ Mois: item.mes, 'Production (kg)': item.kg, Transformations: item.rescates })) },
+              { nombre: 'Entrées PRS mensuelles', datos: datosEntradasPRSMes.map((item) => ({ Mois: item.mes, 'Poids PRS (kg)': item.kg, Entrées: item.entradas })) },
+              { nombre: 'Tendance cuisine', datos: datosCuisineMes.map((item) => ({ Mois: item.mes, 'Production (kg)': item.kg, Transformations: item.rescates })) },
             ]);
           }
           break;
@@ -956,7 +1025,7 @@ export function ReportesAvanzado() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Sources analysées</p>
-              <p className="font-semibold text-slate-900">{productos.length} produits, {comandas.length} commandes, {organismos.length} organismes</p>
+              <p className="font-semibold text-slate-900">{productos.length} produits, {comandas.length} commandes consolidées, {organismos.length} organismes</p>
               <p className="text-sm text-slate-600">{movimientos.length} mouvements, {transformaciones.length} transformations, {rutas.length} routes</p>
             </div>
             <div>
@@ -1329,14 +1398,116 @@ export function ReportesAvanzado() {
             </CardContent>
           </Card>
 
+          <Card className="border-l-4 border-l-[#4CAF50]">
+            <CardHeader>
+              <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Vue locale des entrées PRS</CardTitle>
+              <p className="text-sm text-[#666666]">
+                Synthèse calculée à partir des entrées PRS enregistrées localement dans l&apos;inventaire pour la période filtrée.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <Card className="border-l-4 border-l-[#1E73BE]">
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-[#666666]">Entrées locales PRS</p>
+                    <p className="font-bold" style={{ fontSize: '1.5rem', color: '#1E73BE' }}>{reportePrsLocal.resumen.totalEntradas}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-[#4CAF50]">
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-[#666666]">Poids total PRS local</p>
+                    <p className="font-bold" style={{ fontSize: '1.5rem', color: '#4CAF50' }}>{formatQuantity(totalPrsKgLocal)} kg</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-[#FFC107]">
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-[#666666]">Organismes PRS actifs</p>
+                    <p className="font-bold" style={{ fontSize: '1.5rem', color: '#E0A800' }}>{organismosPRS}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-[#9C27B0]">
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-[#666666]">Moyenne par entrée PRS</p>
+                    <p className="font-bold" style={{ fontSize: '1.5rem', color: '#9C27B0' }}>{formatQuantity(averagePrsEntryWeight)} kg</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Dernières entrées PRS</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {latestPrsEntries.length > 0 ? (
+                      <div className="space-y-3">
+                        {latestPrsEntries.map((entry) => (
+                          <div key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                            <p className="text-sm font-semibold text-[#1E73BE]">{entry.productoNombre}</p>
+                            <p className="text-sm text-[#333333]">{formatQuantity(entry.pesoTotal)} kg • {entry.cantidad} {entry.unidad}</p>
+                            <p className="text-xs text-[#666666]">
+                              {new Date(entry.fecha).toLocaleDateString('fr-CA')} • {entry.organismoNombre || 'Sans organisme'} • {entry.donadorNombre || 'Sans donateur'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : renderEmptyState('Aucune entrée PRS locale enregistrée sur la période.')} 
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Entrées PRS par produit</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {datosPrsProducto.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={datosPrsProducto}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="producto" angle={-20} textAnchor="end" interval={0} height={72} />
+                          <YAxis />
+                          <Tooltip formatter={(value, name) => [name === 'kg' ? `${Number(value).toFixed(1)} kg` : value, name === 'kg' ? 'Poids PRS' : 'Entrées']} />
+                          <Legend />
+                          <Bar dataKey="kg" fill="#4CAF50" name="Poids PRS" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : renderEmptyState('Aucune entrée PRS locale disponible par produit sur la période.')} 
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Entrées PRS par mois</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {datosEntradasPRSMes.some((entry) => entry.kg > 0 || entry.entradas > 0) ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={datosEntradasPRSMes}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="kg" stroke="#4CAF50" strokeWidth={3} name="Poids PRS" />
+                    <Line yAxisId="right" type="monotone" dataKey="entradas" stroke="#1E73BE" strokeWidth={3} name="Entrées" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : renderEmptyState('Aucune entrée PRS locale sur les six derniers mois.')} 
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle style={{ fontFamily: 'Montserrat, sans-serif' }}>Production cuisine par mois</CardTitle>
             </CardHeader>
             <CardContent>
-              {datosPRSMes.some((entry) => entry.kg > 0 || entry.rescates > 0) ? (
+              {datosCuisineMes.some((entry) => entry.kg > 0 || entry.rescates > 0) ? (
                 <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={datosPRSMes}>
+                  <LineChart data={datosCuisineMes}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="mes" />
                     <YAxis yAxisId="left" />
@@ -1354,14 +1525,14 @@ export function ReportesAvanzado() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card className="border-l-4 border-l-[#4CAF50]">
               <CardContent className="pt-6">
-                <p className="text-sm text-[#666666]">Total KG produits</p>
+                <p className="text-sm text-[#666666]">Total KG cuisine</p>
                 <p className="font-bold" style={{ fontSize: '1.5rem', color: '#4CAF50' }}>{formatQuantity(totalKgPRS)} kg</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-[#1E73BE]">
               <CardContent className="pt-6">
-                <p className="text-sm text-[#666666]">Organismes participants PRS</p>
-                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#1E73BE' }}>{organismosPRS}</p>
+                <p className="text-sm text-[#666666]">Transformations terminées</p>
+                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#1E73BE' }}>{transformacionesTerminadas.length}</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-[#9C27B0]">
@@ -1400,25 +1571,25 @@ export function ReportesAvanzado() {
             <Card className="border-l-4 border-l-[#1E73BE]">
               <CardContent className="pt-6">
                 <p className="text-sm text-[#666666]">Total des organismes</p>
-                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#1E73BE' }}>{organismos.length}</p>
+                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#1E73BE' }}>{organismosAnalizados.length}</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-[#4CAF50]">
               <CardContent className="pt-6">
                 <p className="text-sm text-[#666666]">Actifs</p>
-                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#4CAF50' }}>{organismos.filter((organismo) => organismo.activo).length}</p>
+                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#4CAF50' }}>{organismosAnalizados.filter((organismo) => organismo.activo).length}</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-[#DC3545]">
               <CardContent className="pt-6">
                 <p className="text-sm text-[#666666]">Inactifs</p>
-                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#DC3545' }}>{organismos.filter((organismo) => !organismo.activo).length}</p>
+                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#DC3545' }}>{organismosAnalizados.filter((organismo) => !organismo.activo).length}</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-[#FFC107]">
               <CardContent className="pt-6">
                 <p className="text-sm text-[#666666]">Total des bénéficiaires</p>
-                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#FFC107' }}>{totalBeneficiariosSistema}</p>
+                <p className="font-bold" style={{ fontSize: '1.5rem', color: '#FFC107' }}>{organismosAnalizados.reduce((sum, organismo) => sum + organismo.beneficiarios, 0)}</p>
               </CardContent>
             </Card>
           </div>

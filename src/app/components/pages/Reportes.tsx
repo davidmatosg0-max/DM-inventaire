@@ -29,7 +29,7 @@ import {
 import { exportData, exportToPDFWithCharts, generateFilename, type ChartElement, type TableColumn } from '../../utils/exportUtils';
 import { useBranding } from '../../../hooks/useBranding';
 import { AuditLogViewer } from '../auditoria/AuditLogViewer';
-import { obtenerComandasReporte } from '../reports/reportComandas';
+import { obtenerComandasReporte, type ReportComanda } from '../reports/reportComandas';
 import { isActiveReportComanda } from '../reports/reportComandaStatus';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerReportePRSRemoto } from '../../utils/remoteReports';
@@ -39,11 +39,24 @@ import { ModulePageHeader } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceHeader } from '../shared/ModuleControlSurface';
 import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 
-type ComandaExportable = Comanda & {
+type ComandaExportable = {
+  id: string;
+  numero: string;
+  fecha: string;
+  fechaEntrega?: string;
+  estado: Comanda['estado'];
+  valorTotal: number;
+  modalidadDistribucionLabel?: string;
+  prioridad?: string;
+  productos: Array<{
+    productoId: string;
+    nombre: string;
+    cantidad: number;
+    unidad: string;
+  }>;
   organismo?: {
     nombre?: string;
   };
-  modalidadDistribucionLabel?: string;
 };
 
 type DatePreset = 'today' | 'last7days' | 'last30days' | 'month';
@@ -616,8 +629,17 @@ export function Reportes() {
     selectedCategory !== 'all' ? `Catégorie: ${selectedCategory}` : null,
     selectedActor !== 'all' ? `Donateur / fournisseur: ${selectedActor}` : null,
   ].filter(Boolean).join(' • ');
+  const comandasReporte = obtenerComandasReporte();
+  const modalidadDistribucionPorComandaId = new Map(
+    comandas.map((comanda) => [
+      comanda.id,
+      obtenerEtiquetaModalidadDistribucion(resolverModalidadDistribucionComanda(comanda)),
+    ])
+  );
   const comandasFiltradas = rangoValido
-    ? comandas.filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha, rangoInicio, rangoFin))
+    ? comandasReporte
+      .filter(isActiveReportComanda)
+      .filter((comanda) => isDateInRange(comanda.fechaEntrega || comanda.fecha, rangoInicio, rangoFin))
     : [];
   const transformacionesTerminadas = rangoValido
     ? transformaciones.filter((transformacion) => isDateInRange(transformacion.fecha, rangoInicio, rangoFin) && transformacion.estado === 'terminée')
@@ -640,13 +662,16 @@ export function Reportes() {
 
   const monthBuckets = getMonthBuckets(referenciaFin, 6);
   const datosComandasMes = monthBuckets.map((bucket) => {
-    const delMes = comandas.filter((comanda) => getMonthKey(comanda.fechaEntrega || comanda.fechaCreacion || comanda.fecha) === bucket.key);
+    const delMes = comandasReporte
+      .filter(isActiveReportComanda)
+      .filter((comanda) => getMonthKey(comanda.fechaEntrega || comanda.fecha) === bucket.key);
+
     return {
       mes: bucket.label,
       comandas: selectedCategory === 'all'
         ? delMes.length
         : delMes.filter((comanda) =>
-            (comanda.items || []).some((item) => getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory)
+            comanda.productos.some((item) => getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory)
           ).length,
     };
   });
@@ -677,16 +702,28 @@ export function Reportes() {
     }))
     .sort((left, right) => right.kg - left.kg);
 
-  const comandasExportables: ComandaExportable[] = comandasFiltradas.map((comanda) => ({
-    ...comanda,
-    organismo: (comanda as ComandaExportable).organismo ?? (comanda.organismoId ? { nombre: organismosPorId.get(comanda.organismoId)?.nombre || 'N/A' } : undefined),
-    modalidadDistribucionLabel: obtenerEtiquetaModalidadDistribucion(resolverModalidadDistribucionComanda(comanda)),
+  const comandasExportables: ComandaExportable[] = comandasFiltradas.map((comanda: ReportComanda) => ({
+    id: comanda.id,
+    numero: comanda.numero,
+    fecha: comanda.fecha,
+    fechaEntrega: comanda.fechaEntrega,
+    estado: comanda.estado,
+    valorTotal: getSafeNumericValue(comanda.totalValorMonetario),
+    modalidadDistribucionLabel: modalidadDistribucionPorComandaId.get(comanda.id)
+      || (comanda.id.startsWith('OFE-SOL-') ? 'Offre organisme' : 'Standard'),
+    productos: comanda.productos.map((producto) => ({
+      productoId: producto.productoId,
+      nombre: producto.productoNombre,
+      cantidad: producto.cantidad,
+      unidad: producto.unidad,
+    })),
+    organismo: { nombre: comanda.organismoNombre || organismosPorId.get(comanda.organismoId)?.nombre || 'N/A' },
   }));
 
   const comandasExportablesFiltradas = selectedCategory === 'all'
     ? comandasExportables
     : comandasExportables.filter((comanda) =>
-        (comanda.items || []).some((item) => getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory)
+        comanda.productos.some((item) => getProductCategoryLabel(productIndex.get(item.productoId)) === selectedCategory)
       );
 
   const organismosExportables = organismos.map((organismo) => ({
@@ -1381,15 +1418,14 @@ export function Reportes() {
   const stockTotal = productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0);
   const totalBeneficiarios = organismos.reduce((sum, organismo) => sum + organismo.beneficiarios, 0);
   const activeOrganisms = organismos.filter((organismo) => organismo.activo);
+  const reportedOrdersSeriesLabel = 'Commandes reportées';
   const operationalRangeLabel = rangoValido ? `${fechaInicio} - ${fechaFin}` : 'Plage invalide';
   const operationalEntries = activeEntries.filter((entry) =>
     isDateInRange(entry.fecha, rangoInicio, rangoFin)
     && (selectedCategory === 'all' || getEntryCategoryLabel(entry, productIndex) === selectedCategory)
     && (selectedActor === 'all' || (entry.donadorNombre || '').trim() === selectedActor)
   );
-  const operationalDistributions = obtenerComandasReporte()
-    .filter(isActiveReportComanda)
-    .filter((comanda) => isDateInRange(comanda.fecha, rangoInicio, rangoFin))
+  const operationalDistributions = comandasFiltradas
     .map((comanda) => {
       const filteredPeso = selectedCategory === 'all'
         ? getSafeNumericValue(comanda.totalPeso)
@@ -2143,7 +2179,7 @@ export function Reportes() {
               />
             </div>
 
-            <ReportChartCard chartId="report-chart-operaciones-monthly" title="Tendance mensuelle des distributions" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 260}>
+            <ReportChartCard chartId="report-chart-operaciones-monthly" title="Tendance mensuelle des commandas" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={isCompactReportsViewport ? 180 : 260}>
               <ResponsiveContainer width="100%" height={isCompactReportsViewport ? 180 : 260} key="barchart-operaciones-monthly">
                 <BarChart data={datosComandasMes}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -2151,7 +2187,7 @@ export function Reportes() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="comandas" fill={branding.primaryColor} name="Commandes livrées" />
+                  <Bar dataKey="comandas" fill={branding.primaryColor} name={reportedOrdersSeriesLabel} />
                 </BarChart>
               </ResponsiveContainer>
             </ReportChartCard>
@@ -2331,7 +2367,7 @@ export function Reportes() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="comandas" fill="#4CAF50" name={t('reports.completedOrders')} />
+                    <Bar dataKey="comandas" fill="#4CAF50" name={reportedOrdersSeriesLabel} />
                   </BarChart>
                 </ResponsiveContainer>
             </ReportChartCard>
@@ -2627,7 +2663,7 @@ export function Reportes() {
           )}
 
           {activeReportTab === 'operaciones' && (
-            <ExportChartCard chartId="pdf-chart-operaciones-monthly" title="Tendance mensuelle des distributions" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={260}>
+            <ExportChartCard chartId="pdf-chart-operaciones-monthly" title="Tendance mensuelle des commandas" titleColor={branding.primaryColor} hasData={datosComandasMes.length > 0} emptyHeight={260}>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={datosComandasMes}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -2635,7 +2671,7 @@ export function Reportes() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="comandas" fill={branding.primaryColor} name="Commandes livrées" />
+                  <Bar dataKey="comandas" fill={branding.primaryColor} name={reportedOrdersSeriesLabel} />
                 </BarChart>
               </ResponsiveContainer>
             </ExportChartCard>
@@ -2733,7 +2769,7 @@ export function Reportes() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="comandas" fill="#4CAF50" name={t('reports.completedOrders')} />
+                  <Bar dataKey="comandas" fill="#4CAF50" name={reportedOrdersSeriesLabel} />
                 </BarChart>
               </ResponsiveContainer>
             </ExportChartCard>
