@@ -92,6 +92,7 @@ import {
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
+import { ListaProductosDistribuidosDialog } from '../comandas/ListaProductosDistribuidosDialog';
 
 type CarritoItem = {
   productoId: string;
@@ -259,6 +260,7 @@ function cargarUltimaDistribucionGrupo(): UltimaDistribucionGrupoResumen | null 
 export function Inventario() {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
+  const currentLocale = i18n.language || 'fr';
   const translatedNewEntry = t('newEntry');
   const isFrenchLocale = !i18n.resolvedLanguage || i18n.resolvedLanguage.startsWith('fr');
   const newEntryLabel = isFrenchLocale
@@ -309,6 +311,7 @@ export function Inventario() {
   const [showFilters, setShowFilters] = useState(false);
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
   const [carritoOpen, setCarritoOpen] = useState(false);
+  const [dialogListaDistribuidosOpen, setDialogListaDistribuidosOpen] = useState(false);
   const [ultimaDistribucionGrupoCreada, setUltimaDistribucionGrupoCreada] = useState<UltimaDistribucionGrupoResumen | null>(() => cargarUltimaDistribucionGrupo());
   const [sortBy, setSortBy] = useState<'nombre' | 'stock' | 'categoria' | 'valor'>('nombre');
   
@@ -358,6 +361,14 @@ export function Inventario() {
   const [floatingButtonsPosition, setFloatingButtonsPosition] = useState({ x: 0, y: 0 });
   const [floatingButtonsDragStart, setFloatingButtonsDragStart] = useState({ x: 0, y: 0 });
   const [floatingButtonsDragDistance, setFloatingButtonsDragDistance] = useState(0);
+
+  const comandasUltimaDistribucionGrupo = ultimaDistribucionGrupoCreada
+    ? obtenerComandas().filter(
+        (comanda) =>
+          comanda.grupoDistribucionId === ultimaDistribucionGrupoCreada.grupoDistribucionId &&
+          comanda.estado !== 'anulada'
+      )
+    : [];
   const floatingButtonsRef = React.useRef<HTMLDivElement>(null);
 
   const abrirEntradaInventario = () => {
@@ -2389,23 +2400,13 @@ export function Inventario() {
     window.location.href = url.toString();
   };
 
-  const handleAbrirComandasParaEditarDistribucionGrupo = () => {
-    const numeroComanda = ultimaDistribucionGrupoCreada?.comandas[0]?.numero;
-
-    if (numeroComanda) {
-      savePendingQrNavigation({
-        targetPage: 'comandas',
-        qrType: 'comanda',
-        rawData: {
-          tipo: 'comanda',
-          id: numeroComanda,
-          comanda: numeroComanda,
-        },
-        action: 'modificar_grupo',
-      });
+  const handleAbrirListaDistribucionGrupo = () => {
+    if (comandasUltimaDistribucionGrupo.length === 0) {
+      toast.error('Aucune liste de produits distribués n’est disponible pour cette distribution de groupe.');
+      return;
     }
 
-    navigateToModule('comandas');
+    setDialogListaDistribuidosOpen(true);
   };
 
   useEffect(() => {
@@ -2593,50 +2594,97 @@ export function Inventario() {
           </ModuleStatsGrid>
 
       {ultimaDistribucionGrupoCreada && (
-        <Card className="mx-3 mb-3 overflow-hidden border border-[#A7D7AE] bg-[linear-gradient(145deg,rgba(232,245,233,0.96)_0%,rgba(255,255,255,0.96)_100%)] shadow-[0_22px_48px_-36px_rgba(46,125,50,0.24)] sm:mx-4 lg:mx-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="bg-[#2E7D32] text-white">Derniere distribution de groupe</Badge>
-                  <Badge className="bg-[#1E73BE] text-white">{ultimaDistribucionGrupoCreada.grupoDistribucionId}</Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#1B5E20]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    {ultimaDistribucionGrupoCreada.grupoDistribucionEtiqueta}
-                  </p>
-                  <p className="text-xs text-[#355E3B]">
-                    L'acces reste visible ici apres la creation. Vous pouvez ouvrir Commandes a tout moment pour modifier la distribution ancree.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {ultimaDistribucionGrupoCreada.comandas.slice(0, 4).map((comanda) => (
-                    <span
-                      key={comanda.numero}
-                      className="rounded-full border border-[#A7D7AE] bg-white px-2.5 py-1 text-[11px] font-medium text-[#1F2937]"
-                    >
-                      {comanda.numero}
-                    </span>
-                  ))}
-                  {ultimaDistribucionGrupoCreada.comandas.length > 4 && (
-                    <span className="rounded-full border border-dashed border-[#A7D7AE] px-2.5 py-1 text-[11px] font-medium text-[#355E3B]">
-                      +{ultimaDistribucionGrupoCreada.comandas.length - 4}
-                    </span>
-                  )}
+        <Card className="relative mx-3 mb-3 overflow-hidden border-0 bg-[linear-gradient(135deg,#f7fbf8_0%,#ffffff_50%,#f4f8fd_100%)] shadow-[0_24px_54px_-40px_rgba(20,48,34,0.28)] ring-1 ring-[#dbe8de] sm:mx-4 lg:mx-6">
+          <div className="pointer-events-none absolute -left-12 top-[-62px] h-32 w-32 rounded-full bg-[#2E7D32]/10 blur-3xl" />
+          <div className="pointer-events-none absolute right-[-24px] top-4 h-32 w-32 rounded-full bg-[#1E73BE]/8 blur-3xl" />
+          <CardContent className="relative p-0">
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_272px]">
+              <div className="px-4 py-4 sm:px-5 sm:py-4.5">
+                <div className="flex items-start gap-3">
+                  <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(145deg,#2E7D32_0%,#53A35E_100%)] text-white shadow-[0_16px_28px_-22px_rgba(46,125,50,0.5)] sm:flex">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="border border-[#D7E9DC] bg-white/92 text-[#245B2A] shadow-sm">Dernière distribution de groupe</Badge>
+                      <Badge className="bg-[#1E73BE] text-white shadow-sm">{ultimaDistribucionGrupoCreada.grupoDistribucionId}</Badge>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[#D7E9DC] bg-[#F8FCF9] px-2.5 py-1 text-[11px] font-semibold text-[#355E3B]">
+                        <Users className="h-3.5 w-3.5" />
+                        {ultimaDistribucionGrupoCreada.comandas.length} commandes
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#2E7D32]">
+                        Accès direct à la distribution
+                      </p>
+                      <div>
+                        <p className="text-base font-semibold text-[#153B25] sm:text-[1.2rem]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                          {ultimaDistribucionGrupoCreada.grupoDistribucionEtiqueta}
+                        </p>
+                        <p className="mt-1.5 max-w-3xl text-[13px] leading-5 text-[#4F6B58]">
+                          Ouvrez directement le récapitulatif consolidé des produits distribués pour ce groupe.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[20px] border border-white/80 bg-white/78 p-2.5 shadow-[0_16px_30px_-30px_rgba(15,23,42,0.34)] backdrop-blur-sm">
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B7E72]">
+                        Commandes incluses
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {ultimaDistribucionGrupoCreada.comandas.slice(0, 3).map((comanda) => (
+                          <span
+                            key={comanda.numero}
+                            className="rounded-full border border-[#D7E9DC] bg-[#FBFDFB] px-2.5 py-1 text-[11px] font-semibold text-[#1F2937] shadow-sm"
+                          >
+                            {comanda.numero}
+                          </span>
+                        ))}
+                        {ultimaDistribucionGrupoCreada.comandas.length > 3 && (
+                          <span className="rounded-full border border-dashed border-[#A7D7AE] bg-[#F8FCF9] px-2.5 py-1 text-[11px] font-semibold text-[#355E3B]">
+                            +{ultimaDistribucionGrupoCreada.comandas.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={handleAbrirComandasParaEditarDistribucionGrupo}
-                  className="bg-[#1E73BE] hover:bg-[#1557A0]"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Ouvrir les commandes
-                </Button>
-                <Button variant="outline" onClick={() => setUltimaDistribucionGrupoCreada(null)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Masquer
-                </Button>
+
+              <div className="flex flex-col justify-center gap-3 border-t border-[#E3EEE6] bg-[linear-gradient(180deg,rgba(255,255,255,0.64)_0%,rgba(244,249,255,0.88)_100%)] px-4 py-4 lg:border-l lg:border-t-0 lg:px-5">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5D7385]">
+                    Action principale
+                  </p>
+                  <p className="text-[13px] leading-5 text-[#4C6476]">
+                    Accédez au résumé complet du groupe en un clic.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <Button
+                    size="icon"
+                    onClick={handleAbrirListaDistribucionGrupo}
+                    disabled={comandasUltimaDistribucionGrupo.length === 0}
+                    title="Ouvrir la dernière liste de produits"
+                    aria-label="Ouvrir la dernière liste de produits"
+                    className="h-11 w-11 shrink-0 rounded-2xl bg-[linear-gradient(135deg,#1E73BE_0%,#1557A0_100%)] text-white shadow-[0_18px_34px_-24px_rgba(30,115,190,0.55)] hover:brightness-105"
+                  >
+                    <FileText className="h-4.5 w-4.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => setUltimaDistribucionGrupoCreada(null)}
+                    title="Masquer cet accès"
+                    aria-label="Masquer cet accès"
+                    className="h-11 w-11 shrink-0 rounded-2xl border-[#D5DEE8] bg-white/88 text-[#445566] shadow-[0_16px_30px_-28px_rgba(15,23,42,0.28)] hover:bg-white"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -3970,6 +4018,13 @@ export function Inventario() {
         </DeferredPanel>
       )}
 
+      <ListaProductosDistribuidosDialog
+        open={dialogListaDistribuidosOpen}
+        onOpenChange={setDialogListaDistribuidosOpen}
+        comandas={comandasUltimaDistribucionGrupo}
+        currentLocale={currentLocale}
+      />
+
       {/* Historial Producto Dialog */}
       {productoSeleccionado && (
         <DeferredPanel>
@@ -4451,21 +4506,21 @@ export function Inventario() {
           {productoEscaneado && (
             <div className="space-y-4">
               {/* Información del Producto */}
-              <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-[#1a4d7a]">
+              <Card className="overflow-hidden border-0 bg-[linear-gradient(135deg,#f7fbf8_0%,#ffffff_50%,#f4f8fd_100%)] shadow-[0_22px_42px_-34px_rgba(20,48,34,0.24)] ring-1 ring-[#dbe8de]">
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white border-2 border-[#1a4d7a]">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#d9e8dd] bg-white shadow-sm">
                       <span className="text-2xl">{obtenerIconoProducto(productoEscaneado)}</span>
                     </div>
                     <div>
-                      <p className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      <p className="font-semibold text-[#153B25]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                         {productoEscaneado.nombre}
                       </p>
-                      <p className="text-sm text-[#666666]">
+                      <p className="text-sm text-[#5c6f63]">
                         Code: <span className="font-mono text-[#1a4d7a]">{productoEscaneado.codigo}</span>
                       </p>
                       {productoEscaneado.ubicacion && (
-                        <p className="text-sm text-[#2d9561] flex items-center gap-1 mt-1">
+                        <p className="mt-1 flex items-center gap-1 text-sm text-[#2d9561]">
                           <MapPin className="h-3 w-3" />
                           Emplacement actuel: <span className="font-medium">{productoEscaneado.ubicacion}</span>
                         </p>
@@ -4592,15 +4647,15 @@ export function Inventario() {
 
           {quickCartProduct && (
             <div className="space-y-4">
-              <Card className="border-[#1a4d7a]/20 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <Card className="overflow-hidden border-0 bg-[linear-gradient(135deg,#f6f9fe_0%,#ffffff_54%,#f5f8ff_100%)] shadow-[0_22px_42px_-34px_rgba(26,77,122,0.24)] ring-1 ring-[#dbe5f0]">
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-[#1a4d7a] bg-white">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#d7e2ee] bg-white shadow-sm">
                       <span className="text-2xl">{obtenerIconoProducto(quickCartProduct)}</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[#1a4d7a] truncate">{getInventoryProductName(quickCartProduct)}</p>
-                      <p className="text-sm text-[#666666]">Code: {quickCartProduct.codigo}</p>
+                      <p className="truncate font-semibold text-[#153b61]">{getInventoryProductName(quickCartProduct)}</p>
+                      <p className="text-sm text-[#5a6a7a]">Code: {quickCartProduct.codigo}</p>
                       <p className={`text-sm ${quickCartQuantityExceedsAvailable ? 'font-semibold text-[#c23934]' : 'text-[#666666]'}`}>
                         Disponible: {formatQuantity(quickCartAvailableQuantity)} {quickCartProduct.unidad}
                       </p>
