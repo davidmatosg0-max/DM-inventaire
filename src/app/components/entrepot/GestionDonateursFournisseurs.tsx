@@ -75,6 +75,33 @@ const STORAGE_KEY = 'banque_alimentaire_donateurs_fournisseurs';
 const normalizarClaveEmpresa = (valor?: string): string =>
   String(valor || '').trim().toLowerCase();
 
+const extraerFechaSolo = (valor?: string): string => String(valor || '').split('T')[0];
+
+const construirClaveActividad = (type: ActiviteHistorique['type'], date: string): string =>
+  `${extraerFechaSolo(date)}::${type}`;
+
+const obtenerPersonaPrincipal = (item: DonateurFournisseur): PersonneContact => {
+  const primeraPersona = item.personnesContact?.find((persona) => (
+    persona.nom?.trim() || persona.email?.trim() || persona.telephone?.trim()
+  ));
+
+  if (primeraPersona) {
+    return primeraPersona;
+  }
+
+  return {
+    id: item.id,
+    nom: item.nomEntreprise || 'Contact',
+    email: '',
+    telephone: item.telephone || '',
+  };
+};
+
+const normaliserDonateurFournisseur = (item: DonateurFournisseur): DonateurFournisseur => ({
+  ...item,
+  personnesContact: item.personnesContact?.length ? item.personnesContact : [obtenerPersonaPrincipal(item)],
+});
+
 const mapearContactoADonateurFournisseur = (
   contacto: ContactoDepartamento,
   existente?: DonateurFournisseur
@@ -141,7 +168,7 @@ const obtenirDonnees = (): DonateurFournisseur[] => {
     new Map(
       Array.from(donneesPorClave.values()).map((item) => [item.id, item])
     ).values()
-  );
+  ).map(normaliserDonateurFournisseur);
 
   if (JSON.stringify(donneesFusionnees) !== JSON.stringify(donneesLegacy)) {
     sauvegarderDonnees(donneesFusionnees);
@@ -202,8 +229,12 @@ const sincroniserActivites = (): void => {
       
       console.log(`📦 Sincronizando actividades para: ${donador.nomEntreprise}`);
       
-      // Limpiar historial existente para re-sincronizar
-      donador.historiqueActivites = [];
+      const actividadesPorClave = new Map<string, ActiviteHistorique>(
+        (donador.historiqueActivites || []).map((activite) => [
+          construirClaveActividad(activite.type, activite.date),
+          activite,
+        ])
+      );
       
       Object.keys(actividadesPorDonador[donadorId]).forEach(fecha => {
         const entradasDelDia = actividadesPorDonador[donadorId][fecha];
@@ -221,12 +252,15 @@ const sincroniserActivites = (): void => {
           const unites = [...new Set(donations.map((e: any) => e.unidad).filter(Boolean))];
           const pesoTotal = donations.reduce((sum: number, e: any) => sum + (e.pesoTotal || 0), 0);
           const valeur = donations.reduce((sum: number, e: any) => sum + (e.valorTotal || 0), 0);
+          const dateActivite = donations[0].fecha || fecha;
+          const claveActivite = construirClaveActividad('donation', dateActivite);
+          const activiteExistante = actividadesPorClave.get(claveActivite);
           
           console.log(`    💚 Donation: ${formatQuantity(quantite)} unités (${unites.join('/')}) | ${formatQuantity(pesoTotal)} kg | CAD$ ${formatMoney(valeur)}`);
           
           const activite: ActiviteHistorique = {
-            id: `ACT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            date: donations[0].fecha,
+            id: activiteExistante?.id || `ACT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            date: dateActivite,
             type: 'donation',
             produits,
             quantite,
@@ -236,7 +270,7 @@ const sincroniserActivites = (): void => {
             reference: donations[0].id
           };
           
-          donador.historiqueActivites!.push(activite);
+          actividadesPorClave.set(claveActivite, activite);
         }
         
         // Crear actividad para compras
@@ -246,12 +280,15 @@ const sincroniserActivites = (): void => {
           const unites = [...new Set(achats.map((e: any) => e.unidad).filter(Boolean))];
           const pesoTotal = achats.reduce((sum: number, e: any) => sum + (e.pesoTotal || 0), 0);
           const valeur = achats.reduce((sum: number, e: any) => sum + (e.valorTotal || 0), 0);
+          const dateActivite = achats[0].fecha || fecha;
+          const claveActivite = construirClaveActividad('achat', dateActivite);
+          const activiteExistante = actividadesPorClave.get(claveActivite);
           
           console.log(`    🛒 Achat: ${formatQuantity(quantite)} unités (${unites.join('/')}) | ${formatQuantity(pesoTotal)} kg | CAD$ ${formatMoney(valeur)}`);
           
           const activite: ActiviteHistorique = {
-            id: `ACT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            date: achats[0].fecha,
+            id: activiteExistante?.id || `ACT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            date: dateActivite,
             type: 'achat',
             produits,
             quantite,
@@ -261,9 +298,11 @@ const sincroniserActivites = (): void => {
             reference: achats[0].id
           };
           
-          donador.historiqueActivites!.push(activite);
+          actividadesPorClave.set(claveActivite, activite);
         }
       });
+
+      donador.historiqueActivites = Array.from(actividadesPorClave.values());
       
       // Ordenar actividades por fecha (más reciente primero)
       if (donador.historiqueActivites) {
@@ -670,12 +709,13 @@ export function GestionDonateursFournisseurs() {
 
   // Filtrar datos según tab activo, búsqueda y filtro PRS
   const donneesFiltrees = donnees.filter(d => {
+    const personaPrincipal = obtenerPersonaPrincipal(d);
     const matchType = activeTab === 'donateurs' ? d.isDonateur : d.isFournisseur;
     const matchSearch = searchTerm.trim() === '' || 
       d.nomEntreprise.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.personnesContact[0].nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      personaPrincipal.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.telephone.includes(searchTerm) ||
-      d.personnesContact[0].telephone.includes(searchTerm);
+      personaPrincipal.telephone.includes(searchTerm);
     const matchPRS = !filtrePRS || d.participantPRS;
     return matchType && matchSearch && matchPRS;
   });
@@ -913,6 +953,10 @@ export function GestionDonateursFournisseurs() {
                     ) : (
                       donneesFiltrees.map((item) => (
                         <TableRow key={item.id}>
+                          {(() => {
+                            const personaPrincipal = obtenerPersonaPrincipal(item);
+                            return (
+                              <>
                           <TableCell>
                             <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
                               {item.logo ? (
@@ -964,19 +1008,19 @@ export function GestionDonateursFournisseurs() {
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <User className="w-3 h-3 text-[#666666]" />
-                              <span className="text-sm">{item.personnesContact[0].nom}</span>
+                              <span className="text-sm">{personaPrincipal.nom}</span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Mail className="w-3 h-3 text-[#666666]" />
-                              <span className="text-sm">{item.personnesContact[0].email || '-'}</span>
+                              <span className="text-sm">{personaPrincipal.email || '-'}</span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Phone className="w-3 h-3 text-[#666666]" />
-                              <span className="text-sm">{item.personnesContact[0].telephone || '-'}</span>
+                              <span className="text-sm">{personaPrincipal.telephone || '-'}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -1008,6 +1052,9 @@ export function GestionDonateursFournisseurs() {
                               </Button>
                             </div>
                           </TableCell>
+                              </>
+                            );
+                          })()}
                         </TableRow>
                       ))
                     )}
@@ -1041,6 +1088,10 @@ export function GestionDonateursFournisseurs() {
                     ) : (
                       donneesFiltrees.map((item) => (
                         <TableRow key={item.id}>
+                          {(() => {
+                            const personaPrincipal = obtenerPersonaPrincipal(item);
+                            return (
+                              <>
                           <TableCell>
                             <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
                               {item.logo ? (
@@ -1092,19 +1143,19 @@ export function GestionDonateursFournisseurs() {
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <User className="w-3 h-3 text-[#666666]" />
-                              <span className="text-sm">{item.personnesContact[0].nom}</span>
+                              <span className="text-sm">{personaPrincipal.nom}</span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Mail className="w-3 h-3 text-[#666666]" />
-                              <span className="text-sm">{item.personnesContact[0].email || '-'}</span>
+                              <span className="text-sm">{personaPrincipal.email || '-'}</span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Phone className="w-3 h-3 text-[#666666]" />
-                              <span className="text-sm">{item.personnesContact[0].telephone || '-'}</span>
+                              <span className="text-sm">{personaPrincipal.telephone || '-'}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -1136,6 +1187,9 @@ export function GestionDonateursFournisseurs() {
                               </Button>
                             </div>
                           </TableCell>
+                              </>
+                            );
+                          })()}
                         </TableRow>
                       ))
                     )}

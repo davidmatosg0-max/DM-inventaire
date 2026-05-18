@@ -1,5 +1,8 @@
 import { obtenerDepartamentos } from './departamentosStorage';
 
+const normalizarClaveEmpresa = (valor?: string): string =>
+  String(valor || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
 export type TipoContacto = 'donador' | 'fournisseur' | 'benevole' | 'responsable-sante' | 'partenaire' | 'visiteur' | 'employe' | 'transportista';
 export type IdiomaContacto = 'es' | 'fr' | 'en' | 'ar';
 export type GeneroContacto = 'Homme' | 'Femme' | 'Autre' | 'Non spécifié';
@@ -798,9 +801,10 @@ export function sincronizarDonateursFournisseurs(): { sincronizados: number; err
 
     donateurs.forEach(donateur => {
       try {
+        const claveEmpresaDonateur = normalizarClaveEmpresa(donateur.nomEntreprise);
         // Buscar si ya existe un contacto con este ID o nombre de empresa
         const contactoExistente = contactosExistentes.find(
-          c => c.id === donateur.id || c.nombreEmpresa === donateur.nomEntreprise
+          c => c.id === donateur.id || normalizarClaveEmpresa(c.nombreEmpresa) === claveEmpresaDonateur
         );
 
         if (contactoExistente) {
