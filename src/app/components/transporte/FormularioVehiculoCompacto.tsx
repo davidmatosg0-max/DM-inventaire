@@ -3,12 +3,7 @@ import { useBranding } from '../../../hooks/useBranding';
 import {
   Truck,
   Camera,
-  User,
-  Phone,
-  Mail,
-  MapPin,
   Calendar,
-  FileUp,
   Settings,
   FileText,
   Shield,
@@ -24,6 +19,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { useTranslation } from 'react-i18next';
+import { PanelDocumentosAdjuntos } from './PanelDocumentosAdjuntos';
 
 interface FormVehiculoData {
   placa: string;
@@ -395,22 +391,13 @@ export function FormularioVehiculoCompacto({
                         rows={6}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="documentos" className="text-xs">
-                        <FileUp className="w-3 h-3 inline mr-1" />
-                        {t('transport.documents')}
-                      </Label>
-                      <Input
-                        id="documentos"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        multiple
-                        className="h-9"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {t('transport.documentsHint')}
-                      </p>
-                    </div>
+                    <PanelDocumentosAdjuntos
+                      inputId="documentos-vehiculo"
+                      label={t('transport.documents')}
+                      hint={t('transport.documentsHint')}
+                      documentos={formulario.documentos || []}
+                      onChange={(documentos) => setFormulario((current) => ({ ...current, documentos }))}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>

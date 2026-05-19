@@ -3,6 +3,7 @@ const APP_STORAGE_TABLE = 'app_storage';
 
 export const CRITICAL_REMOTE_STORAGE_KEYS = [
   'organismos_banco_alimentos',
+  'recrutement_organismes_banco_alimentos',
   'banco_alimentos_productos',
   'banco_alimentos_entradas_inventario',
   'banco_alimentos_movimientos',

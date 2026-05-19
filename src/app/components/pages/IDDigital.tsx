@@ -299,13 +299,14 @@ export function IDDigital() {
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
             <div 
-              className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 flex-shrink-0"
+              className="w-10 h-10 rounded-none flex items-center justify-center overflow-hidden border-2 flex-shrink-0 bg-white"
               style={{ borderColor: branding.primaryColor }}
             >
               {branding.logo ? (
                 <AdaptiveBrandLogo
                   src={branding.logo}
                   alt="Logo"
+                  forceShape="square"
                   wrapperClassName="h-full w-full"
                   borderWidthClassName="border-0"
                   shadowClassName=""

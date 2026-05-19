@@ -13,6 +13,12 @@ import {
   type Organismo,
 } from './organismosStorage';
 import {
+  guardarOrganismoRecrutement,
+  eliminarOrganismoRecrutement,
+  obtenerOrganismosRecrutement,
+  type OrganismoRecrutement,
+} from './recrutementOrganismosStorage';
+import {
   crearVehiculo,
   crearChofer,
   eliminarVehiculo,
@@ -65,6 +71,7 @@ export type ResumenEjemplos = {
   chauffeurs: number;
   camiones: number;
   organismos: number;
+  organismosRecrutement: number;
   productos: number;
   comandas: number;
   movimientos: number;
@@ -80,6 +87,7 @@ export type CantidadesEjemplosFuncionales = {
   chauffeurs: number;
   camiones: number;
   organismos: number;
+  organismosRecrutement: number;
 };
 
 type OpcionesSembradoEjemplos = {
@@ -106,6 +114,7 @@ const CANTIDADES_EJEMPLOS_POR_DEFECTO: CantidadesEjemplosFuncionales = {
   chauffeurs: 2,
   camiones: 2,
   organismos: 12,
+  organismosRecrutement: 4,
 };
 
 function normalizarCantidadEjemplos(valor: number | undefined, fallback: number, maximo = 20): number {
@@ -152,6 +161,10 @@ function resolverCantidadesEjemplos(
     organismos: normalizarCantidadEjemplos(
       opciones?.cantidades?.organismos ?? cantidadOrganismos,
       CANTIDADES_EJEMPLOS_POR_DEFECTO.organismos
+    ),
+    organismosRecrutement: normalizarCantidadEjemplos(
+      opciones?.cantidades?.organismosRecrutement,
+      CANTIDADES_EJEMPLOS_POR_DEFECTO.organismosRecrutement
     ),
   };
 }
@@ -418,6 +431,78 @@ function crearChoferDemoExtra(
   };
 }
 
+function crearOrganismoRecrutementDemoExtra(
+  indice: number,
+): Parameters<typeof guardarOrganismoRecrutement>[0] {
+  const numero = formatearIndiceDemo(indice);
+  const nombres = [
+    'Relance Communautaire',
+    'Tremplin Emploi',
+    'Passerelle Locale',
+    'Carrefour Solidaire',
+    'Cap Avenir',
+    'Mains Ouvertes',
+  ];
+  const enfoques = [
+    'Insertion sociale',
+    'Mentorat jeunesse',
+    'Accompagnement familles',
+    'Soutien aînés',
+    'Intégration citoyenne',
+    'Formation terrain',
+  ];
+  const quartiers = ['Chomedey', 'Pont-Viau', 'Vimont', 'Duvernay', 'Fabreville', 'Auteuil'];
+  const zonas = ['Laval Centre', 'Laval Est', 'Laval Nord', 'Laval Ouest'];
+  const responsables = ['Mélanie Roy', 'Karim Bensaid', 'Nora Garcia', 'Samuel Fortin', 'Lina Haddad', 'Olivier Gagnon'];
+
+  return {
+    id: `QA-DEMO-REC-ORG-AUTO-${numero}`,
+    nombre: `${nombres[indice % nombres.length]} ${numero}`,
+    tipo: enfoques[indice % enfoques.length],
+    email: `qa-demo.rec.organisme.${numero}${DEMO_EMAIL_DOMAIN}`,
+    telefono: `(450) 555-${6200 + indice}`,
+    direccion: `${200 + indice} Rue Démo Recrutement, Laval`,
+    codigoPostal: ['H7N 2P4', 'H7N 5A4', 'H7K 1M8', 'H7E 2B8', 'H7P 3B2', 'H7H 1N4'][indice % 6],
+    quartier: quartiers[indice % quartiers.length],
+    responsable: responsables[indice % responsables.length],
+    beneficiarios: 24 + (indice % 35),
+    activo: true,
+    regular: true,
+    clasificacionOrganismo: 'regular',
+    participantePRS: false,
+    personasServidas: 24 + (indice % 35),
+    cantidadColaciones: 8 + (indice % 14),
+    cantidadAlmuerzos: 4 + (indice % 10),
+    porcentajeReparticion: 4 + (indice % 6),
+    notas: `${DEMO_MARKER} Organisme recrutement généré automatiquement pour ajuster la quantité QA`,
+    notificaciones: true,
+    logo: null,
+    documentosPDF: [],
+    documentoPDF: null,
+    contactosNotificacion: [
+      {
+        nombre: responsables[indice % responsables.length],
+        email: `qa-demo.rec.contact.${numero}${DEMO_EMAIL_DOMAIN}`,
+        cargo: 'Coordination externe',
+        joursDisponibles: [{ jour: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][indice % 5], horaire: indice % 2 === 0 ? 'AM' : 'PM' }],
+        idiomas: indice % 2 === 0 ? ['fr', 'en'] : ['fr', 'es'],
+      },
+    ],
+    contactoCargo: 'Coordination externe',
+    contactoTelefono: `(450) 555-${6200 + indice}`,
+    contactoCellulaire: `(514) 555-${7200 + indice}`,
+    contactoEmail: `qa-demo.rec.contact.${numero}${DEMO_EMAIL_DOMAIN}`,
+    contactoJoursDisponibles: [{ jour: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][indice % 5], horaire: indice % 2 === 0 ? 'AM' : 'PM' }],
+    frecuenciaCita: indice % 2 === 0 ? 'Mensuelle' : 'Bi-hebdomadaire',
+    diaCita: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][indice % 5],
+    horaCita: ['09:00', '10:30', '13:00', '14:30'][indice % 4],
+    fechaInicioInactividad: undefined,
+    fechaFinInactividad: undefined,
+    claveAcceso: undefined,
+    zona: zonas[indice % zonas.length],
+  };
+}
+
 function ajustarContactosDemo(
   cantidades: Pick<
     CantidadesEjemplosFuncionales,
@@ -492,6 +577,12 @@ function esContactoDemo(contacto: ContactoDepartamento): boolean {
 }
 
 function esOrganismoDemo(organismo: Organismo): boolean {
+  return Boolean(
+    organismo.notas?.includes(DEMO_MARKER) || organismo.email?.endsWith(DEMO_EMAIL_DOMAIN)
+  );
+}
+
+function esOrganismoRecrutementDemo(organismo: OrganismoRecrutement): boolean {
   return Boolean(
     organismo.notas?.includes(DEMO_MARKER) || organismo.email?.endsWith(DEMO_EMAIL_DOMAIN)
   );
@@ -612,6 +703,7 @@ function guardarMovimientosDemo(movimientosDemo: MovimientoExtendido[]): void {
 function resumirEjemplos(): ResumenEjemplos {
   const contactos = obtenerContactosDepartamento();
   const organismos = obtenerOrganismos();
+  const organismosRecrutement = obtenerOrganismosRecrutement();
   const vehiculos = obtenerVehiculos();
   const choferes = obtenerChoferes();
   const productos = obtenerProductos();
@@ -643,6 +735,7 @@ function resumirEjemplos(): ResumenEjemplos {
     chauffeurs: choferes.filter(esChoferDemo).length,
     camiones: vehiculos.filter(esVehiculoDemo).length,
     organismos: organismos.filter(esOrganismoDemo).length,
+    organismosRecrutement: organismosRecrutement.filter(esOrganismoRecrutementDemo).length,
     productos: productos.filter(esProductoDemo).length,
     comandas: comandas.filter(esComandaDemo).length,
     movimientos: movimientos.filter(esMovimientoDemo).length,
@@ -662,6 +755,7 @@ function imprimirResumen(accion: string, resumen: ResumenEjemplos) {
   console.log('Contacts comptoir demo visibles en Comptoir para pruebas de accueil y roles.');
   console.log('Chauffeurs y camiones demo visibles en Transporte > Choferes y Vehiculos.');
   console.log('Organismos demo visibles en Organismos/Liaison y como destinos de rutas.');
+  console.log('Organismes recrutement demo visibles en Recrutement > Organismes pour les assignations externes.');
   console.log('Productos, comandas, movimientos y rutas demo dejan los dashboards listos sin carga manual extra.');
   console.groupEnd();
 }
@@ -691,6 +785,10 @@ export function limpiarEjemplosFuncionalesPrueba(): ResumenEjemplos {
 
   obtenerOrganismos().filter(esOrganismoDemo).forEach((organismo) => {
     eliminarOrganismo(organismo.id);
+  });
+
+  obtenerOrganismosRecrutement().filter(esOrganismoRecrutementDemo).forEach((organismo) => {
+    eliminarOrganismoRecrutement(organismo.id);
   });
 
   obtenerContactosDepartamento().filter(esContactoDemo).forEach((contacto) => {
@@ -1759,6 +1857,207 @@ export function sembrarEjemplosFuncionalesPrueba(
       crearOrganismo(organismo);
     });
 
+  const organismosRecrutementDemo: Array<Parameters<typeof guardarOrganismoRecrutement>[0]> = [
+    {
+      id: 'QA-DEMO-REC-ORG-001',
+      nombre: 'Maison Relance Jeunesse Laval',
+      tipo: 'Programme jeunesse',
+      email: 'relance.jeunesse@demo.qa.local',
+      telefono: '(450) 555-6101',
+      direccion: '210 Rue des Érables, Laval',
+      codigoPostal: 'H7N 2P4',
+      quartier: 'Chomedey',
+      responsable: 'Myriam Saad',
+      beneficiarios: 42,
+      activo: true,
+      regular: true,
+      clasificacionOrganismo: 'regular',
+      participantePRS: false,
+      personasServidas: 42,
+      cantidadColaciones: 18,
+      cantidadAlmuerzos: 12,
+      porcentajeReparticion: 8,
+      notas: `${DEMO_MARKER} Organisme recrutement pour tester les assignations bénévoles externes`,
+      notificaciones: true,
+      logo: null,
+      documentosPDF: [],
+      documentoPDF: null,
+      contactosNotificacion: [
+        {
+          nombre: 'Myriam Saad',
+          email: 'myriam.saad@demo.qa.local',
+          cargo: 'Coordination recrutement',
+          joursDisponibles: [{ jour: 'Lundi', horaire: 'AM/PM' }],
+          idiomas: ['fr', 'ar'],
+        },
+      ],
+      contactoCargo: 'Coordination recrutement',
+      contactoTelefono: '(450) 555-6101',
+      contactoCellulaire: '(514) 555-7101',
+      contactoEmail: 'myriam.saad@demo.qa.local',
+      contactoJoursDisponibles: [{ jour: 'Lundi', horaire: 'AM/PM' }],
+      frecuenciaCita: 'Mensuelle',
+      diaCita: 'Lundi',
+      horaCita: '09:00',
+      fechaInicioInactividad: undefined,
+      fechaFinInactividad: undefined,
+      claveAcceso: undefined,
+      zona: 'Laval Centre',
+    },
+    {
+      id: 'QA-DEMO-REC-ORG-002',
+      nombre: 'Centre Horizons Carrière',
+      tipo: 'Insertion professionnelle',
+      email: 'horizons.carriere@demo.qa.local',
+      telefono: '(450) 555-6102',
+      direccion: '88 Boulevard Cartier Ouest, Laval',
+      codigoPostal: 'H7N 5A4',
+      quartier: 'Pont-Viau',
+      responsable: 'Julien Tremblay',
+      beneficiarios: 37,
+      activo: true,
+      regular: true,
+      clasificacionOrganismo: 'regular',
+      participantePRS: false,
+      personasServidas: 37,
+      cantidadColaciones: 10,
+      cantidadAlmuerzos: 6,
+      porcentajeReparticion: 6,
+      notas: `${DEMO_MARKER} Organisme recrutement orienté mentorat et intégration externe`,
+      notificaciones: true,
+      logo: null,
+      documentosPDF: [],
+      documentoPDF: null,
+      contactosNotificacion: [
+        {
+          nombre: 'Julien Tremblay',
+          email: 'julien.tremblay@demo.qa.local',
+          cargo: 'Responsable partenariats',
+          joursDisponibles: [{ jour: 'Mercredi', horaire: 'PM' }],
+          idiomas: ['fr', 'en'],
+        },
+      ],
+      contactoCargo: 'Responsable partenariats',
+      contactoTelefono: '(450) 555-6102',
+      contactoCellulaire: '(514) 555-7102',
+      contactoEmail: 'julien.tremblay@demo.qa.local',
+      contactoJoursDisponibles: [{ jour: 'Mercredi', horaire: 'PM' }],
+      frecuenciaCita: 'Bi-hebdomadaire',
+      diaCita: 'Mercredi',
+      horaCita: '13:30',
+      fechaInicioInactividad: undefined,
+      fechaFinInactividad: undefined,
+      claveAcceso: undefined,
+      zona: 'Laval Est',
+    },
+    {
+      id: 'QA-DEMO-REC-ORG-003',
+      nombre: 'Passerelle Femmes Laval',
+      tipo: 'Soutien communautaire',
+      email: 'passerelle.femmes@demo.qa.local',
+      telefono: '(450) 555-6103',
+      direccion: '540 Avenue Ampère, Laval',
+      codigoPostal: 'H7N 6E2',
+      quartier: 'Laval-des-Rapides',
+      responsable: 'Sonia El Idrissi',
+      beneficiarios: 29,
+      activo: true,
+      regular: true,
+      clasificacionOrganismo: 'regular',
+      participantePRS: false,
+      personasServidas: 29,
+      cantidadColaciones: 14,
+      cantidadAlmuerzos: 8,
+      porcentajeReparticion: 5,
+      notas: `${DEMO_MARKER} Organisme recrutement pour scénarios de bénévolat externe spécialisé`,
+      notificaciones: true,
+      logo: null,
+      documentosPDF: [],
+      documentoPDF: null,
+      contactosNotificacion: [
+        {
+          nombre: 'Sonia El Idrissi',
+          email: 'sonia.elidrissi@demo.qa.local',
+          cargo: 'Coordination terrain',
+          joursDisponibles: [{ jour: 'Jeudi', horaire: 'AM' }],
+          idiomas: ['fr', 'ar'],
+        },
+      ],
+      contactoCargo: 'Coordination terrain',
+      contactoTelefono: '(450) 555-6103',
+      contactoCellulaire: '(514) 555-7103',
+      contactoEmail: 'sonia.elidrissi@demo.qa.local',
+      contactoJoursDisponibles: [{ jour: 'Jeudi', horaire: 'AM' }],
+      frecuenciaCita: 'Hebdomadaire',
+      diaCita: 'Jeudi',
+      horaCita: '10:00',
+      fechaInicioInactividad: undefined,
+      fechaFinInactividad: undefined,
+      claveAcceso: undefined,
+      zona: 'Laval Centre',
+    },
+    {
+      id: 'QA-DEMO-REC-ORG-004',
+      nombre: 'Réseau Aînés Solidaires Vimont',
+      tipo: 'Accompagnement aînés',
+      email: 'aines.vimont@demo.qa.local',
+      telefono: '(450) 555-6104',
+      direccion: '125 Rue de la Concorde, Laval',
+      codigoPostal: 'H7K 1M8',
+      quartier: 'Vimont',
+      responsable: 'Claire Morissette',
+      beneficiarios: 33,
+      activo: true,
+      regular: true,
+      clasificacionOrganismo: 'regular',
+      participantePRS: false,
+      personasServidas: 33,
+      cantidadColaciones: 9,
+      cantidadAlmuerzos: 5,
+      porcentajeReparticion: 4,
+      notas: `${DEMO_MARKER} Organisme recrutement pour affectations bénévoles auprès des aînés`,
+      notificaciones: true,
+      logo: null,
+      documentosPDF: [],
+      documentoPDF: null,
+      contactosNotificacion: [
+        {
+          nombre: 'Claire Morissette',
+          email: 'claire.morissette@demo.qa.local',
+          cargo: 'Responsable accompagnement',
+          joursDisponibles: [{ jour: 'Vendredi', horaire: 'AM/PM' }],
+          idiomas: ['fr'],
+        },
+      ],
+      contactoCargo: 'Responsable accompagnement',
+      contactoTelefono: '(450) 555-6104',
+      contactoCellulaire: '(514) 555-7104',
+      contactoEmail: 'claire.morissette@demo.qa.local',
+      contactoJoursDisponibles: [{ jour: 'Vendredi', horaire: 'AM/PM' }],
+      frecuenciaCita: 'Mensuelle',
+      diaCita: 'Vendredi',
+      horaCita: '11:00',
+      fechaInicioInactividad: undefined,
+      fechaFinInactividad: undefined,
+      claveAcceso: undefined,
+      zona: 'Laval Nord',
+    },
+  ];
+
+  organismosRecrutementDemo
+    .slice(0, Math.max(0, Math.min(cantidades.organismosRecrutement, organismosRecrutementDemo.length)))
+    .forEach((organismo) => {
+      guardarOrganismoRecrutement(organismo);
+    });
+
+  for (
+    let indice = organismosRecrutementDemo.length;
+    indice < cantidades.organismosRecrutement;
+    indice += 1
+  ) {
+    guardarOrganismoRecrutement(crearOrganismoRecrutementDemoExtra(indice));
+  }
+
   let camionSeco: Vehiculo | null = null;
   if (cantidades.camiones > 0) {
     camionSeco = crearVehiculo({
@@ -2284,6 +2583,9 @@ function necesitaActualizarTextosDemoPersistidos(): boolean {
     obtenerOrganismos().some(
       (organismo) => esOrganismoDemo(organismo) && organismoDemoTieneLegacy(organismo)
     ) ||
+    obtenerOrganismosRecrutement().some(
+      (organismo) => esOrganismoRecrutementDemo(organismo) && organismoDemoTieneLegacy(organismo)
+    ) ||
     obtenerVehiculos().some(
       (vehiculo) => esVehiculoDemo(vehiculo) && vehiculoDemoTieneLegacy(vehiculo)
     ) ||
@@ -2305,9 +2607,15 @@ function sincronizarTextosDemoPersistidosSiHaceFalta(): void {
   }
 
   const cantidadOrganismosDemo = obtenerOrganismos().filter(esOrganismoDemo).length;
+  const cantidadOrganismosRecrutementDemo = obtenerOrganismosRecrutement().filter(esOrganismoRecrutementDemo).length;
   sembrarEjemplosFuncionalesPrueba(
     cantidadOrganismosDemo > 0 ? cantidadOrganismosDemo : 12,
-    { silent: true }
+    {
+      silent: true,
+      cantidades: {
+        organismosRecrutement: cantidadOrganismosRecrutementDemo > 0 ? cantidadOrganismosRecrutementDemo : CANTIDADES_EJEMPLOS_POR_DEFECTO.organismosRecrutement,
+      },
+    }
   );
 }
 

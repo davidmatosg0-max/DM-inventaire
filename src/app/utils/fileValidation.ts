@@ -67,7 +67,7 @@ export function validateImageFile(
 export function validateDocumentFile(
   file: File,
   allowedTypes: string[] = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'],
-  maxSize: number = MAX_DOCUMENT_SIZE
+  maxSize?: number | null
 ): boolean {
   if (!file) return false;
 
@@ -81,7 +81,7 @@ export function validateDocumentFile(
   }
 
   // Validar tamaño
-  if (file.size > maxSize) {
+  if (typeof maxSize === 'number' && Number.isFinite(maxSize) && maxSize > 0 && file.size > maxSize) {
     toast.error(
       `Fichier trop grand (${formatFileSize(file.size)}). Maximum: ${formatFileSize(maxSize)}`
     );

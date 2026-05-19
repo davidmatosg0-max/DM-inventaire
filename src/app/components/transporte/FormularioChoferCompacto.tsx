@@ -8,7 +8,6 @@ import {
   Mail,
   MapPin,
   Calendar,
-  FileUp,
   Settings,
   FileText,
   Shield,
@@ -26,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AddressAutocomplete } from '../ui/address-autocomplete';
 import { Checkbox } from '../ui/checkbox';
 import { useTranslation } from 'react-i18next';
+import { PanelDocumentosAdjuntos } from './PanelDocumentosAdjuntos';
 
 interface FormChoferData {
   nombre: string;
@@ -453,22 +453,13 @@ export function FormularioChoferCompacto({
                         rows={6}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="documentos" className="text-xs">
-                        <FileUp className="w-3 h-3 inline mr-1" />
-                        {t('transport.documents')}
-                      </Label>
-                      <Input
-                        id="documentos"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        multiple
-                        className="h-9"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {t('transport.documentsHint')}
-                      </p>
-                    </div>
+                    <PanelDocumentosAdjuntos
+                      inputId="documentos-chofer"
+                      label={t('transport.documents')}
+                      hint={t('transport.documentsHint')}
+                      documentos={formulario.documentos || []}
+                      onChange={(documentos) => setFormulario((current) => ({ ...current, documentos }))}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>

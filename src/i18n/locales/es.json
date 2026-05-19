@@ -364,7 +364,7 @@
       "rejected": "Rechazado"
     },
     "candidates": {
-      "searchPlaceholder": "Buscar por nombre, cargo o correo...",
+      "searchPlaceholder": "Buscar por nombre, cargo, correo o numero de archivo...",
       "filterByStatus": "Filtrar por estado",
       "newCandidate": "Nueva candidatura",
       "assignedDepartments": "Departamentos:",

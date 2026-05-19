@@ -78,6 +78,7 @@ export interface ContactoDepartamento {
     tipoBgColor?: string; // Color de fondo del tipo
     tipoIcon?: string; // Icono del tipo
     url: string; // Base64 o URL
+    sizeBytes?: number; // Tamaño original del archivo
     date: string; // Fecha de subida
   }[]; // Documentos estandarizados
   // Casier judiciaire et éthique

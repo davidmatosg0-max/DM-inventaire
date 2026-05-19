@@ -5,6 +5,10 @@ import { notificarCambioOrganismo } from './organismoEvents';
 import { registrarActividad } from './actividadLogger';
 import { queueStorageSync } from './cloudPersistence';
 import { generarClaveAccesoUnica, normalizarClaveAcceso } from './claveAcceso';
+import {
+  eliminarContenidosDocumentoPdfOrganismo,
+  esReferenciaDocumentoPdfOrganismo,
+} from './organismoPdfIndexedDb';
 
 export interface JourDisponible {
   jour: string;
@@ -180,6 +184,12 @@ function sanitizarOrganismo(organismo: Organismo): Organismo {
   };
 }
 
+function obtenerReferenciasExternasPdf(documentosPDF: DocumentoPdfOrganismo[] | undefined): string[] {
+  return (documentosPDF || [])
+    .map((documento) => String(documento?.contenido || '').trim())
+    .filter((contenido) => esReferenciaDocumentoPdfOrganismo(contenido));
+}
+
 function tieneClaveAccesoDuplicada(organismos: Organismo[], claveAcceso?: string, organismoId?: string): boolean {
   const claveNormalizada = normalizarClaveAcceso(claveAcceso || '');
 
@@ -313,10 +323,16 @@ export function actualizarOrganismo(id: string, datos: Partial<Organismo>): Orga
   const organismosActualizados = [...organismos];
   organismosActualizados[index] = organismoActualizado;
   organismos[index] = organismoActualizado;
+
+  const referenciasEliminadas = obtenerReferenciasExternasPdf(organismoAnterior.documentosPDF)
+    .filter((referencia) => !obtenerReferenciasExternasPdf(organismoActualizado.documentosPDF).includes(referencia));
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(organismos));
   queueStorageSync(STORAGE_KEY);
   notificarCambioOrganismo('UPDATED', organismos[index].id);
+  if (referenciasEliminadas.length > 0) {
+    void eliminarContenidosDocumentoPdfOrganismo(referenciasEliminadas);
+  }
   
   // Registrar actividad con cambios
   const cambios = [];
@@ -350,6 +366,9 @@ export function eliminarOrganismo(id: string): boolean {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevosOrganismos));
   queueStorageSync(STORAGE_KEY);
   notificarCambioOrganismo('DELETED', id);
+  if (organismoEliminar?.documentosPDF?.length) {
+    void eliminarContenidosDocumentoPdfOrganismo(obtenerReferenciasExternasPdf(organismoEliminar.documentosPDF));
+  }
   
   // Registrar actividad
   if (organismoEliminar) {

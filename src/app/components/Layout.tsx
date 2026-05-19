@@ -690,6 +690,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                   <AdaptiveBrandLogo
                     src={branding.logo}
                     alt={t('common.logo')}
+                    forceShape="square"
                     wrapperClassName="h-7 w-7 flex-shrink-0 sm:h-9 sm:w-9"
                     glowColor={branding.secondaryColor}
                     glowClassName="blur-md opacity-50"

@@ -18,6 +18,13 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useBranding } from '../../../hooks/useBranding';
 import { obtenerErroresFormularioOrganismo } from '../../utils/organismoForm';
+import {
+  crearReferenciaDocumentoPdfOrganismo,
+  eliminarContenidoDocumentoPdfOrganismo,
+  esReferenciaDocumentoPdfOrganismo,
+  guardarContenidoDocumentoPdfOrganismo,
+  obtenerContenidoDocumentoPdfOrganismo,
+} from '../../utils/organismoPdfIndexedDb';
 import type { DocumentoPdfOrganismo } from '../../utils/organismosStorage';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
@@ -38,6 +45,8 @@ interface FormularioOrganismoCompactoProps {
   setFormulario: React.Dispatch<React.SetStateAction<any>>;
   modoEdicion: boolean;
   modoVisualizacion?: boolean;
+  ocultarPestanaServicios?: boolean;
+  soloClasificacionRegular?: boolean;
   onGuardar: () => void;
   tiposOrganismo: { id: string; nombre: string; icono: string }[];
 }
@@ -60,8 +69,6 @@ const quartiersLaval = [
 ];
 
 const joursCita = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-const MAX_PDF_SIZE_BYTES = 2 * 1024 * 1024;
-const MAX_TOTAL_PDF_SIZE_BYTES = 3 * 1024 * 1024;
 const optionsPosteContact = [
   'Direction',
   'Coordination',
@@ -84,7 +91,11 @@ function generarIdDocumentoPdf(): string {
 }
 
 function esDocumentoPdfIntegrado(documento: DocumentoPdfOrganismo): boolean {
-  return typeof documento.contenido === 'string' && documento.contenido.startsWith('data:application/pdf');
+  return typeof documento.contenido === 'string'
+    && (
+      documento.contenido.startsWith('data:application/pdf')
+      || esReferenciaDocumentoPdfOrganismo(documento.contenido)
+    );
 }
 
 function convertirDataUrlPdfABlob(dataUrl: string): Blob {
@@ -108,8 +119,30 @@ function convertirDataUrlPdfABlob(dataUrl: string): Blob {
   return new Blob([decodeURIComponent(data)], { type: 'application/pdf' });
 }
 
-function crearBlobUrlPdf(documento: DocumentoPdfOrganismo): string {
-  return URL.createObjectURL(convertirDataUrlPdfABlob(documento.contenido));
+async function obtenerContenidoPdf(documento: DocumentoPdfOrganismo): Promise<string | null> {
+  if (typeof documento.contenido !== 'string') {
+    return null;
+  }
+
+  if (documento.contenido.startsWith('data:application/pdf')) {
+    return documento.contenido;
+  }
+
+  if (esReferenciaDocumentoPdfOrganismo(documento.contenido)) {
+    return obtenerContenidoDocumentoPdfOrganismo(documento.contenido);
+  }
+
+  return null;
+}
+
+async function crearBlobUrlPdf(documento: DocumentoPdfOrganismo): Promise<string> {
+  const contenido = await obtenerContenidoPdf(documento);
+
+  if (!contenido) {
+    throw new Error('PDF indisponible');
+  }
+
+  return URL.createObjectURL(convertirDataUrlPdfABlob(contenido));
 }
 
 function formatearTamanoArchivo(bytes: number): string {
@@ -131,6 +164,8 @@ export function FormularioOrganismoCompacto({
   setFormulario,
   modoEdicion,
   modoVisualizacion = false,
+  ocultarPestanaServicios = false,
+  soloClasificacionRegular = false,
   onGuardar,
   tiposOrganismo,
 }: FormularioOrganismoCompactoProps) {
@@ -141,6 +176,9 @@ export function FormularioOrganismoCompacto({
   const esConsulta = modoVisualizacion;
 
   const tipoSeleccionado = tiposOrganismo.find((tipo) => tipo.nombre === formulario.tipo);
+  const clasificacionOrganismoSeleccionada = soloClasificacionRegular
+    ? 'regular'
+    : (formulario.clasificacionOrganismo || 'regular');
   const erroresValidacion = obtenerErroresFormularioOrganismo(formulario);
   const formularioValido = erroresValidacion.length === 0;
   const documentosPDF = Array.isArray(formulario.documentosPDF) ? formulario.documentosPDF : [];
@@ -189,7 +227,6 @@ export function FormularioOrganismoCompacto({
     }
 
     const archivosValides: File[] = [];
-    let tailleCumulee = totalTamanoPdf;
 
     files.forEach((file) => {
       if (file.type !== 'application/pdf') {
@@ -197,21 +234,6 @@ export function FormularioOrganismoCompacto({
         return;
       }
 
-      if (file.size > MAX_PDF_SIZE_BYTES) {
-        toast.error(`Le fichier ${file.name} est trop volumineux.`, {
-          description: 'La taille maximale autorisee est de 2 Mo par PDF.',
-        });
-        return;
-      }
-
-      if (tailleCumulee + file.size > MAX_TOTAL_PDF_SIZE_BYTES) {
-        toast.error('La limite totale des PDF serait depassee.', {
-          description: 'La taille cumulee des PDF ne peut pas depasser 3 Mo pour le stockage local.',
-        });
-        return;
-      }
-
-      tailleCumulee += file.size;
       archivosValides.push(file);
     });
 
@@ -225,13 +247,22 @@ export function FormularioOrganismoCompacto({
         (file): Promise<DocumentoPdfOrganismo> =>
           new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onloadend = () => {
-              resolve({
-                id: generarIdDocumentoPdf(),
-                nombre: file.name,
-                contenido: reader.result as string,
-                tamanoBytes: file.size,
-              });
+            const documentoId = generarIdDocumentoPdf();
+
+            reader.onloadend = async () => {
+              try {
+                const contenido = reader.result as string;
+                await guardarContenidoDocumentoPdfOrganismo(documentoId, contenido);
+
+                resolve({
+                  id: documentoId,
+                  nombre: file.name,
+                  contenido: crearReferenciaDocumentoPdfOrganismo(documentoId),
+                  tamanoBytes: file.size,
+                });
+              } catch (error) {
+                reject(error instanceof Error ? error : new Error(file.name));
+              }
             };
             reader.onerror = () => reject(new Error(file.name));
             reader.readAsDataURL(file);
@@ -239,19 +270,22 @@ export function FormularioOrganismoCompacto({
       ),
     )
       .then((nuevosDocumentos) => {
-        actualizarFormulario({
-          documentosPDF: [...documentosPDF, ...nuevosDocumentos],
-        });
+        setFormulario((prev: any) => ({
+          ...prev,
+          documentosPDF: [...(Array.isArray(prev.documentosPDF) ? prev.documentosPDF : []), ...nuevosDocumentos],
+        }));
       })
       .catch(() => {
-        toast.error('Impossible de charger un ou plusieurs documents PDF.');
+        toast.error('Impossible de charger un ou plusieurs documents PDF.', {
+          description: 'Le document n\'a pas pu etre stocke localement pour cette fiche.',
+        });
       })
       .finally(() => {
         event.target.value = '';
       });
   };
 
-  const handleAbrirPdf = (documento: DocumentoPdfOrganismo) => {
+  const handleAbrirPdf = async (documento: DocumentoPdfOrganismo) => {
     if (!esDocumentoPdfIntegrado(documento)) {
       toast.error('Aucun PDF integre disponible pour l\'ouverture.');
       return;
@@ -260,7 +294,7 @@ export function FormularioOrganismoCompacto({
     let blobUrl = '';
 
     try {
-      blobUrl = crearBlobUrlPdf(documento);
+      blobUrl = await crearBlobUrlPdf(documento);
     } catch {
       toast.error('Impossible de preparer le PDF pour l\'ouverture.');
       return;
@@ -276,7 +310,7 @@ export function FormularioOrganismoCompacto({
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
   };
 
-  const handleDescargarPdf = (documento: DocumentoPdfOrganismo, index: number) => {
+  const handleDescargarPdf = async (documento: DocumentoPdfOrganismo, index: number) => {
     if (!esDocumentoPdfIntegrado(documento)) {
       toast.error('Aucun PDF integre disponible pour le telechargement.');
       return;
@@ -285,7 +319,7 @@ export function FormularioOrganismoCompacto({
     let blobUrl = '';
 
     try {
-      blobUrl = crearBlobUrlPdf(documento);
+      blobUrl = await crearBlobUrlPdf(documento);
     } catch {
       toast.error('Impossible de preparer le PDF pour le telechargement.');
       return;
@@ -301,6 +335,12 @@ export function FormularioOrganismoCompacto({
   };
 
   const handleRetirerPdf = (documentoId: string) => {
+    const documentoARetirer = documentosPDF.find((documento: DocumentoPdfOrganismo) => documento.id === documentoId);
+
+    if (documentoARetirer?.contenido && esReferenciaDocumentoPdfOrganismo(documentoARetirer.contenido)) {
+      void eliminarContenidoDocumentoPdfOrganismo(documentoARetirer.contenido);
+    }
+
     actualizarFormulario({
       documentosPDF: documentosPDF.filter((documento: DocumentoPdfOrganismo) => documento.id !== documentoId),
     });
@@ -377,7 +417,7 @@ export function FormularioOrganismoCompacto({
                     ) : null}
                   </div>
                   <div className="flex flex-col items-center gap-4">
-                    <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-3xl border-4 bg-[#f7fafc]" style={{ borderColor: `${branding.primaryColor}30` }}>
+                    <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-none border-4 bg-[#f7fafc]" style={{ borderColor: `${branding.primaryColor}30` }}>
                       {formulario.logo ? (
                         <img src={formulario.logo} alt="Logo" className="h-full w-full object-contain p-3" />
                       ) : (
@@ -433,7 +473,9 @@ export function FormularioOrganismoCompacto({
                 <TabsList className="h-auto justify-start gap-1 overflow-x-auto rounded-none border-b border-[#dbe6f0] bg-white/75 px-3 py-2 sm:px-6">
                   <TabsTrigger value="base" className="rounded-xl"><Building2 className="mr-2 h-4 w-4" />{t('organisms.basicInfo')}</TabsTrigger>
                   <TabsTrigger value="contact" className="rounded-xl"><Phone className="mr-2 h-4 w-4" />{t('organisms.contact')}</TabsTrigger>
-                  <TabsTrigger value="services" className="rounded-xl"><Users className="mr-2 h-4 w-4" />{t('organisms.services')}</TabsTrigger>
+                  {!ocultarPestanaServicios ? (
+                    <TabsTrigger value="services" className="rounded-xl"><Users className="mr-2 h-4 w-4" />{t('organisms.services')}</TabsTrigger>
+                  ) : null}
                   <TabsTrigger value="notifications" className="rounded-xl"><Bell className="mr-2 h-4 w-4" />{t('organisms.notifications')}</TabsTrigger>
                   <TabsTrigger value="notes" className="rounded-xl"><Settings className="mr-2 h-4 w-4" />{t('organisms.other')}</TabsTrigger>
                 </TabsList>
@@ -499,14 +541,14 @@ export function FormularioOrganismoCompacto({
                       <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-4">
                         <div>
                           <Label className="text-xs">Classification</Label>
-                          <Select value={formulario.clasificacionOrganismo || 'regular'} onValueChange={(value) => actualizarFormulario({ clasificacionOrganismo: value, regular: value !== 'eventual' })} disabled={esConsulta}>
+                          <Select value={clasificacionOrganismoSeleccionada} onValueChange={(value) => actualizarFormulario({ clasificacionOrganismo: value, regular: value !== 'eventual' })} disabled={esConsulta || soloClasificacionRegular}>
                             <SelectTrigger className="mt-2 h-11 rounded-2xl border-[#dbe6f0]">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="regular">Regulier</SelectItem>
-                              <SelectItem value="collation">Collation</SelectItem>
-                              <SelectItem value="eventual">Eventuel</SelectItem>
+                              {!soloClasificacionRegular ? <SelectItem value="collation">Collation</SelectItem> : null}
+                              {!soloClasificacionRegular ? <SelectItem value="eventual">Eventuel</SelectItem> : null}
                             </SelectContent>
                           </Select>
                         </div>
@@ -619,42 +661,44 @@ export function FormularioOrganismoCompacto({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="services" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-                  <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
-                    <div className="grid gap-4 lg:grid-cols-3">
-                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
-                        <Label htmlFor="beneficiarios" className="text-xs">{t('organisms.beneficiaries')}</Label>
-                        <QuantityInput id="beneficiarios" value={formulario.beneficiarios || 0} onChangeText={(value) => actualizarFormulario({ beneficiarios: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
+                {!ocultarPestanaServicios ? (
+                  <TabsContent value="services" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                    <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
+                      <div className="grid gap-4 lg:grid-cols-3">
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                          <Label htmlFor="beneficiarios" className="text-xs">{t('organisms.beneficiaries')}</Label>
+                          <QuantityInput id="beneficiarios" value={formulario.beneficiarios || 0} onChangeText={(value) => actualizarFormulario({ beneficiarios: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
+                        </div>
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                          <Label htmlFor="personas-servidas" className="text-xs">{t('organisms.peopleServed')}</Label>
+                          <QuantityInput id="personas-servidas" value={formulario.personasServidas || 0} onChangeText={(value) => actualizarFormulario({ personasServidas: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
+                        </div>
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                          <Label htmlFor="porcentaje" className="text-xs">{t('organisms.distributionPercentage')}</Label>
+                          <Input id="porcentaje" type="number" min="0" max="100" value={formulario.porcentajeReparticion || 0} onChange={(event) => actualizarFormulario({ porcentajeReparticion: Math.max(0, Math.min(100, parseInt(event.target.value, 10) || 0)) })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
+                        </div>
                       </div>
-                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
-                        <Label htmlFor="personas-servidas" className="text-xs">{t('organisms.peopleServed')}</Label>
-                        <QuantityInput id="personas-servidas" value={formulario.personasServidas || 0} onChangeText={(value) => actualizarFormulario({ personasServidas: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
-                      </div>
-                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
-                        <Label htmlFor="porcentaje" className="text-xs">{t('organisms.distributionPercentage')}</Label>
-                        <Input id="porcentaje" type="number" min="0" max="100" value={formulario.porcentajeReparticion || 0} onChange={(event) => actualizarFormulario({ porcentajeReparticion: Math.max(0, Math.min(100, parseInt(event.target.value, 10) || 0)) })} className="mt-2 h-10 rounded-2xl border-[#dbe6f0]" />
-                      </div>
-                    </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
-                        <Label htmlFor="colaciones" className="text-xs">{t('organisms.snacks')}</Label>
-                        <QuantityInput id="colaciones" value={formulario.cantidadColaciones || 0} onChangeText={(value) => actualizarFormulario({ cantidadColaciones: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                          <Label htmlFor="colaciones" className="text-xs">{t('organisms.snacks')}</Label>
+                          <QuantityInput id="colaciones" value={formulario.cantidadColaciones || 0} onChangeText={(value) => actualizarFormulario({ cantidadColaciones: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
+                        </div>
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                          <Label htmlFor="almuerzos" className="text-xs">{t('organisms.lunches')}</Label>
+                          <QuantityInput id="almuerzos" value={formulario.cantidadAlmuerzos || 0} onChangeText={(value) => actualizarFormulario({ cantidadAlmuerzos: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
+                        </div>
                       </div>
-                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
-                        <Label htmlFor="almuerzos" className="text-xs">{t('organisms.lunches')}</Label>
-                        <QuantityInput id="almuerzos" value={formulario.cantidadAlmuerzos || 0} onChangeText={(value) => actualizarFormulario({ cantidadAlmuerzos: parseQuantityText(value, false) || 0 })} min={0} step={1} wrapperClassName="mt-2" className="h-10 rounded-2xl border-[#dbe6f0]" buttonClassName="h-10 w-10 border-[#dbe6f0]" />
-                      </div>
-                    </div>
 
-                    <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
-                      <div className="flex items-center gap-3 rounded-2xl bg-[#f8fbff] px-3 py-3">
-                        <Checkbox id="prs-participant" checked={!!formulario.participantePRS} onCheckedChange={(checked) => actualizarFormulario({ participantePRS: checked as boolean })} />
-                        <Label htmlFor="prs-participant" className="cursor-pointer text-sm">{t('organisms.prsParticipant')}</Label>
+                      <div className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-3 rounded-2xl bg-[#f8fbff] px-3 py-3">
+                          <Checkbox id="prs-participant" checked={!!formulario.participantePRS} onCheckedChange={(checked) => actualizarFormulario({ participantePRS: checked as boolean })} />
+                          <Label htmlFor="prs-participant" className="cursor-pointer text-sm">{t('organisms.prsParticipant')}</Label>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TabsContent>
+                  </TabsContent>
+                ) : null}
 
                 <TabsContent value="notifications" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
                   <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>
@@ -748,7 +792,7 @@ export function FormularioOrganismoCompacto({
                                 </div>
                                 {documentoIntegre ? (
                                   <p className="mt-2 text-xs text-[#5d7185]">
-                                    PDF conserve localement avec la fiche organisme{documento.tamanoBytes > 0 ? ` • ${formatearTamanoArchivo(documento.tamanoBytes)}` : ''}.
+                                    PDF disponible pour cette fiche{documento.tamanoBytes > 0 ? ` • ${formatearTamanoArchivo(documento.tamanoBytes)}` : ''}.
                                   </p>
                                 ) : null}
                                 {documentoHeredado ? (
@@ -761,7 +805,7 @@ export function FormularioOrganismoCompacto({
                           <Input value="" readOnly placeholder="Aucun document selectionne" className="h-10 rounded-2xl border-[#dbe6f0] bg-white" />
                         )}
                       </div>
-                      <p className="mt-3 text-xs text-[#5d7185]">Taille maximale recommandee: 2 Mo par PDF et 3 Mo au total pour le stockage local.</p>
+                      <p className="mt-3 text-xs text-[#5d7185]">Vous pouvez ajouter plusieurs PDF. L\'espace utilise est calcule automatiquement pour cette fiche.</p>
                     </div>
                   </div>
                 </TabsContent>

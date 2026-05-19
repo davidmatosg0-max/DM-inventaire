@@ -366,7 +366,7 @@
       "rejected": "مرفوض"
     },
     "candidates": {
-      "searchPlaceholder": "ابحث بالاسم أو المنصب أو البريد الإلكتروني...",
+      "searchPlaceholder": "ابحث بالاسم أو المنصب أو البريد الإلكتروني أو رقم الملف...",
       "filterByStatus": "التصفية حسب الحالة",
       "newCandidate": "ترشيح جديد",
       "assignedDepartments": "الأقسام:",

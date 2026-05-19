@@ -9,6 +9,10 @@ import type {
   GeneroContacto,
   IdiomaContacto
 } from './contactosDepartamentoStorage';
+import {
+  eliminarContenidosDocumentoCandidato,
+  esReferenciaDocumentoCandidato,
+} from './candidatoDocumentoIndexedDb';
 
 const STORAGE_KEY = 'banqueAlimentaire_candidatos_recrutement';
 
@@ -59,6 +63,13 @@ export interface Candidato {
   foto?: string;
   documents?: ContactoDepartamento['documents'];
   feuillesTemps?: FeuilleTiempoCandidato[];
+  organismosAcreditadosIds?: string[];
+}
+
+function obtenerReferenciasExternasDocumentos(documentos?: ContactoDepartamento['documents']): string[] {
+  return (documentos || [])
+    .map((documento) => documento.url)
+    .filter((url): url is string => esReferenciaDocumentoCandidato(url));
 }
 
 /**
@@ -171,12 +182,17 @@ export function actualizarCandidato(id: number, datos: Partial<Candidato>): Cand
   
   // ✅ IMPORTANTE: Preservar TODOS los campos existentes antes de actualizar
   const candidatoAnterior = { ...candidatos[index] };
+  const referenciasAnteriores = obtenerReferenciasExternasDocumentos(candidatoAnterior.documents);
   
   // ✅ Actualizar el candidato preservando todos los campos existentes
   candidatos[index] = {
     ...candidatoAnterior,
     ...datos
   };
+  const referenciasActuales = obtenerReferenciasExternasDocumentos(candidatos[index].documents);
+  const referenciasAEliminar = referenciasAnteriores.filter(
+    (referencia) => !referenciasActuales.includes(referencia)
+  );
   
   // ✅ Guardar en localStorage inmediatamente
   guardarCandidatos(candidatos);
@@ -217,6 +233,12 @@ export function actualizarCandidato(id: number, datos: Partial<Candidato>): Cand
   }
   
   console.log('📊 Datos actualizados:', datos);
+
+  if (referenciasAEliminar.length > 0) {
+    void eliminarContenidosDocumentoCandidato(referenciasAEliminar).catch((error) => {
+      console.error('❌ Error al limpiar documentos externos del candidato:', error);
+    });
+  }
   
   return candidatos[index];
 }
@@ -226,6 +248,7 @@ export function actualizarCandidato(id: number, datos: Partial<Candidato>): Cand
  */
 export function eliminarCandidato(id: number): boolean {
   const candidatos = obtenerCandidatos();
+  const candidatoAEliminar = candidatos.find(c => c.id === id);
   const nuevosCandidatos = candidatos.filter(c => c.id !== id);
   
   if (nuevosCandidatos.length === candidatos.length) {
@@ -234,6 +257,14 @@ export function eliminarCandidato(id: number): boolean {
   }
   
   guardarCandidatos(nuevosCandidatos);
+
+  const referenciasAEliminar = obtenerReferenciasExternasDocumentos(candidatoAEliminar?.documents);
+  if (referenciasAEliminar.length > 0) {
+    void eliminarContenidosDocumentoCandidato(referenciasAEliminar).catch((error) => {
+      console.error('❌ Error al eliminar documentos externos del candidato:', error);
+    });
+  }
+
   console.log('✅ Candidato eliminado:', id);
   return true;
 }

@@ -106,6 +106,13 @@ import { LanguageSelector } from '../ui/language-selector';
 import { toast } from 'sonner';
 import { validateDocumentFile } from '../../utils/fileValidation';
 import {
+  crearIdDocumentoCandidato,
+  crearReferenciaDocumentoCandidato,
+  esReferenciaDocumentoCandidato,
+  guardarContenidoDocumentoCandidato,
+  obtenerContenidoDocumentoCandidato,
+} from '../../utils/candidatoDocumentoIndexedDb';
+import {
   type ContactoDepartamento,
   type TipoContacto,
   type GeneroContacto
@@ -139,6 +146,7 @@ import { TaskSelector } from '../ui/task-selector';
 import { obtenerDepartamentos, type Departamento } from '../../utils/departamentosStorage';
 import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
 import { SelecteurDepartementsMultiple } from '../shared/SelecteurDepartementsMultiple';
+import { DocumentAttachmentsPanel } from '../shared/DocumentAttachmentsPanel';
 
 interface FormularioContactoCompactoProps {
   abierto: boolean;
@@ -160,6 +168,7 @@ interface FormularioContactoCompactoProps {
   departamentoId?: string; // Nuevo: para identificar el departamento
   departamentoNombre?: string; // Nuevo: nombre del departamento para mostrar
   contactoId?: string; // ✅ NUEVO: ID del contacto en modo edición para forzar reinicialización de componentes
+  dialogVariant?: 'fullscreen' | 'compact';
   textOverrides?: {
     createTitle?: string;
     editTitle?: string;
@@ -226,6 +235,7 @@ export function FormularioContactoCompacto({
   departamentoId, // Nuevo parámetro
   departamentoNombre = 'Département', // Nuevo parámetro con valor por defecto
   contactoId, // ✅ NUEVO: ID del contacto en modo edición
+  dialogVariant = 'fullscreen',
   textOverrides
 }: FormularioContactoCompactoProps) {
   const branding = useBranding();
@@ -438,25 +448,119 @@ export function FormularioContactoCompacto({
     }
   };
 
+  const esFormularioBenevole = formulario.tipo === 'benevole';
+
+  const agregarDocumentosAlFormulario = (archivos: File[], tipoSeleccionado?: Pick<TipoDocumento, 'code' | 'label' | 'color' | 'bgColor' | 'icon'>) => {
+    const configuracionTipo = tipoSeleccionado || {
+      code: 'pdf',
+      label: 'PDF',
+      color: branding.primaryColor,
+      bgColor: '#f8fbff',
+      icon: '📄',
+    };
+
+    Promise.all(
+      archivos.map((file) => new Promise<NonNullable<typeof formulario.documents>[number] | null>((resolve) => {
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+          const contenido = event.target?.result as string;
+
+          if (esFormularioBenevole) {
+            try {
+              const documentoId = crearIdDocumentoCandidato();
+              await guardarContenidoDocumentoCandidato(documentoId, contenido);
+
+              resolve({
+                nom: file.name,
+                tipo: configuracionTipo.code,
+                tipoLabel: configuracionTipo.label,
+                tipoColor: configuracionTipo.color,
+                tipoBgColor: configuracionTipo.bgColor,
+                tipoIcon: configuracionTipo.icon,
+                url: crearReferenciaDocumentoCandidato(documentoId),
+                sizeBytes: file.size,
+                date: new Date().toISOString(),
+              });
+              return;
+            } catch {
+              toast.error(`Erreur lors du stockage du fichier "${file.name}"`);
+              resolve(null);
+              return;
+            }
+          }
+
+          resolve({
+            nom: file.name,
+            tipo: configuracionTipo.code,
+            tipoLabel: configuracionTipo.label,
+            tipoColor: configuracionTipo.color,
+            tipoBgColor: configuracionTipo.bgColor,
+            tipoIcon: configuracionTipo.icon,
+            url: contenido,
+            sizeBytes: file.size,
+            date: new Date().toISOString(),
+          });
+        };
+
+        reader.onerror = () => {
+          toast.error(`Erreur lors de la lecture du fichier "${file.name}"`);
+          resolve(null);
+        };
+
+        reader.readAsDataURL(file);
+      }))
+    ).then((documentsLus) => {
+      const documentsValides = documentsLus.filter((documento): documento is NonNullable<typeof formulario.documents>[number] => documento !== null);
+
+      if (documentsValides.length === 0) {
+        return;
+      }
+
+      setFormulario((current) => ({
+        ...current,
+        documents: [...(current.documents || []), ...documentsValides],
+      }));
+
+      const totalAgregados = documentsValides.length;
+      if (esFormularioBenevole) {
+        toast.success(totalAgregados === 1 ? 'PDF ajoute.' : `${totalAgregados} PDF ajoutes.`);
+        return;
+      }
+
+      toast.success(
+        totalAgregados === 1
+          ? `Document ajouté comme "${configuracionTipo.label}"`
+          : `${totalAgregados} documents ajoutés comme "${configuracionTipo.label}"`
+      );
+    });
+  };
+
   // Funciones para manejo de documentos
   const handleAddDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    const allowedTypes = esFormularioBenevole
+      ? ['application/pdf']
+      : ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     const validFiles: File[] = [];
 
     Array.from(files).forEach((file) => {
-      // ✅ Validar usando utilidad centralizada
-      if (validateDocumentFile(file, allowedTypes)) {
+      // Autoriser les documents sans limite de taille explicite.
+      if (validateDocumentFile(file, allowedTypes, null)) {
         validFiles.push(file);
       }
     });
 
     if (validFiles.length > 0) {
-      // Guardar archivos pendientes y abrir dialog de selección de tipo
-      setArchivosPendientes(validFiles);
-      setDialogSeleccionarTipo(true);
+      if (esFormularioBenevole) {
+        agregarDocumentosAlFormulario(validFiles);
+      } else {
+        // Guardar archivos pendientes y abrir dialog de selección de tipo
+        setArchivosPendientes(validFiles);
+        setDialogSeleccionarTipo(true);
+      }
     }
 
     // Reset input
@@ -466,34 +570,8 @@ export function FormularioContactoCompacto({
   };
 
   const handleConfirmarTipoDocumento = (tipoSeleccionado: TipoDocumento) => {
-    archivosPendientes.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newDocument = {
-          nom: file.name,
-          tipo: tipoSeleccionado.code,
-          tipoLabel: tipoSeleccionado.label,
-          tipoColor: tipoSeleccionado.color,
-          tipoBgColor: tipoSeleccionado.bgColor,
-          tipoIcon: tipoSeleccionado.icon,
-          url: event.target?.result as string,
-          date: new Date().toISOString()
-        };
-
-        setFormulario({
-          ...formulario,
-          documents: [...(formulario.documents || []), newDocument]
-        });
-
-        toast.success(`Document "${file.name}" ajouté comme "${tipoSeleccionado.label}"`);
-      };
-
-      reader.onerror = () => {
-        toast.error('Erreur lors de la lecture du fichier');
-      };
-
-      reader.readAsDataURL(file);
-    });
+    const archivosAProcesar = [...archivosPendientes];
+    agregarDocumentosAlFormulario(archivosAProcesar, tipoSeleccionado);
 
     setArchivosPendientes([]);
     setDialogSeleccionarTipo(false);
@@ -511,6 +589,113 @@ export function FormularioContactoCompacto({
     toast.success('Document supprimé');
   };
 
+  const estimateDocumentSize = (url: string, sizeBytes?: number): number => {
+    if (typeof sizeBytes === 'number' && sizeBytes > 0) {
+      return sizeBytes;
+    }
+
+    if (esReferenciaDocumentoCandidato(url)) {
+      return 0;
+    }
+
+    const [metadata, content] = String(url || '').split(',', 2);
+
+    if (!content) {
+      return 0;
+    }
+
+    if (metadata?.includes(';base64')) {
+      const padding = (content.match(/=+$/) || [''])[0].length;
+      return Math.max(0, Math.floor((content.length * 3) / 4) - padding);
+    }
+
+    try {
+      return decodeURIComponent(content).length;
+    } catch {
+      return content.length;
+    }
+  };
+
+  const createBlobUrlForDocument = (url: string): string => {
+    const safeUrl = String(url || '').trim();
+
+    if (!safeUrl.startsWith('data:')) {
+      return safeUrl;
+    }
+
+    const [metadata, content] = safeUrl.split(',', 2);
+
+    if (!metadata || !content) {
+      throw new Error('Document invalide');
+    }
+
+    const mimeType = metadata.slice(5).split(';', 1)[0] || 'application/octet-stream';
+
+    if (metadata.includes(';base64')) {
+      const binary = atob(content);
+      const bytes = new Uint8Array(binary.length);
+
+      for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+      }
+
+      return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+    }
+
+    return URL.createObjectURL(new Blob([decodeURIComponent(content)], { type: mimeType }));
+  };
+
+  const resolveDocumentUrl = async (documentUrl: string): Promise<string> => {
+    if (!esReferenciaDocumentoCandidato(documentUrl)) {
+      return documentUrl;
+    }
+
+    const contenido = await obtenerContenidoDocumentoCandidato(documentUrl);
+
+    if (!contenido) {
+      throw new Error('Document introuvable');
+    }
+
+    return contenido;
+  };
+
+  const handleOpenDocument = async (documentUrl: string) => {
+    let resolvedUrl = '';
+
+    try {
+      const contenidoDocumento = await resolveDocumentUrl(documentUrl);
+      resolvedUrl = createBlobUrlForDocument(contenidoDocumento);
+      window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+
+      if (resolvedUrl.startsWith('blob:')) {
+        window.setTimeout(() => URL.revokeObjectURL(resolvedUrl), 60_000);
+      }
+    } catch {
+      toast.error('Impossible d\'ouvrir ce document.');
+    }
+  };
+
+  const handleDownloadDocument = async (documentUrl: string, fileName: string) => {
+    let resolvedUrl = '';
+
+    try {
+      const contenidoDocumento = await resolveDocumentUrl(documentUrl);
+      resolvedUrl = createBlobUrlForDocument(contenidoDocumento);
+      const link = document.createElement('a');
+      link.href = resolvedUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (resolvedUrl.startsWith('blob:')) {
+        window.setTimeout(() => URL.revokeObjectURL(resolvedUrl), 60_000);
+      }
+    } catch {
+      toast.error('Impossible de telecharger ce document.');
+    }
+  };
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -518,6 +703,12 @@ export function FormularioContactoCompacto({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
+
+  const totalDocumentos = formulario.documents?.length || 0;
+  const totalTamanoDocumentos = (formulario.documents || []).reduce(
+    (total, doc) => total + estimateDocumentSize(doc.url, doc.sizeBytes),
+    0,
+  );
 
   // Funciones para exportar/importar tipos
   const handleExportarTipos = () => {
@@ -580,13 +771,21 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
     return true;
   };
 
+  const isCompactDialog = dialogVariant === 'compact';
+  const dialogContentClassName = isCompactDialog
+    ? '!max-w-none !w-[94vw] !max-h-[92vh] !h-[92vh] overflow-hidden p-0 m-0 rounded-xl sm:!w-[90vw] sm:!h-[88vh] lg:!w-[82vw] lg:!h-[84vh]'
+    : 'w-full h-full sm:w-screen sm:h-screen md:w-screen md:h-screen max-w-none overflow-hidden p-0 m-0 rounded-none';
+  const dialogShellClassName = isCompactDialog
+    ? 'h-full w-full flex flex-col overflow-hidden'
+    : 'h-screen w-screen flex flex-col overflow-hidden';
+
   return (
     <Dialog open={abierto} onOpenChange={onCerrar}>
       <DialogContent 
-        className="w-full h-full sm:w-screen sm:h-screen md:w-screen md:h-screen max-w-none overflow-hidden p-0 m-0 rounded-none"
+        className={dialogContentClassName}
         aria-describedby="contact-form-description"
       >
-        <div className="h-screen w-screen flex flex-col overflow-hidden">
+        <div className={dialogShellClassName}>
           <DialogHeader className="flex-none bg-white border-b-2 border-[#E0E0E0] px-3 sm:px-4 md:px-6 py-2 sm:py-3 shadow-sm z-10">
             <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }} className="text-base sm:text-lg md:text-xl">
               <Users className="w-4 h-4 sm:w-5 sm:h-5 inline mr-2" />
@@ -1712,20 +1911,12 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                     </div>
 
                     {/* Sección de Documentos */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-[#666666]">
-                          <FileText className="w-4 h-4 inline mr-2" style={{ color: branding.primaryColor }} />
-                          Documents
-                          {formulario.documents && formulario.documents.length > 0 && (
-                            <span 
-                              className="ml-2 px-2 py-0.5 rounded-full text-white text-xs font-bold"
-                              style={{ backgroundColor: branding.secondaryColor }}
-                            >
-                              {formulario.documents.length}
-                            </span>
-                          )}
-                        </h4>
+                    <DocumentAttachmentsPanel
+                      title="Documents"
+                      titleIcon={<FileText className="mr-2 inline h-4 w-4" style={{ color: branding.primaryColor }} />}
+                      count={totalDocumentos}
+                      countStyle={{ backgroundColor: branding.secondaryColor }}
+                      headerActions={esFormularioBenevole ? undefined : (
                         <Button
                           type="button"
                           size="icon"
@@ -1736,130 +1927,103 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
                         >
                           <SettingsIcon className="w-4 h-4 text-[#666666]" />
                         </Button>
-                      </div>
+                      )}
+                      summary={
+                        totalDocumentos > 0
+                          ? `${totalDocumentos} document(s) ajoute(s) • ${formatFileSize(totalTamanoDocumentos)} utilises`
+                          : esFormularioBenevole ? 'Aucun PDF ajoute pour cette fiche.' : 'Aucun document ajoute pour cette fiche.'
+                      }
+                      primaryAction={
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-2xl"
+                            onClick={() => documentInputRef.current?.click()}
+                          >
+                            {esFormularioBenevole ? 'Ajouter des PDF' : 'Ajouter des documents'}
+                          </Button>
+                          <input
+                            ref={documentInputRef}
+                            type="file"
+                            accept={esFormularioBenevole ? 'application/pdf,.pdf' : 'application/pdf,image/jpeg,image/jpg,image/png'}
+                            className="hidden"
+                            multiple
+                            onChange={handleAddDocument}
+                          />
+                        </>
+                      }
+                      items={(formulario.documents || []).map((doc, index) => {
+                        const docColor = doc.tipoColor || branding.primaryColor;
+                        const docBgColor = doc.tipoBgColor || '#f8fbff';
+                        const docIcon = doc.tipoIcon || '📄';
 
-                      {/* Lista de documentos existentes */}
-                      {formulario.documents && formulario.documents.length > 0 && (
-                        <div className="space-y-2 mb-4">
-                          {formulario.documents.map((doc, index) => {
-                            const docColor = doc.tipoColor || branding.primaryColor;
-                            const docBgColor = doc.tipoBgColor || '#E3F2FD';
-                            const docIcon = doc.tipoIcon || '📄';
-                            return (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-3 rounded-lg hover:shadow-sm transition-all border-2"
-                                style={{ 
-                                  borderColor: docColor,
-                                  backgroundColor: docBgColor 
+                        return {
+                          id: `${doc.tipo}-${doc.nom}-${index}`,
+                          leading: <span className="text-lg">{docIcon}</span>,
+                          content: esFormularioBenevole ? (
+                            <p className="truncate text-sm font-semibold text-[#333333]" title={doc.nom}>
+                              {doc.nom}
+                            </p>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                                style={{ backgroundColor: docColor, color: 'white' }}
+                              >
+                                {doc.tipoLabel || 'Document'}
+                              </span>
+                              <p className="truncate text-sm font-semibold text-[#333333]" title={doc.nom}>
+                                {doc.nom}
+                              </p>
+                            </div>
+                          ),
+                          meta: (
+                            <>
+                              <span>{new Date(doc.date).toLocaleDateString('fr-FR')}</span>
+                              <span>•</span>
+                              <span>{formatFileSize(estimateDocumentSize(doc.url, doc.sizeBytes))}</span>
+                            </>
+                          ),
+                          actions: (
+                            <>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="rounded-2xl"
+                                onClick={() => { void handleOpenDocument(doc.url); }}
+                              >
+                                Ouvrir
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="rounded-2xl"
+                                onClick={() => { void handleDownloadDocument(doc.url, doc.nom); }}
+                              >
+                                Telecharger
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => {
+                                  if (confirm(`Voulez-vous vraiment supprimer "${doc.nom}" ?`)) {
+                                    handleRemoveDocument(index);
+                                  }
                                 }}
                               >
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <div 
-                                    className="p-2 rounded-lg text-2xl"
-                                    style={{ backgroundColor: `${docColor}15` }}
-                                  >
-                                    {docIcon}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span 
-                                        className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase"
-                                        style={{ 
-                                          backgroundColor: docColor,
-                                          color: 'white'
-                                        }}
-                                      >
-                                        {doc.tipoLabel || 'Document'}
-                                      </span>
-                                      <p className="text-sm font-semibold text-[#333333] truncate" title={doc.nom}>
-                                        {doc.nom}
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                      <span>{new Date(doc.date).toLocaleDateString('fr-FR')}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-blue-600 hover:bg-blue-100"
-                                    onClick={() => window.open(doc.url, '_blank')}
-                                    title="Voir le document"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-red-600 hover:bg-red-100"
-                                    onClick={() => {
-                                      if (confirm(`Voulez-vous vraiment supprimer "${doc.nom}" ?`)) {
-                                        handleRemoveDocument(index);
-                                      }
-                                    }}
-                                    title="Supprimer le document"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Zona de drop/upload */}
-                      <div 
-                        className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer hover:bg-gray-50"
-                        style={{ borderColor: '#CCCCCC' }}
-                        onClick={() => documentInputRef.current?.click()}
-                      >
-                        <FileUp 
-                          className="w-10 h-10 mx-auto mb-2" 
-                          style={{ color: branding.secondaryColor }} 
-                        />
-                        <h4 className="text-sm font-semibold text-[#666666] mb-1">
-                          Ajouter des fichiers
-                        </h4>
-                        <p className="text-xs text-[#999999] mb-3">
-                          Contrats, Assurables, etc.
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          style={{ 
-                            borderColor: branding.secondaryColor, 
-                            color: branding.secondaryColor 
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            documentInputRef.current?.click();
-                          }}
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          Ajouter PDF
-                        </Button>
-                        <p className="text-[10px] text-gray-400 mt-2">
-                          Formats: PDF, JPG, PNG • Taille max: 2MB
-                        </p>
-                        <input
-                          ref={documentInputRef}
-                          type="file"
-                          accept="application/pdf,image/jpeg,image/jpg,image/png"
-                          className="hidden"
-                          multiple
-                          onChange={handleAddDocument}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                                Retirer
+                              </Button>
+                            </>
+                          ),
+                          containerStyle: { backgroundColor: docBgColor },
+                        };
+                      })}
+                      emptyMessage={esFormularioBenevole ? 'Aucun PDF ajoute pour cette fiche.' : 'Aucun document ajoute pour cette fiche.'}
+                      footerHint={esFormularioBenevole ? undefined : 'Contrats, Assurables, etc. • Formats: PDF, JPG, PNG • Plusieurs documents autorises'}
+                    />
+                </div>
                 </TabsContent>
               </Tabs>
               )}
@@ -1867,8 +2031,9 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
           </div>
 
           {/* Footer con botones */}
-          <div className="sticky bottom-0 bg-white border-t-2 border-[#E0E0E0] px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="sticky bottom-0 z-20 bg-white border-t-2 border-[#E0E0E0] px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
             <Button
+              type="button"
               variant="outline"
               onClick={onCerrar}
               className="w-full sm:w-auto h-9 sm:h-10 text-sm sm:text-base"
@@ -1876,8 +2041,9 @@ ${stats.fechaCreacionMasReciente ? `📅 Plus récent: ${new Date(stats.fechaCre
               {textOverrides?.cancelButtonLabel ?? 'Annuler'}
             </Button>
             <Button
+              type="button"
               onClick={onGuardar}
-              className="w-full sm:w-auto text-white h-9 sm:h-10 text-sm sm:text-base"
+              className="w-full sm:w-auto text-white h-9 sm:h-10 text-sm sm:text-base relative z-10"
               style={{ backgroundColor: branding.secondaryColor }}
             >
               {modoEdicion

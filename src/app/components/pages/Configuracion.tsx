@@ -274,6 +274,7 @@ const cantidadesEjemplosPorDefecto: Record<keyof CantidadesEjemplosFuncionales, 
   chauffeurs: '2',
   camiones: '2',
   organismos: '20',
+  organismosRecrutement: '4',
 };
 
 const camposCantidadesEjemplos: Array<{
@@ -321,9 +322,45 @@ const camposCantidadesEjemplos: Array<{
     label: 'Organismes',
     description: 'Destinations QA disponibles pour liaison, commandes et routes.',
   },
+  {
+    key: 'organismosRecrutement',
+    label: 'Organismes recrutement',
+    description: 'Organismes externes QA disponibles dans Recrutement > Organismes et dans les assignations bénévoles.',
+  },
 ];
 
 const CANTIDADES_EJEMPLOS_STORAGE_KEY = 'configuracion_qa_examples_counts';
+
+function normalizarCantidadEjemplosConfiguracion(valor: unknown, fallback: number): number {
+  return Math.max(0, Math.min(Number(valor) || fallback, 20));
+}
+
+function resolverCantidadOrganismosRecrutementEjemplos(
+  cantidades: Partial<Record<keyof CantidadesEjemplosFuncionales, unknown>>
+): { organismos: number; organismosRecrutement: number } {
+  const organismos = normalizarCantidadEjemplosConfiguracion(
+    cantidades.organismos,
+    Number(cantidadesEjemplosPorDefecto.organismos)
+  );
+  const valorRecrutementPersistido = Number(cantidades.organismosRecrutement);
+  const valorRecrutementPorDefecto = Number(cantidadesEjemplosPorDefecto.organismosRecrutement);
+  const organismosRecrutement = Math.max(
+    0,
+    Math.min(
+      !Number.isFinite(valorRecrutementPersistido)
+        ? organismos
+        : valorRecrutementPersistido === valorRecrutementPorDefecto && organismos > valorRecrutementPorDefecto
+          ? organismos
+          : valorRecrutementPersistido,
+      20
+    )
+  );
+
+  return {
+    organismos,
+    organismosRecrutement,
+  };
+}
 
 function cargarCantidadesEjemplosPersistidas(): Record<keyof CantidadesEjemplosFuncionales, string> {
   if (typeof window === 'undefined') {
@@ -337,16 +374,21 @@ function cargarCantidadesEjemplosPersistidas(): Record<keyof CantidadesEjemplosF
     }
 
     const parsed = JSON.parse(raw) as Partial<Record<keyof CantidadesEjemplosFuncionales, unknown>>;
+    const {
+      organismos: organismosNormalizados,
+      organismosRecrutement: organismosRecrutementNormalizados,
+    } = resolverCantidadOrganismosRecrutementEjemplos(parsed);
 
     return {
-      benevoles: String(Math.max(0, Math.min(Number(parsed.benevoles) || Number(cantidadesEjemplosPorDefecto.benevoles), 20))),
-      donateurs: String(Math.max(0, Math.min(Number(parsed.donateurs) || Number(cantidadesEjemplosPorDefecto.donateurs), 20))),
-      fournisseurs: String(Math.max(0, Math.min(Number(parsed.fournisseurs) || Number(cantidadesEjemplosPorDefecto.fournisseurs), 20))),
-      comptoir: String(Math.max(0, Math.min(Number(parsed.comptoir) || Number(cantidadesEjemplosPorDefecto.comptoir), 20))),
-      contactosDepartamentos: String(Math.max(0, Math.min(Number(parsed.contactosDepartamentos) || Number(cantidadesEjemplosPorDefecto.contactosDepartamentos), 20))),
-      chauffeurs: String(Math.max(0, Math.min(Number(parsed.chauffeurs) || Number(cantidadesEjemplosPorDefecto.chauffeurs), 20))),
-      camiones: String(Math.max(0, Math.min(Number(parsed.camiones) || Number(cantidadesEjemplosPorDefecto.camiones), 20))),
-      organismos: String(Math.max(0, Math.min(Number(parsed.organismos) || Number(cantidadesEjemplosPorDefecto.organismos), 20))),
+      benevoles: String(normalizarCantidadEjemplosConfiguracion(parsed.benevoles, Number(cantidadesEjemplosPorDefecto.benevoles))),
+      donateurs: String(normalizarCantidadEjemplosConfiguracion(parsed.donateurs, Number(cantidadesEjemplosPorDefecto.donateurs))),
+      fournisseurs: String(normalizarCantidadEjemplosConfiguracion(parsed.fournisseurs, Number(cantidadesEjemplosPorDefecto.fournisseurs))),
+      comptoir: String(normalizarCantidadEjemplosConfiguracion(parsed.comptoir, Number(cantidadesEjemplosPorDefecto.comptoir))),
+      contactosDepartamentos: String(normalizarCantidadEjemplosConfiguracion(parsed.contactosDepartamentos, Number(cantidadesEjemplosPorDefecto.contactosDepartamentos))),
+      chauffeurs: String(normalizarCantidadEjemplosConfiguracion(parsed.chauffeurs, Number(cantidadesEjemplosPorDefecto.chauffeurs))),
+      camiones: String(normalizarCantidadEjemplosConfiguracion(parsed.camiones, Number(cantidadesEjemplosPorDefecto.camiones))),
+      organismos: String(organismosNormalizados),
+      organismosRecrutement: String(organismosRecrutementNormalizados),
     };
   } catch {
     return cantidadesEjemplosPorDefecto;
@@ -497,19 +539,30 @@ export function Configuracion() {
   const ejecutarAccionEjemplos = (accion: 'sembrar' | 'sembrar-comptoir' | 'limpiar' | 'actualizar') => {
     setProcesandoEjemplos(true);
 
+    const {
+      organismos: cantidadOrganismosNormalizada,
+      organismosRecrutement: cantidadOrganismosRecrutementNormalizada,
+    } = resolverCantidadOrganismosRecrutementEjemplos(cantidadesEjemplos);
+
     const cantidadesEjemplosNormalizadas: CantidadesEjemplosFuncionales = {
-      benevoles: Math.max(0, Math.min(Number(cantidadesEjemplos.benevoles) || 0, 20)),
-      donateurs: Math.max(0, Math.min(Number(cantidadesEjemplos.donateurs) || 0, 20)),
-      fournisseurs: Math.max(0, Math.min(Number(cantidadesEjemplos.fournisseurs) || 0, 20)),
-      comptoir: Math.max(0, Math.min(Number(cantidadesEjemplos.comptoir) || 0, 20)),
-      contactosDepartamentos: Math.max(0, Math.min(Number(cantidadesEjemplos.contactosDepartamentos) || 0, 20)),
-      chauffeurs: Math.max(0, Math.min(Number(cantidadesEjemplos.chauffeurs) || 0, 20)),
-      camiones: Math.max(0, Math.min(Number(cantidadesEjemplos.camiones) || 0, 20)),
-      organismos: Math.max(0, Math.min(Number(cantidadesEjemplos.organismos) || 0, 20)),
+      benevoles: normalizarCantidadEjemplosConfiguracion(cantidadesEjemplos.benevoles, 0),
+      donateurs: normalizarCantidadEjemplosConfiguracion(cantidadesEjemplos.donateurs, 0),
+      fournisseurs: normalizarCantidadEjemplosConfiguracion(cantidadesEjemplos.fournisseurs, 0),
+      comptoir: normalizarCantidadEjemplosConfiguracion(cantidadesEjemplos.comptoir, 0),
+      contactosDepartamentos: normalizarCantidadEjemplosConfiguracion(cantidadesEjemplos.contactosDepartamentos, 0),
+      chauffeurs: normalizarCantidadEjemplosConfiguracion(cantidadesEjemplos.chauffeurs, 0),
+      camiones: normalizarCantidadEjemplosConfiguracion(cantidadesEjemplos.camiones, 0),
+      organismos: cantidadOrganismosNormalizada,
+      organismosRecrutement: cantidadOrganismosRecrutementNormalizada,
     };
 
     try {
       if (accion === 'sembrar') {
+        setCantidadesEjemplos((prev) => ({
+          ...prev,
+          organismos: String(cantidadOrganismosNormalizada),
+          organismosRecrutement: String(cantidadOrganismosRecrutementNormalizada),
+        }));
         setResumenEjemplos(
           sembrarEjemplosFuncionalesPrueba(cantidadesEjemplosNormalizadas.organismos, {
             cantidades: cantidadesEjemplosNormalizadas,
@@ -534,13 +587,31 @@ export function Configuracion() {
     value: string
   ) => {
     if (value === '') {
-      setCantidadesEjemplos((prev) => ({ ...prev, [key]: '' }));
+      setCantidadesEjemplos((prev) => ({
+        ...prev,
+        [key]: '',
+        ...(key === 'organismos' && (
+          prev.organismosRecrutement === prev.organismos ||
+          prev.organismosRecrutement === cantidadesEjemplosPorDefecto.organismosRecrutement
+        )
+          ? { organismosRecrutement: '' }
+          : {})
+      }));
       return;
     }
 
     const numerico = value.replace(/[^0-9]/g, '');
     const cantidad = Math.max(0, Math.min(Number(numerico || 0), 20));
-    setCantidadesEjemplos((prev) => ({ ...prev, [key]: String(cantidad) }));
+    setCantidadesEjemplos((prev) => ({
+      ...prev,
+      [key]: String(cantidad),
+      ...(key === 'organismos' && (
+        prev.organismosRecrutement === prev.organismos ||
+        prev.organismosRecrutement === cantidadesEjemplosPorDefecto.organismosRecrutement
+      )
+        ? { organismosRecrutement: String(cantidad) }
+        : {})
+    }));
   };
 
   // Filtrar categorías según disponibilidad del programa PRS
@@ -1734,6 +1805,7 @@ export function Configuracion() {
                 <AdaptiveBrandLogo
                   src={branding.logo}
                   alt="Logo"
+                  forceShape="square"
                   wrapperClassName="h-16 w-16 sm:h-20 sm:w-20"
                   glowColor={branding.primaryColor}
                   glowClassName="blur-2xl opacity-30 animate-pulse"
@@ -3724,6 +3796,7 @@ export function Configuracion() {
                       { label: 'Chauffeurs', value: resumenEjemplos.chauffeurs },
                       { label: 'Camions', value: resumenEjemplos.camiones },
                       { label: 'Organismes', value: resumenEjemplos.organismos },
+                      { label: 'Organismes recrutement', value: resumenEjemplos.organismosRecrutement },
                     ].map((item) => (
                       <div key={item.label} className="rounded-2xl border border-white/70 bg-white/80 shadow-lg p-4 text-center">
                         <div className="text-3xl font-bold text-[#1a4d7a]" style={{ fontFamily: 'Montserrat, sans-serif' }}>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../../hooks/useBranding';
 import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { FormularioContactoCompacto } from '../departamentos/FormularioContactoCompacto';
+import { FormularioOrganismoCompacto } from '../organismos/FormularioOrganismoCompacto';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -39,7 +40,11 @@ import {
   Edit,
   ArrowRightLeft,
   Plus,
-  Download
+  Download,
+  Copy,
+  ExternalLink,
+  Building2,
+  Eye
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { toast } from 'sonner';
@@ -64,13 +69,32 @@ import {
   type FeuilleTiempoCandidato,
   type HistorialCorreccionFeuilleTiempo
 } from '../../utils/candidatosStorage'; // ✅ Importar storage
+import {
+  crearReferenciaDocumentoCandidato,
+  eliminarContenidosDocumentoCandidato,
+  guardarContenidoDocumentoCandidato,
+} from '../../utils/candidatoDocumentoIndexedDb';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
+import {
+  construirPayloadOrganismo,
+  convertirOrganismoAFormulario,
+  crearFormularioOrganismoVacio,
+  validarFormularioOrganismo,
+  type FormularioOrganismo,
+} from '../../utils/organismoForm';
+import {
+  obtenerOrganismosRecrutement,
+  guardarOrganismoRecrutement,
+  eliminarOrganismoRecrutement,
+  RECRUTEMENT_ORGANISMES_UPDATED_EVENT,
+  type OrganismoRecrutement
+} from '../../utils/recrutementOrganismosStorage';
 
 // ✅ Usar tipo Candidato del storage
 type Candidate = Candidato;
 type CandidateContactForm = Omit<ContactoDepartamento, 'id'>;
 type AssignationMode = 'assign' | 'modify';
-type RecruitmentMainView = 'candidatures' | 'reports' | 'timesheets';
+type RecruitmentMainView = 'candidatures' | 'reports' | 'timesheets' | 'organisms';
 type TimesheetDepartmentFilter = 'all' | string;
 type CandidateTimesheetForm = {
   departamentoId: string;
@@ -114,6 +138,30 @@ const RECRUITMENT_MOCK_EXPERIENCE_KEYS: Record<string, string> = {
   'Diplômée en arts culinaires': 'culinaryArtsGraduate',
   "1 an d'expérience en logistique": 'logisticsOneYear'
 };
+
+const getTiposOrganismoRecrutement = (t: any) => [
+  { id: '1', nombre: t('organisms.organismTypes.communityKitchen'), icono: '🍽️' },
+  { id: '2', nombre: t('organisms.organismTypes.foundation'), icono: '🏛️' },
+  { id: '3', nombre: t('organisms.organismTypes.ngo'), icono: '🤝' },
+  { id: '4', nombre: t('organisms.organismTypes.shelter'), icono: '🏠' },
+  { id: '5', nombre: t('organisms.organismTypes.dayCenter'), icono: '☀️' },
+  { id: '21', nombre: 'Collation', icono: '🥪' },
+  { id: '6', nombre: t('organisms.organismTypes.school'), icono: '🎓' },
+  { id: '7', nombre: t('organisms.organismTypes.daycare'), icono: '👶' },
+  { id: '8', nombre: t('organisms.organismTypes.childrensHome'), icono: '👨‍👩‍👧‍👦' },
+  { id: '9', nombre: t('organisms.organismTypes.seniorsHome'), icono: '👴' },
+  { id: '10', nombre: t('organisms.organismTypes.rehabCenter'), icono: '💪' },
+  { id: '11', nombre: t('organisms.organismTypes.hospital'), icono: '🏥' },
+  { id: '12', nombre: t('organisms.organismTypes.church'), icono: '⛪' },
+  { id: '13', nombre: t('organisms.organismTypes.civilAssociation'), icono: '📋' },
+  { id: '14', nombre: t('organisms.organismTypes.communityCenter'), icono: '🏘️' },
+  { id: '15', nombre: t('organisms.organismTypes.homelessShelter'), icono: '🛏️' },
+  { id: '16', nombre: t('organisms.organismTypes.migrantCenter'), icono: '🌍' },
+  { id: '17', nombre: t('organisms.organismTypes.womensHome'), icono: '👩' },
+  { id: '18', nombre: t('organisms.organismTypes.disabilityCenter'), icono: '♿' },
+  { id: '19', nombre: t('organisms.organismTypes.foodBank'), icono: '🛒' },
+  { id: '20', nombre: t('organisms.organismTypes.other'), icono: '📌' }
+];
 
 const cloneDisponibilidades = (disponibilidades?: DisponibilidadDia[]) =>
   (disponibilidades && disponibilidades.length > 0
@@ -330,9 +378,51 @@ const mapContactFormToCandidate = (
   };
 };
 
+const crearIdDocumentoCandidato = (index: number): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `candidate-document-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const normalizarDocumentosCandidatoParaPersistencia = async (
+  documents: CandidateContactForm['documents']
+): Promise<{ documentos: CandidateContactForm['documents']; referenciasCreadas: string[] }> => {
+  if (!documents || documents.length === 0) {
+    return { documentos: [], referenciasCreadas: [] };
+  }
+
+  const referenciasCreadas: string[] = [];
+
+  const documentos = await Promise.all(
+    documents.map(async (documento, index) => {
+      const urlDocumento = String(documento.url || '').trim();
+
+      if (!urlDocumento.startsWith('data:')) {
+        return documento;
+      }
+
+      const documentoId = crearIdDocumentoCandidato(index);
+      await guardarContenidoDocumentoCandidato(documentoId, urlDocumento);
+
+      const referencia = crearReferenciaDocumentoCandidato(documentoId);
+      referenciasCreadas.push(referencia);
+
+      return {
+        ...documento,
+        url: referencia,
+      };
+    })
+  );
+
+  return { documentos, referenciasCreadas };
+};
+
 export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
+  const tiposOrganismoRecrutement = getTiposOrganismoRecrutement(t);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [dialogNuevoOpen, setDialogNuevoOpen] = useState(false);
@@ -360,6 +450,15 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   const [selectedTimesheetCandidateId, setSelectedTimesheetCandidateId] = useState('');
   const [timesheetForm, setTimesheetForm] = useState<CandidateTimesheetForm>(createInitialTimesheetForm);
   const [editingTimesheetId, setEditingTimesheetId] = useState<number | null>(null);
+  const [organismosAcreditados, setOrganismosAcreditados] = useState<OrganismoRecrutement[]>([]);
+  const [organismosAcreditadosSeleccionados, setOrganismosAcreditadosSeleccionados] = useState<string[]>([]);
+  const [organismSearchTerm, setOrganismSearchTerm] = useState('');
+  const [organismFilter, setOrganismFilter] = useState<'all' | 'active' | 'linked' | 'inactive'>('all');
+  const [organismoDialogOpen, setOrganismoDialogOpen] = useState(false);
+  const [organismoRecrutementForm, setOrganismoRecrutementForm] = useState<FormularioOrganismo>(crearFormularioOrganismoVacio);
+  const [organismoRecrutementSeleccionado, setOrganismoRecrutementSeleccionado] = useState<OrganismoRecrutement | null>(null);
+  const [modoEdicionOrganismo, setModoEdicionOrganismo] = useState(false);
+  const [modoVisualizacionOrganismo, setModoVisualizacionOrganismo] = useState(false);
 
   useEffect(() => {
     if (isPublicAccess && mainView !== 'timesheets') {
@@ -494,6 +593,27 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     setCandidates(candidatosGuardados);
     console.log('✅ Candidatos cargados desde localStorage:', candidatosGuardados.length);
   }, []);
+
+  const cargarOrganismosAcreditados = useCallback(() => {
+    const organismosDisponibles = obtenerOrganismosRecrutement();
+    setOrganismosAcreditados(organismosDisponibles);
+  }, []);
+
+  useEffect(() => {
+    cargarOrganismosAcreditados();
+
+    const handleOrganismosChanged = () => {
+      cargarOrganismosAcreditados();
+    };
+
+    window.addEventListener(RECRUTEMENT_ORGANISMES_UPDATED_EVENT, handleOrganismosChanged);
+    window.addEventListener('storage', handleOrganismosChanged);
+
+    return () => {
+      window.removeEventListener(RECRUTEMENT_ORGANISMES_UPDATED_EVENT, handleOrganismosChanged);
+      window.removeEventListener('storage', handleOrganismosChanged);
+    };
+  }, [cargarOrganismosAcreditados]);
 
   useEffect(() => {
     const candidatosConDepartamento = candidates.filter(candidate => {
@@ -798,6 +918,94 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     nom: item.nom.split(' ').slice(0, 2).join(' '),
     heures: Number(item.heures.toFixed(2))
   }));
+  const organismosAcreditadosPorId = candidates.reduce<Record<string, number>>((acumulado, candidate) => {
+    (candidate.organismosAcreditadosIds || []).forEach((organismoId) => {
+      acumulado[organismoId] = (acumulado[organismoId] || 0) + 1;
+    });
+
+    return acumulado;
+  }, {});
+  const organismosAcreditadosActivos = organismosAcreditados.filter((organismo) => organismo.activo);
+  const organismosAcreditadosEnriquecidos = organismosAcreditados
+    .map((organismo) => ({
+      ...organismo,
+      benevolesAsignados: organismosAcreditadosPorId[organismo.id] || 0,
+    }))
+    .sort((left, right) => {
+      if (right.benevolesAsignados !== left.benevolesAsignados) {
+        return right.benevolesAsignados - left.benevolesAsignados;
+      }
+
+      if (left.activo !== right.activo) {
+        return left.activo ? -1 : 1;
+      }
+
+      return left.nombre.localeCompare(right.nombre, 'fr');
+    });
+  const organismosAcreditadosFiltrados = organismosAcreditadosEnriquecidos.filter((organismo) => {
+    const searchValue = organismSearchTerm.trim().toLowerCase();
+    const coincideBusqueda = !searchValue || [
+      organismo.nombre,
+      organismo.tipo,
+      organismo.responsable,
+      organismo.email,
+      organismo.quartier,
+      organismo.zona,
+    ]
+      .filter(Boolean)
+      .some((valor) => String(valor).toLowerCase().includes(searchValue));
+
+    if (!coincideBusqueda) {
+      return false;
+    }
+
+    if (organismFilter === 'active') {
+      return organismo.activo;
+    }
+
+    if (organismFilter === 'inactive') {
+      return !organismo.activo;
+    }
+
+    if (organismFilter === 'linked') {
+      return organismo.benevolesAsignados > 0;
+    }
+
+    return true;
+  });
+  const organismosAcreditadosInactivos = organismosAcreditados.length - organismosAcreditadosActivos.length;
+  const organismosAcreditadosSinBenevoles = organismosAcreditadosEnriquecidos.filter((organismo) => organismo.benevolesAsignados === 0).length;
+  const organismosAcreditadosSinCoordonnees = organismosAcreditadosEnriquecidos.filter(
+    (organismo) => !String(organismo.email || '').trim() && !String(organismo.telefono || '').trim()
+  ).length;
+  const organismosAcreditadosConBenevoles = organismosAcreditados
+    .map((organismo) => {
+      const benevoles = candidates.filter(candidate =>
+        (candidate.organismosAcreditadosIds || []).includes(organismo.id)
+      ).length;
+
+      return {
+        id: organismo.id,
+        nombre: organismo.nombre,
+        tipo: organismo.tipo,
+        benevoles,
+      };
+    })
+    .filter((organismo) => organismo.benevoles > 0)
+    .sort((left, right) => {
+      if (right.benevoles !== left.benevoles) {
+        return right.benevoles - left.benevoles;
+      }
+
+      return left.nombre.localeCompare(right.nombre, 'fr');
+    });
+  const totalAssignationsOrganismosAcreditados = candidates.reduce(
+    (sum, candidate) => sum + (candidate.organismosAcreditadosIds?.length || 0),
+    0
+  );
+  const remoteTimesheetUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?page=recrutement-public`
+    : '?page=recrutement-public';
   const reportExportRows = [
     ...reportYearStats.map(item => ({
       axe: 'Année',
@@ -822,6 +1030,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       entrees: item.feuilles,
       benevoles: 1,
       departements: item.departements
+    })),
+    ...organismosAcreditadosConBenevoles.map(item => ({
+      axe: 'Organisme accrédité',
+      libelle: item.nombre,
+      heures: 0,
+      entrees: 0,
+      benevoles: item.benevoles,
+      departements: 0
     }))
   ];
 
@@ -882,6 +1098,145 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     }
 
     return [usuario.nombre?.trim(), usuario.apellido?.trim()].filter(Boolean).join(' ') || usuario.username || usuario.email || 'Utilisateur interne';
+  };
+
+  const obtenerOrganismosAcreditadosAsignados = useCallback((candidate: Candidate) => {
+    const idsAsignados = candidate.organismosAcreditadosIds || [];
+
+    return organismosAcreditados.filter((organismo) => idsAsignados.includes(organismo.id));
+  }, [organismosAcreditados]);
+
+  const resetRecruitmentOrganismForm = () => {
+    setOrganismoDialogOpen(false);
+    setModoEdicionOrganismo(false);
+    setModoVisualizacionOrganismo(false);
+    setOrganismoRecrutementSeleccionado(null);
+    setOrganismoRecrutementForm({
+      ...crearFormularioOrganismoVacio(),
+      clasificacionOrganismo: 'regular',
+      regular: true,
+    });
+  };
+
+  const handleOpenCreateRecruitmentOrganism = () => {
+    setMainView('organisms');
+    setModoEdicionOrganismo(false);
+    setModoVisualizacionOrganismo(false);
+    setOrganismoRecrutementSeleccionado(null);
+    setOrganismoRecrutementForm({
+      ...crearFormularioOrganismoVacio(),
+      clasificacionOrganismo: 'regular',
+      regular: true,
+    });
+    setOrganismoDialogOpen(true);
+  };
+
+  const handleViewRecruitmentOrganismProfile = (organismo: OrganismoRecrutement) => {
+    setMainView('organisms');
+    setModoEdicionOrganismo(false);
+    setModoVisualizacionOrganismo(true);
+    setOrganismoRecrutementSeleccionado(organismo);
+    setOrganismoRecrutementForm({
+      ...convertirOrganismoAFormulario(organismo),
+      clasificacionOrganismo: 'regular',
+      regular: true,
+    });
+    setOrganismoDialogOpen(true);
+  };
+
+  const handleEditRecruitmentOrganism = (organismo: OrganismoRecrutement) => {
+    setMainView('organisms');
+    setModoEdicionOrganismo(true);
+    setModoVisualizacionOrganismo(false);
+    setOrganismoRecrutementSeleccionado(organismo);
+    setOrganismoRecrutementForm({
+      ...convertirOrganismoAFormulario(organismo),
+      clasificacionOrganismo: 'regular',
+      regular: true,
+    });
+    setOrganismoDialogOpen(true);
+  };
+
+  const handleSaveRecruitmentOrganism = () => {
+    const errorValidacion = validarFormularioOrganismo(organismoRecrutementForm);
+    if (errorValidacion) {
+      toast.error(errorValidacion);
+      return;
+    }
+
+    guardarOrganismoRecrutement({
+      ...construirPayloadOrganismo({
+        ...organismoRecrutementForm,
+        clasificacionOrganismo: 'regular',
+        regular: true,
+      }),
+      id: organismoRecrutementSeleccionado?.id,
+    });
+
+    toast.success(
+      organismoRecrutementSeleccionado?.id
+        ? 'Organisme de recrutement mis à jour'
+        : 'Organisme de recrutement ajouté'
+    );
+    resetRecruitmentOrganismForm();
+  };
+
+  const handleDeleteRecruitmentOrganism = (organismo: OrganismoRecrutement) => {
+    eliminarOrganismoRecrutement(organismo.id);
+
+    const updatedCandidates = candidates.map((candidate) => ({
+      ...candidate,
+      organismosAcreditadosIds: (candidate.organismosAcreditadosIds || []).filter((id) => id !== organismo.id)
+    }));
+
+    setCandidates(updatedCandidates);
+    guardarCandidatos(updatedCandidates);
+
+    if (candidatoParaPerfil) {
+      const nextCandidate = updatedCandidates.find((candidate) => candidate.id === candidatoParaPerfil.id) || null;
+      setCandidatoParaPerfil(nextCandidate);
+    }
+
+    if (candidatoParaEditar) {
+      const nextCandidate = updatedCandidates.find((candidate) => candidate.id === candidatoParaEditar.id) || null;
+      setCandidatoParaEditar(nextCandidate);
+    }
+
+    if (candidatoParaAssignar) {
+      const nextCandidate = updatedCandidates.find((candidate) => candidate.id === candidatoParaAssignar.id) || null;
+      setCandidatoParaAssignar(nextCandidate);
+    }
+
+    if (organismoRecrutementSeleccionado?.id === organismo.id) {
+      resetRecruitmentOrganismForm();
+    }
+
+    toast.success('Organisme de recrutement supprimé');
+  };
+
+  const alternarOrganismoAcreditadoSeleccionado = (organismoId: string) => {
+    setOrganismosAcreditadosSeleccionados((prev) => (
+      prev.includes(organismoId)
+        ? prev.filter((id) => id !== organismoId)
+        : [...prev, organismoId]
+    ));
+  };
+
+  const handleCopyRemoteTimesheetLink = async () => {
+    try {
+      await navigator.clipboard.writeText(remoteTimesheetUrl);
+      toast.success('Lien d\'accès à distance copié', {
+        description: 'Le portail public des feuilles de temps est prêt à être partagé.',
+        duration: 4000
+      });
+    } catch (error) {
+      console.error('Erreur lors de la copie du lien de feuille de temps:', error);
+      toast.error('Impossible de copier le lien de la feuille de temps');
+    }
+  };
+
+  const handleOpenRemoteTimesheet = () => {
+    window.open(remoteTimesheetUrl, '_blank', 'noopener,noreferrer');
   };
 
   const buildTimesheetCorrectionHistory = (
@@ -984,6 +1339,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     setCandidatoParaAssignar(null);
     setDepartamentoSeleccionado('');
     setDepartamentoOrigenSeleccionado('');
+    setOrganismosAcreditadosSeleccionados([]);
     setAssignationMode('assign');
   };
 
@@ -998,14 +1354,16 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     setCandidatoParaAssignar(candidate);
     setAssignationMode(mode);
     setDepartamentoSeleccionado('');
+    setOrganismosAcreditadosSeleccionados(candidate.organismosAcreditadosIds || []);
     setDepartamentoOrigenSeleccionado(
       mode === 'modify' && departamentosActuales.length === 1 ? departamentosActuales[0] : ''
     );
     setDialogAssignerOpen(true);
   };
 
-  const handleCrearCandidatura = () => {
+  const handleCrearCandidatura = async () => {
     const candidateName = buildFullName(formularioCandidato.nombre, formularioCandidato.apellido);
+    let referenciasCreadas: string[] = [];
 
     if (!candidateName) {
       toast.error('❌ Le nom est requis');
@@ -1031,19 +1389,37 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       return;
     }
 
-    const nuevoCandidato = agregarCandidato(
-      mapContactFormToCandidate(formularioCandidato, 'pending')
-    );
+    try {
+      const resultadoDocumentos = await normalizarDocumentosCandidatoParaPersistencia(formularioCandidato.documents);
+      referenciasCreadas = resultadoDocumentos.referenciasCreadas;
 
-    setCandidates(prev => [nuevoCandidato, ...prev]);
-    setSearchTerm('');
-    setFilterStatus('all');
-    handleCerrarFormularioCandidato();
+      const nuevoCandidato = agregarCandidato(
+        mapContactFormToCandidate(
+          {
+            ...formularioCandidato,
+            documents: resultadoDocumentos.documentos || [],
+          },
+          'pending'
+        )
+      );
 
-    toast.success('✅ Nouvelle candidature créée avec succès', {
-      description: `${nuevoCandidato.name} a été ajouté à la liste de recrutement`,
-      duration: 5000
-    });
+      setCandidates(prev => [nuevoCandidato, ...prev]);
+      setSearchTerm('');
+      setFilterStatus('all');
+      handleCerrarFormularioCandidato();
+
+      toast.success('✅ Nouvelle candidature créée avec succès', {
+        description: `${nuevoCandidato.name} a été ajouté à la liste de recrutement`,
+        duration: 5000
+      });
+    } catch (error) {
+      if (referenciasCreadas.length > 0) {
+        await eliminarContenidosDocumentoCandidato(referenciasCreadas);
+      }
+
+      console.error('❌ Error al crear candidato con documentos:', error);
+      toast.error('❌ Impossible d\'enregistrer la candidature avec les documents');
+    }
   };
 
   // ✅ NUEVO: Función para abrir edición de candidato
@@ -1058,9 +1434,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   };
 
   // ✅ NUEVO: Función para guardar edición con QUARTIER
-  const handleGuardarEdicion = () => {
+  const handleGuardarEdicion = async () => {
     if (!candidatoParaEditar) return;
     const candidateName = buildFullName(formularioCandidato.nombre, formularioCandidato.apellido);
+    let referenciasCreadas: string[] = [];
     
     // Validaciones
     if (!candidateName) {
@@ -1099,10 +1476,36 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     });
     
     // ✅ CRÍTICO: Actualizar candidato con TODOS los campos sin excepción
-    const candidatoActualizado = persistCandidateChanges(
-      candidatoParaEditar.id,
-      mapContactFormToCandidate(formularioCandidato, candidatoParaEditar.status, candidatoParaEditar)
-    );
+    let candidatoActualizado: Candidate | null = null;
+
+    try {
+      const resultadoDocumentos = await normalizarDocumentosCandidatoParaPersistencia(formularioCandidato.documents);
+      referenciasCreadas = resultadoDocumentos.referenciasCreadas;
+
+      candidatoActualizado = persistCandidateChanges(
+        candidatoParaEditar.id,
+        mapContactFormToCandidate(
+          {
+            ...formularioCandidato,
+            documents: resultadoDocumentos.documentos || [],
+          },
+          candidatoParaEditar.status,
+          candidatoParaEditar
+        )
+      );
+    } catch (error) {
+      if (referenciasCreadas.length > 0) {
+        await eliminarContenidosDocumentoCandidato(referenciasCreadas);
+      }
+
+      console.error('❌ Error al actualizar candidato con documentos:', error);
+      toast.error('❌ Impossible de mettre à jour le candidat avec les documents');
+      return;
+    }
+
+    if (!candidatoActualizado && referenciasCreadas.length > 0) {
+      await eliminarContenidosDocumentoCandidato(referenciasCreadas);
+    }
     
     if (candidatoActualizado) {
       console.log('✅ Candidato actualizado exitosamente con TODOS LOS DATOS:', {
@@ -1176,10 +1579,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   };
 
   const filteredCandidates = candidates.filter(candidate => {
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+    const numeroArchivo = String(candidate.numeroArchivo || '').toLowerCase();
     const matchesSearch = 
-      candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.email.toLowerCase().includes(searchTerm.toLowerCase());
+      candidate.name.toLowerCase().includes(normalizedSearchTerm) ||
+      candidate.position.toLowerCase().includes(normalizedSearchTerm) ||
+      candidate.email.toLowerCase().includes(normalizedSearchTerm) ||
+      numeroArchivo.includes(normalizedSearchTerm);
     
     const matchesFilter = filterStatus === 'all' || candidate.status === filterStatus;
     
@@ -1345,6 +1751,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     const numeroArchivo = obtenerNumeroArchivoCandidato(candidatoParaPerfil);
     const cardColor = branding.primaryColor;
     const tieneContacto = obtenerContactoCandidato(candidatoParaPerfil);
+    const organismosExternosAsignados = obtenerOrganismosAcreditadosAsignados(candidatoParaPerfil);
 
     return (
       <Card className="border-gray-200/50 shadow-sm overflow-hidden xl:sticky xl:top-4">
@@ -1475,6 +1882,32 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Building2 className="w-5 h-5" style={{ color: branding.primaryColor }} />
+              <h4 className="font-semibold text-base" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                Organismes externes accrédités
+              </h4>
+            </div>
+            {organismosExternosAsignados.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {organismosExternosAsignados.map((organismo) => (
+                  <Badge
+                    key={organismo.id}
+                    className="border-0 px-3 py-1"
+                    style={{ backgroundColor: `${branding.secondaryColor}15`, color: branding.secondaryColor }}
+                  >
+                    {organismo.nombre}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                Aucun organisme accrédité lié à ce bénévole pour le moment.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 justify-end pt-3 border-t border-gray-100 flex-wrap">
@@ -2362,7 +2795,8 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       persistCandidateChanges(candidatoParaAssignar.id, {
         contactoId: contactoGuardado.id,
         departamentoIds: departamentosActualizados,
-        numeroArchivo: contactoGuardado.numeroArchivo || candidatoParaAssignar.numeroArchivo
+        numeroArchivo: contactoGuardado.numeroArchivo || candidatoParaAssignar.numeroArchivo,
+        organismosAcreditadosIds: organismosAcreditadosSeleccionados
       });
       
       // 🔥 Déclencher événement personnalisé pour synchroniser départements
@@ -2458,7 +2892,8 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     persistCandidateChanges(candidatoParaAssignar.id, {
       departamentoIds: departamentosActualizados,
       contactoId: contactoActual.id,
-      numeroArchivo: contactoActual.contacto.numeroArchivo || candidatoParaAssignar.numeroArchivo
+      numeroArchivo: contactoActual.contacto.numeroArchivo || candidatoParaAssignar.numeroArchivo,
+      organismosAcreditadosIds: organismosAcreditadosSeleccionados
     });
 
     window.dispatchEvent(new CustomEvent('contactos-actualizados', {
@@ -2802,20 +3237,23 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
             <div className="relative inline-block">
               {/* Glow effect detrás del logo */}
               <div 
-                className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
+                className="absolute inset-0 rounded-none blur-2xl opacity-30 animate-pulse"
                 style={{ backgroundColor: branding.primaryColor }}
               />
               <div 
-                className={`relative ${isPublicAccess ? 'h-12 w-12 sm:h-14 sm:w-14 border-2' : 'h-16 w-16 sm:h-20 sm:w-20 border-4'} rounded-full flex items-center justify-center overflow-hidden shadow-2xl bg-white`}
+                className={`relative ${isPublicAccess ? 'h-12 w-12 sm:h-14 sm:w-14 border-2' : 'h-16 w-16 sm:h-20 sm:w-20 border-4'} rounded-none flex items-center justify-center overflow-hidden shadow-2xl bg-white`}
                 style={{ borderColor: branding.primaryColor }}
               >
                 {branding.logo ? (
                   <AdaptiveBrandLogo
                     src={branding.logo}
                     alt="Logo"
+                    forceShape="square"
                     wrapperClassName="h-full w-full"
+                    containerClassName="rounded-none"
                     borderWidthClassName="border-0"
                     shadowClassName=""
+                    squareRadiusClassName="rounded-none"
                     imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
                   />
                 ) : (
@@ -3022,6 +3460,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       <Clock className="w-4 h-4" />
                       {t('recruitmentInternal.tabs.timesheets')}
                     </TabsTrigger>
+                    <TabsTrigger
+                      value="organisms"
+                      className="app-compact-tab-trigger py-3"
+                      style={{ fontFamily: 'Montserrat, sans-serif' }}
+                    >
+                      <Building2 className="w-4 h-4" />
+                      Organismes
+                    </TabsTrigger>
                   </TabsList>
                 </ModuleControlSurfaceTabs>
               </ModuleControlSurface>
@@ -3085,6 +3531,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   const cardColor = index % 2 === 0 ? branding.primaryColor : branding.secondaryColor;
                   const numeroArchivo = obtenerNumeroArchivoCandidato(candidate);
                   const isSelected = candidatoParaPerfil?.id === candidate.id;
+                  const organismosExternosAsignados = obtenerOrganismosAcreditadosAsignados(candidate);
 
                   return (
                     <Card
@@ -3189,6 +3636,29 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 </Badge>
                               );
                             })}
+                          </div>
+                        )}
+
+                        {organismosExternosAsignados.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 rounded-lg border border-emerald-200/70 bg-emerald-50/80 px-2.5 py-2">
+                            <span className="text-[11px] font-medium text-[#666666] flex items-center gap-1">
+                              <Building2 className="w-3 h-3" style={{ color: branding.secondaryColor }} />
+                              Organismes accrédités :
+                            </span>
+                            {organismosExternosAsignados.map((organismo) => (
+                              <Badge
+                                key={organismo.id}
+                                className="text-[11px] px-2 py-0.5 border-0 shadow-sm"
+                                style={{
+                                  backgroundColor: `${branding.secondaryColor}15`,
+                                  color: branding.secondaryColor,
+                                  fontFamily: 'Montserrat, sans-serif',
+                                  fontWeight: 600
+                                }}
+                              >
+                                {organismo.nombre}
+                              </Badge>
+                            ))}
                           </div>
                         )}
 
@@ -3505,6 +3975,13 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         <p className="text-xs text-gray-500 mb-1">{t('recruitmentInternal.reports.cards.accumulatedHours')}</p>
                         <p className="text-3xl font-bold text-emerald-600">{formatTimesheetHours(reportHeuresTotales)}</p>
                         <p className="text-sm text-gray-500 mt-2">{t('recruitmentInternal.reports.cards.accumulatedHoursHint')}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-200/50 shadow-sm">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-500 mb-1">Organismes accrédités liés</p>
+                        <p className="text-3xl font-bold" style={{ color: branding.secondaryColor }}>{organismosAcreditadosConBenevoles.length}</p>
+                        <p className="text-sm text-gray-500 mt-2">{totalAssignationsOrganismosAcreditados} liaison(s) bénévole-organisme</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -3825,10 +4302,454 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           {reportEntreesTotales > 0 ? formatTimesheetHours(reportHeuresTotales / reportEntreesTotales) : '0h 00m'}
                         </p>
                       </div>
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        <p className="text-xs text-gray-500">Accrédités avec bénévoles</p>
+                        <p className="text-2xl font-bold" style={{ color: branding.secondaryColor }}>{organismosAcreditadosConBenevoles.length}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                        Organismes accrédités suivis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {organismosAcreditadosConBenevoles.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                          Aucun organisme accrédité n'est encore lié à un bénévole recruté.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {organismosAcreditadosConBenevoles.slice(0, 6).map((organismo) => (
+                            <div key={organismo.id} className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-sm text-[#333333] truncate">{organismo.nombre}</p>
+                                  <p className="text-xs text-gray-500 truncate">{organismo.tipo}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-gray-500">Bénévoles</p>
+                                  <p className="text-sm font-semibold" style={{ color: branding.secondaryColor }}>{organismo.benevoles}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
               </div>
+            </TabsContent>
+            )}
+
+            {!isPublicAccess && (
+            <TabsContent value="organisms" className="space-y-4">
+              <div className="space-y-4">
+                <Card className="overflow-hidden border-0 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                  <CardContent className="p-0">
+                    <div className="relative overflow-hidden">
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background: `linear-gradient(135deg, ${branding.primaryColor}12 0%, ${branding.secondaryColor}12 55%, #ffffff 100%)`
+                        }}
+                      />
+                      <div
+                        className="absolute -right-12 top-0 h-40 w-40 rounded-full blur-3xl"
+                        style={{ backgroundColor: `${branding.secondaryColor}20` }}
+                      />
+                      <div
+                        className="absolute left-8 top-8 h-24 w-24 rounded-full blur-2xl"
+                        style={{ backgroundColor: `${branding.primaryColor}18` }}
+                      />
+                      <div className="relative space-y-5 p-5 sm:p-6">
+                        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="max-w-3xl space-y-3">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                              <Building2 className="h-3.5 w-3.5" style={{ color: branding.primaryColor }} />
+                              Réseau externe recrutement
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                                Organismes accrédités, organisés pour l'assignation rapide
+                              </h3>
+                              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                                Cette vue concentre les profils utiles au recrutement externe : état d'activation, niveau d'usage, coordonnées et accès rapide à la fiche organisme.
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge className="border-0 bg-white/85 px-3 py-1 text-slate-700 shadow-sm">Formulaire Liaison réutilisé</Badge>
+                              <Badge className="border-0 bg-white/85 px-3 py-1 text-slate-700 shadow-sm">Stockage distinct Recrutement</Badge>
+                              <Badge className="border-0 bg-white/85 px-3 py-1 text-slate-700 shadow-sm">Assignations bénévoles externes</Badge>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-3 sm:min-w-[260px]">
+                            <Button
+                              onClick={handleOpenCreateRecruitmentOrganism}
+                              className="h-11 rounded-2xl text-white shadow-lg"
+                              style={{ backgroundColor: branding.primaryColor, fontFamily: 'Montserrat, sans-serif' }}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              {t('organisms.newOrganism')}
+                            </Button>
+                            <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Vue active</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-700">
+                                {organismosAcreditadosFiltrados.length} organisme(s) visible(s)
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Triés par usage réel puis par disponibilité.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                          <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">Total</p>
+                            <p className="mt-1 text-3xl font-bold" style={{ color: branding.primaryColor }}>{organismosAcreditados.length}</p>
+                            <p className="mt-1 text-xs text-slate-500">Répertoire complet recrutement</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">Actifs</p>
+                            <p className="mt-1 text-3xl font-bold text-emerald-600">{organismosAcreditadosActivos.length}</p>
+                            <p className="mt-1 text-xs text-slate-500">Disponibles immédiatement</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">Liés</p>
+                            <p className="mt-1 text-3xl font-bold" style={{ color: branding.secondaryColor }}>{organismosAcreditadosConBenevoles.length}</p>
+                            <p className="mt-1 text-xs text-slate-500">Avec bénévoles déjà affectés</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">Inactifs</p>
+                            <p className="mt-1 text-3xl font-bold text-slate-600">{organismosAcreditadosInactivos}</p>
+                            <p className="mt-1 text-xs text-slate-500">À réviser avant usage</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-200/60 shadow-sm overflow-hidden">
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                      <div className="relative flex-1 xl:max-w-xl">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          value={organismSearchTerm}
+                          onChange={(event) => setOrganismSearchTerm(event.target.value)}
+                          placeholder="Rechercher par organisme, type, responsable, email ou quartier"
+                          className="h-11 rounded-2xl border-slate-200 bg-slate-50/80 pl-10"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: 'all', label: 'Tous' },
+                          { key: 'active', label: 'Actifs' },
+                          { key: 'linked', label: 'Liés' },
+                          { key: 'inactive', label: 'Inactifs' },
+                        ].map((option) => {
+                          const isActive = organismFilter === option.key;
+
+                          return (
+                            <Button
+                              key={option.key}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-9 rounded-full px-4"
+                              style={isActive
+                                ? {
+                                    backgroundColor: `${branding.primaryColor}12`,
+                                    borderColor: `${branding.primaryColor}55`,
+                                    color: branding.primaryColor,
+                                    fontFamily: 'Montserrat, sans-serif',
+                                  }
+                                : { fontFamily: 'Montserrat, sans-serif' }}
+                              onClick={() => setOrganismFilter(option.key as 'all' | 'active' | 'linked' | 'inactive')}
+                            >
+                              {option.label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <Filter className="h-3.5 w-3.5" />
+                      <span>{organismosAcreditadosFiltrados.length} carte(s) affichée(s)</span>
+                      <span>•</span>
+                      <span>{organismosAcreditadosSinBenevoles} organisme(s) sans bénévole affecté</span>
+                      <span>•</span>
+                      <span>{organismosAcreditadosSinCoordonnees} fiche(s) sans coordonnées directes</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)] items-start">
+                  <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                    <CardHeader className="border-b border-slate-100 bg-white/90 pb-3">
+                      <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                        Organismes disponibles pour les assignations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      {organismosAcreditadosFiltrados.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                          Aucun organisme ne correspond aux filtres actuels.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
+                          {organismosAcreditadosFiltrados.map((organismo, index) => {
+                            const cardColor = index % 2 === 0 ? branding.primaryColor : branding.secondaryColor;
+                            const inicialesOrganismo = organismo.nombre
+                              .split(/\s+/)
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((fragmento) => fragmento.charAt(0).toUpperCase())
+                              .join('') || 'OR';
+
+                            return (
+                              <Card
+                                key={organismo.id}
+                                className="overflow-hidden border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                              >
+                                <div
+                                  className="h-1 w-full"
+                                  style={{
+                                    background: `linear-gradient(90deg, ${cardColor} 0%, ${cardColor}dd 100%)`
+                                  }}
+                                />
+                                <CardHeader className="px-4 pb-2 pt-4">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <div
+                                        className="h-12 w-12 overflow-hidden rounded-none flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0 bg-white"
+                                        style={{
+                                          background: organismo.logo ? '#FFFFFF' : `linear-gradient(135deg, ${cardColor} 0%, ${cardColor}dd 100%)`,
+                                          boxShadow: `0 4px 12px ${cardColor}30`
+                                        }}
+                                      >
+                                        {organismo.logo ? (
+                                          <img
+                                            src={organismo.logo}
+                                            alt={`Profil de ${organismo.nombre}`}
+                                            className="h-full w-full object-contain p-1"
+                                          />
+                                        ) : (
+                                          inicialesOrganismo
+                                        )}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <CardTitle
+                                          className="text-[15px] sm:text-base leading-tight break-words whitespace-normal"
+                                          style={{
+                                            fontFamily: 'Montserrat, sans-serif',
+                                            color: '#333333'
+                                          }}
+                                        >
+                                          {organismo.nombre}
+                                        </CardTitle>
+                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#666666]">
+                                          <span className="font-medium break-words whitespace-normal">{organismo.tipo || 'Organisme partenaire'}</span>
+                                          {organismo.responsable ? (
+                                            <span className="rounded-full bg-slate-50 px-2 py-0.5 break-words whitespace-normal">
+                                              {organismo.responsable}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Badge
+                                      className="border-0"
+                                      style={{
+                                        backgroundColor: organismo.activo ? '#DCFCE7' : '#F3F4F6',
+                                        color: organismo.activo ? '#166534' : '#6B7280'
+                                      }}
+                                    >
+                                      {organismo.activo ? 'Actif' : 'Inactif'}
+                                    </Badge>
+                                  </div>
+                                </CardHeader>
+
+                                <CardContent className="space-y-3 px-4 pb-4 pt-0">
+                                  <div
+                                    className="rounded-xl p-3"
+                                    style={{
+                                      background: `linear-gradient(135deg, ${cardColor}12 0%, ${branding.secondaryColor}10 100%)`
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div>
+                                        <p className="text-xs text-gray-500">Bénévoles assignés</p>
+                                        <p className="text-xl font-bold" style={{ color: cardColor }}>{organismo.benevolesAsignados}</p>
+                                      </div>
+                                      <Badge className="border-0 bg-blue-50 text-blue-700">
+                                        {organismo.benevolesAsignados} bénévole(s)
+                                      </Badge>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                                      <Mail className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
+                                      <span className="break-all whitespace-normal">{organismo.email || 'Aucun email'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                                      <Phone className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cardColor }} />
+                                      <span className="break-words whitespace-normal">{organismo.telefono || 'Aucun téléphone'}</span>
+                                    </div>
+                                  </div>
+
+                                  {(organismo.direccion || organismo.quartier || organismo.codigoPostal || organismo.zona) ? (
+                                    <div className="flex items-start gap-2 rounded-lg bg-gray-50/70 px-2.5 py-2 text-xs text-[#666666]">
+                                      <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: cardColor }} />
+                                      <div className="space-y-0.5">
+                                        {organismo.direccion ? <p className="font-medium text-[#333333]">{organismo.direccion}</p> : null}
+                                        <p>
+                                          {[organismo.quartier, organismo.codigoPostal, organismo.zona].filter(Boolean).join(' • ') || 'Localisation non renseignée'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ) : null}
+
+                                  {organismo.notas ? (
+                                    <div className="rounded-lg border-l-4 bg-slate-50/80 px-3 py-2" style={{ borderLeftColor: cardColor }}>
+                                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Profil</p>
+                                      <p className="mt-1 text-xs leading-5 text-[#666666] whitespace-pre-wrap break-words">{organismo.notas}</p>
+                                    </div>
+                                  ) : null}
+
+                                  <div className="flex gap-2 pt-2 border-t border-gray-200">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 flex-1 hover:scale-[1.01] transition-all duration-300"
+                                      style={{
+                                        fontFamily: 'Montserrat, sans-serif',
+                                        color: cardColor,
+                                        borderColor: `${cardColor}30`
+                                      }}
+                                      onClick={() => handleViewRecruitmentOrganismProfile(organismo)}
+                                    >
+                                      <Eye className="w-3.5 h-3.5 mr-1.5" />
+                                      Voir profil
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 px-2.5 hover:scale-105 transition-all duration-300 hover:bg-blue-50 border-2"
+                                      style={{
+                                        fontFamily: 'Montserrat, sans-serif',
+                                        color: '#1a4d7a',
+                                        borderColor: '#1a4d7a'
+                                      }}
+                                      onClick={() => handleEditRecruitmentOrganism(organismo)}
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 px-2.5 hover:scale-105 transition-all duration-300 hover:bg-red-50 border-2"
+                                      style={{
+                                        fontFamily: 'Montserrat, sans-serif',
+                                        color: '#DC3545',
+                                        borderColor: '#DC3545'
+                                      }}
+                                      onClick={() => handleDeleteRecruitmentOrganism(organismo)}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <div className="space-y-4">
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3 border-b border-slate-100 bg-white/90">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          Vue rapide
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pt-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">Assignations</p>
+                            <p className="mt-1 text-2xl font-bold" style={{ color: branding.secondaryColor }}>{totalAssignationsOrganismosAcreditados}</p>
+                          </div>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">Sans contact</p>
+                            <p className="mt-1 text-2xl font-bold text-amber-600">{organismosAcreditadosSinCoordonnees}</p>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                          <p className="text-sm font-semibold text-slate-700">Lecture recommandée</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-500">
+                            Les cartes liées à au moins un bénévole remontent en premier. Utilise les filtres pour isoler rapidement les organismes à activer ou à compléter avant affectation.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                      <CardHeader className="pb-3 border-b border-slate-100 bg-white/90">
+                        <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                          Priorités d'assignation
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pt-4">
+                        {organismosAcreditadosEnriquecidos.slice(0, 5).map((organismo) => (
+                          <div key={organismo.id} className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-800 break-words whitespace-normal">{organismo.nombre}</p>
+                                <p className="mt-1 text-xs text-slate-500 break-words whitespace-normal">
+                                  {[organismo.tipo, organismo.quartier].filter(Boolean).join(' • ') || 'Profil à compléter'}
+                                </p>
+                              </div>
+                              <Badge className="border-0 bg-blue-50 text-blue-700">
+                                {organismo.benevolesAsignados}
+                              </Badge>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-slate-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${Math.min(100, organismo.benevolesAsignados * 20 || (organismo.activo ? 12 : 6))}%`,
+                                  background: `linear-gradient(90deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+
+              <FormularioOrganismoCompacto
+                abierto={organismoDialogOpen}
+                onCerrar={resetRecruitmentOrganismForm}
+                formulario={organismoRecrutementForm}
+                setFormulario={setOrganismoRecrutementForm}
+                modoEdicion={modoEdicionOrganismo}
+                modoVisualizacion={modoVisualizacionOrganismo}
+                ocultarPestanaServicios
+                soloClasificacionRegular
+                onGuardar={handleSaveRecruitmentOrganism}
+                tiposOrganismo={tiposOrganismoRecrutement}
+              />
             </TabsContent>
             )}
 
@@ -3946,6 +4867,52 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                             </div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-200/50 shadow-sm overflow-hidden">
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-4 items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Link className="w-5 h-5" style={{ color: branding.primaryColor }} />
+                          <h3 className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
+                            Accès à distance à la feuille de temps
+                          </h3>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-600">
+                          Partagez ce lien pour permettre l'enregistrement à distance des entrées et sorties depuis le portail public de recrutement.
+                        </p>
+                        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 font-mono text-xs text-slate-700 break-all">
+                          {remoteTimesheetUrl}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+                          <span className="rounded-full bg-slate-100 px-3 py-1">{candidatosFeuilleTemps.length} bénévole(s) déjà assigné(s)</span>
+                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">{totalAssignationsOrganismosAcreditados} liaison(s) avec organismes accrédités</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row xl:flex-col gap-2">
+                        <Button
+                          onClick={handleCopyRemoteTimesheetLink}
+                          variant="outline"
+                          style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copier le lien
+                        </Button>
+                        <Button
+                          onClick={handleOpenRemoteTimesheet}
+                          className="text-white"
+                          style={{
+                            backgroundColor: branding.primaryColor,
+                            fontFamily: 'Montserrat, sans-serif'
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Ouvrir l'accès distant
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -4402,6 +5369,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
         departamentoId="7"
         departamentoNombre={t('nav.recruitment')}
         contactoId={candidatoParaEditar ? String(candidatoParaEditar.id) : undefined}
+        dialogVariant="compact"
         textOverrides={{
           createTitle: t('recruitmentInternal.candidateForm.createTitle'),
           editTitle: t('recruitmentInternal.candidateForm.editTitle'),
@@ -4632,6 +5600,51 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-base font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Organismes externes accrédités
+                </Label>
+                {organismosAcreditadosActivos.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+                    Aucun organisme actif n'est disponible dans la gestion propre au recrutement.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-500">
+                      Sélectionnez les organismes externes accrédités pouvant accueillir ou suivre ce bénévole.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {organismosAcreditadosActivos.map((organismo) => {
+                        const seleccionado = organismosAcreditadosSeleccionados.includes(organismo.id);
+
+                        return (
+                          <button
+                            key={organismo.id}
+                            type="button"
+                            onClick={() => alternarOrganismoAcreditadoSeleccionado(organismo.id)}
+                            className="rounded-xl border-2 p-4 text-left transition-all duration-200 hover:shadow-md"
+                            style={{
+                              borderColor: seleccionado ? branding.secondaryColor : '#E5E7EB',
+                              backgroundColor: seleccionado ? `${branding.secondaryColor}10` : '#FFFFFF'
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm text-slate-900 truncate">{organismo.nombre}</p>
+                                <p className="text-xs text-gray-500 mt-1 truncate">{organismo.tipo}</p>
+                              </div>
+                              {seleccionado && (
+                                <CheckCircle className="w-5 h-5 shrink-0" style={{ color: branding.secondaryColor }} />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Botones de acción */}

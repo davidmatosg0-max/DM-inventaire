@@ -724,13 +724,14 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
                 style={{ backgroundColor: branding.primaryColor }}
               />
               <div 
-                className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
+                className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-none flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
                 style={{ borderColor: branding.primaryColor }}
               >
                 {branding.logo ? (
                   <AdaptiveBrandLogo
                     src={branding.logo}
                     alt="Logo"
+                    forceShape="square"
                     wrapperClassName="h-full w-full"
                     borderWidthClassName="border-0"
                     shadowClassName=""

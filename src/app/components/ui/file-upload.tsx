@@ -1,6 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, X, FileText, File, Image as ImageIcon } from 'lucide-react';
+import { Download, File, FileText, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from './button';
 import { cn } from './utils';
 
@@ -17,7 +18,7 @@ interface FileUploadProps {
   files: UploadedFile[];
   onFilesChange: (files: UploadedFile[]) => void;
   disabled?: boolean;
-  maxSize?: number; // in MB
+  maxSize?: number | null; // in MB
   acceptedTypes?: string[];
 }
 
@@ -25,11 +26,12 @@ export function FileUpload({
   files, 
   onFilesChange, 
   disabled = false,
-  maxSize = 10,
+  maxSize = null,
   acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 }: FileUploadProps) {
   const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
+  const inputId = useId();
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
@@ -53,18 +55,18 @@ export function FileUpload({
     if (!fileList || disabled) return;
 
     const newFiles: UploadedFile[] = [];
-    const maxSizeBytes = maxSize * 1024 * 1024;
+    const maxSizeBytes = typeof maxSize === 'number' && Number.isFinite(maxSize) && maxSize > 0
+      ? maxSize * 1024 * 1024
+      : null;
 
     Array.from(fileList).forEach((file) => {
-      // Validate file size
-      if (file.size > maxSizeBytes) {
-        alert(t('comptoir.fileTooLarge'));
+      if (maxSizeBytes !== null && file.size > maxSizeBytes) {
+        toast.error(t('comptoir.fileTooLarge'));
         return;
       }
 
-      // Validate file type
       if (acceptedTypes.length > 0 && !acceptedTypes.includes(file.type)) {
-        alert(t('comptoir.invalidFileType'));
+        toast.error(t('comptoir.invalidFileType'));
         return;
       }
 
@@ -107,14 +109,41 @@ export function FileUpload({
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     handleFiles(e.target.files);
-    // Reset input value to allow selecting the same file again
     e.target.value = '';
   }, [handleFiles]);
 
   const handleDelete = useCallback((fileId: string) => {
+    const fileToDelete = files.find((file) => file.id === fileId);
+    if (fileToDelete?.url?.startsWith('blob:')) {
+      URL.revokeObjectURL(fileToDelete.url);
+    }
+
     const updatedFiles = files.filter(f => f.id !== fileId);
     onFilesChange(updatedFiles);
   }, [files, onFilesChange]);
+
+  const handleOpen = useCallback((file: UploadedFile) => {
+    if (!file.url) {
+      toast.error(t('comptoir.noDocuments'));
+      return;
+    }
+
+    window.open(file.url, '_blank', 'noopener,noreferrer');
+  }, [t]);
+
+  const handleDownload = useCallback((file: UploadedFile) => {
+    if (!file.url) {
+      toast.error(t('comptoir.noDocuments'));
+      return;
+    }
+
+    const anchor = document.createElement('a');
+    anchor.href = file.url;
+    anchor.download = file.name;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  }, [t]);
 
   const formatDate = (date: Date): string => {
     return new Intl.DateTimeFormat('fr-CA', {
@@ -126,82 +155,122 @@ export function FileUpload({
     }).format(date);
   };
 
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
   return (
     <div className="space-y-4">
-      {/* Upload Area */}
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          'border-2 border-dashed rounded-lg p-6 text-center transition-colors',
-          isDragOver && !disabled ? 'border-[#1E73BE] bg-blue-50' : 'border-gray-300',
-          disabled ? 'bg-[#F4F4F4] cursor-not-allowed' : 'cursor-pointer hover:border-[#1E73BE]'
+          'rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm transition-colors',
+          isDragOver && !disabled ? 'border-[#1E73BE] bg-[#f0f7ff]' : '',
+          disabled ? 'cursor-not-allowed bg-[#f8fafc]' : ''
         )}
       >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-2xl',
+              disabled ? 'bg-[#eef2f6] text-[#9aa8b6]' : 'bg-[#eef6ff] text-[#1E73BE]'
+            )}>
+              <Upload className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#25313d]">{t('comptoir.dragDropFiles')}</p>
+              <p className="mt-1 text-xs text-[#5d7185]">
+                {files.length > 0
+                  ? `${files.length} document(s) ajoute(s) • ${formatFileSize(totalSize)}`
+                  : t('comptoir.supportedFormats')}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-2xl"
+              disabled={disabled}
+              onClick={() => {
+                const input = document.getElementById(inputId) as HTMLInputElement | null;
+                input?.click();
+              }}
+            >
+              Ajouter des documents
+            </Button>
+            <p className="text-xs text-[#5d7185]">PDF, JPG, PNG, DOC, DOCX</p>
+          </div>
+        </div>
         <input
           type="file"
-          id="file-upload"
+          id={inputId}
           multiple
           disabled={disabled}
           onChange={handleFileInput}
           accept={acceptedTypes.join(',')}
           className="hidden"
         />
-        <label
-          htmlFor="file-upload"
-          className={cn(
-            'flex flex-col items-center gap-2',
-            disabled ? 'cursor-not-allowed' : 'cursor-pointer'
-          )}
-        >
-          <Upload className={cn(
-            'h-10 w-10',
-            disabled ? 'text-gray-400' : 'text-[#1E73BE]'
-          )} />
-          <div>
-            <p className="font-medium text-gray-700">{t('comptoir.dragDropFiles')}</p>
-            <p className="text-sm text-gray-500 mt-1">{t('comptoir.supportedFormats')}</p>
-          </div>
-        </label>
+        <div className={cn(
+          'mt-3 rounded-2xl border border-dashed p-4 text-center text-sm transition-colors',
+          disabled ? 'border-[#dbe6f0] bg-[#fbfdff] text-[#8a9aab]' : 'border-[#dbe6f0] bg-[#fbfdff] text-[#5d7185]'
+        )}>
+          {t('comptoir.supportedFormats')}
+        </div>
       </div>
 
-      {/* Files List */}
       {files.length > 0 ? (
-        <div className="space-y-2">
-          <h4 className="font-medium text-gray-700">{t('comptoir.attachedDocuments')}</h4>
-          <div className="border rounded-lg divide-y">
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-[#25313d]">{t('comptoir.attachedDocuments')}</h4>
+          <div className="space-y-3">
             {files.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
+                className="rounded-2xl border border-[#dbe6f0] bg-[#f8fbff] p-3"
               >
-                {getFileIcon(file.type)}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{file.name}</p>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                    <span>{formatFileSize(file.size)}</span>
-                    <span>•</span>
-                    <span>{formatDate(file.uploadDate)}</span>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#5d7185]">
+                      {getFileIcon(file.type)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-[#25313d]">{file.name}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#5d7185]">
+                        <span>{formatFileSize(file.size)}</span>
+                        <span>•</span>
+                        <span>{formatDate(file.uploadDate)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" className="rounded-2xl" onClick={() => handleOpen(file)}>
+                      Ouvrir
+                    </Button>
+                    <Button type="button" variant="outline" className="rounded-2xl" onClick={() => handleDownload(file)}>
+                      <Download className="mr-1 h-4 w-4" />
+                      Telecharger
+                    </Button>
+                    {!disabled ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => handleDelete(file.id)}
+                      >
+                        <X className="mr-1 h-4 w-4" />
+                        Retirer
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
-                {!disabled && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(file.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-500 text-center py-4">{t('comptoir.noDocuments')}</p>
+        <div className="rounded-2xl border border-dashed border-[#dbe6f0] bg-[#fbfdff] p-4 text-sm text-[#5d7185]">
+          {t('comptoir.noDocuments')}
+        </div>
       )}
     </div>
   );

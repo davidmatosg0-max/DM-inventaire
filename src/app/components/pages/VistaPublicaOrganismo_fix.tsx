@@ -54,6 +54,23 @@ interface DonadorPRSAsignado {
   nombreEmpresa: string;
 }
 
+interface ProductoEntradaPRSPendiente {
+  donadorId: string;
+  donadorNombre: string;
+  productoId: string;
+  productoNombre: string;
+  productoIcono: string;
+  categoria: string;
+  subcategoria: string;
+  productoCodigo: string;
+  cantidad: number;
+  unidad: string;
+  pesoUnidad: number;
+  pesoTotal: number;
+  temperatura: 'ambiente' | 'refrigerado' | 'congelado';
+  observaciones: string;
+}
+
 interface VistaPublicaOrganismoProps {
   organismo: Organismo & {
     participaPRS?: boolean;
@@ -362,6 +379,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
   const [dialogNuevaEntradaOpen, setDialogNuevaEntradaOpen] = useState(false);
   const [productosPRS, setProductosPRS] = useState<ProductoCreado[]>([]);
   const [donadoresPRS, setDonadoresPRS] = useState<DonadorPRSAsignado[]>([]);
+  const [productosEntradaPendientes, setProductosEntradaPendientes] = useState<ProductoEntradaPRSPendiente[]>([]);
+  const [productoPendienteEditandoIndex, setProductoPendienteEditandoIndex] = useState<number | null>(null);
   const [formEntrada, setFormEntrada] = useState({
     donadorId: '',
     productoId: '',
@@ -423,6 +442,16 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       
       console.log('📦 Productos PRS cargados:', productos.length);
       console.log('👥 Donadores PRS asignados cargados:', donadores.length);
+    } else {
+      setProductosEntradaPendientes([]);
+      setProductoPendienteEditandoIndex(null);
+      setFormEntrada({
+        donadorId: '',
+        productoId: '',
+        cantidad: '',
+        temperatura: '',
+        observaciones: ''
+      });
     }
   }, [dialogNuevaEntradaOpen, obtenerDonadoresPRSAsignados]);
 
@@ -815,77 +844,186 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     cargarPersonasResponsables();
   };
 
-  // Funciones para reportes
-  // Función para manejar el guardado de nueva entrada PRS
-  const handleGuardarEntrada = () => {
-    // Validaciones
+  const limpiarCamposProductoPRS = () => {
+    setProductoPendienteEditandoIndex(null);
+    setFormEntrada((prev) => ({
+      ...prev,
+      productoId: '',
+      cantidad: '',
+      temperatura: '',
+      observaciones: ''
+    }));
+  };
+
+  const construirProductoEntradaPendiente = (): ProductoEntradaPRSPendiente | null => {
     if (!formEntrada.donadorId) {
       toast.error('Donateur obligatoire', { description: 'Veuillez selectionner un donateur.' });
-      return;
+      return null;
     }
     if (!formEntrada.productoId) {
       toast.error('Produit obligatoire', { description: 'Veuillez selectionner un produit.' });
-      return;
+      return null;
     }
     if (!formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0) {
       toast.error('Quantite invalide', { description: 'Veuillez saisir une quantite valide.' });
-      return;
+      return null;
     }
     if (!formEntrada.temperatura) {
       toast.error('Temperature requise', { description: 'Veuillez selectionner la temperature d\'entreposage.' });
-      return;
+      return null;
     }
 
-    // Obtener producto y donador seleccionados
     const producto = productosPRS.find(p => p.id === formEntrada.productoId);
     const donador = donadoresPRS.find(d => d.id === formEntrada.donadorId);
 
     if (!producto || !donador) {
       toast.error('Error', { description: 'Producto o donador no encontrado.' });
-      return;
+      return null;
     }
 
     const cantidad = parseQuantityText(formEntrada.cantidad) || 0;
     const pesoTotal = cantidad * (producto.pesoUnitario || producto.peso || 0);
 
-    // Crear entrada
-    const entrada = {
-      fecha: new Date().toISOString(),
-      tipoEntrada: 'prs',
-      programaNombre: 'Programme de Ramassage de Surplus',
-      programaCodigo: 'prs',
-      programaColor: branding.secondaryColor,
-      programaIcono: '🚚',
-      donadorId: formEntrada.donadorId,
+    return {
+      donadorId: donador.id,
       donadorNombre: donador.nombreCompleto,
-      donadorEsCustom: false,
-      participantePRSId: formEntrada.donadorId,
-      participantePRSNombre: donador.nombreCompleto,
       productoId: producto.id,
-      nombreProducto: producto.nombre,
+      productoNombre: producto.nombre,
+      productoIcono: producto.icono,
       categoria: producto.categoria,
       subcategoria: producto.subcategoria,
-      productoCategoria: producto.categoria,
-      productoSubcategoria: producto.subcategoria,
-      productoIcono: producto.icono,
       productoCodigo: producto.codigo,
-      cantidad: cantidad,
+      cantidad,
       unidad: producto.unidad,
       pesoUnidad: producto.pesoUnitario || producto.peso || 0,
-      pesoTotal: pesoTotal,
+      pesoTotal,
       temperatura: formEntrada.temperatura as 'ambiente' | 'refrigerado' | 'congelado',
-      observaciones: `Entrada registrada por organismo ${organismo.nombre}. ${formEntrada.observaciones || ''}`.trim(),
-      creadoPor: organismo.nombre,
-      registradoPor: organismo.nombre,
-      organismoId: organismo.id
+      observaciones: formEntrada.observaciones.trim(),
     };
+  };
+
+  const handleAjouterProduitAListePRS = () => {
+    const nuevoProducto = construirProductoEntradaPendiente();
+    if (!nuevoProducto) {
+      return;
+    }
+
+    if (productoPendienteEditandoIndex !== null) {
+      setProductosEntradaPendientes((prev) => prev.map((item, index) => (
+        index === productoPendienteEditandoIndex ? nuevoProducto : item
+      )));
+    } else {
+      setProductosEntradaPendientes((prev) => [...prev, nuevoProducto]);
+    }
+    limpiarCamposProductoPRS();
+
+    toast.success(productoPendienteEditandoIndex !== null ? 'Produit mis a jour dans la liste' : 'Produit ajoute a la liste', {
+      description: `${formatQuantity(nuevoProducto.cantidad)} ${nuevoProducto.unidad} de ${nuevoProducto.productoNombre} prets a etre enregistres.`
+    });
+  };
+
+  const handleEditarProductoPendientePRS = (index: number) => {
+    const productoPendiente = productosEntradaPendientes[index];
+    if (!productoPendiente) {
+      return;
+    }
+
+    setProductoPendienteEditandoIndex(index);
+    setFormEntrada({
+      donadorId: productoPendiente.donadorId,
+      productoId: productoPendiente.productoId,
+      cantidad: String(productoPendiente.cantidad),
+      temperatura: productoPendiente.temperatura,
+      observaciones: productoPendiente.observaciones,
+    });
+
+    toast.info('Ligne chargee pour modification', {
+      description: `${productoPendiente.productoNombre} peut maintenant etre corrige avant l'enregistrement final.`
+    });
+  };
+
+  const handleEliminarProductoPendientePRS = (index: number) => {
+    setProductosEntradaPendientes((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setProductoPendienteEditandoIndex((prev) => {
+      if (prev === null) {
+        return prev;
+      }
+
+      if (prev === index) {
+        setFormEntrada((current) => ({
+          ...current,
+          productoId: '',
+          cantidad: '',
+          temperatura: '',
+          observaciones: ''
+        }));
+        return null;
+      }
+
+      if (index < prev) {
+        return prev - 1;
+      }
+
+      return prev;
+    });
+  };
+
+  // Funciones para reportes
+  // Función para manejar el guardado de nueva entrada PRS
+  const handleGuardarEntrada = () => {
+    if (productosEntradaPendientes.length === 0) {
+      toast.error('Liste vide', { description: 'Ajoutez au moins un produit a la liste avant d\'enregistrer.' });
+      return;
+    }
 
     try {
-      const exito = guardarEntrada(entrada as any);
+      let registrosExitosos = 0;
+      let pesoTotalRegistrado = 0;
+
+      for (const productoPendiente of productosEntradaPendientes) {
+        const entrada = {
+          fecha: new Date().toISOString(),
+          tipoEntrada: 'prs',
+          programaNombre: 'Programme de Ramassage de Surplus',
+          programaCodigo: 'prs',
+          programaColor: branding.secondaryColor,
+          programaIcono: '🚚',
+          donadorId: productoPendiente.donadorId,
+          donadorNombre: productoPendiente.donadorNombre,
+          donadorEsCustom: false,
+          participantePRSId: productoPendiente.donadorId,
+          participantePRSNombre: productoPendiente.donadorNombre,
+          productoId: productoPendiente.productoId,
+          nombreProducto: productoPendiente.productoNombre,
+          categoria: productoPendiente.categoria,
+          subcategoria: productoPendiente.subcategoria,
+          productoCategoria: productoPendiente.categoria,
+          productoSubcategoria: productoPendiente.subcategoria,
+          productoIcono: productoPendiente.productoIcono,
+          productoCodigo: productoPendiente.productoCodigo,
+          cantidad: productoPendiente.cantidad,
+          unidad: productoPendiente.unidad,
+          pesoUnidad: productoPendiente.pesoUnidad,
+          pesoTotal: productoPendiente.pesoTotal,
+          temperatura: productoPendiente.temperatura,
+          observaciones: `Entrada registrada por organismo ${organismo.nombre}. ${productoPendiente.observaciones || ''}`.trim(),
+          creadoPor: organismo.nombre,
+          registradoPor: organismo.nombre,
+          organismoId: organismo.id
+        };
+
+        const exito = guardarEntrada(entrada as any);
+        if (!exito) {
+          throw new Error(`No se pudo registrar ${productoPendiente.productoNombre}`);
+        }
+
+        registrosExitosos += 1;
+        pesoTotalRegistrado += productoPendiente.pesoTotal;
+      }
       
-      if (exito) {
+      if (registrosExitosos > 0) {
         toast.success('✅ Entrada registrada correctamente', {
-          description: `${formatQuantity(cantidad)} ${producto.unidad} de ${producto.nombre} - ${formatQuantity(pesoTotal)} kg`,
+          description: `${registrosExitosos} produit(s) enregistres • ${formatQuantity(pesoTotalRegistrado)} kg au total`,
           duration: 5000
         });
         
@@ -897,10 +1035,9 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
           temperatura: '',
           observaciones: ''
         });
+        setProductosEntradaPendientes([]);
         
         setDialogNuevaEntradaOpen(false);
-      } else {
-        toast.error('Erreur lors de l’enregistrement de l’entrée');
       }
     } catch (error) {
       console.error('Erreur lors de l’enregistrement de l’entrée :', error);
@@ -3328,6 +3465,103 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
               </div>
             </div>
 
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={handleAjouterProduitAListePRS}
+                className="h-11 px-5 text-white hover:shadow-lg transition-all duration-300"
+                style={{
+                  background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 600,
+                  opacity: (!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0 || !formEntrada.temperatura) ? 0.5 : 1
+                }}
+                disabled={!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0 || !formEntrada.temperatura}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {productoPendienteEditandoIndex !== null ? 'Mettre a jour la ligne' : 'Ajouter le produit a la liste'}
+              </Button>
+            </div>
+
+            {productoPendienteEditandoIndex !== null && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                Modification en cours. Ajustez les champs puis utilisez “Mettre a jour la ligne”.
+              </div>
+            )}
+
+            {productosEntradaPendientes.length > 0 && (
+              <div
+                className="rounded-xl border-2 p-4 backdrop-blur-sm"
+                style={{
+                  background: `linear-gradient(135deg, ${branding.primaryColor}08 0%, ${branding.secondaryColor}06 100%)`,
+                  borderColor: `${branding.primaryColor}22`
+                }}
+              >
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      Liste avant enregistrement
+                    </p>
+                    <p className="text-sm text-[#666666]">
+                      {productosEntradaPendientes.length} produit(s) prets a etre enregistres • {formatQuantity(productosEntradaPendientes.reduce((sum, item) => sum + item.pesoTotal, 0))} kg
+                    </p>
+                  </div>
+                  <Badge className="text-white" style={{ backgroundColor: branding.primaryColor }}>
+                    En attente
+                  </Badge>
+                </div>
+
+                <div className="space-y-3">
+                  {productosEntradaPendientes.map((productoPendiente, index) => (
+                    <div key={`${productoPendiente.productoId}-${index}`} className="flex items-start gap-3 rounded-xl border border-white/80 bg-white/90 p-3 shadow-sm">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-2xl shadow-sm">
+                        {productoPendiente.productoIcono}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-slate-900">{productoPendiente.productoNombre}</p>
+                          <Badge variant="outline">{productoPendiente.temperatura}</Badge>
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          {productoPendiente.donadorNombre} • {formatQuantity(productoPendiente.cantidad)} {productoPendiente.unidad} • {formatQuantity(productoPendiente.pesoTotal)} kg
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {productoPendiente.categoria} • {productoPendiente.subcategoria} • Code {productoPendiente.productoCodigo}
+                        </p>
+                        {productoPendiente.observaciones && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            Note: {productoPendiente.observaciones}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        title="Modifier la ligne"
+                        aria-label="Modifier la ligne"
+                        onClick={() => handleEditarProductoPendientePRS(index)}
+                        className="h-9 w-9 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        title="Retirer de la liste"
+                        aria-label="Retirer de la liste"
+                        onClick={() => handleEliminarProductoPendientePRS(index)}
+                        className="h-9 w-9 rounded-xl border-red-200 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Observaciones */}
             <div className="space-y-2.5">
               <Label htmlFor="observaciones" className="flex items-center gap-2 font-medium text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -3381,6 +3615,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
               variant="outline"
               onClick={() => {
                 setDialogNuevaEntradaOpen(false);
+                setProductosEntradaPendientes([]);
+                setProductoPendienteEditandoIndex(null);
                 setFormEntrada({
                   donadorId: '',
                   productoId: '',
@@ -3405,12 +3641,12 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                 background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
                 fontFamily: 'Montserrat, sans-serif',
                 fontWeight: 600,
-                opacity: (!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0 || !formEntrada.temperatura) ? 0.5 : 1
+                opacity: productosEntradaPendientes.length === 0 ? 0.5 : 1
               }}
-              disabled={!formEntrada.donadorId || !formEntrada.productoId || !formEntrada.cantidad || (parseQuantityText(formEntrada.cantidad) || 0) <= 0 || !formEntrada.temperatura}
+              disabled={productosEntradaPendientes.length === 0}
             >
               <Save className="w-4 h-4 mr-2" />
-              Enregistrer l'entrée
+              Enregistrer la liste ({productosEntradaPendientes.length})
             </Button>
           </div>
         </DialogContent>
