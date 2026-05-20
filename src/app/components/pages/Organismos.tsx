@@ -426,7 +426,6 @@ export function Organismos() {
                 <AdaptiveBrandLogo
                   src={branding.logo}
                   alt="Logo"
-                  forceShape="square"
                   wrapperClassName="h-11 w-11 sm:h-12 sm:w-12"
                   containerClassName="border shadow-md"
                   containerStyle={{ borderColor: branding.primaryColor }}

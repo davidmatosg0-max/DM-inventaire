@@ -364,7 +364,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
             contactoExistente.direccion = benevole.adresse || contactoExistente.direccion;
             contactoExistente.ciudad = benevole.ville || contactoExistente.ciudad;
             contactoExistente.codigoPostal = benevole.codePostal || contactoExistente.codigoPostal;
-            contactoExistente.foto = benevole.photo || contactoExistente.foto;
+            contactoExistente.foto = contactoExistente.foto || benevole.photo;
             contactoExistente.notas = benevole.notes || contactoExistente.notas;
             contactoExistente.activo = benevole.statut?.toLowerCase() === 'actif';
           } else if (departamentoId === 'todos' && benevole.statut?.toLowerCase() === 'actif') {
@@ -709,13 +709,109 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
     readFileAsDataURL(
       file,
       (dataUrl) => {
-        setFotoPreview(dataUrl);
-        setFormulario({ ...formulario, foto: dataUrl });
+        const image = new Image();
+
+        image.onload = () => {
+          const canvas = document.createElement('canvas');
+          const compressionSteps = [
+            { maxSize: 160, quality: 0.72 },
+            { maxSize: 120, quality: 0.6 },
+            { maxSize: 96, quality: 0.5 }
+          ];
+
+          const context = canvas.getContext('2d');
+          if (!context) {
+            setFotoPreview(dataUrl);
+            setFormulario((prev) => ({ ...prev, foto: dataUrl }));
+            return;
+          }
+
+          let optimized = dataUrl;
+
+          compressionSteps.some(({ maxSize, quality }) => {
+            const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+            const width = Math.max(1, Math.round(image.width * scale));
+            const height = Math.max(1, Math.round(image.height * scale));
+
+            canvas.width = width;
+            canvas.height = height;
+            context.clearRect(0, 0, width, height);
+            context.drawImage(image, 0, 0, width, height);
+
+            optimized = canvas.toDataURL('image/jpeg', quality);
+            return optimized.length <= 24 * 1024;
+          });
+
+          setFotoPreview(optimized);
+          setFormulario((prev) => ({ ...prev, foto: optimized }));
+        };
+
+        image.onerror = () => {
+          setFotoPreview(dataUrl);
+          setFormulario((prev) => ({ ...prev, foto: dataUrl }));
+        };
+
+        image.src = dataUrl;
       },
       () => {
         e.target.value = ''; // Limpiar input en caso de error
       }
     );
+
+    e.target.value = '';
+  };
+
+  const limpiarFotosDuplicadasBenevole = (email: string, contactoIdActual: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return;
+    }
+
+    const contactosRaw = localStorage.getItem('banqueAlimentaire_contactosDepartamento');
+    if (contactosRaw) {
+      const contactos = JSON.parse(contactosRaw);
+      let cambios = 0;
+
+      const contactosSinFotosDuplicadas = contactos.map((contacto: any) => {
+        const mismoBenevole = contacto.email?.trim().toLowerCase() === normalizedEmail;
+        if (mismoBenevole && contacto.id !== contactoIdActual && contacto.foto) {
+          cambios++;
+          return {
+            ...contacto,
+            foto: ''
+          };
+        }
+
+        return contacto;
+      });
+
+      if (cambios > 0) {
+        localStorage.setItem('banqueAlimentaire_contactosDepartamento', JSON.stringify(contactosSinFotosDuplicadas));
+      }
+    }
+
+    const benevolesRaw = localStorage.getItem('banqueAlimentaire_benevoles');
+    if (benevolesRaw) {
+      const benevoles = JSON.parse(benevolesRaw);
+      let cambios = 0;
+
+      const benevolesSinFotosEspejo = benevoles.map((benevole: any) => {
+        const mismoBenevole = benevole.email?.trim().toLowerCase() === normalizedEmail;
+        if (mismoBenevole && benevole.photo) {
+          cambios++;
+          return {
+            ...benevole,
+            photo: ''
+          };
+        }
+
+        return benevole;
+      });
+
+      if (cambios > 0) {
+        localStorage.setItem('banqueAlimentaire_benevoles', JSON.stringify(benevolesSinFotosEspejo));
+      }
+    }
   };
 
   const handleGuardar = () => {
@@ -829,11 +925,25 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
       });
       console.log('💾 ==========================================');
       
-      actualizarContacto(contactoSeleccionado.id, datosActualizados);
-      
-      // 🔄🔄🔄 SINCRONIZACIÓN TOTAL: Si es un bénévole, propagar cambios a TODOS los lugares
-      if (datosActualizados.tipo === 'benevole' && datosActualizados.email) {
-        try {
+      try {
+        if (datosActualizados.tipo === 'benevole' && datosActualizados.email) {
+          limpiarFotosDuplicadasBenevole(datosActualizados.email, contactoSeleccionado.id);
+        }
+
+        let actualizacionPersistida = actualizarContacto(contactoSeleccionado.id, datosActualizados);
+
+        if (!actualizacionPersistida && datosActualizados.tipo === 'benevole' && datosActualizados.email) {
+          optimizarTodosLosContactos();
+          limpiarFotosDuplicadasBenevole(datosActualizados.email, contactoSeleccionado.id);
+          actualizacionPersistida = actualizarContacto(contactoSeleccionado.id, datosActualizados);
+        }
+
+        if (!actualizacionPersistida) {
+          throw new Error('La mise à jour n’a pas pu être persistée dans le stockage local');
+        }
+
+        // 🔄🔄🔄 SINCRONIZACIÓN TOTAL: Si es un bénévole, propagar cambios a TODOS los lugares
+        if (datosActualizados.tipo === 'benevole' && datosActualizados.email) {
           console.log('🔄 ==========================================');
           console.log('🔄 INICIANDO SINCRONIZACIÓN TOTAL DE BÉNÉVOLE');
           console.log('🔄 Email:', datosActualizados.email);
@@ -862,7 +972,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                   competences: datosActualizados.certificaciones || b.competences,
                   disponibilites: datosActualizados.disponibilidades || b.disponibilites,
                   statut: datosActualizados.activo ? 'Actif' : 'Inactif',
-                  photo: datosActualizados.foto || b.photo,
+                  photo: b.photo || '',
                   notes: datosActualizados.notas || b.notes,
                   // Mantener departamentos y rol existentes
                   departement: b.departement,
@@ -917,7 +1027,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                   contactoEmergencia: datosActualizados.contactoEmergencia,
                   fechaConfirmacionCasier: datosActualizados.fechaConfirmacionCasier,
                   codigoEthiqueSigne: datosActualizados.codigoEthiqueSigne,
-                  foto: datosActualizados.foto,
+                  foto: c.foto,
                   notas: datosActualizados.notas,
                   activo: datosActualizados.activo,
                   // Mantener campos específicos del departamento
@@ -944,45 +1054,46 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
               nombreCompleto: datosActualizados.nombreCompleto
             }
           }));
+        }
+
+        // ✅ VERIFICACIÓN POST-GUARDADO: Leer inmediatamente de localStorage
+        setTimeout(() => {
+          const contactoVerificado = obtenerContactoPorId(contactoSeleccionado.id);
+          console.log('✅ ==========================================');
+          console.log('✅ VERIFICACIÓN POST-GUARDADO:');
+          console.log('✅ ==========================================');
+          console.log('✅ Contacto leído de localStorage:', contactoVerificado);
+          console.log('✅ 📍 Dirección verificada:', {
+            direccion: contactoVerificado?.direccion,
+            apartamento: contactoVerificado?.apartamento,
+            ciudad: contactoVerificado?.ciudad,
+            codigoPostal: contactoVerificado?.codigoPostal,
+            quartier: contactoVerificado?.quartier
+          });
+          console.log('✅ 📧 Contacto verificado:', {
+            email: contactoVerificado?.email,
+            telefono: contactoVerificado?.telefono
+          });
           
-        } catch (error) {
-          console.error('❌ Error en sincronización total:', error);
-        }
-      }
-      
-      // ✅ VERIFICACIÓN POST-GUARDADO: Leer inmediatamente de localStorage
-      setTimeout(() => {
-        const contactoVerificado = obtenerContactoPorId(contactoSeleccionado.id);
-        console.log('✅ ==========================================');
-        console.log('✅ VERIFICACIÓN POST-GUARDADO:');
-        console.log('✅ ==========================================');
-        console.log('✅ Contacto leído de localStorage:', contactoVerificado);
-        console.log('✅ 📍 Dirección verificada:', {
-          direccion: contactoVerificado?.direccion,
-          apartamento: contactoVerificado?.apartamento,
-          ciudad: contactoVerificado?.ciudad,
-          codigoPostal: contactoVerificado?.codigoPostal,
-          quartier: contactoVerificado?.quartier
-        });
-        console.log('✅ 📧 Contacto verificado:', {
-          email: contactoVerificado?.email,
-          telefono: contactoVerificado?.telefono
-        });
+          // ⚠️ ALERTA SI FALTAN DATOS
+          if (!contactoVerificado?.quartier && datosActualizados.quartier) {
+            console.error('❌❌❌ CRÍTICO: ¡El campo quartier NO se guardó!');
+            console.error('❌ Esperado:', datosActualizados.quartier);
+            console.error('❌ Encontrado:', contactoVerificado?.quartier);
+          }
+          if (!contactoVerificado?.direccion && datosActualizados.direccion) {
+            console.error('❌❌❌ CRÍTICO: ¡El campo direccion NO se guardó!');
+          }
+          console.log('✅ ==========================================');
+        }, 100);
         
-        // ⚠️ ALERTA SI FALTAN DATOS
-        if (!contactoVerificado?.quartier && datosActualizados.quartier) {
-          console.error('❌❌❌ CRÍTICO: ¡El campo quartier NO se guardó!');
-          console.error('❌ Esperado:', datosActualizados.quartier);
-          console.error('❌ Encontrado:', contactoVerificado?.quartier);
-        }
-        if (!contactoVerificado?.direccion && datosActualizados.direccion) {
-          console.error('❌❌❌ CRÍTICO: ¡El campo direccion NO se guardó!');
-        }
-        console.log('✅ ==========================================');
-      }, 100);
-      
-      toast.success('Contact mis à jour avec succès');
-      cargarContactos();
+        toast.success('Contact mis à jour avec succès');
+        cargarContactos();
+      } catch (error) {
+        console.error('❌ Error al actualizar contacto:', error);
+        toast.error('Impossible de mettre à jour le contact avec la photo. Le stockage local a été assaini, mais il reste saturé.');
+        return;
+      }
     } else {
       // Crear evento de creación
       const eventoCreacion = {
@@ -1059,7 +1170,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                 disponibilites: contactoGuardado.disponibilidades || [],
                 departement: contactoGuardado.departamentoIds || [departamentoId],
                 statut: 'Actif',
-                photo: contactoGuardado.foto || '',
+                photo: '',
                 notes: contactoGuardado.notas || '',
                 dateInscription: new Date().toISOString().split('T')[0],
                 heuresContribuees: 0,

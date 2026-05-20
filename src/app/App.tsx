@@ -272,7 +272,7 @@ function AppContent() {
         {renderPage()}
       </Layout>
       <Toaster position="top-right" />
-      <PWAInstaller />
+      {currentPage !== 'communication' && <PWAInstaller />}
     </BalanceProvider>
   );
 }

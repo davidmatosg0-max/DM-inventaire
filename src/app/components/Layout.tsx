@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
 import { AdaptiveBrandLogo } from './shared/AdaptiveBrandLogo';
+import { UserAvatar } from './shared/UserAvatar';
 import { obtenerUsuarioSesion } from '../utils/sesionStorage';
 import { 
   moduloDisponible, 
@@ -115,14 +116,19 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   
   // Usar el nombre de la empresa (branding.systemName) para mostrar en el header
   const nombreMostrar = branding.systemName || nombreCompleto;
-  
-  const iniciales = usuarioActual 
-    ? `${usuarioActual.nombre[0]}${usuarioActual.apellido?.[0] || ''}`.toUpperCase() 
-    : 'U';
 
   const rolTraducido = usuarioActual?.rol
     ? obtenerNombreRol(usuarioActual.rol)
     : 'Utilisateur';
+  const hideCommunicationFloaters = currentPage === 'communication';
+  const useCommunicationFullscreenShell = currentPage === 'communication';
+  const useCommunicationCompactSidebar = currentPage === 'communication';
+  const communicationTopOffsetClass = useCommunicationFullscreenShell
+    ? 'top-[56px] sm:top-[72px] lg:top-[136px]'
+    : 'top-[56px] sm:top-[72px]';
+  const communicationViewportClass = useCommunicationFullscreenShell
+    ? 'top-[56px] h-[calc(100vh-56px)] sm:top-[72px] sm:h-[calc(100vh-72px)] lg:top-[136px] lg:h-[calc(100vh-136px)] overflow-hidden pt-0'
+    : 'pt-[56px] sm:pt-[72px] h-screen overflow-y-auto';
 
   const professionalShellBadges = [
     t('layout.shellBadges.operationsSuite'),
@@ -690,7 +696,6 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                   <AdaptiveBrandLogo
                     src={branding.logo}
                     alt={t('common.logo')}
-                    forceShape="square"
                     wrapperClassName="h-7 w-7 flex-shrink-0 sm:h-9 sm:w-9"
                     glowColor={branding.secondaryColor}
                     glowClassName="blur-md opacity-50"
@@ -731,12 +736,15 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                   </p>
                   <p className="text-xs text-white/75">{rolTraducido}</p>
                 </div>
-                <div 
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 shadow-lg border border-white/25"
-                  style={{ backgroundColor: branding.secondaryColor }}
-                >
-                  {iniciales}
-                </div>
+                <UserAvatar
+                  userId={usuarioActual?.id}
+                  displayName={nombreCompleto}
+                  username={usuarioActual?.username}
+                  photo={usuarioActual?.foto}
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl shadow-lg border border-white/25"
+                  fallbackClassName="text-xs sm:text-sm font-bold text-white"
+                  fallbackStyle={{ backgroundColor: branding.secondaryColor }}
+                />
               </div>
               {/* Usuario móvil compacto */}
               <div className="sm:hidden flex items-center gap-2 rounded-xl border border-white/16 bg-white/10 px-2 py-1.5 max-w-[150px] backdrop-blur-md">
@@ -749,12 +757,15 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                   </p>
                   <p className="text-[10px] text-white/80 truncate">{rolTraducido}</p>
                 </div>
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-lg"
-                  style={{ backgroundColor: branding.secondaryColor }}
-                >
-                  {iniciales}
-                </div>
+                <UserAvatar
+                  userId={usuarioActual?.id}
+                  displayName={nombreCompleto}
+                  username={usuarioActual?.username}
+                  photo={usuarioActual?.foto}
+                  className="w-8 h-8 rounded-full shadow-lg"
+                  fallbackClassName="text-xs font-bold text-white"
+                  fallbackStyle={{ backgroundColor: branding.secondaryColor }}
+                />
               </div>
               {onLogout && (
                 <button
@@ -773,7 +784,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Sidebar con glassmorphism */}
       {!hideSidebar && (
         <aside
-          className={`app-pro-sidebar fixed top-[56px] sm:top-[72px] left-0 bottom-0 w-[244px] sm:w-[264px] shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
+          className={`app-pro-sidebar fixed ${communicationTopOffsetClass} left-0 bottom-0 ${useCommunicationCompactSidebar ? 'w-[220px] sm:w-[232px]' : 'w-[244px] sm:w-[264px]'} shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
           style={{ 
@@ -853,9 +864,10 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Main content */}
-      <main className={`app-main-stage pt-[56px] sm:pt-[72px] ${!hideSidebar ? 'lg:pl-[244px] xl:pl-[264px]' : ''} relative z-10 h-screen overflow-y-auto overflow-x-hidden`}>
-        <div data-app-shell className="app-shell-content px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5">
-          <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
+      <main className={`app-main-stage box-border ${communicationViewportClass} ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden`}>
+        <div data-app-shell className={`app-shell-content ${useCommunicationFullscreenShell ? 'h-full overflow-hidden px-0 py-0' : 'px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5'}`}>
+          {!useCommunicationFullscreenShell && (
+            <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
                 {t('layout.activeWorkspace')}
@@ -872,7 +884,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                 {t('layout.unifiedJourneys')}
               </span>
             </div>
-          </div>
+            </div>
+          )}
           {children}
         </div>
       </main>
@@ -882,19 +895,21 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       <AlertsSummary />
 
       {/* Botón flotante para acceso de organismos - Modernizado */}
-      <button
-        onClick={() => onNavigate('acceso-organismo')}
-        className={`app-floating-organism-access fixed bottom-4 sm:bottom-6 left-4 sm:left-6 ${!hideSidebar ? 'lg:left-[calc(244px+1.5rem)] xl:left-[calc(264px+1.5rem)]' : ''} text-white rounded-full p-3 sm:p-4 shadow-2xl transition-all hover:scale-110 z-40 flex items-center gap-2 backdrop-blur-xl border-2 border-white/30 group`}
-        style={{ 
-          background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`
-        }}
-        title={t('common.organismAccess')}
-      >
-        <Key className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform" />
-        <span className="hidden md:inline text-sm font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-          {t('nav.organismAccess')}
-        </span>
-      </button>
+      {!hideCommunicationFloaters && (
+        <button
+          onClick={() => onNavigate('acceso-organismo')}
+          className={`app-floating-organism-access fixed bottom-4 sm:bottom-6 left-4 sm:left-6 ${!hideSidebar ? 'lg:left-[calc(244px+1.5rem)] xl:left-[calc(264px+1.5rem)]' : ''} text-white rounded-full p-3 sm:p-4 shadow-2xl transition-all hover:scale-110 z-40 flex items-center gap-2 backdrop-blur-xl border-2 border-white/30 group`}
+          style={{ 
+            background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`
+          }}
+          title={t('common.organismAccess')}
+        >
+          <Key className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform" />
+          <span className="hidden md:inline text-sm font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            {t('nav.organismAccess')}
+          </span>
+        </button>
+      )}
 
       {showEntrepotQuickActions && (
         <div
@@ -951,38 +966,39 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Botón flotante de Guide Complet - DRAGGABLE */}
-      <button
-        ref={buttonRef}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onClick={(e) => {
-          // Solo abrir el modal si no se ha arrastrado (movimiento menor al umbral)
-          if (totalDragDistance < dragThreshold) {
-            setShowGuideComplete(true);
-          }
-        }}
-        className={`app-floating-guide text-white rounded-full shadow-2xl z-50 flex items-center justify-center backdrop-blur-xl border-2 border-white/30 group w-12 h-12 sm:w-14 sm:h-14 transition-all ${
-          isDragging ? 'cursor-grabbing scale-110 shadow-[0_0_30px_rgba(26,77,122,0.5)]' : 'cursor-grab hover:scale-110'
-        }`}
-        style={{ 
-          position: 'fixed',
-          bottom: 'auto',
-          right: position.y === 0 ? '1rem' : 'auto',
-          top: position.y === 0 ? 'calc(50% + 7rem)' : `${position.y}px`,
-          left: position.x !== 0 ? `${position.x}px` : 'auto',
-          transform: position.y === 0 ? 'translateY(-50%)' : 'none',
-          background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
-          transition: isDragging ? 'none' : 'all 0.3s ease',
-          userSelect: 'none',
-          touchAction: 'none',
-          WebkitTouchCallout: 'none'
-        }}
-        title="📖 Guide Complet - Glissez pour déplacer"
-      >
-        <BookOpen className={`w-6 h-6 sm:w-7 sm:h-7 transition-transform pointer-events-none ${
-          isDragging ? '' : 'group-hover:rotate-12'
-        }`} />
-      </button>
+      {!hideCommunicationFloaters && (
+        <button
+          ref={buttonRef}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onClick={(e) => {
+            if (totalDragDistance < dragThreshold) {
+              setShowGuideComplete(true);
+            }
+          }}
+          className={`app-floating-guide text-white rounded-full shadow-2xl z-50 flex items-center justify-center backdrop-blur-xl border-2 border-white/30 group w-12 h-12 sm:w-14 sm:h-14 transition-all ${
+            isDragging ? 'cursor-grabbing scale-110 shadow-[0_0_30px_rgba(26,77,122,0.5)]' : 'cursor-grab hover:scale-110'
+          }`}
+          style={{ 
+            position: 'fixed',
+            bottom: 'auto',
+            right: position.y === 0 ? '1rem' : 'auto',
+            top: position.y === 0 ? 'calc(50% + 7rem)' : `${position.y}px`,
+            left: position.x !== 0 ? `${position.x}px` : 'auto',
+            transform: position.y === 0 ? 'translateY(-50%)' : 'none',
+            background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
+            transition: isDragging ? 'none' : 'all 0.3s ease',
+            userSelect: 'none',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none'
+          }}
+          title="📖 Guide Complet - Glissez pour déplacer"
+        >
+          <BookOpen className={`w-6 h-6 sm:w-7 sm:h-7 transition-transform pointer-events-none ${
+            isDragging ? '' : 'group-hover:rotate-12'
+          }`} />
+        </button>
+      )}
 
       {/* Modal de Guide Complet */}
       {showGuideComplete && (
@@ -990,7 +1006,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Botón de instalación PWA flotante */}
-      <PWAFloatingButton />
+      {!hideCommunicationFloaters && <PWAFloatingButton />}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../../hooks/useBranding';
 import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
+import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { FormularioContactoCompacto } from '../departamentos/FormularioContactoCompacto';
 import { FormularioOrganismoCompacto } from '../organismos/FormularioOrganismoCompacto';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -216,6 +217,14 @@ const splitCandidateName = (fullName: string) => {
   };
 };
 
+const getCandidateInitials = (fullName: string) =>
+  fullName
+    .split(' ')
+    .map((name) => name[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
 const buildFullName = (nombre: string, apellido: string) =>
   [nombre.trim(), apellido.trim()].filter(Boolean).join(' ').trim();
 
@@ -417,6 +426,55 @@ const normalizarDocumentosCandidatoParaPersistencia = async (
   );
 
   return { documentos, referenciasCreadas };
+};
+
+const optimizarImagenCandidato = (source: string): Promise<string> => {
+  const safeSource = String(source || '').trim();
+
+  if (!safeSource.startsWith('data:image/')) {
+    return Promise.resolve(safeSource);
+  }
+
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      if (!context) {
+        resolve(safeSource);
+        return;
+      }
+
+      const compressionSteps = [
+        { maxSize: 240, quality: 0.78 },
+        { maxSize: 160, quality: 0.68 },
+        { maxSize: 120, quality: 0.58 },
+      ];
+
+      let optimized = safeSource;
+
+      compressionSteps.some(({ maxSize, quality }) => {
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+
+        canvas.width = width;
+        canvas.height = height;
+        context.clearRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+
+        optimized = canvas.toDataURL('image/jpeg', quality);
+        return optimized.length <= 36 * 1024;
+      });
+
+      resolve(optimized);
+    };
+
+    image.onerror = () => resolve(safeSource);
+    image.src = safeSource;
+  });
 };
 
 export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
@@ -1323,15 +1381,17 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     }
 
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       const base64 = typeof reader.result === 'string' ? reader.result : '';
-      setFotoPreview(base64 || null);
+      const optimized = await optimizarImagenCandidato(base64);
+      setFotoPreview(optimized || null);
       setFormularioCandidato(prev => ({
         ...prev,
-        foto: base64
+        foto: optimized
       }));
     };
     reader.readAsDataURL(file);
+    event.target.value = '';
   };
 
   const resetAssignationDialog = () => {
@@ -1390,6 +1450,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     }
 
     try {
+      const fotoOptimizada = await optimizarImagenCandidato(formularioCandidato.foto || '');
       const resultadoDocumentos = await normalizarDocumentosCandidatoParaPersistencia(formularioCandidato.documents);
       referenciasCreadas = resultadoDocumentos.referenciasCreadas;
 
@@ -1397,6 +1458,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
         mapContactFormToCandidate(
           {
             ...formularioCandidato,
+            foto: fotoOptimizada,
             documents: resultadoDocumentos.documentos || [],
           },
           'pending'
@@ -1479,6 +1541,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     let candidatoActualizado: Candidate | null = null;
 
     try {
+      const fotoOptimizada = await optimizarImagenCandidato(formularioCandidato.foto || '');
       const resultadoDocumentos = await normalizarDocumentosCandidatoParaPersistencia(formularioCandidato.documents);
       referenciasCreadas = resultadoDocumentos.referenciasCreadas;
 
@@ -1487,6 +1550,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
         mapContactFormToCandidate(
           {
             ...formularioCandidato,
+            foto: fotoOptimizada,
             documents: resultadoDocumentos.documentos || [],
           },
           candidatoParaEditar.status,
@@ -1641,10 +1705,18 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 <td className={isPublicAccess ? 'px-3 py-2' : 'px-4 py-3'}>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`${isPublicAccess ? 'w-7 h-7 text-[10px]' : 'w-8 h-8 text-xs'} rounded-full flex items-center justify-center text-white font-bold`}
+                      className={`${isPublicAccess ? 'w-7 h-7 text-[10px]' : 'w-8 h-8 text-xs'} rounded-full flex items-center justify-center text-white font-bold overflow-hidden`}
                       style={{ backgroundColor: branding.primaryColor }}
                     >
-                      {(candidatoFeuilleTempsSeleccionado?.name || 'BA').split(' ').map(name => name[0]).join('').slice(0, 2)}
+                      {candidatoFeuilleTempsSeleccionado?.foto ? (
+                        <ImageWithFallback
+                          src={candidatoFeuilleTempsSeleccionado.foto}
+                          alt={candidatoFeuilleTempsSeleccionado.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        getCandidateInitials(candidatoFeuilleTempsSeleccionado?.name || 'BA')
+                      )}
                     </div>
                     <div>
                       <span className="font-semibold text-sm text-[#333333] leading-tight">
@@ -1775,13 +1847,23 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
           >
             <div className="flex flex-col lg:flex-row items-start gap-4">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white flex-shrink-0 overflow-hidden"
                 style={{
                   background: `linear-gradient(135deg, ${cardColor} 0%, ${cardColor}dd 100%)`,
                   boxShadow: `0 4px 12px ${cardColor}30`
                 }}
               >
-                <Users className="w-8 h-8" />
+                {candidatoParaPerfil.foto ? (
+                  <ImageWithFallback
+                    src={candidatoParaPerfil.foto}
+                    alt={candidatoParaPerfil.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-base font-bold">
+                    {getCandidateInitials(candidatoParaPerfil.name || 'BA')}
+                  </span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-xl font-bold mb-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
@@ -2053,11 +2135,27 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       }}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold" style={{ color: isSelected ? branding.primaryColor : '#1F2937' }}>
-                            {candidate.name}
-                          </p>
-                          <p className="mt-0.5 truncate text-xs text-gray-500">{candidate.email}</p>
+                        <div className="min-w-0 flex items-center gap-3">
+                          <div
+                            className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
+                            style={{ backgroundColor: isSelected ? branding.primaryColor : `${branding.primaryColor}cc` }}
+                          >
+                            {candidate.foto ? (
+                              <ImageWithFallback
+                                src={candidate.foto}
+                                alt={candidate.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              getCandidateInitials(candidate.name || 'BA')
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold" style={{ color: isSelected ? branding.primaryColor : '#1F2937' }}>
+                              {candidate.name}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-gray-500">{candidate.email}</p>
+                          </div>
                         </div>
                         <div className="shrink-0 text-right">
                           <p className="text-[10px] uppercase tracking-wide text-gray-400">{t('recruitmentPublic.hours')}</p>
@@ -3240,23 +3338,22 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 className="absolute inset-0 rounded-none blur-2xl opacity-30 animate-pulse"
                 style={{ backgroundColor: branding.primaryColor }}
               />
-              <div 
-                className={`relative ${isPublicAccess ? 'h-12 w-12 sm:h-14 sm:w-14 border-2' : 'h-16 w-16 sm:h-20 sm:w-20 border-4'} rounded-none flex items-center justify-center overflow-hidden shadow-2xl bg-white`}
-                style={{ borderColor: branding.primaryColor }}
-              >
-                {branding.logo ? (
-                  <AdaptiveBrandLogo
-                    src={branding.logo}
-                    alt="Logo"
-                    forceShape="square"
-                    wrapperClassName="h-full w-full"
-                    containerClassName="rounded-none"
-                    borderWidthClassName="border-0"
-                    shadowClassName=""
-                    squareRadiusClassName="rounded-none"
-                    imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
-                  />
-                ) : (
+              {branding.logo ? (
+                <AdaptiveBrandLogo
+                  src={branding.logo}
+                  alt="Logo"
+                  wrapperClassName={`relative ${isPublicAccess ? 'h-12 w-12 sm:h-14 sm:w-14' : 'h-16 w-16 sm:h-20 sm:w-20'}`}
+                  backgroundClassName="bg-white"
+                  borderWidthClassName={isPublicAccess ? 'border-2' : 'border-4'}
+                  shadowClassName="shadow-2xl"
+                  containerStyle={{ borderColor: branding.primaryColor }}
+                  imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
+                />
+              ) : (
+                <div 
+                  className={`relative ${isPublicAccess ? 'h-12 w-12 sm:h-14 sm:w-14 border-2' : 'h-16 w-16 sm:h-20 sm:w-20 border-4'} rounded-[24px] flex items-center justify-center overflow-hidden shadow-2xl bg-white`}
+                  style={{ borderColor: branding.primaryColor }}
+                >
                   <div 
                     className="h-full w-full flex items-center justify-center text-white"
                     style={{ backgroundColor: branding.primaryColor }}
@@ -3265,8 +3362,8 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                       BA
                     </span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
           )}
@@ -3550,13 +3647,23 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3 flex-1">
                             <div
-                              className="h-10 w-10 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform duration-300"
+                              className="h-10 w-10 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden"
                               style={{
                                 background: `linear-gradient(135deg, ${cardColor} 0%, ${cardColor}dd 100%)`,
                                 boxShadow: `0 4px 12px ${cardColor}30`
                               }}
                             >
-                              <Users className="w-5 h-5" />
+                              {candidate.foto ? (
+                                <ImageWithFallback
+                                  src={candidate.foto}
+                                  alt={candidate.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs font-bold">
+                                  {getCandidateInitials(candidate.name || 'BA')}
+                                </span>
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <CardTitle
@@ -4228,9 +4335,25 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           <div className="space-y-3">
                             {recentCandidates.map(candidate => (
                               <div key={candidate.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
-                                <div className="min-w-0">
-                                  <p className="font-semibold text-sm text-[#333333] truncate">{candidate.name}</p>
-                                  <p className="text-xs text-gray-500 truncate">{getLocalizedCandidatePosition(candidate.position)} • {formatLocalizedDate(candidate.applicationDate)}</p>
+                                <div className="min-w-0 flex items-center gap-3">
+                                  <div
+                                    className="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold shrink-0"
+                                    style={{ backgroundColor: branding.primaryColor }}
+                                  >
+                                    {candidate.foto ? (
+                                      <ImageWithFallback
+                                        src={candidate.foto}
+                                        alt={candidate.name}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      getCandidateInitials(candidate.name || 'BA')
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-[#333333] truncate">{candidate.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{getLocalizedCandidatePosition(candidate.position)} • {formatLocalizedDate(candidate.applicationDate)}</p>
+                                  </div>
                                 </div>
                                 {getStatusBadge(candidate.status)}
                               </div>
@@ -5267,10 +5390,18 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                     <div className="flex-1">
                                       <div className="flex items-center gap-3">
                                         <div
-                                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden"
                                           style={{ backgroundColor: branding.primaryColor }}
                                         >
-                                          {(candidatoFeuilleTempsSeleccionado?.name || 'BA').split(' ').map(name => name[0]).join('').slice(0, 2)}
+                                          {candidatoFeuilleTempsSeleccionado?.foto ? (
+                                            <ImageWithFallback
+                                              src={candidatoFeuilleTempsSeleccionado.foto}
+                                              alt={candidatoFeuilleTempsSeleccionado.name}
+                                              className="h-full w-full object-cover"
+                                            />
+                                          ) : (
+                                            getCandidateInitials(candidatoFeuilleTempsSeleccionado?.name || 'BA')
+                                          )}
                                         </div>
                                         <div>
                                           <p className="font-bold text-lg">{candidatoFeuilleTempsSeleccionado?.name}</p>

@@ -7,6 +7,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { UserAvatar } from '../shared/UserAvatar';
 import { 
   type Demande, 
   obtenirDemandes, 
@@ -256,9 +257,15 @@ export const GestionDemandes: React.FC<GestionDemandesProps> = ({ onBack }) => {
                   {getPrioriteBadge(demandeSelectionnee.priorite)}
                   
                   {demandeSelectionnee.assigneA && (
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                      <UserCheck className="w-4 h-4" />
-                      Assigné à: {demandeSelectionnee.assigneA}
+                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                      <UserAvatar
+                        userId={demandeSelectionnee.assigneA}
+                        displayName={demandeSelectionnee.assigneA}
+                        className="h-6 w-6 rounded-full"
+                        fallbackClassName="text-[10px] font-bold text-white"
+                        fallbackStyle={{ backgroundColor: '#7c3aed' }}
+                      />
+                      <span>Assigné à: {demandeSelectionnee.assigneA}</span>
                     </span>
                   )}
                 </div>
@@ -621,8 +628,14 @@ export const GestionDemandes: React.FC<GestionDemandesProps> = ({ onBack }) => {
                       )}
                       
                       {demande.assigneA && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
-                          <UserCheck className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                          <UserAvatar
+                            userId={demande.assigneA}
+                            displayName={demande.assigneA}
+                            className="h-5 w-5 rounded-full"
+                            fallbackClassName="text-[9px] font-bold text-white"
+                            fallbackStyle={{ backgroundColor: '#7c3aed' }}
+                          />
                           {demande.assigneA}
                         </span>
                       )}

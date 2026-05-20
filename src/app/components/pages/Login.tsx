@@ -110,7 +110,6 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                     <AdaptiveBrandLogo
                       src={branding.logo}
                       alt="Logo"
-                      forceShape="square"
                       wrapperClassName="h-24 w-24"
                       glowColor={branding.primaryColor}
                       glowClassName="blur-2xl opacity-30 animate-pulse"

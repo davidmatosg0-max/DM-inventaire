@@ -298,30 +298,30 @@ export function IDDigital() {
       <aside className="hidden lg:block w-64 bg-white border-r min-h-screen sticky top-0">
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 rounded-none flex items-center justify-center overflow-hidden border-2 flex-shrink-0 bg-white"
-              style={{ borderColor: branding.primaryColor }}
-            >
-              {branding.logo ? (
-                <AdaptiveBrandLogo
-                  src={branding.logo}
-                  alt="Logo"
-                  forceShape="square"
-                  wrapperClassName="h-full w-full"
-                  borderWidthClassName="border-0"
-                  shadowClassName=""
-                  squareRadiusClassName="rounded-[14px]"
-                  imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
-                />
-              ) : (
+            {branding.logo ? (
+              <AdaptiveBrandLogo
+                src={branding.logo}
+                alt="Logo"
+                wrapperClassName="w-10 h-10 flex-shrink-0"
+                backgroundClassName="bg-white"
+                borderWidthClassName="border-2"
+                shadowClassName=""
+                containerStyle={{ borderColor: branding.primaryColor }}
+                imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
+              />
+            ) : (
+              <div 
+                className="w-10 h-10 rounded-[14px] flex items-center justify-center overflow-hidden border-2 flex-shrink-0 bg-white"
+                style={{ borderColor: branding.primaryColor }}
+              >
                 <div 
                   className="w-full h-full flex items-center justify-center text-white font-bold"
                   style={{ backgroundColor: branding.primaryColor }}
                 >
                   <span style={{ fontFamily: 'Montserrat, sans-serif' }}>BA</span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             <div>
               <h1 className="text-lg font-bold" style={{ color: branding.primaryColor, fontFamily: 'Montserrat, sans-serif' }}>
                 Comptoir

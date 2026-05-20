@@ -1805,7 +1805,6 @@ export function Configuracion() {
                 <AdaptiveBrandLogo
                   src={branding.logo}
                   alt="Logo"
-                  forceShape="square"
                   wrapperClassName="h-16 w-16 sm:h-20 sm:w-20"
                   glowColor={branding.primaryColor}
                   glowClassName="blur-2xl opacity-30 animate-pulse"

@@ -466,6 +466,25 @@ export function actualizarContacto(id: string, datosActualizados: Partial<Contac
     // ✅ VERIFICACIÓN CRÍTICA: Leer el contacto guardado y verificar que la dirección esté presente
     const verificacion = obtenerContactosDepartamento();
     const contactoVerificado = verificacion.find(c => c.id === id);
+    if (!contactoVerificado) {
+      console.error('❌ STORAGE - No se pudo verificar el contacto actualizado después de guardar');
+      return false;
+    }
+
+    const cambiosPersistidos = Object.entries(datosActualizados).every(([key, value]) => {
+      if (value === undefined) {
+        return true;
+      }
+
+      const valorGuardado = (contactoVerificado as any)[key];
+      return JSON.stringify(valorGuardado ?? null) === JSON.stringify(value ?? null);
+    });
+
+    if (!cambiosPersistidos) {
+      console.error('❌ STORAGE - Los cambios del contacto no se persistieron correctamente');
+      return false;
+    }
+
     if (contactoVerificado) {
       console.log('🔍 VERIFICACIÓN - Contacto actualizado leído de localStorage:', contactoVerificado);
       console.log('🔍 VERIFICACIÓN - Dirección en localStorage:', {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit, Trash2, Eye, EyeOff, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -23,6 +23,7 @@ import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { Rol, permisos as permisosCatalogo } from '../../data/rolesPermisos';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 export function Usuarios() {
   const { t } = useTranslation();
@@ -35,6 +36,7 @@ export function Usuarios() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<Usuario | null>(null);
   const [rolesDisponibles, setRolesDisponibles] = useState<Rol[]>([]);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   
   // Estados para contraseñas
   const [mostrarPassword, setMostrarPassword] = useState(false);
@@ -50,7 +52,8 @@ export function Usuarios() {
     password: '',
     confirmPassword: '',
     permisos: [] as string[],
-    descripcion: ''
+    descripcion: '',
+    foto: ''
   });
 
   // Cargar usuarios al montar el componente
@@ -109,7 +112,8 @@ export function Usuarios() {
       password: passwordActual,
       confirmPassword: passwordActual,
       permisos: usuario.permisos || [],
-      descripcion: usuario.descripcion || ''
+      descripcion: usuario.descripcion || '',
+      foto: usuario.foto || ''
     });
     setModoEdicion(true);
     setUsuarioDialogOpen(true);
@@ -163,7 +167,8 @@ export function Usuarios() {
           email: formUsuario.email,
           rol: formUsuario.rol,
           permisos: getPermisosSegunRol(formUsuario.rol),
-          descripcion: formUsuario.descripcion
+          descripcion: formUsuario.descripcion,
+          foto: formUsuario.foto
         };
 
         // Solo actualizar password si se proporcionó uno nuevo
@@ -206,7 +211,8 @@ export function Usuarios() {
           rol: formUsuario.rol,
           password: formUsuario.password,
           permisos: getPermisosSegunRol(formUsuario.rol),
-          descripcion: formUsuario.descripcion
+          descripcion: formUsuario.descripcion,
+          foto: formUsuario.foto
         });
         
         // 📝 REGISTRAR ACTIVIDAD
@@ -265,12 +271,72 @@ export function Usuarios() {
       password: '',
       confirmPassword: '',
       permisos: [],
-      descripcion: ''
+      descripcion: '',
+      foto: ''
     });
     setUsuarioSeleccionado(null);
     setModoEdicion(false);
     setMostrarPassword(false);
     setMostrarConfirmPassword(false);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
+  };
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Sélectionnez une image valide');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const source = typeof reader.result === 'string' ? reader.result : '';
+      if (!source) {
+        toast.error('Impossible de lire l’image sélectionnée');
+        return;
+      }
+
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 320;
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          setFormUsuario((previous) => ({ ...previous, foto: source }));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, width, height);
+        const optimized = canvas.toDataURL('image/jpeg', 0.78);
+        setFormUsuario((previous) => ({ ...previous, foto: optimized }));
+      };
+      image.onerror = () => {
+        setFormUsuario((previous) => ({ ...previous, foto: source }));
+      };
+      image.src = source;
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleRemovePhoto = () => {
+    setFormUsuario((previous) => ({ ...previous, foto: '' }));
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
   };
 
   // Función para copiar contraseña al portapapeles
@@ -466,8 +532,12 @@ export function Usuarios() {
                         <TableRow key={usuario.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-[#1E73BE] text-white flex items-center justify-center font-medium">
-                                {usuario.nombre[0]}{usuario.apellido[0]}
+                              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#1E73BE] font-medium text-white">
+                                {usuario.foto ? (
+                                  <ImageWithFallback src={usuario.foto} alt={`${usuario.nombre} ${usuario.apellido}`} className="h-full w-full object-cover" />
+                                ) : (
+                                  <span>{usuario.nombre[0]}{usuario.apellido[0]}</span>
+                                )}
                               </div>
                               <div>
                                 <p className="font-medium">{usuario.nombre} {usuario.apellido}</p>
@@ -534,6 +604,44 @@ export function Usuarios() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="rounded-2xl border border-[#d7e3ef] bg-[#f8fbff] p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#d7e3ef] bg-white text-xl font-semibold text-[#35516b] shadow-sm">
+                    {formUsuario.foto ? (
+                      <ImageWithFallback src={formUsuario.foto} alt="Photo utilisateur" className="h-full w-full object-cover" />
+                    ) : (
+                      <span>
+                        {(formUsuario.nombre?.[0] || formUsuario.username?.[0] || 'U').toUpperCase()}
+                        {(formUsuario.apellido?.[0] || '').toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div>
+                      <p className="text-sm font-semibold text-[#35516b]">Photo de profil</p>
+                      <p className="text-xs text-[#666666]">Ajoutez une image pour reconnaître l’utilisateur dans le formulaire et la liste.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" onClick={() => photoInputRef.current?.click()}>
+                        {formUsuario.foto ? 'Changer la photo' : 'Ajouter une photo'}
+                      </Button>
+                      {formUsuario.foto && (
+                        <Button type="button" variant="outline" onClick={handleRemovePhoto} className="text-[#DC3545]">
+                          Retirer
+                        </Button>
+                      )}
+                    </div>
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nom d'utilisateur *</Label>

@@ -228,8 +228,23 @@ export function actualizarCandidato(id: number, datos: Partial<Candidato>): Cand
     if (datos.adresse !== undefined && !candidatoVerificado.adresse) {
       console.error('⚠️ ADVERTENCIA: El campo adresse se perdió durante la actualización!');
     }
+
+    const cambiosPersistidos = Object.entries(datos).every(([key, value]) => {
+      if (value === undefined) {
+        return true;
+      }
+
+      const valorGuardado = (candidatoVerificado as any)[key];
+      return JSON.stringify(valorGuardado ?? null) === JSON.stringify(value ?? null);
+    });
+
+    if (!cambiosPersistidos) {
+      console.error('❌ ERROR CRÍTICO: Los cambios del candidato no se persistieron correctamente');
+      return null;
+    }
   } else {
     console.error('❌ ERROR CRÍTICO: El candidato NO se encontró después de guardar!');
+    return null;
   }
   
   console.log('📊 Datos actualizados:', datos);

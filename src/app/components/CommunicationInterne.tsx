@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { toast } from 'sonner';
 import { copiarAlPortapapeles } from '../utils/clipboard';
 import { GuiaCommunicationInterne } from './GuiaCommunicationInterne';
@@ -24,6 +25,7 @@ import {
   Download,
   Trash2,
   ArrowLeft,
+  Calendar,
   Users,
   TrendingUp,
   Bell,
@@ -38,11 +40,13 @@ import {
   Heart,
   Laugh,
   Pin,
+  Phone,
   Moon,
   Sun,
   Link2,
   Mic,
   Image,
+  Info,
   Video,
   BarChart3,
   Hash,
@@ -78,9 +82,9 @@ import {
   obtenirMessagesNonLus,
   rechercherMessages,
   obtenirNotificationsNonLues,
+  obtenirStatistiquesDepartement,
   marquerNotificationLue,
   marquerToutesNotificationsLues,
-  obtenirStatistiquesDepartement,
   obtenirBrouillonsMessagerie,
   sauvegarderBrouillonMessagerie,
   supprimerBrouillonMessagerie,
@@ -93,21 +97,49 @@ import {
 } from '../utils/communicationInterneStorage';
 import { obtenerDepartamentos, type Departamento } from '../utils/departamentosStorage';
 import { obtenerInfoUsuarioConPermisos, obtenerNombreRol } from '../utils/permisos';
+import { obtenerUsuarios, obtenerEtiquetaRol, type Usuario } from '../utils/usuarios';
 import { ReactionPicker, MessageReactions } from './chat/ReactionPicker';
 import { TypingIndicator, TypingIndicatorCompact } from './chat/TypingIndicator';
-import { MessageActions, QuickReplyButton } from './chat/MessageActions';
-import { PollCreator, PollView } from './chat/PollCreator';
+import { UserAvatar } from './shared/UserAvatar';
+import {
+  crearIdAdjuntoMessagerie,
+  crearReferenciaAdjuntoMessagerie,
+  esReferenciaAdjuntoMessagerie,
+  guardarContenidoAdjuntoMessagerie,
+  obtenerContenidoAdjuntoMessagerie,
+  eliminarAdjuntoMessagerie,
+} from '../utils/messagerieAttachmentIndexedDb';
+import {
+  TEAM_CHAT_EVENT,
+  buildDirectConversationId,
+  obtenirTeamChatMessages,
+  obtenirTeamChatTeams,
+  obtenirTeamChatChannels,
+  obtenirTeamChatEvents,
+  envoyerTeamChatMessage,
+  creerTeamChatTeam,
+  creerTeamChatChannel,
+  creerTeamChatEvent,
+  mettreAJourTeamChatTeam,
+  supprimerTeamChatTeam,
+  mettreAJourTeamChatChannel,
+  supprimerTeamChatChannel,
+  mettreAJourTeamChatEvent,
+  supprimerTeamChatEvent,
+  marquerConversationLeida,
+  type TeamChatMessage,
+  type TeamChatTeam,
+  type TeamChatChannel,
+  type TeamChatEvent,
+} from '../utils/teamChatStorage';
 
 type Vue = 'liste' | 'detail' | 'nouveau' | 'repondre' | 'statistiques';
 type Filtre = 'tous' | 'recus' | 'envoyes' | 'non_lus' | 'importants' | 'demandes' | 'archives' | 'epingles';
-type Reaction = '👍' | '❤️' | '😂' | '⭐' | '⚡' | '✅' | '🎉' | '🔥';
+type SimpleQuickFilter = 'chat' | 'channels' | 'people' | 'files' | 'agenda' | 'alerts';
 
 interface ExtendedMessage extends Message {
   reactions?: Record<string, string[]>;
   pinned?: boolean;
-  poll?: any;
-  edited?: boolean;
-  editedAt?: string;
 }
 
 interface MessagingAccessProfile {
@@ -122,15 +154,124 @@ interface MessagingAccessProfile {
   restrictionNotice?: string;
 }
 
-function createEmptyFormData() {
+type WorkspaceConversationType = 'direct' | 'team' | 'channel';
+
+type WorkspaceDialogMode = 'team' | 'channel' | 'event';
+
+interface WorkspaceConversation {
+  key: string;
+  id: string;
+  type: WorkspaceConversationType;
+  title: string;
+  subtitle: string;
+  avatarSeed: string;
+  avatarUserId?: string;
+  memberIds: string[];
+  messages: TeamChatMessage[];
+  unreadCount: number;
+  lastActivity?: string;
+  accentLabel: string;
+}
+
+const WORKSPACE_QUICK_EMOJIS = [
+  '🙂', '😊', '😄', '😉', '🤝', '🙌', '👏', '🙏',
+  '👍', '👌', '💪', '❤️', '💙', '💚', '🔥', '✨',
+  '🎉', '🚀', '🎯', '💡', '📌', '📅', '📞', '📝',
+  '📣', '📎', '📦', '🚚', '👀', '⚠️', '✅', '🏁',
+] as const;
+
+const WORKSPACE_QUICK_REACTIONS = [
+  { emoji: '✅', label: 'Validé' },
+  { emoji: '📌', label: 'À garder en vue' },
+  { emoji: '📅', label: 'À planifier' },
+  { emoji: '📞', label: 'À appeler' },
+  { emoji: '📦', label: 'Logistique' },
+  { emoji: '🚚', label: 'Livraison' },
+  { emoji: '💡', label: 'Idée' },
+  { emoji: '📝', label: 'Note' },
+  { emoji: '📣', label: 'Annonce' },
+  { emoji: '👀', label: 'À relire' },
+  { emoji: '⚠️', label: 'Attention' },
+  { emoji: '🔥', label: 'Prioritaire' },
+  { emoji: '🤝', label: 'Coordination' },
+  { emoji: '🎯', label: 'Objectif' },
+  { emoji: '🚀', label: 'Lancement' },
+  { emoji: '🙏', label: 'Merci' },
+] as const;
+
+interface WorkspaceTeamFormState {
+  name: string;
+  description: string;
+  memberIds: string[];
+}
+
+interface WorkspaceChannelFormState {
+  name: string;
+  description: string;
+  teamId: string;
+  memberIds: string[];
+}
+
+interface WorkspaceEventFormState {
+  title: string;
+  description: string;
+  startAt: string;
+  endAt: string;
+  participantIds: string[];
+  teamId: string;
+  channelId: string;
+}
+
+const createEmptyWorkspaceTeamForm = (currentUserId: string): WorkspaceTeamFormState => ({
+  name: '',
+  description: '',
+  memberIds: [currentUserId],
+});
+
+const createEmptyWorkspaceChannelForm = (currentUserId: string): WorkspaceChannelFormState => ({
+  name: '',
+  description: '',
+  teamId: '',
+  memberIds: [currentUserId],
+});
+
+const createDefaultEventStart = () => {
+  const date = new Date(Date.now() + 60 * 60 * 1000);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+const createEmptyWorkspaceEventForm = (currentUserId: string): WorkspaceEventFormState => ({
+  title: '',
+  description: '',
+  startAt: createDefaultEventStart(),
+  endAt: '',
+  participantIds: [currentUserId],
+  teamId: '',
+  channelId: '',
+});
+
+interface MessageFormData {
+  type: TypeMessage;
+  departementDestinataire: string;
+  departementDestinataires: string[];
+  isGroupMessage: boolean;
+  sujet: string;
+  contenu: string;
+  typeDemande?: TypeDemande;
+  priorite: PrioriteDemande;
+  dateEcheance: string;
+}
+
+function createEmptyFormData(): MessageFormData {
   return {
     type: 'message' as TypeMessage,
     departementDestinataire: '',
-    departementDestinataires: [] as string[],
+    departementDestinataires: [],
     isGroupMessage: false,
     sujet: '',
     contenu: '',
-    typeDemande: 'information' as TypeDemande,
+    typeDemande: undefined,
     priorite: 'normale' as PrioriteDemande,
     dateEcheance: ''
   };
@@ -145,14 +286,40 @@ function formatFileSize(size: number): string {
 function formatPresenceLabel(date: string): string {
   const elapsedMs = Date.now() - new Date(date).getTime();
   const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60000));
-
-  if (elapsedMinutes <= 1) return 'À l’instant';
   if (elapsedMinutes < 60) return `Il y a ${elapsedMinutes} min`;
-
-  const elapsedHours = Math.round(elapsedMinutes / 60);
-  if (elapsedHours < 24) return `Il y a ${elapsedHours} h`;
-
   return new Date(date).toLocaleDateString('fr-CA');
+}
+
+const CHAT_AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #5b67f3 0%, #6e8bff 100%)',
+  'linear-gradient(135deg, #1f8f68 0%, #4ecb8d 100%)',
+  'linear-gradient(135deg, #f18a3b 0%, #ffb466 100%)',
+  'linear-gradient(135deg, #9a56d6 0%, #c38cff 100%)',
+  'linear-gradient(135deg, #1176b8 0%, #59b8f0 100%)',
+  'linear-gradient(135deg, #e0567a 0%, #ff8ea6 100%)',
+];
+
+function hashChatSeed(value: string): number {
+  return Array.from(value).reduce((accumulator, character) => accumulator + character.charCodeAt(0), 0);
+}
+
+function getChatAvatarStyle(seed: string): React.CSSProperties {
+  const colorIndex = hashChatSeed(seed) % CHAT_AVATAR_GRADIENTS.length;
+  return { backgroundImage: CHAT_AVATAR_GRADIENTS[colorIndex] };
+}
+
+function getChatAvatarLabel(label: string): string {
+  const tokens = label.trim().split(/\s+/).filter(Boolean);
+
+  if (tokens.length === 0) {
+    return 'C';
+  }
+
+  if (tokens.length === 1) {
+    return tokens[0].slice(0, 1).toUpperCase();
+  }
+
+  return `${tokens[0][0] || ''}${tokens[1][0] || ''}`.toUpperCase();
 }
 
 function buildMessagingAccessProfile(
@@ -258,6 +425,13 @@ export function CommunicationInterne() {
   const [afficherGuide, setAfficherGuide] = useState(false);
   const [afficherGuideCompleta, setAfficherGuideCompleta] = useState(false);
   const [activeTab, setActiveTab] = useState('messagerie');
+  const [selectedConversationId, setSelectedConversationId] = useState('');
+  const sessionInfo = obtenerInfoUsuarioConPermisos();
+  const currentUserId = sessionInfo?.id || 'user-current';
+  const currentUserName = sessionInfo
+    ? [sessionInfo.nombre, sessionInfo.apellido].filter(Boolean).join(' ') || sessionInfo.username || 'Utilisateur'
+    : 'Utilisateur';
+  const currentUserRoleLabel = sessionInfo ? obtenerNombreRol(sessionInfo.rol) : 'Utilisateur';
   
   // Nuevos estados para funcionalidades avanzadas
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
@@ -272,22 +446,50 @@ export function CommunicationInterne() {
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState('');
   const [lastRealtimeRefresh, setLastRealtimeRefresh] = useState(new Date().toISOString());
+  const [simpleQuickFilter, setSimpleQuickFilter] = useState<SimpleQuickFilter>('chat');
+  const [workspaceUsers, setWorkspaceUsers] = useState<Usuario[]>([]);
+  const [teamChatMessages, setTeamChatMessages] = useState<TeamChatMessage[]>([]);
+  const [teamChatTeams, setTeamChatTeams] = useState<TeamChatTeam[]>([]);
+  const [teamChatChannels, setTeamChatChannels] = useState<TeamChatChannel[]>([]);
+  const [teamChatEvents, setTeamChatEvents] = useState<TeamChatEvent[]>([]);
+  const [selectedWorkspaceKey, setSelectedWorkspaceKey] = useState('');
+  const [selectedCalendarEventId, setSelectedCalendarEventId] = useState('');
+  const [workspaceDialogMode, setWorkspaceDialogMode] = useState<WorkspaceDialogMode | null>(null);
+  const [workspaceEditingTeamId, setWorkspaceEditingTeamId] = useState<string | null>(null);
+  const [workspaceEditingChannelId, setWorkspaceEditingChannelId] = useState<string | null>(null);
+  const [workspaceEditingEventId, setWorkspaceEditingEventId] = useState<string | null>(null);
+  const [workspaceTeamForm, setWorkspaceTeamForm] = useState<WorkspaceTeamFormState>(() => createEmptyWorkspaceTeamForm(currentUserId));
+  const [workspaceChannelForm, setWorkspaceChannelForm] = useState<WorkspaceChannelFormState>(() => createEmptyWorkspaceChannelForm(currentUserId));
+  const [workspaceEventForm, setWorkspaceEventForm] = useState<WorkspaceEventFormState>(() => createEmptyWorkspaceEventForm(currentUserId));
+  const [attachmentPickerAccept, setAttachmentPickerAccept] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const sessionInfo = obtenerInfoUsuarioConPermisos();
-  const currentUserId = sessionInfo?.id || 'user-current';
-  const currentUserName = sessionInfo
-    ? [sessionInfo.nombre, sessionInfo.apellido].filter(Boolean).join(' ') || sessionInfo.username || 'Utilisateur'
-    : 'Utilisateur';
-  const currentUserRoleLabel = sessionInfo ? obtenerNombreRol(sessionInfo.rol) : 'Utilisateur';
+  const composerActionsRef = useRef<HTMLDivElement | null>(null);
+  const [openComposerMenu, setOpenComposerMenu] = useState<'media' | 'quick' | null>(null);
   const accessProfile = buildMessagingAccessProfile(sessionInfo, departements, departementActuel);
   const allowedRecipientIds = accessProfile.allowedRecipientIds;
   const allowedRecipientsKey = allowedRecipientIds.join('|');
+  const isWorkspaceDialogOpen = workspaceDialogMode !== null;
   
   // Formulaire nouveau message
   const [formData, setFormData] = useState(createEmptyFormData());
 
   useEffect(() => {
     chargerDonnees();
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!composerActionsRef.current) {
+        return;
+      }
+
+      if (!composerActionsRef.current.contains(event.target as Node)) {
+        setOpenComposerMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
   useEffect(() => {
@@ -323,7 +525,12 @@ export function CommunicationInterne() {
 
   useEffect(() => {
     const storageHandler = (event: StorageEvent) => {
-      if (!event.key || event.key.startsWith('communication_interne_')) {
+      if (
+        !event.key
+        || event.key.startsWith('communication_interne_')
+        || event.key === 'banque_alimentaire_usuarios'
+        || event.key.startsWith('team_chat_')
+      ) {
         chargerDonnees();
       }
     };
@@ -334,10 +541,12 @@ export function CommunicationInterne() {
 
     window.addEventListener('storage', storageHandler);
     window.addEventListener(COMMUNICATION_INTERNE_EVENT, customEventHandler as EventListener);
+    window.addEventListener(TEAM_CHAT_EVENT, customEventHandler as EventListener);
 
     return () => {
       window.removeEventListener('storage', storageHandler);
       window.removeEventListener(COMMUNICATION_INTERNE_EVENT, customEventHandler as EventListener);
+      window.removeEventListener(TEAM_CHAT_EVENT, customEventHandler as EventListener);
     };
   }, [departementActuel, currentUserId]);
 
@@ -434,6 +643,33 @@ export function CommunicationInterne() {
     }
   }, [allowedRecipientsKey, accessProfile.canUseGroupMessages, formData.departementDestinataire, formData.departementDestinataires, formData.isGroupMessage]);
 
+  const chargerWorkspaceChat = () => {
+    const rawUsers = obtenerUsuarios();
+    const hasSessionUser = rawUsers.some((user) => user.id === currentUserId);
+    const normalizedUsers = hasSessionUser || !sessionInfo
+      ? rawUsers
+      : [
+          ...rawUsers,
+          {
+            id: currentUserId,
+            username: sessionInfo.username || currentUserName,
+            password: '',
+            nombre: sessionInfo.nombre || currentUserName,
+            apellido: sessionInfo.apellido || '',
+            email: sessionInfo.email || '',
+            rol: sessionInfo.rol,
+            permisos: sessionInfo.permisos || [],
+            activo: true,
+          },
+        ];
+
+    setWorkspaceUsers(normalizedUsers.filter((user) => user.activo !== false));
+    setTeamChatMessages(obtenirTeamChatMessages());
+    setTeamChatTeams(obtenirTeamChatTeams());
+    setTeamChatChannels(obtenirTeamChatChannels());
+    setTeamChatEvents(obtenirTeamChatEvents());
+  };
+
   const chargerDonnees = () => {
     const msgs = obtenirMessages() as ExtendedMessage[];
     const depts = obtenerDepartamentos();
@@ -455,6 +691,7 @@ export function CommunicationInterne() {
     setSavedDrafts(nextDepartmentId ? obtenirBrouillonsMessagerie(nextDepartmentId, currentUserId) : []);
     setDepartmentTemplates(nextDepartmentId ? obtenirTemplatesMessagerie(nextDepartmentId) : []);
     setPresenceEntries(obtenirPresencesMessagerie());
+    chargerWorkspaceChat();
     setLastRealtimeRefresh(new Date().toISOString());
     
     if (nextDepartmentId && !departementActuel) {
@@ -764,6 +1001,66 @@ export function CommunicationInterne() {
     toast.success('Sondage créé et envoyé');
   };
 
+  const handleEnvoyerMessageSimple = () => {
+    if (!accessProfile.canCompose) {
+      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas l’envoi de messages.');
+      return;
+    }
+
+    if (!selectedConversationId) {
+      toast.error('Sélectionnez une conversation avant d’envoyer un message.');
+      return;
+    }
+
+    const contenu = formData.contenu.trim();
+    if (!contenu && composerAttachments.length === 0) {
+      toast.error('Ajoutez un message ou une pièce jointe avant l’envoi.');
+      return;
+    }
+
+    const deptActuel = departements.find(d => d.id === departementActuel);
+    const deptDest = departements.find(d => d.id === selectedConversationId);
+    if (!deptActuel || !deptDest) {
+      toast.error('Conversation invalide.');
+      return;
+    }
+
+    const subjectBase = formData.sujet.trim() || `Conversation ${deptActuel.codigo || 'INT'} -> ${deptDest.codigo || 'EXT'}`;
+
+    envoyerMessage({
+      type: 'message',
+      departementEmetteur: departementActuel,
+      departementDestinataire: selectedConversationId,
+      expediteur: currentUserName || `Responsable ${deptActuel.nombre}`,
+      expediteurId: currentUserId,
+      sujet: subjectBase,
+      contenu,
+      piecesJointes: composerAttachments,
+      important: false,
+    });
+
+    if (activeDraftId) {
+      supprimerBrouillonMessagerie(activeDraftId);
+      setActiveDraftId(null);
+    }
+
+    chargerDonnees();
+    setComposerAttachments([]);
+    setFormData(previous => ({
+      ...previous,
+      type: 'message',
+      isGroupMessage: false,
+      departementDestinataire: selectedConversationId,
+      departementDestinataires: [],
+      sujet: '',
+      contenu: '',
+      typeDemande: 'information',
+      priorite: 'normale',
+      dateEcheance: '',
+    }));
+    toast.success(`Message envoyé à ${deptDest.nombre}`);
+  };
+
   const handleOpenReply = (msg: ExtendedMessage) => {
     setMessageSelectionne(msg);
     setComposerAttachments([]);
@@ -771,9 +1068,22 @@ export function CommunicationInterne() {
     setVue('repondre');
   };
 
-  const handleDownloadAttachment = (piece: PieceJointe) => {
+  const handleDownloadAttachment = async (piece: PieceJointe) => {
+    let downloadUrl = piece.url;
+
+    if (esReferenciaAdjuntoMessagerie(piece.url)) {
+      const stored = await obtenerContenidoAdjuntoMessagerie(piece.url);
+
+      if (!stored?.contenido) {
+        toast.error(`Le fichier ${piece.nom} n'est plus disponible localement.`);
+        return;
+      }
+
+      downloadUrl = stored.contenido;
+    }
+
     const link = document.createElement('a');
-    link.href = piece.url;
+    link.href = downloadUrl;
     link.download = piece.nom;
     document.body.appendChild(link);
     link.click();
@@ -790,6 +1100,7 @@ export function CommunicationInterne() {
   const handleAttachmentSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     event.target.value = '';
+    setAttachmentPickerAccept(undefined);
 
     if (!files.length) return;
 
@@ -801,29 +1112,36 @@ export function CommunicationInterne() {
     const nextAttachments: PieceJointe[] = [];
 
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} dépasse la limite de 5 Mo.`);
-        continue;
-      }
-
       const url = await lireFichierEnDataUrl(file);
+      const attachmentId = crearIdAdjuntoMessagerie();
+      await guardarContenidoAdjuntoMessagerie(attachmentId, url, file.type || 'application/octet-stream');
       nextAttachments.push({
-        id: `attachment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: attachmentId,
         nom: file.name,
         taille: file.size,
         type: file.type || 'application/octet-stream',
-        url,
+        url: crearReferenciaAdjuntoMessagerie(attachmentId),
       });
     }
 
     if (nextAttachments.length > 0) {
-      setComposerAttachments(previous => [...previous, ...nextAttachments].slice(0, 6));
+      setComposerAttachments(previous => [...previous, ...nextAttachments]);
       toast.success(`${nextAttachments.length} pièce(s) jointe(s) ajoutée(s)`);
     }
   };
 
   const handleRemoveAttachment = (attachmentId: string) => {
-    setComposerAttachments(previous => previous.filter(attachment => attachment.id !== attachmentId));
+    setComposerAttachments(previous => {
+      const attachmentToRemove = previous.find(attachment => attachment.id === attachmentId);
+
+      if (attachmentToRemove && esReferenciaAdjuntoMessagerie(attachmentToRemove.url)) {
+        void eliminarAdjuntoMessagerie(attachmentToRemove.url).catch((error) => {
+          console.error('Erreur lors de la suppression du contenu de la pièce jointe:', error);
+        });
+      }
+
+      return previous.filter(attachment => attachment.id !== attachmentId);
+    });
   };
 
   const handleSaveDraftNow = () => {
@@ -998,6 +1316,79 @@ export function CommunicationInterne() {
   const availableRecipients = departements.filter(
     department => department.activo && department.id !== departementActuel && allowedRecipientIds.includes(department.id)
   );
+  const normalizedChatSearch = recherche.trim().toLowerCase();
+  const baseSimpleConversationThreads = departements
+    .filter(department => department.activo && department.id !== departementActuel && allowedRecipientIds.includes(department.id))
+    .map(department => {
+      const threadMessages = messages
+        .filter(message => !message.archive && (
+          (message.departementEmetteur === departementActuel && message.departementDestinataire === department.id) ||
+          (message.departementDestinataire === departementActuel && message.departementEmetteur === department.id)
+        ))
+        .sort((left, right) => new Date(left.dateCreation).getTime() - new Date(right.dateCreation).getTime());
+
+      const lastMessage = threadMessages[threadMessages.length - 1] || null;
+      const unreadCount = threadMessages.filter(message =>
+        message.departementDestinataire === departementActuel &&
+        message.departementEmetteur === department.id &&
+        !message.lu
+      ).length;
+      const presence = presenceEntries.find(entry => entry.departementId === department.id && entry.status === 'online')
+        || presenceEntries.find(entry => entry.departementId === department.id)
+        || null;
+
+      return {
+        department,
+        messages: threadMessages,
+        lastMessage,
+        unreadCount,
+        presence,
+      };
+    });
+  const simpleConversationThreads = baseSimpleConversationThreads
+    .filter(thread => {
+      if (!normalizedChatSearch) {
+        return true;
+      }
+
+      const preview = `${thread.department.nombre} ${thread.department.codigo || ''} ${thread.lastMessage?.contenu || ''} ${thread.lastMessage?.expediteur || ''}`.toLowerCase();
+      return preview.includes(normalizedChatSearch);
+    })
+    .filter(thread => {
+      switch (simpleQuickFilter) {
+        case 'channels':
+          return thread.unreadCount > 0;
+        case 'people':
+          return thread.presence?.status === 'online';
+        case 'files':
+          return thread.messages.some(message => message.piecesJointes.length > 0);
+        case 'agenda':
+          return thread.messages.some(message => message.type === 'demande' || Boolean(message.dateEcheance));
+        case 'alerts':
+          return thread.messages.some(message =>
+            message.type === 'alerte'
+            || (message.type === 'demande' && ['urgente', 'haute'].includes(message.priorite || ''))
+            || (!message.lu && message.departementDestinataire === departementActuel)
+          );
+        default:
+          return true;
+      }
+    })
+    .sort((left, right) => {
+      const leftTime = left.lastMessage ? new Date(left.lastMessage.dateCreation).getTime() : 0;
+      const rightTime = right.lastMessage ? new Date(right.lastMessage.dateCreation).getTime() : 0;
+
+      if (rightTime !== leftTime) {
+        return rightTime - leftTime;
+      }
+
+      return left.department.nombre.localeCompare(right.department.nombre, 'fr', { sensitivity: 'base' });
+    });
+  const simpleConversationIdsKey = simpleConversationThreads.map(thread => thread.department.id).join('|');
+  const selectedConversation = simpleConversationThreads.find(thread => thread.department.id === selectedConversationId)
+    || simpleConversationThreads[0]
+    || null;
+  const selectedConversationMessages = selectedConversation?.messages || [];
   const departmentPresence = presenceEntries.filter(entry => entry.departementId === departementActuel);
   const activePresenceCount = presenceEntries.filter(entry => entry.status === 'online').length;
   const permissionBadges = [
@@ -1027,6 +1418,65 @@ export function CommunicationInterne() {
     }
 
     setVue(target);
+  };
+  const handleSimpleQuickFilterChange = (target: SimpleQuickFilter) => {
+    setSimpleQuickFilter(target);
+  };
+  const ouvrirSelecteurAdjuntos = (accept?: string) => {
+    if (!selectedConversationId && !selectedWorkspaceKey) {
+      toast.error('Sélectionnez une conversation avant d’ajouter un contenu.');
+      return;
+    }
+
+    if (!accessProfile.canUseAttachments) {
+      toast.error('Les pièces jointes ne sont pas disponibles pour ce rôle.');
+      return;
+    }
+
+    setAttachmentPickerAccept(accept || undefined);
+    fileInputRef.current?.click();
+  };
+  const handleInsertQuickText = (value: string, emptyError: string) => {
+    if (!selectedConversationId && !selectedWorkspaceKey) {
+      toast.error(emptyError);
+      return;
+    }
+
+    if (!accessProfile.canCompose) {
+      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas de rédiger un message.');
+      return;
+    }
+
+    setFormData(previous => ({
+      ...previous,
+      contenu: previous.contenu.trim().length > 0 ? `${previous.contenu} ${value}` : value
+    }));
+  };
+  const handleInsertQuickEmoji = (emoji = '🙂') => {
+    handleInsertQuickText(emoji, 'Sélectionnez une conversation avant d’ajouter un emoji.');
+  };
+  const handleInsertReaction = (emoji: string) => {
+    handleInsertQuickText(emoji, 'Sélectionnez une conversation avant d’ajouter une réaction.');
+  };
+  const handleInsertLinkTemplate = () => {
+    handleInsertQuickText('https://', 'Sélectionnez une conversation avant d’ajouter un lien.');
+  };
+  const handleStartVideoRoom = () => {
+    if (!selectedConversation || !departementCourant) {
+      toast.error('Sélectionnez une conversation avant de lancer une réunion.');
+      return;
+    }
+
+    const roomId = ['banque-dm', departementCourant.codigo || departementCourant.id, selectedConversation.department.codigo || selectedConversation.department.id]
+      .join('-')
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-');
+
+    window.open(`https://meet.jit.si/${roomId}`, '_blank', 'noopener,noreferrer');
+    toast.success(`Salon vidéo ouvert pour ${selectedConversation.department.nombre}`);
+  };
+  const toggleComposerMenu = (menu: 'media' | 'quick') => {
+    setOpenComposerMenu(previous => previous === menu ? null : menu);
   };
   const selectedDestCount = formData.isGroupMessage
     ? formData.departementDestinataires.length
@@ -1224,112 +1674,1980 @@ export function CommunicationInterne() {
     }
   ];
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-[#eef3f8]">
-      <div className="pointer-events-none fixed inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,_rgba(15,45,71,0.16),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(45,149,97,0.18),_transparent_26%),linear-gradient(180deg,_#f7fafc_0%,_#edf3f8_100%)]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 opacity-60" style={{ backgroundImage: 'linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+  const workspaceUserMap = workspaceUsers.reduce<Record<string, Usuario>>((accumulator, user) => {
+    accumulator[user.id] = user;
+    return accumulator;
+  }, {});
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="relative z-10 flex min-h-screen flex-col">
-        <div className="px-4 py-4 md:px-6 md:py-6">
-          <div className="overflow-hidden rounded-[34px] border border-white/70 bg-white/92 shadow-[0_30px_70px_-42px_rgba(15,45,71,0.32)] backdrop-blur-xl">
-            <div className="p-6 lg:p-7">
-              <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-slate-950 text-white shadow-lg shadow-slate-900/15">
-                      <MessageSquare className="h-8 w-8" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Communication interne</p>
-                      <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        Centre de messagerie
-                      </h1>
-                      <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 md:text-[15px]">
-                        Une messagerie plus simple pour lire, répondre et envoyer sans surcharge visuelle.
-                      </p>
-                    </div>
+  const getWorkspaceUserLabel = (userId: string) => {
+    const user = workspaceUserMap[userId];
+    if (!user) {
+      return userId === currentUserId ? currentUserName : 'Utilisateur';
+    }
+
+    return [user.nombre, user.apellido].filter(Boolean).join(' ').trim() || user.username || user.email || 'Utilisateur';
+  };
+
+  const getWorkspaceRoleLabel = (userId: string) => {
+    const user = workspaceUserMap[userId];
+    if (!user?.rol) {
+      return userId === currentUserId ? currentUserRoleLabel : 'Utilisateur';
+    }
+
+    return obtenerEtiquetaRol(user.rol);
+  };
+
+  const formatWorkspaceDate = (value?: string) => {
+    if (!value) {
+      return 'Aucune activité';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return 'Aucune activité';
+    }
+
+    return date.toLocaleString('fr-CA', {
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getUnreadCountForConversation = (messagesForConversation: TeamChatMessage[]) => {
+    return messagesForConversation.filter((message) => (
+      message.senderUserId !== currentUserId && !message.readByUserIds.includes(currentUserId)
+    )).length;
+  };
+
+  const activeWorkspaceUsers = workspaceUsers.filter((user) => user.id !== currentUserId && user.activo !== false);
+
+  const directConversations: WorkspaceConversation[] = activeWorkspaceUsers
+    .map((user) => {
+      const conversationId = buildDirectConversationId(currentUserId, user.id);
+      const messagesForConversation = teamChatMessages
+        .filter((message) => message.conversationType === 'direct' && message.conversationId === conversationId)
+        .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+      const lastMessage = messagesForConversation[messagesForConversation.length - 1];
+
+      return {
+        key: `direct:${conversationId}`,
+        id: conversationId,
+        type: 'direct',
+        title: getWorkspaceUserLabel(user.id),
+        subtitle: `${getWorkspaceRoleLabel(user.id)}${user.email ? ` • ${user.email}` : ''}`,
+        avatarSeed: `direct-${user.id}`,
+        avatarUserId: user.id,
+        memberIds: [currentUserId, user.id],
+        messages: messagesForConversation,
+        unreadCount: getUnreadCountForConversation(messagesForConversation),
+        lastActivity: lastMessage?.createdAt,
+        accentLabel: 'Utilisateur',
+      };
+    })
+    .sort((left, right) => {
+      const leftTime = left.lastActivity ? new Date(left.lastActivity).getTime() : 0;
+      const rightTime = right.lastActivity ? new Date(right.lastActivity).getTime() : 0;
+      return rightTime - leftTime || left.title.localeCompare(right.title, 'fr');
+    });
+
+  const teamConversations: WorkspaceConversation[] = teamChatTeams
+    .filter((team) => team.memberIds.includes(currentUserId))
+    .map((team) => {
+      const messagesForConversation = teamChatMessages
+        .filter((message) => message.conversationType === 'team' && message.conversationId === team.id)
+        .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+      const lastMessage = messagesForConversation[messagesForConversation.length - 1];
+
+      return {
+        key: `team:${team.id}`,
+        id: team.id,
+        type: 'team',
+        title: team.name,
+        subtitle: team.description || `${team.memberIds.length} membre(s)`,
+        avatarSeed: `team-${team.id}`,
+        memberIds: team.memberIds,
+        messages: messagesForConversation,
+        unreadCount: getUnreadCountForConversation(messagesForConversation),
+        lastActivity: lastMessage?.createdAt || team.createdAt,
+        accentLabel: 'Équipe',
+      };
+    })
+    .sort((left, right) => {
+      const leftTime = left.lastActivity ? new Date(left.lastActivity).getTime() : 0;
+      const rightTime = right.lastActivity ? new Date(right.lastActivity).getTime() : 0;
+      return rightTime - leftTime || left.title.localeCompare(right.title, 'fr');
+    });
+
+  const channelConversations: WorkspaceConversation[] = teamChatChannels
+    .filter((channel) => {
+      if (channel.memberIds.includes(currentUserId)) {
+        return true;
+      }
+
+      if (!channel.teamId) {
+        return false;
+      }
+
+      return teamChatTeams.some((team) => team.id === channel.teamId && team.memberIds.includes(currentUserId));
+    })
+    .map((channel) => {
+      const linkedTeam = channel.teamId ? teamChatTeams.find((team) => team.id === channel.teamId) : undefined;
+      const memberIds = channel.memberIds.length > 0 ? channel.memberIds : linkedTeam?.memberIds || [currentUserId];
+      const messagesForConversation = teamChatMessages
+        .filter((message) => message.conversationType === 'channel' && message.conversationId === channel.id)
+        .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+      const lastMessage = messagesForConversation[messagesForConversation.length - 1];
+
+      return {
+        key: `channel:${channel.id}`,
+        id: channel.id,
+        type: 'channel',
+        title: `#${channel.name}`,
+        subtitle: channel.description || (linkedTeam ? `Équipe ${linkedTeam.name}` : `${memberIds.length} membre(s)`),
+        avatarSeed: `channel-${channel.id}`,
+        memberIds,
+        messages: messagesForConversation,
+        unreadCount: getUnreadCountForConversation(messagesForConversation),
+        lastActivity: lastMessage?.createdAt || channel.createdAt,
+        accentLabel: 'Canal',
+      };
+    })
+    .sort((left, right) => {
+      const leftTime = left.lastActivity ? new Date(left.lastActivity).getTime() : 0;
+      const rightTime = right.lastActivity ? new Date(right.lastActivity).getTime() : 0;
+      return rightTime - leftTime || left.title.localeCompare(right.title, 'fr');
+    });
+
+  const allWorkspaceConversations = [...directConversations, ...teamConversations, ...channelConversations];
+  const workspaceSearch = recherche.trim().toLowerCase();
+
+  const visibleWorkspaceConversations = allWorkspaceConversations.filter((conversation) => {
+    switch (simpleQuickFilter) {
+      case 'chat':
+        if (conversation.type !== 'direct') return false;
+        break;
+      case 'channels':
+        if (conversation.type !== 'channel') return false;
+        break;
+      case 'people':
+        if (conversation.type !== 'team') return false;
+        break;
+      case 'files':
+        if (!conversation.messages.some((message) => message.attachments.length > 0)) return false;
+        break;
+      case 'alerts':
+        if (conversation.unreadCount === 0) return false;
+        break;
+      case 'agenda':
+        return false;
+    }
+
+    if (!workspaceSearch) {
+      return true;
+    }
+
+    return conversation.title.toLowerCase().includes(workspaceSearch)
+      || conversation.subtitle.toLowerCase().includes(workspaceSearch)
+      || conversation.messages.some((message) => message.content.toLowerCase().includes(workspaceSearch));
+  });
+
+  const visibleCalendarEvents = teamChatEvents
+    .filter((event) => event.participantIds.includes(currentUserId))
+    .filter((event) => {
+      if (!workspaceSearch) {
+        return true;
+      }
+
+      return event.title.toLowerCase().includes(workspaceSearch)
+        || (event.description || '').toLowerCase().includes(workspaceSearch);
+    })
+    .sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime());
+
+  const selectedWorkspace = visibleWorkspaceConversations.find((conversation) => conversation.key === selectedWorkspaceKey)
+    || visibleWorkspaceConversations[0]
+    || null;
+  const selectedCalendarEvent = visibleCalendarEvents.find((event) => event.id === selectedCalendarEventId)
+    || visibleCalendarEvents[0]
+    || null;
+
+  const toggleWorkspaceMemberSelection = (
+    memberIds: string[],
+    memberId: string,
+    checked: boolean,
+    keepCurrentUser = true,
+  ) => {
+    const nextMemberIds = checked
+      ? [...memberIds, memberId]
+      : memberIds.filter((item) => item !== memberId);
+
+    return Array.from(new Set(keepCurrentUser ? [currentUserId, ...nextMemberIds] : nextMemberIds));
+  };
+
+  const closeWorkspaceDialog = () => {
+    setWorkspaceEditingTeamId(null);
+    setWorkspaceEditingChannelId(null);
+    setWorkspaceEditingEventId(null);
+    setWorkspaceDialogMode(null);
+  };
+
+  const handleCreateWorkspaceTeam = () => {
+    setWorkspaceEditingTeamId(null);
+    setWorkspaceTeamForm(createEmptyWorkspaceTeamForm(currentUserId));
+    setWorkspaceDialogMode('team');
+  };
+
+  const handleEditWorkspaceTeam = (teamId: string) => {
+    const team = teamChatTeams.find((item) => item.id === teamId);
+    if (!team) {
+      toast.error('Équipe introuvable.');
+      return;
+    }
+
+    setWorkspaceEditingTeamId(team.id);
+    setWorkspaceTeamForm({
+      name: team.name,
+      description: team.description || '',
+      memberIds: Array.from(new Set([currentUserId, ...team.memberIds])),
+    });
+    setWorkspaceDialogMode('team');
+  };
+
+  const submitWorkspaceTeam = () => {
+    if (!workspaceTeamForm.name.trim()) {
+      toast.error('Saisissez un nom pour l’équipe.');
+      return;
+    }
+
+    const memberIds = Array.from(new Set([currentUserId, ...workspaceTeamForm.memberIds]));
+    const savedTeam = workspaceEditingTeamId
+      ? mettreAJourTeamChatTeam(workspaceEditingTeamId, {
+          name: workspaceTeamForm.name.trim(),
+          description: workspaceTeamForm.description.trim(),
+          memberIds,
+        })
+      : creerTeamChatTeam({
+          name: workspaceTeamForm.name.trim(),
+          description: workspaceTeamForm.description.trim(),
+          memberIds,
+          createdByUserId: currentUserId,
+        });
+
+    if (!savedTeam) {
+      toast.error('Impossible de sauvegarder l’équipe.');
+      return;
+    }
+
+    chargerWorkspaceChat();
+    setSimpleQuickFilter('people');
+    setSelectedWorkspaceKey(`team:${savedTeam.id}`);
+    setWorkspaceTeamForm(createEmptyWorkspaceTeamForm(currentUserId));
+    closeWorkspaceDialog();
+    toast.success(workspaceEditingTeamId ? `Équipe « ${savedTeam.name} » mise à jour` : `Équipe « ${savedTeam.name} » créée`);
+  };
+
+  const handleDeleteWorkspaceTeam = (teamId: string) => {
+    const team = teamChatTeams.find((item) => item.id === teamId);
+    if (!team) {
+      toast.error('Équipe introuvable.');
+      return;
+    }
+
+    if (!window.confirm(`Supprimer l’équipe « ${team.name} » ainsi que ses canaux et messages liés ?`)) {
+      return;
+    }
+
+    supprimerTeamChatTeam(teamId);
+    setSelectedWorkspaceKey('');
+    chargerWorkspaceChat();
+    toast.success(`Équipe « ${team.name} » supprimée`);
+  };
+
+  const handleCreateWorkspaceChannel = () => {
+    setWorkspaceEditingChannelId(null);
+    setWorkspaceChannelForm(createEmptyWorkspaceChannelForm(currentUserId));
+    setWorkspaceDialogMode('channel');
+  };
+
+  const handleEditWorkspaceChannel = (channelId: string) => {
+    const channel = teamChatChannels.find((item) => item.id === channelId);
+    if (!channel) {
+      toast.error('Canal introuvable.');
+      return;
+    }
+
+    setWorkspaceEditingChannelId(channel.id);
+    setWorkspaceChannelForm({
+      name: channel.name,
+      description: channel.description || '',
+      teamId: channel.teamId || '',
+      memberIds: Array.from(new Set([currentUserId, ...channel.memberIds])),
+    });
+    setWorkspaceDialogMode('channel');
+  };
+
+  const submitWorkspaceChannel = () => {
+    if (!workspaceChannelForm.name.trim()) {
+      toast.error('Saisissez un nom pour le canal.');
+      return;
+    }
+
+    const linkedTeam = workspaceChannelForm.teamId
+      ? teamChatTeams.find((team) => team.id === workspaceChannelForm.teamId)
+      : undefined;
+    const memberIds = linkedTeam
+      ? linkedTeam.memberIds
+      : Array.from(new Set([currentUserId, ...workspaceChannelForm.memberIds]));
+
+    const savedChannel = workspaceEditingChannelId
+      ? mettreAJourTeamChatChannel(workspaceEditingChannelId, {
+          name: workspaceChannelForm.name.trim().replace(/^#/, ''),
+          description: workspaceChannelForm.description.trim(),
+          memberIds,
+          teamId: linkedTeam?.id,
+        })
+      : creerTeamChatChannel({
+          name: workspaceChannelForm.name.trim().replace(/^#/, ''),
+          description: workspaceChannelForm.description.trim(),
+          memberIds,
+          teamId: linkedTeam?.id,
+          createdByUserId: currentUserId,
+        });
+
+    if (!savedChannel) {
+      toast.error('Impossible de sauvegarder le canal.');
+      return;
+    }
+
+    chargerWorkspaceChat();
+    setSimpleQuickFilter('channels');
+    setSelectedWorkspaceKey(`channel:${savedChannel.id}`);
+    setWorkspaceChannelForm(createEmptyWorkspaceChannelForm(currentUserId));
+    closeWorkspaceDialog();
+    toast.success(workspaceEditingChannelId ? `Canal « ${savedChannel.name} » mis à jour` : `Canal « ${savedChannel.name} » créé`);
+  };
+
+  const handleDeleteWorkspaceChannel = (channelId: string) => {
+    const channel = teamChatChannels.find((item) => item.id === channelId);
+    if (!channel) {
+      toast.error('Canal introuvable.');
+      return;
+    }
+
+    if (!window.confirm(`Supprimer le canal « ${channel.name} » ainsi que ses messages et événements liés ?`)) {
+      return;
+    }
+
+    supprimerTeamChatChannel(channelId);
+    setSelectedWorkspaceKey('');
+    chargerWorkspaceChat();
+    toast.success(`Canal « ${channel.name} » supprimé`);
+  };
+
+  const handleScheduleWorkspaceEvent = (conversation?: WorkspaceConversation | null) => {
+    setWorkspaceEditingEventId(null);
+    setWorkspaceEventForm({
+      title: '',
+      description: '',
+      startAt: createDefaultEventStart(),
+      endAt: '',
+      participantIds: conversation?.memberIds?.length ? Array.from(new Set(conversation.memberIds)) : [currentUserId],
+      teamId: conversation?.type === 'team' ? conversation.id : '',
+      channelId: conversation?.type === 'channel' ? conversation.id : '',
+    });
+    setWorkspaceDialogMode('event');
+  };
+
+  const handleEditWorkspaceEvent = (eventId: string) => {
+    const event = teamChatEvents.find((item) => item.id === eventId);
+    if (!event) {
+      toast.error('Événement introuvable.');
+      return;
+    }
+
+    setWorkspaceEditingEventId(event.id);
+    setWorkspaceEventForm({
+      title: event.title,
+      description: event.description || '',
+      startAt: createDefaultEventStart(),
+      endAt: '',
+      participantIds: Array.from(new Set([currentUserId, ...event.participantIds])),
+      teamId: event.teamId || '',
+      channelId: event.channelId || '',
+    });
+    setWorkspaceEventForm((previous) => ({
+      ...previous,
+      startAt: (() => {
+        const date = new Date(event.startAt);
+        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 16);
+      })(),
+      endAt: event.endAt
+        ? (() => {
+            const date = new Date(event.endAt as string);
+            const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 16);
+          })()
+        : '',
+    }));
+    setWorkspaceDialogMode('event');
+  };
+
+  const submitWorkspaceEvent = () => {
+    if (!workspaceEventForm.title.trim()) {
+      toast.error('Saisissez un titre pour l’événement.');
+      return;
+    }
+
+    if (!workspaceEventForm.startAt.trim() || Number.isNaN(new Date(workspaceEventForm.startAt).getTime())) {
+      toast.error('Date de début invalide.');
+      return;
+    }
+
+    if (workspaceEventForm.endAt.trim() && Number.isNaN(new Date(workspaceEventForm.endAt).getTime())) {
+      toast.error('Date de fin invalide.');
+      return;
+    }
+
+    const savedEvent = workspaceEditingEventId
+      ? mettreAJourTeamChatEvent(workspaceEditingEventId, {
+          title: workspaceEventForm.title.trim(),
+          description: workspaceEventForm.description.trim(),
+          startAt: new Date(workspaceEventForm.startAt).toISOString(),
+          endAt: workspaceEventForm.endAt.trim() ? new Date(workspaceEventForm.endAt).toISOString() : undefined,
+          participantIds: Array.from(new Set([currentUserId, ...workspaceEventForm.participantIds])),
+          teamId: workspaceEventForm.teamId || undefined,
+          channelId: workspaceEventForm.channelId || undefined,
+        })
+      : creerTeamChatEvent({
+          title: workspaceEventForm.title.trim(),
+          description: workspaceEventForm.description.trim(),
+          startAt: new Date(workspaceEventForm.startAt).toISOString(),
+          endAt: workspaceEventForm.endAt.trim() ? new Date(workspaceEventForm.endAt).toISOString() : undefined,
+          createdByUserId: currentUserId,
+          participantIds: Array.from(new Set([currentUserId, ...workspaceEventForm.participantIds])),
+          teamId: workspaceEventForm.teamId || undefined,
+          channelId: workspaceEventForm.channelId || undefined,
+        });
+
+    if (!savedEvent) {
+      toast.error('Impossible de sauvegarder l’événement.');
+      return;
+    }
+
+    chargerWorkspaceChat();
+    setSimpleQuickFilter('agenda');
+    setSelectedCalendarEventId(savedEvent.id);
+    setWorkspaceEventForm(createEmptyWorkspaceEventForm(currentUserId));
+    closeWorkspaceDialog();
+    toast.success(workspaceEditingEventId ? `Événement « ${savedEvent.title} » mis à jour` : `Événement « ${savedEvent.title} » programmé`);
+  };
+
+  const handleDeleteWorkspaceEvent = (eventId: string) => {
+    const event = teamChatEvents.find((item) => item.id === eventId);
+    if (!event) {
+      toast.error('Événement introuvable.');
+      return;
+    }
+
+    if (!window.confirm(`Supprimer l’événement « ${event.title} » ?`)) {
+      return;
+    }
+
+    supprimerTeamChatEvent(eventId);
+    setSelectedCalendarEventId('');
+    chargerWorkspaceChat();
+    toast.success(`Événement « ${event.title} » supprimé`);
+  };
+
+  const handleStartWorkspaceVideoRoom = (conversation?: WorkspaceConversation | null) => {
+    if (!conversation) {
+      toast.error('Sélectionnez une conversation avant de lancer une réunion.');
+      return;
+    }
+
+    const roomId = ['banque-dm', conversation.type, conversation.id]
+      .join('-')
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-');
+
+    window.open(`https://meet.jit.si/${roomId}`, '_blank', 'noopener,noreferrer');
+    toast.success(`Salon vidéo ouvert pour ${conversation.title}`);
+  };
+
+  const handleSendWorkspaceMessage = () => {
+    if (!selectedWorkspace) {
+      toast.error('Sélectionnez une conversation avant d’envoyer un message.');
+      return;
+    }
+
+    if (!accessProfile.canCompose) {
+      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas de rédiger un message.');
+      return;
+    }
+
+    const content = formData.contenu.trim();
+    if (!content && composerAttachments.length === 0) {
+      toast.error('Saisissez un message ou ajoutez une pièce jointe.');
+      return;
+    }
+
+    envoyerTeamChatMessage({
+      conversationType: selectedWorkspace.type,
+      conversationId: selectedWorkspace.id,
+      senderUserId: currentUserId,
+      senderName: currentUserName,
+      content,
+      attachments: composerAttachments,
+    });
+
+    setComposerAttachments([]);
+    setOpenComposerMenu(null);
+    setFormData((previous) => ({
+      ...previous,
+      sujet: '',
+      contenu: '',
+    }));
+    chargerWorkspaceChat();
+  };
+
+  useEffect(() => {
+    if (simpleQuickFilter === 'agenda') {
+      if (!visibleCalendarEvents.length) {
+        if (selectedCalendarEventId) {
+          setSelectedCalendarEventId('');
+        }
+        return;
+      }
+
+      if (!selectedCalendarEventId || !visibleCalendarEvents.some((event) => event.id === selectedCalendarEventId)) {
+        setSelectedCalendarEventId(visibleCalendarEvents[0].id);
+      }
+      return;
+    }
+
+    if (!visibleWorkspaceConversations.length) {
+      if (selectedWorkspaceKey) {
+        setSelectedWorkspaceKey('');
+      }
+      return;
+    }
+
+    if (!selectedWorkspaceKey || !visibleWorkspaceConversations.some((conversation) => conversation.key === selectedWorkspaceKey)) {
+      setSelectedWorkspaceKey(visibleWorkspaceConversations[0].key);
+    }
+  }, [
+    simpleQuickFilter,
+    selectedWorkspaceKey,
+    selectedCalendarEventId,
+    visibleWorkspaceConversations.map((conversation) => conversation.key).join('|'),
+    visibleCalendarEvents.map((event) => event.id).join('|'),
+  ]);
+
+  useEffect(() => {
+    if (!selectedWorkspace || simpleQuickFilter === 'agenda') {
+      return;
+    }
+
+    if (selectedWorkspace.unreadCount === 0) {
+      return;
+    }
+
+    marquerConversationLeida(selectedWorkspace.type, selectedWorkspace.id, currentUserId);
+    chargerWorkspaceChat();
+  }, [selectedWorkspace?.key, simpleQuickFilter, currentUserId]);
+
+  useEffect(() => {
+    if (!simpleConversationThreads.length) {
+      if (selectedConversationId) {
+        setSelectedConversationId('');
+      }
+      return;
+    }
+
+    if (!selectedConversationId || !simpleConversationThreads.some(thread => thread.department.id === selectedConversationId)) {
+      setSelectedConversationId(simpleConversationThreads[0].department.id);
+    }
+  }, [selectedConversationId, simpleConversationIdsKey]);
+
+  useEffect(() => {
+    if (!selectedConversationId) {
+      return;
+    }
+
+    setFormData(previous => {
+      if (
+        previous.departementDestinataire === selectedConversationId &&
+        !previous.isGroupMessage &&
+        previous.departementDestinataires.length === 0 &&
+        previous.type === 'message'
+      ) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        type: 'message',
+        isGroupMessage: false,
+        departementDestinataire: selectedConversationId,
+        departementDestinataires: [],
+      };
+    });
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId || !departementActuel) {
+      return;
+    }
+
+    const unreadMessages = messages.filter(message =>
+      message.departementDestinataire === departementActuel &&
+      message.departementEmetteur === selectedConversationId &&
+      !message.lu
+    );
+
+    if (unreadMessages.length === 0) {
+      return;
+    }
+
+    unreadMessages.forEach(message => {
+      marquerCommeLu(message.id);
+    });
+    chargerDonnees();
+  }, [selectedConversationId, departementActuel, messages]);
+
+  const renderTeamWorkspaceView = () => {
+    const navigationItems = [
+      { id: 'chat' as const, label: 'Chats', icon: <MessageSquare className="h-4 w-4" /> },
+      { id: 'channels' as const, label: 'Canaux', icon: <Hash className="h-4 w-4" /> },
+      { id: 'people' as const, label: 'Équipes', icon: <Users className="h-4 w-4" /> },
+      { id: 'files' as const, label: 'Fichiers', icon: <FileText className="h-4 w-4" /> },
+      { id: 'agenda' as const, label: 'Calendrier', icon: <Calendar className="h-4 w-4" /> },
+      { id: 'alerts' as const, label: 'Alertes', icon: <Bell className="h-4 w-4" /> },
+    ];
+
+    const totalUnreadConversations = allWorkspaceConversations.filter((conversation) => conversation.unreadCount > 0).length;
+    const totalAttachments = allWorkspaceConversations.reduce((count, conversation) => (
+      count + conversation.messages.reduce((innerCount, message) => innerCount + message.attachments.length, 0)
+    ), 0);
+
+    const sectionDescriptions: Record<SimpleQuickFilter, string> = {
+      chat: 'Conversations directes avec les utilisateurs créés.',
+      channels: 'Canaux partagés par équipe ou par sujet.',
+      people: 'Espaces d’équipe pour coordonner plusieurs membres.',
+      files: 'Conversations contenant des fichiers ou médias.',
+      agenda: 'Réunions, points de passage et créneaux planifiés.',
+      alerts: 'Conversations avec messages non lus à traiter.',
+    };
+
+    const emptyDescriptions: Record<SimpleQuickFilter, string> = {
+      chat: 'Aucun utilisateur actif n’est encore disponible pour lancer une discussion directe.',
+      channels: 'Créez un canal pour organiser un sujet, un projet ou une opération.',
+      people: 'Créez une équipe pour regrouper plusieurs utilisateurs et centraliser la discussion.',
+      files: 'Aucun échange avec pièce jointe n’a été trouvé pour ce filtre.',
+      agenda: 'Aucun événement programmé pour votre périmètre actuel.',
+      alerts: 'Aucune conversation prioritaire ou non lue n’est en attente.',
+    };
+
+    const directParticipantId = selectedWorkspace?.type === 'direct'
+      ? selectedWorkspace.memberIds.find((memberId) => memberId !== currentUserId) || currentUserId
+      : undefined;
+    const selectedPresence = directParticipantId
+      ? presenceEntries.find((entry) => entry.userId === directParticipantId)
+      : undefined;
+    const workspaceActionButtonClass = 'inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800';
+    const workspaceDangerButtonClass = 'inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-600';
+
+    return (
+      <div className="flex h-full min-h-0 w-full items-center justify-center">
+        <div className="flex h-[calc(100%-8px)] min-h-0 w-full max-w-[1368px] flex-col rounded-[34px] border border-white/70 bg-white/42 p-2 shadow-[0_30px_80px_-52px_rgba(15,45,71,0.35)] backdrop-blur-xl xl:h-[calc(100%-12px)] xl:p-2.5">
+          <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[88px_332px_minmax(0,1fr)] xl:grid-cols-[88px_320px_minmax(0,1fr)]">
+            <aside className="overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#18243a_0%,#10192b_100%)] text-white shadow-[0_24px_56px_-42px_rgba(15,23,42,0.88)]">
+              <div className="flex h-full flex-col items-center p-2.5">
+                <div className="flex w-full flex-col items-center border-b border-white/10 pb-3 text-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-lg" style={getChatAvatarStyle('communica-team-chat')}>
+                    T
                   </div>
-
-                  <div className="mt-5 flex flex-wrap items-center gap-2.5">
-                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
-                      {departementCourant?.nombre || 'Aucun département'}
-                    </span>
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
-                      {nonLusCount} non lu(s)
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
-                      {messagesRecusCount} reçus
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
-                      {messagesEnvoyesCount} envoyés
-                    </span>
+                  <div className="mt-2.5 min-w-0">
+                    <p className="text-[13px] font-semibold">Communica</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-slate-300">Team chat</p>
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-[minmax(220px,260px)_auto_auto] xl:min-w-[540px]">
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Département actif</label>
-                    <select
-                      value={departementActuel}
-                      onChange={(e) => setDepartementActuel(e.target.value)}
-                      className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1a4d7a]/20"
+                <nav className="mt-3 w-full space-y-1.5">
+                  {navigationItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      title={item.label}
+                      onClick={() => handleSimpleQuickFilterChange(item.id)}
+                      className={`flex w-full flex-col items-center gap-1.5 rounded-[20px] px-1.5 py-2.5 text-center text-[10px] transition-colors ${
+                        simpleQuickFilter === item.id ? 'bg-white/12 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                      }`}
                     >
-                      {departements.filter(d => d.activo).map(dept => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.nombre} ({dept.codigo})
-                        </option>
-                      ))}
-                    </select>
+                      <span className={`flex h-9 w-9 items-center justify-center rounded-2xl ${simpleQuickFilter === item.id ? 'bg-white/12' : 'bg-white/5'}`}>{item.icon}</span>
+                      <span className="line-clamp-2 leading-tight">{item.label}</span>
+                    </button>
+                  ))}
+                </nav>
+
+                <div className="mt-auto w-full rounded-[20px] border border-white/10 bg-white/5 p-2.5">
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <div className="relative">
+                      <UserAvatar
+                        userId={currentUserId}
+                        displayName={currentUserName}
+                        photo={sessionInfo?.foto}
+                        users={workspaceUsers}
+                        className="h-9 w-9 rounded-full"
+                        fallbackClassName="text-[11px] font-semibold text-white"
+                        fallbackStyle={getChatAvatarStyle(currentUserName)}
+                      />
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#11192b] bg-emerald-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-[12px] font-semibold">{currentUserName}</p>
+                      <p className="mt-1 truncate text-[11px] text-slate-300">{currentUserRoleLabel}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <section className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/75 bg-[linear-gradient(180deg,#fbfcfe_0%,#f5f7fb_100%)] shadow-[0_24px_60px_-44px_rgba(15,45,71,0.22)]">
+              <div className="border-b border-[#e4e8f2] px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Espace d’équipe</p>
+                    <h2 className="mt-0.5 text-[26px] font-bold text-slate-950">{navigationItems.find((item) => item.id === simpleQuickFilter)?.label || 'Chats'}</h2>
+                    <p className="text-[12px] text-slate-500">{sectionDescriptions[simpleQuickFilter]}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {simpleQuickFilter === 'people' && (
+                      <button type="button" onClick={handleCreateWorkspaceTeam} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                        <UserPlus className="h-4 w-4" />
+                        Créer équipe
+                      </button>
+                    )}
+                    {simpleQuickFilter === 'channels' && (
+                      <button type="button" onClick={handleCreateWorkspaceChannel} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                        <Plus className="h-4 w-4" />
+                        Créer canal
+                      </button>
+                    )}
+                    {simpleQuickFilter === 'agenda' && (
+                      <button type="button" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                        <Calendar className="h-4 w-4" />
+                        Programmer
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                    {workspaceUsers.length} utilisateur(s)
+                  </span>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                    {totalUnreadConversations} conversation(s) à lire
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                    {teamChatTeams.length} équipe(s)
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                    {teamChatChannels.length} canal(aux)
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                    {totalAttachments} fichier(s)
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      value={recherche}
+                      onChange={(event) => setRecherche(event.target.value)}
+                      placeholder={simpleQuickFilter === 'agenda' ? 'Rechercher un événement' : 'Rechercher une conversation'}
+                      className="h-9 rounded-2xl border-[#e4e8f2] bg-white pl-10"
+                    />
+                  </div>
+                  <button type="button" onClick={() => setRecherche('')} className="rounded-full border border-[#e4e8f2] bg-white p-2 text-slate-500 transition-colors hover:bg-slate-50">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+                {simpleQuickFilter === 'agenda' ? (
+                  visibleCalendarEvents.length === 0 ? (
+                    <div className="flex h-full min-h-[240px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-5 text-center">
+                      <Calendar className="h-9 w-9 text-slate-300" />
+                      <p className="mt-4 text-base font-semibold text-slate-900">Aucun événement programmé</p>
+                      <p className="mt-2 max-w-xs text-sm text-slate-500">{emptyDescriptions.agenda}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {visibleCalendarEvents.map((event) => {
+                        const isActive = event.id === selectedCalendarEvent?.id;
+                        const participantLabel = event.participantIds.map((participantId) => getWorkspaceUserLabel(participantId)).slice(0, 3).join(', ');
+
+                        return (
+                          <button
+                            key={event.id}
+                            type="button"
+                            onClick={() => setSelectedCalendarEventId(event.id)}
+                            className={`flex w-full flex-col gap-1 rounded-[18px] border px-3 py-3 text-left transition-all ${
+                              isActive ? 'border-white bg-white shadow-[0_18px_34px_-24px_rgba(59,78,135,0.45)]' : 'border-transparent bg-transparent hover:border-white hover:bg-white/75'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="truncate text-[14px] font-semibold text-slate-950">{event.title}</p>
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                {formatWorkspaceDate(event.startAt)}
+                              </span>
+                            </div>
+                            <p className="line-clamp-2 text-[12px] text-slate-600">{event.description || 'Réunion planifiée depuis l’espace de communication.'}</p>
+                            <p className="text-[11px] text-slate-500">{participantLabel || currentUserName}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )
+                ) : visibleWorkspaceConversations.length === 0 ? (
+                  <div className="flex h-full min-h-[240px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-5 text-center">
+                    <MessageSquare className="h-9 w-9 text-slate-300" />
+                    <p className="mt-4 text-base font-semibold text-slate-900">Aucune conversation disponible</p>
+                    <p className="mt-2 max-w-xs text-sm text-slate-500">{emptyDescriptions[simpleQuickFilter]}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {visibleWorkspaceConversations.map((conversation) => {
+                      const isActive = conversation.key === selectedWorkspace?.key;
+                      const lastMessage = conversation.messages[conversation.messages.length - 1];
+
+                      return (
+                        <button
+                          key={conversation.key}
+                          type="button"
+                          onClick={() => setSelectedWorkspaceKey(conversation.key)}
+                          className={`flex w-full items-start gap-2.5 rounded-[18px] border px-2.5 py-2 text-left transition-all ${
+                            isActive ? 'border-white bg-white shadow-[0_18px_34px_-24px_rgba(59,78,135,0.45)]' : 'border-transparent bg-transparent hover:border-white hover:bg-white/75'
+                          }`}
+                        >
+                          <div className="relative shrink-0">
+                            {conversation.type === 'direct' ? (
+                              <UserAvatar
+                                userId={conversation.avatarUserId}
+                                displayName={conversation.title}
+                                users={workspaceUsers}
+                                className="h-10 w-10 rounded-full"
+                                fallbackClassName="text-[13px] font-semibold text-white"
+                                fallbackStyle={getChatAvatarStyle(conversation.avatarSeed)}
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-semibold text-white" style={getChatAvatarStyle(conversation.avatarSeed)}>
+                                {getChatAvatarLabel(conversation.title)}
+                              </div>
+                            )}
+                            {conversation.unreadCount > 0 && (
+                              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                                {conversation.unreadCount}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-[14px] font-semibold text-slate-950">{conversation.title}</p>
+                                <p className="mt-0.5 truncate text-[11px] text-slate-500">{conversation.subtitle}</p>
+                              </div>
+                              <div className="flex shrink-0 flex-col items-end gap-1">
+                                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                  {conversation.accentLabel}
+                                </span>
+                                <span className="text-[10px] font-medium text-slate-400">{formatWorkspaceDate(conversation.lastActivity)}</span>
+                              </div>
+                            </div>
+                            <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-600">
+                              {lastMessage?.content || 'Commencer une nouvelle conversation'}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_60px_-44px_rgba(15,45,71,0.22)]">
+              {simpleQuickFilter === 'agenda' ? (
+                selectedCalendarEvent ? (
+                  <>
+                    <div className="border-b border-[#edf0f6] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] px-5 py-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Événement</p>
+                          <h3 className="truncate text-[18px] font-bold text-slate-950">{selectedCalendarEvent.title}</h3>
+                          <p className="mt-0.5 text-[13px] text-slate-500">Début {formatWorkspaceDate(selectedCalendarEvent.startAt)}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
+                            <button type="button" title="Modifier l’événement" onClick={() => handleEditWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceActionButtonClass}>
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button type="button" title="Supprimer l’événement" onClick={() => handleDeleteWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceDangerButtonClass}>
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
+                            <button type="button" title="Programmer un nouvel événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
+                              <Calendar className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(91,103,243,0.06),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2f8_100%)] px-5 py-5">
+                      <div className="rounded-[22px] border border-slate-200 bg-white/85 p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Participants</p>
+                        <p className="mt-2 text-sm text-slate-700">{selectedCalendarEvent.participantIds.map((participantId) => getWorkspaceUserLabel(participantId)).join(', ') || currentUserName}</p>
+                      </div>
+                      <div className="rounded-[22px] border border-slate-200 bg-white/85 p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Détails</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{selectedCalendarEvent.description || 'Aucun détail complémentaire fourni pour cet événement.'}</p>
+                      </div>
+                      <div className="rounded-[22px] border border-slate-200 bg-white/85 p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Contexte</p>
+                        <p className="mt-2 text-sm text-slate-700">
+                          {selectedCalendarEvent.channelId
+                            ? `Canal lié : ${channelConversations.find((conversation) => conversation.id === selectedCalendarEvent.channelId)?.title || 'Canal supprimé'}`
+                            : selectedCalendarEvent.teamId
+                              ? `Équipe liée : ${teamConversations.find((conversation) => conversation.id === selectedCalendarEvent.teamId)?.title || 'Équipe supprimée'}`
+                              : 'Événement planifié hors conversation spécifique.'}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
+                    <Calendar className="h-10 w-10 text-slate-300" />
+                    <p className="mt-6 text-lg font-semibold text-slate-900">Sélectionnez un événement</p>
+                    <p className="mt-2 max-w-sm text-sm text-slate-500">Choisissez un événement à gauche ou utilisez le bouton Programmer pour en créer un.</p>
+                  </div>
+                )
+              ) : selectedWorkspace ? (
+                <>
+                  <div className="border-b border-[#edf0f6] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] px-5 py-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <div className="relative shrink-0">
+                          {selectedWorkspace.type === 'direct' ? (
+                            <UserAvatar
+                              userId={selectedWorkspace.avatarUserId}
+                              displayName={selectedWorkspace.title}
+                              users={workspaceUsers}
+                              className="h-12 w-12 rounded-full"
+                              fallbackClassName="text-sm font-semibold text-white"
+                              fallbackStyle={getChatAvatarStyle(selectedWorkspace.avatarSeed)}
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white" style={getChatAvatarStyle(selectedWorkspace.avatarSeed)}>
+                              {getChatAvatarLabel(selectedWorkspace.title)}
+                            </div>
+                          )}
+                          {selectedPresence?.status === 'online' && (
+                            <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{selectedWorkspace.accentLabel}</p>
+                          <h3 className="truncate text-[18px] font-bold text-slate-950">{selectedWorkspace.title}</h3>
+                          <p className="mt-0.5 text-[13px] text-slate-500">{selectedWorkspace.subtitle}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {selectedWorkspace.type !== 'direct' && (
+                          <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
+                            <button
+                              type="button"
+                              title={selectedWorkspace.type === 'team' ? 'Modifier l’équipe' : 'Modifier le canal'}
+                              onClick={() => selectedWorkspace.type === 'team' ? handleEditWorkspaceTeam(selectedWorkspace.id) : handleEditWorkspaceChannel(selectedWorkspace.id)}
+                              className={workspaceActionButtonClass}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              title={selectedWorkspace.type === 'team' ? 'Supprimer l’équipe' : 'Supprimer le canal'}
+                              onClick={() => selectedWorkspace.type === 'team' ? handleDeleteWorkspaceTeam(selectedWorkspace.id) : handleDeleteWorkspaceChannel(selectedWorkspace.id)}
+                              className={workspaceDangerButtonClass}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
+                          <button type="button" title="Programmer un événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
+                            <Calendar className="h-4 w-4" />
+                          </button>
+                          <button type="button" title="Lancer une réunion vidéo" onClick={() => handleStartWorkspaceVideoRoom(selectedWorkspace)} className={workspaceActionButtonClass}>
+                            <Video className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      marquerToutesNotificationsLues(departementActuel);
-                      setNotificationsNonLues(0);
-                      toast.success('Notifications marquées comme lues');
-                    }}
-                    className="h-12 rounded-2xl border-slate-300 bg-white text-slate-700"
-                  >
-                    <Bell className="mr-2 h-4 w-4" />
-                    Tout lire
-                    {notificationsNonLues > 0 && (
-                      <span className="ml-2 rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-bold text-white">
-                        {notificationsNonLues}
-                      </span>
-                    )}
-                  </Button>
+                  <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(91,103,243,0.06),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2f8_100%)] px-4 py-4 sm:px-5">
+                    {selectedWorkspace.messages.length === 0 ? (
+                      <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
+                        <div className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Nouveau fil
+                        </div>
+                        <p className="mt-6 text-lg font-semibold text-slate-900">Aucun message dans cette conversation</p>
+                        <p className="mt-2 max-w-sm text-sm text-slate-500">Commencez l’échange avec {selectedWorkspace.title} ou planifiez un rendez-vous avec le bouton calendrier.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {selectedWorkspace.messages.map((message) => {
+                          const isOutgoing = message.senderUserId === currentUserId;
 
-                  <Button
-                    onClick={() => ouvrirVueTravail('nouveau')}
-                    disabled={!accessProfile.canCompose}
-                    className="h-12 rounded-2xl bg-slate-950 hover:bg-slate-800"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau message
-                  </Button>
+                          return (
+                            <div key={message.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`flex max-w-[84%] items-end gap-2 sm:max-w-[66%] ${isOutgoing ? 'flex-row-reverse' : 'flex-row'}`}>
+                                <UserAvatar
+                                  userId={message.senderUserId}
+                                  displayName={message.senderName || getWorkspaceUserLabel(message.senderUserId)}
+                                  users={workspaceUsers}
+                                  className="h-8 w-8 rounded-full"
+                                  fallbackClassName="text-[10px] font-semibold text-white"
+                                  fallbackStyle={getChatAvatarStyle(`${message.senderUserId || message.senderName || 'message'}-${message.id}`)}
+                                />
+                                <div className={`flex flex-col gap-1.5 ${isOutgoing ? 'items-end' : 'items-start'}`}>
+                                  <div className="flex items-center gap-2 px-1">
+                                    <span className="text-[12px] font-semibold text-slate-700">{message.senderName || getWorkspaceUserLabel(message.senderUserId)}</span>
+                                    <span className="text-[10px] text-slate-400">{formatWorkspaceDate(message.createdAt)}</span>
+                                  </div>
+                                  <div className={`rounded-[22px] px-4 py-3 shadow-sm ${isOutgoing ? 'bg-slate-900 text-white' : 'border border-white/80 bg-white text-slate-900'}`}>
+                                    {message.content && (
+                                      <p className="whitespace-pre-wrap text-[13px] leading-relaxed">{message.content}</p>
+                                    )}
+                                    {message.attachments.length > 0 && (
+                                      <div className="mt-3 space-y-2">
+                                        {message.attachments.map((attachment) => (
+                                          <button
+                                            key={attachment.id}
+                                            type="button"
+                                            onClick={() => handleDownloadAttachment(attachment)}
+                                            className={`flex w-full items-center gap-2 rounded-2xl border px-3 py-2 text-left text-[12px] transition-colors ${isOutgoing ? 'border-white/15 bg-white/10 hover:bg-white/15' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}
+                                          >
+                                            <Paperclip className="h-4 w-4 shrink-0" />
+                                            <span className="min-w-0 flex-1 truncate">{attachment.nombre}</span>
+                                            <Download className="h-4 w-4 shrink-0" />
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-[#edf0f6] bg-white px-4 py-4 sm:px-5">
+                    <div className="rounded-[26px] border border-[#e8edf7] bg-[#f8fafc] p-3 shadow-[0_18px_40px_-32px_rgba(15,45,71,0.28)]">
+                      {composerAttachments.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {composerAttachments.map((attachment) => (
+                            <div key={attachment.id} className="inline-flex max-w-full items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-700">
+                              <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              <span className="truncate">{attachment.nombre}</span>
+                              <button type="button" onClick={() => handleRemoveAttachment(attachment.id)} className="rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1">
+                          <TextareaSpellCheck
+                            value={formData.contenu}
+                            onChange={(event) => setFormData((previous) => ({ ...previous, contenu: event.target.value }))}
+                            placeholder={`Écrire à ${selectedWorkspace.title}`}
+                            className="min-h-[86px] rounded-[22px] border-[#dbe3f2] bg-white px-4 py-3 text-[13px]"
+                          />
+                        </div>
+
+                        <div ref={composerActionsRef} className="relative flex items-center gap-2">
+                          <button type="button" onClick={() => toggleComposerMenu('media')} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#dbe3f2] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                            <Paperclip className="h-4 w-4" />
+                            Médias
+                          </button>
+                          <button type="button" onClick={() => toggleComposerMenu('quick')} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#dbe3f2] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                            <Zap className="h-4 w-4" />
+                            Rapide
+                          </button>
+
+                          {openComposerMenu === 'media' && (
+                            <div className="absolute bottom-14 right-0 z-20 flex min-w-[210px] flex-col gap-1 rounded-[22px] border border-slate-200 bg-white p-2 shadow-[0_22px_44px_-28px_rgba(15,23,42,0.4)]">
+                              <button type="button" onClick={() => ouvrirSelecteurAdjuntos(undefined)} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                                <Paperclip className="h-4 w-4" />
+                                Documents
+                              </button>
+                              <button type="button" onClick={() => ouvrirSelecteurAdjuntos('image/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                                <Image className="h-4 w-4" />
+                                Images
+                              </button>
+                              <button type="button" onClick={() => ouvrirSelecteurAdjuntos('audio/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                                <Mic className="h-4 w-4" />
+                                Audio
+                              </button>
+                            </div>
+                          )}
+
+                          {openComposerMenu === 'quick' && (
+                            <div className="absolute bottom-14 right-0 z-20 flex w-[320px] flex-col gap-3 rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_22px_44px_-28px_rgba(15,23,42,0.4)]">
+                              <div>
+                                <div className="mb-2 flex items-center gap-2 px-1">
+                                  <Smile className="h-4 w-4 text-slate-400" />
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Émojis</p>
+                                </div>
+                                <div className="grid grid-cols-8 gap-1.5">
+                                  {WORKSPACE_QUICK_EMOJIS.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      type="button"
+                                      onClick={() => handleInsertQuickEmoji(emoji)}
+                                      className="flex h-9 w-9 items-center justify-center rounded-xl text-[19px] transition-colors hover:bg-slate-100"
+                                      title={`Insérer ${emoji}`}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="mb-2 flex items-center gap-2 px-1">
+                                  <ThumbsUp className="h-4 w-4 text-slate-400" />
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Raccourcis métier</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  {WORKSPACE_QUICK_REACTIONS.map((item) => (
+                                    <button
+                                      key={item.label}
+                                      type="button"
+                                      onClick={() => handleInsertReaction(item.emoji)}
+                                      className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50"
+                                    >
+                                      <span className="text-base leading-none">{item.emoji}</span>
+                                      <span>{item.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <button type="button" onClick={handleInsertLinkTemplate} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                                <Link2 className="h-4 w-4" />
+                                Ajouter un lien
+                              </button>
+                            </div>
+                          )}
+
+                          <button type="button" onClick={handleSendWorkspaceMessage} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-slate-900 px-4 text-[12px] font-semibold text-white transition-colors hover:bg-slate-800">
+                            <Send className="h-4 w-4" />
+                            Envoyer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
+                  <MessageSquare className="h-10 w-10 text-slate-300" />
+                  <p className="mt-6 text-lg font-semibold text-slate-900">Sélectionnez une conversation</p>
+                  <p className="mt-2 max-w-sm text-sm text-slate-500">Choisissez un utilisateur, une équipe ou un canal à gauche pour commencer.</p>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSimpleMessagingView = () => {
+    const navigationItems = [
+      { id: 'chat' as const, label: 'Chats', icon: <MessageSquare className="h-4 w-4" /> },
+      { id: 'channels' as const, label: 'Canaux', icon: <Hash className="h-4 w-4" /> },
+      { id: 'people' as const, label: 'Équipes', icon: <Users className="h-4 w-4" /> },
+      { id: 'files' as const, label: 'Fichiers', icon: <FileText className="h-4 w-4" /> },
+      { id: 'agenda' as const, label: 'Calendrier', icon: <Calendar className="h-4 w-4" /> },
+      { id: 'alerts' as const, label: 'Alertes', icon: <Bell className="h-4 w-4" /> },
+    ];
+
+    const selectedDepartment = selectedConversation?.department || null;
+    const selectedPresence = selectedConversation?.presence || null;
+    const selectedAvatarSeed = `${selectedDepartment?.id || 'current'}-${selectedDepartment?.nombre || 'chat'}`;
+    const totalUnreadConversations = simpleConversationThreads.filter(thread => thread.unreadCount > 0).length;
+    const currentDepartmentLabel = departementCourant?.nombre || 'Aucun département';
+    const simpleEmptyStateDescription: Record<SimpleQuickFilter, string> = {
+      chat: 'Sélectionnez un département autorisé ou attendez un nouveau message.',
+      channels: 'Aucun échange non lu ne correspond au filtre actif.',
+      people: 'Aucun département en ligne n’est disponible pour le moment.',
+      files: 'Aucune conversation avec pièces jointes n’est disponible.',
+      agenda: 'Aucune conversation avec échéance ou demande active n’est disponible.',
+      alerts: 'Aucune alerte ou demande prioritaire n’est disponible.',
+    };
+
+    return (
+      <div className="flex h-full min-h-0 w-full items-center justify-center">
+        <div className="flex h-[calc(100%-8px)] min-h-0 w-full max-w-[1368px] flex-col rounded-[34px] border border-white/70 bg-white/42 p-2 shadow-[0_30px_80px_-52px_rgba(15,45,71,0.35)] backdrop-blur-xl xl:h-[calc(100%-12px)] xl:p-2.5">
+          <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[88px_332px_minmax(0,1fr)] xl:grid-cols-[88px_320px_minmax(0,1fr)]">
+        <aside className="overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#18243a_0%,#10192b_100%)] text-white shadow-[0_24px_56px_-42px_rgba(15,23,42,0.88)]">
+          <div className="flex h-full flex-col items-center p-2.5">
+            <div className="flex w-full flex-col items-center border-b border-white/10 pb-3 text-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-lg" style={getChatAvatarStyle('communica-app')}>
+                C
+              </div>
+              <div className="mt-2.5 min-w-0">
+                <p className="text-[13px] font-semibold">Communica</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-slate-300">Chat</p>
+              </div>
+            </div>
+
+            <nav className="mt-3 w-full space-y-1.5">
+              {navigationItems.map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  title={item.label}
+                  onClick={() => handleSimpleQuickFilterChange(item.id)}
+                  className={`flex w-full flex-col items-center gap-1.5 rounded-[20px] px-1.5 py-2.5 text-center text-[10px] transition-colors ${
+                    simpleQuickFilter === item.id ? 'bg-white/12 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-2xl ${simpleQuickFilter === item.id ? 'bg-white/12' : 'bg-white/5'}`}>{item.icon}</span>
+                  <span className="line-clamp-2 leading-tight">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="mt-auto w-full rounded-[20px] border border-white/10 bg-white/5 p-2.5">
+              <div className="flex flex-col items-center gap-2 text-center">
+                <div className="relative">
+                  <UserAvatar
+                    userId={currentUserId}
+                    displayName={currentUserName}
+                    photo={sessionInfo?.foto}
+                    users={workspaceUsers}
+                    className="h-9 w-9 rounded-full"
+                    fallbackClassName="text-[11px] font-semibold text-white"
+                    fallbackStyle={getChatAvatarStyle(currentUserName)}
+                  />
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#11192b] bg-emerald-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-[12px] font-semibold">{currentUserName}</p>
+                  <p className="mt-1 truncate text-[11px] text-slate-300">{currentUserRoleLabel}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/75 bg-[linear-gradient(180deg,#fbfcfe_0%,#f5f7fb_100%)] shadow-[0_24px_60px_-44px_rgba(15,45,71,0.22)]">
+          <div className="border-b border-[#e4e8f2] px-4 py-3">
+            <div className="flex flex-col gap-2.5">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Centre de messagerie</p>
+                <h2 className="mt-0.5 text-[26px] font-bold text-slate-950">Messages</h2>
+                <p className="text-[12px] text-slate-500">{navigationItems.find(item => item.id === simpleQuickFilter)?.label || 'Conversations'} par département</p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <select
+                  value={departementActuel}
+                  onChange={(e) => setDepartementActuel(e.target.value)}
+                  className="h-9 w-full rounded-2xl border border-[#e4e8f2] bg-white px-4 text-[13px] font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1a4d7a]/20"
+                >
+                  {departements.filter(d => d.activo).map(dept => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.nombre} ({dept.codigo})
+                    </option>
+                  ))}
+                </select>
+                <div className="flex justify-end">
+                  <button type="button" onClick={() => setAfficherGuide(true)} className="flex h-9 w-10 items-center justify-center rounded-2xl border border-[#e4e8f2] bg-white text-slate-500 transition-colors hover:bg-slate-50">
+                    <Filter className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-200/80 px-4 pb-4 pt-3 md:px-6 md:pb-6">
-              <TabsList className="grid h-auto w-full grid-cols-1 rounded-[24px] border border-slate-200 bg-slate-100/90 p-1.5">
-                <TabsTrigger
-                  value="messagerie"
-                  className="rounded-[18px] px-4 py-3 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm"
-                  style={{ fontFamily: 'Montserrat, sans-serif' }}
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Messagerie
-                </TabsTrigger>
-              </TabsList>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                {currentDepartmentLabel}
+              </span>
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                {notificationsNonLues} notification(s)
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+                {messagesEnvoyesCount} envoyés
+              </span>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={recherche}
+                  onChange={(event) => setRecherche(event.target.value)}
+                  placeholder="Rechercher"
+                  className="h-9 rounded-2xl border-[#e4e8f2] bg-white pl-10"
+                />
+              </div>
+              <button type="button" onClick={() => setRecherche('')} className="rounded-full border border-[#e4e8f2] bg-white p-2 text-slate-500 transition-colors hover:bg-slate-50">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2">
+              <span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-semibold text-white">Tous</span>
+              <span className="rounded-full border border-[#dbe1ee] bg-white px-3 py-1 text-[10px] font-semibold text-slate-600">
+                Non lus {totalUnreadConversations}
+              </span>
             </div>
           </div>
-        </div>
 
-        <TabsContent value="messagerie" className="relative m-0 flex flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+            {simpleConversationThreads.length === 0 ? (
+              <div className="flex h-full min-h-[240px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-5 text-center">
+                <MessageSquare className="h-9 w-9 text-slate-300" />
+                <p className="mt-4 text-base font-semibold text-slate-900">Aucune conversation disponible</p>
+                <p className="mt-2 max-w-xs text-sm text-slate-500">{simpleEmptyStateDescription[simpleQuickFilter]}</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {simpleConversationThreads.map(thread => {
+                  const isActive = thread.department.id === selectedConversationId;
+                  const avatarSeed = `${thread.department.id}-${thread.department.nombre}`;
+                  const fallbackLabel = getChatAvatarLabel(thread.department.nombre);
+                  const lastTime = thread.lastMessage
+                    ? new Date(thread.lastMessage.dateCreation).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })
+                    : '--:--';
+
+                  return (
+                    <button
+                      key={thread.department.id}
+                      type="button"
+                      onClick={() => setSelectedConversationId(thread.department.id)}
+                      className={`flex w-full items-start gap-2.5 rounded-[18px] border px-2.5 py-2 text-left transition-all ${
+                        isActive
+                          ? 'border-white bg-white shadow-[0_18px_34px_-24px_rgba(59,78,135,0.45)]'
+                          : 'border-transparent bg-transparent hover:border-white hover:bg-white/75'
+                      }`}
+                    >
+                      <div className="relative shrink-0">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-semibold text-white" style={getChatAvatarStyle(avatarSeed)}>
+                          {fallbackLabel}
+                        </div>
+                        {thread.presence?.status === 'online' && (
+                          <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-[14px] font-semibold text-slate-950">{thread.department.nombre}</p>
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              {thread.presence?.status === 'online' ? 'En ligne' : formatPresenceLabel(thread.presence?.lastSeen || new Date().toISOString())}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end gap-1">
+                            <span className="text-[10px] font-medium text-slate-400">{lastTime}</span>
+                            {thread.unreadCount > 0 && (
+                              <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white">
+                                {thread.unreadCount}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-600">
+                          {thread.lastMessage?.contenu || 'Commencer une nouvelle conversation'}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_60px_-44px_rgba(15,45,71,0.22)]">
+          {selectedDepartment ? (
+            <>
+              <div className="border-b border-[#edf0f6] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] px-5 py-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="relative shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white" style={getChatAvatarStyle(selectedAvatarSeed)}>
+                        {getChatAvatarLabel(selectedDepartment.nombre)}
+                      </div>
+                      {selectedPresence?.status === 'online' && (
+                        <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Discussion</p>
+                      <h3 className="truncate text-[18px] font-bold text-slate-950">{selectedDepartment.nombre}</h3>
+                      <p className="mt-0.5 text-[13px] text-slate-500">
+                        {selectedPresence?.status === 'online'
+                          ? 'En ligne'
+                          : `Dernière activité ${formatPresenceLabel(selectedPresence?.lastSeen || new Date().toISOString())}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <button type="button" onClick={handleStartVideoRoom} className="rounded-full border border-[#e4e8f2] bg-white p-2 transition-colors hover:bg-slate-50">
+                      <Video className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(91,103,243,0.06),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2f8_100%)] px-4 py-4 sm:px-5">
+                {selectedConversationMessages.length === 0 ? (
+                  <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
+                    <div className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Aujourd'hui
+                    </div>
+                    <p className="mt-6 text-lg font-semibold text-slate-900">Aucun message dans cette conversation</p>
+                    <p className="mt-2 max-w-sm text-sm text-slate-500">Écris un premier message pour démarrer l’échange avec {selectedDepartment.nombre}.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-center">
+                      <span className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Aujourd'hui
+                      </span>
+                    </div>
+
+                    {selectedConversationMessages.map(message => {
+                      const isOutgoing = message.departementEmetteur === departementActuel;
+                      const attachmentCount = message.piecesJointes.length;
+                      const messageSeed = `${isOutgoing ? 'self' : message.expediteur}-${message.id}`;
+
+                      return (
+                        <div key={message.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[84%] sm:max-w-[66%] ${isOutgoing ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+                            {!isOutgoing && (
+                              <div className="flex items-center gap-3 px-1">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-semibold text-white" style={getChatAvatarStyle(messageSeed)}>
+                                  {getChatAvatarLabel(message.expediteur)}
+                                </div>
+                                <span className="text-sm font-semibold text-slate-700">{message.expediteur}</span>
+                              </div>
+                            )}
+                            <div
+                              className={`px-4 py-2.5 shadow-sm ${
+                                isOutgoing
+                                  ? 'rounded-[26px] rounded-br-[10px] bg-[#5b67f3] text-white'
+                                  : 'rounded-[26px] rounded-bl-[10px] border border-white/80 bg-white text-slate-800'
+                              }`}
+                            >
+                              <p className="whitespace-pre-wrap text-[13px] leading-5">{message.contenu || 'Pièce jointe envoyée'}</p>
+
+                              {attachmentCount > 0 && (
+                                <div className="mt-3 space-y-2">
+                                  {message.piecesJointes.map(piece => (
+                                    <button
+                                      key={piece.id}
+                                      type="button"
+                                      onClick={() => handleDownloadAttachment(piece)}
+                                      className={`flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-xs font-semibold transition-colors ${
+                                        isOutgoing
+                                          ? 'border border-white/20 bg-white/10 text-white hover:bg-white/15'
+                                          : 'border border-slate-200 bg-white/80 text-slate-700 hover:bg-white'
+                                      }`}
+                                    >
+                                      <span className="min-w-0 truncate">{piece.nom}</span>
+                                      <span>{formatFileSize(piece.taille)}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 px-1 text-xs text-slate-400">
+                              <span>
+                                {new Date(message.dateCreation).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {isOutgoing && (
+                                <CheckCheck className={`h-3.5 w-3.5 ${message.lu ? 'text-indigo-500' : 'text-slate-300'}`} />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] px-4 py-3 sm:px-5">
+                {!accessProfile.canCompose && accessProfile.restrictionNotice && (
+                  <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {accessProfile.restrictionNotice}
+                  </div>
+                )}
+
+                <div className="rounded-[24px] border border-[#e5e9f3] bg-[#fbfcfe] p-2.5 shadow-sm">
+                  <TextareaSpellCheck
+                    value={formData.contenu}
+                    onChange={(event) => setFormData(previous => ({ ...previous, contenu: event.target.value }))}
+                    rows={2}
+                    placeholder={selectedDepartment ? `Écrire à ${selectedDepartment.nombre}...` : 'Écrire un message...' }
+                    language="fr"
+                    showSpellCheck={true}
+                    disabled={!accessProfile.canCompose || !selectedConversationId}
+                  />
+
+                  {composerAttachments.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {composerAttachments.map(attachment => (
+                        <div key={attachment.id} className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700">
+                          <Paperclip className="h-3.5 w-3.5 text-slate-400" />
+                          <span className="max-w-[180px] truncate font-medium">{attachment.nom}</span>
+                          <button type="button" onClick={() => handleRemoveAttachment(attachment.id)} className="text-slate-400 hover:text-slate-700">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <div ref={composerActionsRef} className="flex flex-wrap items-center gap-2 text-slate-500">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={attachmentPickerAccept}
+                        multiple
+                        onChange={handleAttachmentSelection}
+                        className="hidden"
+                      />
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => toggleComposerMenu('media')}
+                          disabled={!selectedConversationId}
+                          className="flex items-center gap-2 rounded-full border border-[#e4e8f2] bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Paperclip className="h-4 w-4" />
+                          Médias
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+
+                        {openComposerMenu === 'media' && (
+                          <div className="absolute bottom-full left-0 z-20 mb-2 flex min-w-[172px] flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(15,45,71,0.28)]">
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); ouvrirSelecteurAdjuntos(); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Paperclip className="h-4 w-4" />
+                              Fichier
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); ouvrirSelecteurAdjuntos('image/*'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Image className="h-4 w-4" />
+                              Image
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); ouvrirSelecteurAdjuntos('audio/*'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Mic className="h-4 w-4" />
+                              Audio
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => toggleComposerMenu('quick')}
+                          disabled={!selectedConversationId}
+                          className="flex items-center gap-2 rounded-full border border-[#e4e8f2] bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Rapide
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+
+                        {openComposerMenu === 'quick' && (
+                          <div className="absolute bottom-full left-0 z-20 mb-2 flex min-w-[236px] max-h-[340px] flex-col gap-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(15,45,71,0.28)]">
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertQuickEmoji(); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Smile className="h-4 w-4" />
+                              Emoji
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertLinkTemplate(); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Link2 className="h-4 w-4" />
+                              Lien
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('✅'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">✅</span>
+                              Confirmé
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📌'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">📌</span>
+                              Priorité
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📅'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">📅</span>
+                              Planifié
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📞'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">📞</span>
+                              Appel requis
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📦'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">📦</span>
+                              Logistique
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('🚚'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">🚚</span>
+                              Transport
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('⚠️'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">⚠️</span>
+                              Urgent
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('👀'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">👀</span>
+                              À vérifier
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('🙏'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">🙏</span>
+                              Merci
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('👍'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <ThumbsUp className="h-4 w-4" />
+                              Réaction positive
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('❤️'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Heart className="h-4 w-4" />
+                              Réaction coeur
+                            </button>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('😂'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Laugh className="h-4 w-4" />
+                              Réaction rire
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <span className="text-xs text-slate-400">Sélection multiple sans limite imposée</span>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={handleEnvoyerMessageSimple}
+                      disabled={!accessProfile.canCompose || !selectedConversationId}
+                      className="h-11 rounded-full bg-[#5b67f3] px-5 text-white hover:bg-[#4d58de]"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Envoyer
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex h-full min-h-[480px] flex-col items-center justify-center rounded-[30px] border border-dashed border-slate-200 bg-white px-6 text-center">
+              <MessageSquare className="h-10 w-10 text-slate-300" />
+              <p className="mt-4 text-lg font-semibold text-slate-900">Choisissez une conversation</p>
+              <p className="mt-2 max-w-sm text-sm text-slate-500">Le fil de discussion apparaîtra ici avec un modèle simple et direct.</p>
+            </div>
+          )}
+        </section>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[#eef3f8]">
+      <div className="pointer-events-none fixed inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,_rgba(15,45,71,0.16),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(45,149,97,0.18),_transparent_26%),linear-gradient(180deg,_#f7fafc_0%,_#edf3f8_100%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 opacity-60" style={{ backgroundImage: 'linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden">
+        <TabsContent value="messagerie" className="relative m-0 flex min-h-0 flex-1 flex-col overflow-hidden">
           {afficherGuide && <GuideCompletModules onClose={() => setAfficherGuide(false)} />}
           {afficherGuideCompleta && <GuiaCompletaApp onClose={() => setAfficherGuideCompleta(false)} />}
+          <Dialog open={isWorkspaceDialogOpen} onOpenChange={(open) => { if (!open) closeWorkspaceDialog(); }}>
+            <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto" aria-describedby="workspace-chat-dialog-description">
+              <DialogHeader>
+                <DialogTitle>
+                  {workspaceDialogMode === 'team' && (workspaceEditingTeamId ? 'Modifier l’équipe' : 'Créer une équipe')}
+                  {workspaceDialogMode === 'channel' && (workspaceEditingChannelId ? 'Modifier le canal' : 'Créer un canal')}
+                  {workspaceDialogMode === 'event' && (workspaceEditingEventId ? 'Modifier l’événement' : 'Programmer un événement')}
+                </DialogTitle>
+                <DialogDescription id="workspace-chat-dialog-description">
+                  {workspaceDialogMode === 'team' && (workspaceEditingTeamId ? 'Mettez à jour le périmètre et les membres de cette équipe.' : 'Regroupez des utilisateurs créés dans un espace commun de travail.')}
+                  {workspaceDialogMode === 'channel' && (workspaceEditingChannelId ? 'Ajustez le nom, les membres ou le rattachement de ce canal.' : 'Définissez un canal libre ou rattaché à une équipe existante.')}
+                  {workspaceDialogMode === 'event' && (workspaceEditingEventId ? 'Modifiez les participants, dates ou le contexte de cet événement.' : 'Planifiez une réunion ou un créneau depuis le calendrier du module.')}
+                </DialogDescription>
+              </DialogHeader>
+
+              {workspaceDialogMode === 'team' && (
+                <div className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Nom</p>
+                      <Input
+                        value={workspaceTeamForm.name}
+                        onChange={(event) => setWorkspaceTeamForm((previous) => ({ ...previous, name: event.target.value }))}
+                        placeholder="Ex. Coordination terrain"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Description</p>
+                      <Input
+                        value={workspaceTeamForm.description}
+                        onChange={(event) => setWorkspaceTeamForm((previous) => ({ ...previous, description: event.target.value }))}
+                        placeholder="Mission, périmètre ou projet"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-700">Membres</p>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                        {workspaceTeamForm.memberIds.length} sélectionné(s)
+                      </span>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {[currentUserId, ...activeWorkspaceUsers.map((user) => user.id)].map((memberId) => {
+                        const isCurrentUser = memberId === currentUserId;
+                        return (
+                          <label key={memberId} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={workspaceTeamForm.memberIds.includes(memberId)}
+                              disabled={isCurrentUser}
+                              onChange={(event) => setWorkspaceTeamForm((previous) => ({
+                                ...previous,
+                                memberIds: toggleWorkspaceMemberSelection(previous.memberIds, memberId, event.target.checked),
+                              }))}
+                              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                            />
+                            <span>
+                              <span className="block font-semibold text-slate-900">{isCurrentUser ? `${currentUserName} (vous)` : getWorkspaceUserLabel(memberId)}</span>
+                              <span className="block text-[12px] text-slate-500">{isCurrentUser ? currentUserRoleLabel : getWorkspaceRoleLabel(memberId)}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {workspaceDialogMode === 'channel' && (
+                <div className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Nom du canal</p>
+                      <Input
+                        value={workspaceChannelForm.name}
+                        onChange={(event) => setWorkspaceChannelForm((previous) => ({ ...previous, name: event.target.value }))}
+                        placeholder="Ex. livraison-soir"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Équipe liée</p>
+                      <select
+                        value={workspaceChannelForm.teamId}
+                        onChange={(event) => setWorkspaceChannelForm((previous) => ({
+                          ...previous,
+                          teamId: event.target.value,
+                          memberIds: event.target.value
+                            ? teamChatTeams.find((team) => team.id === event.target.value)?.memberIds || [currentUserId]
+                            : [currentUserId],
+                        }))}
+                        className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      >
+                        <option value="">Aucune équipe liée</option>
+                        {teamChatTeams.map((team) => (
+                          <option key={team.id} value={team.id}>{team.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-700">Description</p>
+                    <Input
+                      value={workspaceChannelForm.description}
+                      onChange={(event) => setWorkspaceChannelForm((previous) => ({ ...previous, description: event.target.value }))}
+                      placeholder="Sujet du canal, usage ou consignes"
+                    />
+                  </div>
+                  {workspaceChannelForm.teamId ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      Membres hérités de l’équipe : {workspaceChannelForm.memberIds.map((memberId) => getWorkspaceUserLabel(memberId)).join(', ')}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-slate-700">Membres du canal</p>
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                          {workspaceChannelForm.memberIds.length} sélectionné(s)
+                        </span>
+                      </div>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {[currentUserId, ...activeWorkspaceUsers.map((user) => user.id)].map((memberId) => {
+                          const isCurrentUser = memberId === currentUserId;
+                          return (
+                            <label key={memberId} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={workspaceChannelForm.memberIds.includes(memberId)}
+                                disabled={isCurrentUser}
+                                onChange={(event) => setWorkspaceChannelForm((previous) => ({
+                                  ...previous,
+                                  memberIds: toggleWorkspaceMemberSelection(previous.memberIds, memberId, event.target.checked),
+                                }))}
+                                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                              />
+                              <span>
+                                <span className="block font-semibold text-slate-900">{isCurrentUser ? `${currentUserName} (vous)` : getWorkspaceUserLabel(memberId)}</span>
+                                <span className="block text-[12px] text-slate-500">{isCurrentUser ? currentUserRoleLabel : getWorkspaceRoleLabel(memberId)}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {workspaceDialogMode === 'event' && (
+                <div className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Titre</p>
+                      <Input
+                        value={workspaceEventForm.title}
+                        onChange={(event) => setWorkspaceEventForm((previous) => ({ ...previous, title: event.target.value }))}
+                        placeholder="Ex. Point quotidien terrain"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Contexte</p>
+                      <select
+                        value={workspaceEventForm.channelId || workspaceEventForm.teamId}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          const nextChannel = teamChatChannels.find((channel) => channel.id === nextValue);
+                          const nextTeam = teamChatTeams.find((team) => team.id === nextValue);
+                          setWorkspaceEventForm((previous) => ({
+                            ...previous,
+                            channelId: nextChannel?.id || '',
+                            teamId: nextChannel?.teamId || nextTeam?.id || '',
+                            participantIds: nextChannel?.memberIds || nextTeam?.memberIds || previous.participantIds,
+                          }));
+                        }}
+                        className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      >
+                        <option value="">Aucun contexte spécifique</option>
+                        {teamChatTeams.map((team) => (
+                          <option key={team.id} value={team.id}>{`Équipe • ${team.name}`}</option>
+                        ))}
+                        {teamChatChannels.map((channel) => (
+                          <option key={channel.id} value={channel.id}>{`Canal • #${channel.name}`}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Début</p>
+                      <Input
+                        type="datetime-local"
+                        value={workspaceEventForm.startAt}
+                        onChange={(event) => setWorkspaceEventForm((previous) => ({ ...previous, startAt: event.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">Fin</p>
+                      <Input
+                        type="datetime-local"
+                        value={workspaceEventForm.endAt}
+                        onChange={(event) => setWorkspaceEventForm((previous) => ({ ...previous, endAt: event.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-700">Détails</p>
+                    <TextareaSpellCheck
+                      value={workspaceEventForm.description}
+                      onChange={(event) => setWorkspaceEventForm((previous) => ({ ...previous, description: event.target.value }))}
+                      placeholder="Objectif, ordre du jour, lien utile ou contraintes"
+                      className="min-h-[110px] rounded-2xl border-slate-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-700">Participants</p>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                        {workspaceEventForm.participantIds.length} sélectionné(s)
+                      </span>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {[currentUserId, ...activeWorkspaceUsers.map((user) => user.id)].map((memberId) => {
+                        const isCurrentUser = memberId === currentUserId;
+                        return (
+                          <label key={memberId} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={workspaceEventForm.participantIds.includes(memberId)}
+                              disabled={isCurrentUser}
+                              onChange={(event) => setWorkspaceEventForm((previous) => ({
+                                ...previous,
+                                participantIds: toggleWorkspaceMemberSelection(previous.participantIds, memberId, event.target.checked),
+                              }))}
+                              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                            />
+                            <span>
+                              <span className="block font-semibold text-slate-900">{isCurrentUser ? `${currentUserName} (vous)` : getWorkspaceUserLabel(memberId)}</span>
+                              <span className="block text-[12px] text-slate-500">{isCurrentUser ? currentUserRoleLabel : getWorkspaceRoleLabel(memberId)}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeWorkspaceDialog}>Annuler</Button>
+                {workspaceDialogMode === 'team' && <Button type="button" onClick={submitWorkspaceTeam}>{workspaceEditingTeamId ? 'Enregistrer' : 'Créer l’équipe'}</Button>}
+                {workspaceDialogMode === 'channel' && <Button type="button" onClick={submitWorkspaceChannel}>{workspaceEditingChannelId ? 'Enregistrer' : 'Créer le canal'}</Button>}
+                {workspaceDialogMode === 'event' && <Button type="button" onClick={submitWorkspaceEvent}>{workspaceEditingEventId ? 'Enregistrer' : 'Programmer'}</Button>}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {usersTyping.length > 0 && (
             <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transform">
@@ -1341,8 +3659,8 @@ export function CommunicationInterne() {
             </div>
           )}
 
-          <div className="flex-1 overflow-hidden px-3 pb-3 md:px-4 md:pb-4">
-            {vue === 'liste' && (
+          <div className="flex min-h-0 flex-1 overflow-hidden p-2 md:p-2.5">
+            {true ? renderTeamWorkspaceView() : vue === 'liste' && (
               <div className="grid h-full grid-cols-1 gap-4 xl:grid-cols-[248px_minmax(0,1fr)]">
                 <aside className="min-h-0 space-y-3 xl:overflow-y-auto">
                   <div className="rounded-[28px] border border-white/70 bg-white/94 p-4 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
@@ -1899,7 +4217,7 @@ export function CommunicationInterne() {
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-sm font-semibold text-slate-800">Pièces jointes de réponse</p>
-                          <p className="mt-1 text-sm text-slate-600">Ajoutez jusqu’à 6 fichiers locaux, 5 Mo chacun.</p>
+                          <p className="mt-1 text-sm text-slate-600">Ajoutez un ou plusieurs fichiers locaux sans limite imposée par l’interface.</p>
                         </div>
                         <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border-slate-300 bg-white" disabled={!accessProfile.canUseAttachments}>
                           <Paperclip className="mr-2 h-4 w-4" />

@@ -464,7 +464,6 @@ export function PanelMarca() {
                           <AdaptiveBrandLogo
                             src={logoPreview}
                             alt="Logo preview"
-                            forceShape="square"
                             wrapperClassName="h-28 w-28 sm:h-32 sm:w-32"
                             containerClassName="border border-slate-200"
                             shadowClassName="shadow-[0_14px_28px_-20px_rgba(15,23,42,0.22)]"
@@ -534,7 +533,6 @@ export function PanelMarca() {
                     <AdaptiveBrandLogo
                       src={logoPreview}
                       alt="Logo"
-                      forceShape="square"
                       wrapperClassName="h-10 w-10"
                       containerClassName="border border-white/15 backdrop-blur-sm"
                       backgroundClassName="bg-white/90"

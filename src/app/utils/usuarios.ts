@@ -321,6 +321,10 @@ function mezclarUsuariosConCacheLocal(usuariosRemotos: Usuario[]): Usuario[] {
     return {
       ...usuarioRemoto,
       password: usuarioLocal?.password || usuarioRemoto.password || '',
+      foto: usuarioLocal?.foto || usuarioRemoto.foto || undefined,
+      descripcion: usuarioLocal?.descripcion || usuarioRemoto.descripcion || undefined,
+      telefono: usuarioLocal?.telefono || usuarioRemoto.telefono || undefined,
+      departamentoId: usuarioLocal?.departamentoId || usuarioRemoto.departamentoId || undefined,
       ultimoAcceso: usuarioLocal?.ultimoAcceso || usuarioRemoto.ultimoAcceso,
       fechaCreacion: usuarioLocal?.fechaCreacion || usuarioRemoto.fechaCreacion,
     };
@@ -368,9 +372,22 @@ export async function guardarUsuarioEnProveedor(
         || usuariosActualizados.find((item) => item.username.toLowerCase() === usuario.username.toLowerCase());
 
       if (usuarioGuardado) {
+        if (usuario.foto || usuario.descripcion || usuario.telefono || usuario.departamentoId) {
+          actualizarUsuario(usuarioGuardado.id, {
+            foto: usuario.foto,
+            descripcion: usuario.descripcion,
+            telefono: usuario.telefono,
+            departamentoId: usuario.departamentoId,
+          });
+        }
+
         return {
           ...usuarioGuardado,
           password: usuario.password || usuarioGuardado.password,
+          foto: usuario.foto || usuarioGuardado.foto,
+          descripcion: usuario.descripcion || usuarioGuardado.descripcion,
+          telefono: usuario.telefono || usuarioGuardado.telefono,
+          departamentoId: usuario.departamentoId || usuarioGuardado.departamentoId,
         };
       }
     }

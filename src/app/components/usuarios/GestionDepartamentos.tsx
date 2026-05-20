@@ -11,6 +11,7 @@ import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { useBranding } from '../../../hooks/useBranding';
+import { UserAvatar } from '../shared/UserAvatar';
 import { obtenerDepartamentos, guardarDepartamento, actualizarDepartamento, eliminarDepartamento, type Departamento as DepartamentoStorage } from '../../utils/departamentosStorage';
 
 interface Departamento {
@@ -449,12 +450,12 @@ export function GestionDepartamentos() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div 
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                            style={{ backgroundColor: branding.primaryColor }}
-                          >
-                            {departamento.responsable.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-                          </div>
+                          <UserAvatar
+                            displayName={departamento.responsable}
+                            className="w-8 h-8 rounded-full"
+                            fallbackClassName="text-white text-xs font-medium"
+                            fallbackStyle={{ backgroundColor: branding.primaryColor }}
+                          />
                           <span>{departamento.responsable}</span>
                         </div>
                       </TableCell>

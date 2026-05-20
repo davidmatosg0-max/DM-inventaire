@@ -723,21 +723,22 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
                 className="absolute inset-0 rounded-full blur-2xl opacity-30 animate-pulse"
                 style={{ backgroundColor: branding.primaryColor }}
               />
-              <div 
-                className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-none flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
-                style={{ borderColor: branding.primaryColor }}
-              >
-                {branding.logo ? (
-                  <AdaptiveBrandLogo
-                    src={branding.logo}
-                    alt="Logo"
-                    forceShape="square"
-                    wrapperClassName="h-full w-full"
-                    borderWidthClassName="border-0"
-                    shadowClassName=""
-                    imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
-                  />
-                ) : (
+              {branding.logo ? (
+                <AdaptiveBrandLogo
+                  src={branding.logo}
+                  alt="Logo"
+                  wrapperClassName="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24"
+                  backgroundClassName="bg-white"
+                  borderWidthClassName="border-4"
+                  shadowClassName="shadow-2xl"
+                  containerStyle={{ borderColor: branding.primaryColor }}
+                  imageStyle={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1) inset' }}
+                />
+              ) : (
+                <div 
+                  className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-[24px] flex items-center justify-center overflow-hidden shadow-2xl border-4 bg-white"
+                  style={{ borderColor: branding.primaryColor }}
+                >
                   <div 
                     className="h-full w-full flex items-center justify-center text-white"
                     style={{ backgroundColor: branding.primaryColor }}
@@ -746,8 +747,8 @@ export function Departamentos({ onNavigate }: { onNavigate?: (page: string) => v
                       BA
                     </span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 

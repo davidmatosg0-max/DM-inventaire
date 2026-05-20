@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
-import { ThumbsUp, Heart, Laugh, Star, Zap, CheckCircle, X } from 'lucide-react';
+import React from 'react';
+import { X } from 'lucide-react';
 
-type Reaction = '👍' | '❤️' | '😂' | '⭐' | '⚡' | '✅' | '🎉' | '🔥';
+const REACTION_CATALOG = [
+  '👍', '👏', '🙌', '🙏', '🤝', '💪',
+  '✅', '📌', '📅', '📞', '💡', '📝',
+  '📦', '🚚', '🛠️', '📈', '📎', '🔔',
+  '👀', '⚠️', '🔥', '⭐', '✨', '🎉',
+  '❤️', '💙', '💚', '😊', '🙂', '😄',
+  '🚀', '🏁', '🎯', '🤗', '💬', '📣',
+] as const;
+
+export type Reaction = typeof REACTION_CATALOG[number];
 
 interface ReactionPickerProps {
   onReact: (emoji: Reaction) => void;
@@ -9,30 +18,34 @@ interface ReactionPickerProps {
 }
 
 export function ReactionPicker({ onReact, onClose }: ReactionPickerProps) {
-  const reactions: Reaction[] = ['👍', '❤️', '😂', '⭐', '⚡', '✅', '🎉', '🔥'];
-
   return (
-    <div className="absolute bottom-full mb-2 right-0 backdrop-blur-xl bg-white/95 rounded-2xl shadow-2xl border border-white/20 p-2 flex gap-1 animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
-      {reactions.map((emoji) => (
+    <div className="absolute bottom-full right-0 z-50 mb-2 w-[308px] rounded-2xl border border-white/20 bg-white/95 p-3 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+      <div className="mb-2 flex items-center justify-between gap-3 px-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Réactions</p>
         <button
-          key={emoji}
-          onClick={() => {
-            onReact(emoji);
-            onClose();
-          }}
-          className="group relative w-10 h-10 flex items-center justify-center rounded-xl hover:bg-blue-50 transition-all duration-200 hover:scale-125"
-          title={`Réagir avec ${emoji}`}
+          onClick={onClose}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-500"
+          title="Fermer"
         >
-          <span className="text-2xl">{emoji}</span>
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/10 group-hover:to-purple-500/10 transition-all duration-200" />
+          <X className="h-4 w-4" />
         </button>
-      ))}
-      <button
-        onClick={onClose}
-        className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-red-50 transition-all duration-200 ml-2 border-l border-gray-200"
-      >
-        <X className="w-4 h-4 text-gray-500" />
-      </button>
+      </div>
+      <div className="grid grid-cols-6 gap-1.5">
+        {REACTION_CATALOG.map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => {
+              onReact(emoji);
+              onClose();
+            }}
+            className="group relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 hover:scale-110 hover:bg-blue-50"
+            title={`Réagir avec ${emoji}`}
+          >
+            <span className="text-[22px] leading-none">{emoji}</span>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-emerald-500/0 group-hover:from-blue-500/10 group-hover:to-emerald-500/10 transition-all duration-200" />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

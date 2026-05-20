@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 
 type LogoShape = 'round' | 'square';
 
+interface PixelColor {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
+
 interface LogoContentBounds {
   widthRatio: number;
   heightRatio: number;
@@ -36,6 +43,8 @@ interface AdaptiveBrandLogoProps {
 const CANVAS_SIZE = 64;
 const CORNER_ALPHA_THRESHOLD = 40;
 const CONTENT_ALPHA_THRESHOLD = 24;
+const BACKGROUND_COLOR_DISTANCE_THRESHOLD = 26;
+const CORNER_COLOR_SIMILARITY_THRESHOLD = 18;
 const CONTENT_FILL_RATIO = 0.9;
 const MAX_AUTO_SCALE = 2.4;
 
@@ -86,6 +95,84 @@ function getLogoContentBounds(data: Uint8ClampedArray): LogoContentBounds | null
   };
 }
 
+function getAverageCornerColor(data: Uint8ClampedArray, startX: number, startY: number): PixelColor {
+  let redTotal = 0;
+  let greenTotal = 0;
+  let blueTotal = 0;
+  let alphaTotal = 0;
+
+  for (let offsetY = 0; offsetY < 3; offsetY += 1) {
+    for (let offsetX = 0; offsetX < 3; offsetX += 1) {
+      const pixelIndex = ((startY + offsetY) * CANVAS_SIZE + (startX + offsetX)) * 4;
+      redTotal += data[pixelIndex] ?? 0;
+      greenTotal += data[pixelIndex + 1] ?? 0;
+      blueTotal += data[pixelIndex + 2] ?? 0;
+      alphaTotal += data[pixelIndex + 3] ?? 0;
+    }
+  }
+
+  return {
+    r: redTotal / 9,
+    g: greenTotal / 9,
+    b: blueTotal / 9,
+    a: alphaTotal / 9,
+  };
+}
+
+function getColorDistance(left: PixelColor, right: PixelColor) {
+  return Math.sqrt(
+    ((left.r - right.r) ** 2)
+    + ((left.g - right.g) ** 2)
+    + ((left.b - right.b) ** 2)
+  );
+}
+
+function getBackgroundAwareContentBounds(data: Uint8ClampedArray, backgroundColor: PixelColor): LogoContentBounds | null {
+  let minX = CANVAS_SIZE;
+  let minY = CANVAS_SIZE;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < CANVAS_SIZE; y += 1) {
+    for (let x = 0; x < CANVAS_SIZE; x += 1) {
+      const pixelIndex = (y * CANVAS_SIZE + x) * 4;
+      const pixel: PixelColor = {
+        r: data[pixelIndex] ?? 0,
+        g: data[pixelIndex + 1] ?? 0,
+        b: data[pixelIndex + 2] ?? 0,
+        a: data[pixelIndex + 3] ?? 0,
+      };
+
+      const alphaDifference = Math.abs(pixel.a - backgroundColor.a);
+      const colorDistance = getColorDistance(pixel, backgroundColor);
+
+      if (pixel.a <= CONTENT_ALPHA_THRESHOLD && alphaDifference <= CONTENT_ALPHA_THRESHOLD) {
+        continue;
+      }
+
+      if (colorDistance <= BACKGROUND_COLOR_DISTANCE_THRESHOLD && alphaDifference <= CONTENT_ALPHA_THRESHOLD) {
+        continue;
+      }
+
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < 0 || maxY < 0) {
+    return null;
+  }
+
+  return {
+    widthRatio: (maxX - minX + 1) / CANVAS_SIZE,
+    heightRatio: (maxY - minY + 1) / CANVAS_SIZE,
+    centerX: (minX + maxX + 1) / (2 * CANVAS_SIZE),
+    centerY: (minY + maxY + 1) / (2 * CANVAS_SIZE),
+  };
+}
+
 function analyzeLogo(src: string): Promise<LogoAnalysis> {
   return new Promise((resolve) => {
     const image = new Image();
@@ -111,7 +198,7 @@ function analyzeLogo(src: string): Promise<LogoAnalysis> {
         context.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
         context.drawImage(image, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
         const { data } = context.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        const contentBounds = getLogoContentBounds(data);
+        const alphaContentBounds = getLogoContentBounds(data);
 
         const cornerAlphas = [
           getAverageCornerAlpha(data, 0, 0),
@@ -119,9 +206,33 @@ function analyzeLogo(src: string): Promise<LogoAnalysis> {
           getAverageCornerAlpha(data, 0, CANVAS_SIZE - 3),
           getAverageCornerAlpha(data, CANVAS_SIZE - 3, CANVAS_SIZE - 3),
         ];
+        const cornerColors = [
+          getAverageCornerColor(data, 0, 0),
+          getAverageCornerColor(data, CANVAS_SIZE - 3, 0),
+          getAverageCornerColor(data, 0, CANVAS_SIZE - 3),
+          getAverageCornerColor(data, CANVAS_SIZE - 3, CANVAS_SIZE - 3),
+        ];
+        const cornersShareBackground = cornerColors.every((cornerColor) => (
+          getColorDistance(cornerColor, cornerColors[0]) <= CORNER_COLOR_SIMILARITY_THRESHOLD
+          && Math.abs(cornerColor.a - cornerColors[0].a) <= CONTENT_ALPHA_THRESHOLD
+        ));
+        const backgroundAwareBounds = cornersShareBackground
+          ? getBackgroundAwareContentBounds(data, cornerColors[0])
+          : null;
+        const contentBounds = backgroundAwareBounds || alphaContentBounds;
+        const compactCenteredContent = Boolean(
+          backgroundAwareBounds
+          && backgroundAwareBounds.widthRatio < 0.9
+          && backgroundAwareBounds.heightRatio < 0.9
+          && Math.abs(backgroundAwareBounds.widthRatio - backgroundAwareBounds.heightRatio) < 0.18
+        );
 
         resolve({
-          shape: aspectDelta > 0.16 || !cornerAlphas.every((alpha) => alpha < CORNER_ALPHA_THRESHOLD) ? 'square' : 'round',
+          shape: aspectDelta > 0.16
+            ? 'square'
+            : cornerAlphas.every((alpha) => alpha < CORNER_ALPHA_THRESHOLD) || compactCenteredContent
+              ? 'round'
+              : 'square',
           contentBounds,
         });
       } catch {

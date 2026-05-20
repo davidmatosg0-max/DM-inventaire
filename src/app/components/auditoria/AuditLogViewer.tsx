@@ -37,6 +37,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { UserAvatar } from '../shared/UserAvatar';
 import {
   obtenerLogs,
   filtrarLogs,
@@ -514,9 +515,15 @@ export function AuditLogViewer({
                           </div>
                           
                           <div className="flex items-center gap-4 text-xs text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {log.usuario}
+                            <div className="flex items-center gap-2">
+                              <UserAvatar
+                                userId={log.usuarioId}
+                                displayName={log.usuario}
+                                className="h-6 w-6 rounded-full"
+                                fallbackClassName="text-[10px] font-bold text-white"
+                                fallbackStyle={{ backgroundColor: '#1a4d7a' }}
+                              />
+                              <span>{log.usuario}</span>
                             </div>
                             
                             <div className="flex items-center gap-1">
@@ -597,7 +604,15 @@ export function AuditLogViewer({
                         <div className="w-8 h-8 rounded-full bg-[#1a4d7a] text-white flex items-center justify-center font-bold text-sm">
                           {idx + 1}
                         </div>
-                        <span className="font-medium">{item.usuario}</span>
+                        <div className="flex items-center gap-2">
+                          <UserAvatar
+                            displayName={item.usuario}
+                            className="h-8 w-8 rounded-full"
+                            fallbackClassName="text-xs font-bold text-white"
+                            fallbackStyle={{ backgroundColor: '#2d9561' }}
+                          />
+                          <span className="font-medium">{item.usuario}</span>
+                        </div>
                       </div>
                       <Badge>{item.acciones} actions</Badge>
                     </div>

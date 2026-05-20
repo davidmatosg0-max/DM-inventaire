@@ -29,6 +29,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { UserAvatar } from './shared/UserAvatar';
 import { toast } from 'sonner';
 import { type ActividadLog } from '../utils/actividadLogger';
 
@@ -488,9 +489,13 @@ export function RegistroActividades({ filtroModulo }: RegistroActividadesProps) 
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] flex items-center justify-center text-white text-xs font-bold">
-                              {actividad.usuario.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                            </div>
+                            <UserAvatar
+                              userId={actividad.usuarioId}
+                              displayName={actividad.usuario}
+                              className="w-8 h-8 rounded-full"
+                              fallbackClassName="text-white text-xs font-bold"
+                              fallbackStyle={{ backgroundImage: 'linear-gradient(to bottom right, #1a4d7a, #2d9561)' }}
+                            />
                             <span className="text-sm font-medium">{actividad.usuario}</span>
                           </div>
                         </TableCell>
