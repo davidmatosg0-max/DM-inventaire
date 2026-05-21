@@ -19,6 +19,10 @@ export type TypeDemande =
 
 // Import des départements existants du système
 import { obtenerDepartamentos, type Departamento } from './departamentosStorage';
+import {
+  eliminarAdjuntosMessagerie,
+  esReferenciaAdjuntoMessagerie,
+} from './messagerieAttachmentIndexedDb';
 
 export interface PieceJointe {
   id: string;
@@ -154,6 +158,59 @@ function ecrireStorage<T>(key: string, value: T, scope: string): void {
   localStorage.setItem(STORAGE_KEY_SIGNAL, JSON.stringify(payload));
 }
 
+function extraerReferenciasAdjuntos(piecesJointes: PieceJointe[] = []): string[] {
+  return piecesJointes
+    .map((piece) => piece.url)
+    .filter((url): url is string => esReferenciaAdjuntoMessagerie(url));
+}
+
+function obtenirReferenciasAdjuntosMessages(messages: Message[]): string[] {
+  return messages.flatMap((message) => extraerReferenciasAdjuntos(message.piecesJointes));
+}
+
+function obtenirReferenciasAdjuntosDrafts(drafts: MessageDraft[]): string[] {
+  return drafts.flatMap((draft) => extraerReferenciasAdjuntos(draft.piecesJointes));
+}
+
+function nettoyerAdjuntosOrphelins(candidateRefs: string[], options?: { excludeMessageIds?: string[]; excludeDraftIds?: string[] }): void {
+  const uniqueCandidateRefs = Array.from(new Set(candidateRefs.filter((ref) => esReferenciaAdjuntoMessagerie(ref))));
+
+  if (uniqueCandidateRefs.length === 0) {
+    return;
+  }
+
+  const excludeMessageIds = new Set(options?.excludeMessageIds || []);
+  const excludeDraftIds = new Set(options?.excludeDraftIds || []);
+  const remainingMessages = obtenirMessages().filter((message) => !excludeMessageIds.has(message.id));
+  const remainingDrafts = obtenirBrouillonsMessagerie().filter((draft) => !excludeDraftIds.has(draft.id));
+  const stillUsedRefs = new Set([
+    ...obtenirReferenciasAdjuntosMessages(remainingMessages),
+    ...obtenirReferenciasAdjuntosDrafts(remainingDrafts),
+  ]);
+  const refsToDelete = uniqueCandidateRefs.filter((ref) => !stillUsedRefs.has(ref));
+
+  if (refsToDelete.length === 0) {
+    return;
+  }
+
+  void eliminarAdjuntosMessagerie(refsToDelete).catch((error) => {
+    console.error('Erreur lors du nettoyage des pièces jointes de messagerie:', error);
+  });
+}
+
+function supprimerNotificationsPourMessages(messageIds: string[]): void {
+  if (messageIds.length === 0) {
+    return;
+  }
+
+  const notifications = obtenirNotifications();
+  const filtered = notifications.filter((notification) => !messageIds.includes(notification.messageId));
+
+  if (filtered.length !== notifications.length) {
+    sauvegarderNotifications(filtered);
+  }
+}
+
 // ==================== MESSAGES ====================
 
 export function obtenirMessages(): Message[] {
@@ -286,11 +343,21 @@ export function modifierStatutDemande(messageId: string, nouveauStatut: StatutDe
 
 export function supprimerMessage(messageId: string): boolean {
   const messages = obtenirMessages();
+  const messageToDelete = messages.find((message) => message.id === messageId);
+
+  if (!messageToDelete) return false;
+
   const filtered = messages.filter(m => m.id !== messageId);
-  
-  if (filtered.length === messages.length) return false;
+
+  filtered.forEach((message) => {
+    if (message.reponses.includes(messageId)) {
+      message.reponses = message.reponses.filter((replyId) => replyId !== messageId);
+    }
+  });
   
   sauvegarderMessages(filtered);
+  supprimerNotificationsPourMessages([messageId]);
+  nettoyerAdjuntosOrphelins(extraerReferenciasAdjuntos(messageToDelete.piecesJointes), { excludeMessageIds: [messageId] });
   return true;
 }
 
@@ -449,6 +516,7 @@ export function sauvegarderBrouillonMessagerie(
   draft: Omit<MessageDraft, 'id' | 'updatedAt'> & { id?: string }
 ): MessageDraft {
   const drafts = lireStorage<MessageDraft[]>(STORAGE_KEY_DRAFTS, []);
+  const previousDraft = draft.id ? drafts.find((entry) => entry.id === draft.id) : undefined;
   const draftToSave: MessageDraft = {
     ...draft,
     id: draft.id || `draft-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -463,16 +531,29 @@ export function sauvegarderBrouillonMessagerie(
   }
 
   ecrireStorage(STORAGE_KEY_DRAFTS, drafts, 'drafts');
+
+  if (previousDraft) {
+    const nextDraftRefs = new Set(extraerReferenciasAdjuntos(draftToSave.piecesJointes));
+    const removedRefs = extraerReferenciasAdjuntos(previousDraft.piecesJointes).filter((ref) => !nextDraftRefs.has(ref));
+    nettoyerAdjuntosOrphelins(removedRefs, { excludeDraftIds: [draftToSave.id] });
+  }
+
   return draftToSave;
 }
 
 export function supprimerBrouillonMessagerie(draftId: string): boolean {
   const drafts = lireStorage<MessageDraft[]>(STORAGE_KEY_DRAFTS, []);
+  const draftToDelete = drafts.find((draft) => draft.id === draftId);
   const filtered = drafts.filter((draft) => draft.id !== draftId);
 
   if (filtered.length === drafts.length) return false;
 
   ecrireStorage(STORAGE_KEY_DRAFTS, filtered, 'drafts');
+
+  if (draftToDelete) {
+    nettoyerAdjuntosOrphelins(extraerReferenciasAdjuntos(draftToDelete.piecesJointes), { excludeDraftIds: [draftId] });
+  }
+
   return true;
 }
 

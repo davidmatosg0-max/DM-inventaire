@@ -150,6 +150,7 @@ interface MessagingAccessProfile {
   canViewStats: boolean;
   canManageTemplates: boolean;
   canDeleteAny: boolean;
+  canManageWorkspace: boolean;
   allowedRecipientIds: string[];
   restrictionNotice?: string;
 }
@@ -340,6 +341,7 @@ function buildMessagingAccessProfile(
       canViewStats: false,
       canManageTemplates: false,
       canDeleteAny: false,
+      canManageWorkspace: false,
       allowedRecipientIds: [],
       restrictionNotice: 'Une session active est requise pour utiliser la messagerie.'
     };
@@ -366,6 +368,14 @@ function buildMessagingAccessProfile(
   );
   const canViewStats = isFullAccess || hasAny('coordinador', 'administrador_liaison', 'liaison_organisme');
   const canDeleteAny = isFullAccess || hasAny('coordinador');
+  const canManageWorkspace = isFullAccess || hasAny(
+    'coordinador',
+    'administrador_liaison',
+    'liaison_organisme',
+    'responsable_entrepot',
+    'responsable_comptoir',
+    'responsable_transport'
+  );
   const canManageTemplates = canCompose && (isFullAccess || hasAny(
     'coordinador',
     'administrador_liaison',
@@ -408,12 +418,77 @@ function buildMessagingAccessProfile(
     canViewStats,
     canManageTemplates,
     canDeleteAny,
+    canManageWorkspace,
     allowedRecipientIds,
     restrictionNotice,
   };
 }
 
+function parseStoredState<T>(rawValue: string | null, fallback: T, key: string): T {
+  if (!rawValue) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(rawValue) as T;
+  } catch (error) {
+    console.warn(`État persistant ignoré pour ${key}:`, error);
+    return fallback;
+  }
+}
+
+interface MessagingUiState {
+  selectedConversationId: string;
+  simpleQuickFilter: SimpleQuickFilter;
+  selectedWorkspaceKey: string;
+  selectedCalendarEventId: string;
+}
+
+const DEFAULT_MESSAGING_UI_STATE: MessagingUiState = {
+  selectedConversationId: '',
+  simpleQuickFilter: 'chat',
+  selectedWorkspaceKey: '',
+  selectedCalendarEventId: '',
+};
+
+function getMessagingUiStateStorageKey(userId: string): string {
+  return `communication_interne_ui_state:${userId}`;
+}
+
+function readMessagingUiState(userId: string): MessagingUiState {
+  if (typeof window === 'undefined') {
+    return DEFAULT_MESSAGING_UI_STATE;
+  }
+
+  const rawValue = localStorage.getItem(getMessagingUiStateStorageKey(userId));
+  const parsed = parseStoredState(rawValue, DEFAULT_MESSAGING_UI_STATE, 'communication-interne-ui-state');
+
+  return {
+    selectedConversationId: typeof parsed.selectedConversationId === 'string' ? parsed.selectedConversationId : '',
+    simpleQuickFilter: ['chat', 'channels', 'people', 'files', 'agenda', 'alerts'].includes(parsed.simpleQuickFilter)
+      ? parsed.simpleQuickFilter
+      : 'chat',
+    selectedWorkspaceKey: typeof parsed.selectedWorkspaceKey === 'string' ? parsed.selectedWorkspaceKey : '',
+    selectedCalendarEventId: typeof parsed.selectedCalendarEventId === 'string' ? parsed.selectedCalendarEventId : '',
+  };
+}
+
+function writeMessagingUiState(userId: string, state: MessagingUiState): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(getMessagingUiStateStorageKey(userId), JSON.stringify(state));
+}
+
 export function CommunicationInterne() {
+  const sessionInfo = obtenerInfoUsuarioConPermisos();
+  const currentUserId = sessionInfo?.id || 'user-current';
+  const currentUserName = sessionInfo
+    ? [sessionInfo.nombre, sessionInfo.apellido].filter(Boolean).join(' ') || sessionInfo.username || 'Utilisateur'
+    : 'Utilisateur';
+  const currentUserRoleLabel = sessionInfo ? obtenerNombreRol(sessionInfo.rol) : 'Utilisateur';
+  const initialMessagingUiState = readMessagingUiState(currentUserId);
   const [messages, setMessages] = useState<ExtendedMessage[]>([]);
   const [departements, setDepartements] = useState<Departamento[]>([]);
   const [departementActuel, setDepartementActuel] = useState<string>('');
@@ -425,13 +500,7 @@ export function CommunicationInterne() {
   const [afficherGuide, setAfficherGuide] = useState(false);
   const [afficherGuideCompleta, setAfficherGuideCompleta] = useState(false);
   const [activeTab, setActiveTab] = useState('messagerie');
-  const [selectedConversationId, setSelectedConversationId] = useState('');
-  const sessionInfo = obtenerInfoUsuarioConPermisos();
-  const currentUserId = sessionInfo?.id || 'user-current';
-  const currentUserName = sessionInfo
-    ? [sessionInfo.nombre, sessionInfo.apellido].filter(Boolean).join(' ') || sessionInfo.username || 'Utilisateur'
-    : 'Utilisateur';
-  const currentUserRoleLabel = sessionInfo ? obtenerNombreRol(sessionInfo.rol) : 'Utilisateur';
+  const [selectedConversationId, setSelectedConversationId] = useState(initialMessagingUiState.selectedConversationId);
   
   // Nuevos estados para funcionalidades avanzadas
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
@@ -446,14 +515,14 @@ export function CommunicationInterne() {
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState('');
   const [lastRealtimeRefresh, setLastRealtimeRefresh] = useState(new Date().toISOString());
-  const [simpleQuickFilter, setSimpleQuickFilter] = useState<SimpleQuickFilter>('chat');
+  const [simpleQuickFilter, setSimpleQuickFilter] = useState<SimpleQuickFilter>(initialMessagingUiState.simpleQuickFilter);
   const [workspaceUsers, setWorkspaceUsers] = useState<Usuario[]>([]);
   const [teamChatMessages, setTeamChatMessages] = useState<TeamChatMessage[]>([]);
   const [teamChatTeams, setTeamChatTeams] = useState<TeamChatTeam[]>([]);
   const [teamChatChannels, setTeamChatChannels] = useState<TeamChatChannel[]>([]);
   const [teamChatEvents, setTeamChatEvents] = useState<TeamChatEvent[]>([]);
-  const [selectedWorkspaceKey, setSelectedWorkspaceKey] = useState('');
-  const [selectedCalendarEventId, setSelectedCalendarEventId] = useState('');
+  const [selectedWorkspaceKey, setSelectedWorkspaceKey] = useState(initialMessagingUiState.selectedWorkspaceKey);
+  const [selectedCalendarEventId, setSelectedCalendarEventId] = useState(initialMessagingUiState.selectedCalendarEventId);
   const [workspaceDialogMode, setWorkspaceDialogMode] = useState<WorkspaceDialogMode | null>(null);
   const [workspaceEditingTeamId, setWorkspaceEditingTeamId] = useState<string | null>(null);
   const [workspaceEditingChannelId, setWorkspaceEditingChannelId] = useState<string | null>(null);
@@ -464,6 +533,8 @@ export function CommunicationInterne() {
   const [attachmentPickerAccept, setAttachmentPickerAccept] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const composerActionsRef = useRef<HTMLDivElement | null>(null);
+  const workspaceMessagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const departmentMessagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [openComposerMenu, setOpenComposerMenu] = useState<'media' | 'quick' | null>(null);
   const accessProfile = buildMessagingAccessProfile(sessionInfo, departements, departementActuel);
   const allowedRecipientIds = accessProfile.allowedRecipientIds;
@@ -491,6 +562,15 @@ export function CommunicationInterne() {
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
+
+  useEffect(() => {
+    writeMessagingUiState(currentUserId, {
+      selectedConversationId,
+      simpleQuickFilter,
+      selectedWorkspaceKey,
+      selectedCalendarEventId,
+    });
+  }, [currentUserId, selectedConversationId, simpleQuickFilter, selectedWorkspaceKey, selectedCalendarEventId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -663,7 +743,7 @@ export function CommunicationInterne() {
           },
         ];
 
-    setWorkspaceUsers(normalizedUsers.filter((user) => user.activo !== false));
+    setWorkspaceUsers(normalizedUsers);
     setTeamChatMessages(obtenirTeamChatMessages());
     setTeamChatTeams(obtenirTeamChatTeams());
     setTeamChatChannels(obtenirTeamChatChannels());
@@ -679,12 +759,8 @@ export function CommunicationInterne() {
     const storedReactions = localStorage.getItem('message-reactions');
     const storedPinned = localStorage.getItem('pinned-messages');
     
-    if (storedReactions) {
-      setMessageReactions(JSON.parse(storedReactions));
-    }
-    if (storedPinned) {
-      setPinnedMessages(JSON.parse(storedPinned));
-    }
+    setMessageReactions(parseStoredState(storedReactions, {}, 'message-reactions'));
+    setPinnedMessages(parseStoredState(storedPinned, [], 'pinned-messages'));
     
     setMessages(msgs);
     setDepartements(depts);
@@ -1097,9 +1173,7 @@ export function CommunicationInterne() {
     reader.readAsDataURL(file);
   });
 
-  const handleAttachmentSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    event.target.value = '';
+  const processAttachmentFiles = async (files: File[]) => {
     setAttachmentPickerAccept(undefined);
 
     if (!files.length) return;
@@ -1128,6 +1202,12 @@ export function CommunicationInterne() {
       setComposerAttachments(previous => [...previous, ...nextAttachments]);
       toast.success(`${nextAttachments.length} pièce(s) jointe(s) ajoutée(s)`);
     }
+  };
+
+  const handleAttachmentSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    await processAttachmentFiles(files);
   };
 
   const handleRemoveAttachment = (attachmentId: string) => {
@@ -1389,6 +1469,18 @@ export function CommunicationInterne() {
     || simpleConversationThreads[0]
     || null;
   const selectedConversationMessages = selectedConversation?.messages || [];
+  useEffect(() => {
+    const container = departmentMessagesContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [selectedConversationId, selectedConversationMessages.length]);
   const departmentPresence = presenceEntries.filter(entry => entry.departementId === departementActuel);
   const activePresenceCount = presenceEntries.filter(entry => entry.status === 'online').length;
   const permissionBadges = [
@@ -1422,8 +1514,9 @@ export function CommunicationInterne() {
   const handleSimpleQuickFilterChange = (target: SimpleQuickFilter) => {
     setSimpleQuickFilter(target);
   };
+  const canUseComposerMedia = Boolean(selectedConversationId || selectedWorkspaceKey || vue === 'nouveau' || vue === 'repondre');
   const ouvrirSelecteurAdjuntos = (accept?: string) => {
-    if (!selectedConversationId && !selectedWorkspaceKey) {
+    if (!canUseComposerMedia) {
       toast.error('Sélectionnez une conversation avant d’ajouter un contenu.');
       return;
     }
@@ -1434,10 +1527,29 @@ export function CommunicationInterne() {
     }
 
     setAttachmentPickerAccept(accept || undefined);
-    fileInputRef.current?.click();
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.multiple = true;
+    picker.accept = accept || '';
+    picker.style.position = 'fixed';
+    picker.style.left = '-9999px';
+    picker.style.top = '0';
+
+    picker.addEventListener('change', () => {
+      const files = Array.from(picker.files || []);
+      void processAttachmentFiles(files);
+      picker.remove();
+    }, { once: true });
+
+    document.body.appendChild(picker);
+    picker.click();
+  };
+  const ouvrirOptionMedia = (accept?: string) => {
+    setOpenComposerMenu(null);
+    ouvrirSelecteurAdjuntos(accept);
   };
   const handleInsertQuickText = (value: string, emptyError: string) => {
-    if (!selectedConversationId && !selectedWorkspaceKey) {
+    if (!canUseComposerMedia) {
       toast.error(emptyError);
       return;
     }
@@ -1722,24 +1834,48 @@ export function CommunicationInterne() {
   };
 
   const activeWorkspaceUsers = workspaceUsers.filter((user) => user.id !== currentUserId && user.activo !== false);
+  const historicalDirectUserIds = Array.from(new Set(
+    teamChatMessages
+      .filter((message) => message.conversationType === 'direct')
+      .map((message) => {
+        const participants = message.conversationId
+          .split(':')
+          .filter((part) => part && part !== 'direct' && part !== currentUserId);
+        return participants[0] || '';
+      })
+      .filter((userId) => Boolean(userId))
+  ));
+  const directConversationUserIds = Array.from(new Set([
+    ...activeWorkspaceUsers.map((user) => user.id),
+    ...historicalDirectUserIds,
+  ])).filter((userId) => userId !== currentUserId);
 
-  const directConversations: WorkspaceConversation[] = activeWorkspaceUsers
-    .map((user) => {
-      const conversationId = buildDirectConversationId(currentUserId, user.id);
+  const directConversations: WorkspaceConversation[] = directConversationUserIds
+    .map((userId) => {
+      const user = workspaceUserMap[userId];
+      const conversationId = buildDirectConversationId(currentUserId, userId);
       const messagesForConversation = teamChatMessages
         .filter((message) => message.conversationType === 'direct' && message.conversationId === conversationId)
         .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
       const lastMessage = messagesForConversation[messagesForConversation.length - 1];
+      const fallbackName = messagesForConversation.find((message) => message.senderUserId === userId)?.senderName
+        || messagesForConversation.find((message) => message.senderUserId !== currentUserId)?.senderName
+        || 'Utilisateur archivé';
+      const subtitleParts = [
+        user ? getWorkspaceRoleLabel(userId) : 'Historique archivé',
+        user?.email || '',
+        user && user.activo === false ? 'Inactif' : '',
+      ].filter(Boolean);
 
       return {
         key: `direct:${conversationId}`,
         id: conversationId,
         type: 'direct',
-        title: getWorkspaceUserLabel(user.id),
-        subtitle: `${getWorkspaceRoleLabel(user.id)}${user.email ? ` • ${user.email}` : ''}`,
-        avatarSeed: `direct-${user.id}`,
-        avatarUserId: user.id,
-        memberIds: [currentUserId, user.id],
+        title: user ? getWorkspaceUserLabel(userId) : fallbackName,
+        subtitle: subtitleParts.join(' • '),
+        avatarSeed: `direct-${userId}`,
+        avatarUserId: user?.activo === false ? undefined : userId,
+        memberIds: [currentUserId, userId],
         messages: messagesForConversation,
         unreadCount: getUnreadCountForConversation(messagesForConversation),
         lastActivity: lastMessage?.createdAt,
@@ -1871,6 +2007,22 @@ export function CommunicationInterne() {
   const selectedCalendarEvent = visibleCalendarEvents.find((event) => event.id === selectedCalendarEventId)
     || visibleCalendarEvents[0]
     || null;
+  useEffect(() => {
+    if (simpleQuickFilter === 'agenda') {
+      return;
+    }
+
+    const container = workspaceMessagesContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [simpleQuickFilter, selectedWorkspace?.key, selectedWorkspace?.messages.length]);
 
   const toggleWorkspaceMemberSelection = (
     memberIds: string[],
@@ -1893,12 +2045,22 @@ export function CommunicationInterne() {
   };
 
   const handleCreateWorkspaceTeam = () => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La gestion des équipes est réservée aux rôles autorisés.');
+      return;
+    }
+
     setWorkspaceEditingTeamId(null);
     setWorkspaceTeamForm(createEmptyWorkspaceTeamForm(currentUserId));
     setWorkspaceDialogMode('team');
   };
 
   const handleEditWorkspaceTeam = (teamId: string) => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La modification des équipes est réservée aux rôles autorisés.');
+      return;
+    }
+
     const team = teamChatTeams.find((item) => item.id === teamId);
     if (!team) {
       toast.error('Équipe introuvable.');
@@ -1915,6 +2077,11 @@ export function CommunicationInterne() {
   };
 
   const submitWorkspaceTeam = () => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La gestion des équipes est réservée aux rôles autorisés.');
+      return;
+    }
+
     if (!workspaceTeamForm.name.trim()) {
       toast.error('Saisissez un nom pour l’équipe.');
       return;
@@ -1948,6 +2115,11 @@ export function CommunicationInterne() {
   };
 
   const handleDeleteWorkspaceTeam = (teamId: string) => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La suppression des équipes est réservée aux rôles autorisés.');
+      return;
+    }
+
     const team = teamChatTeams.find((item) => item.id === teamId);
     if (!team) {
       toast.error('Équipe introuvable.');
@@ -1965,12 +2137,22 @@ export function CommunicationInterne() {
   };
 
   const handleCreateWorkspaceChannel = () => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La gestion des canaux est réservée aux rôles autorisés.');
+      return;
+    }
+
     setWorkspaceEditingChannelId(null);
     setWorkspaceChannelForm(createEmptyWorkspaceChannelForm(currentUserId));
     setWorkspaceDialogMode('channel');
   };
 
   const handleEditWorkspaceChannel = (channelId: string) => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La modification des canaux est réservée aux rôles autorisés.');
+      return;
+    }
+
     const channel = teamChatChannels.find((item) => item.id === channelId);
     if (!channel) {
       toast.error('Canal introuvable.');
@@ -1988,6 +2170,11 @@ export function CommunicationInterne() {
   };
 
   const submitWorkspaceChannel = () => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La gestion des canaux est réservée aux rôles autorisés.');
+      return;
+    }
+
     if (!workspaceChannelForm.name.trim()) {
       toast.error('Saisissez un nom pour le canal.');
       return;
@@ -2029,6 +2216,11 @@ export function CommunicationInterne() {
   };
 
   const handleDeleteWorkspaceChannel = (channelId: string) => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La suppression des canaux est réservée aux rôles autorisés.');
+      return;
+    }
+
     const channel = teamChatChannels.find((item) => item.id === channelId);
     if (!channel) {
       toast.error('Canal introuvable.');
@@ -2046,6 +2238,11 @@ export function CommunicationInterne() {
   };
 
   const handleScheduleWorkspaceEvent = (conversation?: WorkspaceConversation | null) => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La programmation d’événements est réservée aux rôles autorisés.');
+      return;
+    }
+
     setWorkspaceEditingEventId(null);
     setWorkspaceEventForm({
       title: '',
@@ -2060,6 +2257,11 @@ export function CommunicationInterne() {
   };
 
   const handleEditWorkspaceEvent = (eventId: string) => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La modification des événements est réservée aux rôles autorisés.');
+      return;
+    }
+
     const event = teamChatEvents.find((item) => item.id === eventId);
     if (!event) {
       toast.error('Événement introuvable.');
@@ -2095,6 +2297,11 @@ export function CommunicationInterne() {
   };
 
   const submitWorkspaceEvent = () => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La programmation d’événements est réservée aux rôles autorisés.');
+      return;
+    }
+
     if (!workspaceEventForm.title.trim()) {
       toast.error('Saisissez un titre pour l’événement.');
       return;
@@ -2145,6 +2352,11 @@ export function CommunicationInterne() {
   };
 
   const handleDeleteWorkspaceEvent = (eventId: string) => {
+    if (!accessProfile.canManageWorkspace) {
+      toast.error('La suppression des événements est réservée aux rôles autorisés.');
+      return;
+    }
+
     const event = teamChatEvents.find((item) => item.id === eventId);
     if (!event) {
       toast.error('Événement introuvable.');
@@ -2424,19 +2636,19 @@ export function CommunicationInterne() {
                     <p className="text-[12px] text-slate-500">{sectionDescriptions[simpleQuickFilter]}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {simpleQuickFilter === 'people' && (
+                    {simpleQuickFilter === 'people' && accessProfile.canManageWorkspace && (
                       <button type="button" onClick={handleCreateWorkspaceTeam} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                         <UserPlus className="h-4 w-4" />
                         Créer équipe
                       </button>
                     )}
-                    {simpleQuickFilter === 'channels' && (
+                    {simpleQuickFilter === 'channels' && accessProfile.canManageWorkspace && (
                       <button type="button" onClick={handleCreateWorkspaceChannel} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                         <Plus className="h-4 w-4" />
                         Créer canal
                       </button>
                     )}
-                    {simpleQuickFilter === 'agenda' && (
+                    {simpleQuickFilter === 'agenda' && accessProfile.canManageWorkspace && (
                       <button type="button" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                         <Calendar className="h-4 w-4" />
                         Programmer
@@ -2595,19 +2807,23 @@ export function CommunicationInterne() {
                           <p className="mt-0.5 text-[13px] text-slate-500">Début {formatWorkspaceDate(selectedCalendarEvent.startAt)}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
-                            <button type="button" title="Modifier l’événement" onClick={() => handleEditWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceActionButtonClass}>
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button type="button" title="Supprimer l’événement" onClick={() => handleDeleteWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceDangerButtonClass}>
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
-                            <button type="button" title="Programmer un nouvel événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
-                              <Calendar className="h-4 w-4" />
-                            </button>
-                          </div>
+                          {accessProfile.canManageWorkspace && (
+                            <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
+                              <button type="button" title="Modifier l’événement" onClick={() => handleEditWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceActionButtonClass}>
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button type="button" title="Supprimer l’événement" onClick={() => handleDeleteWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceDangerButtonClass}>
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                          {accessProfile.canManageWorkspace && (
+                            <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
+                              <button type="button" title="Programmer un nouvel événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
+                                <Calendar className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2670,7 +2886,7 @@ export function CommunicationInterne() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {selectedWorkspace.type !== 'direct' && (
+                        {selectedWorkspace.type !== 'direct' && accessProfile.canManageWorkspace && (
                           <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
                             <button
                               type="button"
@@ -2691,9 +2907,11 @@ export function CommunicationInterne() {
                           </div>
                         )}
                         <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
-                          <button type="button" title="Programmer un événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
-                            <Calendar className="h-4 w-4" />
-                          </button>
+                          {accessProfile.canManageWorkspace && (
+                            <button type="button" title="Programmer un événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
+                              <Calendar className="h-4 w-4" />
+                            </button>
+                          )}
                           <button type="button" title="Lancer une réunion vidéo" onClick={() => handleStartWorkspaceVideoRoom(selectedWorkspace)} className={workspaceActionButtonClass}>
                             <Video className="h-4 w-4" />
                           </button>
@@ -2702,7 +2920,7 @@ export function CommunicationInterne() {
                     </div>
                   </div>
 
-                  <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(91,103,243,0.06),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2f8_100%)] px-4 py-4 sm:px-5">
+                  <div ref={workspaceMessagesContainerRef} className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(91,103,243,0.06),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2f8_100%)] px-4 py-4 sm:px-5">
                     {selectedWorkspace.messages.length === 0 ? (
                       <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
                         <div className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -2800,15 +3018,19 @@ export function CommunicationInterne() {
 
                           {openComposerMenu === 'media' && (
                             <div className="absolute bottom-14 right-0 z-20 flex min-w-[210px] flex-col gap-1 rounded-[22px] border border-slate-200 bg-white p-2 shadow-[0_22px_44px_-28px_rgba(15,23,42,0.4)]">
-                              <button type="button" onClick={() => ouvrirSelecteurAdjuntos(undefined)} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                              <button type="button" onClick={() => ouvrirOptionMedia(undefined)} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
                                 <Paperclip className="h-4 w-4" />
                                 Documents
                               </button>
-                              <button type="button" onClick={() => ouvrirSelecteurAdjuntos('image/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                              <button type="button" onClick={() => ouvrirOptionMedia('image/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
                                 <Image className="h-4 w-4" />
                                 Images
                               </button>
-                              <button type="button" onClick={() => ouvrirSelecteurAdjuntos('audio/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                              <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
+                                <Video className="h-4 w-4" />
+                                Vidéos
+                              </button>
+                              <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
                                 <Mic className="h-4 w-4" />
                                 Audio
                               </button>
@@ -3129,7 +3351,7 @@ export function CommunicationInterne() {
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(91,103,243,0.06),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2f8_100%)] px-4 py-4 sm:px-5">
+              <div ref={departmentMessagesContainerRef} className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(91,103,243,0.06),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2f8_100%)] px-4 py-4 sm:px-5">
                 {selectedConversationMessages.length === 0 ? (
                   <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
                     <div className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -3264,15 +3486,19 @@ export function CommunicationInterne() {
 
                         {openComposerMenu === 'media' && (
                           <div className="absolute bottom-full left-0 z-20 mb-2 flex min-w-[172px] flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(15,45,71,0.28)]">
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); ouvrirSelecteurAdjuntos(); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                            <button type="button" onClick={() => ouvrirOptionMedia()} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <Paperclip className="h-4 w-4" />
                               Fichier
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); ouvrirSelecteurAdjuntos('image/*'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                            <button type="button" onClick={() => ouvrirOptionMedia('image/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <Image className="h-4 w-4" />
                               Image
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); ouvrirSelecteurAdjuntos('audio/*'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                            <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <Video className="h-4 w-4" />
+                              Vidéo
+                            </button>
+                            <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <Mic className="h-4 w-4" />
                               Audio
                             </button>
@@ -3642,9 +3868,9 @@ export function CommunicationInterne() {
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeWorkspaceDialog}>Annuler</Button>
-                {workspaceDialogMode === 'team' && <Button type="button" onClick={submitWorkspaceTeam}>{workspaceEditingTeamId ? 'Enregistrer' : 'Créer l’équipe'}</Button>}
-                {workspaceDialogMode === 'channel' && <Button type="button" onClick={submitWorkspaceChannel}>{workspaceEditingChannelId ? 'Enregistrer' : 'Créer le canal'}</Button>}
-                {workspaceDialogMode === 'event' && <Button type="button" onClick={submitWorkspaceEvent}>{workspaceEditingEventId ? 'Enregistrer' : 'Programmer'}</Button>}
+                {workspaceDialogMode === 'team' && <Button type="button" onClick={submitWorkspaceTeam} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingTeamId ? 'Enregistrer' : 'Créer l’équipe'}</Button>}
+                {workspaceDialogMode === 'channel' && <Button type="button" onClick={submitWorkspaceChannel} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingChannelId ? 'Enregistrer' : 'Créer le canal'}</Button>}
+                {workspaceDialogMode === 'event' && <Button type="button" onClick={submitWorkspaceEvent} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingEventId ? 'Enregistrer' : 'Programmer'}</Button>}
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -4219,15 +4445,38 @@ export function CommunicationInterne() {
                           <p className="text-sm font-semibold text-slate-800">Pièces jointes de réponse</p>
                           <p className="mt-1 text-sm text-slate-600">Ajoutez un ou plusieurs fichiers locaux sans limite imposée par l’interface.</p>
                         </div>
-                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border-slate-300 bg-white" disabled={!accessProfile.canUseAttachments}>
-                          <Paperclip className="mr-2 h-4 w-4" />
-                          Ajouter un fichier
-                        </Button>
+                        <div className="relative" ref={composerActionsRef}>
+                          <Button type="button" variant="outline" onClick={() => toggleComposerMenu('media')} className="rounded-2xl border-slate-300 bg-white" disabled={!accessProfile.canUseAttachments}>
+                            <Paperclip className="mr-2 h-4 w-4" />
+                            Médias
+                          </Button>
+                          {openComposerMenu === 'media' && (
+                            <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[190px] flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(15,45,71,0.28)]">
+                              <button type="button" onClick={() => ouvrirOptionMedia()} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                <Paperclip className="h-4 w-4" />
+                                Fichier
+                              </button>
+                              <button type="button" onClick={() => ouvrirOptionMedia('image/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                <Image className="h-4 w-4" />
+                                Image
+                              </button>
+                              <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                <Video className="h-4 w-4" />
+                                Vidéo
+                              </button>
+                              <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                <Mic className="h-4 w-4" />
+                                Audio
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <input
                         ref={fileInputRef}
                         type="file"
+                        accept={attachmentPickerAccept}
                         multiple
                         onChange={handleAttachmentSelection}
                         className="hidden"
@@ -4571,15 +4820,38 @@ export function CommunicationInterne() {
                               <p className="text-sm font-semibold text-slate-900">Pièces jointes</p>
                               <p className="mt-1 text-sm text-slate-600">Ajoutez seulement les fichiers nécessaires au message.</p>
                             </div>
-                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border-slate-300 bg-white" disabled={!accessProfile.canUseAttachments}>
-                              <Paperclip className="mr-2 h-4 w-4" />
-                              Ajouter des fichiers
-                            </Button>
+                            <div className="relative" ref={composerActionsRef}>
+                              <Button type="button" variant="outline" onClick={() => toggleComposerMenu('media')} className="rounded-2xl border-slate-300 bg-white" disabled={!accessProfile.canUseAttachments}>
+                                <Paperclip className="mr-2 h-4 w-4" />
+                                Médias
+                              </Button>
+                              {openComposerMenu === 'media' && (
+                                <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[190px] flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(15,45,71,0.28)]">
+                                  <button type="button" onClick={() => ouvrirOptionMedia()} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                    <Paperclip className="h-4 w-4" />
+                                    Fichier
+                                  </button>
+                                  <button type="button" onClick={() => ouvrirOptionMedia('image/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                    <Image className="h-4 w-4" />
+                                    Image
+                                  </button>
+                                  <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                    <Video className="h-4 w-4" />
+                                    Vidéo
+                                  </button>
+                                  <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                    <Mic className="h-4 w-4" />
+                                    Audio
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           <input
                             ref={fileInputRef}
                             type="file"
+                            accept={attachmentPickerAccept}
                             multiple
                             onChange={handleAttachmentSelection}
                             className="hidden"

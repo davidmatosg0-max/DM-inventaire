@@ -69,6 +69,7 @@ function PageLoadingState() {
 const PUBLIC_PAGE_IDS = new Set(['acceso-organismo', 'benevoles-public', 'recrutement-public']);
 const AUTH_UTILITY_PAGE_IDS = new Set(['contact', 'departamentos']);
 const REMOVED_PAGE_IDS = new Set(['benevoles', 'usuarios-internos']);
+const CURRENT_PAGE_STORAGE_KEY = 'banque_aliments_current_page';
 const PAGE_PERMISSION_ALIASES: Record<string, string> = {
   liaison: 'email-organismos',
   'reportes-avanzado': 'reportes',
@@ -92,7 +93,12 @@ function AppContent() {
       return 'dashboard';
     }
 
-    return new URLSearchParams(window.location.search).get('page') || 'dashboard';
+    const pageFromUrl = new URLSearchParams(window.location.search).get('page');
+    if (pageFromUrl) {
+      return pageFromUrl;
+    }
+
+    return localStorage.getItem(CURRENT_PAGE_STORAGE_KEY) || 'dashboard';
   });
   const { isAuthenticated, isLoading, logout: logoutAuth } = useAuth();
   const { i18n } = useTranslation();
@@ -113,6 +119,20 @@ function AppContent() {
       document.documentElement.lang = i18n.language;
     }
   }, [i18n.language]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    localStorage.setItem(CURRENT_PAGE_STORAGE_KEY, currentPage);
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('page') !== currentPage) {
+      url.searchParams.set('page', currentPage);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [currentPage]);
 
   useEffect(() => {
     if (!REMOVED_PAGE_IDS.has(currentPage)) {
