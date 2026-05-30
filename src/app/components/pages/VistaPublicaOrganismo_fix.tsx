@@ -5,7 +5,7 @@
 // - Badge "✓ PRS" en el título del organismo cuando participa en PRS
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Phone, Mail, MapPin, Users, Calendar, Package, History, TrendingUp, Award, CheckCircle, Eye, X, Printer, Edit2, Save, Plus, Thermometer, Download, FileText, FileSpreadsheet, Tag, ShoppingCart, Clock, AlertCircle, Minus, Trash2, Star, UserPlus, MessageSquare, Languages, ChefHat, Sparkles, ShieldCheck } from 'lucide-react';
+import { LogOut, Phone, Mail, MapPin, Users, Calendar, Package, History, TrendingUp, Award, CheckCircle, Eye, X, Printer, Edit2, Save, Plus, Thermometer, Download, FileText, FileSpreadsheet, Tag, ShoppingCart, Clock, AlertCircle, Minus, Trash2, Star, UserPlus, MessageSquare, Languages, ChefHat, Sparkles, ShieldCheck, Scale } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -490,6 +490,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     icono: string;
     kilos: number;
     valorUnitario: number;
+    unidad: string;
+    limiteMaximoPorOrganismo?: number;
   }>>([]);
 
   // Abrir diálogo de edición de oferta
@@ -497,16 +499,22 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     setOfertaSeleccionada(oferta);
     
     // Inicializar productos con cantidades disponibles
-    const productosIniciales = oferta.productos.map(p => ({
-      id: p.productoId,
-      seleccionado: p.cantidadDisponible > 0, // Pre-seleccionar si hay disponibilidad
-      cantidadSolicitada: p.cantidadDisponible, // Por defecto, toda la cantidad disponible
-      cantidadMaxima: p.cantidadDisponible,
-      productoNombre: p.productoNombre || 'Producto sin nombre',
-      icono: p.icono || '📦',
-      kilos: p.peso || 0,
-      valorUnitario: p.valorUnitario || 0
-    }));
+    const productosIniciales = oferta.productos.map(p => {
+      const limite = Number(p.limiteMaximoPorOrganismo) || 0;
+      const maximaPermitida = limite > 0 ? Math.min(p.cantidadDisponible, limite) : p.cantidadDisponible;
+      return {
+        id: p.productoId,
+        seleccionado: maximaPermitida > 0,
+        cantidadSolicitada: maximaPermitida,
+        cantidadMaxima: maximaPermitida,
+        productoNombre: p.productoNombre || 'Producto sin nombre',
+        icono: p.icono || '📦',
+        kilos: p.peso || 0,
+        valorUnitario: p.valorUnitario || 0,
+        unidad: p.unidad || '',
+        limiteMaximoPorOrganismo: limite > 0 ? limite : undefined
+      };
+    });
     
     setProductosOferta(productosIniciales);
     setEditarOfertaOpen(true);
@@ -2118,17 +2126,26 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                             const detallePeso = pesoUnitario > 0
                               ? ` · ${formatQuantity(pesoUnitario)} kg/${prod.unidad || t('organismPortal.unitsLower')}`
                               : '';
+                            const limiteMax = Number(prod.limiteMaximoPorOrganismo) || 0;
                             return (
                               <div
                                 key={`${oferta.id}-prod-${idx}`}
-                                className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2 py-1 text-xs"
+                                className="flex flex-col gap-0.5 rounded-md bg-gray-50 px-2 py-1 text-xs"
                               >
-                                <span className="truncate font-medium text-[#0f172a]">
-                                  {prod.icono} {prod.productoNombre}
-                                </span>
-                                <span className="shrink-0 text-[#666666]">
-                                  {prod.cantidadOfrecida} {prod.unidad || t('organismPortal.unitsLower')}{detallePeso}
-                                </span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate font-medium text-[#0f172a]">
+                                    {prod.icono} {prod.productoNombre}
+                                  </span>
+                                  <span className="shrink-0 text-[#666666]">
+                                    {prod.cantidadOfrecida} {prod.unidad || t('organismPortal.unitsLower')}{detallePeso}
+                                  </span>
+                                </div>
+                                {limiteMax > 0 && (
+                                  <div className="flex items-center gap-1 text-[10px] font-medium text-[#9C27B0]">
+                                    <Scale className="h-3 w-3" />
+                                    Max. par organisme : {limiteMax} {prod.unidad || t('organismPortal.unitsLower')}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -2705,7 +2722,15 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <span className="text-2xl">{producto.icono}</span>
-                              <span className="font-medium text-[#333333]">{producto.productoNombre}</span>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-[#333333]">{producto.productoNombre}</span>
+                                {producto.limiteMaximoPorOrganismo && producto.limiteMaximoPorOrganismo > 0 && (
+                                  <span className="flex items-center gap-1 text-[11px] font-medium text-[#9C27B0]">
+                                    <Scale className="h-3 w-3" />
+                                    Max. par organisme : {producto.limiteMaximoPorOrganismo} {producto.unidad || 'und.'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-right">

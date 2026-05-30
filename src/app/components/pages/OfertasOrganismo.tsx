@@ -560,17 +560,25 @@ export function OfertasOrganismo() {
                         const detallePeso = pesoUnitario > 0
                           ? ` · ${pesoUnitario} kg/${prod.unidad || 'unité'}`
                           : '';
+                        const limiteMax = Number(prod.limiteMaximoPorOrganismo) || 0;
                         return (
                           <div
                             key={`${oferta.id}-prod-${idx}`}
-                            className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2 py-1 text-xs"
+                            className="flex flex-col gap-0.5 rounded-md bg-gray-50 px-2 py-1 text-xs"
                           >
-                            <span className="truncate font-medium text-[#0f172a]">
-                              {prod.icono} {prod.productoNombre}
-                            </span>
-                            <span className="shrink-0 text-gray-600">
-                              {prod.cantidadOfrecida} {prod.unidad || 'unité'}{detallePeso}
-                            </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate font-medium text-[#0f172a]">
+                                {prod.icono} {prod.productoNombre}
+                              </span>
+                              <span className="shrink-0 text-gray-600">
+                                {prod.cantidadOfrecida} {prod.unidad || 'unité'}{detallePeso}
+                              </span>
+                            </div>
+                            {limiteMax > 0 && (
+                              <div className="text-[10px] font-medium text-[#9C27B0]">
+                                Max. par organisme : {limiteMax} {prod.unidad || 'unité'}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
