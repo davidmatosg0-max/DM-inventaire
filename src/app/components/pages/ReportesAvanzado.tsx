@@ -913,14 +913,14 @@ export function ReportesAvanzado() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '2rem', color: '#333333' }}>
+          <h1 className="mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '1.8rem', color: '#333333' }}>
             {t('reports.title')}
           </h1>
           <p className="text-[#666666]">{t('reports.subtitle')}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           <Button onClick={handleExportarDatos} variant="outline" className="border-[#1E73BE] text-[#1E73BE]">
             <RefreshCcw className="w-4 h-4 mr-2" />
             Actualiser l'analyse
@@ -939,8 +939,8 @@ export function ReportesAvanzado() {
             {t('reports.generate')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+        <CardContent className="space-y-3.5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
             <div className="space-y-2">
               <Label>{t('reports.reportType')}</Label>
               <Select value={tipoReporte} onValueChange={(value) => setTipoReporte(value as TipoReporte)}>
@@ -1039,7 +1039,7 @@ export function ReportesAvanzado() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-[#1E73BE]">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">

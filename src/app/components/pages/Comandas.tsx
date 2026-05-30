@@ -1519,7 +1519,7 @@ export function Comandas() {
 
   return (
     <div 
-      className="min-h-[calc(100vh-56px)] p-2.5 sm:p-3 lg:p-4 space-y-3 sm:space-y-4 relative overflow-hidden"
+      className="min-h-[calc(100vh-56px)] p-2 sm:p-2.5 lg:p-3.5 space-y-2.5 sm:space-y-3 relative overflow-hidden"
       style={{ 
         fontFamily: 'Roboto, sans-serif',
         background: 'linear-gradient(135deg, #1a4d7a15 0%, #2d956110 100%)',
@@ -1599,7 +1599,7 @@ export function Comandas() {
 
         <ModuleStatsGrid
           compact={isCompactOrdersViewport}
-          compactLayout="grid grid-cols-5 gap-2"
+          compactLayout="grid grid-cols-5 gap-1.5"
           defaultLayout="grid grid-cols-1 md:grid-cols-5 gap-4"
         >
           <ModuleStatCard
@@ -1655,7 +1655,7 @@ export function Comandas() {
 
           {/* TAB: COMANDAS */}
           <TabsContent value="comandas" className="mt-0">
-            <ModuleControlSurfaceBody className="space-y-3">
+            <ModuleControlSurfaceBody className="space-y-2.5">
             {/* Búsqueda y filtros */}
           <div className="app-compact-filters">
             <div className="flex-1">
@@ -1692,20 +1692,20 @@ export function Comandas() {
           </div>
 
           <Card className="overflow-hidden border-white/75 bg-white/88 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.24)] backdrop-blur-xl">
-            <CardContent className="pt-4 space-y-3">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+            <CardContent className="pt-3 space-y-2.5">
+              <div className="flex flex-col gap-2.5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <h2
-                    className="text-base sm:text-lg font-semibold"
+                    className="text-sm sm:text-base font-semibold"
                     style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
                   >
                     Vue compacte par état des commandes
                   </h2>
-                  <p className="text-xs sm:text-sm text-[#666666]">
+                  <p className="text-[11px] sm:text-xs text-[#666666]">
                     Tous les états visibles dans une lecture plus dense, sans perdre les détails opérationnels.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1">
                   <div className="flex items-center rounded-full border border-[#dbe4ee] bg-white p-0.5 shadow-sm">
                     <Button
                       type="button"

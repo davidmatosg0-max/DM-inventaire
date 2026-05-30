@@ -4170,7 +4170,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                           background: `linear-gradient(135deg, ${branding.primaryColor}10 0%, ${branding.secondaryColor}10 100%)`
                         }}
                       >
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                           <div>
                             <h2
                               className="text-xl font-bold flex items-center gap-2"
@@ -4183,10 +4183,10 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               {t('recruitmentInternal.reports.ui.description')}
                             </p>
                           </div>
-                          <div className="flex flex-col gap-3 lg:items-end">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 w-full lg:w-auto">
+                          <div className="flex flex-col gap-3 w-full xl:w-auto xl:items-end">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-5 gap-3 w-full">
                             <Select value={reportYearFilter} onValueChange={setReportYearFilter}>
-                              <SelectTrigger className="w-full sm:w-52 bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                              <SelectTrigger className="w-full bg-white/90 border-white/70" style={{ fontFamily: 'Roboto, sans-serif' }}>
                                 <Calendar className="w-4 h-4 mr-2" />
                                 <SelectValue placeholder={t('recruitmentInternal.reports.ui.filterByYear')} />
                               </SelectTrigger>
@@ -4238,7 +4238,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               </SelectContent>
                             </Select>
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-3 lg:justify-end">
+                            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 xl:justify-end w-full">
                             <Button
                               type="button"
                               variant="outline"
@@ -4249,14 +4249,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                 setReportVolunteerFilter('all');
                                 setReportDepartmentFilter('all');
                               }}
-                              className="bg-white/90 border-white/70"
+                              className="bg-white/90 border-white/70 w-full sm:w-auto"
                               style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
                             >
                               {t('recruitmentInternal.reports.ui.reset')}
                             </Button>
                             <Button
                               onClick={handleExportRecruitmentReport}
-                              className="text-white"
+                              className="text-white w-full sm:w-auto"
                               style={{
                                 backgroundColor: branding.primaryColor,
                                 fontFamily: 'Montserrat, sans-serif'

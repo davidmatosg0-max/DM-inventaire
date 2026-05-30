@@ -126,11 +126,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const useCommunicationFullscreenShell = currentPage === 'communication';
   const useCommunicationCompactSidebar = currentPage === 'communication';
   const communicationTopOffsetClass = useCommunicationFullscreenShell
-    ? 'top-[56px] sm:top-[72px] lg:top-[136px]'
-    : 'top-[56px] sm:top-[72px]';
+    ? 'top-[52px] sm:top-[68px] lg:top-[128px]'
+    : 'top-[52px] sm:top-[68px]';
   const communicationViewportClass = useCommunicationFullscreenShell
-    ? 'top-[56px] h-[calc(100vh-56px)] sm:top-[72px] sm:h-[calc(100vh-72px)] lg:top-[136px] lg:h-[calc(100vh-136px)] overflow-hidden pt-0'
-    : 'pt-[56px] sm:pt-[72px] h-screen overflow-y-auto';
+    ? 'top-[52px] h-[calc(100vh-52px)] sm:top-[68px] sm:h-[calc(100vh-68px)] lg:top-[128px] lg:h-[calc(100vh-128px)] overflow-hidden pt-0'
+    : 'pt-[52px] sm:pt-[68px] h-screen overflow-y-auto';
 
   const professionalShellBadges = [
     t('layout.shellBadges.operationsSuite'),
@@ -661,8 +661,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
           boxShadow: '0 16px 40px -28px rgba(6, 24, 44, 0.55)'
         }}
       >
-        <div className="px-3 sm:px-4 py-3 sm:py-4">
-          <div className="mb-3 hidden lg:flex items-center justify-between gap-4 text-white/78">
+        <div className="px-3 sm:px-4 py-2.5 sm:py-3.5">
+          <div className="mb-2.5 hidden lg:flex items-center justify-between gap-4 text-white/78">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
               <Zap className="h-3.5 w-3.5 text-white/90" />
               {t('layout.professionalEnvironment')}
@@ -681,8 +681,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
           </div>
 
           {/* Primera fila: Menú, Logo/Nombre */}
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2 sm:gap-3.5">
+            <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
               {!hideSidebar && (
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -733,11 +733,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             </div>
             
             {/* Segunda parte: Búsqueda, Notificaciones, Idioma, Usuario */}
-            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
               <GlobalSearch onNavigate={onNavigate} />
               <CentroNotificaciones />
               <LanguageSelector />
-              <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-white/16 bg-white/10 px-3 py-2 max-w-[220px] sm:max-w-[260px] shadow-[0_14px_28px_-24px_rgba(0,0,0,0.55)] backdrop-blur-md">
+              <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-white/16 bg-white/10 px-2.5 py-1.5 max-w-[220px] sm:max-w-[240px] shadow-[0_14px_28px_-24px_rgba(0,0,0,0.55)] backdrop-blur-md">
                 <div className="text-right">
                   <p className="text-xs sm:text-sm text-white font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     {nombreCompleto}
@@ -755,7 +755,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                 />
               </div>
               {/* Usuario móvil compacto */}
-              <div className="sm:hidden flex items-center gap-2 rounded-xl border border-white/16 bg-white/10 px-2 py-1.5 max-w-[150px] backdrop-blur-md">
+              <div className="sm:hidden flex items-center gap-2 rounded-xl border border-white/16 bg-white/10 px-2 py-1 max-w-[150px] backdrop-blur-md">
                 <div className="text-right min-w-0">
                   <p
                     className="text-[11px] text-white font-semibold truncate"
@@ -792,7 +792,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Sidebar con glassmorphism */}
       {!hideSidebar && (
         <aside
-          className={`app-pro-sidebar fixed ${communicationTopOffsetClass} left-0 bottom-0 ${useCommunicationCompactSidebar ? 'w-[220px] sm:w-[232px]' : 'w-[244px] sm:w-[264px]'} shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
+          className={`app-pro-sidebar fixed ${communicationTopOffsetClass} left-0 bottom-0 ${useCommunicationCompactSidebar ? 'w-[212px] sm:w-[224px]' : 'w-[232px] sm:w-[248px]'} shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
           style={{ 
@@ -800,8 +800,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             borderColor: `${branding.primaryColor}30`
           }}
         >
-          <nav className="p-2.5 sm:p-3 space-y-3">
-            <div className="app-pro-sidebar-panel rounded-[20px] border border-white/10 bg-white/[0.07] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <nav className="p-2.5 sm:p-3 space-y-2.5">
+            <div className="app-pro-sidebar-panel rounded-[18px] border border-white/10 bg-white/[0.07] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-white/72" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
@@ -825,7 +825,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             {menuSectionsFiltradas.map((section) => (
               <section
                 key={section.id}
-                className="rounded-[20px] px-2 py-2 transition-all duration-200"
+                className="rounded-[18px] px-2 py-1.5 transition-all duration-200"
                 style={{
                   border: section.items.some(item => isMenuItemActive(item))
                     ? `1px solid ${branding.secondaryColor}30`
@@ -873,7 +873,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
       {/* Main content */}
       <main ref={mainStageRef} className={`app-main-stage box-border ${communicationViewportClass} ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden`}>
-        <div ref={appShellRef} data-app-shell className={`app-shell-content ${useCommunicationFullscreenShell ? 'h-full overflow-hidden px-0 py-0' : 'px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5'}`}>
+        <div ref={appShellRef} data-app-shell className={`app-shell-content ${useCommunicationFullscreenShell ? 'h-full overflow-hidden px-0 py-0' : 'px-2 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5'}`}>
           {!useCommunicationFullscreenShell && (
             <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
             <div>

@@ -2771,13 +2771,13 @@ export function Inventario() {
           <div className="pointer-events-none absolute right-[-24px] top-4 h-32 w-32 rounded-full bg-[#1E73BE]/8 blur-3xl" />
           <CardContent className="relative p-0">
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_272px]">
-              <div className="px-4 py-4 sm:px-5 sm:py-4.5">
-                <div className="flex items-start gap-3">
-                  <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(145deg,#2E7D32_0%,#53A35E_100%)] text-white shadow-[0_16px_28px_-22px_rgba(46,125,50,0.5)] sm:flex">
-                    <Sparkles className="h-5 w-5" />
+              <div className="px-3 py-3 sm:px-4 sm:py-3.5">
+                <div className="flex items-start gap-2.5">
+                  <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(145deg,#2E7D32_0%,#53A35E_100%)] text-white shadow-[0_16px_28px_-22px_rgba(46,125,50,0.5)] sm:flex">
+                    <Sparkles className="h-4 w-4" />
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 flex-1 space-y-2.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge className="border border-[#D7E9DC] bg-white/92 text-[#245B2A] shadow-sm">Dernière distribution de groupe</Badge>
                       <Badge className="bg-[#1E73BE] text-white shadow-sm">{ultimaDistribucionGrupoCreada.grupoDistribucionId}</Badge>
@@ -2787,7 +2787,7 @@ export function Inventario() {
                       </span>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#2E7D32]">
                         Accès direct à la distribution
                       </p>
@@ -2795,13 +2795,13 @@ export function Inventario() {
                         <p className="text-base font-semibold text-[#153B25] sm:text-[1.2rem]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                           {ultimaDistribucionGrupoCreada.grupoDistribucionEtiqueta}
                         </p>
-                        <p className="mt-1.5 max-w-3xl text-[13px] leading-5 text-[#4F6B58]">
+                        <p className="mt-1.5 max-w-3xl text-[12px] leading-5 text-[#4F6B58]">
                           Ouvrez directement le récapitulatif consolidé des produits distribués pour ce groupe.
                         </p>
                       </div>
                     </div>
 
-                    <div className="rounded-[20px] border border-white/80 bg-white/78 p-2.5 shadow-[0_16px_30px_-30px_rgba(15,23,42,0.34)] backdrop-blur-sm">
+                    <div className="rounded-[18px] border border-white/80 bg-white/78 p-2 shadow-[0_16px_30px_-30px_rgba(15,23,42,0.34)] backdrop-blur-sm">
                       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B7E72]">
                         Commandes incluses
                       </p>
@@ -2844,7 +2844,7 @@ export function Inventario() {
                     aria-label="Ouvrir la dernière liste de produits"
                     className="h-11 w-11 shrink-0 rounded-2xl bg-[linear-gradient(135deg,#1E73BE_0%,#1557A0_100%)] text-white shadow-[0_18px_34px_-24px_rgba(30,115,190,0.55)] hover:brightness-105"
                   >
-                    <FileText className="h-4.5 w-4.5" />
+                    <FileText className="h-4 w-4" />
                   </Button>
                   <Button
                     size="icon"
@@ -2854,7 +2854,7 @@ export function Inventario() {
                     aria-label="Masquer cet accès"
                     className="h-11 w-11 shrink-0 rounded-2xl border-[#D5DEE8] bg-white/88 text-[#445566] shadow-[0_16px_30px_-28px_rgba(15,23,42,0.28)] hover:bg-white"
                   >
-                    <X className="h-4.5 w-4.5" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

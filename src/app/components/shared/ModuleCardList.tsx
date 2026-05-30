@@ -13,9 +13,9 @@ interface ModuleCardListProps<T> {
 }
 
 const gapClasses = {
-  sm: 'gap-3',
-  md: 'gap-4',
-  lg: 'gap-6',
+  sm: 'gap-2.5 sm:gap-3',
+  md: 'gap-3 sm:gap-4',
+  lg: 'gap-4 sm:gap-5',
 };
 
 const columnClasses = {
@@ -37,7 +37,7 @@ export function ModuleCardList<T>({
 }: ModuleCardListProps<T>) {
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4">
+      <div className="flex flex-col items-center justify-center py-8 sm:py-10 px-4">
         {emptyIcon && (
           <div className="mb-4 text-muted-foreground opacity-50">
             {emptyIcon}

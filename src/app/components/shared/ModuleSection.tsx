@@ -29,36 +29,36 @@ export function ModuleSection({
 
   return (
     <Card className={`${cardClasses} animate-fadeInScale ${className}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
+      <CardHeader className="pb-3 sm:pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
             {Icon && (
-              <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center shadow-md">
-                <Icon className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center shadow-md flex-shrink-0">
+                <Icon className="w-4 h-4 text-white" />
               </div>
             )}
             <div className="flex-1">
               <CardTitle 
-                className="text-lg sm:text-xl"
+                className="text-[1rem] sm:text-[1.1rem]"
                 style={{ fontFamily: 'Montserrat, sans-serif' }}
               >
                 {title}
               </CardTitle>
               {description && (
-                <CardDescription className="mt-1">
+                <CardDescription className="mt-1 text-[0.84rem] sm:text-[0.9rem] leading-5">
                   {description}
                 </CardDescription>
               )}
             </div>
           </div>
           {actions && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               {actions}
             </div>
           )}
         </div>
       </CardHeader>
-      <CardContent className={contentClassName}>
+      <CardContent className={`pt-0 ${contentClassName}`}>
         {children}
       </CardContent>
     </Card>

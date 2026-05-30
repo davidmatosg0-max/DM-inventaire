@@ -48,7 +48,7 @@ export function ModuleContainer({
       )}
 
       {/* Contenedor principal */}
-      <div className={`relative z-10 p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 ${className}`}>
+      <div className={`relative z-10 p-2.5 sm:p-3.5 lg:p-4 space-y-3 sm:space-y-4 ${className}`}>
         {children}
       </div>
     </div>
