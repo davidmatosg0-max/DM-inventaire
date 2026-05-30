@@ -19,6 +19,7 @@ import { ComptoirDashboard } from '../comptoir/ComptoirDashboard';
 import { ListeBeneficiaires } from '../comptoir/ListeBeneficiaires';
 import { FicheBeneficiaire } from '../comptoir/FicheBeneficiaire';
 import { RendezVous } from '../comptoir/RendezVous';
+import { EvenementsSpeciaux } from '../comptoir/EvenementsSpeciaux';
 import { AideAlimentaire } from '../comptoir/AideAlimentaire';
 import { DemandesAide } from '../comptoir/DemandesAide';
 import { TypesAide } from '../comptoir/TypesAide';
@@ -35,7 +36,13 @@ import {
   sauvegarderTypesAidePersonnalises,
 } from '../../utils/comptoirStorage';
 
-type ComptoirView = 'dashboard' | 'beneficiaires' | 'fiche-beneficiaire' | 'rendez-vous' | 'aide-alimentaire' | 'demandes-aide' | 'types-aide' | 'rapports' | 'contactos';
+type ComptoirView = 'dashboard' | 'beneficiaires' | 'fiche-beneficiaire' | 'rendez-vous' | 'evenements-speciaux' | 'aide-alimentaire' | 'demandes-aide' | 'types-aide' | 'rapports' | 'contactos';
+type NavigationCommand = ComptoirView | '__back__';
+
+interface NavigationEntry {
+  view: ComptoirView;
+  id?: string;
+}
 
 interface MenuItem {
   id: string;
@@ -77,9 +84,11 @@ export function IDDigital() {
   const { t } = useTranslation();
   const branding = useBranding();
   const contactsViewLabel = 'Gestion des contacts';
+  const specialEventsViewLabel = 'Événements spéciaux';
   const [currentView, setCurrentView] = useState<ComptoirView>('dashboard');
   const [selectedBeneficiaireId, setSelectedBeneficiaireId] = useState<string | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navigationHistory, setNavigationHistory] = useState<NavigationEntry[]>([]);
 
   const defaultAidTypes: AidType[] = [
     {
@@ -203,17 +212,44 @@ export function IDDigital() {
     };
   }, []);
 
-  const handleNavigate = (view: string, id?: string) => {
-    setCurrentView(view as ComptoirView);
+  const goToView = (view: ComptoirView, id?: string) => {
+    setCurrentView(view);
     setSelectedBeneficiaireId(id);
     setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoBack = () => {
+    if (navigationHistory.length === 0) {
+      goToView('dashboard');
+      return;
+    }
+
+    const previousEntry = navigationHistory[navigationHistory.length - 1];
+    setNavigationHistory((prev) => prev.slice(0, -1));
+    goToView(previousEntry.view, previousEntry.id);
+  };
+
+  const handleNavigate = (view: NavigationCommand, id?: string) => {
+    if (view === '__back__') {
+      handleGoBack();
+      return;
+    }
+
+    if (view === currentView && id === selectedBeneficiaireId) {
+      setSidebarOpen(false);
+      return;
+    }
+
+    setNavigationHistory((prev) => [...prev, { view: currentView, id: selectedBeneficiaireId }]);
+    goToView(view, id);
   };
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: t('comptoir.dashboard'), icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'beneficiaires', label: t('comptoir.beneficiaries'), icon: <Users className="w-5 h-5" /> },
     { id: 'rendez-vous', label: t('comptoir.appointments'), icon: <Calendar className="w-5 h-5" /> },
+    { id: 'evenements-speciaux', label: specialEventsViewLabel, icon: <Calendar className="w-5 h-5" /> },
     { id: 'aide-alimentaire', label: t('comptoir.foodAid'), icon: <Package className="w-5 h-5" /> },
     { id: 'demandes-aide', label: t('comptoir.aidRequests'), icon: <ClipboardList className="w-5 h-5" /> },
     { id: 'types-aide', label: t('comptoir.aidTypes'), icon: <Settings className="w-5 h-5" /> },
@@ -231,8 +267,10 @@ export function IDDigital() {
         return <FicheBeneficiaire beneficiaireId={selectedBeneficiaireId} onNavigate={handleNavigate} />;
       case 'rendez-vous':
         return <RendezVous onNavigate={handleNavigate} aidRequests={aidRequests} aidTypes={allAidTypes} />;
+      case 'evenements-speciaux':
+        return <EvenementsSpeciaux onNavigate={handleNavigate} aidTypes={allAidTypes} />;
       case 'aide-alimentaire':
-        return <AideAlimentaire onNavigate={handleNavigate} aidTypes={allAidTypes} />;
+        return <AideAlimentaire onNavigate={handleNavigate} aidTypes={allAidTypes} preselectedBeneficiaireId={selectedBeneficiaireId} />;
       case 'demandes-aide':
         return <DemandesAide onNavigate={handleNavigate} aidRequests={aidRequests} setAidRequests={setAidRequests} />;
       case 'types-aide':
@@ -260,6 +298,7 @@ export function IDDigital() {
           ? t('comptoir.newBeneficiary') 
           : t('comptoir.beneficiaryRecord');
       case 'rendez-vous': return t('comptoir.appointments');
+      case 'evenements-speciaux': return specialEventsViewLabel;
       case 'aide-alimentaire': return t('comptoir.foodAid');
       case 'demandes-aide': return t('comptoir.aidRequests');
       case 'types-aide': return t('comptoir.aidTypes');
@@ -278,6 +317,7 @@ export function IDDigital() {
       case 'fiche-beneficiaire':
         return <Users className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
       case 'rendez-vous':
+      case 'evenements-speciaux':
         return <Calendar className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
       case 'aide-alimentaire':
         return <Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />;
@@ -438,7 +478,7 @@ export function IDDigital() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleNavigate('dashboard')}
+                      onClick={() => handleNavigate('__back__')}
                     >
                       <ArrowLeft className="w-4 h-4 sm:mr-2" />
                       <span className="hidden sm:inline">{t('common.back')}</span>

@@ -1,7 +1,7 @@
 ﻿// 🎨🎨🎨 VERSIÓN 3.0.0 - SISTEMA DE LOGOS IMPLEMENTADO 🎨🎨🎨
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Edit, Phone, Mail, MapPin, Users, Upload, X, FileText, Bell, Calendar, Percent, UserCheck, UtensilsCrossed, Coffee, Clock, PackageCheck, History, ClipboardCheck, Key, Copy, Check, Send, Languages, Shield, Search } from 'lucide-react';
+import { Plus, Eye, Edit, Phone, Mail, MapPin, Users, Upload, X, FileText, Bell, Calendar, Percent, UserCheck, UtensilsCrossed, Coffee, Clock, PackageCheck, History, ClipboardCheck, Key, Copy, Check, Send, Languages, Shield, Search, LayoutGrid, List, ExternalLink, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -20,6 +20,8 @@ import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { LanguageSelector } from '../ui/language-selector';
 import { generarClaveAccesoUnica } from '../../utils/claveAcceso';
 import { MapLink } from '../ui/map-link';
+import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
+import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { obtenerPersonasPorOrganismo } from '../../utils/personasResponsablesStorage';
 import { SelecteurJoursDisponibles, type JourDisponible } from '../shared/SelecteurJoursDisponibles';
 import {
@@ -33,6 +35,7 @@ import {
   crearOrganismo, 
   actualizarOrganismo,
   migrarClavesDeAcceso,
+  reinicializarClaveAccesoOrganismo,
   type Organismo,
   type ClasificacionOrganismo,
   type IdiomaContactoOrganismo
@@ -68,6 +71,51 @@ const getTiposOrganismo = (t: any) => [
 ];
 
 const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+const ORDEN_CLASIFICACION: ClasificacionOrganismo[] = ['regular', 'eventual', 'collation'];
+
+function obtenerClasificacionOrganismo(organismo: Organismo): ClasificacionOrganismo {
+  return organismo.clasificacionOrganismo || (organismo.regular ? 'regular' : 'eventual');
+}
+
+function getEtiquetaClasificacion(clasificacion: ClasificacionOrganismo): string {
+  switch (clasificacion) {
+    case 'regular':
+      return 'Organismes reguliers';
+    case 'eventual':
+      return 'Organismes eventuels';
+    case 'collation':
+      return 'Organismes collation';
+    default:
+      return 'Organismes';
+  }
+}
+
+function getDescripcionClasificacion(clasificacion: ClasificacionOrganismo): string {
+  switch (clasificacion) {
+    case 'regular':
+      return 'Suivi recurrent avec repartition reguliere.';
+    case 'eventual':
+      return 'Demandes ponctuelles ou interventions occasionnelles.';
+    case 'collation':
+      return 'Distribution dediee aux collations et services rapides.';
+    default:
+      return 'Reseau des organismes accredites.';
+  }
+}
+
+function getAcentoClasificacion(clasificacion: ClasificacionOrganismo): string {
+  switch (clasificacion) {
+    case 'regular':
+      return '#1E73BE';
+    case 'eventual':
+      return '#F59E0B';
+    case 'collation':
+      return '#8B5CF6';
+    default:
+      return '#64748B';
+  }
+}
 
 export function Organismos() {
   const { t } = useTranslation();
@@ -109,7 +157,12 @@ export function Organismos() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [modoVisualizacion, setModoVisualizacion] = useState(false);
   const [organismoSeleccionado, setOrganismoSeleccionado] = useState<any>(null);
+  const organismoSeleccionadoAccessKey = String(organismoSeleccionado?.claveAcceso || '').trim();
+  const organismoSeleccionadoAccessUrl = organismoSeleccionadoAccessKey
+    ? construirUrlAccesoOrganismo(organismoSeleccionadoAccessKey)
+    : '';
   const [searchTerm, setSearchTerm] = useState('');
+  const [vistaOrganismos, setVistaOrganismos] = useState<'grid' | 'list'>('grid');
   const [searchOrganismoPRS, setSearchOrganismoPRS] = useState('');
   
   // Estados para AsignarRolContacto
@@ -245,6 +298,51 @@ export function Organismos() {
     o.responsable.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const organismosAgrupadosPorClasificacion = ORDEN_CLASIFICACION
+    .map((clasificacion) => ({
+      clasificacion,
+      organismos: organismosFiltrados.filter((organismo) => obtenerClasificacionOrganismo(organismo) === clasificacion),
+    }))
+    .filter((grupo) => grupo.organismos.length > 0);
+
+  const renderOrganismoActions = (organismo: Organismo) => (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => handleAbrirEmailIndividual(organismo)}
+        className="h-9 w-full rounded-xl border-transparent text-white sm:w-auto"
+        style={{ backgroundColor: branding.secondaryColor, borderColor: branding.secondaryColor }}
+      >
+        <Send className="mr-1 h-4 w-4" />
+        Email
+      </Button>
+      <Button variant="outline" size="sm" className="h-9 w-full rounded-xl border-slate-200 bg-white sm:flex-1" onClick={() => handleVerPerfil(organismo)}>
+        <Eye className="mr-1 h-4 w-4" />
+        {t('organisms.viewProfile')}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-9 w-full rounded-xl border-slate-200 bg-white sm:flex-1"
+        onClick={() => {
+          if (!puedeGestionarOrganismos) {
+            toast.error(t('organisms.accessDeniedTitle'), {
+              description: t('organisms.editPermissionDescription')
+            });
+            return;
+          }
+          handleEditarPerfil(organismo);
+        }}
+        disabled={!puedeGestionarOrganismos}
+        title={!puedeGestionarOrganismos ? t('organisms.editPermissionTooltip') : ''}
+      >
+        <Edit className="mr-1 h-4 w-4" />
+        {t('organisms.edit')}
+      </Button>
+    </>
+  );
+
   const handleCrearOrganismo = () => {
     const errorValidacion = validarFormularioOrganismo(formOrganismo);
     if (errorValidacion) {
@@ -310,6 +408,29 @@ export function Organismos() {
     setModoEdicion(true);
     setModoVisualizacion(false);
     setOrganismoDialogOpen(true);
+  };
+
+  const handleReinicializarClaveAcceso = () => {
+    if (!organismoSeleccionado?.id) {
+      return;
+    }
+
+    try {
+      const organismoActualizado = reinicializarClaveAccesoOrganismo(organismoSeleccionado.id);
+
+      if (!organismoActualizado) {
+        toast.error('Impossible de reinitialiser la cle d\'acces.');
+        return;
+      }
+
+      setOrganismoSeleccionado(organismoActualizado);
+      cargarOrganismos();
+      toast.success('Cle d\'acces reinitialisee', {
+        description: 'Les anciens liens du portail organisme devront etre remplaces.',
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la reinitialisation de la cle d\'acces');
+    }
   };
 
   const handleGuardarCambios = () => {
@@ -507,6 +628,7 @@ export function Organismos() {
                   setOrganismoDialogOpen(false);
                   setModoEdicion(false);
                   setModoVisualizacion(false);
+                  setOrganismoSeleccionado(null);
                 }}
                 formulario={formOrganismo}
                 setFormulario={setFormOrganismo}
@@ -514,6 +636,109 @@ export function Organismos() {
                 modoVisualizacion={modoVisualizacion}
                 onGuardar={modoEdicion ? handleGuardarCambios : handleCrearOrganismo}
                 tiposOrganismo={tiposOrganismo}
+                encabezadoExtra={organismoSeleccionado ? (
+                  <div className="overflow-hidden rounded-[28px] border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.10)_100%)] shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-md">
+                    <div className="border-b border-white/15 px-5 py-4">
+                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        <div className="flex items-start gap-4 min-w-0">
+                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[20px] bg-white/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                            <Building2 className="h-7 w-7 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-lg font-semibold text-white sm:text-xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                {organismoSeleccionado.nombre}
+                              </h3>
+                              <Badge className="border-0 bg-white/15 text-white backdrop-blur-sm">
+                                {organismoSeleccionado.activo ? 'Actif' : 'Inactif'}
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-sm text-white/80">
+                              Portail organisme avec acces direct et gestion centralisee de la cle d'acces.
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/90">
+                              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                                {organismoSeleccionado.tipo || 'Type a definir'}
+                              </span>
+                              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                                {organismoSeleccionado.responsable || 'Responsable non renseigne'}
+                              </span>
+                              <span className="rounded-full border border-white/15 bg-emerald-400/15 px-3 py-1 text-emerald-50">
+                                {organismoSeleccionadoAccessKey ? 'Cle disponible' : 'Cle non disponible'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row xl:flex-col xl:min-w-[220px]">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-amber-200/50 bg-amber-400/10 text-white hover:bg-amber-400/20"
+                            onClick={handleReinicializarClaveAcceso}
+                          >
+                            <History className="mr-2 h-4 w-4" />
+                            Reinitialiser la cle
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-white/25 bg-white/10 text-white hover:bg-white/20"
+                            onClick={async () => {
+                              const exito = await copiarAlPortapapeles(organismoSeleccionadoAccessKey);
+                              if (exito) {
+                                toast.success('Clé d\'accès copiée');
+                              }
+                            }}
+                            disabled={!organismoSeleccionadoAccessKey}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copier la cle
+                          </Button>
+                          <Button
+                            type="button"
+                            className="bg-white text-slate-900 shadow-lg hover:bg-white/90"
+                            onClick={() => window.open(organismoSeleccionadoAccessUrl, '_blank', 'noopener,noreferrer')}
+                            disabled={!organismoSeleccionadoAccessUrl}
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Ouvrir le portail
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                        <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Cle d'acces</p>
+                          <p className="mt-2 font-mono text-sm text-white break-all">
+                            {organismoSeleccionadoAccessKey || 'Cle non disponible'}
+                          </p>
+                        </div>
+                        <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Coordonnees</p>
+                          <div className="mt-2 space-y-1 text-sm text-white/90">
+                            <p className="break-all">{organismoSeleccionado.email || 'Aucun email'}</p>
+                            <p>{organismoSeleccionado.telefono || 'Aucun telephone'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-3xl border border-white/15 bg-[#0f172a]/16 px-4 py-3">
+                        <div className="flex items-center gap-2 text-white/85">
+                          <ExternalLink className="h-4 w-4" />
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em]">Lien du portail</p>
+                        </div>
+                        <p className="mt-2 text-sm text-white/75">
+                          Ce lien ouvre le portail organisme en conservant sa cle de connexion pre-remplie.
+                        </p>
+                        <div className="mt-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 font-mono text-[11px] text-white/92 break-all">
+                          {organismoSeleccionadoAccessUrl || 'Lien non disponible tant qu\'aucune cle n\'est definie.'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : undefined}
               />
             </div>
           </div>
@@ -590,6 +815,30 @@ export function Organismos() {
               />
             </div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <div className="flex items-center rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVistaOrganismos('grid')}
+                  className={`h-8 rounded-xl px-2.5 ${vistaOrganismos === 'grid' ? 'shadow-sm' : ''}`}
+                  style={vistaOrganismos === 'grid' ? { backgroundColor: branding.primaryColor, color: 'white' } : { color: '#475569' }}
+                  title="Vue cartes"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVistaOrganismos('list')}
+                  className={`h-8 rounded-xl px-2.5 ${vistaOrganismos === 'list' ? 'shadow-sm' : ''}`}
+                  style={vistaOrganismos === 'list' ? { backgroundColor: branding.primaryColor, color: 'white' } : { color: '#475569' }}
+                  title="Vue liste"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
               <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-[11px] text-slate-700">
                 {organismosFiltrados.length} affiché(s)
               </span>
@@ -598,119 +847,210 @@ export function Organismos() {
         </div>
 
         {/* Organismos Grid */}
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
-          {organismosFiltrados.map((organismo) => {
-            const comandasOrganismo = obtenerComandas().filter(c => c.organismoId === organismo.id);
+        <div className="space-y-5">
+          {organismosAgrupadosPorClasificacion.map(({ clasificacion, organismos: organismosDelGrupo }) => {
+            const colorClasificacion = getAcentoClasificacion(clasificacion);
 
             return (
-              <Card key={organismo.id} className="overflow-hidden rounded-[24px] border border-white/80 bg-white/96 shadow-[0_18px_40px_-32px_rgba(15,45,71,0.34)] transition-shadow hover:shadow-[0_24px_55px_-34px_rgba(15,45,71,0.42)]">
-                <CardHeader className="px-4 pb-2 pt-4">
-                  <div className="flex items-start justify-between gap-3">
-                    {organismo.logo && (
-                      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white sm:h-14 sm:w-14">
-                        <img
-                          src={organismo.logo}
-                          alt={`Logo ${organismo.nombre}`}
-                          className="h-full w-full object-contain p-1"
-                        />
-                      </div>
-                    )}
-
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="mb-1 text-base leading-tight break-words sm:text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        {organismo.nombre}
-                      </CardTitle>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.primaryColor }}>
-                          {tiposOrganismo.find(tipo => tipo.nombre === organismo.tipo)?.nombre || organismo.tipo}
-                        </Badge>
-                        {organismo.participaPRS && (
-                          <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
-                            ✓ PRS
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {organismo.activo ? (
-                      <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
-                        {t('common.active')}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[11px]">
-                        {t('common.inactive')}
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-3 px-4 pb-4">
-                  <div className="grid gap-2 text-xs text-slate-600 sm:text-[13px]">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 flex-shrink-0 text-slate-400" />
-                      <MapLink direccion={organismo.direccion} variant="inline" showIcon={false} />
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span>{organismo.responsable} • {organismo.beneficiarios} {t('organisms.beneficiaries')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Phone className="h-4 w-4 text-slate-400" />
-                      <span>{organismo.telefono}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      <span>{organismo.email}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <section key={clasificacion} className="space-y-3">
+                <div
+                  className="rounded-[24px] border border-white/70 bg-white/92 px-4 py-3 shadow-[0_18px_45px_-34px_rgba(15,45,71,0.3)] backdrop-blur-xl"
+                  style={{ borderLeft: `5px solid ${colorClasificacion}` }}
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{t('organisms.orders')}</p>
-                      <p className="text-xs text-slate-500">Activité récente de commande</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Classification
+                      </p>
+                      <h3 className="mt-1 text-lg font-semibold text-[#16324f]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                        {getEtiquetaClasificacion(clasificacion)}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {getDescripcionClasificacion(clasificacion)}
+                      </p>
                     </div>
-                    <p className="text-lg font-bold" style={{ color: '#1E73BE', fontFamily: 'Montserrat, sans-serif' }}>
-                      {comandasOrganismo.length}
-                    </p>
+                    <Badge className="rounded-full px-3 py-1 text-[11px] text-white" style={{ backgroundColor: colorClasificacion }}>
+                      {organismosDelGrupo.length} organisme(s)
+                    </Badge>
                   </div>
+                </div>
 
-                  <div className="flex flex-col gap-2 pt-1 sm:flex-row">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAbrirEmailIndividual(organismo)}
-                      className="h-9 w-full rounded-xl border-transparent text-white sm:w-auto"
-                      style={{ backgroundColor: branding.secondaryColor, borderColor: branding.secondaryColor }}
-                    >
-                      <Send className="mr-1 h-4 w-4" />
-                      Email
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-9 w-full rounded-xl border-slate-200 bg-white sm:flex-1" onClick={() => handleVerPerfil(organismo)}>
-                      <Eye className="mr-1 h-4 w-4" />
-                      {t('organisms.viewProfile')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 w-full rounded-xl border-slate-200 bg-white sm:flex-1"
-                      onClick={() => {
-                        if (!puedeGestionarOrganismos) {
-                          toast.error(t('organisms.accessDeniedTitle'), {
-                            description: t('organisms.editPermissionDescription')
-                          });
-                          return;
-                        }
-                        handleEditarPerfil(organismo);
-                      }}
-                      disabled={!puedeGestionarOrganismos}
-                      title={!puedeGestionarOrganismos ? t('organisms.editPermissionTooltip') : ''}
-                    >
-                      <Edit className="mr-1 h-4 w-4" />
-                      {t('organisms.edit')}
-                    </Button>
+                {vistaOrganismos === 'grid' ? (
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+                    {organismosDelGrupo.map((organismo) => {
+                      const comandasOrganismo = obtenerComandas().filter(c => c.organismoId === organismo.id);
+
+                      return (
+                        <Card key={organismo.id} className="overflow-hidden rounded-[24px] border border-white/80 bg-white/96 shadow-[0_18px_40px_-32px_rgba(15,45,71,0.34)] transition-shadow hover:shadow-[0_24px_55px_-34px_rgba(15,45,71,0.42)]">
+                          <CardHeader className="px-4 pb-2 pt-4">
+                            <div className="flex items-start justify-between gap-3">
+                              {organismo.logo && (
+                                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white sm:h-14 sm:w-14">
+                                  <img
+                                    src={organismo.logo}
+                                    alt={`Logo ${organismo.nombre}`}
+                                    className="h-full w-full object-contain p-1"
+                                  />
+                                </div>
+                              )}
+
+                              <div className="min-w-0 flex-1">
+                                <CardTitle className="mb-1 text-base leading-tight break-words sm:text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                  {organismo.nombre}
+                                </CardTitle>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.primaryColor }}>
+                                    {tiposOrganismo.find(tipo => tipo.nombre === organismo.tipo)?.nombre || organismo.tipo}
+                                  </Badge>
+                                  <Badge className="rounded-full px-2.5 py-0.5 text-[11px] text-white" style={{ backgroundColor: colorClasificacion }}>
+                                    {getEtiquetaClasificacion(clasificacion).replace('Organismes ', '')}
+                                  </Badge>
+                                  {organismo.participaPRS && (
+                                    <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
+                                      ✓ PRS
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {organismo.activo ? (
+                                <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
+                                  {t('common.active')}
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[11px]">
+                                  {t('common.inactive')}
+                                </Badge>
+                              )}
+                            </div>
+                          </CardHeader>
+
+                          <CardContent className="space-y-3 px-4 pb-4">
+                            <div className="grid gap-2 text-xs text-slate-600 sm:text-[13px]">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                                <MapLink direccion={organismo.direccion} variant="inline" showIcon={false} />
+                              </div>
+                              <div className="flex items-center gap-2 text-slate-600">
+                                <Users className="h-4 w-4 text-slate-400" />
+                                <span>{organismo.responsable} • {organismo.beneficiarios} {t('organisms.beneficiaries')}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-slate-600">
+                                <Phone className="h-4 w-4 text-slate-400" />
+                                <span>{organismo.telefono}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-slate-600">
+                                <Mail className="h-4 w-4 text-slate-400" />
+                                <span>{organismo.email}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{t('organisms.orders')}</p>
+                                <p className="text-xs text-slate-500">Activité récente de commande</p>
+                              </div>
+                              <p className="text-lg font-bold" style={{ color: '#1E73BE', fontFamily: 'Montserrat, sans-serif' }}>
+                                {comandasOrganismo.length}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+                              {renderOrganismoActions(organismo)}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
-                </CardContent>
-              </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {organismosDelGrupo.map((organismo) => {
+                      const comandasOrganismo = obtenerComandas().filter(c => c.organismoId === organismo.id);
+
+                      return (
+                        <div key={organismo.id} className="rounded-[24px] border border-white/80 bg-white/96 p-4 shadow-[0_18px_40px_-32px_rgba(15,45,71,0.34)] transition-shadow hover:shadow-[0_24px_55px_-34px_rgba(15,45,71,0.42)]">
+                          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                            <div className="flex min-w-0 flex-1 gap-3">
+                              {organismo.logo && (
+                                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white sm:h-14 sm:w-14">
+                                  <img
+                                    src={organismo.logo}
+                                    alt={`Logo ${organismo.nombre}`}
+                                    className="h-full w-full object-contain p-1"
+                                  />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="text-base font-semibold text-[#16324f] sm:text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                    {organismo.nombre}
+                                  </h4>
+                                  {organismo.activo ? (
+                                    <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
+                                      {t('common.active')}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[11px]">
+                                      {t('common.inactive')}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.primaryColor }}>
+                                    {tiposOrganismo.find(tipo => tipo.nombre === organismo.tipo)?.nombre || organismo.tipo}
+                                  </Badge>
+                                  <Badge className="rounded-full px-2.5 py-0.5 text-[11px] text-white" style={{ backgroundColor: colorClasificacion }}>
+                                    {getEtiquetaClasificacion(clasificacion).replace('Organismes ', '')}
+                                  </Badge>
+                                  {organismo.participaPRS && (
+                                    <Badge className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ backgroundColor: branding.secondaryColor }}>
+                                      ✓ PRS
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2 sm:text-[13px] xl:grid-cols-4">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                                    <MapLink direccion={organismo.direccion} variant="inline" showIcon={false} />
+                                  </div>
+                                  <div className="flex items-center gap-2 text-slate-600">
+                                    <Users className="h-4 w-4 text-slate-400" />
+                                    <span>{organismo.responsable} • {organismo.beneficiarios} {t('organisms.beneficiaries')}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-slate-600">
+                                    <Phone className="h-4 w-4 text-slate-400" />
+                                    <span>{organismo.telefono}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-slate-600">
+                                    <Mail className="h-4 w-4 text-slate-400" />
+                                    <span>{organismo.email}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col gap-3 xl:min-w-[300px] xl:max-w-[320px]">
+                              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{t('organisms.orders')}</p>
+                                  <p className="text-xs text-slate-500">Activité récente de commande</p>
+                                </div>
+                                <p className="text-lg font-bold" style={{ color: '#1E73BE', fontFamily: 'Montserrat, sans-serif' }}>
+                                  {comandasOrganismo.length}
+                                </p>
+                              </div>
+                              <div className="flex flex-col gap-2 sm:flex-row xl:flex-col">
+                                {renderOrganismoActions(organismo)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             );
           })}
         </div>

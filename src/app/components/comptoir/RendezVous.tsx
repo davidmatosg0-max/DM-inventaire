@@ -348,7 +348,7 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
   return (
     <div className="space-y-4">
       <BoutonRetourHeader 
-        onClick={() => onNavigate('dashboard')} 
+        onClick={() => onNavigate('__back__')} 
         titre="Rendez-vous"
       />
       {/* Barre supérieure */}

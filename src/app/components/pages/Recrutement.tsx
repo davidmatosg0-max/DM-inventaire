@@ -87,9 +87,11 @@ import {
   obtenerOrganismosRecrutement,
   guardarOrganismoRecrutement,
   eliminarOrganismoRecrutement,
+  reinicializarClaveAccesoOrganismoRecrutement,
   RECRUTEMENT_ORGANISMES_UPDATED_EVENT,
   type OrganismoRecrutement
 } from '../../utils/recrutementOrganismosStorage';
+import { normalizarClaveAcceso } from '../../utils/claveAcceso';
 
 // ✅ Usar tipo Candidato del storage
 type Candidate = Candidato;
@@ -508,6 +510,9 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   const [selectedTimesheetCandidateId, setSelectedTimesheetCandidateId] = useState('');
   const [timesheetForm, setTimesheetForm] = useState<CandidateTimesheetForm>(createInitialTimesheetForm);
   const [editingTimesheetId, setEditingTimesheetId] = useState<number | null>(null);
+  const [publicAccessCodeInput, setPublicAccessCodeInput] = useState('');
+  const [publicAccessSessionKey, setPublicAccessSessionKey] = useState('');
+  const [publicAccessAuthError, setPublicAccessAuthError] = useState('');
   const [organismosAcreditados, setOrganismosAcreditados] = useState<OrganismoRecrutement[]>([]);
   const [organismosAcreditadosSeleccionados, setOrganismosAcreditadosSeleccionados] = useState<string[]>([]);
   const [organismSearchTerm, setOrganismSearchTerm] = useState('');
@@ -523,6 +528,20 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       setMainView('timesheets');
     }
   }, [isPublicAccess, mainView]);
+
+  useEffect(() => {
+    if (!isPublicAccess || typeof window === 'undefined') {
+      return;
+    }
+
+    const claveDesdeUrl = normalizarClaveAcceso(new URLSearchParams(window.location.search).get('clave') || '');
+    if (!claveDesdeUrl) {
+      return;
+    }
+
+    setPublicAccessCodeInput(claveDesdeUrl);
+    setPublicAccessSessionKey(claveDesdeUrl);
+  }, [isPublicAccess]);
   
   // ✅ NUEVO: Estados para el diálogo de edición
   const [dialogEdicionOpen, setDialogEdicionOpen] = useState(false);
@@ -673,8 +692,73 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     };
   }, [cargarOrganismosAcreditados]);
 
+  const publicAccessOrganismMatch = isPublicAccess && publicAccessSessionKey
+    ? organismosAcreditados.find(
+        (organismo) => normalizarClaveAcceso(organismo.claveAcceso || '') === publicAccessSessionKey
+      ) || null
+    : null;
+
+  const publicAccessOrganism = publicAccessOrganismMatch?.activo ? publicAccessOrganismMatch : null;
+  const publicAccessOrganismId = publicAccessOrganism?.id || '';
+
+  const candidateMatchesPublicAccess = useCallback((candidate: Candidate) => {
+    if (!isPublicAccess) {
+      return true;
+    }
+
+    if (!publicAccessOrganismId) {
+      return false;
+    }
+
+    return (candidate.organismosAcreditadosIds || []).includes(publicAccessOrganismId);
+  }, [isPublicAccess, publicAccessOrganismId]);
+
+  const handleAuthenticatePublicAccess = useCallback(() => {
+    const claveNormalizada = normalizarClaveAcceso(publicAccessCodeInput);
+
+    if (!claveNormalizada) {
+      const message = 'Veuillez saisir la clé d\'accès de votre organisme.';
+      setPublicAccessAuthError(message);
+      toast.error(message);
+      return;
+    }
+
+    const organismoEncontrado = organismosAcreditados.find(
+      (organismo) => normalizarClaveAcceso(organismo.claveAcceso || '') === claveNormalizada
+    );
+
+    if (!organismoEncontrado) {
+      const message = 'Clé d\'accès invalide. Vérifiez la clé transmise par le module Organismes.';
+      setPublicAccessAuthError(message);
+      toast.error(message);
+      return;
+    }
+
+    if (!organismoEncontrado.activo) {
+      const message = 'Cet organisme est actuellement inactif. L\'accès à la feuille de temps est suspendu.';
+      setPublicAccessAuthError(message);
+      toast.error(message);
+      return;
+    }
+
+    setPublicAccessSessionKey(claveNormalizada);
+    setPublicAccessAuthError('');
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('clave', claveNormalizada);
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    toast.success(`Feuille de temps ouverte pour ${organismoEncontrado.nombre}.`);
+  }, [organismosAcreditados, publicAccessCodeInput]);
+
   useEffect(() => {
     const candidatosConDepartamento = candidates.filter(candidate => {
+      if (!candidateMatchesPublicAccess(candidate)) {
+        return false;
+      }
+
       if ((candidate.departamentoIds || []).length === 0) {
         return false;
       }
@@ -696,10 +780,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     if (!existeSeleccion) {
       setSelectedTimesheetCandidateId(String(candidatosConDepartamento[0].id));
     }
-  }, [candidates, selectedTimesheetCandidateId, timesheetDepartmentFilter]);
+  }, [candidateMatchesPublicAccess, candidates, selectedTimesheetCandidateId, timesheetDepartmentFilter]);
 
   const candidatosFeuilleTemps = candidates
     .filter(candidate => {
+      if (!candidateMatchesPublicAccess(candidate)) {
+        return false;
+      }
+
       if ((candidate.departamentoIds || []).length === 0) {
         return false;
       }
@@ -767,7 +855,9 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   );
   const timesheetMonthOptions = Array.from(
     new Set(
-      candidates.flatMap(candidate =>
+      candidates
+        .filter(candidate => candidateMatchesPublicAccess(candidate))
+        .flatMap(candidate =>
         (candidate.feuillesTemps || []).map(timesheet => timesheet.date.slice(0, 7))
       )
     )
@@ -1061,9 +1151,24 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     (sum, candidate) => sum + (candidate.organismosAcreditadosIds?.length || 0),
     0
   );
-  const remoteTimesheetUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}?page=recrutement-public`
-    : '?page=recrutement-public';
+  const buildOrganismRemoteTimesheetUrl = useCallback((claveAcceso: string) => {
+    const normalizedKey = normalizarClaveAcceso(claveAcceso);
+    const params = new URLSearchParams();
+    params.set('page', 'recrutement-public');
+
+    if (normalizedKey) {
+      params.set('clave', normalizedKey);
+    }
+
+    const route = `?${params.toString()}`;
+
+    if (typeof window === 'undefined') {
+      return route;
+    }
+
+    return `${window.location.origin}${window.location.pathname}${route}`;
+  }, []);
+
   const reportExportRows = [
     ...reportYearStats.map(item => ({
       axe: 'Année',
@@ -1280,22 +1385,65 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     ));
   };
 
-  const handleCopyRemoteTimesheetLink = async () => {
+  const handleCopyRemoteTimesheetLinkForOrganism = async (organismo: OrganismoRecrutement) => {
+    const organismoKey = normalizarClaveAcceso(organismo.claveAcceso || '');
+
+    if (!organismoKey) {
+      toast.error('Cet organisme ne dispose pas encore de clé d\'accès.');
+      return;
+    }
+
+    const personalizedUrl = buildOrganismRemoteTimesheetUrl(organismoKey);
+
     try {
-      await navigator.clipboard.writeText(remoteTimesheetUrl);
-      toast.success('Lien d\'accès à distance copié', {
-        description: 'Le portail public des feuilles de temps est prêt à être partagé.',
-        duration: 4000
+      await navigator.clipboard.writeText(personalizedUrl);
+      toast.success('Lien personnalisé copié', {
+        description: `Le lien distant de ${organismo.nombre} inclut déjà sa clé d'accès.`,
+        duration: 4000,
       });
     } catch (error) {
-      console.error('Erreur lors de la copie du lien de feuille de temps:', error);
-      toast.error('Impossible de copier le lien de la feuille de temps');
+      console.error('Erreur lors de la copie du lien personnalisé de feuille de temps:', error);
+      toast.error('Impossible de copier le lien personnalisé de la feuille de temps');
     }
   };
 
-  const handleOpenRemoteTimesheet = () => {
-    window.open(remoteTimesheetUrl, '_blank', 'noopener,noreferrer');
+  const handleOpenRemoteTimesheetForOrganism = (organismo: OrganismoRecrutement) => {
+    const organismoKey = normalizarClaveAcceso(organismo.claveAcceso || '');
+
+    if (!organismoKey) {
+      toast.error('Cet organisme ne dispose pas encore de clé d\'accès.');
+      return;
+    }
+
+    window.open(buildOrganismRemoteTimesheetUrl(organismoKey), '_blank', 'noopener,noreferrer');
   };
+
+  const handleResetRemoteAccessKeyForOrganism = () => {
+    if (!organismoRecrutementSeleccionado?.id) {
+      return;
+    }
+
+    try {
+      const organismoActualizado = reinicializarClaveAccesoOrganismoRecrutement(organismoRecrutementSeleccionado.id);
+
+      if (!organismoActualizado) {
+        toast.error('Impossible de reinitialiser la cle d\'acces.');
+        return;
+      }
+
+      setOrganismoRecrutementSeleccionado(organismoActualizado);
+      toast.success('Cle d\'acces reinitialisee', {
+        description: 'Les anciens liens distants devront etre remplaces par le nouveau lien personnalise.',
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la reinitialisation de la cle d\'acces');
+    }
+  };
+
+  const selectedRecruitmentOrganismAccessKey = normalizarClaveAcceso(organismoRecrutementSeleccionado?.claveAcceso || '');
+  const selectedRecruitmentOrganismRemoteUrl = selectedRecruitmentOrganismAccessKey
+    ? buildOrganismRemoteTimesheetUrl(selectedRecruitmentOrganismAccessKey)
+    : '';
 
   const buildTimesheetCorrectionHistory = (
     originalTimesheet: FeuilleTiempoCandidato,
@@ -2034,6 +2182,65 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   };
 
   const renderPublicTimesheetsLayout = () => {
+    if (!publicAccessOrganism) {
+      return (
+        <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+          <CardContent className="p-4 sm:p-5">
+            <div className="mx-auto flex max-w-2xl flex-col gap-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  Organisme accredite
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Identifiez votre organisme avec sa cle d'acces
+                </h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  La feuille de temps affichera uniquement les benevoles assignes a votre organisme dans le module Recrutement.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <Label htmlFor="recruit-public-access-key" className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  Cle d'acces de l'organisme
+                </Label>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="recruit-public-access-key"
+                    value={publicAccessCodeInput}
+                    onChange={(event) => {
+                      setPublicAccessCodeInput(normalizarClaveAcceso(event.target.value));
+                      setPublicAccessAuthError('');
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        handleAuthenticatePublicAccess();
+                      }
+                    }}
+                    placeholder="Ex. HORIZON2026"
+                    className="h-11 font-mono uppercase tracking-[0.12em]"
+                  />
+                  <Button
+                    onClick={handleAuthenticatePublicAccess}
+                    className="h-11 whitespace-nowrap text-white"
+                    style={{
+                      backgroundColor: branding.primaryColor,
+                      fontFamily: 'Montserrat, sans-serif'
+                    }}
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Identifier l'organisme
+                  </Button>
+                </div>
+                {publicAccessAuthError && (
+                  <p className="mt-3 text-sm text-red-600">{publicAccessAuthError}</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
     const publicRecentTimesheets = feuillesTempsHistorialSeleccionadas
       .slice()
       .sort((left, right) => `${right.date}-${right.heureDebut}`.localeCompare(`${left.date}-${left.heureDebut}`))
@@ -2053,6 +2260,16 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       <div className="grid grid-cols-1 gap-3 md:h-[412px] md:grid-cols-[minmax(292px,1.02fr)_minmax(330px,1.18fr)_minmax(248px,0.96fr)]">
         <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] md:h-full">
           <CardContent className="flex h-full flex-col gap-4 p-4">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                Organisme identifie
+              </p>
+              <p className="mt-1 font-semibold">{publicAccessOrganism.nombre}</p>
+              <p className="mt-1 text-xs text-emerald-800">
+                Cle: {publicAccessOrganism.claveAcceso || publicAccessSessionKey}
+              </p>
+            </div>
+
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
               <div className="flex items-start gap-3">
                 <div
@@ -4634,6 +4851,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                               .slice(0, 2)
                               .map((fragmento) => fragmento.charAt(0).toUpperCase())
                               .join('') || 'OR';
+                            const organismoAccessKey = normalizarClaveAcceso(organismo.claveAcceso || '');
 
                             return (
                               <Card
@@ -4745,6 +4963,51 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                       <p className="mt-1 text-xs leading-5 text-[#666666] whitespace-pre-wrap break-words">{organismo.notas}</p>
                                     </div>
                                   ) : null}
+
+                                  <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Accès distant feuille de temps</p>
+                                    <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                      <span className="rounded-md bg-white px-2 py-1 font-mono text-[11px] text-slate-700 break-all">
+                                        {organismoAccessKey || 'Clé non disponible'}
+                                      </span>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8 px-2.5"
+                                          style={{
+                                            fontFamily: 'Montserrat, sans-serif',
+                                            color: cardColor,
+                                            borderColor: `${cardColor}30`
+                                          }}
+                                          onClick={() => handleCopyRemoteTimesheetLinkForOrganism(organismo)}
+                                          disabled={!organismoAccessKey}
+                                          title={!organismoAccessKey ? 'Clé d\'accès indisponible' : 'Copier le lien personnalisé'}
+                                        >
+                                          <Copy className="h-3.5 w-3.5 sm:mr-1.5" />
+                                          <span className="hidden sm:inline">Copier</span>
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8 px-2.5"
+                                          style={{
+                                            fontFamily: 'Montserrat, sans-serif',
+                                            color: cardColor,
+                                            borderColor: `${cardColor}30`
+                                          }}
+                                          onClick={() => handleOpenRemoteTimesheetForOrganism(organismo)}
+                                          disabled={!organismoAccessKey}
+                                          title={!organismoAccessKey ? 'Clé d\'accès indisponible' : 'Ouvrir le lien personnalisé'}
+                                        >
+                                          <ExternalLink className="h-3.5 w-3.5 sm:mr-1.5" />
+                                          <span className="hidden sm:inline">Ouvrir</span>
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
 
                                   <div className="flex gap-2 pt-2 border-t border-gray-200">
                                     <Button
@@ -4872,6 +5135,104 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                 soloClasificacionRegular
                 onGuardar={handleSaveRecruitmentOrganism}
                 tiposOrganismo={tiposOrganismoRecrutement}
+                encabezadoExtra={organismoRecrutementSeleccionado ? (
+                  <div className="overflow-hidden rounded-[28px] border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.10)_100%)] shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-md">
+                    <div className="border-b border-white/15 px-5 py-4">
+                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        <div className="flex items-start gap-4 min-w-0">
+                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[20px] bg-white/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                            <Building2 className="h-7 w-7 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-lg font-semibold text-white sm:text-xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                {organismoRecrutementSeleccionado.nombre}
+                              </h3>
+                              <Badge className="border-0 bg-white/15 text-white backdrop-blur-sm">
+                                {organismoRecrutementSeleccionado.activo ? 'Actif' : 'Inactif'}
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-sm text-white/80">
+                              Profil de recrutement avec acces distant dedie pour la feuille de temps.
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/90">
+                              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                                {organismoRecrutementSeleccionado.tipo || 'Type a definir'}
+                              </span>
+                              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                                {organismoRecrutementSeleccionado.responsable || 'Responsable non renseigne'}
+                              </span>
+                              <span className="rounded-full border border-white/15 bg-emerald-400/15 px-3 py-1 text-emerald-50">
+                                {selectedRecruitmentOrganismAccessKey ? 'Acces pret a partager' : 'Acces non disponible'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row xl:flex-col xl:min-w-[220px]">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-amber-200/50 bg-amber-400/10 text-white hover:bg-amber-400/20"
+                            onClick={handleResetRemoteAccessKeyForOrganism}
+                          >
+                            <ArrowRightLeft className="mr-2 h-4 w-4" />
+                            Reinitialiser la cle
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-white/25 bg-white/10 text-white hover:bg-white/20"
+                            onClick={() => handleCopyRemoteTimesheetLinkForOrganism(organismoRecrutementSeleccionado)}
+                            disabled={!selectedRecruitmentOrganismAccessKey}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copier le lien distant
+                          </Button>
+                          <Button
+                            type="button"
+                            className="bg-white text-slate-900 shadow-lg hover:bg-white/90"
+                            onClick={() => handleOpenRemoteTimesheetForOrganism(organismoRecrutementSeleccionado)}
+                            disabled={!selectedRecruitmentOrganismAccessKey}
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Ouvrir le portail
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                        <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Cle d'acces</p>
+                          <p className="mt-2 font-mono text-sm text-white break-all">
+                            {selectedRecruitmentOrganismAccessKey || 'Cle non disponible'}
+                          </p>
+                        </div>
+                        <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Coordonnees</p>
+                          <div className="mt-2 space-y-1 text-sm text-white/90">
+                            <p className="break-all">{organismoRecrutementSeleccionado.email || 'Aucun email'}</p>
+                            <p>{organismoRecrutementSeleccionado.telefono || 'Aucun telephone'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-3xl border border-white/15 bg-[#0f172a]/16 px-4 py-3">
+                        <div className="flex items-center gap-2 text-white/85">
+                          <ExternalLink className="h-4 w-4" />
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em]">Lien personnalise</p>
+                        </div>
+                        <p className="mt-2 text-sm text-white/75">
+                          Ce lien ouvre directement la feuille de temps publique en limitant l'affichage aux benevoles accredites pour cet organisme.
+                        </p>
+                        <div className="mt-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 font-mono text-[11px] text-white/92 break-all">
+                          {selectedRecruitmentOrganismRemoteUrl || 'Lien non disponible tant qu\'aucune cle n\'est definie.'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : undefined}
               />
             </TabsContent>
             )}
@@ -4995,51 +5356,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200/50 shadow-sm overflow-hidden">
-                  <CardContent className="p-4 sm:p-5">
-                    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-4 items-start">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Link className="w-5 h-5" style={{ color: branding.primaryColor }} />
-                          <h3 className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                            Accès à distance à la feuille de temps
-                          </h3>
-                        </div>
-                        <p className="mt-2 text-sm text-gray-600">
-                          Partagez ce lien pour permettre l'enregistrement à distance des entrées et sorties depuis le portail public de recrutement.
-                        </p>
-                        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 font-mono text-xs text-slate-700 break-all">
-                          {remoteTimesheetUrl}
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
-                          <span className="rounded-full bg-slate-100 px-3 py-1">{candidatosFeuilleTemps.length} bénévole(s) déjà assigné(s)</span>
-                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">{totalAssignationsOrganismosAcreditados} liaison(s) avec organismes accrédités</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row xl:flex-col gap-2">
-                        <Button
-                          onClick={handleCopyRemoteTimesheetLink}
-                          variant="outline"
-                          style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}
-                        >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copier le lien
-                        </Button>
-                        <Button
-                          onClick={handleOpenRemoteTimesheet}
-                          className="text-white"
-                          style={{
-                            backgroundColor: branding.primaryColor,
-                            fontFamily: 'Montserrat, sans-serif'
-                          }}
-                        >
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Ouvrir l'accès distant
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
 
               {candidatosFeuilleTemps.length === 0 ? (

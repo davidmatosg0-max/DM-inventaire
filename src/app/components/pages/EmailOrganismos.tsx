@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Send, Mail, MapPin, Phone, Users, Plus, Edit, Eye, X, Upload, FileText, Bell, Calendar, Percent, UserCheck, UtensilsCrossed, Coffee, Clock, PackageCheck, History, Building2, Copy, Check, Printer, TrendingUp, BarChart3, PieChart, Download, FileSpreadsheet, ChevronDown, File, MessageSquare, Languages } from 'lucide-react';
+import { Send, Mail, MapPin, Phone, Users, Plus, Edit, Eye, X, Upload, FileText, Bell, Calendar, Percent, UserCheck, UtensilsCrossed, Coffee, Clock, PackageCheck, History, Building2, Copy, Check, Printer, TrendingUp, BarChart3, PieChart, Download, FileSpreadsheet, ChevronDown, File, MessageSquare, Languages, LayoutGrid, List, ExternalLink } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -37,6 +37,7 @@ import {
   crearOrganismo, 
   actualizarOrganismo,
   migrarClavesDeAcceso,
+  reinicializarClaveAccesoOrganismo,
   type Organismo,
   type ClasificacionOrganismo,
   type IdiomaContactoOrganismo
@@ -46,6 +47,8 @@ import {
   enviarEmail as enviarEmailService
 } from '../../utils/emailConfig';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
+import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
+import { obtenerPersonasPorOrganismo } from '../../utils/personasResponsablesStorage';
 import { obtenerUsuarioSesion, esAdministradorLiaison } from '../../utils/sesionStorage';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
@@ -83,6 +86,24 @@ const clasificacionOptions: Array<{ value: ClasificacionOrganismo; label: string
   { value: 'eventual', label: 'Éventuel' },
   { value: 'collation', label: 'Collation' },
 ];
+const ORDEN_CLASIFICACION: ClasificacionOrganismo[] = ['regular', 'eventual', 'collation'];
+
+function getClasificacionLabel(clasificacion: ClasificacionOrganismo): string {
+  return clasificacionOptions.find((item) => item.value === clasificacion)?.label || 'Non definie';
+}
+
+function getClasificacionAccent(clasificacion: ClasificacionOrganismo): string {
+  switch (clasificacion) {
+    case 'regular':
+      return '#1E73BE';
+    case 'eventual':
+      return '#F59E0B';
+    case 'collation':
+      return '#8B5CF6';
+    default:
+      return '#64748B';
+  }
+}
 
 export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { t } = useTranslation();
@@ -96,6 +117,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   const [organismos, setOrganismos] = useState<Organismo[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOrganismos, setFilteredOrganismos] = useState<Organismo[]>([]);
+  const [vistaOrganismos, setVistaOrganismos] = useState<'grid' | 'list'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [emailType, setEmailType] = useState<'individual' | 'group'>('individual');
   const [selectedOrganismos, setSelectedOrganismos] = useState<string[]>([]);
@@ -156,6 +178,10 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   
   // Verificar configuración de email (ya no se usa para mostrar estado, solo el usuario conectado)
   const emailConfig = obtenerConfigEmail();
+  const organismoSeleccionadoAccessKey = String(organismoSeleccionado?.claveAcceso || '').trim();
+  const organismoSeleccionadoAccessUrl = organismoSeleccionadoAccessKey
+    ? construirUrlAccesoOrganismo(organismoSeleccionadoAccessKey)
+    : '';
 
   // Referencia para impresión
   const estadisticasRef = useRef<HTMLDivElement>(null);
@@ -707,6 +733,62 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     return coincideDiaCita && coincideClasificacion;
   });
 
+  const organismosAgrupados = ORDEN_CLASIFICACION
+    .map((clasificacion) => ({
+      clasificacion,
+      organismos: filteredOrganismos.filter((organismo) => getClasificacionOrganismo(organismo) === clasificacion),
+    }))
+    .filter((grupo) => grupo.organismos.length > 0);
+
+  const organismosFiltradosModalAgrupados = ORDEN_CLASIFICACION
+    .map((clasificacion) => ({
+      clasificacion,
+      organismos: organismosFiltradosModal.filter((organismo) => getClasificacionOrganismo(organismo) === clasificacion),
+    }))
+    .filter((grupo) => grupo.organismos.length > 0);
+
+  const renderOrganismoActions = (org: Organismo) => (
+    <>
+      <button
+        onClick={() => openEmailModal('individual', org.id)}
+        className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2d9561] to-green-700 px-4 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:scale-105 hover:from-green-700 hover:to-[#2d9561] hover:shadow-lg"
+      >
+        <span>✉️</span>
+        {t('liaison.email')}
+      </button>
+      <button
+        onClick={() => {
+          handleVerPerfil(org);
+        }}
+        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-300/50 px-4 py-2 text-sm font-medium text-gray-700 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-[#1a4d7a]/30 hover:bg-white/80 hover:text-[#1a4d7a]"
+      >
+        <span>👁️</span>
+        {t('liaison.viewProfile')}
+      </button>
+      <button
+        onClick={() => {
+          if (!puedeGestionarOrganismos) {
+            toast.error('⚠️ Accès refusé', {
+              description: 'Seuls les administrateurs de Liaison peuvent modifier des organismes.'
+            });
+            return;
+          }
+          handleEditarPerfil(org);
+        }}
+        disabled={!puedeGestionarOrganismos}
+        className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 ${
+          puedeGestionarOrganismos
+            ? 'cursor-pointer border border-gray-300/50 text-gray-700 shadow-sm backdrop-blur-sm hover:scale-105 hover:border-[#1a4d7a]/30 hover:bg-white/80 hover:text-[#1a4d7a] hover:shadow-md'
+            : 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400 opacity-60'
+        }`}
+        title={!puedeGestionarOrganismos ? 'Seuls les administrateurs de Liaison peuvent modifier des organismes' : ''}
+      >
+        <span>✏️</span>
+        {t('liaison.edit')}
+      </button>
+    </>
+  );
+
   const todosLosOrganismosFiltradosSeleccionados = (
     organismosFiltradosModal.length > 0
     && organismosFiltradosModal.every((organismo) => selectedOrganismos.includes(organismo.id))
@@ -803,6 +885,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
 
   const handleVerPerfil = (organismo: Organismo) => {
     setOrganismoSeleccionado(organismo);
+    setPersonasAutorizadas(obtenerPersonasPorOrganismo(organismo.id));
     setFormOrganismo(convertirOrganismoAFormulario(organismo));
     setModoEdicion(false);
     setModoVisualizacion(true);
@@ -811,10 +894,34 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
 
   const handleEditarPerfil = (organismo: Organismo) => {
     setOrganismoSeleccionado(organismo);
+    setPersonasAutorizadas(obtenerPersonasPorOrganismo(organismo.id));
     setFormOrganismo(convertirOrganismoAFormulario(organismo));
     setModoEdicion(true);
     setModoVisualizacion(false);
     setOrganismoDialogOpen(true);
+  };
+
+  const handleReinicializarClaveAcceso = () => {
+    if (!organismoSeleccionado?.id) {
+      return;
+    }
+
+    try {
+      const organismoActualizado = reinicializarClaveAccesoOrganismo(organismoSeleccionado.id);
+
+      if (!organismoActualizado) {
+        toast.error('Impossible de reinitialiser la cle d\'acces.');
+        return;
+      }
+
+      setOrganismoSeleccionado(organismoActualizado);
+      cargarOrganismos();
+      toast.success('Cle d\'acces reinitialisee', {
+        description: 'Les anciens liens d\'acces devront etre remplaces par le nouveau lien.',
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la reinitialisation de la cle d\'acces');
+    }
   };
 
   // Validar botón de envío
@@ -1489,15 +1596,46 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
         )}
 
         {/* Búsqueda con glassmorphism */}
-        <div className="card-glass rounded-[26px] border border-white/75 p-6 mb-6 relative overflow-hidden shadow-[0_20px_44px_-34px_rgba(15,45,71,0.24)]">
+        <div className="card-glass relative mb-6 overflow-hidden rounded-[26px] border border-white/75 p-6 shadow-[0_20px_44px_-34px_rgba(15,45,71,0.24)]">
           <div className="absolute -top-10 -left-10 w-32 h-32 bg-[#1a4d7a]/10 rounded-full blur-2xl" />
-          <Input
-            type="text"
-            placeholder={t('liaison.searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="relative z-10 w-full px-4 py-3 border border-gray-300/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a4d7a] focus:border-transparent bg-white/88 backdrop-blur-sm transition-all"
-          />
+          <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <Input
+              type="text"
+              placeholder={t('liaison.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-gray-300/50 bg-white/88 px-4 py-3 backdrop-blur-sm transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1a4d7a] lg:max-w-2xl"
+            />
+            <div className="flex items-center gap-2 self-end lg:self-auto">
+              <div className="flex items-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVistaOrganismos('grid')}
+                  className={`h-8 rounded-lg px-2.5 ${vistaOrganismos === 'grid' ? 'shadow-sm' : ''}`}
+                  style={vistaOrganismos === 'grid' ? { backgroundColor: '#1a4d7a', color: 'white' } : { color: '#475569' }}
+                  title="Vue cartes"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVistaOrganismos('list')}
+                  className={`h-8 rounded-lg px-2.5 ${vistaOrganismos === 'list' ? 'shadow-sm' : ''}`}
+                  style={vistaOrganismos === 'list' ? { backgroundColor: '#1a4d7a', color: 'white' } : { color: '#475569' }}
+                  title="Vue liste"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+              <span className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                {filteredOrganismos.length} affiché(s)
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Grid de Organismos */}
@@ -1507,126 +1645,188 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             <p className="text-gray-500">{t('liaison.tryOtherSearchTerms')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredOrganismos.map((org) => (
-              <div
-                key={org.id}
-                className="group backdrop-blur-xl bg-white/90 rounded-2xl shadow-lg hover:shadow-2xl border border-white/20 p-6 transition-all duration-300 hover:scale-[1.02] relative overflow-hidden"
-              >
-                <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-[#1a4d7a]/10 to-[#2d9561]/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-500" />
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex gap-4 flex-1">
-                    {/* Logo del organismo */}
-                    {org.logo && (
-                      <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-lg overflow-hidden bg-white">
-                        <img 
-                          src={org.logo} 
-                          alt={`Logo ${org.nombre}`}
-                          className="w-full h-full object-contain p-1"
-                        />
+          <div className="space-y-6">
+            {organismosAgrupados.map(({ clasificacion, organismos: organismosDelGrupo }) => {
+              const accentColor = getClasificacionAccent(clasificacion);
+
+              return (
+                <section key={clasificacion} className="space-y-4">
+                  <div className="card-glass rounded-[24px] border border-white/75 p-4 shadow-[0_20px_44px_-34px_rgba(15,45,71,0.24)]" style={{ borderLeft: `5px solid ${accentColor}` }}>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Classification</p>
+                        <h3 className="text-lg font-semibold text-[#1a4d7a]">{getClasificacionLabel(clasificacion)}</h3>
                       </div>
-                    )}
-                    <div className="flex-1 relative z-10">
-                      <h3 className="text-xl font-semibold text-[#1a4d7a] mb-2">{org.nombre}</h3>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-gradient-to-r from-[#1a4d7a] to-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm">
-                          {org.tipo}
-                        </span>
-                      </div>
+                      <span className="inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold text-white" style={{ backgroundColor: accentColor }}>
+                        {organismosDelGrupo.length} organisme(s)
+                      </span>
                     </div>
                   </div>
-                  <span className="relative z-10 bg-gradient-to-r from-[#2d9561] to-green-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm">
-                    {t('liaison.active')}
-                  </span>
-                </div>
 
-                <div className="relative z-10 space-y-2 mb-4 text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 flex-shrink-0 text-[#1a4d7a]" />
-                    <MapLink 
-                      direccion={org.direccion} 
-                      variant="inline"
-                      showIcon={false}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm">
-                      <strong>{org.responsable}</strong> • {org.beneficiarios} {t('liaison.beneficiaries')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    <span className="text-sm">{org.telefono}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    <span className="text-sm">{org.email}</span>
-                  </div>
-                  {org.claveAcceso && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">🔑</span>
-                      <span className="text-sm font-mono font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded">
-                        {org.claveAcceso}
-                      </span>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const exito = await copiarAlPortapapeles(org.claveAcceso || '');
-                          if (exito) toast.success('✅ Clé copiée!');
-                        }}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        title="Copier la clé"
-                      >
-                        <Copy className="w-3 h-3 text-gray-600" />
-                      </button>
+                  {vistaOrganismos === 'grid' ? (
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                      {organismosDelGrupo.map((org) => (
+                        <div
+                          key={org.id}
+                          className="group relative overflow-hidden rounded-2xl border border-white/20 bg-white/90 p-6 shadow-lg backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
+                        >
+                          <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-gradient-to-br from-[#1a4d7a]/10 to-[#2d9561]/10 blur-3xl transition-transform duration-500 group-hover:scale-150" />
+                          <div className="mb-4 flex items-start justify-between">
+                            <div className="flex flex-1 gap-4">
+                              {org.logo && (
+                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                  <img 
+                                    src={org.logo} 
+                                    alt={`Logo ${org.nombre}`}
+                                    className="h-full w-full object-contain p-1"
+                                  />
+                                </div>
+                              )}
+                              <div className="relative z-10 flex-1">
+                                <h3 className="mb-2 text-xl font-semibold text-[#1a4d7a]">{org.nombre}</h3>
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="rounded-lg bg-gradient-to-r from-[#1a4d7a] to-blue-600 px-3 py-1 text-sm font-medium text-white shadow-sm">
+                                    {org.tipo}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <span className="relative z-10 rounded-lg bg-gradient-to-r from-[#2d9561] to-green-600 px-3 py-1 text-sm font-medium text-white shadow-sm">
+                              {t('liaison.active')}
+                            </span>
+                          </div>
+
+                          <div className="relative z-10 mb-4 space-y-2 text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 flex-shrink-0 text-[#1a4d7a]" />
+                              <MapLink 
+                                direccion={org.direccion} 
+                                variant="inline"
+                                showIcon={false}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              <span className="text-sm">
+                                <strong>{org.responsable}</strong> • {org.beneficiarios} {t('liaison.beneficiaries')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              <span className="text-sm">{org.telefono}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4" />
+                              <span className="text-sm">{org.email}</span>
+                            </div>
+                            {org.claveAcceso && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">🔑</span>
+                                <span className="rounded bg-green-50 px-2 py-0.5 text-sm font-mono font-semibold text-green-700">
+                                  {org.claveAcceso}
+                                </span>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const exito = await copiarAlPortapapeles(org.claveAcceso || '');
+                                    if (exito) toast.success('✅ Clé copiée!');
+                                  }}
+                                  className="rounded p-1 transition-colors hover:bg-gray-100"
+                                  title="Copier la clé"
+                                >
+                                  <Copy className="h-3 w-3 text-gray-600" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="relative z-10 flex gap-2 border-t border-gray-200/50 pt-4">
+                            {renderOrganismoActions(org)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {organismosDelGrupo.map((org) => (
+                        <div
+                          key={org.id}
+                          className="rounded-2xl border border-white/20 bg-white/90 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:shadow-2xl"
+                        >
+                          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                            <div className="flex min-w-0 flex-1 gap-4">
+                              {org.logo && (
+                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                  <img 
+                                    src={org.logo} 
+                                    alt={`Logo ${org.nombre}`}
+                                    className="h-full w-full object-contain p-1"
+                                  />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="text-lg font-semibold text-[#1a4d7a]">{org.nombre}</h3>
+                                  <span className="rounded-lg bg-gradient-to-r from-[#2d9561] to-green-600 px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                    {t('liaison.active')}
+                                  </span>
+                                  <span className="rounded-lg bg-gradient-to-r from-[#1a4d7a] to-blue-600 px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                    {org.tipo}
+                                  </span>
+                                </div>
+                                <div className="mt-3 grid gap-2 text-sm text-gray-600 sm:grid-cols-2 xl:grid-cols-4">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 flex-shrink-0 text-[#1a4d7a]" />
+                                    <MapLink direccion={org.direccion} variant="inline" showIcon={false} />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4" />
+                                    <span><strong>{org.responsable}</strong> • {org.beneficiarios} {t('liaison.beneficiaries')}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="h-4 w-4" />
+                                    <span>{org.telefono}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="h-4 w-4" />
+                                    <span>{org.email}</span>
+                                  </div>
+                                </div>
+                                {org.claveAcceso && (
+                                  <div className="mt-3 flex items-center gap-2">
+                                    <span className="text-sm">🔑</span>
+                                    <span className="rounded bg-green-50 px-2 py-0.5 text-sm font-mono font-semibold text-green-700">
+                                      {org.claveAcceso}
+                                    </span>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const exito = await copiarAlPortapapeles(org.claveAcceso || '');
+                                        if (exito) toast.success('✅ Clé copiée!');
+                                      }}
+                                      className="rounded p-1 transition-colors hover:bg-gray-100"
+                                      title="Copier la clé"
+                                    >
+                                      <Copy className="h-3 w-3 text-gray-600" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 sm:flex-row xl:min-w-[320px] xl:flex-col">
+                              {renderOrganismoActions(org)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
-                </div>
-
-                <div className="relative z-10 flex gap-2 pt-4 border-t border-gray-200/50">
-                  <button
-                    onClick={() => openEmailModal('individual', org.id)}
-                    className="group bg-gradient-to-r from-[#2d9561] to-green-700 hover:from-green-700 hover:to-[#2d9561] text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-105"
-                  >
-                    <span>✉️</span>
-                    {t('liaison.email')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleVerPerfil(org);
-                    }}
-                    className="flex-1 border border-gray-300/50 hover:bg-white/80 backdrop-blur-sm text-gray-700 hover:text-[#1a4d7a] px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 hover:border-[#1a4d7a]/30"
-                  >
-                    <span>👁️</span>
-                    {t('liaison.viewProfile')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!puedeGestionarOrganismos) {
-                        toast.error('⚠️ Accès refusé', {
-                          description: 'Seuls les administrateurs de Liaison peuvent modifier des organismes.'
-                        });
-                        return;
-                      }
-                      handleEditarPerfil(org);
-                    }}
-                    disabled={!puedeGestionarOrganismos}
-                    className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                      puedeGestionarOrganismos
-                        ? 'border border-gray-300/50 hover:bg-white/80 backdrop-blur-sm text-gray-700 hover:text-[#1a4d7a] cursor-pointer hover:scale-105 hover:border-[#1a4d7a]/30 shadow-sm hover:shadow-md'
-                        : 'border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
-                    }`}
-                    title={!puedeGestionarOrganismos ? 'Seuls les administrateurs de Liaison peuvent modifier des organismes' : ''}
-                  >
-                    <span>✏️</span>
-                    {t('liaison.edit')}
-                  </button>
-                </div>
-              </div>
-            ))}
-                  </div>
-                )}
+                </section>
+              );
+            })}
+          </div>
+        )}
               </TabsContent>
 
               <TabsContent value="contactos" className="space-y-6">
@@ -1722,34 +1922,47 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
                   </Button>
                 </div>
 
-                <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
-                  {organismosFiltradosModal.length > 0 ? organismosFiltradosModal.map((org) => (
-                    <label
-                      key={org.id}
-                      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedOrganismos.includes(org.id)}
-                        onChange={() => toggleOrganismo(org.id)}
-                        className="w-4 h-4"
-                      />
-                      {org.logo && (
-                        <div className="flex-shrink-0 w-10 h-10 border border-gray-200 rounded overflow-hidden bg-white">
-                          <img 
-                            src={org.logo} 
-                            alt={`Logo ${org.nombre}`}
-                            className="w-full h-full object-contain p-0.5"
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{org.nombre}</p>
-                        <p className="text-xs text-[#666666]">{org.email}</p>
-                        <p className="text-xs text-[#8a8a8a]">Jour de rendez-vous: {org.diaCita || 'Non défini'}</p>
-                        <p className="text-xs text-[#8a8a8a]">Classification: {clasificacionOptions.find((item) => item.value === getClasificacionOrganismo(org))?.label || 'Non définie'}</p>
+                <div className="max-h-60 space-y-3 overflow-y-auto rounded-lg border p-3">
+                  {organismosFiltradosModal.length > 0 ? organismosFiltradosModalAgrupados.map(({ clasificacion, organismos: organismosDelGrupo }) => (
+                    <section key={clasificacion} className="space-y-2">
+                      <div className="sticky top-0 z-10 flex items-center justify-between rounded-md border border-gray-100 bg-white/95 px-3 py-2 backdrop-blur-sm">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          {getClasificacionLabel(clasificacion)}
+                        </p>
+                        <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: getClasificacionAccent(clasificacion) }}>
+                          {organismosDelGrupo.length}
+                        </span>
                       </div>
-                    </label>
+
+                      {organismosDelGrupo.map((org) => (
+                        <label
+                          key={org.id}
+                          className="flex cursor-pointer items-center gap-3 rounded p-2 hover:bg-gray-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedOrganismos.includes(org.id)}
+                            onChange={() => toggleOrganismo(org.id)}
+                            className="h-4 w-4"
+                          />
+                          {org.logo && (
+                            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded border border-gray-200 bg-white">
+                              <img 
+                                src={org.logo} 
+                                alt={`Logo ${org.nombre}`}
+                                className="h-full w-full object-contain p-0.5"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{org.nombre}</p>
+                            <p className="text-xs text-[#666666]">{org.email}</p>
+                            <p className="text-xs text-[#8a8a8a]">Jour de rendez-vous: {org.diaCita || 'Non défini'}</p>
+                            <p className="text-xs text-[#8a8a8a]">Classification: {getClasificacionLabel(getClasificacionOrganismo(org))}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </section>
                   )) : (
                     <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-6 text-center text-sm text-[#666666]">
                       Aucun organisme ne correspond aux filtres sélectionnés.
@@ -1819,6 +2032,8 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
           setOrganismoDialogOpen(false);
           setModoEdicion(false);
           setModoVisualizacion(false);
+          setOrganismoSeleccionado(null);
+          setPersonasAutorizadas([]);
         }}
         formulario={formOrganismo}
         setFormulario={setFormOrganismo}
@@ -1826,6 +2041,82 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
         modoVisualizacion={modoVisualizacion}
         onGuardar={modoEdicion ? handleGuardarCambios : handleCrearOrganismo}
         tiposOrganismo={tiposOrganismo}
+        encabezadoExtra={organismoSeleccionado ? (
+          <div className="rounded-[24px] border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.08)_100%)] px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.14)] backdrop-blur-md">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/16">
+                  <Building2 className="h-5 w-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold text-white sm:text-lg" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      {organismoSeleccionado.nombre}
+                    </h3>
+                    <Badge className="border-0 bg-white/15 text-white backdrop-blur-sm">
+                      {organismoSeleccionado.activo ? 'Actif' : 'Inactif'}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-white/90">
+                    <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1">{organismoSeleccionado.tipo || 'Type a definir'}</span>
+                    <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1">{organismoSeleccionado.responsable || 'Responsable non renseigne'}</span>
+                    <span className="rounded-full border border-white/15 bg-emerald-400/15 px-2.5 py-1 text-emerald-50">{personasAutorizadas.length} personne(s) autorisee(s)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row xl:flex-none">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-amber-200/50 bg-amber-400/10 text-white hover:bg-amber-400/20"
+                  onClick={handleReinicializarClaveAcceso}
+                >
+                  <History className="mr-2 h-4 w-4" />
+                  Reinitialiser la cle
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-white/25 bg-white/10 text-white hover:bg-white/20"
+                  onClick={async () => {
+                    const exito = await copiarAlPortapapeles(organismoSeleccionadoAccessKey);
+                    if (exito) {
+                      toast.success('Clé d\'accès copiée');
+                    }
+                  }}
+                  disabled={!organismoSeleccionadoAccessKey}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copier la cle
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-white text-slate-900 shadow-lg hover:bg-white/90"
+                  onClick={() => window.open(organismoSeleccionadoAccessUrl, '_blank', 'noopener,noreferrer')}
+                  disabled={!organismoSeleccionadoAccessUrl}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Ouvrir le portail
+                </Button>
+              </div>
+            </div>
+            <div className="mt-3 grid gap-2 md:grid-cols-[220px_240px_minmax(0,1fr)]">
+              <div className="rounded-2xl bg-white/10 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/65">Cle</p>
+                <p className="mt-1 font-mono text-sm text-white break-all">{organismoSeleccionadoAccessKey || 'Cle non disponible'}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/65">Coordonnees</p>
+                <p className="mt-1 text-sm text-white/90 break-all">{organismoSeleccionado.email || 'Aucun email'}</p>
+                <p className="text-sm text-white/90">{organismoSeleccionado.telefono || 'Aucun telephone'}</p>
+              </div>
+              <div className="rounded-2xl bg-[#0f172a]/14 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/65">Lien du portail</p>
+                <p className="mt-1 font-mono text-[11px] text-white/92 break-all">{organismoSeleccionadoAccessUrl || 'Lien non disponible tant qu\'aucune cle n\'est definie.'}</p>
+              </div>
+            </div>
+          </div>
+        ) : undefined}
       />
 
       {/* Diálogo de Clave Generada */}

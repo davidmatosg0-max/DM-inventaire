@@ -312,6 +312,8 @@ export function actualizarOrganismo(id: string, datos: Partial<Organismo>): Orga
   const organismoActualizado = sanitizarOrganismo({
     ...organismos[index],
     ...datos,
+    claveAcceso: datos.claveAcceso !== undefined ? datos.claveAcceso : organismos[index].claveAcceso,
+    zona: datos.zona !== undefined ? datos.zona : organismos[index].zona,
     id, // Mantener el ID original
     fechaModificacion: new Date().toISOString()
   });
@@ -351,6 +353,24 @@ export function actualizarOrganismo(id: string, datos: Partial<Organismo>): Orga
   );
   
   return organismos[index];
+}
+
+export function reinicializarClaveAccesoOrganismo(id: string): Organismo | null {
+  const organismos = obtenerOrganismos();
+  const organismo = organismos.find((item) => item.id === id);
+
+  if (!organismo) {
+    return null;
+  }
+
+  const nuevaClave = generarClaveAccesoUnica(
+    organismo.nombre || 'Organisme',
+    organismos
+      .filter((item) => item.id !== id)
+      .map((item) => item.claveAcceso || ''),
+  );
+
+  return actualizarOrganismo(id, { claveAcceso: nuevaClave });
 }
 
 // Eliminar un organismo

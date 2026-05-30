@@ -70,6 +70,10 @@ interface DonateurFournisseur {
   historiqueActivites?: ActiviteHistorique[];
 }
 
+interface GestionDonateursFournisseursProps {
+  onNavigate?: (page: string) => void;
+}
+
 const STORAGE_KEY = 'banque_alimentaire_donateurs_fournisseurs';
 
 const normalizarClaveEmpresa = (valor?: string): string =>
@@ -321,7 +325,7 @@ const sincroniserActivites = (): void => {
   }
 };
 
-export function GestionDonateursFournisseurs() {
+export function GestionDonateursFournisseurs({ onNavigate }: GestionDonateursFournisseursProps) {
   const branding = useBranding();
   const organismosAcreditados = obtenerOrganismos()
     .filter((organismo) => organismo.activo && organismo.regular)
@@ -1526,10 +1530,24 @@ export function GestionDonateursFournisseurs() {
 
                       {estParticipantPRS && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-semibold flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                            <Building2 className="w-4 h-4 text-[#3B82F6]" />
-                            Organisme accrédité assigné
-                          </Label>
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <Label className="text-sm font-semibold flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                              <Building2 className="w-4 h-4 text-[#3B82F6]" />
+                              Organisme accrédité assigné
+                            </Label>
+                            {onNavigate && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 border-[#3B82F6]/30 text-[#1a4d7a] hover:bg-[#3B82F6]/5"
+                                onClick={() => onNavigate('organismos')}
+                              >
+                                <Building2 className="h-4 w-4" />
+                                Ouvrir Organismes
+                              </Button>
+                            )}
+                          </div>
                           <Select
                             value={organismoAcreditadoId || '__aucun__'}
                             onValueChange={(value) => setOrganismoAcreditadoId(value === '__aucun__' ? '' : value)}

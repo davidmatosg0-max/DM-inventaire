@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Users, Calendar, Package, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import { useBranding } from '../../../hooks/useBranding';
 import { ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import {
@@ -12,6 +14,8 @@ import {
   obtenirBeneficiairesComptoir,
   obtenirDemandesAideComptoir,
   obtenirDistributionsComptoir,
+  obtenirReservationSettingsComptoir,
+  sauvegarderReservationSettingsComptoir,
 } from '../../utils/comptoirStorage';
 
 interface ComptoirDashboardProps {
@@ -22,6 +26,7 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
   const { t } = useTranslation();
   const branding = useBranding();
   const [refreshToken, setRefreshToken] = useState(0);
+  const [reservationSettings, setReservationSettings] = useState(() => obtenirReservationSettingsComptoir());
 
   useEffect(() => {
     const refreshData = () => {
@@ -33,9 +38,13 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
         event.key === comptoirStorageKeys.beneficiaries ||
         event.key === comptoirStorageKeys.aidRequests ||
         event.key === comptoirStorageKeys.distributions ||
-        event.key === comptoirStorageKeys.appointments
+        event.key === comptoirStorageKeys.appointments ||
+        event.key === comptoirStorageKeys.reservationSettings
       ) {
         refreshData();
+        if (event.key === comptoirStorageKeys.reservationSettings) {
+          setReservationSettings(obtenirReservationSettingsComptoir());
+        }
       }
     };
 
@@ -45,9 +54,13 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
         detail?.key === comptoirStorageKeys.beneficiaries ||
         detail?.key === comptoirStorageKeys.aidRequests ||
         detail?.key === comptoirStorageKeys.distributions ||
-        detail?.key === comptoirStorageKeys.appointments
+        detail?.key === comptoirStorageKeys.appointments ||
+        detail?.key === comptoirStorageKeys.reservationSettings
       ) {
         refreshData();
+        if (detail?.key === comptoirStorageKeys.reservationSettings) {
+          setReservationSettings(obtenirReservationSettingsComptoir());
+        }
       }
     };
 
@@ -84,6 +97,35 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
   };
 
   const pendingRequests = aidRequests.filter((request) => request.status === 'pending').length;
+  const reservationSlotsPreview = (() => {
+    const parseTime = (value: string) => {
+      if (!/^\d{2}:\d{2}$/.test(value)) {
+        return null;
+      }
+
+      const [hours, minutes] = value.split(':').map((part) => Number.parseInt(part, 10));
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        return null;
+      }
+
+      return (hours * 60) + minutes;
+    };
+
+    const start = parseTime(reservationSettings.startTime);
+    const end = parseTime(reservationSettings.endTime);
+    if (start === null || end === null || end < start || reservationSettings.intervalMinutes <= 0) {
+      return [] as string[];
+    }
+
+    const slots: string[] = [];
+    for (let current = start; current <= end; current += reservationSettings.intervalMinutes) {
+      const hours = Math.floor(current / 60);
+      const minutes = current % 60;
+      slots.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+    }
+
+    return slots;
+  })();
 
   const getSortTimestamp = (dateValue?: string, timeValue?: string) => {
     if (!dateValue) {
@@ -267,7 +309,7 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
           <h3 className="text-white font-semibold mb-4" style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '1.125rem' }}>
             {t('comptoir.quickActions')}
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <Button 
               className="bg-white text-[#1E73BE] hover:bg-gray-100 h-auto py-4 justify-start"
               onClick={() => onNavigate('beneficiaires')}
@@ -282,19 +324,90 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
                 </div>
               </div>
             </Button>
-            <Button 
-              className="bg-white text-[#1E73BE] hover:bg-gray-100 h-auto py-4 justify-start"
-              onClick={() => onNavigate('rendez-vous')}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b bg-[#F4F4F4]">
+          <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, fontSize: '1.125rem' }}>
+            Programmation des réservations
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
+              <Label>Heure de début</Label>
+              <Input
+                type="time"
+                value={reservationSettings.startTime}
+                onChange={(event) => setReservationSettings((current) => ({ ...current, startTime: event.target.value }))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Heure de fin</Label>
+              <Input
+                type="time"
+                value={reservationSettings.endTime}
+                onChange={(event) => setReservationSettings((current) => ({ ...current, endTime: event.target.value }))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Intervalle (minutes)</Label>
+              <Input
+                type="number"
+                min="5"
+                max="240"
+                value={String(reservationSettings.intervalMinutes)}
+                onChange={(event) => setReservationSettings((current) => ({
+                  ...current,
+                  intervalMinutes: Number.parseInt(event.target.value || '0', 10) || 0,
+                }))}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-[#D8E5F2] bg-[#F8FAFD] p-4">
+            <p className="text-sm font-medium text-[#333333]">Créneaux prévus</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {reservationSlotsPreview.length > 0 ? reservationSlotsPreview.slice(0, 16).map((slot) => (
+                <span key={slot} className="rounded-full border border-[#D8E5F2] bg-white px-2 py-1 text-xs text-[#1E73BE]">
+                  {slot}
+                </span>
+              )) : (
+                <span className="text-xs text-[#666666]">Définissez une plage horaire et un intervalle valides.</span>
+              )}
+              {reservationSlotsPreview.length > 16 && (
+                <span className="rounded-full border border-[#D8E5F2] bg-white px-2 py-1 text-xs text-[#666666]">
+                  +{reservationSlotsPreview.length - 16} autres
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              className="bg-[#1E73BE] hover:bg-[#1557A0]"
+              onClick={() => {
+                if (!reservationSettings.startTime || !reservationSettings.endTime) {
+                  return;
+                }
+
+                if (reservationSettings.intervalMinutes < 5 || reservationSettings.intervalMinutes > 240) {
+                  return;
+                }
+
+                sauvegarderReservationSettingsComptoir({
+                  startTime: reservationSettings.startTime,
+                  endTime: reservationSettings.endTime,
+                  intervalMinutes: reservationSettings.intervalMinutes,
+                });
+              }}
             >
-              <Calendar className="w-5 h-5 mr-3" />
-              <div className="text-left">
-                <div className="font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  {t('comptoir.newAppointment')}
-                </div>
-                <div className="text-xs opacity-75">
-                  {t('comptoir.scheduleAppointment')}
-                </div>
-              </div>
+              Enregistrer la programmation
             </Button>
           </div>
         </CardContent>

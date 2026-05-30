@@ -914,7 +914,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Module Organismes</h3>
                       <p className="text-orange-50 text-lg">
-                        Gestion complète des organismes bénéficiaires et de leurs informations.
+                        Référentiel complet des organismes avec profils détaillés, accès portail, documents et lecture compacte des fiches.
                       </p>
                     </div>
                   </div>
@@ -935,7 +935,8 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                         <li>• Nom de l'organisme</li>
                         <li>• Type d'organisme</li>
                         <li>• Statut (Actif/Inactif)</li>
-                        <li>• Code d'accès unique</li>
+                        <li>• Classification, quartier et langue</li>
+                        <li>• Clé d'accès et lien direct de portail</li>
                       </ul>
                     </div>
 
@@ -971,10 +972,10 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                         <h5 className="font-bold">Documentation</h5>
                       </div>
                       <ul className="text-sm text-gray-600 space-y-1">
-                        <li>• Certificats</li>
-                        <li>• Assurances</li>
-                        <li>• Documents légaux</li>
-                        <li>• Historique de commandes</li>
+                        <li>• Documents PDF associés à la fiche</li>
+                        <li>• Notes internes et contacts de notification</li>
+                        <li>• Vue complète en lecture seule</li>
+                        <li>• Historique et accès portail partagé</li>
                       </ul>
                     </div>
                   </div>
@@ -983,30 +984,30 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                 <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-xl p-6">
                   <h4 className="font-bold text-xl mb-4 flex items-center gap-2 text-blue-900">
                     <Globe className="w-6 h-6" />
-                    Portail Public des Organismes
+                    Portail Organisme & fiche complète
                   </h4>
                   <div className="space-y-3">
                     <p className="text-gray-700">
-                      Chaque organisme dispose d'un <strong>code d'accès unique</strong> pour accéder à son portail privé.
+                      Chaque organisme dispose d'une <strong>clé d'accès unique</strong> affichée directement dans les vues <strong>Voir le profil</strong> et <strong>Modifier le profil</strong>.
                     </p>
                     
                     <div className="bg-white p-5 rounded-lg border-2 border-blue-300">
                       <p className="font-bold mb-3 flex items-center gap-2">
                         <Shield className="w-5 h-5 text-blue-600" />
-                        Comment accéder au portail?
+                        Ce que la fiche organisme permet maintenant
                       </p>
                       <div className="space-y-2 text-sm">
                         <div className="flex gap-3">
                           <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
-                          <p>Sur la page de connexion, cliquez sur <strong>"Accès Organismes"</strong></p>
+                          <p>Consulter toute la fiche dans une <strong>vue complète</strong> avec défilement global et en-tête fixe.</p>
                         </div>
                         <div className="flex gap-3">
                           <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
-                          <p>Entrez le code unique de votre organisme (ex: <code className="bg-gray-100 px-2 py-1 rounded">CAC-456ABC</code>)</p>
+                          <p>Copier la clé d'accès ou le <strong>lien direct du portail</strong> sans reconstruire l'URL manuellement.</p>
                         </div>
                         <div className="flex gap-3">
                           <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
-                          <p>Accédez à votre espace personnalisé</p>
+                          <p>Réinitialiser la clé d'accès quand un partage doit être invalidé ou renouvelé.</p>
                         </div>
                       </div>
                     </div>
@@ -1028,7 +1029,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                         </li>
                         <li className="flex gap-2">
                           <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
-                          Mettre à jour les informations
+                          Accéder via une clé partagée individuellement par l'équipe interne
                         </li>
                       </ul>
                     </div>
@@ -1708,6 +1709,16 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                         Génération de reçus PDF pour chaque distribution
                       </p>
                     </div>
+
+                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-5 h-5 text-emerald-600" />
+                        <h5 className="font-bold">Événements Spéciaux</h5>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Création d’événements ponctuels avec date de commencement et de fin, liaison directe des bénéficiaires, filtres par événement et export de rapports ciblés.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -1730,6 +1741,20 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <p className="text-2xl font-bold text-purple-600">CAD$ 3,245</p>
                       <p className="text-sm text-gray-600">Valeur distribuée</p>
                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-md border border-emerald-200">
+                  <h4 className="font-bold text-xl mb-4 flex items-center gap-2 text-emerald-900">
+                    <FileText className="w-6 h-6 text-emerald-600" />
+                    Gestion des événements spéciaux
+                  </h4>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <p>Le menu Comptoir inclut désormais une vue <strong>Événements spéciaux</strong> pour planifier des distributions saisonnières, journées thématiques ou activités ciblées, avec <strong>période de début et de fin</strong>.</p>
+                    <p>Chaque événement peut recevoir une <strong>liste d’inscriptions de bénéficiaires</strong>, avec <strong>statut défini dès l’inscription</strong>, <strong>type d'aide associé</strong>, <strong>jour et heure de cita par inscription</strong> et <strong>sélection du jour limitée aux dates programmées de l'événement</strong>, suivi de présence et consultation rapide du profil du bénéficiaire.</p>
+                    <p>Les inscriptions restent <strong>filtrables par événement, statut et type d'aide</strong>, avec <strong>édition directe du type d'aide et du statut</strong> dans la table, une <strong>option explicite de modification d'inscription</strong> (statut, type d'aide, date et heure de cita), un <strong>bouton d'inscription actif tant que la capacité maximale n'est pas atteinte</strong> même si aucun bénéficiaire n'est encore disponible dans la liste, un <strong>résumé des quantités par type d'aide dans l'en-tête des inscriptions</strong>, une <strong>prévention des doublons d'inscription</strong> (1 bénéficiaire par événement) et un <strong>contrôle de capacité au moment de l'enregistrement</strong>, dans une <strong>présentation empilée</strong> affichant désormais les <strong>événements au-dessus</strong> puis les <strong>inscriptions en dessous</strong>, avec <strong>métriques supérieures compactées</strong>, <strong>barre de filtres compactée</strong>, <strong>menu unique pour les exportations</strong>, <strong>en-tête d'inscriptions allégé</strong>, <strong>métadonnées d'événement condensées en badges</strong> et <strong>lignes d'inscription resserrées dans une zone plus haute</strong> pour une lecture plus complète à l'écran, tout en permettant de générer un <strong>rapport PDF ou Excel par événement</strong> avec résumé, <strong>répartition par type d'aide</strong> et liste détaillée.</p>
+                    <p>Une <strong>feuille de présence imprimable</strong> peut être lancée depuis l’événement sélectionné, avec colonnes présence et signature pour le jour de l’activité.</p>
+                    <p>La <strong>fiche du bénéficiaire</strong> affiche aussi l’historique de ses participations aux événements spéciaux, les ajoute à sa timeline d’activité et permet désormais de <strong>créer directement une inscription à un événement</strong> depuis le profil (événement, statut, type d'aide, date et heure de cita), tandis que le bouton <strong>Ajouter une aide</strong> du bloc historique est actif, ouvre la vue d'aide alimentaire et <strong>pré-sélectionne automatiquement le bénéficiaire du profil</strong>.</p>
                   </div>
                 </div>
               </div>
@@ -1905,7 +1930,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Module Entrepôt (Menu Accordéon)</h3>
                       <p className="text-blue-50 text-lg">
-                        Hub central regroupant 8 modules essentiels pour la gestion complète de l'entrepôt et des opérations.
+                        Hub central regroupant l'ensemble des accès opérationnels: inventaire, commandes, organismes, rapports, PRS, partenaires et annuaire Entrepôt.
                       </p>
                     </div>
                   </div>
@@ -1934,14 +1959,14 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <h5 className="font-bold text-blue-900 mb-2">🛒 Commandes</h5>
                       <p className="text-sm text-gray-700">
-                        Gestion des commandes pour organismes avec différents états (brouillon, acceptée, préparée, livrée).
+                        Gestion des commandes organismes avec suivi des statuts, préparation, livraison et lecture compacte de la commande.
                       </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <h5 className="font-bold text-blue-900 mb-2">🏛️ Organismes</h5>
                       <p className="text-sm text-gray-700">
-                        Administration des organismes bénéficiaires, types, clés d'accès portal, personnes responsables et PRS.
+                        Fiches complètes des organismes, classifications, personnes responsables, clés d'accès, lien direct de portail et réinitialisation de clé.
                       </p>
                     </div>
 
@@ -1962,14 +1987,28 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <h5 className="font-bold text-blue-900 mb-2">📊 Rapports</h5>
                       <p className="text-sm text-gray-700">
-                        Génération de rapports Excel/PDF personnalisés avec analyses statistiques détaillées.
+                        Rapports standards et avancés avec exports, synthèses et lecture croisée des activités de l'entrepôt.
                       </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h5 className="font-bold text-blue-900 mb-2">📞 Contacts Entrepôt</h5>
+                      <h5 className="font-bold text-blue-900 mb-2">🤝 Partenaires & fournisseurs</h5>
                       <p className="text-sm text-gray-700">
-                        Annuaire de contacts du département, donateurs PRS et fournisseurs partenaires.
+                        Suivi des donateurs et fournisseurs, participation PRS, organisme accrédité assigné et historique des activités partenaires.
+                      </p>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h5 className="font-bold text-blue-900 mb-2">📞 Annuaire Entrepôt</h5>
+                      <p className="text-sm text-gray-700">
+                        Annuaire de contacts du département avec types dédiés Entrepôt: donateurs, fournisseurs, PRS, transporteurs et autres contacts opérationnels.
+                      </p>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h5 className="font-bold text-blue-900 mb-2">♻️ Déchets & compostage</h5>
+                      <p className="text-sm text-gray-700">
+                        Suivi du gaspillage, de la valorisation et des sorties vers compostage pour documenter les pertes et leur traitement.
                       </p>
                     </div>
                   </div>
@@ -1981,7 +2020,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     Navigation Rapide
                   </h4>
                   <p className="text-gray-700 text-sm">
-                    Le menu accordéon Entrepôt permet d'accéder rapidement à tous ces modules sans quitter la navigation principale. Cliquez sur "Entrepôt" dans le menu latéral pour déplier toutes les options.
+                    Le menu accordéon Entrepôt permet de passer rapidement d'un sous-module à l'autre sans casser le contexte de travail. Depuis les formulaires PRS et partenaires, des raccourcis ouvrent aussi directement le module Organismes quand une vérification est nécessaire.
                   </p>
                 </div>
               </div>
@@ -1996,7 +2035,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Module Offres aux Organismes</h3>
                       <p className="text-rose-50 text-lg">
-                        Créez et gérez des offres de dons de produits destinées aux organismes bénéficiaires.
+                        Créez, publiez et suivez des offres de produits visibles dans le portail organisme relié aux clés d'accès individuelles.
                       </p>
                     </div>
                   </div>
@@ -2023,7 +2062,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <ul className="text-sm text-gray-700 space-y-1">
                         <li>• Acceptation/refus des demandes organismes</li>
                         <li>• Suivi des quantités demandées vs disponibles</li>
-                        <li>• Notification automatique aux organismes</li>
+                        <li>• Visibilité immédiate dans le portail organisme concerné</li>
                         <li>• Historique complet des transactions</li>
                       </ul>
                     </div>
@@ -2040,10 +2079,10 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                 <div className="bg-green-50 border-l-4 border-green-600 rounded-r-xl p-6">
                   <h4 className="font-bold text-green-900 mb-3 flex items-center gap-2">
                     <CheckCircle className="w-5 h-5" />
-                    Connexion avec le Portal Organismes
+                    Connexion avec le Portail Organismes
                   </h4>
                   <p className="text-gray-700 text-sm">
-                    Les offres créées ici sont automatiquement visibles dans le <strong>Portal Public des Organismes</strong>. Les organismes peuvent consulter, demander et réserver les produits directement depuis leur interface.
+                    Les offres créées ici deviennent automatiquement visibles dans le <strong>portail organisme</strong> accessible par clé individuelle. Les équipes internes peuvent partager le lien direct depuis les fiches Organismes et Liaison.
                   </p>
                 </div>
               </div>
@@ -2058,7 +2097,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Module Cuisine</h3>
                       <p className="text-orange-50 text-lg">
-                        Gestion complète de la cuisine avec recettes, transformations, production et inventaire spécifique.
+                        Gestion de la production cuisine avec six accès principaux alignés sur le tableau de bord réel du module.
                       </p>
                     </div>
                   </div>
@@ -2073,49 +2112,42 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h5 className="font-bold text-orange-900 mb-2">📖 Recettes</h5>
                       <p className="text-sm text-gray-700">
-                        Création de recettes avec ingrédients, portions, temps de préparation, instructions et catégories (entrée, plat, dessert).
+                        Créer et gérer les recettes de production avec ingrédients, quantités, instructions et rendement.
                       </p>
                     </div>
 
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h5 className="font-bold text-orange-900 mb-2">🔄 Transformations</h5>
                       <p className="text-sm text-gray-700">
-                        Conversion de produits frais en repas préparés avec suivi des états (planifiée, en cours, complétée).
+                        Enregistrer les transformations réalisées avec traçabilité complète des productions.
                       </p>
                     </div>
 
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                      <h5 className="font-bold text-orange-900 mb-2">🍽️ Production</h5>
+                      <h5 className="font-bold text-orange-900 mb-2">🍽️ Planification Production</h5>
                       <p className="text-sm text-gray-700">
-                        Planification de la production journalière, suivi des préparations et génération d'étiquettes de repas.
+                        Planifier les productions quotidiennes et hebdomadaires depuis le calendrier de production.
                       </p>
                     </div>
 
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h5 className="font-bold text-orange-900 mb-2">📦 Inventaire Cuisine</h5>
                       <p className="text-sm text-gray-700">
-                        Stock spécifique de la cuisine séparé de l'entrepôt principal pour une gestion indépendante.
-                      </p>
-                    </div>
-
-                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                      <h5 className="font-bold text-orange-900 mb-2">🎁 Offres Disponibles</h5>
-                      <p className="text-sm text-gray-700">
-                        Consultation des offres de l'entrepôt et demande de transferts de produits vers la cuisine.
-                      </p>
-                    </div>
-
-                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                      <h5 className="font-bold text-orange-900 mb-2">👥 Contacts Cuisine</h5>
-                      <p className="text-sm text-gray-700">
-                        Équipe cuisine, chefs, aide-cuisiniers avec horaires et disponibilités.
+                        Consulter les stocks disponibles pour la production et l'inventaire dédié à la cuisine.
                       </p>
                     </div>
 
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h5 className="font-bold text-orange-900 mb-2">📊 Statistiques</h5>
                       <p className="text-sm text-gray-700">
-                        Repas produits, pertes, rendement des transformations, coûts et analyses de performance.
+                        Consulter les analyses et rapports de production détaillés du module cuisine.
+                      </p>
+                    </div>
+
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                      <h5 className="font-bold text-orange-900 mb-2">👥 Gestion des Contacts</h5>
+                      <p className="text-sm text-gray-700">
+                        Gérer les bénévoles, PTC, employés et programmes rattachés au département Cuisine.
                       </p>
                     </div>
                   </div>
@@ -2130,7 +2162,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     Le module Cuisine assure une traçabilité complète depuis l'arrivée des produits frais jusqu'à la distribution des repas préparés:
                   </p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Origine des ingrédients (entrepôt ou donateurs PRS)</li>
+                    <li>• Origine des ingrédients et stock utilisé</li>
                     <li>• Date de transformation et lot de production</li>
                     <li>• Température de conservation et dates limites</li>
                     <li>• Étiquetage automatique conforme aux normes</li>
@@ -2148,7 +2180,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Module Liaison</h3>
                       <p className="text-purple-50 text-lg">
-                        Communication externe avec les organismes bénéficiaires par emails professionnels.
+                        Communication externe et suivi opérationnel des organismes avec email, profils complets et partage sécurisé des accès.
                       </p>
                     </div>
                   </div>
@@ -2168,23 +2200,23 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     </div>
 
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h5 className="font-bold text-purple-900 mb-2">📝 Templates Personnalisés</h5>
+                      <h5 className="font-bold text-purple-900 mb-2">🗂️ Fiche organisme complète</h5>
                       <p className="text-sm text-gray-700">
-                        Créez et sauvegardez des templates d'emails réutilisables pour les communications fréquentes (nouvelles offres, rappels, actualités).
+                        Consultation et modification du profil organisme dans une vue compacte complète avec toutes les informations visibles sans changer de module.
                       </p>
                     </div>
 
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h5 className="font-bold text-purple-900 mb-2">🔔 Notifications Automatiques</h5>
+                      <h5 className="font-bold text-purple-900 mb-2">🔑 Clé d'accès et portail</h5>
                       <p className="text-sm text-gray-700">
-                        Configurez l'envoi automatique d'emails lors de certains événements (nouvelle offre disponible, commande prête, etc.).
+                        La fiche Liaison affiche la clé d'accès, le lien direct du portail organisme et l'action de réinitialisation de clé.
                       </p>
                     </div>
 
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h5 className="font-bold text-purple-900 mb-2">📜 Historique Communications</h5>
+                      <h5 className="font-bold text-purple-900 mb-2">📜 Historique & ciblage</h5>
                       <p className="text-sm text-gray-700">
-                        Consultez l'historique complet de tous les emails envoyés avec dates, destinataires et contenus.
+                        Consultez l'historique des envois et ciblez les organismes par jour de rendez-vous, classification et recherche directe.
                       </p>
                     </div>
                   </div>
@@ -2197,21 +2229,21 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                   </h4>
                   <div className="space-y-3 text-sm text-gray-700">
                     <div className="bg-white p-4 rounded-lg border border-fuchsia-200">
-                      <p className="font-bold mb-1">Envoi groupé stabilisé</p>
+                      <p className="font-bold mb-1">Profil organisme enrichi</p>
                       <p>
-                        Le modal d'email groupé s'ouvre de nouveau correctement et la sélection globale fonctionne sur la liste affichée.
+                        Les vues Voir/Modifier affichent maintenant la fiche complète de l'organisme, la clé d'accès, le lien du portail et la réinitialisation de clé.
                       </p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-fuchsia-200">
-                      <p className="font-bold mb-1">Filtres avancés</p>
+                      <p className="font-bold mb-1">Mise en page compacte et lisible</p>
                       <p>
-                        Les envois peuvent être filtrés par <strong>jour de rendez-vous</strong> et par <strong>classification</strong> pour cibler plus finement les organismes.
+                        Le bandeau d'accès a été compacté et la fiche organisme se lit avec défilement global pour afficher toutes les informations sans coupure.
                       </p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-fuchsia-200">
-                      <p className="font-bold mb-1">Retour depuis la gestion des demandes</p>
+                      <p className="font-bold mb-1">Ciblage opérationnel</p>
                       <p>
-                        Un bouton de retour permet de revenir directement à Liaison depuis l'écran de gestion des demandes sans casser le flux de travail.
+                        Les envois restent filtrables par <strong>jour de rendez-vous</strong> et <strong>classification</strong> pour cibler plus finement les organismes.
                       </p>
                     </div>
                   </div>
@@ -2253,7 +2285,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     <div>
                       <h3 className="text-3xl font-bold mb-3">Module Recrutement & Bénévoles</h3>
                       <p className="text-green-50 text-lg">
-                        Gestion complète des volontaires: recrutement, horaires, compétences, formations et certifications.
+                        Gestion des candidatures, bénévoles, organismes partenaires et accès distant aux feuilles de temps par organisme.
                       </p>
                     </div>
                   </div>
@@ -2273,37 +2305,37 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h5 className="font-bold text-green-900 mb-2">📅 Gestion Horaires</h5>
+                      <h5 className="font-bold text-green-900 mb-2">📅 Feuilles de temps</h5>
                       <p className="text-sm text-gray-700">
-                        Planification des shifts, disponibilités hebdomadaires, absences et remplacements.
+                        Saisie, suivi et corrections des feuilles de temps avec accès public individualisé par organisme.
                       </p>
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h5 className="font-bold text-green-900 mb-2">🎓 Formations</h5>
+                      <h5 className="font-bold text-green-900 mb-2">🏛️ Organismes Recrutement</h5>
                       <p className="text-sm text-gray-700">
-                        Suivi des formations obligatoires (hygiène, sécurité) avec dates et certifications.
+                        Gestion des organismes partenaires avec clé d'accès propre, lien de feuille de temps distant et réinitialisation de clé depuis la fiche profil.
                       </p>
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h5 className="font-bold text-green-900 mb-2">⭐ Évaluations</h5>
+                      <h5 className="font-bold text-green-900 mb-2">⭐ Candidatures & affectations</h5>
                       <p className="text-sm text-gray-700">
-                        Historique de participation, ponctualité, et notes de performance.
+                        Gestion des candidats, affectations, disponibilités, heures et suivi des activités bénévoles.
                       </p>
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h5 className="font-bold text-green-900 mb-2">📢 Recrutement</h5>
+                      <h5 className="font-bold text-green-900 mb-2">📢 Portail public ciblé</h5>
                       <p className="text-sm text-gray-700">
-                        Campagnes de recrutement, candidatures en ligne et processus d'intégration.
+                        L'accès distant général n'est plus utilisé: chaque organisme reçoit son propre lien sécurisé pour son portail de temps.
                       </p>
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                       <h5 className="font-bold text-green-900 mb-2">📊 Statistiques</h5>
                       <p className="text-sm text-gray-700">
-                        Heures travaillées, taux de rétention, bénévoles actifs par département.
+                        Heures travaillées, présence, activité par organisme et suivi des feuilles de temps validées.
                       </p>
                     </div>
                   </div>
@@ -2312,11 +2344,13 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                 <div className="bg-emerald-50 border-l-4 border-emerald-600 rounded-r-xl p-6">
                   <h4 className="font-bold text-emerald-900 mb-3 flex items-center gap-2">
                     <Star className="w-5 h-5" />
-                    Reconnaissance & Motivation
+                    Accès distant par organisme
                   </h4>
-                  <p className="text-gray-700 text-sm">
-                    Le système permet de reconnaître les bénévoles les plus engagés avec des badges d'ancienneté, certificats de reconnaissance et statistiques de contribution. Cela aide à maintenir la motivation et la fidélité des volontaires.
-                  </p>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <p>Chaque organisme Recrutement possède désormais sa <strong>clé d'accès propre</strong> et son <strong>lien direct de feuille de temps</strong>.</p>
+                    <p>Depuis la fiche Voir/Modifier, l'équipe peut copier le lien, ouvrir le portail distant ou réinitialiser la clé si nécessaire.</p>
+                    <p>La fiche organisme en consultation s'ouvre dans une <strong>vue complète avec défilement</strong>, pour éviter les informations tronquées.</p>
+                  </div>
                 </div>
               </div>
             )}

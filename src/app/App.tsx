@@ -229,7 +229,7 @@ function AppContent() {
       case 'cuisine':
         return renderWithSuspense(<CuisinePage onNavigate={setCurrentPage} />);
       case 'donateurs-fournisseurs':
-        return renderWithSuspense(<GestionDonateursFournisseurs />);
+        return renderWithSuspense(<GestionDonateursFournisseurs onNavigate={setCurrentPage} />);
       case 'contactos-almacen':
         return renderWithSuspense(<ContactosAlmacenPage onNavigate={setCurrentPage} />);
       case 'dechets-compostage':

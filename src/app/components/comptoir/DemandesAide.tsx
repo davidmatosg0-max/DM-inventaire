@@ -10,6 +10,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { toast } from 'sonner';
 import { BoutonRetourHeader } from '../shared/BoutonRetour';
+import { obtenirReservationSettingsComptoir, comptoirStorageEvents, comptoirStorageKeys } from '../../utils/comptoirStorage';
 import {
   Dialog,
   DialogContent,
@@ -42,15 +43,142 @@ interface AidRequest {
   appointmentTime?: string;
 }
 
+const DEMANDES_AIDE_APPROVAL_SCHEDULE_STORAGE_KEY = 'comptoir_demandes_aide_approval_schedule';
+
 export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: DemandesAideProps) {
   const { t } = useTranslation();
+  const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
+  const getRememberedApprovalSchedule = () => {
+    const today = getTodayIsoDate();
+    const defaultSettings = obtenirReservationSettingsComptoir();
+
+    try {
+      const rawValue = localStorage.getItem(DEMANDES_AIDE_APPROVAL_SCHEDULE_STORAGE_KEY);
+      if (!rawValue) {
+        return {
+          date: today,
+          time: defaultSettings.startTime,
+        };
+      }
+
+      const parsedValue = JSON.parse(rawValue) as { date?: string; time?: string };
+      return {
+        date: parsedValue.date || today,
+        time: parsedValue.time || defaultSettings.startTime,
+      };
+    } catch (error) {
+      console.error('Erreur lors de la lecture de la date/heure mémorisées pour l\'approbation :', error);
+      return {
+        date: today,
+        time: defaultSettings.startTime,
+      };
+    }
+  };
+
+  const rememberedApprovalSchedule = getRememberedApprovalSchedule();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedRequest, setSelectedRequest] = useState<AidRequest | null>(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [appointmentDate, setAppointmentDate] = useState('');
-  const [appointmentTime, setAppointmentTime] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState(rememberedApprovalSchedule.date);
+  const [reservationSettings, setReservationSettings] = useState(() => obtenirReservationSettingsComptoir());
+  const [appointmentTime, setAppointmentTime] = useState(rememberedApprovalSchedule.time);
+
+  const parseTimeToMinutes = (value: string): number | null => {
+    if (!/^\d{2}:\d{2}$/.test(value)) {
+      return null;
+    }
+
+    const [hours, minutes] = value.split(':').map((part) => Number.parseInt(part, 10));
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return null;
+    }
+
+    return (hours * 60) + minutes;
+  };
+
+  const formatMinutesToTime = (totalMinutes: number): string => {
+    const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+    const hours = Math.floor(normalized / 60);
+    const minutes = normalized % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
+  const reservationTimeSlots = (() => {
+    const start = parseTimeToMinutes(reservationSettings.startTime);
+    const end = parseTimeToMinutes(reservationSettings.endTime);
+    if (start === null || end === null || end < start || reservationSettings.intervalMinutes <= 0) {
+      return [] as string[];
+    }
+
+    const slots: string[] = [];
+    for (let current = start; current <= end; current += reservationSettings.intervalMinutes) {
+      slots.push(formatMinutesToTime(current));
+    }
+
+    return slots;
+  })();
+
+  const occupiedTimesForSelectedDate = new Set(
+    aidRequests
+      .filter((request) => request.status !== 'rejected')
+      .filter((request) => request.id !== selectedRequest?.id)
+      .filter((request) => {
+        const requestDate = request.appointmentDate || request.dateRequested?.split(' ')[0] || '';
+        return Boolean(appointmentDate) && requestDate === appointmentDate;
+      })
+      .map((request) => request.appointmentTime || request.dateRequested?.split(' ')[1] || '')
+      .filter((value) => Boolean(value))
+  );
+
+  const availableApprovalTimeSlots = reservationTimeSlots.filter((slot) => !occupiedTimesForSelectedDate.has(slot));
+
+  React.useEffect(() => {
+    const refreshSettings = () => {
+      const nextSettings = obtenirReservationSettingsComptoir();
+      setReservationSettings(nextSettings);
+      setAppointmentTime((currentTime) => currentTime || nextSettings.startTime);
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === comptoirStorageKeys.reservationSettings) {
+        refreshSettings();
+      }
+    };
+
+    const handleComptoirStorageUpdated = (event: Event) => {
+      const { detail } = event as CustomEvent<{ key?: string }>;
+      if (detail?.key === comptoirStorageKeys.reservationSettings) {
+        refreshSettings();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener(comptoirStorageEvents.updated, handleComptoirStorageUpdated);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(comptoirStorageEvents.updated, handleComptoirStorageUpdated);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    localStorage.setItem(
+      DEMANDES_AIDE_APPROVAL_SCHEDULE_STORAGE_KEY,
+      JSON.stringify({ date: appointmentDate, time: appointmentTime })
+    );
+  }, [appointmentDate, appointmentTime]);
+
+  React.useEffect(() => {
+    if (availableApprovalTimeSlots.length === 0) {
+      return;
+    }
+
+    if (!availableApprovalTimeSlots.includes(appointmentTime)) {
+      setAppointmentTime(availableApprovalTimeSlots[0]);
+    }
+  }, [appointmentTime, availableApprovalTimeSlots]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -95,6 +223,46 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
       return;
     }
 
+    const intervalMinutes = reservationSettings.intervalMinutes;
+    if (!Number.isFinite(intervalMinutes) || intervalMinutes <= 0) {
+      toast.error(t('common.error'), {
+        description: 'Programmez un intervalle valide depuis le tableau de bord du Comptoir.',
+      });
+      return;
+    }
+
+    if (reservationTimeSlots.length === 0) {
+      toast.error(t('common.error'), {
+        description: 'Aucun créneau n\'est disponible. Vérifiez la programmation globale des réservations.',
+      });
+      return;
+    }
+
+    if (availableApprovalTimeSlots.length === 0) {
+      toast.error(t('common.error'), {
+        description: 'Toutes les heures de cette date sont déjà réservées.',
+      });
+      return;
+    }
+
+    if (!availableApprovalTimeSlots.includes(appointmentTime)) {
+      toast.error(t('common.error'), {
+        description: 'Ce créneau est déjà réservé. Choisissez une autre heure.',
+      });
+      return;
+    }
+
+    const baseSlotIndex = Math.max(availableApprovalTimeSlots.indexOf(appointmentTime), 0);
+    const availableSlot = availableApprovalTimeSlots.slice(baseSlotIndex)[0];
+    if (!availableSlot) {
+      toast.error(t('common.error'), {
+        description: 'Aucune heure libre n\'est disponible à partir du créneau sélectionné pour cette date.',
+      });
+      return;
+    }
+
+    const finalAppointmentTime = availableSlot;
+
     setAidRequests(prev => prev.map(req => 
       req.id === selectedRequest.id 
         ? {
@@ -103,7 +271,7 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
             processedDate: new Date().toLocaleString('fr-CA'),
             processedBy: 'Admin Système',
             appointmentDate: appointmentDate,
-            appointmentTime: appointmentTime
+            appointmentTime: finalAppointmentTime
           }
         : req
     ));
@@ -115,7 +283,7 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
           {selectedRequest.beneficiaire} - {selectedRequest.type}
         </div>
         <div className="text-xs text-[#666666] mt-1">
-          RDV: {appointmentDate} à {appointmentTime}
+          RDV: {appointmentDate} à {finalAppointmentTime}
         </div>
       </div>,
       { duration: 5000 }
@@ -123,8 +291,6 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
 
     setShowApproveDialog(false);
     setSelectedRequest(null);
-    setAppointmentDate('');
-    setAppointmentTime('');
   };
 
   const handleReject = () => {
@@ -164,7 +330,7 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
   return (
     <div className="space-y-6">
       <BoutonRetourHeader 
-        onClick={() => onNavigate('dashboard')} 
+        onClick={() => onNavigate('__back__')} 
         titre="Demandes d'Aide"
       />
       {/* Header with stats */}
@@ -357,6 +523,8 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
                             className="bg-[#4CAF50] hover:bg-[#45a049]"
                             onClick={() => {
                               setSelectedRequest(request);
+                              setAppointmentDate((currentDate) => currentDate || getRememberedApprovalSchedule().date || getTodayIsoDate());
+                              setAppointmentTime((currentTime) => currentTime || getRememberedApprovalSchedule().time || reservationSettings.startTime);
                               setShowApproveDialog(true);
                             }}
                           >
@@ -439,12 +607,17 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
 
               <div className="space-y-2">
                 <Label>{t('comptoir.appointmentTime')}</Label>
-                <input
-                  type="time"
-                  value={appointmentTime}
-                  onChange={(e) => setAppointmentTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
-                />
+                <Select value={appointmentTime} onValueChange={setAppointmentTime}>
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue placeholder="Sélectionner une heure" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableApprovalTimeSlots.map((slot) => (
+                      <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-[#666666]">Créneaux libres: {availableApprovalTimeSlots.length}/{reservationTimeSlots.length} pour le {appointmentDate || 'jour sélectionné'}.</p>
               </div>
             </div>
           )}
@@ -452,7 +625,9 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowApproveDialog(false)}
+              onClick={() => {
+                setShowApproveDialog(false);
+              }}
             >
               {t('common.cancel')}
             </Button>

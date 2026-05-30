@@ -88,6 +88,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const [expandedMenus, setExpandedMenus] = React.useState<string[]>([]);
   const [showGuideComplete, setShowGuideComplete] = React.useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = React.useState(false);
+  const mainStageRef = React.useRef<HTMLElement>(null);
+  const appShellRef = React.useRef<HTMLDivElement>(null);
   
   // Estados para botón draggable del Guide Complet
   const [isDragging, setIsDragging] = React.useState(false);
@@ -135,6 +137,12 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     t('layout.shellBadges.realTime'),
     t('layout.shellBadges.secure'),
   ];
+
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+    mainStageRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    appShellRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [currentPage]);
   
   // Funciones para drag del botón Guide Complet
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -864,8 +872,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Main content */}
-      <main className={`app-main-stage box-border ${communicationViewportClass} ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden`}>
-        <div data-app-shell className={`app-shell-content ${useCommunicationFullscreenShell ? 'h-full overflow-hidden px-0 py-0' : 'px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5'}`}>
+      <main ref={mainStageRef} className={`app-main-stage box-border ${communicationViewportClass} ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden`}>
+        <div ref={appShellRef} data-app-shell className={`app-shell-content ${useCommunicationFullscreenShell ? 'h-full overflow-hidden px-0 py-0' : 'px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5'}`}>
           {!useCommunicationFullscreenShell && (
             <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
             <div>

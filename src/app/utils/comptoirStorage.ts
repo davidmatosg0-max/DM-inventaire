@@ -81,12 +81,67 @@ export interface ComptoirAppointment {
   updatedAt: string;
 }
 
+export interface ComptoirSpecialEvent {
+  id: string;
+  nom: string;
+  description?: string;
+  fechaInicio: string;
+  fechaFin: string;
+  date?: string;
+  heureDebut?: string;
+  heureFin?: string;
+  reservationIntervalMinutes?: number;
+  lieu?: string;
+  capaciteMax?: number;
+  statut: 'planifie' | 'ouvert' | 'complet' | 'termine' | 'annule';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComptoirSpecialEventRegistration {
+  id: string;
+  eventId: string;
+  beneficiaireId: string;
+  beneficiaireNom: string;
+  aidTypeId?: string;
+  aidTypeName?: string;
+  aidQuantity?: number;
+  aidItems?: Array<{
+    aidTypeId?: string;
+    aidTypeName?: string;
+    quantity: number;
+  }>;
+  appointmentDate?: string;
+  appointmentTime?: string;
+  statut: 'inscrit' | 'present' | 'absent' | 'annule';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComptoirReservationSettings {
+  startTime: string;
+  endTime: string;
+  intervalMinutes: number;
+  updatedAt: string;
+}
+
 const CUSTOM_AID_TYPES_KEY = 'comptoir_custom_aid_types';
 const AID_REQUESTS_KEY = 'comptoir_aid_requests';
 const BENEFICIARIES_KEY = 'comptoir_beneficiaries';
 const DISTRIBUTIONS_KEY = 'comptoir_distributions';
 const APPOINTMENTS_KEY = 'comptoir_appointments';
+const SPECIAL_EVENTS_KEY = 'comptoir_special_events';
+const SPECIAL_EVENT_REGISTRATIONS_KEY = 'comptoir_special_event_registrations';
+const RESERVATION_SETTINGS_KEY = 'comptoir_reservation_settings';
 const COMPTOIR_STORAGE_UPDATED_EVENT = 'comptoir-storage-updated';
+
+const DEFAULT_RESERVATION_SETTINGS: ComptoirReservationSettings = {
+  startTime: '08:00',
+  endTime: '17:00',
+  intervalMinutes: 15,
+  updatedAt: new Date().toISOString(),
+};
 
 function notifyComptoirStorageUpdated(key: string): void {
   if (typeof window === 'undefined') {
@@ -284,12 +339,171 @@ export function upsertRendezVousComptoir(
   return normalizedAppointment;
 }
 
+export function obtenirEvenementsSpeciauxComptoir(): ComptoirSpecialEvent[] {
+  return readStorageValue<(ComptoirSpecialEvent & { date?: string })>(SPECIAL_EVENTS_KEY)
+    .map((event) => {
+      const fechaInicio = event.fechaInicio || event.date || '';
+      const fechaFin = event.fechaFin || event.date || fechaInicio;
+      const parsedInterval = Number(event.reservationIntervalMinutes);
+      const reservationIntervalMinutes = Number.isFinite(parsedInterval) && parsedInterval > 0
+        ? Math.trunc(parsedInterval)
+        : undefined;
+
+      return {
+        ...event,
+        fechaInicio,
+        fechaFin,
+        reservationIntervalMinutes,
+      };
+    })
+    .filter((event) => Boolean(event.fechaInicio));
+}
+
+export function sauvegarderEvenementsSpeciauxComptoir(events: ComptoirSpecialEvent[]): void {
+  writeStorageValue(SPECIAL_EVENTS_KEY, events);
+}
+
+export function genererSiguienteIdEvenementSpecial(): string {
+  const events = obtenirEvenementsSpeciauxComptoir();
+  const maxId = events.reduce((maxValue, event) => {
+    const match = event.id.match(/EVT-(\d+)/);
+    if (!match) {
+      return maxValue;
+    }
+
+    return Math.max(maxValue, Number.parseInt(match[1], 10));
+  }, 0);
+
+  return `EVT-${String(maxId + 1).padStart(4, '0')}`;
+}
+
+export function upsertEvenementSpecialComptoir(
+  event: Omit<ComptoirSpecialEvent, 'updatedAt' | 'createdAt'> & Partial<Pick<ComptoirSpecialEvent, 'updatedAt' | 'createdAt'>>
+): ComptoirSpecialEvent {
+  const events = obtenirEvenementsSpeciauxComptoir();
+  const existingIndex = events.findIndex((currentEvent) => currentEvent.id === event.id);
+  const timestamp = new Date().toISOString();
+  const normalizedEvent: ComptoirSpecialEvent = {
+    ...event,
+    createdAt: existingIndex >= 0 ? events[existingIndex].createdAt : event.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+
+  if (existingIndex >= 0) {
+    events[existingIndex] = normalizedEvent;
+  } else {
+    events.push(normalizedEvent);
+  }
+
+  sauvegarderEvenementsSpeciauxComptoir(events);
+  return normalizedEvent;
+}
+
+export function supprimerEvenementSpecialComptoir(eventId: string): void {
+  const events = obtenirEvenementsSpeciauxComptoir().filter((event) => event.id !== eventId);
+  const registrations = obtenirInscriptionsEvenementsSpeciauxComptoir().filter((registration) => registration.eventId !== eventId);
+
+  sauvegarderEvenementsSpeciauxComptoir(events);
+  sauvegarderInscriptionsEvenementsSpeciauxComptoir(registrations);
+}
+
+export function obtenirInscriptionsEvenementsSpeciauxComptoir(): ComptoirSpecialEventRegistration[] {
+  return readStorageValue<ComptoirSpecialEventRegistration>(SPECIAL_EVENT_REGISTRATIONS_KEY);
+}
+
+export function sauvegarderInscriptionsEvenementsSpeciauxComptoir(registrations: ComptoirSpecialEventRegistration[]): void {
+  writeStorageValue(SPECIAL_EVENT_REGISTRATIONS_KEY, registrations);
+}
+
+export function genererSiguienteIdInscriptionEvenementSpecial(): string {
+  const registrations = obtenirInscriptionsEvenementsSpeciauxComptoir();
+  const maxId = registrations.reduce((maxValue, registration) => {
+    const match = registration.id.match(/EVREG-(\d+)/);
+    if (!match) {
+      return maxValue;
+    }
+
+    return Math.max(maxValue, Number.parseInt(match[1], 10));
+  }, 0);
+
+  return `EVREG-${String(maxId + 1).padStart(4, '0')}`;
+}
+
+export function upsertInscriptionEvenementSpecialComptoir(
+  registration: Omit<ComptoirSpecialEventRegistration, 'updatedAt' | 'createdAt'> & Partial<Pick<ComptoirSpecialEventRegistration, 'updatedAt' | 'createdAt'>>
+): ComptoirSpecialEventRegistration {
+  const registrations = obtenirInscriptionsEvenementsSpeciauxComptoir();
+  const existingIndex = registrations.findIndex((currentRegistration) => currentRegistration.id === registration.id);
+  const timestamp = new Date().toISOString();
+  const normalizedRegistration: ComptoirSpecialEventRegistration = {
+    ...registration,
+    createdAt: existingIndex >= 0 ? registrations[existingIndex].createdAt : registration.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+
+  if (existingIndex >= 0) {
+    registrations[existingIndex] = normalizedRegistration;
+  } else {
+    registrations.push(normalizedRegistration);
+  }
+
+  sauvegarderInscriptionsEvenementsSpeciauxComptoir(registrations);
+  return normalizedRegistration;
+}
+
+export function supprimerInscriptionEvenementSpecialComptoir(registrationId: string): void {
+  const registrations = obtenirInscriptionsEvenementsSpeciauxComptoir().filter((registration) => registration.id !== registrationId);
+  sauvegarderInscriptionsEvenementsSpeciauxComptoir(registrations);
+}
+
+export function obtenirReservationSettingsComptoir(): ComptoirReservationSettings {
+  try {
+    const rawValue = localStorage.getItem(RESERVATION_SETTINGS_KEY);
+    if (!rawValue) {
+      return DEFAULT_RESERVATION_SETTINGS;
+    }
+
+    const parsedValue = JSON.parse(rawValue) as Partial<ComptoirReservationSettings>;
+    const intervalMinutes = Number(parsedValue.intervalMinutes);
+
+    return {
+      startTime: parsedValue.startTime || DEFAULT_RESERVATION_SETTINGS.startTime,
+      endTime: parsedValue.endTime || DEFAULT_RESERVATION_SETTINGS.endTime,
+      intervalMinutes: Number.isFinite(intervalMinutes) && intervalMinutes > 0
+        ? Math.trunc(intervalMinutes)
+        : DEFAULT_RESERVATION_SETTINGS.intervalMinutes,
+      updatedAt: parsedValue.updatedAt || DEFAULT_RESERVATION_SETTINGS.updatedAt,
+    };
+  } catch (error) {
+    console.error('Erreur lors de la lecture de la configuration des réservations:', error);
+    return DEFAULT_RESERVATION_SETTINGS;
+  }
+}
+
+export function sauvegarderReservationSettingsComptoir(
+  settings: Omit<ComptoirReservationSettings, 'updatedAt'>
+): ComptoirReservationSettings {
+  const normalizedSettings: ComptoirReservationSettings = {
+    startTime: settings.startTime,
+    endTime: settings.endTime,
+    intervalMinutes: Math.trunc(settings.intervalMinutes),
+    updatedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(RESERVATION_SETTINGS_KEY, JSON.stringify(normalizedSettings));
+  notifyComptoirStorageUpdated(RESERVATION_SETTINGS_KEY);
+  return normalizedSettings;
+}
+
 export const comptoirStorageKeys = {
   customAidTypes: CUSTOM_AID_TYPES_KEY,
   aidRequests: AID_REQUESTS_KEY,
   beneficiaries: BENEFICIARIES_KEY,
   distributions: DISTRIBUTIONS_KEY,
   appointments: APPOINTMENTS_KEY,
+  specialEvents: SPECIAL_EVENTS_KEY,
+  specialEventRegistrations: SPECIAL_EVENT_REGISTRATIONS_KEY,
+  reservationSettings: RESERVATION_SETTINGS_KEY,
 };
 
 export const comptoirStorageEvents = {

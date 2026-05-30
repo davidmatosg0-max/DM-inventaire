@@ -49,6 +49,7 @@ interface FormularioOrganismoCompactoProps {
   soloClasificacionRegular?: boolean;
   onGuardar: () => void;
   tiposOrganismo: { id: string; nombre: string; icono: string }[];
+  encabezadoExtra?: React.ReactNode;
 }
 
 const quartiersLaval = [
@@ -168,6 +169,7 @@ export function FormularioOrganismoCompacto({
   soloClasificacionRegular = false,
   onGuardar,
   tiposOrganismo,
+  encabezadoExtra,
 }: FormularioOrganismoCompactoProps) {
   const branding = useBranding();
   const { t } = useTranslation();
@@ -182,6 +184,7 @@ export function FormularioOrganismoCompacto({
   const erroresValidacion = obtenerErroresFormularioOrganismo(formulario);
   const formularioValido = erroresValidacion.length === 0;
   const documentosPDF = Array.isArray(formulario.documentosPDF) ? formulario.documentosPDF : [];
+  const contactosNotificacion = Array.isArray(formulario.contactosNotificacion) ? formulario.contactosNotificacion : [];
   const totalTamanoPdf = documentosPDF.reduce((total: number, documento: DocumentoPdfOrganismo) => {
     return total + (Number.isFinite(documento.tamanoBytes) ? documento.tamanoBytes : 0);
   }, 0);
@@ -370,10 +373,10 @@ export function FormularioOrganismoCompacto({
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => { if (!open) onCerrar(); }}>
-      <DialogContent className="!max-w-none !w-[96vw] !h-[95vh] overflow-hidden rounded-[28px] border-0 p-0 shadow-2xl">
-        <div className="flex h-full flex-col bg-[linear-gradient(180deg,#f7fbff_0%,#edf5fb_100%)]">
+      <DialogContent className="!max-w-none !w-[96vw] !h-[95vh] overflow-y-auto rounded-[28px] border-0 p-0 shadow-2xl">
+        <div className="flex min-h-full flex-col bg-[linear-gradient(180deg,#f7fbff_0%,#edf5fb_100%)]">
           <DialogHeader
-            className="border-b border-white/20 px-5 py-5 text-white sm:px-6"
+            className="sticky top-0 z-10 border-b border-white/20 px-5 py-5 text-white sm:px-6"
             style={{ background: `linear-gradient(120deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -402,6 +405,7 @@ export function FormularioOrganismoCompacto({
                 </div>
               </div>
             </div>
+            {encabezadoExtra ? <div className="mt-4">{encabezadoExtra}</div> : null}
           </DialogHeader>
 
           <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
@@ -469,8 +473,11 @@ export function FormularioOrganismoCompacto({
             </aside>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <Tabs defaultValue="base" className="flex min-h-0 flex-1 flex-col">
+              <Tabs defaultValue={esConsulta ? 'overview' : 'base'} className="flex min-h-0 flex-1 flex-col">
                 <TabsList className="h-auto justify-start gap-1 overflow-x-auto rounded-none border-b border-[#dbe6f0] bg-white/75 px-3 py-2 sm:px-6">
+                  {esConsulta ? (
+                    <TabsTrigger value="overview" className="rounded-xl"><FileText className="mr-2 h-4 w-4" />Vue complete</TabsTrigger>
+                  ) : null}
                   <TabsTrigger value="base" className="rounded-xl"><Building2 className="mr-2 h-4 w-4" />{t('organisms.basicInfo')}</TabsTrigger>
                   <TabsTrigger value="contact" className="rounded-xl"><Phone className="mr-2 h-4 w-4" />{t('organisms.contact')}</TabsTrigger>
                   {!ocultarPestanaServicios ? (
@@ -479,6 +486,167 @@ export function FormularioOrganismoCompacto({
                   <TabsTrigger value="notifications" className="rounded-xl"><Bell className="mr-2 h-4 w-4" />{t('organisms.notifications')}</TabsTrigger>
                   <TabsTrigger value="notes" className="rounded-xl"><Settings className="mr-2 h-4 w-4" />{t('organisms.other')}</TabsTrigger>
                 </TabsList>
+
+                {esConsulta ? (
+                  <TabsContent value="overview" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                    <div className="max-w-6xl space-y-4">
+                      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-5 shadow-sm">
+                          <div className="flex items-center gap-2 text-[#16324f]">
+                            <Building2 className="h-4 w-4" />
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a7c8d]">Profil general</p>
+                          </div>
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                              <p className="text-xs text-[#6a7c8d]">Nom</p>
+                              <p className="mt-1 font-semibold text-[#16324f]">{formulario.nombre || 'Non renseigne'}</p>
+                            </div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                              <p className="text-xs text-[#6a7c8d]">Type</p>
+                              <p className="mt-1 font-semibold text-[#16324f]">{formulario.tipo || 'A definir'}</p>
+                            </div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                              <p className="text-xs text-[#6a7c8d]">Quartier</p>
+                              <p className="mt-1 font-semibold text-[#16324f]">{formulario.quartier || 'A definir'}</p>
+                            </div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                              <p className="text-xs text-[#6a7c8d]">Code postal</p>
+                              <p className="mt-1 font-semibold text-[#16324f]">{formulario.codigoPostal || 'Non renseigne'}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 rounded-2xl bg-[#f8fbff] px-4 py-3">
+                            <p className="text-xs text-[#6a7c8d]">Adresse</p>
+                            <p className="mt-1 font-semibold text-[#16324f]">{formulario.direccion || 'Non renseignee'}</p>
+                          </div>
+                          {!formulario.activo && (formulario.fechaInicioInactividad || formulario.fechaFinInactividad) ? (
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                              <div className="rounded-2xl bg-amber-50 px-4 py-3">
+                                <p className="text-xs text-amber-700">Debut inactivite</p>
+                                <p className="mt-1 font-semibold text-amber-900">{formulario.fechaInicioInactividad || 'Non renseigne'}</p>
+                              </div>
+                              <div className="rounded-2xl bg-amber-50 px-4 py-3">
+                                <p className="text-xs text-amber-700">Fin inactivite</p>
+                                <p className="mt-1 font-semibold text-amber-900">{formulario.fechaFinInactividad || 'Non renseignee'}</p>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-5 shadow-sm">
+                          <div className="flex items-center gap-2 text-[#16324f]">
+                            <Phone className="h-4 w-4" />
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a7c8d]">Contact et rendez-vous</p>
+                          </div>
+                          <div className="mt-4 space-y-3">
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                              <p className="text-xs text-[#6a7c8d]">Responsable</p>
+                              <p className="mt-1 font-semibold text-[#16324f]">{formulario.responsable || 'Non renseigne'}</p>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                                <p className="text-xs text-[#6a7c8d]">Telephone</p>
+                                <p className="mt-1 font-semibold text-[#16324f]">{formulario.telefono || 'Non renseigne'}</p>
+                              </div>
+                              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                                <p className="text-xs text-[#6a7c8d]">Email</p>
+                                <p className="mt-1 font-semibold text-[#16324f] break-all">{formulario.email || 'Non renseigne'}</p>
+                              </div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                                <p className="text-xs text-[#6a7c8d]">Frequence</p>
+                                <p className="mt-1 font-semibold text-[#16324f]">{formulario.frecuenciaCita || 'Non renseignee'}</p>
+                              </div>
+                              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                                <p className="text-xs text-[#6a7c8d]">Jour</p>
+                                <p className="mt-1 font-semibold text-[#16324f]">{formulario.diaCita || 'Non renseigne'}</p>
+                              </div>
+                              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                                <p className="text-xs text-[#6a7c8d]">Heure</p>
+                                <p className="mt-1 font-semibold text-[#16324f]">{formulario.horaCita || 'Non renseignee'}</p>
+                              </div>
+                            </div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3">
+                              <p className="text-xs text-[#6a7c8d]">Contact direct</p>
+                              <div className="mt-1 space-y-1 text-sm text-[#16324f]">
+                                <p>{formulario.contactoCargo || 'Poste non renseigne'}</p>
+                                <p>{formulario.contactoTelefono || formulario.contactoCellulaire || 'Telephone direct non renseigne'}</p>
+                                <p className="break-all">{formulario.contactoEmail || 'Email direct non renseigne'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {!ocultarPestanaServicios ? (
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-5 shadow-sm">
+                          <div className="flex items-center gap-2 text-[#16324f]">
+                            <Users className="h-4 w-4" />
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a7c8d]">Services et capacite</p>
+                          </div>
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3"><p className="text-xs text-[#6a7c8d]">Beneficiaires</p><p className="mt-1 font-semibold text-[#16324f]">{formulario.beneficiarios || 0}</p></div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3"><p className="text-xs text-[#6a7c8d]">Personnes servies</p><p className="mt-1 font-semibold text-[#16324f]">{formulario.personasServidas || 0}</p></div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3"><p className="text-xs text-[#6a7c8d]">Collations</p><p className="mt-1 font-semibold text-[#16324f]">{formulario.cantidadColaciones || 0}</p></div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3"><p className="text-xs text-[#6a7c8d]">Dejeuners</p><p className="mt-1 font-semibold text-[#16324f]">{formulario.cantidadAlmuerzos || 0}</p></div>
+                            <div className="rounded-2xl bg-[#f8fbff] px-4 py-3"><p className="text-xs text-[#6a7c8d]">Repartition</p><p className="mt-1 font-semibold text-[#16324f]">{formulario.porcentajeReparticion || 0}%</p></div>
+                          </div>
+                          <div className="mt-3 rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm text-[#16324f]">
+                            Participant PRS: <span className="font-semibold">{formulario.participantePRS ? 'Oui' : 'Non'}</span>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-5 shadow-sm">
+                          <div className="flex items-center gap-2 text-[#16324f]">
+                            <Bell className="h-4 w-4" />
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a7c8d]">Notifications</p>
+                          </div>
+                          <div className="mt-4 rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm text-[#16324f]">
+                            Notifications actives: <span className="font-semibold">{formulario.notificaciones ? 'Oui' : 'Non'}</span>
+                          </div>
+                          <div className="mt-3 space-y-2">
+                            {contactosNotificacion.length > 0 ? contactosNotificacion.map((contacto: any, index: number) => (
+                              <div key={`${contacto.email || 'contact'}-${index}`} className="rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm text-[#16324f]">
+                                <p className="font-semibold">{contacto.nombre || `Contact ${index + 1}`}</p>
+                                <p>{contacto.cargo || 'Poste non renseigne'}</p>
+                                <p className="break-all text-[#5d7185]">{contacto.email || 'Email non renseigne'}</p>
+                              </div>
+                            )) : (
+                              <div className="rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm text-[#5d7185]">Aucun contact de notification renseigne.</div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="rounded-3xl border border-[#e7eef5] bg-white p-5 shadow-sm">
+                          <div className="flex items-center gap-2 text-[#16324f]">
+                            <Settings className="h-4 w-4" />
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6a7c8d]">Notes et documents</p>
+                          </div>
+                          <div className="mt-4 rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm text-[#16324f] whitespace-pre-wrap">
+                            {formulario.notas || 'Aucune note renseignee pour cet organisme.'}
+                          </div>
+                          <div className="mt-3 rounded-2xl bg-[#f8fbff] px-4 py-3">
+                            <p className="text-xs text-[#6a7c8d]">Documents PDF</p>
+                            {documentosPDF.length > 0 ? (
+                              <div className="mt-2 space-y-2">
+                                {documentosPDF.map((documento: DocumentoPdfOrganismo, index: number) => (
+                                  <div key={documento.id || `${documento.nombre}-${index}`} className="rounded-2xl bg-white px-3 py-2 text-sm text-[#16324f]">
+                                    <p className="font-semibold">{construirNombreArchivoPdf(documento, index)}</p>
+                                    <p className="text-xs text-[#5d7185]">{documento.tamanoBytes > 0 ? formatearTamanoArchivo(documento.tamanoBytes) : 'Taille non disponible'}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mt-2 text-sm text-[#5d7185]">Aucun document associe a cette fiche.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                ) : null}
 
                 <TabsContent value="base" className="m-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
                   <div className={`max-w-5xl space-y-4 ${esConsulta ? 'pointer-events-none' : ''}`}>

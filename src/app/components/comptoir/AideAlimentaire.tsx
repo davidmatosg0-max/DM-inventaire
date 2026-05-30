@@ -17,6 +17,7 @@ import {
   comptoirStorageKeys,
   obtenirDemandesAideComptoir,
   obtenirBeneficiairesComptoir,
+  obtenirReservationSettingsComptoir,
   sauvegarderDemandesAideComptoir,
   type ComptoirBeneficiary,
 } from '../../utils/comptoirStorage';
@@ -24,20 +25,150 @@ import {
 interface AideAlimentaireProps {
   onNavigate: (view: string, id?: string) => void;
   aidTypes: any[];
+  preselectedBeneficiaireId?: string;
 }
 
-export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) {
+const AIDE_ALIMENTAIRE_SCHEDULE_STORAGE_KEY = 'comptoir_aide_alimentaire_schedule';
+
+export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireId }: AideAlimentaireProps) {
   const { t } = useTranslation();
+  const getRememberedSchedule = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const defaultSettings = obtenirReservationSettingsComptoir();
+
+    try {
+      const rawValue = localStorage.getItem(AIDE_ALIMENTAIRE_SCHEDULE_STORAGE_KEY);
+      if (!rawValue) {
+        return {
+          date: today,
+          time: defaultSettings.startTime,
+        };
+      }
+
+      const parsedValue = JSON.parse(rawValue) as { date?: string; time?: string };
+      return {
+        date: parsedValue.date || today,
+        time: parsedValue.time || defaultSettings.startTime,
+      };
+    } catch (error) {
+      console.error('Erreur lors de la lecture de la date/heure mémorisées pour l\'aide alimentaire :', error);
+      return {
+        date: today,
+        time: defaultSettings.startTime,
+      };
+    }
+  };
+
+  const rememberedSchedule = getRememberedSchedule();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBeneficiaires, setSelectedBeneficiaires] = useState<ComptoirBeneficiary[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedAidType, setSelectedAidType] = useState<string>('');
   const [beneficiaires, setBeneficiaires] = useState<ComptoirBeneficiary[]>(() => obtenirBeneficiairesComptoir());
   const [quantite, setQuantite] = useState('1');
-  const [dateAide, setDateAide] = useState(new Date().toISOString().split('T')[0]);
-  const [heureAide, setHeureAide] = useState(new Date().toTimeString().slice(0, 5));
+  const [dateAide, setDateAide] = useState(rememberedSchedule.date);
+  const [reservationSettings, setReservationSettings] = useState(() => obtenirReservationSettingsComptoir());
+  const [heureAide, setHeureAide] = useState(rememberedSchedule.time);
   const [valeurEstimee, setValeurEstimee] = useState('');
   const [notes, setNotes] = useState('');
+  const [demandesRefreshToken, setDemandesRefreshToken] = useState(0);
+
+  const getRequestReservationSlotKey = (request: { appointmentDate?: string; appointmentTime?: string; dateRequested?: string }) => {
+    const appointmentDate = request.appointmentDate || request.dateRequested?.split(' ')[0] || '';
+    const appointmentTime = request.appointmentTime || request.dateRequested?.split(' ')[1] || '';
+
+    if (!appointmentDate || !appointmentTime) {
+      return null;
+    }
+
+    return `${appointmentDate}__${appointmentTime}`;
+  };
+
+  const generateReservationSlots = () => {
+    const parseTime = (value: string) => {
+      if (!/^\d{2}:\d{2}$/.test(value)) {
+        return null;
+      }
+
+      const [hours, minutes] = value.split(':').map((part) => Number.parseInt(part, 10));
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        return null;
+      }
+
+      return (hours * 60) + minutes;
+    };
+
+    const start = parseTime(reservationSettings.startTime);
+    const end = parseTime(reservationSettings.endTime);
+    if (start === null || end === null || end < start || reservationSettings.intervalMinutes <= 0) {
+      return [] as string[];
+    }
+
+    const slots: string[] = [];
+    for (let current = start; current <= end; current += reservationSettings.intervalMinutes) {
+      const hours = Math.floor(current / 60);
+      const minutes = current % 60;
+      slots.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+    }
+
+    return slots;
+  };
+
+  const reservationTimeSlots = generateReservationSlots();
+
+  const occupiedTimesForSelectedDate = new Set(
+    obtenirDemandesAideComptoir()
+      .filter((request) => request.status !== 'rejected')
+      .filter((request) => {
+        const requestDate = request.appointmentDate || request.dateRequested?.split(' ')[0] || '';
+        return Boolean(dateAide) && requestDate === dateAide;
+      })
+      .map((request) => request.appointmentTime || request.dateRequested?.split(' ')[1] || '')
+      .filter((value) => Boolean(value))
+  );
+
+  const availableReservationTimeSlots = reservationTimeSlots.filter((slot) => !occupiedTimesForSelectedDate.has(slot));
+
+  const planReservationSchedule = (baseDate: string, baseTime: string, offsetMinutes: number) => {
+    const hasDate = Boolean(baseDate);
+    const hasTime = Boolean(baseTime);
+
+    if (!hasDate) {
+      return {
+        appointmentDate: undefined as string | undefined,
+        appointmentTime: hasTime ? baseTime : undefined,
+        dateRequested: hasTime ? ` ${baseTime}` : '',
+      };
+    }
+
+    if (!hasTime) {
+      return {
+        appointmentDate: baseDate,
+        appointmentTime: undefined as string | undefined,
+        dateRequested: baseDate,
+      };
+    }
+
+    const baseDateTime = new Date(`${baseDate}T${baseTime}:00`);
+    if (Number.isNaN(baseDateTime.getTime())) {
+      return {
+        appointmentDate: baseDate,
+        appointmentTime: baseTime,
+        dateRequested: `${baseDate} ${baseTime}`,
+      };
+    }
+
+    baseDateTime.setMinutes(baseDateTime.getMinutes() + offsetMinutes);
+
+    const appointmentDate = baseDateTime.toISOString().slice(0, 10);
+    const appointmentTime = `${String(baseDateTime.getHours()).padStart(2, '0')}:${String(baseDateTime.getMinutes()).padStart(2, '0')}`;
+
+    return {
+      appointmentDate,
+      appointmentTime,
+      dateRequested: `${appointmentDate} ${appointmentTime}`,
+    };
+  };
 
   const generarSiguienteIdDemanda = () => {
     const requests = obtenirDemandesAideComptoir();
@@ -65,12 +196,32 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
       if (event.key === comptoirStorageKeys.beneficiaries) {
         refreshBeneficiaires();
       }
+
+      if (event.key === comptoirStorageKeys.aidRequests) {
+        setDemandesRefreshToken((currentValue) => currentValue + 1);
+      }
+
+      if (event.key === comptoirStorageKeys.reservationSettings) {
+        const updatedSettings = obtenirReservationSettingsComptoir();
+        setReservationSettings(updatedSettings);
+        setHeureAide((currentTime) => currentTime || updatedSettings.startTime);
+      }
     };
 
     const handleComptoirStorageUpdated = (event: Event) => {
       const { detail } = event as CustomEvent<{ key?: string }>;
       if (detail?.key === comptoirStorageKeys.beneficiaries) {
         refreshBeneficiaires();
+      }
+
+      if (detail?.key === comptoirStorageKeys.aidRequests) {
+        setDemandesRefreshToken((currentValue) => currentValue + 1);
+      }
+
+      if (detail?.key === comptoirStorageKeys.reservationSettings) {
+        const updatedSettings = obtenirReservationSettingsComptoir();
+        setReservationSettings(updatedSettings);
+        setHeureAide((currentTime) => currentTime || updatedSettings.startTime);
       }
     };
 
@@ -84,6 +235,42 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
       window.removeEventListener('focus', refreshBeneficiaires);
     };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      AIDE_ALIMENTAIRE_SCHEDULE_STORAGE_KEY,
+      JSON.stringify({ date: dateAide, time: heureAide })
+    );
+  }, [dateAide, heureAide]);
+
+  useEffect(() => {
+    if (availableReservationTimeSlots.length === 0) {
+      return;
+    }
+
+    if (!availableReservationTimeSlots.includes(heureAide)) {
+      setHeureAide(availableReservationTimeSlots[0]);
+    }
+  }, [heureAide, availableReservationTimeSlots, demandesRefreshToken]);
+
+  useEffect(() => {
+    if (!preselectedBeneficiaireId) {
+      return;
+    }
+
+    const preselectedBeneficiaire = beneficiaires.find((beneficiary) => beneficiary.id === preselectedBeneficiaireId);
+    if (!preselectedBeneficiaire) {
+      return;
+    }
+
+    setSelectedBeneficiaires((currentSelected) => {
+      if (currentSelected.some((item) => item.id === preselectedBeneficiaire.id)) {
+        return currentSelected;
+      }
+
+      return [preselectedBeneficiaire, ...currentSelected];
+    });
+  }, [preselectedBeneficiaireId, beneficiaires]);
 
   // Filtrage des bénéficiaires (excluant ceux déjà sélectionnés)
   const beneficiairesFiltres = beneficiaires.filter((b) => {
@@ -153,32 +340,149 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
       estimatedValue = (currentAidType.defaultValue || 0) * quantity;
     }
 
+    const intervalMinutes = reservationSettings.intervalMinutes;
+    if (!Number.isFinite(intervalMinutes) || intervalMinutes <= 0) {
+      toast.error(t('common.error'), {
+        description: 'Programmez un intervalle valide dans le tableau de bord du Comptoir.',
+      });
+      return;
+    }
+
+    if (reservationTimeSlots.length === 0) {
+      toast.error(t('common.error'), {
+        description: 'Aucun créneau n\'est disponible. Vérifiez la programmation des réservations.',
+      });
+      return;
+    }
+
+    if (availableReservationTimeSlots.length === 0) {
+      toast.error(t('common.error'), {
+        description: 'Tous les créneaux de cette date sont déjà réservés.',
+      });
+      return;
+    }
+
+    if (!heureAide) {
+      toast.error(t('common.error'), {
+        description: 'Sélectionnez une heure de base parmi les créneaux programmés.',
+      });
+      return;
+    }
+
+    if (!availableReservationTimeSlots.includes(heureAide)) {
+      toast.error(t('common.error'), {
+        description: 'Ce créneau est déjà réservé. Choisissez une autre heure.',
+      });
+      return;
+    }
+
     const demandasActuales = obtenirDemandesAideComptoir();
     let siguienteIdDemanda = generarSiguienteIdDemanda();
 
+    const occupiedReservationSlots = new Set(
+      demandasActuales
+        .filter((request) => request.status !== 'rejected')
+        .map((request) => getRequestReservationSlotKey(request))
+        .filter((slotKey): slotKey is string => Boolean(slotKey))
+    );
+
+    const beneficiariesWithExistingReservation = selectedBeneficiaires.filter((beneficiaire) => (
+      demandasActuales.some((request) => request.beneficiaireId === beneficiaire.id && request.status !== 'rejected')
+    ));
+
+    if (beneficiariesWithExistingReservation.length > 0) {
+      const reservationDetails = beneficiariesWithExistingReservation.map((beneficiaire) => {
+        const existingRequest = demandasActuales.find((request) => (
+          request.beneficiaireId === beneficiaire.id && request.status !== 'rejected'
+        ));
+
+        const dayLabel = existingRequest?.appointmentDate || existingRequest?.dateRequested?.split(' ')[0] || 'Non défini';
+        const hourLabel = existingRequest?.appointmentTime || existingRequest?.dateRequested?.split(' ')[1] || 'Non définie';
+        const aidTypeLabel = existingRequest?.type || 'Non défini';
+        const statusLabel = existingRequest?.status === 'approved' ? 'approuvée' : 'en attente';
+
+        return `- ${beneficiaire.nom}: Jour ${dayLabel}, Heure ${hourLabel}, Type ${aidTypeLabel}, Statut ${statusLabel}`;
+      }).join('\n');
+
+      const shouldContinue = window.confirm(
+        `Attention: des réservations existent déjà pour ces bénéficiaires.\n\n${reservationDetails}\n\nCes bénéficiaires seront ignorés. Voulez-vous continuer ?`
+      );
+
+      if (!shouldContinue) {
+        return;
+      }
+    }
+
+    const skippedBeneficiaries: string[] = [];
+    let addedCount = 0;
+    const baseSlotIndex = Math.max(reservationTimeSlots.indexOf(heureAide), 0);
+    const eligibleBeneficiaries = selectedBeneficiaires.filter((beneficiaire) => !beneficiariesWithExistingReservation.some((item) => item.id === beneficiaire.id));
+    const availableSlots = reservationTimeSlots
+      .slice(baseSlotIndex)
+      .filter((slot) => !occupiedReservationSlots.has(`${dateAide}__${slot}`));
+
+    if (availableSlots.length < eligibleBeneficiaries.length) {
+      toast.error(t('common.error'), {
+        description: 'Les créneaux disponibles ne suffisent pas pour tous les bénéficiaires sélectionnés à cette date.',
+      });
+      return;
+    }
+
+    let nextReservationSlotIndex = 0;
+
     selectedBeneficiaires.forEach((beneficiaire) => {
+      const hasExistingReservation = demandasActuales.some((request) => (
+        request.beneficiaireId === beneficiaire.id && request.status !== 'rejected'
+      ));
+
+      if (hasExistingReservation) {
+        skippedBeneficiaries.push(beneficiaire.nom);
+        return;
+      }
+
+      const assignedSlot = availableSlots[nextReservationSlotIndex];
+      const reservationSchedule = {
+        appointmentDate: dateAide || undefined,
+        appointmentTime: assignedSlot,
+        dateRequested: dateAide ? `${dateAide} ${assignedSlot}` : assignedSlot,
+      };
+      nextReservationSlotIndex += 1;
+
       demandasActuales.push({
         id: siguienteIdDemanda,
         beneficiaire: beneficiaire.nom,
         beneficiaireId: beneficiaire.id,
         type: currentAidType.name,
         quantite: quantity,
-        dateRequested: `${dateAide}${heureAide ? ` ${heureAide}` : ''}`,
+        dateRequested: reservationSchedule.dateRequested,
         status: 'pending',
         notes,
         estimatedValue,
+        appointmentDate: reservationSchedule.appointmentDate,
+        appointmentTime: reservationSchedule.appointmentTime,
       });
 
+      const assignedSlotKey = getRequestReservationSlotKey(reservationSchedule);
+      if (assignedSlotKey) {
+        occupiedReservationSlots.add(assignedSlotKey);
+      }
+
       siguienteIdDemanda += 1;
+      addedCount += 1;
     });
+
+    if (addedCount === 0) {
+      toast.error(t('common.error'), {
+        description: 'Chaque bénéficiaire sélectionné a déjà une aide en attente.',
+      });
+      return;
+    }
 
     sauvegarderDemandesAideComptoir(demandasActuales);
 
     setSelectedBeneficiaires([]);
     setSelectedAidType('');
     setQuantite('1');
-    setDateAide(new Date().toISOString().split('T')[0]);
-    setHeureAide(new Date().toTimeString().slice(0, 5));
     setValeurEstimee('');
     setNotes('');
     setSearchTerm('');
@@ -188,17 +492,24 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
       <div>
         <div className="font-semibold">Demande enregistrée</div>
         <div className="text-sm text-[#666666] mt-1">
-          {selectedBeneficiaires.length} {selectedBeneficiaires.length === 1 ? 'bénéficiaire ajouté à la file d\'attente' : 'bénéficiaires ajoutés à la file d\'attente'}
+          {addedCount} {addedCount === 1 ? 'bénéficiaire ajouté à la file d\'attente' : 'bénéficiaires ajoutés à la file d\'attente'}
         </div>
       </div>,
       { duration: 5000 }
     );
+
+    if (skippedBeneficiaries.length > 0) {
+      toast.info(
+        `${skippedBeneficiaries.length} doublon(s) ignoré(s): ${skippedBeneficiaries.join(', ')}`,
+        { duration: 6000 }
+      );
+    }
   };
 
   return (
     <>
       <BoutonRetourHeader 
-        onClick={() => onNavigate('dashboard')} 
+        onClick={() => onNavigate('__back__')} 
         titre="Nouvelle demande d'aide"
       />
     <div className="space-y-6">
@@ -480,11 +791,17 @@ export function AideAlimentaire({ onNavigate, aidTypes }: AideAlimentaireProps) 
               {/* Heure */}
               <div>
                 <Label>{t('comptoir.time')}</Label>
-                <Input 
-                  type="time" 
-                  value={heureAide}
-                  onChange={(event) => setHeureAide(event.target.value)}
-                />
+                <Select value={heureAide} onValueChange={setHeureAide}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une heure" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableReservationTimeSlots.map((slot) => (
+                      <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-[#666666] mt-1">Créneaux libres: {availableReservationTimeSlots.length}/{reservationTimeSlots.length} pour le {dateAide || 'jour sélectionné'}.</p>
               </div>
             </div>
 

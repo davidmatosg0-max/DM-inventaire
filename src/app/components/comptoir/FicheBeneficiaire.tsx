@@ -12,18 +12,33 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
 import { toast } from 'sonner';
 import { AddressAutocomplete } from '../ui/address-autocomplete';
 import { CountrySelect } from '../ui/country-select';
 import { FileUpload, UploadedFile } from '../ui/file-upload';
 import {
+  genererSiguienteIdInscriptionEvenementSpecial,
   generarSiguienteIdBeneficiario,
+  obtenirTypesAidePersonnalises,
   obtenirDemandesAideComptoir,
   obtenirDistributionsComptoir,
+  obtenirEvenementsSpeciauxComptoir,
+  obtenirInscriptionsEvenementsSpeciauxComptoir,
   obtenirRendezVousComptoir,
   obtenirBeneficiaireComptoirParId,
+  sauvegarderInscriptionsEvenementsSpeciauxComptoir,
   upsertBeneficiaireComptoir,
+  type ComptoirAidType,
   type ComptoirBeneficiary,
+  type ComptoirSpecialEventRegistration,
 } from '../../utils/comptoirStorage';
 
 interface FicheBeneficiaireProps {
@@ -79,6 +94,53 @@ function getTimelineSortValue(dateValue?: string, timeValue?: string): number {
   return Number.isNaN(fallbackDate.getTime()) ? 0 : fallbackDate.getTime();
 }
 
+function getEventAvailableDates(event: { fechaInicio?: string; fechaFin?: string }): string[] {
+  if (!event.fechaInicio) {
+    return [];
+  }
+
+  const endDate = event.fechaFin || event.fechaInicio;
+  const dates: string[] = [];
+  const current = new Date(`${event.fechaInicio}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  if (Number.isNaN(current.getTime()) || Number.isNaN(end.getTime())) {
+    return [event.fechaInicio];
+  }
+
+  if (current > end) {
+    return [event.fechaInicio];
+  }
+
+  for (let guard = 0; current <= end && guard < 370; guard += 1) {
+    dates.push(current.toISOString().slice(0, 10));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
+}
+
+function dedupeSpecialEventRegistrations(registrations: ComptoirSpecialEventRegistration[]): ComptoirSpecialEventRegistration[] {
+  const byEventAndBeneficiary = new Map<string, ComptoirSpecialEventRegistration>();
+
+  registrations.forEach((registration) => {
+    const key = `${registration.eventId}__${registration.beneficiaireId}`;
+    const existing = byEventAndBeneficiary.get(key);
+    if (!existing) {
+      byEventAndBeneficiary.set(key, registration);
+      return;
+    }
+
+    const existingTimestamp = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+    const currentTimestamp = new Date(registration.updatedAt || registration.createdAt || 0).getTime();
+    if (currentTimestamp >= existingTimestamp) {
+      byEventAndBeneficiary.set(key, registration);
+    }
+  });
+
+  return Array.from(byEventAndBeneficiary.values());
+}
+
 export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficiaireProps) {
   const { t } = useTranslation();
 
@@ -94,6 +156,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
   const [infoExpanded, setInfoExpanded] = useState(true);
   const [situationExpanded, setSituationExpanded] = useState(true);
   const [historiqueExpanded, setHistoriqueExpanded] = useState(true);
+  const [eventosExpanded, setEventosExpanded] = useState(true);
   const [nombrePersonnes, setNombrePersonnes] = useState(beneficiaire?.nombrePersonnes || 3);
   const [revenuMensuel, setRevenuMensuel] = useState(beneficiaire?.revenuMensuel?.toString() || '');
   const [niveauRevenu, setNiveauRevenu] = useState('');
@@ -105,6 +168,12 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
   const [gender, setGender] = useState(beneficiaire?.sexe || 'no_respuesta');
   const [priority, setPriority] = useState<ComptoirBeneficiary['priorite']>(beneficiaire?.priorite || 'normale');
   const [notesInternes, setNotesInternes] = useState(beneficiaire?.notes || '');
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+  const [registrationEventId, setRegistrationEventId] = useState<string>('');
+  const [registrationStatus, setRegistrationStatus] = useState<ComptoirSpecialEventRegistration['statut']>('inscrit');
+  const [registrationAidTypeId, setRegistrationAidTypeId] = useState('');
+  const [registrationAppointmentDate, setRegistrationAppointmentDate] = useState('');
+  const [registrationAppointmentTime, setRegistrationAppointmentTime] = useState('');
   
   // Estados para los campos de dirección
   const [adresse, setAdresse] = useState(beneficiaire?.adresse || '');
@@ -176,6 +245,15 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
   const distributions = beneficiaire ? obtenirDistributionsComptoir() : [];
   const appointments = beneficiaire ? obtenirRendezVousComptoir() : [];
   const aidRequests = beneficiaire ? obtenirDemandesAideComptoir() : [];
+  const specialEvents = beneficiaire ? obtenirEvenementsSpeciauxComptoir() : [];
+  const specialEventRegistrations = beneficiaire ? obtenirInscriptionsEvenementsSpeciauxComptoir() : [];
+  const aidTypes = beneficiaire ? obtenirTypesAidePersonnalises().filter((aidType) => aidType.isActive !== false) : [];
+  const availableSpecialEvents = specialEvents
+    .filter((event) => event.statut !== 'annule' && event.statut !== 'termine')
+    .slice()
+    .sort((left, right) => left.fechaInicio.localeCompare(right.fechaInicio));
+  const selectedRegistrationEvent = availableSpecialEvents.find((event) => event.id === registrationEventId) || null;
+  const selectedRegistrationEventDates = selectedRegistrationEvent ? getEventAvailableDates(selectedRegistrationEvent) : [];
 
   const historiqueAides = beneficiaire
     ? distributions
@@ -238,6 +316,41 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
         }))
     : [];
 
+  const historiqueEvenements = beneficiaire
+    ? specialEventRegistrations
+        .filter((registration) => registration.beneficiaireId === beneficiaire.id)
+        .map((registration) => {
+          const event = specialEvents.find((item) => item.id === registration.eventId);
+          const fechaInicio = event?.fechaInicio || event?.date || registration.createdAt;
+          const fechaFin = event?.fechaFin || event?.date || fechaInicio;
+          return {
+            id: registration.id,
+            nom: event?.nom || 'Événement spécial supprimé',
+            statut: registration.statut,
+            typeAide: registration.aidTypeName,
+            dateCita: registration.appointmentDate,
+            heureCita: registration.appointmentTime,
+            fechaInicio,
+            fechaFin,
+            horaire: event?.heureDebut ? `${event.heureDebut}${event.heureFin ? ` à ${event.heureFin}` : ''}` : '',
+            lieu: event?.lieu || 'Lieu non défini',
+            notes: registration.notes,
+            sortValue: getTimelineSortValue(registration.appointmentDate || fechaInicio || registration.updatedAt, registration.appointmentTime || event?.heureDebut),
+          };
+        })
+        .sort((left, right) => right.sortValue - left.sortValue)
+    : [];
+
+  const eventTimeline = beneficiaire
+    ? historiqueEvenements.map((eventItem) => ({
+        id: `special-event-${eventItem.id}`,
+        action: `Événement spécial • ${eventItem.nom} • ${eventItem.typeAide ? `${eventItem.typeAide} • ` : ''}${eventItem.statut}`,
+        date: `${eventItem.dateCita ? formatDateLabel(eventItem.dateCita) : formatDateLabel(eventItem.fechaInicio)}${eventItem.heureCita ? ` • ${eventItem.heureCita}` : eventItem.horaire ? ` • ${eventItem.horaire}` : ''}${eventItem.fechaFin && eventItem.dateCita !== eventItem.fechaFin && eventItem.fechaFin !== eventItem.fechaInicio && !eventItem.dateCita ? ` au ${formatDateLabel(eventItem.fechaFin)}` : ''}`,
+        user: 'Comptoir',
+        sortValue: eventItem.sortValue,
+      }))
+    : [];
+
   const timeline = beneficiaire
     ? [
         {
@@ -261,6 +374,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
         ...appointmentTimeline,
         ...aidRequestTimeline,
         ...distributionTimeline,
+        ...eventTimeline,
       ]
         .slice()
         .sort((left, right) => right.sortValue - left.sortValue)
@@ -311,6 +425,114 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
     }
 
     setIsEditing(false);
+  };
+
+  const handleOpenCreateEventRegistration = () => {
+    if (!beneficiaire) {
+      toast.info('Créez d’abord le dossier du bénéficiaire.');
+      return;
+    }
+
+    if (availableSpecialEvents.length === 0) {
+      toast.info('Aucun événement ouvert ou planifié disponible pour inscription.');
+      return;
+    }
+
+    setRegistrationEventId(availableSpecialEvents[0].id);
+    setRegistrationStatus('inscrit');
+    setRegistrationAidTypeId('');
+    setRegistrationAppointmentDate('');
+    setRegistrationAppointmentTime('');
+    setRegistrationDialogOpen(true);
+  };
+
+  const handleSaveEventRegistration = () => {
+    if (!beneficiaire) {
+      return;
+    }
+
+    const selectedEvent = specialEvents.find((event) => event.id === registrationEventId);
+    if (!selectedEvent) {
+      toast.error('Sélectionnez un événement valide.');
+      return;
+    }
+
+    const availableDates = getEventAvailableDates(selectedEvent);
+    if (registrationAppointmentDate && availableDates.length > 0 && !availableDates.includes(registrationAppointmentDate)) {
+      toast.error('La date de cita doit être une date programmée de l’événement.');
+      return;
+    }
+
+    const existingRegistration = specialEventRegistrations.find((registration) => (
+      registration.eventId === selectedEvent.id && registration.beneficiaireId === beneficiaire.id
+    ));
+
+    const selectedAidType = aidTypes.find((aidType) => aidType.id === registrationAidTypeId);
+
+    if (existingRegistration) {
+      const dayLabel = existingRegistration.appointmentDate ? formatDateLabel(existingRegistration.appointmentDate) : 'Non défini';
+      const hourLabel = existingRegistration.appointmentTime || 'Non définie';
+      const aidTypeLabel = existingRegistration.aidTypeName || 'Aucun';
+      const shouldContinue = window.confirm(
+        `Ce bénéficiaire a déjà une inscription à cet événement.\n\nJour: ${dayLabel}\nHeure: ${hourLabel}\nType d'aide: ${aidTypeLabel}\n\nConfirmer la mise à jour avant d'enregistrer ?`
+      );
+      if (!shouldContinue) {
+        return;
+      }
+    }
+
+    const occupiedPlaces = specialEventRegistrations.filter((registration) => (
+      registration.eventId === selectedEvent.id
+      && registration.statut !== 'annule'
+      && registration.beneficiaireId !== beneficiaire.id
+    )).length;
+    const willOccupyPlace = registrationStatus !== 'annule';
+
+    if (
+      typeof selectedEvent.capaciteMax === 'number'
+      && willOccupyPlace
+      && occupiedPlaces >= selectedEvent.capaciteMax
+      && !existingRegistration
+    ) {
+      toast.error('La capacité maximale de cet événement est atteinte.');
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const registrationsToSave = specialEventRegistrations.slice();
+
+    if (existingRegistration) {
+      const index = registrationsToSave.findIndex((registration) => registration.id === existingRegistration.id);
+      if (index >= 0) {
+        registrationsToSave[index] = {
+          ...existingRegistration,
+          statut: registrationStatus,
+          aidTypeId: registrationAidTypeId || undefined,
+          aidTypeName: selectedAidType?.name || existingRegistration.aidTypeName,
+          appointmentDate: registrationAppointmentDate || undefined,
+          appointmentTime: registrationAppointmentTime || undefined,
+          updatedAt: timestamp,
+        };
+      }
+    } else {
+      registrationsToSave.push({
+        id: genererSiguienteIdInscriptionEvenementSpecial(),
+        eventId: selectedEvent.id,
+        beneficiaireId: beneficiaire.id,
+        beneficiaireNom: beneficiaire.nom,
+        aidTypeId: registrationAidTypeId || undefined,
+        aidTypeName: selectedAidType?.name,
+        appointmentDate: registrationAppointmentDate || undefined,
+        appointmentTime: registrationAppointmentTime || undefined,
+        statut: registrationStatus,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+    }
+
+    sauvegarderInscriptionsEvenementsSpeciauxComptoir(dedupeSpecialEventRegistrations(registrationsToSave));
+    setRegistrationDialogOpen(false);
+    toast.success(existingRegistration ? 'Inscription mise à jour depuis le profil.' : 'Inscription créée depuis le profil.');
   };
 
   const CollapsibleSection = ({ 
@@ -375,20 +597,6 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                   >
                     <Edit2 className="w-4 h-4 mr-2" />
                     {t('common.edit')}
-                  </Button>
-                  <Button 
-                    className="bg-[#4CAF50] hover:bg-[#45a049]"
-                    onClick={() => onNavigate('rendez-vous')}
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {t('comptoir.newAppointment')}
-                  </Button>
-                  <Button 
-                    className="bg-[#FFC107] hover:bg-[#FFB300] text-[#333333]"
-                    onClick={() => onNavigate('aide-alimentaire')}
-                  >
-                    <Package className="w-4 h-4 mr-2" />
-                    {t('comptoir.recordAid')}
                   </Button>
                 </>
               ) : (
@@ -1099,7 +1307,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                   <div className="text-sm text-[#666666]">
                     {historiqueAides.length} {t('comptoir.aidsRecorded')}
                   </div>
-                  <Button size="sm" className="bg-[#4CAF50] hover:bg-[#45a049]">
+                  <Button size="sm" className="bg-[#4CAF50] hover:bg-[#45a049]" onClick={() => onNavigate('aide-alimentaire', beneficiaire?.id)}>
                     <Plus className="w-4 h-4 mr-1" />
                     {t('comptoir.addAid')}
                   </Button>
@@ -1123,6 +1331,159 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
               </div>
             )}
           </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Historique des événements spéciaux"
+            expanded={eventosExpanded}
+            onToggle={() => setEventosExpanded(!eventosExpanded)}
+          >
+            {beneficiaire ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-[#666666]">
+                    {historiqueEvenements.length} participation(s) enregistrée(s)
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" className="bg-[#4CAF50] hover:bg-[#449B48]" onClick={handleOpenCreateEventRegistration}>
+                      <Plus className="w-4 h-4 mr-1" />
+                      Inscrire au événement
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => onNavigate('evenements-speciaux')}>
+                      <Calendar className="w-4 h-4 mr-1" />
+                      Voir les événements
+                    </Button>
+                  </div>
+                </div>
+
+                {historiqueEvenements.length > 0 ? historiqueEvenements.map((eventItem) => (
+                  <div key={eventItem.id} className="border-l-4 border-[#4CAF50] bg-[#F4F4F4] p-3 rounded">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="font-medium text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                          {eventItem.nom}
+                        </div>
+                        <div className="text-sm text-[#666666] mt-1">
+                          {eventItem.dateCita ? formatDateLabel(eventItem.dateCita) : formatDateLabel(eventItem.fechaInicio)}
+                          {!eventItem.dateCita && eventItem.fechaFin && eventItem.fechaFin !== eventItem.fechaInicio ? ` au ${formatDateLabel(eventItem.fechaFin)}` : ''}
+                          {eventItem.heureCita ? ` • ${eventItem.heureCita}` : eventItem.horaire ? ` • ${eventItem.horaire}` : ''}
+                        </div>
+                        {(eventItem.dateCita || eventItem.heureCita) && (
+                          <div className="text-sm text-[#666666]">Cita: {eventItem.dateCita ? formatDateLabel(eventItem.dateCita) : 'Date non définie'}{eventItem.heureCita ? ` • ${eventItem.heureCita}` : ''}</div>
+                        )}
+                        {eventItem.typeAide && (
+                          <div className="text-sm text-[#666666]">Type d'aide: {eventItem.typeAide}</div>
+                        )}
+                        <div className="text-sm text-[#666666]">{eventItem.lieu}</div>
+                        {eventItem.notes && (
+                          <div className="text-xs text-[#666666] mt-1">Notes: {eventItem.notes}</div>
+                        )}
+                      </div>
+                      <Badge variant="outline">{eventItem.statut}</Badge>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-6 text-[#666666]">
+                    Aucune participation à un événement spécial pour le moment.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-[#666666]">
+                Créez d’abord le dossier du bénéficiaire pour suivre ses événements spéciaux.
+              </div>
+            )}
+          </CollapsibleSection>
+
+          <Dialog open={registrationDialogOpen} onOpenChange={setRegistrationDialogOpen}>
+            <DialogContent className="max-w-lg" aria-describedby="beneficiary-event-registration-description">
+              <DialogHeader>
+                <DialogTitle>Inscrire le bénéficiaire à un événement</DialogTitle>
+                <DialogDescription id="beneficiary-event-registration-description">
+                  Créez ou mettez à jour rapidement une inscription d'événement spécial depuis le profil.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Label>Événement</Label>
+                  <Select value={registrationEventId} onValueChange={setRegistrationEventId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Sélectionner un événement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSpecialEvents.map((event) => (
+                        <SelectItem key={event.id} value={event.id}>{event.nom}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Statut d'inscription</Label>
+                  <Select value={registrationStatus} onValueChange={(value) => setRegistrationStatus(value as ComptoirSpecialEventRegistration['statut'])}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="inscrit">Inscrit</SelectItem>
+                      <SelectItem value="present">Présent</SelectItem>
+                      <SelectItem value="absent">Absent</SelectItem>
+                      <SelectItem value="annule">Annulé</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Type d'aide</Label>
+                  <Select value={registrationAidTypeId || '__none__'} onValueChange={(value) => setRegistrationAidTypeId(value === '__none__' ? '' : value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Sélectionner un type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Aucun</SelectItem>
+                      {aidTypes.map((aidType: ComptoirAidType) => (
+                        <SelectItem key={aidType.id} value={aidType.id}>{aidType.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Jour de la cita</Label>
+                  <Select value={registrationAppointmentDate && selectedRegistrationEventDates.includes(registrationAppointmentDate) ? registrationAppointmentDate : '__none__'} onValueChange={(value) => setRegistrationAppointmentDate(value === '__none__' ? '' : value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Sélectionner un jour" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Aucune date</SelectItem>
+                      {selectedRegistrationEventDates.map((availableDate) => (
+                        <SelectItem key={availableDate} value={availableDate}>{formatDateLabel(availableDate)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Heure de la cita</Label>
+                  <Input
+                    type="time"
+                    value={registrationAppointmentTime}
+                    onChange={(event) => setRegistrationAppointmentTime(event.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRegistrationDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button className="bg-[#1E73BE] hover:bg-[#1557A0]" onClick={handleSaveEventRegistration}>
+                  Enregistrer l'inscription
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Timeline d'activité */}
           <Card>
