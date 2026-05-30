@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-type SendGraphMailPayload = {
+type SendMailPayload = {
   to: string[];
   subject: string;
   body: string;
@@ -36,22 +36,12 @@ function buildClients(req: Request) {
   const authHeader = req.headers.get('Authorization') || '';
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
   const requesterClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-    global: {
-      headers: {
-        Authorization: authHeader,
-      },
-    },
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: authHeader } },
   });
 
   return { adminClient, requesterClient };
@@ -90,101 +80,71 @@ function normalizeEmails(to: string[]): string[] {
   );
 }
 
-async function getGraphAccessToken(): Promise<string> {
-  const tenantId = assertEnv('MS_TENANT_ID');
-  const clientId = assertEnv('MS_CLIENT_ID');
-  const clientSecret = assertEnv('MS_CLIENT_SECRET');
-
-  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
-  const tokenParams = new URLSearchParams({
-    client_id: clientId,
-    client_secret: clientSecret,
-    scope: 'https://graph.microsoft.com/.default',
-    grant_type: 'client_credentials',
-  });
-
-  const tokenResponse = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: tokenParams.toString(),
-  });
-
-  const tokenData = await tokenResponse.json().catch(() => null) as { access_token?: string; error_description?: string } | null;
-
-  if (!tokenResponse.ok || !tokenData?.access_token) {
-    throw new Error(tokenData?.error_description || 'Unable to acquire Microsoft Graph token');
-  }
-
-  return tokenData.access_token;
-}
-
-async function sendMailThroughGraph(payload: SendGraphMailPayload): Promise<{ status: number; requestId: string | null; clientRequestId: string | null; sender: string; recipients: string[] }> {
-  const senderUpn = assertEnv('MS_SENDER_UPN');
-  const accessToken = await getGraphAccessToken();
-
+async function sendMailThroughResend(payload: SendMailPayload): Promise<{
+  status: number;
+  resendId: string | null;
+  sender: string;
+  recipients: string[];
+}> {
+  const apiKey = assertEnv('RESEND_API_KEY');
+  const sender = Deno.env.get('RESEND_FROM') || 'onboarding@resend.dev';
   const recipients = normalizeEmails(payload.to);
-  const toRecipients = recipients.map((email) => ({
-    emailAddress: { address: email },
-  }));
 
-  if (toRecipients.length === 0) {
+  if (recipients.length === 0) {
     throw new Error('No valid recipients');
   }
 
-  console.log('[send-graph-mail] sending', {
-    sender: senderUpn,
+  console.log('[send-graph-mail] sending via Resend', {
+    sender,
     recipients,
     subject: String(payload.subject || '').trim(),
   });
 
-  const graphResponse = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderUpn)}/sendMail`, {
+  const bodyText = String(payload.body || '');
+  const bodyHtml = bodyText
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br/>');
+
+  const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      message: {
-        subject: String(payload.subject || '').trim(),
-        body: {
-          contentType: 'Text',
-          content: String(payload.body || ''),
-        },
-        toRecipients,
-      },
-      saveToSentItems: true,
+      from: sender,
+      to: recipients,
+      subject: String(payload.subject || '').trim(),
+      text: bodyText,
+      html: bodyHtml,
     }),
   });
 
-  const requestId = graphResponse.headers.get('request-id');
-  const clientRequestId = graphResponse.headers.get('client-request-id');
+  const data = (await response.json().catch(() => null)) as
+    | { id?: string; message?: string; name?: string }
+    | null;
 
-  if (!graphResponse.ok) {
-    const errorBody = await graphResponse.text();
-    console.error('[send-graph-mail] graph error', {
-      status: graphResponse.status,
-      requestId,
-      clientRequestId,
-      body: errorBody,
+  if (!response.ok) {
+    console.error('[send-graph-mail] resend error', {
+      status: response.status,
+      data,
     });
-    throw new Error(errorBody || `Graph sendMail failed (${graphResponse.status})`);
+    throw new Error(data?.message || `Resend returned ${response.status}`);
   }
 
-  console.log('[send-graph-mail] graph accepted', {
-    status: graphResponse.status,
-    requestId,
-    clientRequestId,
-    sender: senderUpn,
+  console.log('[send-graph-mail] resend accepted', {
+    status: response.status,
+    resendId: data?.id ?? null,
+    sender,
     recipients,
   });
 
   return {
-    status: graphResponse.status,
-    requestId,
-    clientRequestId,
-    sender: senderUpn,
+    status: response.status,
+    resendId: data?.id ?? null,
+    sender,
     recipients,
   };
 }
@@ -201,14 +161,21 @@ Deno.serve(async (req) => {
   try {
     await assertAuthenticatedActiveUser(req);
 
-    const payload = (await req.json()) as SendGraphMailPayload;
+    const payload = (await req.json()) as SendMailPayload;
     if (!payload || !Array.isArray(payload.to) || !payload.subject || !payload.body) {
       return jsonResponse({ error: 'Invalid payload' }, 400);
     }
 
-    const result = await sendMailThroughGraph(payload);
+    const result = await sendMailThroughResend(payload);
 
-    return jsonResponse({ ok: true, ...result });
+    return jsonResponse({
+      ok: true,
+      status: result.status,
+      requestId: result.resendId,
+      clientRequestId: result.resendId,
+      sender: result.sender,
+      recipients: result.recipients,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;

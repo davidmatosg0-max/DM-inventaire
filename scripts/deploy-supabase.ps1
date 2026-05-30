@@ -3,10 +3,8 @@ param(
   [string]$DbPassword = $env:SUPABASE_DB_PASSWORD,
   [string]$AccessToken = $env:SUPABASE_ACCESS_TOKEN,
   [string]$ServiceRoleKey = $env:SUPABASE_SERVICE_ROLE_KEY,
-  [string]$MsTenantId = $env:MS_TENANT_ID,
-  [string]$MsClientId = $env:MS_CLIENT_ID,
-  [string]$MsClientSecret = $env:MS_CLIENT_SECRET,
-  [string]$MsSenderUpn = $env:MS_SENDER_UPN,
+  [string]$ResendApiKey = $env:RESEND_API_KEY,
+  [string]$ResendFrom = $env:RESEND_FROM,
   [switch]$DryRun
 )
 
@@ -58,10 +56,11 @@ Assert-RequiredValue -Name 'SUPABASE_PROJECT_REF' -Value $ProjectRef
 Assert-RequiredValue -Name 'SUPABASE_DB_PASSWORD' -Value $DbPassword
 Assert-RequiredValue -Name 'SUPABASE_ACCESS_TOKEN' -Value $AccessToken
 Assert-RequiredValue -Name 'SUPABASE_SERVICE_ROLE_KEY' -Value $ServiceRoleKey
-Assert-RequiredValue -Name 'MS_TENANT_ID' -Value $MsTenantId
-Assert-RequiredValue -Name 'MS_CLIENT_ID' -Value $MsClientId
-Assert-RequiredValue -Name 'MS_CLIENT_SECRET' -Value $MsClientSecret
-Assert-RequiredValue -Name 'MS_SENDER_UPN' -Value $MsSenderUpn
+Assert-RequiredValue -Name 'RESEND_API_KEY' -Value $ResendApiKey
+if ([string]::IsNullOrWhiteSpace($ResendFrom)) {
+  $ResendFrom = 'onboarding@resend.dev'
+  Write-Host "RESEND_FROM non défini, utilisation par défaut : $ResendFrom" -ForegroundColor Yellow
+}
 
 $env:SUPABASE_ACCESS_TOKEN = $AccessToken
 $projectUrl = "https://$ProjectRef.supabase.co"
@@ -72,7 +71,7 @@ Write-Host "Proyecto Supabase: $ProjectRef" -ForegroundColor Green
 Invoke-Step -Description 'Vincular el proyecto Supabase' -Command "$supabaseCommand link --project-ref $ProjectRef --password `"$DbPassword`""
 Invoke-Step -Description 'Aplicar migraciones de base de datos' -Command "$supabaseCommand db push"
 Invoke-Step -Description 'Configurar secretos de la Edge Function' -Command "$supabaseCommand secrets set SUPABASE_URL=`"$projectUrl`" SUPABASE_SERVICE_ROLE_KEY=`"$ServiceRoleKey`""
-Invoke-Step -Description 'Configurar secretos de Microsoft Graph' -Command "$supabaseCommand secrets set MS_TENANT_ID=`"$MsTenantId`" MS_CLIENT_ID=`"$MsClientId`" MS_CLIENT_SECRET=`"$MsClientSecret`" MS_SENDER_UPN=`"$MsSenderUpn`""
+Invoke-Step -Description 'Configurar secretos de Resend' -Command "$supabaseCommand secrets set RESEND_API_KEY=`"$ResendApiKey`" RESEND_FROM=`"$ResendFrom`""
 Invoke-Step -Description 'Desplegar la Edge Function admin-users' -Command "$supabaseCommand functions deploy admin-users"
 Invoke-Step -Description 'Desplegar la Edge Function reports-prs' -Command "$supabaseCommand functions deploy reports-prs"
 Invoke-Step -Description 'Desplegar la Edge Function send-graph-mail' -Command "$supabaseCommand functions deploy send-graph-mail"
