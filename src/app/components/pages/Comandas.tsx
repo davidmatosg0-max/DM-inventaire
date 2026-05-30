@@ -44,6 +44,7 @@ import type { Comanda, ItemComanda, Organismo, ProductoOferta, Oferta as OfertaT
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerOrganismos as obtenerOrganismosReales } from '../../utils/organismosStorage';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
+import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
 import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 import {
@@ -52,6 +53,7 @@ import {
 } from '../../utils/pendingQrNavigation';
 import { formatNumberSimple } from '../../utils/formatUtils';
 import { sortByTemperature } from '../../utils/temperatureSort';
+import { getSupabaseAnonKey, getSupabaseClient, getSupabaseFunctionUrl, isSupabaseAuthEnabled } from '../../utils/supabaseClient';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
@@ -842,85 +844,198 @@ export function Comandas() {
     }
 
     const comandasObjetivo = comandasPendientes.filter((comanda) => comandasSeleccionadas.includes(comanda.id));
-    const destinatarios = Array.from(new Set(
-      comandasObjetivo
-        .map((comanda) => resolverOrganismoComanda(comanda)?.email)
-        .map((email) => String(email || '').trim())
-        .filter(Boolean)
-    ));
+    const notificacionesPorOrganismo = comandasObjetivo.reduce<Array<{
+      organismo: Organismo;
+      comandas: Comanda[];
+      destinatarios: string[];
+    }>>((grupos, comanda) => {
+      const organismo = resolverOrganismoComanda(comanda);
+      if (!organismo) {
+        return grupos;
+      }
 
-    if (destinatarios.length === 0) {
+      const destinatariosComanda = Array.from(
+        new Set(
+          [
+            organismo.email,
+            ...(organismo.contactosNotificacion || []).map(contacto => contacto.email),
+          ]
+            .map(email => String(email || '').trim())
+            .filter(Boolean)
+        )
+      );
+
+      if (destinatariosComanda.length === 0) {
+        return grupos;
+      }
+
+      const existente = grupos.find(grupo => grupo.organismo.id === organismo.id);
+      if (existente) {
+        existente.comandas.push(comanda);
+        existente.destinatarios = Array.from(new Set([...existente.destinatarios, ...destinatariosComanda]));
+      } else {
+        grupos.push({
+          organismo,
+          comandas: [comanda],
+          destinatarios: destinatariosComanda,
+        });
+      }
+
+      return grupos;
+    }, []);
+
+    const destinatariosTotales = notificacionesPorOrganismo.reduce((total, grupo) => total + grupo.destinatarios.length, 0);
+
+    if (notificacionesPorOrganismo.length === 0) {
       toast.error('Aucun organisme sélectionné avec une adresse email valide.');
       return;
     }
 
     const confirmarEnvio = window.confirm(
-      `Vous allez préparer ${comandasObjetivo.length} notification(s) pour ${destinatarios.length} destinataire(s).\n\n` +
-      'Une ouverture d\'Outlook sera lancée avant l\'envoi. Voulez-vous continuer ?'
+      t('orders.notifyPendingOrdersConfirm', {
+        orders: comandasObjetivo.length,
+        organizations: notificacionesPorOrganismo.length,
+        recipients: destinatariosTotales,
+      })
     );
 
     if (!confirmarEnvio) {
       return;
     }
 
-    const detalleComandas = comandasObjetivo
-      .map((comanda) => {
-        const organismo = resolverOrganismoComanda(comanda);
-        const nombreOrganismo = organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism');
-        return `- ${comanda.numero || comanda.id} (${nombreOrganismo})`;
-      })
-      .join('\n');
+    const crearMensajePorOrganismo = (organismo: Organismo, comandasOrganismo: Comanda[]) => {
+      const linkAcceso = construirUrlAccesoOrganismo(organismo.claveAcceso);
+      const listadoComandas = comandasOrganismo
+        .map((comanda) => `• ${comanda.numero || comanda.id} - ${comanda.items.length} article(s)`)
+        .join('\n');
 
-    const asunto = `Notifications de commandes prêtes (${comandasObjetivo.length})`;
-    const cuerpo = [
-      'Bonjour,',
-      '',
-      'Les commandes suivantes sont prêtes :',
-      detalleComandas,
-      '',
-      'Merci de confirmer la réception dans le portail.',
-    ].join('\n');
-
-    const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
-    composeUrl.searchParams.set('to', destinatarios.join(';'));
-    composeUrl.searchParams.set('subject', asunto);
-    composeUrl.searchParams.set('body', cuerpo);
-    composeUrl.searchParams.set('from', senderEmail);
-
-    const mailtoTo = encodeURIComponent(destinatarios.join(','));
-    const mailtoSubject = encodeURIComponent(asunto);
-    const mailtoBody = encodeURIComponent(cuerpo);
-    const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
-
-    let localClientLikelyOpened = false;
-    const markClientOpen = () => {
-      localClientLikelyOpened = true;
+      return [
+        `Bonjour ${organismo.nombre},`,
+        '',
+        `Vos ${comandasOrganismo.length} commande(s) en attente sont prêtes à être consultées :`,
+        listadoComandas,
+        '',
+        `Accès direct à votre portail organisme : ${linkAcceso}`,
+        '',
+        'Veuillez vérifier les détails et confirmer la réception dans le portail.',
+        '',
+        'Merci,',
+        'Équipe de gestion',
+      ].join('\n');
     };
-    window.addEventListener('blur', markClientOpen, { once: true });
-    window.location.href = mailtoUrl;
 
-    window.setTimeout(() => {
-      if (localClientLikelyOpened) {
+    const enviarAutomaticoGraph = async (
+      destinatariosEmail: string[],
+      asunto: string,
+      cuerpo: string,
+    ): Promise<{ ok: boolean; error?: string }> => {
+      if (!isSupabaseAuthEnabled()) {
+        return { ok: false, error: 'Supabase auth disabled in frontend configuration.' };
+      }
+
+      const client = getSupabaseClient();
+      if (!client) {
+        return { ok: false, error: 'Supabase client is not configured (check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).' };
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!session?.access_token) {
+        return { ok: false, error: 'No authenticated session token available.' };
+      }
+
+      const response = await fetch(getSupabaseFunctionUrl('send-graph-mail'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: getSupabaseAnonKey(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: destinatariosEmail,
+          subject: asunto,
+          body: cuerpo,
+        }),
+      });
+
+      if (response.ok) {
+        return { ok: true };
+      }
+
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      return {
+        ok: false,
+        error: payload?.error || `send-graph-mail returned ${response.status}`,
+      };
+    };
+
+    const gruposNotificacion = notificacionesPorOrganismo.map(({ organismo, comandas, destinatarios }, index) => {
+      const asunto = `${t('orders.notifyPendingOrders')} - ${organismo.nombre}`;
+      const cuerpo = crearMensajePorOrganismo(organismo, comandas);
+
+      return {
+        index,
+        organismo,
+        comandas,
+        asunto,
+        cuerpo,
+        destinatarios,
+      };
+    });
+
+    if (gruposNotificacion.length === 0) {
+      toast.error('Aucun organisme sélectionné avec une adresse email valide.');
+      return;
+    }
+
+    (async () => {
+      const gruposFallback: typeof gruposNotificacion = [];
+      const erroresAutomaticos: string[] = [];
+      let enviadosAutomaticamente = 0;
+
+      for (const grupo of gruposNotificacion) {
+        try {
+          const resultado = await enviarAutomaticoGraph(grupo.destinatarios, grupo.asunto, grupo.cuerpo);
+          if (resultado.ok) {
+            enviadosAutomaticamente += 1;
+          } else {
+            gruposFallback.push(grupo);
+            if (resultado.error) {
+              erroresAutomaticos.push(`${grupo.organismo.nombre}: ${resultado.error}`);
+            }
+          }
+        } catch (error) {
+          gruposFallback.push(grupo);
+          const mensaje = error instanceof Error ? error.message : 'Unexpected error';
+          erroresAutomaticos.push(`${grupo.organismo.nombre}: ${mensaje}`);
+        }
+      }
+
+      if (enviadosAutomaticamente > 0) {
+        toast.success(
+          t('orders.pendingNotificationsSentAutomatically', {
+            organizations: enviadosAutomaticamente,
+          })
+        );
+      }
+
+      if (gruposFallback.length === 0) {
+        setDialogNotificacionOpen(false);
+        setComandasSeleccionadas([]);
+        setConfirmacionNotificaciones(false);
         return;
       }
 
-      const shouldOpenWeb = window.confirm('Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?');
-      if (shouldOpenWeb) {
-        window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
-      }
-    }, 1500);
+      toast.error(
+        t('orders.pendingNotificationsAutomaticFailed', {
+          organizations: gruposFallback.length,
+        }) + (erroresAutomaticos.length > 0 ? `\n${erroresAutomaticos.slice(0, 2).join(' | ')}` : '')
+      );
+    })();
 
-    toast.success(
-      <div className="flex flex-col gap-1">
-        <span className="font-semibold">{t('orders.sendNotifications')}</span>
-        <span className="text-sm text-[#666666]">
-          Brouillon Outlook préparé pour {destinatarios.length} {t('organisms.name')}{destinatarios.length !== 1 ? 's' : ''}
-        </span>
-      </div>,
-      { duration: 5000 }
-    );
-    
-    // Mantener el diálogo y la selección para que el usuario termine el envío manual en Outlook.
+    // Modo solo automático: sin fallback manual a Outlook.
   };
 
   // Handler para escanear QR
