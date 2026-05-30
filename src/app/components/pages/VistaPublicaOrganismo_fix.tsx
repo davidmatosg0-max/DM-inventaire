@@ -248,7 +248,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     if (fechaExpiracion < ahora || !oferta.activa) {
       return {
         estado: 'expirada',
-        label: 'Expirada',
+        label: t('organismPortal.expired', { defaultValue: 'Expirée' }),
         color: '#c23934',
         diasRestantes: 0
       };
@@ -259,7 +259,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     if (!tieneDisponibilidad) {
       return {
         estado: 'agotada',
-        label: 'Agotada',
+        label: t('organismPortal.soldOut', { defaultValue: 'Épuisée' }),
         color: '#6c757d',
         diasRestantes
       };
@@ -267,7 +267,9 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
     
     return {
       estado: 'activa',
-      label: diasRestantes <= 3 ? `Expira en ${diasRestantes} días` : 'Activa',
+      label: diasRestantes <= 3
+        ? t('organismPortal.expiresInDays', { count: diasRestantes, days: diasRestantes, defaultValue: `Expire dans ${diasRestantes} jour(s)` })
+        : t('organismPortal.active', { defaultValue: 'Active' }),
       color: diasRestantes <= 3 ? '#e8a419' : '#2d9561',
       diasRestantes
     };
@@ -2110,14 +2112,28 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                       {/* Productos incluidos */}
                       <div className="border-t pt-3 mb-3">
                         <p className="text-xs text-[#666666] mb-2">{t('organismPortal.productsIncluded')}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {oferta.productos.slice(0, 3).map((prod, idx) => (
-                            <Badge key={`${oferta.id}-prod-${idx}`} variant="outline" className="text-xs">
-                              {prod.icono} {prod.productoNombre}
-                            </Badge>
-                          ))}
+                        <div className="flex flex-col gap-1">
+                          {oferta.productos.slice(0, 3).map((prod, idx) => {
+                            const pesoUnitario = Number(prod.peso) || 0;
+                            const detallePeso = pesoUnitario > 0
+                              ? ` · ${formatQuantity(pesoUnitario)} kg/${prod.unidad || t('organismPortal.unitsLower')}`
+                              : '';
+                            return (
+                              <div
+                                key={`${oferta.id}-prod-${idx}`}
+                                className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2 py-1 text-xs"
+                              >
+                                <span className="truncate font-medium text-[#0f172a]">
+                                  {prod.icono} {prod.productoNombre}
+                                </span>
+                                <span className="shrink-0 text-[#666666]">
+                                  {prod.cantidadOfrecida} {prod.unidad || t('organismPortal.unitsLower')}{detallePeso}
+                                </span>
+                              </div>
+                            );
+                          })}
                           {oferta.productos.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="self-start text-xs">
                               +{oferta.productos.length - 3} {t('organismPortal.more')}
                             </Badge>
                           )}
