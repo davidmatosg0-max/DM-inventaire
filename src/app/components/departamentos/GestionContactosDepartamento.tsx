@@ -86,6 +86,7 @@ import {
 } from '../../utils/idiomasPersonalizadosStorage';
 import { obtenerTiposContacto } from '../../utils/tiposContactoStorage';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
+import { enviarEmailViaGraph } from '../../utils/organismoEmailNotifications';
 import { FormularioContactoCompacto } from './FormularioContactoCompacto';
 import { CalendarioContactos } from './CalendarioContactos';
 import { AsignarRolContacto } from '../AsignarRolContacto';
@@ -1343,7 +1344,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
     });
   };
 
-  const abrirBorradorEmailOutlook = (destinatarios: string[], asunto: string, mensaje: string) => {
+  const abrirBorradorEmailOutlook = async (destinatarios: string[], asunto: string, mensaje: string) => {
     const destinatariosLimpios = Array.from(new Set(destinatarios.map((email) => String(email || '').trim()).filter(Boolean)));
     if (destinatariosLimpios.length === 0) {
       toast.error('Aucun destinataire email valide.');
@@ -1358,40 +1359,23 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
       return;
     }
 
-    const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
-    composeUrl.searchParams.set('to', destinatariosLimpios.join(';'));
-    composeUrl.searchParams.set('subject', asunto);
-    composeUrl.searchParams.set('body', mensaje);
-    composeUrl.searchParams.set('from', senderEmail);
-
-    const mailtoTo = encodeURIComponent(destinatariosLimpios.join(','));
-    const mailtoSubject = encodeURIComponent(asunto);
-    const mailtoBody = encodeURIComponent(mensaje);
-    const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
-
-    let localClientLikelyOpened = false;
-    const markClientOpen = () => {
-      localClientLikelyOpened = true;
-    };
-    window.addEventListener('blur', markClientOpen, { once: true });
-
-    window.location.href = mailtoUrl;
-
-    window.setTimeout(() => {
-      if (localClientLikelyOpened) {
+    try {
+      const resultado = await enviarEmailViaGraph(destinatariosLimpios, asunto, mensaje);
+      if (!resultado.ok) {
+        toast.error('Échec de l\'envoi du courriel', {
+          description: resultado.error || 'Microsoft Graph indisponible.',
+        });
         return;
       }
 
-      const shouldOpenWeb = window.confirm('Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?');
-      if (shouldOpenWeb) {
-        window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
-      }
-    }, 1500);
-
-    toast.success('Ouverture du brouillon Outlook local', {
-      description: 'Si Outlook local ne s’ouvre pas, vous pourrez basculer vers Outlook Web.',
-      duration: 5000,
-    });
+      toast.success('Courriel envoyé', {
+        description: `${destinatariosLimpios.length} destinataire(s) notifié(s).`,
+        duration: 4000,
+      });
+    } catch (error) {
+      toast.error('Erreur lors de l\'envoi du courriel');
+      console.error('Erreur envoi Graph:', error);
+    }
   };
 
   const handleEnviarEmailContacto = (contacto: ContactoDepartamento) => {

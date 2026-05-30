@@ -193,7 +193,7 @@ type DatosEmailEstadoComanda = {
   observaciones?: string;
 };
 
-async function enviarEmailViaGraph(
+export async function enviarEmailViaGraph(
   destinatarios: string[],
   asunto: string,
   cuerpo: string,

@@ -46,6 +46,7 @@ import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
 import { obtenerPersonasPorOrganismo } from '../../utils/personasResponsablesStorage';
 import { obtenerUsuarioSesion, esAdministradorLiaison } from '../../utils/sesionStorage';
+import { enviarEmailViaGraph } from '../../utils/organismoEmailNotifications';
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
@@ -837,46 +838,26 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     }
 
     try {
-      const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
-      composeUrl.searchParams.set('to', destinatarios.join(';'));
-      composeUrl.searchParams.set('subject', emailSubject || '');
-      composeUrl.searchParams.set('body', emailMessage || '');
-      composeUrl.searchParams.set('from', senderEmail);
+      const resultado = await enviarEmailViaGraph(
+        destinatarios,
+        emailSubject || '',
+        emailMessage || '',
+      );
 
-      const mailtoTo = encodeURIComponent(destinatarios.join(','));
-      const mailtoSubject = encodeURIComponent(emailSubject || '');
-      const mailtoBody = encodeURIComponent(emailMessage || '');
-      const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
+      if (!resultado.ok) {
+        toast.error('Échec de l\'envoi du courriel', {
+          description: resultado.error || 'Microsoft Graph indisponible.',
+        });
+        return;
+      }
 
-      let localClientLikelyOpened = false;
-      const markClientOpen = () => {
-        localClientLikelyOpened = true;
-      };
-      window.addEventListener('blur', markClientOpen, { once: true });
-
-      window.location.href = mailtoUrl;
-
-      window.setTimeout(() => {
-        if (localClientLikelyOpened) {
-          return;
-        }
-
-        const shouldOpenWeb = window.confirm(
-          'Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?'
-        );
-
-        if (shouldOpenWeb) {
-          window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
-        }
-      }, 1500);
-
-      toast.success('Ouverture du brouillon Outlook local', {
-        description: 'Si Outlook local ne s’ouvre pas, vous pourrez basculer vers Outlook Web.',
-        duration: 5000,
+      toast.success('Courriel envoyé', {
+        description: `${destinatarios.length} destinataire(s) notifié(s).`,
+        duration: 4000,
       });
 
       if (emailType === 'individual' && currentRecipient) {
-        console.log('Email individual preparado en Outlook:', {
+        console.log('Email individual envoyé via Graph:', {
           de: senderEmail,
           nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : senderEmail,
           destinatario: currentRecipient,
@@ -885,7 +866,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
           fecha: new Date().toISOString(),
         });
       } else {
-        console.log('Email grupal preparado en Outlook:', {
+        console.log('Email grupal envoyé via Graph:', {
           de: senderEmail,
           nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : senderEmail,
           destinatarios: organismos.filter((organismo) => selectedOrganismos.includes(organismo.id)),
@@ -897,8 +878,8 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
 
       closeEmailModal();
     } catch (error) {
-      toast.error('❌ Erreur lors de l\'ouverture d\'Outlook');
-      console.error('Erreur ouverture Outlook:', error);
+      toast.error('Erreur lors de l\'envoi du courriel');
+      console.error('Error envoyant courriel via Graph:', error);
     }
   };
 
