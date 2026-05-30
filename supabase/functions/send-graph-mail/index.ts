@@ -120,17 +120,24 @@ async function getGraphAccessToken(): Promise<string> {
   return tokenData.access_token;
 }
 
-async function sendMailThroughGraph(payload: SendGraphMailPayload): Promise<void> {
+async function sendMailThroughGraph(payload: SendGraphMailPayload): Promise<{ status: number; requestId: string | null; clientRequestId: string | null; sender: string; recipients: string[] }> {
   const senderUpn = assertEnv('MS_SENDER_UPN');
   const accessToken = await getGraphAccessToken();
 
-  const toRecipients = normalizeEmails(payload.to).map((email) => ({
+  const recipients = normalizeEmails(payload.to);
+  const toRecipients = recipients.map((email) => ({
     emailAddress: { address: email },
   }));
 
   if (toRecipients.length === 0) {
     throw new Error('No valid recipients');
   }
+
+  console.log('[send-graph-mail] sending', {
+    sender: senderUpn,
+    recipients,
+    subject: String(payload.subject || '').trim(),
+  });
 
   const graphResponse = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderUpn)}/sendMail`, {
     method: 'POST',
@@ -151,10 +158,35 @@ async function sendMailThroughGraph(payload: SendGraphMailPayload): Promise<void
     }),
   });
 
+  const requestId = graphResponse.headers.get('request-id');
+  const clientRequestId = graphResponse.headers.get('client-request-id');
+
   if (!graphResponse.ok) {
     const errorBody = await graphResponse.text();
+    console.error('[send-graph-mail] graph error', {
+      status: graphResponse.status,
+      requestId,
+      clientRequestId,
+      body: errorBody,
+    });
     throw new Error(errorBody || `Graph sendMail failed (${graphResponse.status})`);
   }
+
+  console.log('[send-graph-mail] graph accepted', {
+    status: graphResponse.status,
+    requestId,
+    clientRequestId,
+    sender: senderUpn,
+    recipients,
+  });
+
+  return {
+    status: graphResponse.status,
+    requestId,
+    clientRequestId,
+    sender: senderUpn,
+    recipients,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -174,9 +206,9 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Invalid payload' }, 400);
     }
 
-    await sendMailThroughGraph(payload);
+    const result = await sendMailThroughGraph(payload);
 
-    return jsonResponse({ ok: true });
+    return jsonResponse({ ok: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;

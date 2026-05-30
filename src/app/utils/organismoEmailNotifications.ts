@@ -227,6 +227,17 @@ export async function enviarEmailViaGraph(
     });
 
     if (response.ok) {
+      const payloadOk = (await response.json().catch(() => null)) as
+        | { ok?: boolean; status?: number; requestId?: string | null; clientRequestId?: string | null; sender?: string; recipients?: string[] }
+        | null;
+      console.info('[send-graph-mail] success', {
+        sender: payloadOk?.sender,
+        recipients: payloadOk?.recipients,
+        graphStatus: payloadOk?.status,
+        graphRequestId: payloadOk?.requestId,
+        graphClientRequestId: payloadOk?.clientRequestId,
+        subject: asunto,
+      });
       return { ok: true };
     }
 
