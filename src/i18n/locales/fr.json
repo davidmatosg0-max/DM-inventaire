@@ -885,8 +885,10 @@
         "configuredShare": "Pourcentage de répartition configuré : {{share}}%",
         "orderCreated": "Commande {{number}} créée avec succès",
         "emailSent": "Notification automatique envoyée à {{count}} destinataire(s)",
+        "outlookDraftOpened": "Brouillon Outlook ouvert pour {{count}} destinataire(s).",
         "ordersCreatedTitle": "Commandes créées avec succès :",
-        "emailSummary": "✉️ Notifications automatiques envoyées à {{organizations}} organisme(s) ({{recipients}} destinataire(s))."
+        "emailSummary": "✉️ Notifications automatiques envoyées à {{organizations}} organisme(s) ({{recipients}} destinataire(s)).",
+        "outlookDraftSummary": "Brouillons Outlook ouverts : {{organizations}} organisme(s), {{recipients}} destinataire(s)."
       },
       "errors": {
         "noRegularOrganizationsWithShare": "Aucun organisme régulier avec un pourcentage de répartition configuré",

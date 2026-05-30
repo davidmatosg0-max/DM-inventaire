@@ -885,8 +885,10 @@
         "configuredShare": "Porcentaje de repartición configurado: {{share}}%",
         "orderCreated": "Comanda {{number}} creada correctamente",
         "emailSent": "Notificación automática enviada a {{count}} destinatario(s)",
+        "outlookDraftOpened": "Borrador de Outlook abierto para {{count}} destinatario(s).",
         "ordersCreatedTitle": "Comandas creadas correctamente:",
-        "emailSummary": "✉️ Notificaciones automáticas enviadas a {{organizations}} organismo(s) ({{recipients}} destinatario(s))."
+        "emailSummary": "✉️ Notificaciones automáticas enviadas a {{organizations}} organismo(s) ({{recipients}} destinatario(s)).",
+        "outlookDraftSummary": "Borradores de Outlook abiertos: {{organizations}} organismo(s), {{recipients}} destinatario(s)."
       },
       "errors": {
         "noRegularOrganizationsWithShare": "No hay organismos regulares con porcentaje de repartición configurado",

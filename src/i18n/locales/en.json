@@ -885,8 +885,10 @@
         "configuredShare": "Configured distribution share: {{share}}%",
         "orderCreated": "Order {{number}} created successfully",
         "emailSent": "Automatic notification sent to {{count}} recipient(s)",
+        "outlookDraftOpened": "Outlook draft opened for {{count}} recipient(s).",
         "ordersCreatedTitle": "Orders created successfully:",
-        "emailSummary": "✉️ Automatic notifications sent to {{organizations}} organization(s) ({{recipients}} recipient(s))."
+        "emailSummary": "✉️ Automatic notifications sent to {{organizations}} organization(s) ({{recipients}} recipient(s)).",
+        "outlookDraftSummary": "Outlook drafts opened: {{organizations}} organization(s), {{recipients}} recipient(s)."
       },
       "errors": {
         "noRegularOrganizationsWithShare": "No regular organizations with a configured distribution share",

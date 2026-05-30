@@ -85,6 +85,7 @@ import {
   type IdiomaPersonalizado
 } from '../../utils/idiomasPersonalizadosStorage';
 import { obtenerTiposContacto } from '../../utils/tiposContactoStorage';
+import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 import { FormularioContactoCompacto } from './FormularioContactoCompacto';
 import { CalendarioContactos } from './CalendarioContactos';
 import { AsignarRolContacto } from '../AsignarRolContacto';
@@ -105,6 +106,7 @@ interface GestionContactosDepartamentoProps {
 
 export function GestionContactosDepartamento({ departamentoId, departamentoNombre }: GestionContactosDepartamentoProps) {
   const branding = useBranding();
+  const usuarioSesion = obtenerUsuarioSesion();
   const departamentosDisponibles = obtenerDepartamentos();
   const [activeContactsTab, setActiveContactsTab] = useState('liste');
   const {
@@ -150,6 +152,7 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
   const [contactoSeleccionado, setContactoSeleccionado] = useState<ContactoDepartamento | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState<TipoContacto | 'todos'>('todos');
+  const [diaFiltro, setDiaFiltro] = useState<'todos' | string>('todos');
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1340,6 +1343,86 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
     });
   };
 
+  const abrirBorradorEmailOutlook = (destinatarios: string[], asunto: string, mensaje: string) => {
+    const destinatariosLimpios = Array.from(new Set(destinatarios.map((email) => String(email || '').trim()).filter(Boolean)));
+    if (destinatariosLimpios.length === 0) {
+      toast.error('Aucun destinataire email valide.');
+      return;
+    }
+
+    const senderEmail = String(usuarioSesion?.email || '').trim();
+    if (!senderEmail) {
+      toast.error('Aucun expéditeur connecté', {
+        description: 'Connectez-vous avec un utilisateur ayant une adresse email valide.',
+      });
+      return;
+    }
+
+    const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
+    composeUrl.searchParams.set('to', destinatariosLimpios.join(';'));
+    composeUrl.searchParams.set('subject', asunto);
+    composeUrl.searchParams.set('body', mensaje);
+    composeUrl.searchParams.set('from', senderEmail);
+
+    const mailtoTo = encodeURIComponent(destinatariosLimpios.join(','));
+    const mailtoSubject = encodeURIComponent(asunto);
+    const mailtoBody = encodeURIComponent(mensaje);
+    const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
+
+    let localClientLikelyOpened = false;
+    const markClientOpen = () => {
+      localClientLikelyOpened = true;
+    };
+    window.addEventListener('blur', markClientOpen, { once: true });
+
+    window.location.href = mailtoUrl;
+
+    window.setTimeout(() => {
+      if (localClientLikelyOpened) {
+        return;
+      }
+
+      const shouldOpenWeb = window.confirm('Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?');
+      if (shouldOpenWeb) {
+        window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
+      }
+    }, 1500);
+
+    toast.success('Ouverture du brouillon Outlook local', {
+      description: 'Si Outlook local ne s’ouvre pas, vous pourrez basculer vers Outlook Web.',
+      duration: 5000,
+    });
+  };
+
+  const handleEnviarEmailContacto = (contacto: ContactoDepartamento) => {
+    if (!contacto.email) {
+      toast.error('Ce contact n’a pas d’adresse email.');
+      return;
+    }
+
+    const nombreMostrado = (contacto.tipo === 'donador' || contacto.tipo === 'fournisseur') && contacto.nombreEmpresa
+      ? contacto.nombreEmpresa
+      : `${contacto.nombre} ${contacto.apellido}`.trim();
+    const asunto = `Message - ${departamentoNombre}`;
+    const mensaje = `Bonjour ${nombreMostrado},\n\n`;
+    abrirBorradorEmailOutlook([contacto.email], asunto, mensaje);
+  };
+
+  const handleEnviarEmailGrupal = (contactosLista: ContactoDepartamento[]) => {
+    const destinatarios = contactosLista
+      .map((contacto) => contacto.email)
+      .filter((email): email is string => Boolean(String(email || '').trim()));
+
+    if (destinatarios.length === 0) {
+      toast.error('Aucun contact filtré avec un email valide.');
+      return;
+    }
+
+    const asunto = `Message groupé - ${departamentoNombre}`;
+    const mensaje = 'Bonjour,\n\n';
+    abrirBorradorEmailOutlook(destinatarios, asunto, mensaje);
+  };
+
   const contactosFiltrados = contactos.filter(contacto => {
     // Filtrer seulement les contacts actifs (ou sans le champ activo défini pour la compatibilité)
     if (contacto.activo === false) {
@@ -1356,6 +1439,11 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
       (contacto.numeroArchivo || '').toLowerCase().includes(searchText);
     
     const matchTipo = tipoFiltro === 'todos' || contacto.tipo === tipoFiltro;
+    const matchDia = diaFiltro === 'todos' || Boolean(
+      (contacto.disponibilidades || []).some((disponibilidad) => (
+        disponibilidad.jour === diaFiltro && (disponibilidad.am || disponibilidad.pm)
+      ))
+    );
     
     if (!matchBusqueda) {
       console.log(`❌ Filtrado por búsqueda: ${contacto.nombre} ${contacto.apellido} (búsqueda: "${busqueda}")`);
@@ -1363,8 +1451,11 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
     if (!matchTipo) {
       console.log(`❌ Filtrado por tipo: ${contacto.nombre} ${contacto.apellido} (tipo: ${contacto.tipo}, filtro: ${tipoFiltro})`);
     }
+    if (!matchDia) {
+      console.log(`❌ Filtrado por día: ${contacto.nombre} ${contacto.apellido} (día: ${diaFiltro})`);
+    }
     
-    return matchBusqueda && matchTipo;
+    return matchBusqueda && matchTipo && matchDia;
   });
   
   // Log final de resultados filtrados
@@ -1698,6 +1789,17 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                   </div>
                 ) : (
                   <>
+                    <Select value={diaFiltro} onValueChange={(value) => setDiaFiltro(value)}>
+                      <SelectTrigger className="w-[180px] h-9">
+                        <SelectValue placeholder="Filtrer par jour" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Tous les jours</SelectItem>
+                        {diasSemana.map((jour) => (
+                          <SelectItem key={jour} value={jour}>{jour}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Button
                       variant={tipoFiltro === 'todos' ? 'default' : 'outline'}
                       onClick={() => setTipoFiltro('todos')}
@@ -1722,6 +1824,16 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                         </Button>
                       );
                     })}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEnviarEmailGrupal(contactosFiltrados)}
+                      disabled={!contactosFiltrados.some((contacto) => Boolean(String(contacto.email || '').trim()))}
+                      className="gap-1"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      Email groupé
+                    </Button>
                   </>
                 )}
               </div>
@@ -1870,6 +1982,16 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                             >
                               <Eye className="w-4 h-4 mr-1.5" style={{ color: branding.primaryColor }} />
                               Voir
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEnviarEmailContacto(contacto)}
+                              disabled={!Boolean(String(contacto.email || '').trim())}
+                              title={contacto.email ? 'Envoyer un email' : 'Aucun email disponible'}
+                              className="hover:bg-emerald-50 rounded-lg transition-colors"
+                            >
+                              <Mail className="w-4 h-4" style={{ color: '#059669' }} />
                             </Button>
                             <Button
                               variant="ghost"
@@ -2066,6 +2188,17 @@ export function GestionContactosDepartamento({ departamentoId, departamentoNombr
                       Email:
                     </span>
                     <p style={{ fontFamily: 'Roboto, sans-serif' }}>{contactoSeleccionado.email}</p>
+                    <div className="mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => handleEnviarEmailContacto(contactoSeleccionado)}
+                      >
+                        <Mail className="w-4 h-4" />
+                        Envoyer un email
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {contactoSeleccionado.telefono && (

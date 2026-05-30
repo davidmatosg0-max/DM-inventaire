@@ -43,6 +43,7 @@ import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import type { Comanda, ItemComanda, Organismo, ProductoOferta, Oferta as OfertaTipo, Solicitud, ProductoAceptado, DatosQR } from '../../types';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerOrganismos as obtenerOrganismosReales } from '../../utils/organismosStorage';
+import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
 import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 import {
@@ -163,6 +164,7 @@ export function Comandas() {
   const [comandaSeleccionada, setComandaSeleccionada] = useState<Comanda | null>(null);
   const [selectedOrganismos, setSelectedOrganismos] = useState<string[]>([]);
   const [comandasSeleccionadas, setComandasSeleccionadas] = useState<string[]>([]);
+  const [confirmacionNotificaciones, setConfirmacionNotificaciones] = useState(false);
   const [grupoItems, setGrupoItems] = useState<ItemComanda[]>([{ productoId: '', cantidad: 1, nombreProducto: '', unidad: '' }]);
   const [fechaEntregaGrupo, setFechaEntregaGrupo] = useState('');
   const [observacionesGrupo, setObservacionesGrupo] = useState('');
@@ -825,18 +827,100 @@ export function Comandas() {
       return;
     }
 
+    if (!confirmacionNotificaciones) {
+      toast.error('Veuillez confirmer la vérification avant l\'envoi.');
+      return;
+    }
+
+    const usuarioSesion = obtenerUsuarioSesion();
+    const senderEmail = String(usuarioSesion?.email || '').trim();
+    if (!senderEmail) {
+      toast.error('Aucun expéditeur connecté', {
+        description: 'Connectez-vous avec un utilisateur ayant une adresse email valide.',
+      });
+      return;
+    }
+
+    const comandasObjetivo = comandasPendientes.filter((comanda) => comandasSeleccionadas.includes(comanda.id));
+    const destinatarios = Array.from(new Set(
+      comandasObjetivo
+        .map((comanda) => resolverOrganismoComanda(comanda)?.email)
+        .map((email) => String(email || '').trim())
+        .filter(Boolean)
+    ));
+
+    if (destinatarios.length === 0) {
+      toast.error('Aucun organisme sélectionné avec une adresse email valide.');
+      return;
+    }
+
+    const confirmarEnvio = window.confirm(
+      `Vous allez préparer ${comandasObjetivo.length} notification(s) pour ${destinatarios.length} destinataire(s).\n\n` +
+      'Une ouverture d\'Outlook sera lancée avant l\'envoi. Voulez-vous continuer ?'
+    );
+
+    if (!confirmarEnvio) {
+      return;
+    }
+
+    const detalleComandas = comandasObjetivo
+      .map((comanda) => {
+        const organismo = resolverOrganismoComanda(comanda);
+        const nombreOrganismo = organismo?.nombre || obtenerNombreOrganismoComanda(comanda) || t('orders.withoutOrganism');
+        return `- ${comanda.numero || comanda.id} (${nombreOrganismo})`;
+      })
+      .join('\n');
+
+    const asunto = `Notifications de commandes prêtes (${comandasObjetivo.length})`;
+    const cuerpo = [
+      'Bonjour,',
+      '',
+      'Les commandes suivantes sont prêtes :',
+      detalleComandas,
+      '',
+      'Merci de confirmer la réception dans le portail.',
+    ].join('\n');
+
+    const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
+    composeUrl.searchParams.set('to', destinatarios.join(';'));
+    composeUrl.searchParams.set('subject', asunto);
+    composeUrl.searchParams.set('body', cuerpo);
+    composeUrl.searchParams.set('from', senderEmail);
+
+    const mailtoTo = encodeURIComponent(destinatarios.join(','));
+    const mailtoSubject = encodeURIComponent(asunto);
+    const mailtoBody = encodeURIComponent(cuerpo);
+    const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
+
+    let localClientLikelyOpened = false;
+    const markClientOpen = () => {
+      localClientLikelyOpened = true;
+    };
+    window.addEventListener('blur', markClientOpen, { once: true });
+    window.location.href = mailtoUrl;
+
+    window.setTimeout(() => {
+      if (localClientLikelyOpened) {
+        return;
+      }
+
+      const shouldOpenWeb = window.confirm('Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?');
+      if (shouldOpenWeb) {
+        window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
+      }
+    }, 1500);
+
     toast.success(
       <div className="flex flex-col gap-1">
         <span className="font-semibold">{t('orders.sendNotifications')}</span>
         <span className="text-sm text-[#666666]">
-          {comandasSeleccionadas.length} {t('organisms.name')}{comandasSeleccionadas.length !== 1 ? 's' : ''}
+          Brouillon Outlook préparé pour {destinatarios.length} {t('organisms.name')}{destinatarios.length !== 1 ? 's' : ''}
         </span>
       </div>,
       { duration: 5000 }
     );
     
-    setDialogNotificacionOpen(false);
-    setComandasSeleccionadas([]);
+    // Mantener el diálogo y la selección para que el usuario termine el envío manual en Outlook.
   };
 
   // Handler para escanear QR
@@ -1375,7 +1459,14 @@ export function Comandas() {
                   {t('orders.executive.actions.distributedList')}
                 </Button>
               )}
-              <Button variant="outline" onClick={() => setDialogNotificacionOpen(true)} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setConfirmacionNotificaciones(false);
+                  setDialogNotificacionOpen(true);
+                }}
+                className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white"
+              >
                 <Bell className="mr-2 h-4 w-4" />
                 {t('orders.executive.actions.notifications')}
               </Button>
@@ -2289,11 +2380,39 @@ export function Comandas() {
               })}
             </div>
 
+            <div className="rounded-lg border border-[#1E73BE]/25 bg-[#EAF3FF] p-3">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="verification-notifications"
+                  checked={confirmacionNotificaciones}
+                  onCheckedChange={(checked) => setConfirmacionNotificaciones(Boolean(checked))}
+                />
+                <div>
+                  <Label htmlFor="verification-notifications" className="cursor-pointer font-medium text-[#1A4D7A]">
+                    J’ai vérifié les destinataires et je confirme l’ouverture d’Outlook avant l’envoi.
+                  </Label>
+                  <p className="mt-1 text-xs text-[#4B647A]">
+                    Cette confirmation est obligatoire pour envoyer les notifications.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="app-compact-actions justify-end">
-              <Button variant="outline" onClick={() => setDialogNotificacionOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDialogNotificacionOpen(false);
+                  setConfirmacionNotificaciones(false);
+                }}
+              >
                 {t('common.cancel')}
               </Button>
-              <Button onClick={handleNotificarComandas} className="bg-[#1E73BE] hover:bg-[#1557A0]">
+              <Button
+                onClick={handleNotificarComandas}
+                disabled={!confirmacionNotificaciones || comandasSeleccionadas.length === 0}
+                className="bg-[#1E73BE] hover:bg-[#1557A0]"
+              >
                 {t('orders.sendNotifications')}
               </Button>
             </div>

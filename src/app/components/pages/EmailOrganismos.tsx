@@ -42,10 +42,6 @@ import {
   type ClasificacionOrganismo,
   type IdiomaContactoOrganismo
 } from '../../utils/organismosStorage';
-import { 
-  obtenerConfigEmail,
-  enviarEmail as enviarEmailService
-} from '../../utils/emailConfig';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
 import { obtenerPersonasPorOrganismo } from '../../utils/personasResponsablesStorage';
@@ -176,8 +172,6 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   // Verificar permisos del usuario
   const puedeGestionarOrganismos = esAdministradorLiaison();
   
-  // Verificar configuración de email (ya no se usa para mostrar estado, solo el usuario conectado)
-  const emailConfig = obtenerConfigEmail();
   const organismoSeleccionadoAccessKey = String(organismoSeleccionado?.claveAcceso || '').trim();
   const organismoSeleccionadoAccessUrl = organismoSeleccionadoAccessKey
     ? construirUrlAccesoOrganismo(organismoSeleccionadoAccessKey)
@@ -814,9 +808,10 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
   };
 
   const sendEmail = async () => {
-    if (!emailConfig || !emailConfig.isConfigured) {
-      toast.error('Configuration email requise', {
-        description: 'Veuillez configurer un compte email avant l\'envoi.',
+    const senderEmail = String(usuarioSesion?.email || '').trim();
+    if (!senderEmail) {
+      toast.error('Aucun expéditeur connecté', {
+        description: 'Connectez-vous avec un utilisateur ayant une adresse email valide.',
       });
       return;
     }
@@ -842,33 +837,57 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
     }
 
     try {
-      const resultado = await enviarEmailService(destinatarios, emailSubject, emailMessage, emailConfig);
+      const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
+      composeUrl.searchParams.set('to', destinatarios.join(';'));
+      composeUrl.searchParams.set('subject', emailSubject || '');
+      composeUrl.searchParams.set('body', emailMessage || '');
+      composeUrl.searchParams.set('from', senderEmail);
 
-      if (!resultado.exito) {
-        toast.error('Erreur lors de l\'envoi de l\'email', {
-          description: resultado.mensaje,
-        });
-        return;
-      }
+      const mailtoTo = encodeURIComponent(destinatarios.join(','));
+      const mailtoSubject = encodeURIComponent(emailSubject || '');
+      const mailtoBody = encodeURIComponent(emailMessage || '');
+      const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
 
-      toast.success('Email envoye avec succes', {
-        description: resultado.mensaje,
+      let localClientLikelyOpened = false;
+      const markClientOpen = () => {
+        localClientLikelyOpened = true;
+      };
+      window.addEventListener('blur', markClientOpen, { once: true });
+
+      window.location.href = mailtoUrl;
+
+      window.setTimeout(() => {
+        if (localClientLikelyOpened) {
+          return;
+        }
+
+        const shouldOpenWeb = window.confirm(
+          'Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?'
+        );
+
+        if (shouldOpenWeb) {
+          window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
+        }
+      }, 1500);
+
+      toast.success('Ouverture du brouillon Outlook local', {
+        description: 'Si Outlook local ne s’ouvre pas, vous pourrez basculer vers Outlook Web.',
         duration: 5000,
       });
 
       if (emailType === 'individual' && currentRecipient) {
-        console.log('Email individual enviado:', {
-          de: usuarioSesion?.email,
-          nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : emailConfig.email,
+        console.log('Email individual preparado en Outlook:', {
+          de: senderEmail,
+          nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : senderEmail,
           destinatario: currentRecipient,
           asunto: emailSubject,
           mensaje: emailMessage,
           fecha: new Date().toISOString(),
         });
       } else {
-        console.log('Email grupal enviado:', {
-          de: usuarioSesion?.email,
-          nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : emailConfig.email,
+        console.log('Email grupal preparado en Outlook:', {
+          de: senderEmail,
+          nombreRemitente: usuarioSesion ? `${usuarioSesion.nombre} ${usuarioSesion.apellido}` : senderEmail,
           destinatarios: organismos.filter((organismo) => selectedOrganismos.includes(organismo.id)),
           asunto: emailSubject,
           mensaje: emailMessage,
@@ -878,8 +897,8 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
 
       closeEmailModal();
     } catch (error) {
-      toast.error('❌ Erreur lors de l\'envoi de l\'email');
-      console.error('Error enviando email:', error);
+      toast.error('❌ Erreur lors de l\'ouverture d\'Outlook');
+      console.error('Erreur ouverture Outlook:', error);
     }
   };
 

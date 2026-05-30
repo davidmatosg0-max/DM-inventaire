@@ -525,7 +525,11 @@ export function DialogDistribuirProductos({
         observaciones: observacionesComanda,
       });
       if (resultadoEmail.enviado) {
-        toast.success(t('inventory.distributionDialog.toasts.emailSent', { count: resultadoEmail.destinatarios.length }));
+        toast.success(
+          t('inventory.distributionDialog.toasts.outlookDraftOpened', {
+            count: resultadoEmail.destinatarios.length,
+          })
+        );
       }
       cerrarYReiniciar();
       onDistribucionCompletada();
@@ -704,9 +708,9 @@ export function DialogDistribuirProductos({
           </ul>
           {resumenEmails.organismosNotificados > 0 && (
             <p className="text-sm mt-2">
-              {t('inventory.distributionDialog.toasts.emailSummary', {
+              {t('inventory.distributionDialog.toasts.outlookDraftSummary', {
                 organizations: resumenEmails.organismosNotificados,
-                recipients: resumenEmails.destinatarios
+                recipients: resumenEmails.destinatarios,
               })}
             </p>
           )}

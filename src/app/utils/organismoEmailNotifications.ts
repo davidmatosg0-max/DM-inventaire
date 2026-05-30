@@ -54,6 +54,57 @@ function formatearFechaEntrega(fechaEntrega?: string): string {
   });
 }
 
+function abrirBorradorOutlookPreferenteLocal(
+  destinatarios: string[],
+  asunto: string,
+  mensaje: string,
+  remitente: string,
+): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const destinatariosLimpios = Array.from(
+    new Set(destinatarios.map((email) => String(email || '').trim()).filter(Boolean))
+  );
+
+  if (destinatariosLimpios.length === 0) {
+    return false;
+  }
+
+  const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
+  composeUrl.searchParams.set('to', destinatariosLimpios.join(';'));
+  composeUrl.searchParams.set('subject', asunto || '');
+  composeUrl.searchParams.set('body', mensaje || '');
+  composeUrl.searchParams.set('from', remitente || '');
+
+  const mailtoTo = encodeURIComponent(destinatariosLimpios.join(','));
+  const mailtoSubject = encodeURIComponent(asunto || '');
+  const mailtoBody = encodeURIComponent(mensaje || '');
+  const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
+
+  let clienteLocalProbablementeAbierto = false;
+  const marcarAperturaCliente = () => {
+    clienteLocalProbablementeAbierto = true;
+  };
+  window.addEventListener('blur', marcarAperturaCliente, { once: true });
+
+  window.location.href = mailtoUrl;
+
+  window.setTimeout(() => {
+    if (clienteLocalProbablementeAbierto) {
+      return;
+    }
+
+    const abrirWeb = window.confirm('Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?');
+    if (abrirWeb) {
+      window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
+    }
+  }, 1500);
+
+  return true;
+}
+
 export function enviarEmailAutomaticoNuevaComanda({
   organismo,
   numeroComanda,
@@ -113,6 +164,13 @@ export function enviarEmailAutomaticoNuevaComanda({
     brandingContactLine,
   ].filter(Boolean).join('\n');
 
+  const borradorAbierto = abrirBorradorOutlookPreferenteLocal(
+    destinatarios,
+    asunto,
+    mensaje,
+    usuarioSesion.email || ''
+  );
+
   console.log('Email automatique de distribution envoyé:', {
     de: usuarioSesion.email,
     nombreRemitente: `${usuarioSesion.nombre} ${usuarioSesion.apellido || ''}`.trim(),
@@ -122,11 +180,12 @@ export function enviarEmailAutomaticoNuevaComanda({
     organismoId: organismo.id,
     organismoNombre: organismo.nombre,
     numeroComanda,
+    borradorAbierto,
     fecha: new Date().toISOString(),
   });
 
   return {
-    enviado: true,
+    enviado: borradorAbierto,
     destinatarios,
   };
 }

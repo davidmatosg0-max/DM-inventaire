@@ -314,7 +314,11 @@ export function PanierProductos({
 
       toast.success(`${t('inventory.orderCreated')}: ${numeroComanda}`);
       if (resultadoEmail.enviado) {
-        toast.success(`Notification email automatique envoyée à ${resultadoEmail.destinatarios.length} destinataire(s)`);
+        toast.success(
+          t('inventory.distributionDialog.toasts.outlookDraftOpened', {
+            count: resultadoEmail.destinatarios.length,
+          })
+        );
       }
       onOpenChange(false);
     } catch (error) {

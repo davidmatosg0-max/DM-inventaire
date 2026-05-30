@@ -868,8 +868,10 @@
         "configuredShare": "نسبة التوزيع المضبوطة: {{share}}%",
         "orderCreated": "تم إنشاء الطلب {{number}} بنجاح",
         "emailSent": "تم إرسال إشعار تلقائي إلى {{count}} مستلم/مستلمين",
+        "outlookDraftOpened": "تم فتح مسودة Outlook لـ {{count}} مستلم/مستلمين.",
         "ordersCreatedTitle": "تم إنشاء الطلبات بنجاح:",
-        "emailSummary": "✉️ تم إرسال إشعارات تلقائية إلى {{organizations}} جهة ({{recipients}} مستلم/مستلمين)."
+        "emailSummary": "✉️ تم إرسال إشعارات تلقائية إلى {{organizations}} جهة ({{recipients}} مستلم/مستلمين).",
+        "outlookDraftSummary": "تم فتح مسودات Outlook: {{organizations}} جهة، {{recipients}} مستلم/مستلمين."
       },
       "errors": {
         "noRegularOrganizationsWithShare": "لا توجد جهات منتظمة بنسبة توزيع مضبوطة",
