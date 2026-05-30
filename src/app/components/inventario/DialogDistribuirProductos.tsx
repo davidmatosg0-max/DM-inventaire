@@ -516,21 +516,28 @@ export function DialogDistribuirProductos({
         organismoData?.claveAcceso
       );
       guardarNotificacion(notificacion);
-      const resultadoEmail = enviarEmailAutomaticoNuevaComanda({
+      void enviarEmailAutomaticoNuevaComanda({
         organismo: organismoData,
         numeroComanda,
         fechaEntrega: fechaCaducidadGrupo,
         totalProductos: comanda.items.length,
         valorTotal: comanda.valorTotal,
         observaciones: observacionesComanda,
+      }).then((resultadoEmail) => {
+        if (resultadoEmail.enviado) {
+          toast.success(
+            t('inventory.distributionDialog.toasts.outlookDraftOpened', {
+              count: resultadoEmail.destinatarios.length,
+            })
+          );
+        } else if (resultadoEmail.motivo === 'graph_error' || resultadoEmail.motivo === 'graph_no_configurado') {
+          toast.error('Échec de la notification par courriel à l\'organisme', {
+            description: resultadoEmail.error || 'Microsoft Graph indisponible.',
+          });
+        }
+      }).catch((error) => {
+        console.error('Error enviando email de nueva distribución:', error);
       });
-      if (resultadoEmail.enviado) {
-        toast.success(
-          t('inventory.distributionDialog.toasts.outlookDraftOpened', {
-            count: resultadoEmail.destinatarios.length,
-          })
-        );
-      }
       cerrarYReiniciar();
       onDistribucionCompletada();
     } catch (error) {
@@ -678,18 +685,23 @@ export function DialogDistribuirProductos({
         );
         guardarNotificacion(notificacion);
         if (organismoDestino) {
-          const resultadoEmail = enviarEmailAutomaticoNuevaComanda({
+          void enviarEmailAutomaticoNuevaComanda({
             organismo: organismoDestino,
             numeroComanda,
             fechaEntrega: fechaCaducidadGrupo,
             totalProductos: comanda.items.length,
             valorTotal: comanda.valorTotal,
             observaciones: comanda.observaciones,
+          }).then((resultadoEmail) => {
+            if (resultadoEmail.enviado) {
+              resumenEmails.organismosNotificados += 1;
+              resumenEmails.destinatarios += resultadoEmail.destinatarios.length;
+            } else if (resultadoEmail.motivo === 'graph_error' || resultadoEmail.motivo === 'graph_no_configurado') {
+              console.warn(`Echec email distribution pour ${organismoDestino.nombre}:`, resultadoEmail.error);
+            }
+          }).catch((error) => {
+            console.error('Error enviando email distribution groupe:', error);
           });
-          if (resultadoEmail.enviado) {
-            resumenEmails.organismosNotificados += 1;
-            resumenEmails.destinatarios += resultadoEmail.destinatarios.length;
-          }
         }
       });
 

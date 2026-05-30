@@ -22,7 +22,13 @@ type DatosEmailNuevaComanda = {
 export type ResultadoEmailNuevaComanda = {
   enviado: boolean;
   destinatarios: string[];
-  motivo?: 'notificaciones_deshabilitadas' | 'sin_destinatarios' | 'sin_usuario';
+  motivo?:
+    | 'notificaciones_deshabilitadas'
+    | 'sin_destinatarios'
+    | 'sin_usuario'
+    | 'graph_no_configurado'
+    | 'graph_error';
+  error?: string;
 };
 
 function obtenerDestinatariosOrganismo(organismo: Organismo): string[] {
@@ -60,65 +66,14 @@ function formatearFechaEntrega(fechaEntrega?: string): string {
   });
 }
 
-function abrirBorradorOutlookPreferenteLocal(
-  destinatarios: string[],
-  asunto: string,
-  mensaje: string,
-  remitente: string,
-): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  const destinatariosLimpios = Array.from(
-    new Set(destinatarios.map((email) => String(email || '').trim()).filter(Boolean))
-  );
-
-  if (destinatariosLimpios.length === 0) {
-    return false;
-  }
-
-  const composeUrl = new URL('https://outlook.office.com/mail/deeplink/compose');
-  composeUrl.searchParams.set('to', destinatariosLimpios.join(';'));
-  composeUrl.searchParams.set('subject', asunto || '');
-  composeUrl.searchParams.set('body', mensaje || '');
-  composeUrl.searchParams.set('from', remitente || '');
-
-  const mailtoTo = encodeURIComponent(destinatariosLimpios.join(','));
-  const mailtoSubject = encodeURIComponent(asunto || '');
-  const mailtoBody = encodeURIComponent(mensaje || '');
-  const mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}&body=${mailtoBody}`;
-
-  let clienteLocalProbablementeAbierto = false;
-  const marcarAperturaCliente = () => {
-    clienteLocalProbablementeAbierto = true;
-  };
-  window.addEventListener('blur', marcarAperturaCliente, { once: true });
-
-  window.location.href = mailtoUrl;
-
-  window.setTimeout(() => {
-    if (clienteLocalProbablementeAbierto) {
-      return;
-    }
-
-    const abrirWeb = window.confirm('Outlook local ne semble pas disponible. Voulez-vous ouvrir Outlook Web ?');
-    if (abrirWeb) {
-      window.open(composeUrl.toString(), '_blank', 'noopener,noreferrer');
-    }
-  }, 1500);
-
-  return true;
-}
-
-export function enviarEmailAutomaticoNuevaComanda({
+export async function enviarEmailAutomaticoNuevaComanda({
   organismo,
   numeroComanda,
   fechaEntrega,
   totalProductos,
   valorTotal,
   observaciones,
-}: DatosEmailNuevaComanda): ResultadoEmailNuevaComanda {
+}: DatosEmailNuevaComanda): Promise<ResultadoEmailNuevaComanda> {
   if (!organismo.notificaciones) {
     return {
       enviado: false,
@@ -170,28 +125,32 @@ export function enviarEmailAutomaticoNuevaComanda({
     brandingContactLine,
   ].filter(Boolean).join('\n');
 
-  const borradorAbierto = abrirBorradorOutlookPreferenteLocal(
-    destinatarios,
-    asunto,
-    mensaje,
-    usuarioSesion.email || ''
-  );
+  const resultado = await enviarEmailViaGraph(destinatarios, asunto, mensaje);
 
-  console.log('Email automatique de distribution envoyé:', {
+  console.log('Email automatique de distribution (Graph):', {
     de: usuarioSesion.email,
     nombreRemitente: `${usuarioSesion.nombre} ${usuarioSesion.apellido || ''}`.trim(),
     destinatarios,
     asunto,
-    mensaje,
     organismoId: organismo.id,
     organismoNombre: organismo.nombre,
     numeroComanda,
-    borradorAbierto,
+    enviado: resultado.ok,
+    error: resultado.error,
     fecha: new Date().toISOString(),
   });
 
+  if (!resultado.ok) {
+    return {
+      enviado: false,
+      destinatarios,
+      motivo: resultado.motivo,
+      error: resultado.error,
+    };
+  }
+
   return {
-    enviado: borradorAbierto,
+    enviado: true,
     destinatarios,
   };
 }

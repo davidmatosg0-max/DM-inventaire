@@ -298,13 +298,27 @@ export function PanierProductos({
         organismo.claveAcceso
       );
       guardarNotificacion(notificacion);
-      const resultadoEmail = enviarEmailAutomaticoNuevaComanda({
+      void enviarEmailAutomaticoNuevaComanda({
         organismo,
         numeroComanda,
         fechaEntrega,
         totalProductos: nuevaComanda.items.length,
         valorTotal: nuevaComanda.valorTotal,
         observaciones,
+      }).then((resultadoEmail) => {
+        if (resultadoEmail.enviado) {
+          toast.success(
+            t('inventory.distributionDialog.toasts.outlookDraftOpened', {
+              count: resultadoEmail.destinatarios.length,
+            })
+          );
+        } else if (resultadoEmail.motivo === 'graph_error' || resultadoEmail.motivo === 'graph_no_configurado') {
+          toast.error('Échec de la notification par courriel à l\'organisme', {
+            description: resultadoEmail.error || 'Microsoft Graph indisponible.',
+          });
+        }
+      }).catch((error) => {
+        console.error('Error enviando email panier:', error);
       });
 
       setOrganismoSeleccionado('');
@@ -313,13 +327,6 @@ export function PanierProductos({
       setGenerarComandaOpen(false);
 
       toast.success(`${t('inventory.orderCreated')}: ${numeroComanda}`);
-      if (resultadoEmail.enviado) {
-        toast.success(
-          t('inventory.distributionDialog.toasts.outlookDraftOpened', {
-            count: resultadoEmail.destinatarios.length,
-          })
-        );
-      }
       onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('common.error'));
