@@ -554,14 +554,28 @@ export function OfertasOrganismo() {
                   {/* Productos preview */}
                   <div className="border-t pt-3">
                     <p className="text-xs text-gray-600 mb-2">{t('offers.productsIncluded')}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {oferta.productos.slice(0, 3).map((prod, idx) => (
-                        <Badge key={`${oferta.id}-prod-${idx}`} variant="outline" className="text-xs">
-                          {prod.icono} {prod.productoNombre}
-                        </Badge>
-                      ))}
+                    <div className="flex flex-col gap-1">
+                      {oferta.productos.slice(0, 3).map((prod, idx) => {
+                        const pesoUnitario = Number(prod.peso) || 0;
+                        const detallePeso = pesoUnitario > 0
+                          ? ` · ${pesoUnitario} kg/${prod.unidad || 'unité'}`
+                          : '';
+                        return (
+                          <div
+                            key={`${oferta.id}-prod-${idx}`}
+                            className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2 py-1 text-xs"
+                          >
+                            <span className="truncate font-medium text-[#0f172a]">
+                              {prod.icono} {prod.productoNombre}
+                            </span>
+                            <span className="shrink-0 text-gray-600">
+                              {prod.cantidadOfrecida} {prod.unidad || 'unité'}{detallePeso}
+                            </span>
+                          </div>
+                        );
+                      })}
                       {oferta.productos.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="self-start text-xs">
                           +{oferta.productos.length - 3} {t('offers.more')}
                         </Badge>
                       )}
