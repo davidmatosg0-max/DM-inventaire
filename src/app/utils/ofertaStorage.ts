@@ -24,6 +24,9 @@ export type ProductoOferta = {
   peso: number;
   valorUnitario: number;
   icono?: string;
+  // Limite maxéquitable par organisme (toutes solicitudes actives confondues).
+  // undefined ou 0 = pas de limite.
+  limiteMaximoPorOrganismo?: number;
 };
 
 export type AceptacionOferta = {
@@ -343,6 +346,31 @@ export function crearSolicitudOferta(
   if (!oferta) return false;
   if (!ofertaPuedeRecibirSolicitudes(oferta)) return false;
   if (!validarProductosDisponibles(oferta, productosAceptados)) return false;
+
+  // Validation de la limite maxéquitable par organisme
+  // (somme de toutes les solicitudes actives de ce même organisme + nouvelle demande)
+  for (const item of productosAceptados) {
+    const producto = oferta.productos.find(p => p.productoId === item.productoId);
+    if (!producto || !producto.limiteMaximoPorOrganismo || producto.limiteMaximoPorOrganismo <= 0) continue;
+
+    const yaSolicitado = (oferta.solicitudes || [])
+      .filter(s =>
+        s.organismoId === organismoId &&
+        (s.estado === 'pendiente' || s.estado === 'aceptada' || s.estado === 'en_preparacion' || s.estado === 'entregada')
+      )
+      .reduce((sum, s) => {
+        const prod = s.productosAceptados.find(p => p.productoId === item.productoId);
+        return sum + (prod ? prod.cantidadAceptada : 0);
+      }, 0);
+
+    if (yaSolicitado + item.cantidadAceptada > producto.limiteMaximoPorOrganismo) {
+      console.warn(
+        `⛔ Limite maxéquitable dépassée pour ${producto.productoNombre}: ` +
+        `${yaSolicitado + item.cantidadAceptada} > ${producto.limiteMaximoPorOrganismo}`
+      );
+      return false;
+    }
+  }
 
   const solicitudExistente = (oferta.solicitudes || []).find(
     solicitud =>

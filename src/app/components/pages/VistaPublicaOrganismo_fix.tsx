@@ -625,8 +625,8 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
       setRefreshOfertas(prev => prev + 1);
     } else {
       toast.error('Erreur lors du traitement de la demande', {
-        description: 'La demande n’a pas pu être enregistrée. Vérifiez s’il existe déjà une demande active pour cette offre ou si les quantités sont encore disponibles.',
-        duration: 4000
+        description: 'La demande n’a pas pu être enregistrée. Causes possibles : une demande active existe déjà pour cette offre, les quantités ne sont plus disponibles, ou la limite équitable par organisme a été dépassée.',
+        duration: 5000
       });
     }
   };

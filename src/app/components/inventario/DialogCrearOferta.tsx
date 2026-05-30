@@ -58,6 +58,10 @@ export function DialogCrearOferta({
   const [filtrarPorTipoAsistencia, setFiltrarPorTipoAsistencia] = useState(false);
   const [tiposAsistenciaSeleccionados, setTiposAsistenciaSeleccionados] = useState<string[]>([]);
 
+  // Limite maxéquitable par organisme (par produit)
+  const [limiteEquitableActivo, setLimiteEquitableActivo] = useState(false);
+  const [limitesPorProducto, setLimitesPorProducto] = useState<Record<string, number>>({});
+
   const usuarioActual = t('inventory.offerDialog.systemUser');
   const organismosActivos = obtenerOrganismos().filter(organismo => organismo.activo);
 
@@ -71,6 +75,8 @@ export function DialogCrearOferta({
       setOrganismosSeleccionados([]);
       setFiltrarPorTipoAsistencia(false);
       setTiposAsistenciaSeleccionados([]);
+      setLimiteEquitableActivo(false);
+      setLimitesPorProducto({});
     }
   }, [open]);
 
@@ -91,7 +97,10 @@ export function DialogCrearOferta({
       unidad: producto?.unidad || '',
       peso: producto?.peso || producto?.pesoUnitario || 0,
       valorUnitario: valorDistribucion.valorUnitario,
-      icono: producto?.icono || categoriaInfo?.icono || '📦'
+      icono: producto?.icono || categoriaInfo?.icono || '📦',
+      limiteMaximoPorOrganismo: limiteEquitableActivo && limitesPorProducto[item.productoId] && limitesPorProducto[item.productoId] > 0
+        ? limitesPorProducto[item.productoId]
+        : undefined
     };
   });
 
@@ -368,6 +377,87 @@ export function DialogCrearOferta({
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Limite équitable par organisme */}
+          <Card className="border-2 border-[#9C27B0]">
+            <CardContent className="p-4 space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Scale className="w-5 h-5 text-[#9C27B0]" />
+                Limite équitable par organisme
+              </h3>
+
+              <div
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  limiteEquitableActivo
+                    ? 'border-[#9C27B0] bg-[#F3E5F5]'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setLimiteEquitableActivo(prev => !prev)}
+              >
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={limiteEquitableActivo}
+                    onCheckedChange={(checked) => setLimiteEquitableActivo(Boolean(checked))}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div className="flex-1">
+                    <p className="font-semibold">Activer une quantité maximale par organisme</p>
+                    <p className="text-sm text-gray-600">
+                      Chaque organisme ne pourra réserver, au total, qu'au plus la quantité indiquée pour chaque produit. Cela permet une distribution plus équitable.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {limiteEquitableActivo && (
+                <div className="space-y-2 max-h-[220px] overflow-y-auto border-t pt-3">
+                  {productosOferta.map((producto) => (
+                    <div
+                      key={producto.productoId}
+                      className="flex items-center justify-between gap-3 p-2 bg-gray-50 rounded-md border border-gray-200"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-xl">{producto.icono}</span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{producto.productoNombre}</p>
+                          <p className="text-xs text-gray-500">
+                            Disponible : {formatQuantity(producto.cantidadOfrecida)} {producto.unidad}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={producto.cantidadOfrecida}
+                          step={1}
+                          value={limitesPorProducto[producto.productoId] ?? ''}
+                          onChange={(e) => {
+                            const valor = e.target.value;
+                            setLimitesPorProducto(prev => {
+                              const next = { ...prev };
+                              if (valor === '') {
+                                delete next[producto.productoId];
+                              } else {
+                                next[producto.productoId] = Math.max(1, Math.min(producto.cantidadOfrecida, Number(valor) || 0));
+                              }
+                              return next;
+                            });
+                          }}
+                          placeholder="—"
+                          className="w-24 text-right"
+                        />
+                        <span className="text-xs text-gray-600 w-12">{producto.unidad}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-xs text-gray-500 italic">
+                    Laisser vide pour ne pas appliquer de limite à ce produit.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
