@@ -3,6 +3,12 @@ import { formatBrandingContactLine, getStoredBrandingPrintConfig } from './brand
 import { formatMoney } from './formatUtils';
 import { construirUrlAccesoOrganismo } from './organismoAccessLinks';
 import { obtenerUsuarioSesion } from './sesionStorage';
+import {
+  getSupabaseAnonKey,
+  getSupabaseClient,
+  getSupabaseFunctionUrl,
+  isSupabaseAuthEnabled,
+} from './supabaseClient';
 
 type DatosEmailNuevaComanda = {
   organismo: Organismo;
@@ -188,4 +194,167 @@ export function enviarEmailAutomaticoNuevaComanda({
     enviado: borradorAbierto,
     destinatarios,
   };
+}
+
+// ============================================================================
+// Notification de changement d'état de commande (Microsoft Graph)
+// ============================================================================
+
+const ETIQUETAS_ESTADO_COMANDA_FR: Record<string, string> = {
+  pendiente: 'En attente',
+  confirmada: 'Acceptée',
+  en_preparacion: 'En préparation',
+  completada: 'Complétée',
+  entregada: 'Livrée',
+  anulada: 'Annulée',
+  rechazada: 'Refusée',
+};
+
+function describirEstadoComanda(estado: string): string {
+  return ETIQUETAS_ESTADO_COMANDA_FR[estado] || estado;
+}
+
+export type ResultadoEmailEstadoComanda = {
+  enviado: boolean;
+  destinatarios: string[];
+  motivo?:
+    | 'notificaciones_deshabilitadas'
+    | 'sin_destinatarios'
+    | 'sin_usuario'
+    | 'graph_no_configurado'
+    | 'graph_error';
+  error?: string;
+};
+
+type DatosEmailEstadoComanda = {
+  organismo: Organismo;
+  numeroComanda: string;
+  estadoAnterior: string;
+  estadoNuevo: string;
+  observaciones?: string;
+};
+
+async function enviarEmailViaGraph(
+  destinatarios: string[],
+  asunto: string,
+  cuerpo: string,
+): Promise<{ ok: boolean; error?: string; motivo?: 'graph_no_configurado' | 'graph_error' }> {
+  if (!isSupabaseAuthEnabled()) {
+    return { ok: false, motivo: 'graph_no_configurado', error: 'Supabase auth disabled.' };
+  }
+
+  const client = getSupabaseClient();
+  if (!client) {
+    return { ok: false, motivo: 'graph_no_configurado', error: 'Supabase client not configured.' };
+  }
+
+  try {
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    if (!session?.access_token) {
+      return { ok: false, motivo: 'graph_no_configurado', error: 'No authenticated session token.' };
+    }
+
+    const response = await fetch(getSupabaseFunctionUrl('send-graph-mail'), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: getSupabaseAnonKey(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ to: destinatarios, subject: asunto, body: cuerpo }),
+    });
+
+    if (response.ok) {
+      return { ok: true };
+    }
+
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    return {
+      ok: false,
+      motivo: 'graph_error',
+      error: payload?.error || `send-graph-mail returned ${response.status}`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      motivo: 'graph_error',
+      error: error instanceof Error ? error.message : 'Unexpected error',
+    };
+  }
+}
+
+export async function enviarEmailEstadoComandaActualizado({
+  organismo,
+  numeroComanda,
+  estadoAnterior,
+  estadoNuevo,
+  observaciones,
+}: DatosEmailEstadoComanda): Promise<ResultadoEmailEstadoComanda> {
+  if (!organismo.notificaciones) {
+    return { enviado: false, destinatarios: [], motivo: 'notificaciones_deshabilitadas' };
+  }
+
+  const usuarioSesion = obtenerUsuarioSesion();
+  if (!usuarioSesion) {
+    return { enviado: false, destinatarios: [], motivo: 'sin_usuario' };
+  }
+
+  const destinatarios = obtenerDestinatariosOrganismo(organismo);
+  if (destinatarios.length === 0) {
+    return { enviado: false, destinatarios: [], motivo: 'sin_destinatarios' };
+  }
+
+  const etiquetaAnterior = describirEstadoComanda(estadoAnterior);
+  const etiquetaNueva = describirEstadoComanda(estadoNuevo);
+  const asunto = `🔔 Mise à jour commande ${numeroComanda} - ${etiquetaNueva}`;
+  const linkAcceso = construirUrlAccesoOrganismo(organismo.claveAcceso);
+  const brandingPrint = getStoredBrandingPrintConfig();
+  const brandingContactLine = formatBrandingContactLine(brandingPrint);
+
+  const mensaje = [
+    `Bonjour ${organismo.nombre},`,
+    '',
+    `Le statut de votre commande ${numeroComanda} a été mis à jour.`,
+    '',
+    `• Statut précédent : ${etiquetaAnterior}`,
+    `• Nouveau statut : ${etiquetaNueva}`,
+    observaciones?.trim() ? `• Observations : ${observaciones.trim()}` : '',
+    '',
+    `Accès direct au portail organisme : ${linkAcceso}`,
+    '',
+    'Vous pouvez consulter le détail complet de votre commande dans le portail.',
+    '',
+    brandingPrint.systemName,
+    'Système de Gestion',
+    brandingContactLine,
+  ].filter(Boolean).join('\n');
+
+  const resultado = await enviarEmailViaGraph(destinatarios, asunto, mensaje);
+
+  console.log('Notification changement état commande:', {
+    de: usuarioSesion.email,
+    destinatarios,
+    organismoId: organismo.id,
+    organismoNombre: organismo.nombre,
+    numeroComanda,
+    estadoAnterior,
+    estadoNuevo,
+    enviado: resultado.ok,
+    error: resultado.error,
+    fecha: new Date().toISOString(),
+  });
+
+  if (!resultado.ok) {
+    return {
+      enviado: false,
+      destinatarios,
+      motivo: resultado.motivo,
+      error: resultado.error,
+    };
+  }
+
+  return { enviado: true, destinatarios };
 }

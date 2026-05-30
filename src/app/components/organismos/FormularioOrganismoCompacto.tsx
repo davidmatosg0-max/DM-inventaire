@@ -608,7 +608,7 @@ export function FormularioOrganismoCompacto({
                           </div>
                           <div className="mt-3 space-y-2">
                             {contactosNotificacion.length > 0 ? contactosNotificacion.map((contacto: any, index: number) => (
-                              <div key={`${contacto.email || 'contact'}-${index}`} className="rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm text-[#16324f]">
+                              <div key={`contact-readonly-${index}`} className="rounded-2xl bg-[#f8fbff] px-4 py-3 text-sm text-[#16324f]">
                                 <p className="font-semibold">{contacto.nombre || `Contact ${index + 1}`}</p>
                                 <p>{contacto.cargo || 'Poste non renseigne'}</p>
                                 <p className="break-all text-[#5d7185]">{contacto.email || 'Email non renseigne'}</p>
@@ -876,7 +876,7 @@ export function FormularioOrganismoCompacto({
                     </div>
 
                     {(formulario.contactosNotificacion || []).map((contacto: any, index: number) => (
-                      <div key={`${contacto.email || 'contact'}-${index}`} className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-3">
+                      <div key={`contact-edit-${index}`} className="rounded-3xl border border-[#e7eef5] bg-white p-4 shadow-sm space-y-3">
                         <div className="flex items-center justify-between gap-3">
                           <h4 className="text-sm font-semibold">{t('organisms.contact')} {index + 1}</h4>
                           {(formulario.contactosNotificacion || []).length > 1 ? (

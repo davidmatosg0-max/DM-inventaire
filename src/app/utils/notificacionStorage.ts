@@ -99,6 +99,36 @@ export const crearNotificacionNuevaComanda = (
   };
 };
 
+const ETIQUETAS_ESTADO_NOTIF_FR: Record<string, string> = {
+  pendiente: 'En attente',
+  confirmada: 'acceptée',
+  en_preparacion: 'en préparation',
+  completada: 'complétée',
+  entregada: 'livrée',
+  anulada: 'annulée',
+  rechazada: 'refusée',
+};
+
+export const crearNotificacionCambioEstadoComanda = (
+  comandaId: string,
+  comandaNumero: string,
+  organismoId: string,
+  nuevoEstado: string,
+  claveAcceso?: string
+): NotificacionComanda => {
+  const etiqueta = ETIQUETAS_ESTADO_NOTIF_FR[nuevoEstado] || nuevoEstado;
+  return {
+    id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    comandaId,
+    organismoId,
+    tipo: 'cambio_estado',
+    mensaje: `Commande ${comandaNumero} ${etiqueta}`,
+    fecha: new Date().toISOString(),
+    leida: false,
+    urlAcceso: construirRutaAccesoOrganismo(claveAcceso),
+  };
+};
+
 // ============ FUNCIONES PARA NOTIFICACIONES DE OFERTAS ============
 
 export const obtenerNotificacionesOfertas = (): NotificacionOferta[] => {

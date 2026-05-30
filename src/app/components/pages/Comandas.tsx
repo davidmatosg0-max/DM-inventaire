@@ -45,6 +45,8 @@ import { registrarActividad } from '../../utils/actividadLogger';
 import { obtenerOrganismos as obtenerOrganismosReales } from '../../utils/organismosStorage';
 import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 import { construirUrlAccesoOrganismo } from '../../utils/organismoAccessLinks';
+import { enviarEmailEstadoComandaActualizado } from '../../utils/organismoEmailNotifications';
+import { crearNotificacionCambioEstadoComanda, guardarNotificacion } from '../../utils/notificacionStorage';
 import { normalizeScannedComandaQR } from '../../utils/comandaQr';
 import { normalizeScannedLocationQR, normalizeScannedProductQR } from '../../utils/barcode';
 import {
@@ -704,6 +706,54 @@ export function Comandas() {
     }
     
     toast.success(`${t('orders.statusChangedTo')} ${estadoTexto}`);
+
+    // 🔔 NOTIFICAR AL ORGANISMO (in-app + email Microsoft Graph)
+    if (comandaSeleccionada) {
+      const organismoDestino = resolverOrganismoComanda(comandaSeleccionada);
+      const numeroComanda = comandaSeleccionada.numero || comandaSeleccionada.id;
+      const estadoAnterior = comandaSeleccionada.estado;
+
+      if (organismoDestino) {
+        try {
+          const notificacionInApp = crearNotificacionCambioEstadoComanda(
+            comandaSeleccionada.id,
+            numeroComanda,
+            organismoDestino.id,
+            nuevoEstado,
+            organismoDestino.claveAcceso,
+          );
+          guardarNotificacion(notificacionInApp);
+        } catch (error) {
+          console.error('No se pudo guardar la notificación in-app de cambio de estado:', error);
+        }
+
+        if (organismoDestino.notificaciones) {
+          (async () => {
+            try {
+              const resultado = await enviarEmailEstadoComandaActualizado({
+                organismo: organismoDestino,
+                numeroComanda,
+                estadoAnterior,
+                estadoNuevo: nuevoEstado,
+              });
+
+              if (resultado.enviado) {
+                toast.success(
+                  `Organisme notifié par courriel (${resultado.destinatarios.length})`,
+                );
+              } else if (resultado.motivo === 'graph_error' || resultado.motivo === 'graph_no_configurado') {
+                toast.error('Échec de la notification par courriel à l\'organisme', {
+                  description: resultado.error || 'Microsoft Graph indisponible.',
+                });
+              }
+              // Casos sin_destinatarios / sin_usuario / notificaciones_deshabilitadas: silencioso.
+            } catch (error) {
+              console.error('Error enviando email de cambio de estado:', error);
+            }
+          })();
+        }
+      }
+    }
   };
 
   const reconstruirItemsAceptados = (itemsOriginales: ItemComanda[], itemsAceptados: ItemComanda[]) => {
@@ -844,6 +894,8 @@ export function Comandas() {
     }
 
     const comandasObjetivo = comandasPendientes.filter((comanda) => comandasSeleccionadas.includes(comanda.id));
+    const organismosOptOut: string[] = [];
+    const organismosSinEmail: string[] = [];
     const notificacionesPorOrganismo = comandasObjetivo.reduce<Array<{
       organismo: Organismo;
       comandas: Comanda[];
@@ -851,6 +903,14 @@ export function Comandas() {
     }>>((grupos, comanda) => {
       const organismo = resolverOrganismoComanda(comanda);
       if (!organismo) {
+        return grupos;
+      }
+
+      // Respect opt-out par organisme
+      if (organismo.notificaciones === false) {
+        if (!organismosOptOut.includes(organismo.nombre)) {
+          organismosOptOut.push(organismo.nombre);
+        }
         return grupos;
       }
 
@@ -866,6 +926,9 @@ export function Comandas() {
       );
 
       if (destinatariosComanda.length === 0) {
+        if (!organismosSinEmail.includes(organismo.nombre)) {
+          organismosSinEmail.push(organismo.nombre);
+        }
         return grupos;
       }
 
@@ -887,21 +950,21 @@ export function Comandas() {
     const destinatariosTotales = notificacionesPorOrganismo.reduce((total, grupo) => total + grupo.destinatarios.length, 0);
 
     if (notificacionesPorOrganismo.length === 0) {
-      toast.error('Aucun organisme sélectionné avec une adresse email valide.');
+      const detalles: string[] = [];
+      if (organismosOptOut.length > 0) {
+        detalles.push(`Notifications désactivées : ${organismosOptOut.join(', ')}`);
+      }
+      if (organismosSinEmail.length > 0) {
+        detalles.push(`Sans adresse courriel : ${organismosSinEmail.join(', ')}`);
+      }
+      toast.error('Aucun organisme éligible aux notifications.', {
+        description: detalles.join(' | ') || undefined,
+      });
       return;
     }
 
-    const confirmarEnvio = window.confirm(
-      t('orders.notifyPendingOrdersConfirm', {
-        orders: comandasObjetivo.length,
-        organizations: notificacionesPorOrganismo.length,
-        recipients: destinatariosTotales,
-      })
-    );
-
-    if (!confirmarEnvio) {
-      return;
-    }
+    // Note : le checkbox de confirmation dans le dialog tient lieu de validation préalable.
+    // window.confirm() supprimé pour éviter une double confirmation.
 
     const crearMensajePorOrganismo = (organismo: Organismo, comandasOrganismo: Comanda[]) => {
       const linkAcceso = construirUrlAccesoOrganismo(organismo.claveAcceso);
@@ -1019,6 +1082,44 @@ export function Comandas() {
             organizations: enviadosAutomaticamente,
           })
         );
+
+        // 🔔 Notification in-app + journal d'activité pour chaque groupe envoyé
+        const gruposEnviados = gruposNotificacion.filter((g) => !gruposFallback.includes(g));
+        gruposEnviados.forEach((grupo) => {
+          grupo.comandas.forEach((comanda) => {
+            try {
+              const notif = crearNotificacionCambioEstadoComanda(
+                comanda.id,
+                comanda.numero || comanda.id,
+                grupo.organismo.id,
+                'pendiente',
+                grupo.organismo.claveAcceso,
+              );
+              guardarNotificacion({
+                ...notif,
+                mensaje: `Rappel : commande ${comanda.numero || comanda.id} en attente de confirmation`,
+              });
+            } catch (error) {
+              console.error('No se pudo guardar notificación in-app de rappel:', error);
+            }
+          });
+
+          try {
+            registrarActividad(
+              'Commandes',
+              'enviar',
+              `Rappel envoyé à ${grupo.organismo.nombre} (${grupo.comandas.length} commande(s), ${grupo.destinatarios.length} destinataire(s))`,
+              {
+                organismoId: grupo.organismo.id,
+                organismoNombre: grupo.organismo.nombre,
+                comandasIds: grupo.comandas.map((c) => c.id),
+                destinatarios: grupo.destinatarios,
+              },
+            );
+          } catch (error) {
+            console.error('No se pudo registrar actividad de notificación:', error);
+          }
+        });
       }
 
       if (gruposFallback.length === 0) {
@@ -1031,7 +1132,12 @@ export function Comandas() {
       toast.error(
         t('orders.pendingNotificationsAutomaticFailed', {
           organizations: gruposFallback.length,
-        }) + (erroresAutomaticos.length > 0 ? `\n${erroresAutomaticos.slice(0, 2).join(' | ')}` : '')
+        }),
+        {
+          description: erroresAutomaticos.length > 0
+            ? erroresAutomaticos.slice(0, 2).join(' | ')
+            : undefined,
+        }
       );
     })();
 
@@ -2504,10 +2610,10 @@ export function Comandas() {
                 />
                 <div>
                   <Label htmlFor="verification-notifications" className="cursor-pointer font-medium text-[#1A4D7A]">
-                    J’ai vérifié les destinataires et je confirme l’ouverture d’Outlook avant l’envoi.
+                    J’ai vérifié les destinataires. Les courriels seront envoyés automatiquement via Microsoft Graph.
                   </Label>
                   <p className="mt-1 text-xs text-[#4B647A]">
-                    Cette confirmation est obligatoire pour envoyer les notifications.
+                    Les organismes ayant désactivé les notifications seront ignorés. Cette confirmation est obligatoire.
                   </p>
                 </div>
               </div>
