@@ -358,6 +358,15 @@ export function crearSolicitudOferta(
     oferta.solicitudes = [];
   }
 
+  // Réserver immédiatement les quantités dès la création de la demande
+  // afin que les autres organismes ne voient plus la quantité disponible.
+  for (const item of productosAceptados) {
+    const producto = oferta.productos.find(p => p.productoId === item.productoId);
+    if (producto) {
+      producto.cantidadDisponible -= item.cantidadAceptada;
+    }
+  }
+
   oferta.solicitudes.push({
     id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     organismoId,
@@ -367,6 +376,8 @@ export function crearSolicitudOferta(
     observaciones,
     estado: 'pendiente'
   });
+
+  actualizarEstadoDerivadoOferta(oferta);
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(ofertas));
   console.log('✅ Solicitud de oferta creada:', { ofertaId, organismoId, productosAceptados });
@@ -867,8 +878,10 @@ export function actualizarEstadoSolicitud(
     solicitud.motivoRechazo = motivoRechazo;
   }
   
-  // Aceptar una solicitud reserva cantidades si antes no estaban reservadas
-  if (nuevoEstado === 'aceptada' && estadoAnterior !== 'aceptada' && estadoAnterior !== 'en_preparacion') {
+  // La cantidad ya queda reservada desde la creación de la solicitud (estado 'pendiente').
+  // Por lo tanto, pasar a 'aceptada' / 'en_preparacion' no requiere descontar de nuevo.
+  // Sólo validamos que sigue habiendo cantidad coherente (defensa en profundidad).
+  if (nuevoEstado === 'aceptada' && estadoAnterior !== 'aceptada' && estadoAnterior !== 'en_preparacion' && estadoAnterior !== 'pendiente') {
     if (!validarProductosDisponibles(oferta, solicitud.productosAceptados)) {
       console.error('No hay suficiente cantidad disponible');
       solicitud.estado = estadoAnterior;
@@ -883,9 +896,14 @@ export function actualizarEstadoSolicitud(
       }
     }
   }
-  
-  // Si se anula o rechaza una solicitud que estaba aceptada, devolver cantidades
-  if ((nuevoEstado === 'anulada' || nuevoEstado === 'rechazada') && (estadoAnterior === 'aceptada' || estadoAnterior === 'en_preparacion')) {
+
+  // Si se anula o rechaza una solicitud que tenía cantidades reservadas, devolverlas.
+  // Ahora la reserva existe desde 'pendiente', así que cualquier paso a 'anulada' o 'rechazada'
+  // desde un estado activo debe restaurar la disponibilidad.
+  if (
+    (nuevoEstado === 'anulada' || nuevoEstado === 'rechazada') &&
+    (estadoAnterior === 'pendiente' || estadoAnterior === 'aceptada' || estadoAnterior === 'en_preparacion')
+  ) {
     for (const prod of solicitud.productosAceptados) {
       const producto = oferta.productos.find(p => p.productoId === prod.productoId);
       if (producto) {
@@ -916,8 +934,10 @@ export function editarSolicitud(
   const solicitud = oferta.solicitudes.find(s => s.id === solicitudId);
   if (!solicitud) return false;
   
-  // Si la solicitud estaba aceptada, devolver las cantidades anteriores
-  if (solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion') {
+  // Si la solicitud está activa (pendiente, aceptada o en preparación),
+  // devolver las cantidades anteriores antes de aplicar las nuevas.
+  const solicitudActiva = solicitud.estado === 'pendiente' || solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion';
+  if (solicitudActiva) {
     for (const prod of solicitud.productosAceptados) {
       const producto = oferta.productos.find(p => p.productoId === prod.productoId);
       if (producto) {
@@ -943,8 +963,8 @@ export function editarSolicitud(
   }
   solicitud.fechaActualizacion = new Date().toISOString();
   
-  // Si la solicitud estaba aceptada, reservar las nuevas cantidades
-  if (solicitud.estado === 'aceptada' || solicitud.estado === 'en_preparacion') {
+  // Reservar las nuevas cantidades si la solicitud está activa
+  if (solicitudActiva) {
     for (const prod of nuevosProductos) {
       const producto = oferta.productos.find(p => p.productoId === prod.productoId);
       if (producto) {
