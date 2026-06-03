@@ -146,7 +146,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (remoteAuth.status === 'success') {
         usuarioValidado = remoteAuth.usuario;
       } else if (remoteAuth.status === 'invalid-credentials') {
-        return false;
+        // Fallback local para no bloquear accesos de emergencia (p. ej. cuenta desarrollador)
+        // cuando el proveedor remoto no reconoce todavía el usuario o su contraseña.
+        usuarioValidado = validarCredenciales(username, password);
+        if (!usuarioValidado) {
+          return false;
+        }
       } else {
         usuarioValidado = validarCredenciales(username, password);
       }
@@ -304,7 +309,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const esDeveloper = (): boolean => {
     const role = (usuario?.role || usuario?.rol || '').toLowerCase();
-    return role === 'desarrollador';
+    const permisosUsuario = Array.isArray(usuario?.permisos)
+      ? usuario.permisos.map((permiso: string) => permiso.toLowerCase())
+      : [];
+
+    return role === 'desarrollador'
+      || role === 'developer'
+      || role === 'developpeur'
+      || permisosUsuario.includes('desarrollador')
+      || permisosUsuario.includes('developer')
+      || permisosUsuario.includes('developpeur');
   };
 
   const value: AuthContextType = {

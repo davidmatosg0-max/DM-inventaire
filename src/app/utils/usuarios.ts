@@ -120,6 +120,7 @@ export const DAVID_DEVELOPPEUR_USERNAME = 'David';
 export const DAVID_DEVELOPPEUR_NOMBRE = 'David';
 export const DAVID_DEVELOPPEUR_APELLIDO = 'Développeur';
 export const DAVID_DEVELOPPEUR_EMAIL = 'davidmatosg0@gmail.com';
+export const DAVID_DEVELOPPEUR_PASSWORD = 'Lettycia26';
 
 export function esRolSistema(rol: string): rol is RolUsuario {
   return esRolSistemaCatalogo(rol);
@@ -134,7 +135,7 @@ const USUARIOS_PREDEFINIDOS: Usuario[] = [
   {
     id: '1',
     username: DAVID_DEVELOPPEUR_USERNAME,
-    password: 'Lettycia26',
+    password: DAVID_DEVELOPPEUR_PASSWORD,
     nombre: DAVID_DEVELOPPEUR_NOMBRE,
     apellido: DAVID_DEVELOPPEUR_APELLIDO,
     email: DAVID_DEVELOPPEUR_EMAIL,
@@ -158,7 +159,7 @@ const USUARIOS_PREDEFINIDOS: Usuario[] = [
 
 const STORAGE_KEY = 'banque_alimentaire_usuarios';
 const VERSION_KEY = 'banque_alimentaire_usuarios_version';
-const CURRENT_VERSION = '5.2-production'; // Versión producción - Normaliza el email real de David
+const CURRENT_VERSION = '5.3-production'; // Fuerza normalización completa del usuario desarrollador
 
 function esUsuarioDavidDeveloppeur(usuario: Partial<Usuario>): boolean {
   const username = usuario.username?.trim().toLowerCase();
@@ -174,13 +175,36 @@ function normalizarUsuarioSistema(usuario: Usuario): Usuario {
     return usuario;
   }
 
+  const permisosMinimos = new Set([
+    ...USUARIOS_PREDEFINIDOS[0].permisos,
+    ...(Array.isArray(usuario.permisos) ? usuario.permisos : []),
+  ]);
+
   return {
     ...usuario,
     username: DAVID_DEVELOPPEUR_USERNAME,
     nombre: DAVID_DEVELOPPEUR_NOMBRE,
     apellido: DAVID_DEVELOPPEUR_APELLIDO,
     email: DAVID_DEVELOPPEUR_EMAIL,
+    password: usuario.password?.trim() ? usuario.password : DAVID_DEVELOPPEUR_PASSWORD,
+    rol: 'desarrollador',
+    permisos: Array.from(permisosMinimos),
+    activo: true,
   };
+}
+
+function asegurarUsuarioDesarrollador(usuarios: Usuario[]): Usuario[] {
+  const usuariosNormalizados = usuarios.map(normalizarUsuarioSistema);
+  const existeDesarrollador = usuariosNormalizados.some(esUsuarioDavidDeveloppeur);
+
+  if (existeDesarrollador) {
+    return usuariosNormalizados;
+  }
+
+  return [
+    ...usuariosNormalizados,
+    normalizarUsuarioSistema(USUARIOS_PREDEFINIDOS[0]),
+  ];
 }
 
 // Migrar usuarios existentes para actualizar permisos del usuario David
@@ -194,7 +218,8 @@ export function migrarUsuarios(): void {
       return; // Ya está actualizado
     }
 
-    const usuariosNormalizados = (usuariosActuales.length > 0 ? usuariosActuales : USUARIOS_PREDEFINIDOS).map(normalizarUsuarioSistema);
+    const baseUsuarios = usuariosActuales.length > 0 ? usuariosActuales : USUARIOS_PREDEFINIDOS;
+    const usuariosNormalizados = asegurarUsuarioDesarrollador(baseUsuarios);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usuariosNormalizados));
     queueStorageSync(STORAGE_KEY);
     localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
@@ -214,7 +239,7 @@ export function inicializarUsuarios(): void {
       localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
       console.log('✅ Utilisateurs initialisés :', USUARIOS_PREDEFINIDOS.length, 'utilisateur(s)');
     } else {
-      const usuarios = (JSON.parse(stored) as Usuario[]).map(normalizarUsuarioSistema);
+      const usuarios = asegurarUsuarioDesarrollador(JSON.parse(stored) as Usuario[]);
       if (usuarios.length === 0) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(USUARIOS_PREDEFINIDOS));
         queueStorageSync(STORAGE_KEY);
@@ -238,12 +263,21 @@ export function obtenerUsuarios(): Usuario[] {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored !== null) {
       // Si existe la clave (aunque sea un array vacío), usarla
-      const usuarios = JSON.parse(stored);
+      const usuarios = JSON.parse(stored) as Usuario[];
+      const usuariosReparados = asegurarUsuarioDesarrollador(usuarios);
+
+      // Auto-reparación silenciosa: si hay desvíos de estructura/credenciales
+      // del usuario desarrollador, persistimos la versión saneada.
+      if (JSON.stringify(usuariosReparados) !== JSON.stringify(usuarios)) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(usuariosReparados));
+        queueStorageSync(STORAGE_KEY);
+      }
+
       // Si hay usuarios, ejecutar migración si es necesaria
-      if (usuarios.length > 0) {
+      if (usuariosReparados.length > 0) {
         migrarUsuarios();
       }
-      return usuarios;
+      return usuariosReparados;
     } else {
       // Solo inicializar si NO existe la clave en localStorage (primera vez)
       inicializarUsuarios();
@@ -276,9 +310,10 @@ export function obtenerUsuariosTransporte(): Usuario[] {
 // Guardar usuarios en localStorage
 export function guardarUsuarios(usuarios: Usuario[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
+    const usuariosSaneados = asegurarUsuarioDesarrollador(usuarios);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(usuariosSaneados));
     queueStorageSync(STORAGE_KEY);
-    console.log('✅ Utilisateurs enregistrés :', usuarios.length, 'utilisateur(s)');
+    console.log('✅ Utilisateurs enregistrés :', usuariosSaneados.length, 'utilisateur(s)');
   } catch (error) {
     console.error('Erreur lors de l’enregistrement des utilisateurs :', error);
   }
@@ -286,9 +321,10 @@ export function guardarUsuarios(usuarios: Usuario[]): void {
 
 // Validar credenciales de usuario
 export function validarCredenciales(username: string, password: string): Usuario | null {
+  const usernameNormalizado = username.trim().toLowerCase();
   const usuarios = obtenerUsuarios();
   const usuario = usuarios.find(
-    u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
+    u => u.username.toLowerCase() === usernameNormalizado && u.password === password
   );
   
   if (usuario) {
@@ -311,7 +347,7 @@ export function obtenerUsuarioPorUsername(username: string): Usuario | null {
 function mezclarUsuariosConCacheLocal(usuariosRemotos: Usuario[]): Usuario[] {
   const usuariosLocales = obtenerUsuarios();
 
-  return usuariosRemotos.map((usuarioRemoto) => {
+  const usuariosRemotosFusionados = usuariosRemotos.map((usuarioRemoto) => {
     const usuarioLocal = usuariosLocales.find((usuario) =>
       usuario.id === usuarioRemoto.id
       || usuario.username.toLowerCase() === usuarioRemoto.username.toLowerCase()
@@ -329,6 +365,19 @@ function mezclarUsuariosConCacheLocal(usuariosRemotos: Usuario[]): Usuario[] {
       fechaCreacion: usuarioLocal?.fechaCreacion || usuarioRemoto.fechaCreacion,
     };
   });
+
+  // Preservar usuarios locales que todavía no existen en remoto
+  // para evitar perder accesos críticos (ej. cuenta desarrollador).
+  const usuariosLocalesNoSincronizados = usuariosLocales.filter((usuarioLocal) =>
+    !usuariosRemotosFusionados.some((usuarioRemoto) =>
+      usuarioRemoto.id === usuarioLocal.id
+      || usuarioRemoto.username.toLowerCase() === usuarioLocal.username.toLowerCase()
+      || usuarioRemoto.email.toLowerCase() === usuarioLocal.email.toLowerCase()
+    )
+  );
+
+  return [...usuariosRemotosFusionados, ...usuariosLocalesNoSincronizados]
+    .map(normalizarUsuarioSistema);
 }
 
 export async function sincronizarUsuariosConProveedor(): Promise<Usuario[]> {
