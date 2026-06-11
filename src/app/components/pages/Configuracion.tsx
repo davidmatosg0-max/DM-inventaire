@@ -932,10 +932,8 @@ export function Configuracion() {
       return;
     }
 
-    // Generar icono automático basado en el nombre de la subcategoría
     const categoriaObj = categorias.find(c => c.id === categoriaSeleccionada);
-    const iconoAutomatico = generarIconoProducto(formSubcategoria.nombre, categoriaObj?.nombre);
-    const iconoFinal = formSubcategoria.icono || iconoAutomatico;
+    const iconoFinal = categoriaObj?.icono || formSubcategoria.icono || generarIconoProducto(formSubcategoria.nombre, categoriaObj?.nombre);
 
     if (editandoSubcategoria) {
       // Editar subcategoría existente
@@ -1514,7 +1512,7 @@ export function Configuracion() {
         ...editandoVariante.variante,
         nombre: formVarianteSubcategoria.nombre.trim(),
         codigo: codigoGenerado,
-        icono: formVarianteSubcategoria.icono,
+        icono: subcategoria.icono || categoria.icono || formVarianteSubcategoria.icono,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
         valorPorKg: formVarianteSubcategoria.valorPorKg ? parseFloat(formVarianteSubcategoria.valorPorKg) : undefined,
         pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseFloat(formVarianteSubcategoria.pesoUnitario) : undefined,
@@ -1560,7 +1558,7 @@ export function Configuracion() {
         id: `var-${Date.now()}`,
         nombre: formVarianteSubcategoria.nombre.trim(),
         codigo: codigoGenerado,
-        icono: formVarianteSubcategoria.icono,
+        icono: subcategoria.icono || categoria.icono || formVarianteSubcategoria.icono,
         activa: true,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
         valorPorKg: formVarianteSubcategoria.valorPorKg ? parseFloat(formVarianteSubcategoria.valorPorKg) : undefined,
