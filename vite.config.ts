@@ -38,6 +38,8 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
     ],
     resolve: {
+      // Evita que Vite resuelva rutas con realpath en Windows y reduzca errores EPERM
+      preserveSymlinks: true,
       alias: {
         // Alias @ to the src directory
         '@': path.resolve(__dirname, './src'),
@@ -123,6 +125,11 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: false,
       open: false,
+      watch: {
+        // En Windows, polling es más estable para archivos que cambian mucho como usuarios.ts
+        usePolling: true,
+        interval: 250,
+      },
     },
     // Vista previa de producción
     preview: {
