@@ -228,7 +228,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
   const [searchVarianteQuery, setSearchVarianteQuery] = useState('');
   const [selectContactoOpen, setSelectContactoOpen] = useState(false);
   const [searchContactoQuery, setSearchContactoQuery] = useState('');
-  const [detallesOpcionalesAbiertos, setDetallesOpcionalesAbiertos] = useState(true); // Siempre visible por defecto
+  const [detallesOpcionalesAbiertos, setDetallesOpcionalesAbiertos] = useState(true); // Se ajusta según el tamaño de pantalla al abrir
   const [imprimirAutomaticamente, setImprimirAutomaticamente] = useState(true);
   
   // 🎯 Estados específicos para productos PRS
@@ -294,6 +294,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       toast.error('Error al cargar los datos del sistema');
     }
   }, []);
+
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') return;
+
+    const esPantallaTactilCompacta = window.matchMedia('(pointer: coarse)').matches
+      && window.matchMedia('(max-width: 1024px)').matches;
+
+    setDetallesOpcionalesAbiertos(!esPantallaTactilCompacta);
+  }, [open]);
 
   // ==================== CARGA DE DATOS INICIAL ====================
   useEffect(() => {
@@ -1504,8 +1513,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
         </DialogTrigger>
       )}
       
-      <DialogContent className="w-[min(96vw,1320px)] max-w-[1320px] max-h-[92vh] overflow-hidden border-0 bg-white/98 p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]" aria-describedby="entry-form-description">
-        <div className="flex max-h-[92vh] flex-col overflow-hidden rounded-[28px] bg-white">
+      <DialogContent className="w-[min(96vw,1320px)] max-w-[1320px] max-h-[calc(100dvh-0.5rem)] overflow-hidden border-0 bg-white/98 p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]" aria-describedby="entry-form-description">
+        <div className="flex h-[calc(100dvh-0.5rem)] flex-col overflow-hidden rounded-[28px] bg-white">
           <DialogHeader className="relative overflow-hidden border-b border-slate-200/80 px-5 py-4 sm:px-6">
             <div
               className="absolute inset-0"
@@ -1542,8 +1551,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-7 sm:py-5">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)] lg:items-start xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
+          <div className="flex-1 overflow-hidden px-4 py-4 sm:px-7 sm:py-5 xl:overflow-y-auto">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)] xl:items-start">
               <div className="space-y-4">
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fbfd_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.38)]">
@@ -2678,7 +2687,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           )}
               </div>
 
-              <aside className="space-y-4 lg:sticky lg:top-0">
+              <aside className="hidden xl:block space-y-4 xl:sticky xl:top-0">
                 <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_22px_50px_-38px_rgba(15,23,42,0.45)]">
                   <div className="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(26,77,122,0.08),rgba(45,149,97,0.08))] px-5 py-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Résumé en direct</p>
