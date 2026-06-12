@@ -212,7 +212,7 @@ export function FormularioEntradaProductoCompacto({
   return (
     <Dialog open={abierto} onOpenChange={onCerrar}>
       <DialogContent 
-        className="!max-w-none !w-[95vw] !max-h-[95vh] !h-[95vh] overflow-hidden p-0 m-0 rounded-xl"
+        className="!max-w-none !w-screen !max-h-screen !h-screen !top-0 !left-0 !translate-x-0 !translate-y-0 overflow-hidden p-0 m-0 rounded-none border-0"
         aria-describedby="product-entry-form-description"
       >
         <div className="h-full flex flex-col">
