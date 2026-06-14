@@ -172,12 +172,13 @@ export function VerificacionesRecientes() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button 
+            size="icon"
             variant="outline"
-            className="border-2 border-[#1E73BE] text-[#1E73BE] hover:bg-[#E3F2FD] hover:border-[#155a99]"
-            style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
+            className="border-2 border-[#1E73BE] text-[#1E73BE] hover:bg-[#E3F2FD] hover:border-[#155a99] shadow-md hover:shadow-lg transition-all"
+            title="Vérifications Récentes"
+            aria-label="Vérifications Récentes"
           >
-            <FileText className="w-4 h-4 mr-2" />
-            Vérifications Récentes
+            <FileText className="w-5 h-5" />
           </Button>
         </DialogTrigger>
         

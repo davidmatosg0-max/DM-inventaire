@@ -1504,11 +1504,12 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button 
-            className="bg-[#2d9561] hover:bg-[#267d50] text-white shadow-md"
-            style={{ fontFamily: 'Montserrat, sans-serif' }}
+            size="icon"
+            className="bg-gradient-to-br from-[#2d9561] to-[#26855a] hover:from-[#267d50] hover:to-[#1f6b45] text-white shadow-lg hover:shadow-xl transition-all"
+            title="Registrer Entrée"
+            aria-label="Registrer Entrée"
           >
-            <Plus className="w-5 h-5 mr-2" />
-            Registrer Entrée
+            <Plus className="w-5 h-5" />
           </Button>
         </DialogTrigger>
       )}
@@ -3040,7 +3041,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   </div>
                 )}
                 
-                {(!formData.lote || formData.lote.trim() === '') && (
+                {(!formData.lote || formData.lote.trim() === '' || formData.lote.trim() === 'LOT-') && (
                   <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="h-8 w-8 rounded-lg bg-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm">
                       <span className="text-lg">🏷️</span>
