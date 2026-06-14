@@ -2437,17 +2437,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
               {/* SECTION 5: Botones de acción */}
               <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center">
-                {productosAgregados.length === 0 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={annulerEtFermer}
-                    className="rounded-2xl border-slate-300"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Annuler
-                  </Button>
-                )}
                 <Button
                   onClick={agregarProductoALista}
                   className="flex-1 rounded-2xl bg-[#2d9561] shadow-sm hover:bg-[#267d50]"
@@ -2469,163 +2458,6 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </div>
               </div>
 
-              {/* SECTION 6: Lista de productos agregados */}
-              {productosAgregados.length > 0 && (
-                <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_36px_-34px_rgba(15,23,42,0.45)]">
-                  {/* Información del contacto seleccionado */}
-                  {formData.donadorId && (
-                    <div className="mb-3 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-green-50 p-3">
-                      {(() => {
-                        const contacto = contactosDisponibles.find(c => c.id === formData.donadorId);
-                        const programa = programasActivos.find(p => p.codigo.toLowerCase() === formData.tipoEntrada);
-                        if (!contacto) return null;
-                        
-                        return (
-                          <div className="flex items-start gap-3">
-                            <div className="text-2xl">{programa?.icono || '📦'}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[#1a4d7a] text-base">
-                                  {contacto.nombreEmpresa || `${contacto.nombre} ${contacto.apellido}`}
-                                </span>
-                                <Badge 
-                                  style={{
-                                    backgroundColor: programa?.color + '20',
-                                    color: programa?.color
-                                  }}
-                                  className="text-xs"
-                                >
-                                  {programa?.nombre}
-                                </Badge>
-                              </div>
-                              {contacto.nombreEmpresa && (
-                                <p className="text-sm text-gray-700">👤 {contacto.nombre} {contacto.apellido}</p>
-                              )}
-                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600 mt-1">
-                                {contacto.telefono && <span>📞 {contacto.telefono}</span>}
-                                {contacto.email && <span>📧 {contacto.email}</span>}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Produits Ajoutés ({productosAgregados.length})
-                    </h3>
-                    <div className="flex gap-2">
-                      <Badge variant="secondary">
-                        {formatQuantity(productosAgregados.reduce((sum, p) => {
-                          const pesoNeto = p.pesoUnidad && p.pesoUnidad > 0 
-                            ? Math.max(0, p.pesoTotal - p.pesoUnidad)
-                            : p.pesoTotal;
-                          return sum + pesoNeto;
-                        }, 0))} kg net total
-                      </Badge>
-                      {(() => {
-                        const totalMonetario = productosAgregados.reduce((sum, p) => sum + (p.valorTotal || 0), 0);
-                        if (totalMonetario > 0) {
-                          return (
-                            <Badge className="bg-green-600 text-white">
-                              💰 CAD$ {formatMoney(totalMonetario)}
-                            </Badge>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                  </div>
-
-                  <div className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
-                    {productosAgregados.map((producto, index) => {
-                      const pesoTaraTotal = (producto.pesoUnidad && producto.pesoUnidad > 0) 
-                        ? producto.pesoUnidad * producto.cantidad 
-                        : 0;
-                      const pesoNeto = pesoTaraTotal > 0
-                        ? Math.max(0, producto.pesoTotal - pesoTaraTotal)
-                        : producto.pesoTotal;
-                      const tieneTara = producto.pesoUnidad && producto.pesoUnidad > 0;
-
-                      return (
-                        <div key={index} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                          <span className="text-2xl">{producto.productoIcono}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{producto.nombreProducto}</p>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <span>{formatQuantity(producto.cantidad)} {producto.unidad}</span>
-                              <span>•</span>
-                              {tieneTara ? (
-                                <span className="flex items-center gap-1" title={`Brut: ${formatQuantity(producto.pesoTotal)}kg - Tare: ${formatQuantity(pesoTaraTotal)}kg (${formatQuantity(producto.pesoUnidad)}kg × ${formatQuantity(producto.cantidad)}) = Net: ${formatQuantity(pesoNeto)}kg`}>
-                                  <span className="font-semibold text-green-700">{formatQuantity(pesoNeto)} kg</span>
-                                  <span className="text-xs text-gray-400">(net)</span>
-                                </span>
-                              ) : (
-                                <span>{formatQuantity(producto.pesoTotal)} kg</span>
-                              )}
-                              <span>•</span>
-                              <Badge className={cn("text-xs", getTemperatureColor(producto.temperatura))}>
-                                {getTemperatureIcon(producto.temperatura)}
-                                <span className="ml-1">
-                                  {producto.temperatura === 'ambiente' ? 'AMB' :
-                                   producto.temperatura === 'refrigerado' ? 'RÉF' : 'CONG'}
-                                </span>
-                              </Badge>
-                              {producto.valorTotal && producto.valorTotal > 0 && (
-                                <>
-                                  <span>•</span>
-                                  <span className="font-semibold text-green-700">
-                                    CAD$ {formatMoney(producto.valorTotal)}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => imprimirEtiquetaProducto(producto)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            title="Réimprimer l'étiquette"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => eliminarProductoAgregado(index)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-1.5.5 flex flex-col gap-2 sm:flex-row">
-                    <Button
-                      variant="outline"
-                      onClick={annulerEtFermer}
-                      size="default"
-                      className="rounded-xl"
-                    >
-                      <X className="w-4 h-4 mr-1.5" />
-                      Annuler
-                    </Button>
-                    <Button
-                      onClick={finalizarEntrada}
-                      className="flex-1 rounded-xl bg-[#1a4d7a] shadow-sm hover:bg-[#153d62]"
-                      size="default"
-                    >
-                      <Check className="w-4 h-4 mr-1.5" />
-                      Finaliser l'Entrée ({productosAgregados.length})
-                    </Button>
-                  </div>
-                </div>
-              )}
             </>
           )}
               </div>
@@ -2751,6 +2583,30 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         </p>
                       </div>
                     )}
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="flex-none border-t border-slate-200 bg-slate-50/50 px-2 py-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Button
+                        variant="outline"
+                        onClick={annulerEtFermer}
+                        size="sm"
+                        className="rounded-xl text-xs h-8"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Annuler
+                      </Button>
+                      <Button
+                        onClick={finalizarEntrada}
+                        disabled={productosAgregados.length === 0}
+                        className="rounded-xl bg-[#1a4d7a] shadow-sm hover:bg-[#153d62] text-xs h-8"
+                        size="sm"
+                      >
+                        <Check className="w-3 h-3 mr-1" />
+                        Finaliser l'Entrée ({productosAgregados.length})
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </aside>
