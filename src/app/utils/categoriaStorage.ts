@@ -25,7 +25,10 @@ function normalizarCategoriasConIconos(categorias: Categoria[]): { categorias: C
       const iconoSubcategoria = iconoCategoria;
 
       const variantesNormalizadas = sub.variantes?.map((variante) => {
-        const iconoVariante = iconoSubcategoria;
+        // Solo sobrescribir si la variante tiene un icono por defecto
+        const iconoVariante = necesitaIconoAutomatico(variante.icono)
+          ? iconoSubcategoria
+          : variante.icono;
 
         if (iconoVariante !== variante.icono) {
           changed = true;
@@ -386,7 +389,7 @@ export function agregarVariante(
               id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               nombre: datosVariante.nombre.trim(),
               codigo: datosVariante.codigo?.trim() || '',
-              icono: sub.icono || cat.icono || datosVariante.icono || '🏷️',
+              icono: datosVariante.icono || sub.icono || cat.icono || '🏷️',
               activa: true,
               unidad: datosVariante.unidad || sub.unidad || '',
               valorPorKg: datosVariante.valorPorKg || undefined,

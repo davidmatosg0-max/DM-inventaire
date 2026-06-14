@@ -76,7 +76,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
     setFormData({
       nombre: '',
       codigo: '',
-      icono: '📦',
+      icono: subcategoria.icono || '📦',
       unidad: '',
       valorPorKg: '',
       pesoUnitario: '',
@@ -91,7 +91,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
     setFormData({
       nombre: variante.nombre,
       codigo: variante.codigo || '',
-      icono: variante.icono || '📦',
+      icono: variante.icono || subcategoria.icono || '📦',
       unidad: variante.unidad || '',
       valorPorKg: variante.valorPorKg?.toString() || '',
       pesoUnitario: variante.pesoUnitario?.toString() || '',
@@ -450,6 +450,9 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-[#666666]">
+                Icône par défaut: {subcategoria.icono} (sous-catégorie). Sélectionnez un icône différent si nécessaire.
+              </p>
             </div>
 
             {/* Descripción */}

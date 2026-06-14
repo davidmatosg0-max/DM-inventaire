@@ -6,7 +6,7 @@ import { useBranding } from '../../hooks/useBranding';
 import { 
   Gift, Package, Building2, Plus, Check, ChevronsUpDown, Save, X, 
   Thermometer, Snowflake, Wind, ChevronDown, ChevronUp, Settings, 
-  Package2, Printer, AlertTriangle, Info, Search, Trash2
+  Package2, Printer, AlertTriangle, Info, Search, Trash2, Edit
 } from 'lucide-react';
 import { printStandardLabel, type ProductLabelData } from './etiquetas/StandardProductLabel';
 import { Button } from './ui/button';
@@ -241,6 +241,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
   const [nuevaVarianteDialogOpen, setNuevaVarianteDialogOpen] = useState(false);
   const [ayudaImpresionOpen, setAyudaImpresionOpen] = useState(false);
   const [dialogConfirmacion, setDialogConfirmacion] = useState(false);
+  
+  // ========== Estados de edición de productos ==========
+  const [productoEditandoIndex, setProductoEditandoIndex] = useState<number | null>(null);
   
   // ========== Estados de formularios secundarios ==========
   const [formSubcategoria, setFormSubcategoria] = useState<FormSubcategoria>(FORM_SUBCATEGORIA_INICIAL);
@@ -1121,6 +1124,12 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           productosNuevos.push(productoIndividual);
         }
         
+        // Si estamos editando, no permitir edición para productos múltiples
+        if (productoEditandoIndex !== null) {
+          toast.warning('⚠️ L\'édition n\'est pas disponible pour les unités multiples. Supprimez et recréez.');
+          return;
+        }
+        
         setProductosAgregados(prev => [...prev, ...productosNuevos]);
         
         // Si está activa la impresión automática, imprimir todas las etiquetas
@@ -1166,11 +1175,21 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           valorTotal: (formData.valorUnitario || 0) * formData.cantidad,
         };
 
-        setProductosAgregados(prev => [...prev, nuevoProducto]);
+        // Si estamos editando, reemplazar el producto en la lista
+        if (productoEditandoIndex !== null) {
+          setProductosAgregados(prev => 
+            prev.map((p, i) => i === productoEditandoIndex ? nuevoProducto : p)
+          );
+          setProductoEditandoIndex(null);
+          toast.success('✅ Produit modifié avec succès');
+        } else {
+          // Modo normal: agregar nuevo producto
+          setProductosAgregados(prev => [...prev, nuevoProducto]);
 
-        // Si está activa la impresión automática, imprimir etiqueta
-        if (imprimirAutomaticamente) {
-          await imprimirEtiquetaProducto(nuevoProducto);
+          // Si está activa la impresión automática, imprimir etiqueta
+          if (imprimirAutomaticamente) {
+            await imprimirEtiquetaProducto(nuevoProducto);
+          }
         }
       }
 
@@ -1422,6 +1441,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       // Resetear formulario y cerrar ventana
       setFormData(FORM_DATA_INICIAL);
       setProductosAgregados([]);
+      setProductoEditandoIndex(null);
       
       // ✅ Cerrar la ventana inmediatamente después de finalizar
       handleOpenChange(false);
@@ -1434,6 +1454,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
   const annulerEtFermer = useCallback(() => {
     setFormData(FORM_DATA_INICIAL);
     setProductosAgregados([]);
+    setProductoEditandoIndex(null);
     handleOpenChange(false);
   }, [handleOpenChange]);
 
@@ -1441,6 +1462,40 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     setProductosAgregados(prev => prev.filter((_, i) => i !== index));
     toast.info('Produit retiré de la liste');
   }, []);
+
+  const editarProductoAgregado = useCallback((index: number) => {
+    const producto = productosAgregados[index];
+    
+    // Cargar datos del producto al formulario
+    setFormData({
+      ...formData,
+      categoriaId: producto.categoriaId || '',
+      categoriaNombre: producto.categoria || '',
+      subcategoriaId: producto.subcategoriaId || '',
+      subcategoriaNombre: producto.subcategoria || '',
+      varianteId: producto.varianteId || '',
+      varianteNombre: producto.variante || '',
+      productoId: producto.productoId || '',
+      nombreProducto: producto.nombreProductoBase || producto.nombreProducto,
+      productoIcono: producto.productoIcono,
+      categoria: producto.categoria || '',
+      subcategoria: producto.subcategoria || '',
+      cantidad: producto.cantidad,
+      unidad: producto.unidad,
+      peso: producto.pesoTotal,
+      pesoUnitario: producto.pesoTotal / producto.cantidad,
+      valorUnitario: producto.valorUnitario || 0,
+      temperatura: producto.temperatura,
+      fechaCaducidad: producto.fechaCaducidad || '',
+      lote: producto.lote || 'LOT-',
+      detallesEmpaque: producto.detallesEmpaque || '',
+    });
+    
+    // Marcar que estamos editando
+    setProductoEditandoIndex(index);
+    
+    toast.info('📝 Édition du produit - Modifiez les champs et cliquez sur "Ajouter Produit"');
+  }, [productosAgregados, formData]);
 
   // ==================== RENDER ====================
   
@@ -1494,7 +1549,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       : formData.temperatura === 'congelado'
         ? 'Congelé'
         : 'À définir';
-    const comboboxTriggerClass = 'min-h-[56px] w-full justify-between rounded-2xl border-2 border-slate-300 bg-white px-4 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.15),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:border-[#2d9561] hover:shadow-[0_6px_20px_-4px_rgba(45,149,97,0.25)] focus:border-[#2d9561] focus:ring-2 focus:ring-[#2d9561]/20';
+    const comboboxTriggerClass = 'w-full min-h-[80px] h-auto justify-between items-start rounded-2xl border-2 border-slate-300 bg-white px-4 py-4 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.15),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:border-[#2d9561] hover:shadow-[0_6px_20px_-4px_rgba(45,149,97,0.25)] focus:border-[#2d9561] focus:ring-2 focus:ring-[#2d9561]/20';
     const floatingPanelClass = 'rounded-[20px] border-2 border-slate-200 bg-white p-0 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35),0_0_1px_rgba(15,23,42,0.1)]';
     const selectTriggerClass = 'mt-2 min-h-[56px] rounded-2xl border-2 border-slate-300 bg-white px-4 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.15),0_0_0_1px_rgba(255,255,255,0.8)_inset] hover:border-[#2d9561] hover:shadow-[0_6px_20px_-4px_rgba(45,149,97,0.25)] transition-all';
     const selectContentClass = 'rounded-[20px] border-2 border-slate-200 bg-white shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35),0_0_1px_rgba(15,23,42,0.1)]';
@@ -1636,7 +1691,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             if (!contacto) return <span className="text-gray-500">Contact introuvable</span>;
                             
                             return (
-                              <div className="space-y-1">
+                              <div className="space-y-1.5">
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-sm text-slate-900">
                                     {contacto.nombreEmpresa || `${contacto.nombre} ${contacto.apellido}`}
@@ -1662,14 +1717,22 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                                     👤 {contacto.nombre} {contacto.apellido}
                                   </div>
                                 )}
-                                <div className="flex items-center gap-3 text-xs text-gray-500">
+                                <div className="flex flex-col gap-1 text-xs text-gray-500">
                                   {contacto.telefono && (
                                     <span>📞 {contacto.telefono}</span>
                                   )}
                                   {contacto.email && (
                                     <span>📧 {contacto.email}</span>
                                   )}
+                                  {contacto.direccion && (
+                                    <span>📍 {contacto.direccion}</span>
+                                  )}
                                 </div>
+                                {contacto.notas && (
+                                  <div className="text-xs text-gray-400 italic">
+                                    💬 {contacto.notas}
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
@@ -1685,7 +1748,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             : 'Sélectionner un donateur...'}
                         </span>
                       )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 self-start mt-0.5" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className={`w-[min(92vw,560px)] ${floatingPanelClass}`}>
@@ -2465,11 +2528,39 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center">
                 <Button
                   onClick={agregarProductoALista}
-                  className="flex-1 rounded-2xl bg-gradient-to-r from-[#2d9561] to-[#26855a] shadow-md hover:shadow-lg hover:from-[#267d50] hover:to-[#1f6b45] transition-all font-bold h-11"
+                  className={cn(
+                    "flex-1 rounded-2xl shadow-md hover:shadow-lg transition-all font-bold h-11",
+                    productoEditandoIndex !== null
+                      ? "bg-gradient-to-r from-[#9C27B0] to-[#7B1FA2] hover:from-[#8E24AA] hover:to-[#6A1B9A]"
+                      : "bg-gradient-to-r from-[#2d9561] to-[#26855a] hover:from-[#267d50] hover:to-[#1f6b45]"
+                  )}
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Ajouter Produit
+                  {productoEditandoIndex !== null ? (
+                    <>
+                      <Check className="w-5 h-5 mr-2" />
+                      Confirmer Modification
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5 mr-2" />
+                      Ajouter Produit
+                    </>
+                  )}
                 </Button>
+                
+                {productoEditandoIndex !== null && (
+                  <Button
+                    onClick={() => {
+                      setProductoEditandoIndex(null);
+                      toast.info('Édition annulée');
+                    }}
+                    variant="outline"
+                    className="rounded-2xl border-2 border-slate-300 hover:border-red-500 hover:bg-red-50 h-11"
+                  >
+                    <X className="w-5 h-5 mr-2" />
+                    Annuler Édition
+                  </Button>
+                )}
                 
                 <div className="flex items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-3 py-2.5 shadow-sm hover:border-[#2d9561] transition-colors">
                   <Checkbox
@@ -2584,6 +2675,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                                     title="Réimprimer"
                                   >
                                     <Printer className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => editarProductoAgregado(index)}
+                                    className="h-6 px-1.5 text-[10px] text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                    title="Éditer"
+                                  >
+                                    <Edit className="w-3 h-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
