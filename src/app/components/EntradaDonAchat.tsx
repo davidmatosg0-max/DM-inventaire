@@ -204,6 +204,16 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
   const { t } = useTranslation();
   const branding = useBranding();
   const printRef = useRef<HTMLDivElement>(null);
+  const categoriaTriggerRef = useRef<HTMLButtonElement>(null);
+  const subcategoriaTriggerRef = useRef<HTMLButtonElement>(null);
+  const varianteTriggerRef = useRef<HTMLButtonElement>(null);
+  const productoPRSTriggerRef = useRef<HTMLButtonElement>(null);
+  const cantidadFieldRef = useRef<HTMLDivElement>(null);
+  const unidadTriggerRef = useRef<HTMLButtonElement>(null);
+  const temperaturaAmbienteButtonRef = useRef<HTMLButtonElement>(null);
+  const loteInputRef = useRef<HTMLInputElement>(null);
+  const fechaCaducidadInputRef = useRef<HTMLInputElement>(null);
+  const agregarProductoButtonRef = useRef<HTMLButtonElement>(null);
   
   // ========== Estados principales ==========
   const [internalOpen, setInternalOpen] = useState(false);
@@ -646,12 +656,72 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       return { label: 'Donateur', color: '#2d9561', bgColor: '#2d956120' }; // Verde
     }
   };
+
+  const focusCantidadField = useCallback(() => {
+    setTimeout(() => {
+      const inputCantidad = cantidadFieldRef.current?.querySelector('input');
+      if (inputCantidad instanceof HTMLInputElement) {
+        inputCantidad.focus();
+        inputCantidad.select();
+      }
+    }, 120);
+  }, []);
+
+  const focusUnidadField = useCallback(() => {
+    setTimeout(() => {
+      unidadTriggerRef.current?.focus();
+    }, 100);
+  }, []);
+
+  const focusTemperaturaField = useCallback(() => {
+    setTimeout(() => {
+      temperaturaAmbienteButtonRef.current?.focus();
+    }, 100);
+  }, []);
+
+  const focusLoteField = useCallback(() => {
+    setTimeout(() => {
+      loteInputRef.current?.focus();
+      loteInputRef.current?.select();
+    }, 100);
+  }, []);
+
+  const focusFechaCaducidadField = useCallback(() => {
+    setTimeout(() => {
+      fechaCaducidadInputRef.current?.focus();
+    }, 100);
+  }, []);
+
+  const focusAgregarProductoButton = useCallback(() => {
+    setTimeout(() => {
+      agregarProductoButtonRef.current?.focus();
+    }, 100);
+  }, []);
+
+  const handleCantidadFieldContinue = useCallback(() => {
+    if (formData.cantidad <= 0) return;
+    if (formData.unidad) {
+      focusTemperaturaField();
+      return;
+    }
+    focusUnidadField();
+  }, [focusTemperaturaField, focusUnidadField, formData.cantidad, formData.unidad]);
   
   // ==================== HANDLERS ====================
   
   const handleFieldChange = useCallback((field: keyof FormDataDonAchat, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
+
+  const handleUnidadSelect = useCallback((value: string) => {
+    handleFieldChange('unidad', value);
+    focusTemperaturaField();
+  }, [focusTemperaturaField, handleFieldChange]);
+
+  const handleTemperaturaSelect = useCallback((temperatura: TipoTemperatura) => {
+    handleFieldChange('temperatura', temperatura);
+    focusLoteField();
+  }, [focusLoteField, handleFieldChange]);
 
   // ========== HANDLERS EN CASCADA ==========
   
@@ -676,6 +746,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     setComboboxCategoriaOpen(false);
     setSearchCategoriaQuery('');
     toast.success(`Catégorie sélectionnée: ${categoria.nombre}`);
+
+    setTimeout(() => {
+      subcategoriaTriggerRef.current?.focus();
+      setComboboxSubcategoriaOpen(true);
+    }, 140);
   }, [categoriasDB]);
 
   const handleSubcategoriaSelect = useCallback((subcategoriaId: string) => {
@@ -702,7 +777,18 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     setComboboxSubcategoriaOpen(false);
     setSearchSubcategoriaQuery('');
     toast.success(`Sous-catégorie sélectionnée: ${subcategoria.nombre}`);
-  }, [categoriasDB, formData.categoriaId, formData.categoriaNombre]);
+
+    const tieneVariantes = Boolean(subcategoria.variantes && subcategoria.variantes.length > 0);
+    if (tieneVariantes) {
+      setTimeout(() => {
+        varianteTriggerRef.current?.focus();
+        setComboboxVarianteOpen(true);
+      }, 140);
+      return;
+    }
+
+    focusCantidadField();
+  }, [categoriasDB, focusCantidadField, formData.categoriaId, formData.categoriaNombre]);
 
   const handleVarianteSelect = useCallback((varianteId: string) => {
     const categoria = categoriasDB.find(c => c.id === formData.categoriaId);
@@ -731,7 +817,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     setComboboxVarianteOpen(false);
     setSearchVarianteQuery('');
     toast.success(`Variante sélectionnée: ${variante.nombre}`);
-  }, [categoriasDB, formData.categoriaId, formData.subcategoriaId, formData.categoriaNombre, formData.subcategoriaNombre]);
+
+    focusCantidadField();
+  }, [categoriasDB, focusCantidadField, formData.categoriaId, formData.subcategoriaId, formData.categoriaNombre, formData.subcategoriaNombre]);
 
   const handleContactoSelect = useCallback((contactoId: string) => {
     const contacto = contactosDisponibles.find(c => c.id === contactoId);
@@ -745,7 +833,20 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
     setSelectContactoOpen(false);
     toast.success(`Contact sélectionné: ${contacto.nombre} ${contacto.apellido}`);
-  }, [contactosDisponibles]);
+
+    if (formData.tipoEntrada === 'prs') {
+      setTimeout(() => {
+        productoPRSTriggerRef.current?.focus();
+        setComboboxProductoPRSOpen(true);
+      }, 140);
+      return;
+    }
+
+    setTimeout(() => {
+      categoriaTriggerRef.current?.focus();
+      setComboboxCategoriaOpen(true);
+    }, 140);
+  }, [contactosDisponibles, formData.tipoEntrada]);
 
   const handleCategoriaChange = useCallback((categoriaId: string) => {
     setFormData(prev => ({
@@ -951,7 +1052,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       description: `${producto.categoria} → ${producto.subcategoria} (${producto.unidad})`,
       duration: 3000
     });
-  }, [categoriasDB]);
+
+    focusCantidadField();
+  }, [categoriasDB, focusCantidadField]);
 
   // Función para imprimir etiqueta de un producto
   const imprimirEtiquetaProducto = useCallback(async (producto: ProductoAgregado) => {
@@ -1887,6 +1990,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                           variant="outline"
                           role="combobox"
                           aria-expanded={comboboxProductoPRSOpen}
+                          ref={productoPRSTriggerRef}
                           className={cn(
                             comboboxTriggerClass,
                             formData.categoriaNombre 
@@ -1984,6 +2088,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             variant="outline"
                             role="combobox"
                             aria-expanded={comboboxCategoriaOpen}
+                            ref={categoriaTriggerRef}
                             className={comboboxTriggerClass}
                           >
                             {formData.categoriaNombre ? (
@@ -2075,6 +2180,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         variant="outline"
                         role="combobox"
                         aria-expanded={comboboxSubcategoriaOpen}
+                        ref={subcategoriaTriggerRef}
                         className={comboboxTriggerClass}
                         disabled={!formData.categoriaId}
                       >
@@ -2170,6 +2276,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                             variant="outline"
                             role="combobox"
                             aria-expanded={comboboxVarianteOpen}
+                            ref={varianteTriggerRef}
                             className={comboboxTriggerClass}
                           >
                             {formData.varianteNombre ? (
@@ -2291,11 +2398,18 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                 {/* Campos de cantidad y unidad */}
                 <div className="grid gap-1.5 md:grid-cols-2">
-                  <div className="rounded-2xl border-2 border-slate-200 bg-white p-2.5 shadow-[0_4px_12px_-4px_rgba(15,23,42,0.15)]">
+                  <div ref={cantidadFieldRef} className="rounded-2xl border-2 border-slate-200 bg-white p-2.5 shadow-[0_4px_12px_-4px_rgba(15,23,42,0.15)]">
                     <Label className="text-xs font-semibold text-slate-700">Quantité *</Label>
                     <QuantityInput
                       value={formData.cantidad || ''}
                       onChangeText={(value) => handleFieldChange('cantidad', parseQuantityText(value, false) || 0)}
+                      onBlur={handleCantidadFieldContinue}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          handleCantidadFieldContinue();
+                        }
+                      }}
                       min={0}
                       step={1}
                       placeholder="0"
@@ -2306,8 +2420,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   </div>
                   <div className="rounded-2xl border-2 border-slate-200 bg-white p-2.5 shadow-[0_4px_12px_-4px_rgba(15,23,42,0.15)]">
                     <Label className="text-xs font-semibold text-slate-700">Unité *</Label>
-                    <Select value={formData.unidad} onValueChange={(value) => handleFieldChange('unidad', value)}>
-                      <SelectTrigger className={selectTriggerClass}>
+                    <Select value={formData.unidad} onValueChange={handleUnidadSelect}>
+                      <SelectTrigger ref={unidadTriggerRef} className={selectTriggerClass}>
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
                       <SelectContent className={selectContentClass}>
@@ -2418,8 +2532,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs font-semibold text-slate-700">Température *</Label>
                   <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                     <button
+                      ref={temperaturaAmbienteButtonRef}
                       type="button"
-                      onClick={() => handleFieldChange('temperatura', 'ambiente')}
+                      onClick={() => handleTemperaturaSelect('ambiente')}
                       className={cn(
                         "rounded-xl border-2 px-2 py-2 transition-all",
                         formData.temperatura === 'ambiente'
@@ -2432,7 +2547,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleFieldChange('temperatura', 'refrigerado')}
+                      onClick={() => handleTemperaturaSelect('refrigerado')}
                       className={cn(
                         "rounded-xl border-2 px-2 py-2 transition-all",
                         formData.temperatura === 'refrigerado'
@@ -2445,7 +2560,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleFieldChange('temperatura', 'congelado')}
+                      onClick={() => handleTemperaturaSelect('congelado')}
                       className={cn(
                         "rounded-xl border-2 px-2 py-2 transition-all",
                         formData.temperatura === 'congelado'
@@ -2466,8 +2581,15 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         <div>
                           <Label className="text-xs font-semibold text-slate-700">Numéro de Lot</Label>
                           <Input
+                            ref={loteInputRef}
                             value={formData.lote}
                             onChange={(e) => handleFieldChange('lote', e.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault();
+                                focusFechaCaducidadField();
+                              }
+                            }}
                             placeholder="LOT-12345"
                             className="mt-1.5 rounded-xl border-2 border-slate-200 h-10 focus:border-[#2d9561] transition-colors"
                           />
@@ -2475,9 +2597,21 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         <div>
                           <Label className="text-xs font-semibold text-slate-700">Date d'Expiration</Label>
                           <Input
+                            ref={fechaCaducidadInputRef}
                             type="date"
                             value={formData.fechaCaducidad}
-                            onChange={(e) => handleFieldChange('fechaCaducidad', e.target.value)}
+                            onChange={(e) => {
+                              handleFieldChange('fechaCaducidad', e.target.value);
+                              if (e.target.value) {
+                                focusAgregarProductoButton();
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault();
+                                focusAgregarProductoButton();
+                              }
+                            }}
                             className="mt-1.5 rounded-xl border-2 border-slate-200 h-10 focus:border-[#2d9561] transition-colors"
                           />
                         </div>
@@ -2527,6 +2661,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               {/* SECTION 5: Botones de acción */}
               <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center">
                 <Button
+                  ref={agregarProductoButtonRef}
                   onClick={agregarProductoALista}
                   className={cn(
                     "flex-1 rounded-2xl shadow-md hover:shadow-lg transition-all font-bold h-11",
