@@ -7,10 +7,14 @@ Se ha implementado un patrón unificado de **formularios compactos con tabs** pa
 ## ✨ Características del Patrón
 
 ### 📐 Estructura Visual
-- **Tamaño**: 95vw × 95vh (95% del viewport)
+- **Tamaño**: 95vw × 95vh en modo compacto, y fullscreen real para el registro principal
 - **Diseño**: Sidebar izquierda (256px) + Contenido principal con tabs
-- **Sin scroll excesivo**: Todo visible en pantalla
+- **Sin scroll excesivo**: El nuevo registro principal debe mostrarse a pantalla completa sin scroll visible
 - **Glassmorphism**: Mantiene el estilo visual del sistema
+- **Modelo lógico visible**: La categoría, la subcategoría y la variante deben quedar fijadas en un banner superior sticky para no perder contexto durante el registro
+- **Versión simple**: Reducir tarjetas decorativas y priorizar secciones planas con divisores y chips compactos
+- **Versión más densa**: Header, paneles laterales y tarjetas principales deben usar paddings reducidos y alturas mínimas para evitar bloques altos innecesarios
+- **Versión pro**: Cuando ya hay productos agregados, la lista y el resumen deben mantenerse compactos para conservar visibles el modelo lógico, el cockpit y las acciones finales sin romper el flujo
 
 ### 🎨 Componentes del Layout
 
@@ -42,6 +46,11 @@ Se ha implementado un patrón unificado de **formularios compactos con tabs** pa
 - Professionnel: Departamento, puesto, horas
 - Disponibilités: Calendario semanal interactivo
 - Autres: Notas y documentos
+
+**Modo de apertura recomendado para nuevo registro**:
+- `dialogVariant="fullscreen"` para ocupar toda la pantalla
+- Layout compacto con densidad reducida y footer fijo
+- Evitar contenedores internos con `overflow-y-auto` salvo en diálogos secundarios
 
 **Tipos de contacto**:
 - Bénévole (Voluntario)

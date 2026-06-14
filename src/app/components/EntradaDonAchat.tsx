@@ -1513,79 +1513,51 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
         </DialogTrigger>
       )}
       
-      <DialogContent className="w-[min(96vw,1320px)] max-w-[1320px] max-h-[calc(100dvh-0.5rem)] overflow-hidden border-0 bg-white/98 p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]" aria-describedby="entry-form-description">
-        <div className="flex h-[calc(100dvh-0.5rem)] flex-col overflow-hidden rounded-[28px] bg-white">
-          <DialogHeader className="relative overflow-hidden border-b border-slate-200/80 px-5 py-4 sm:px-6">
+      <DialogContent className="w-[min(98vw,1920px)] max-w-[1920px] max-h-[98dvh] overflow-hidden border-0 bg-white/98 p-0 shadow-[0_36px_90px_-42px_rgba(15,23,42,0.55)]" aria-describedby="entry-form-description">
+        <div className="flex h-[98dvh] flex-col overflow-hidden rounded-[28px] bg-white">
+          <DialogHeader className="relative overflow-hidden border-b border-slate-200/80 px-3 py-1.5 sm:px-4">
             <div
               className="absolute inset-0"
               style={{
                 background: 'linear-gradient(135deg, rgba(26,77,122,0.10) 0%, rgba(45,149,97,0.08) 55%, rgba(255,255,255,0.96) 100%)'
               }}
             />
-            <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a4d7a] text-white shadow-lg shadow-[#1a4d7a]/20">
-                  <Package className="h-6 w-6" />
+            <div className="relative flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#1a4d7a] text-white shadow-lg shadow-[#1a4d7a]/20">
+                  <Package className="h-4 w-4" />
                 </div>
                 <div>
-                  <DialogTitle className="text-left text-[1.3rem] font-bold tracking-tight text-slate-900 sm:text-[1.38rem]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  <DialogTitle className="text-left text-base font-bold tracking-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     Registrer Entrée
                   </DialogTitle>
-                  <DialogDescription id="entry-form-description" className="mt-0.5 max-w-2xl text-[0.95rem] leading-6 text-slate-600">
-                    Sélectionnez le type d'entrée, ajoutez les produits et finalisez l'enregistrement dans une interface plus large et plus claire.
+                  <DialogDescription id="entry-form-description" className="mt-0 max-w-2xl text-[0.75rem] leading-tight text-slate-600">
+                    Sélectionnez le type, ajoutez les produits et finalisez.
                   </DialogDescription>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                <div className="rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <div className="flex flex-wrap gap-1">
+                <div className="rounded-full border border-slate-200 bg-white/85 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-slate-500">
                   Inventaire
                 </div>
-                <div className="rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2d9561]">
-                  Saisie guidée
+                <div className="rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#2d9561]">
+                  Guidée
                 </div>
-                <div className="rounded-full border border-[#1a4d7a]/15 bg-[#1a4d7a]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a4d7a]">
-                  Progression {progressionFormulaire}%
+                <div className="rounded-full border border-[#1a4d7a]/15 bg-[#1a4d7a]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#1a4d7a]">
+                  {progressionFormulaire}%
                 </div>
               </div>
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden px-4 py-4 sm:px-7 sm:py-5 xl:overflow-y-auto">
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)] xl:items-start">
-              <div className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fbfd_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.38)]">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Programme</p>
-                    <p className="mt-2 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {programaSeleccionado?.nombre || 'À sélectionner'}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {programaSeleccionado?.descripcion || 'Choisissez un flux d’entrée pour adapter le formulaire.'}
-                    </p>
-                  </div>
-                  <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f7fbf8_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.38)]">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Contact</p>
-                    <p className="mt-2 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {contactoSeleccionado?.nombreEmpresa || (contactoSeleccionado ? `${contactoSeleccionado.nombre} ${contactoSeleccionado.apellido}` : 'Aucun contact')}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {contactoSeleccionado?.telefono || contactoSeleccionado?.email || 'La fiche du contact s’affiche ici dès la sélection.'}
-                    </p>
-                  </div>
-                  <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fafc_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.38)]">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Lot en préparation</p>
-                    <p className="mt-2 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {productosAgregados.length} produit{productosAgregados.length > 1 ? 's' : ''}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {formatQuantity(totalPesoNetoAgregado)} kg net • {totalMonetarioAgregado > 0 ? `CAD$ ${formatMoney(totalMonetarioAgregado)}` : 'Valeur non renseignée'}
-                    </p>
-                  </div>
-                </div>
+          <div className="flex-1 overflow-hidden px-2 py-1.5 sm:px-3 sm:py-2">
+            <div className="h-full overflow-y-auto">
+            <div className="grid gap-2 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)] xl:items-start">
+              <div className="space-y-1.5">
           {/* SECTION 1: Type d'entrée - DINÁMICO desde configuración */}
-          <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
-            <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <div className="space-y-1.5 rounded-2xl border border-slate-200 bg-slate-50/70 p-2 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
+            <Label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               Type d'Entrée *
             </Label>
             
@@ -1599,7 +1571,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
             ) : (
               <div className={cn(
-                "grid gap-3",
+                "grid gap-2",
                 programasActivos.length === 1 ? "grid-cols-1" :
                 programasActivos.length === 2 ? "grid-cols-2" :
                 programasActivos.length === 3 ? "grid-cols-3" :
@@ -1611,7 +1583,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     type="button"
                     onClick={() => handleFieldChange('tipoEntrada', programa.codigo.toLowerCase())}
                     className={cn(
-                      "rounded-2xl border px-3 py-3 transition-all hover:shadow-sm text-left",
+                      "rounded-xl border px-2 py-1.5 transition-all hover:shadow-sm text-left",
                       formData.tipoEntrada === programa.codigo.toLowerCase()
                         ? "border-current bg-opacity-10"
                         : "border-slate-200 bg-white hover:border-slate-300"
@@ -1621,11 +1593,11 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       backgroundColor: formData.tipoEntrada === programa.codigo.toLowerCase() ? `${programa.color}10` : undefined
                     }}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{programa.icono || '📦'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{programa.icono || '📦'}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">{programa.nombre}</p>
-                        <p className="text-xs text-gray-500 truncate">{programa.descripcion}</p>
+                        <p className="truncate text-xs font-semibold text-slate-900">{programa.nombre}</p>
+                        <p className="text-[10px] text-gray-500 truncate">{programa.descripcion}</p>
                       </div>
                       {formData.tipoEntrada === programa.codigo.toLowerCase() && (
                         <Check className="w-5 h-5 flex-shrink-0" style={{ color: programa.color }} />
@@ -1640,8 +1612,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           {formData.tipoEntrada && (
             <>
               {/* SECTION 2: Contact (Donateur/Fournisseur) */}
-              <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
-                <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <div className="space-y-2 rounded-[20px] border border-slate-200 bg-slate-50/70 p-3 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
+                <Label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   {formData.tipoEntrada === 'achat' ? '📦 Fournisseur *' : 
                    formData.tipoEntrada === 'prs' ? '🚚 Participant PRS *' :
                    formData.tipoEntrada === 'occ' ? '🔄 Donateur/Fournisseur *' : 
@@ -1813,21 +1785,21 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               {/* SECTION 3: Sélection Produit en Cascada */}
-              <div className="space-y-4 rounded-[24px] border border-slate-200 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.92)_100%)] p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
-                <div className="flex flex-col gap-3 rounded-[22px] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_32px_-30px_rgba(15,23,42,0.28)] lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-1.5 rounded-[20px] border border-slate-200 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.92)_100%)] p-3 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)]">
+                <div className="flex flex-col gap-2 rounded-[18px] border border-slate-200 bg-white/90 p-2.5 shadow-[0_18px_32px_-30px_rgba(15,23,42,0.28)] lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <Label className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <Label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       📦 Sélection du produit *
                     </Label>
-                    <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                      Configurez le produit avec un parcours plus lisible: sélection, paramètres logistiques et validation avant ajout au lot.
+                    <p className="mt-1 max-w-2xl text-xs text-slate-500">
+                      Configurez le produit: sélection, paramètres et validation.
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2 lg:max-w-[280px] lg:justify-end">
-                    <Badge className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 hover:bg-slate-100">
+                  <div className="flex flex-wrap gap-1.5 lg:max-w-[280px] lg:justify-end">
+                    <Badge className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-600 hover:bg-slate-100">
                       {formData.nombreProducto ? 'Produit prêt' : 'Sélection requise'}
                     </Badge>
-                    <Badge className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 hover:bg-emerald-50">
+                    <Badge className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-emerald-700 hover:bg-emerald-50">
                       {formatQuantity(poidsEstimeCourant)} kg estimés
                     </Badge>
                   </div>
@@ -1932,7 +1904,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   /* MODO NORMAL: Cascada Categoría → Subcategoría → Variante */
                   <div className="space-y-4">
                     {/* PASO 1: Catégorie */}
-                    <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                       <Label>1️⃣ Catégorie *</Label>
@@ -2000,7 +1972,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     </div>
 
                 {/* PASO 2: Sous-catégorie */}
-                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <Label>2️⃣ Sous-catégorie *</Label>
@@ -2099,7 +2071,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                 {/* PASO 3: Variante (opcional) */}
                 {formData.subcategoriaId && (
-                  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <Label>3️⃣ Variante (optionnel)</Label>
@@ -2208,7 +2180,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                       <div className="min-w-0">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Produit sélectionné</p>
                         <p className="mt-1 truncate text-base font-semibold text-slate-900">{formData.nombreProducto}</p>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-0.5 text-[10px] text-slate-500 truncate">
                           {formData.categoriaNombre || 'Catégorie à définir'}
                           {formData.subcategoriaNombre ? ` • ${formData.subcategoriaNombre}` : ''}
                           {formData.varianteNombre ? ` • ${formData.varianteNombre}` : ''}
@@ -2230,26 +2202,26 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
-                  <div className="space-y-4">
+                <div className="grid gap-3 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
+                  <div className="space-y-1.5">
 
                 {/* Campos de cantidad y unidad */}
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
-                    <Label>Quantité *</Label>
+                <div className="grid gap-1.5 md:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                    <Label className="text-xs">Quantité *</Label>
                     <QuantityInput
                       value={formData.cantidad || ''}
                       onChangeText={(value) => handleFieldChange('cantidad', parseQuantityText(value, false) || 0)}
                       min={0}
                       step={1}
                       placeholder="0"
-                      wrapperClassName="mt-2"
-                      className="rounded-2xl border-slate-200 bg-slate-50/60"
+                      wrapperClassName="mt-1.5"
+                      className="rounded-xl border-slate-200 bg-slate-50/60 text-sm h-9"
                       buttonClassName="border-slate-200 bg-slate-50/60 hover:bg-slate-100"
                     />
                   </div>
-                  <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
-                    <Label>Unité *</Label>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                    <Label className="text-xs">Unité *</Label>
                     <Select value={formData.unidad} onValueChange={(value) => handleFieldChange('unidad', value)}>
                       <SelectTrigger className={selectTriggerClass}>
                         <SelectValue placeholder="Sélectionner..." />
@@ -2265,18 +2237,18 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div className="grid gap-2.5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                 {/* Peso Unitario */}
-                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
-                  <Label>Poids Unitaire (kg/unité)</Label>
+                <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                  <Label className="text-xs">Poids Unitaire (kg/unité)</Label>
                   <QuantityInput
                     value={formData.pesoUnitario || ''}
                     onChangeText={(value) => handleFieldChange('pesoUnitario', parseQuantityText(value, false) || 0)}
                     min={0}
                     step={1}
                     placeholder="0"
-                    wrapperClassName="mt-2"
-                    className="rounded-2xl border-slate-200 bg-slate-50/60"
+                    wrapperClassName="mt-1.5"
+                    className="rounded-xl border-slate-200 bg-slate-50/60 text-sm h-9"
                     buttonClassName="border-slate-200 bg-slate-50/60 hover:bg-slate-100"
                   />
                   {formData.pesoUnitario > 0 && formData.cantidad > 0 && (
@@ -2287,9 +2259,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </div>
 
                 {/* Peso */}
-                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                   <div className="flex items-center justify-between mb-2">
-                    <Label>Poids Total (kg)</Label>
+                    <Label className="text-xs">Poids Total (kg)</Label>
                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
                       ✓ Calcul automatique
                     </Badge>
@@ -2301,7 +2273,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     value={formData.peso ? formatQuantity(formData.peso) : ''}
                     onChange={(e) => handleFieldChange('peso', parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="rounded-2xl border-slate-200 bg-gray-50"
+                    className="rounded-xl border-slate-200 h-9 text-sm bg-gray-50"
                     readOnly
                   />
                   
@@ -2320,7 +2292,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                     if (pesoTara > 0 && pesoBruto > 0) {
                       return (
-                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="mt-1.5 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-start gap-2 mb-2">
                             <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div className="text-xs text-blue-800">
@@ -2358,47 +2330,47 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </div>
 
                 {/* Temperatura */}
-                <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
-                  <Label>Température *</Label>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                  <Label className="text-xs">Température *</Label>
+                  <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleFieldChange('temperatura', 'ambiente')}
                       className={cn(
-                        "rounded-2xl border px-3 py-2.5 transition-all",
+                        "rounded-xl border px-2 py-2 transition-all",
                         formData.temperatura === 'ambiente'
                           ? "border-amber-500 bg-amber-50"
                           : "border-slate-200 bg-white hover:border-slate-300"
                       )}
                     >
-                      <Wind className="w-5 h-5 mx-auto text-amber-600" />
-                      <p className="text-xs mt-1">Ambiante</p>
+                      <Wind className="w-4 h-4 mx-auto text-amber-600" />
+                      <p className="text-[10px] mt-0.5">Ambiante</p>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleFieldChange('temperatura', 'refrigerado')}
                       className={cn(
-                        "rounded-2xl border px-3 py-2.5 transition-all",
+                        "rounded-xl border px-2 py-2 transition-all",
                         formData.temperatura === 'refrigerado'
                           ? "border-blue-500 bg-blue-50"
                           : "border-slate-200 bg-white hover:border-slate-300"
                       )}
                     >
-                      <Thermometer className="w-5 h-5 mx-auto text-blue-600" />
-                      <p className="text-xs mt-1">Réfrigéré</p>
+                      <Thermometer className="w-4 h-4 mx-auto text-blue-600" />
+                      <p className="text-[10px] mt-0.5">Réfrigéré</p>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleFieldChange('temperatura', 'congelado')}
                       className={cn(
-                        "rounded-2xl border px-3 py-2.5 transition-all",
+                        "rounded-xl border px-2 py-2 transition-all",
                         formData.temperatura === 'congelado'
                           ? "border-cyan-500 bg-cyan-50"
                           : "border-slate-200 bg-white hover:border-slate-300"
                       )}
                     >
-                      <Snowflake className="w-5 h-5 mx-auto text-cyan-600" />
-                      <p className="text-xs mt-1">Congelé</p>
+                      <Snowflake className="w-4 h-4 mx-auto text-cyan-600" />
+                      <p className="text-[10px] mt-0.5">Congelé</p>
                     </button>
                   </div>
                 </div>
@@ -2406,28 +2378,27 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
                   <div className="space-y-4">
                     <div className="rounded-[22px] border border-slate-200 bg-[linear-gradient(145deg,#f8fbfd_0%,#ffffff_100%)] p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Cockpit produit</p>
-                      <div className="mt-4 space-y-3">
-                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                          <span className="text-sm text-slate-500">Statut</span>
-                          <span className="text-sm font-semibold text-slate-900">{formData.nombreProducto ? 'Configuré' : 'En attente'}</span>
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Numéro de Lot</Label>
+                          <Input
+                            value={formData.lote}
+                            onChange={(e) => handleFieldChange('lote', e.target.value)}
+                            placeholder="LOT-12345"
+                          />
                         </div>
-                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                          <span className="text-sm text-slate-500">Quantité</span>
-                          <span className="text-sm font-semibold text-slate-900">{formData.cantidad > 0 ? `${formatQuantity(formData.cantidad)} ${formData.unidad || ''}`.trim() : 'Non définie'}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                          <span className="text-sm text-slate-500">Poids estimé</span>
-                          <span className="text-sm font-semibold text-slate-900">{formatQuantity(poidsEstimeCourant)} kg</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                          <span className="text-sm text-slate-500">Température</span>
-                          <span className="text-sm font-semibold text-slate-900">{etiquetteTemperature}</span>
+                        <div>
+                          <Label className="text-xs">Date d'Expiration</Label>
+                          <Input
+                            type="date"
+                            value={formData.fechaCaducidad}
+                            onChange={(e) => handleFieldChange('fechaCaducidad', e.target.value)}
+                          />
                         </div>
                       </div>
                     </div>
 
-                    <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.35)]">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Conseil opérateur</p>
                       <p className="mt-3 text-sm leading-6 text-slate-600">
                         Utilisez la catégorie et la sous-catégorie pour standardiser les données. Réservez les variantes aux différences réellement utiles pour l’étiquetage ou le suivi.
@@ -2439,46 +2410,18 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               {/* SECTION 4: Detalles opcionales */}
-              <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-3 shadow-[0_14px_30px_-28px_rgba(15,23,42,0.4)]">
+              <div className="rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-[0_14px_30px_-28px_rgba(15,23,42,0.4)]">
                 <button
                   type="button"
                   onClick={() => setDetallesOpcionalesAbiertos(!detallesOpcionalesAbiertos)}
-                  className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-800"
+                  className="flex w-full items-center justify-between text-left text-xs font-semibold text-slate-800"
                 >
                   <span>Détails Optionnels</span>
-                  {detallesOpcionalesAbiertos ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  {detallesOpcionalesAbiertos ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
 
                 {detallesOpcionalesAbiertos && (
-                  <div className="mt-4 space-y-3">
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div>
-                        <Label>Numéro de Lot</Label>
-                        <Input
-                          value={formData.lote}
-                          onChange={(e) => handleFieldChange('lote', e.target.value)}
-                          placeholder="LOT-12345"
-                        />
-                      </div>
-                      <div>
-                        <Label>Date d'Expiration</Label>
-                        <Input
-                          type="date"
-                          value={formData.fechaCaducidad}
-                          onChange={(e) => handleFieldChange('fechaCaducidad', e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Détails d'Empaquetage</Label>
-                      <Input
-                        value={formData.detallesEmpaque}
-                        onChange={(e) => handleFieldChange('detallesEmpaque', e.target.value)}
-                        placeholder="Ex: 24x500ml, 12x1kg, etc."
-                      />
-                    </div>
-
+                  <div className="mt-1.5.5 space-y-1.5">
                     <div>
                       <Label>Observations</Label>
                       <Textarea
@@ -2662,23 +2605,23 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     })}
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <div className="mt-1.5.5 flex flex-col gap-2 sm:flex-row">
                     <Button
                       variant="outline"
                       onClick={annulerEtFermer}
-                      size="lg"
-                      className="rounded-2xl"
+                      size="default"
+                      className="rounded-xl"
                     >
-                      <X className="w-5 h-5 mr-2" />
+                      <X className="w-4 h-4 mr-1.5" />
                       Annuler
                     </Button>
                     <Button
                       onClick={finalizarEntrada}
-                      className="flex-1 rounded-2xl bg-[#1a4d7a] shadow-sm hover:bg-[#153d62]"
-                      size="lg"
+                      className="flex-1 rounded-xl bg-[#1a4d7a] shadow-sm hover:bg-[#153d62]"
+                      size="default"
                     >
-                      <Check className="w-5 h-5 mr-2" />
-                      Finaliser l'Entrée ({productosAgregados.length} produits)
+                      <Check className="w-4 h-4 mr-1.5" />
+                      Finaliser l'Entrée ({productosAgregados.length})
                     </Button>
                   </div>
                 </div>
@@ -2687,93 +2630,135 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           )}
               </div>
 
-              <aside className="hidden xl:block space-y-4 xl:sticky xl:top-0">
-                <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_22px_50px_-38px_rgba(15,23,42,0.45)]">
-                  <div className="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(26,77,122,0.08),rgba(45,149,97,0.08))] px-5 py-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Résumé en direct</p>
-                    <h3 className="mt-1 text-lg font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      Nouvelle entrée
+              <aside className="hidden xl:flex xl:flex-col xl:sticky xl:top-0 xl:max-h-[94dvh] overflow-hidden">
+                <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_22px_50px_-38px_rgba(15,23,42,0.45)] h-full">
+                  {/* Header */}
+                  <div className="flex-none border-b border-slate-200 bg-[linear-gradient(135deg,rgba(26,77,122,0.08),rgba(45,149,97,0.08))] px-3 py-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-slate-500">📋 Liste</p>
+                    <h3 className="mt-0.5 text-sm font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      Produits Ajoutés
                     </h3>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className="h-full rounded-full bg-[linear-gradient(90deg,#1a4d7a_0%,#2d9561_100%)] transition-all"
-                        style={{ width: `${progressionFormulaire}%` }}
-                      />
-                    </div>
-                    <p className="mt-2 text-sm text-slate-600">{checkpointsCompletados}/6 repères complétés</p>
+                    {productosAgregados.length > 0 && (
+                      <p className="mt-0.5 text-[10px] text-slate-600">
+                        {productosAgregados.length} produit{productosAgregados.length > 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="space-y-4 px-5 py-4 text-sm text-slate-700">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Programme</p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <Gift className="h-4 w-4 text-[#2d9561]" />
-                        <span className="font-medium text-slate-900">{programaSeleccionado?.nombre || 'Non sélectionné'}</span>
+                  {/* Totales */}
+                  {productosAgregados.length > 0 && (
+                    <div className="flex-none border-b border-slate-200 bg-slate-50/50 px-3 py-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="secondary" className="w-fit text-[10px] py-0.5">
+                          {formatQuantity(productosAgregados.reduce((sum, p) => {
+                            const pesoNeto = p.pesoUnidad && p.pesoUnidad > 0 
+                              ? Math.max(0, p.pesoTotal - p.pesoUnidad)
+                              : p.pesoTotal;
+                            return sum + pesoNeto;
+                          }, 0))} kg
+                        </Badge>
+                        {(() => {
+                          const totalMonetario = productosAgregados.reduce((sum, p) => sum + (p.valorTotal || 0), 0);
+                          if (totalMonetario > 0) {
+                            return (
+                              <Badge className="bg-green-600 text-white w-fit text-[10px] py-0.5">
+                                CAD$ {formatMoney(totalMonetario)}
+                              </Badge>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
+                  )}
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Contact</p>
-                      <div className="mt-2 flex items-start gap-2">
-                        <Building2 className="mt-0.5 h-4 w-4 text-[#1a4d7a]" />
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {contactoSeleccionado?.nombreEmpresa || (contactoSeleccionado ? `${contactoSeleccionado.nombre} ${contactoSeleccionado.apellido}` : 'À sélectionner')}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {contactoSeleccionado?.telefono || contactoSeleccionado?.email || 'Choisissez un donateur, fournisseur ou participant PRS.'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Lista de productos */}
+                  <div className="flex-1 overflow-y-auto px-2 py-2">
+                    {productosAgregados.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {productosAgregados.map((producto, index) => {
+                          const pesoTaraTotal = (producto.pesoUnidad && producto.pesoUnidad > 0) 
+                            ? producto.pesoUnidad * producto.cantidad 
+                            : 0;
+                          const pesoNeto = pesoTaraTotal > 0
+                            ? Math.max(0, producto.pesoTotal - pesoTaraTotal)
+                            : producto.pesoTotal;
+                          const tieneTara = producto.pesoUnidad && producto.pesoUnidad > 0;
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Produit courant</p>
-                      <div className="mt-2 flex items-start gap-2">
-                        <Package2 className="mt-0.5 h-4 w-4 text-[#1a4d7a]" />
-                        <div>
-                          <p className="font-medium text-slate-900">{formData.nombreProducto || 'Aucun produit sélectionné'}</p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {formData.cantidad > 0 && formData.unidad
-                              ? `${formatQuantity(formData.cantidad)} ${formData.unidad} • ${formatQuantity(formData.peso || 0)} kg`
-                              : 'Sélectionnez la catégorie, la quantité et l’unité.'}
-                          </p>
-                        </div>
+                          return (
+                            <div key={index} className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-2">
+                              <span className="text-base flex-shrink-0">{producto.productoIcono}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-xs truncate text-slate-900">{producto.nombreProducto}</p>
+                                <div className="flex flex-col gap-0.5 mt-1">
+                                  <div className="flex items-center gap-1 text-[10px] text-gray-600">
+                                    <span className="font-semibold">{formatQuantity(producto.cantidad)} {producto.unidad}</span>
+                                    <span>•</span>
+                                    {tieneTara ? (
+                                      <span className="font-semibold text-green-700" title={`Brut: ${formatQuantity(producto.pesoTotal)}kg - Tare: ${formatQuantity(pesoTaraTotal)}kg`}>
+                                        {formatQuantity(pesoNeto)} kg
+                                      </span>
+                                    ) : (
+                                      <span>{formatQuantity(producto.pesoTotal)} kg</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <Badge className={cn("text-[9px] py-0 px-1.5", getTemperatureColor(producto.temperatura))}>
+                                      {getTemperatureIcon(producto.temperatura)}
+                                      <span className="ml-0.5">
+                                        {producto.temperatura === 'ambiente' ? 'AMB' :
+                                         producto.temperatura === 'refrigerado' ? 'RÉF' : 'CONG'}
+                                      </span>
+                                    </Badge>
+                                    {producto.valorTotal && producto.valorTotal > 0 && (
+                                      <span className="text-[10px] font-semibold text-green-700">
+                                        CAD$ {formatMoney(producto.valorTotal)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-1 mt-1.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => imprimirEtiquetaProducto(producto)}
+                                    className="h-6 px-1.5 text-[10px] text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                    title="Réimprimer"
+                                  >
+                                    <Printer className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => eliminarProductoAgregado(index)}
+                                    className="h-6 px-1.5 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    title="Supprimer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Température</p>
-                        <div className="mt-2 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                          {getTemperatureIcon(formData.temperatura)}
-                          <span>{etiquetteTemperature}</span>
-                        </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <Package className="w-12 h-12 text-slate-300 mb-3" />
+                        <p className="text-xs font-medium text-slate-500">Aucun produit</p>
+                        <p className="text-[10px] text-slate-400 mt-1 max-w-[180px]">
+                          Ajoutez des produits
+                        </p>
                       </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Impression</p>
-                        <p className="mt-2 text-sm font-medium text-slate-900">{imprimirAutomaticamente ? 'Automatique' : 'Manuelle'}</p>
-                        <p className="mt-1 text-xs text-slate-500">Réimpression disponible après ajout.</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Validation finale</p>
-                      <p className="mt-2 text-sm text-slate-700">
-                        Ajoutez un ou plusieurs produits, puis finalisez l’entrée pour enregistrer le lot dans l’inventaire.
-                      </p>
-                      <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-                        <Save className="h-4 w-4" />
-                        <span>Le résumé se met à jour en temps réel.</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </aside>
-            </div>
-        </div>
 
-      </div>
+            </div>
+            </div>
+          </div>
+        </div>
       </DialogContent>
 
       {/* DIÁLOGO: Crear Nueva Variante */}
@@ -2818,7 +2803,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <Label>Unité (optionnel)</Label>
+                  <Label className="text-xs">Unité (optionnel)</Label>
                   <Select 
                     value={formVariante.unidad} 
                     onValueChange={(value) => setFormVariante(prev => ({ ...prev, unidad: value }))}
@@ -2841,7 +2826,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   )}
                 </div>
                 <div>
-                  <Label>Poids Unitaire (kg) (optionnel)</Label>
+                  <Label className="text-xs">Poids Unitaire (kg) (optionnel)</Label>
                   <QuantityInput
                     value={formVariante.pesoUnitario}
                     onChangeText={(value) => setFormVariante(prev => ({ ...prev, pesoUnitario: value }))}
@@ -2951,7 +2936,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               <div>
-                <Label>Unité par défaut (optionnel)</Label>
+                <Label className="text-xs">Unité par défaut (optionnel)</Label>
                 <Select 
                   value={formSubcategoria.unidad} 
                   onValueChange={(value) => setFormSubcategoria(prev => ({ ...prev, unidad: value }))}
@@ -2987,7 +2972,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               <div>
-                <Label>Poids Unitaire Héritage (kg) (optionnel)</Label>
+                <Label className="text-xs">Poids Unitaire Héritage (kg) (optionnel)</Label>
                 <QuantityInput
                   value={formSubcategoria.pesoUnitario || ''}
                   onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseQuantityText(value, false) || 0 }))}
@@ -3034,7 +3019,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               </div>
 
               <div className="space-y-3 rounded-lg bg-gray-50 p-4">
-                <Label className="text-sm font-semibold">Poids par unité (kg) - Optionnel</Label>
+                <Label className="text-xs font-semibold">Poids par unité (kg) - Optionnel</Label>
                 <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Palette (PLT)</Label>
