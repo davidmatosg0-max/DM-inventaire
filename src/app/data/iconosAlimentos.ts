@@ -16,6 +16,12 @@ export type SeccionIconos = {
   iconos: string[];
 };
 
+export type FamiliaOperativaIconos = {
+  id: string;
+  label: string;
+  iconos: string[];
+};
+
 export const CATEGORIAS_NO_ALIMENTARIAS = [
   'Higiene Personal',
   'Limpieza del Hogar',
@@ -274,90 +280,136 @@ function uniqueIcons(iconos: string[]): string[] {
   return Array.from(new Set(iconos));
 }
 
+export const FAMILIAS_OPERATIVAS_ICONOS_ALIMENTARIOS: FamiliaOperativaIconos[] = [
+  {
+    id: 'op-frais',
+    label: 'Frais',
+    iconos: ['🥬', '🥕', '🥦', '🍅', '🥒', '🧅', '🧄', '🍆', '🥑', '🫑', '🍎', '🍊', '🍌', '🍇', '🍓', '🍉', '🍍'],
+  },
+  {
+    id: 'op-sec',
+    label: 'Sec',
+    iconos: ['🍚', '🍝', '🌾', '🫘', '🥫', '🫙', '🥜', '🍯', '🧂', '🍪', '🍘', '🧃'],
+  },
+  {
+    id: 'op-refrigere',
+    label: 'Réfrigéré',
+    iconos: ['🥛', '🧀', '🧈', '🥚', '🥩', '🍗', '🐟', '🍤', '🥓', '🧆'],
+  },
+  {
+    id: 'op-congele',
+    label: 'Congelé',
+    iconos: ['🧊', '🍦', '🍕', '🍟', '🍤', '🐟', '🥦', '🍓'],
+  },
+  {
+    id: 'op-pret-a-manger',
+    label: 'Prêt à consommer',
+    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍔', '🍣', '🥙'],
+  },
+  {
+    id: 'op-boissons',
+    label: 'Boissons',
+    iconos: ['💧', '🧊', '🧃', '🥤', '🧋', '☕', '🫖', '🍵', '🧉'],
+  },
+  {
+    id: 'op-boulangerie',
+    label: 'Boulangerie',
+    iconos: ['🍞', '🥖', '🥐', '🥯', '🥨', '🫓', '🧇', '🥞', '🥣'],
+  },
+  {
+    id: 'op-proteines',
+    label: 'Protéines',
+    iconos: ['🥩', '🍗', '🐟', '🍤', '🥚', '🍖', '🥓', '🌭', '🍔', '🍣', '🍢', '🧆'],
+  },
+].map((famille) => ({
+  ...famille,
+  iconos: uniqueIcons(famille.iconos),
+}));
+
 export const ICONOS_SECCIONES_ALIMENTARIAS: SeccionIconos[] = [
   {
     id: 'boissons-froides',
     labelKey: 'configuration.coldDrinksIcons',
     commonLabelKey: 'common.iconCategories.coldDrinks',
-    iconos: ['🧃', '🥤', '🧋', '🧊', '💧'],
+    iconos: ['🧃', '🥤', '🧋', '🧊', '💧', '🍹', '🍸', '🍶', '🍾', '🍷', '🍺', '🍻', '🥂'],
   },
   {
     id: 'boissons-chaudes',
     labelKey: 'configuration.hotDrinksIcons',
     commonLabelKey: 'common.iconCategories.hotDrinks',
-    iconos: ['☕', '🫖', '🍵', '🧉'],
+    iconos: ['☕', '🫖', '🍵', '🧉', '🍶'],
   },
   {
     id: 'boissons-fonctionnelles',
     labelKey: 'configuration.functionalDrinksIcons',
     commonLabelKey: 'common.iconCategories.functionalDrinks',
-    iconos: ['🧉', '🫖', '🧃', '☕'],
+    iconos: ['🧉', '🫖', '🧃', '☕', '🧊', '💧'],
   },
   {
     id: 'tartinables-sucres',
     labelKey: 'configuration.sweetSpreadsIcons',
     commonLabelKey: 'common.iconCategories.sweetSpreads',
-    iconos: ['🍯', '🍓', '🍇', '🍫', '🧀'],
+    iconos: ['🍯', '🍓', '🍇', '🍫', '🧀', '🥜', '🫙', '🧈'],
   },
   {
     id: 'condiments-trempettes',
     labelKey: 'configuration.condimentsDipsIcons',
     commonLabelKey: 'common.iconCategories.condimentsDips',
-    iconos: ['🧂', '🫒', '🌻', '🧴', '🥜', '🍅', '🌶️', '🧄', '🫙', '🧆'],
+    iconos: ['🧂', '🫒', '🌻', '🧴', '🥜', '🍅', '🌶️', '🧄', '🫙', '🧆', '🧅', '🍋', '🥫'],
   },
   {
     id: 'sucre-desserts',
     labelKey: 'configuration.sweetsDessertsIcons',
     commonLabelKey: 'common.iconCategories.sweetsDesserts',
-    iconos: ['🍫', '🍬', '🍪', '🍩', '🍰', '🎂', '🥧', '🍮', '🍭', '🍡'],
+    iconos: ['🍫', '🍬', '🍪', '🍩', '🍰', '🎂', '🥧', '🍮', '🍭', '🍡', '🍦', '🧁', '🍯'],
   },
   {
     id: 'petit-dejeuner-boulangerie',
     labelKey: 'configuration.breakfastBakeryIcons',
     commonLabelKey: 'common.iconCategories.breakfastBakery',
-    iconos: ['🍞', '🥖', '🥣', '🥐', '🥯', '🥨', '🫓', '🧇', '🥞'],
+    iconos: ['🍞', '🥖', '🥣', '🥐', '🥯', '🥨', '🫓', '🧇', '🥞', '🍪'],
   },
   {
     id: 'epicerie-seche',
     labelKey: 'configuration.dryGroceryIcons',
     commonLabelKey: 'common.iconCategories.dryGrocery',
-    iconos: ['🍚', '🍝', '🌾', '🫘', '🥫'],
+    iconos: ['🍚', '🍝', '🌾', '🫘', '🥫', '🫙', '🥜', '🫛'],
   },
   {
     id: 'fruits',
     labelKey: 'configuration.fruitsIcons',
     commonLabelKey: 'common.iconCategories.fruits',
-    iconos: ['🍎', '🍊', '🍌', '🍇', '🍓', '🍋', '🍉', '🍍', '🥝', '🥭', '🍏', '🍐', '🥥'],
+    iconos: ['🍎', '🍊', '🍌', '🍇', '🍓', '🍋', '🍉', '🍍', '🥝', '🥭', '🍏', '🍐', '🥥', '🍈', '🫐', '🍒', '🍑'],
   },
   {
     id: 'legumes',
     labelKey: 'configuration.vegetablesIcons',
     commonLabelKey: 'common.iconCategories.vegetables',
-    iconos: ['🥬', '🥕', '🥔', '🌽', '🥦', '🍅', '🫑', '🥒', '🧅', '🧄', '🍆', '🥑', '🌶️', '🫛', '🍄'],
+    iconos: ['🥬', '🥕', '🥔', '🌽', '🥦', '🍅', '🫑', '🥒', '🧅', '🧄', '🍆', '🥑', '🌶️', '🫛', '🍄', '🫒'],
   },
   {
     id: 'proteines',
     labelKey: 'configuration.proteinsIcons',
     commonLabelKey: 'common.iconCategories.proteins',
-    iconos: ['🥩', '🍗', '🐟', '🍤', '🥚', '🍖', '🥓', '🌭', '🍔'],
+    iconos: ['🥩', '🍗', '🐟', '🍤', '🥚', '🍖', '🥓', '🌭', '🍔', '🍣', '🍢', '🧆'],
   },
   {
     id: 'produits-laitiers',
     labelKey: 'configuration.dairyIcons',
     commonLabelKey: 'common.iconCategories.dairy',
-    iconos: ['🥛', '🧀', '🧈', '🍦', '🧁'],
+    iconos: ['🥛', '🧀', '🧈', '🍦', '🧁', '🍮'],
   },
   {
     id: 'plats-prepares-collations',
     labelKey: 'configuration.preparedMealsSnacksIcons',
     commonLabelKey: 'common.iconCategories.preparedSnacks',
-    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍿', '🍟', '🍘'],
+    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍿', '🍟', '🍘', '🍝', '🍔', '🍣', '🥙'],
   },
   {
     id: 'generiques-alimentaires',
     labelKey: 'configuration.foodGenericIcons',
     commonLabelKey: 'common.iconCategories.foodGeneric',
-    iconos: ['📦', '🛒', '🍽️', '🥘', '🍴'],
+    iconos: ['📦', '🛒', '🍽️', '🥘', '🍴', '🫙', '🥫', '🍱'],
   },
 ];
 

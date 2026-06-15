@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { Input } from './input';
 import { Label } from './label';
-import { CATEGORIAS_NO_ALIMENTARIAS, ICONOS_CATEGORIAS, ICONOS_SECCIONES_ALIMENTARIAS } from '../../data/iconosAlimentos';
+import {
+  CATEGORIAS_NO_ALIMENTARIAS,
+  FAMILIAS_OPERATIVAS_ICONOS_ALIMENTARIOS,
+  ICONOS_CATEGORIAS,
+  ICONOS_SECCIONES_ALIMENTARIAS,
+} from '../../data/iconosAlimentos';
 
 interface IconSelectorProps {
   value: string;
@@ -26,6 +31,10 @@ export function IconSelector({
 
   const categoryOptions = [
     { id: 'all', label: t('common.iconCategories.all') },
+    ...FAMILIAS_OPERATIVAS_ICONOS_ALIMENTARIOS.map(familia => ({
+      id: familia.id,
+      label: familia.label,
+    })),
     ...ICONOS_SECCIONES_ALIMENTARIAS.map(section => ({
       id: section.id,
       label: t(section.commonLabelKey),
@@ -40,6 +49,11 @@ export function IconSelector({
 
     if (selectedCategory === 'non-food') {
       return CATEGORIAS_NO_ALIMENTARIAS.includes(categoria);
+    }
+
+    const familiaOperativa = FAMILIAS_OPERATIVAS_ICONOS_ALIMENTARIOS.find(familia => familia.id === selectedCategory);
+    if (familiaOperativa) {
+      return familiaOperativa.iconos.includes(emoji);
     }
 
     const selectedSection = ICONOS_SECCIONES_ALIMENTARIAS.find(section => section.id === selectedCategory);
