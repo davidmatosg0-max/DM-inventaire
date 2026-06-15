@@ -22,7 +22,9 @@ function normalizarCategoriasConIconos(categorias: Categoria[]): { categorias: C
     }
 
     const subcategoriasNormalizadas = cat.subcategorias?.map((sub) => {
-      const iconoSubcategoria = iconoCategoria;
+      const iconoSubcategoria = necesitaIconoAutomatico(sub.icono)
+        ? iconoCategoria
+        : sub.icono;
 
       const variantesNormalizadas = sub.variantes?.map((variante) => {
         // Solo sobrescribir si la variante tiene un icono por defecto
@@ -334,7 +336,9 @@ export function agregarSubcategoria(
         const subcategoria: Subcategoria = {
           id: nuevoId,
           ...nuevaSubcategoria,
-          icono: cat.icono || generarIconoProducto(nuevaSubcategoria.nombre, cat.nombre)
+          icono: necesitaIconoAutomatico(nuevaSubcategoria.icono)
+            ? (cat.icono || generarIconoProducto(nuevaSubcategoria.nombre, cat.nombre))
+            : (nuevaSubcategoria.icono as string)
         };
 
         console.log('🔧 Subcategoría creada con datos:', JSON.stringify(subcategoria, null, 2));
@@ -389,7 +393,9 @@ export function agregarVariante(
               id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               nombre: datosVariante.nombre.trim(),
               codigo: datosVariante.codigo?.trim() || '',
-              icono: datosVariante.icono || sub.icono || cat.icono || '🏷️',
+              icono: necesitaIconoAutomatico(datosVariante.icono)
+                ? (sub.icono || cat.icono || '🏷️')
+                : (datosVariante.icono as string),
               activa: true,
               unidad: datosVariante.unidad || sub.unidad || '',
               valorPorKg: datosVariante.valorPorKg || undefined,

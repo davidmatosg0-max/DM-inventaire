@@ -933,7 +933,10 @@ export function Configuracion() {
     }
 
     const categoriaObj = categorias.find(c => c.id === categoriaSeleccionada);
-    const iconoFinal = categoriaObj?.icono || formSubcategoria.icono || generarIconoProducto(formSubcategoria.nombre, categoriaObj?.nombre);
+    const iconoPersonalizadoSubcategoria = formSubcategoria.icono?.trim();
+    const iconoFinal = (iconoPersonalizadoSubcategoria && iconoPersonalizadoSubcategoria !== '📦' && iconoPersonalizadoSubcategoria !== '🏷️')
+      ? iconoPersonalizadoSubcategoria
+      : (categoriaObj?.icono || generarIconoProducto(formSubcategoria.nombre, categoriaObj?.nombre));
 
     if (editandoSubcategoria) {
       // Editar subcategoría existente
@@ -1501,6 +1504,10 @@ export function Configuracion() {
     }
 
     const { categoria, subcategoria } = subcategoriaBase;
+    const iconoPersonalizadoVariante = formVarianteSubcategoria.icono?.trim();
+    const iconoVarianteFinal = (iconoPersonalizadoVariante && iconoPersonalizadoVariante !== '📦' && iconoPersonalizadoVariante !== '🏷️')
+      ? iconoPersonalizadoVariante
+      : (subcategoria.icono || categoria.icono);
 
     // Generar código automáticamente si no se proporcionó uno
     const codigoGenerado = formVarianteSubcategoria.codigo.trim() || 
@@ -1512,7 +1519,7 @@ export function Configuracion() {
         ...editandoVariante.variante,
         nombre: formVarianteSubcategoria.nombre.trim(),
         codigo: codigoGenerado,
-        icono: formVarianteSubcategoria.icono || subcategoria.icono || categoria.icono,
+        icono: iconoVarianteFinal,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
         valorPorKg: formVarianteSubcategoria.valorPorKg ? parseFloat(formVarianteSubcategoria.valorPorKg) : undefined,
         pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseFloat(formVarianteSubcategoria.pesoUnitario) : undefined,
@@ -1558,7 +1565,7 @@ export function Configuracion() {
         id: `var-${Date.now()}`,
         nombre: formVarianteSubcategoria.nombre.trim(),
         codigo: codigoGenerado,
-        icono: formVarianteSubcategoria.icono || subcategoria.icono || categoria.icono,
+        icono: iconoVarianteFinal,
         activa: true,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
         valorPorKg: formVarianteSubcategoria.valorPorKg ? parseFloat(formVarianteSubcategoria.valorPorKg) : undefined,
