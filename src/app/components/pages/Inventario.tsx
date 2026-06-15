@@ -530,7 +530,9 @@ export function Inventario() {
         peso: p.peso,
         pesoRegistrado: p.pesoRegistrado,
         pesoUnitario: p.pesoUnitario || p.peso,
-        varianteId: p.varianteId
+        varianteId: p.varianteId,
+        temperatura: (p as any).temperaturaOriginalEntrada || p.temperatura,
+        temperaturaAlmacenamiento: p.temperaturaAlmacenamiento,
       };
     });
     
@@ -1253,6 +1255,25 @@ export function Inventario() {
     }
 
     return null;
+  };
+
+  const getTemperatureBadge = (producto: typeof todosLosProductos[0]) => {
+    const temperaturaRaw = String(
+      (producto as any).temperatura ||
+      (producto as any).temperaturaOriginalEntrada ||
+      (producto as any).temperaturaAlmacenamiento ||
+      ''
+    ).toLowerCase();
+
+    if (temperaturaRaw.includes('congel')) {
+      return { label: 'Congelé', icon: '🧊', className: 'bg-cyan-100 text-cyan-800 border-cyan-200' };
+    }
+
+    if (temperaturaRaw.includes('refrig') || temperaturaRaw.includes('froid') || temperaturaRaw.includes('frio')) {
+      return { label: 'Réfrigéré', icon: '❄️', className: 'bg-blue-100 text-blue-800 border-blue-200' };
+    }
+
+    return { label: 'Ambiante', icon: '🌡️', className: 'bg-amber-100 text-amber-800 border-amber-200' };
   };
 
   const reservasInventario = React.useMemo(
@@ -3200,9 +3221,10 @@ export function Inventario() {
                       <TableRow className="h-8">
                         <TableHead className="w-[4%] font-semibold text-[#333333] text-[11px] py-1 px-1.5 text-center" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.photo')}</TableHead>
                         <TableHead className="w-[8%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.code')}</TableHead>
-                        <TableHead className="w-[15%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.productName')}</TableHead>
+                        <TableHead className="w-[13%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.productName')}</TableHead>
                         <TableHead className="w-[8%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>📦 {t('inventory.lotNumberShort')}</TableHead>
                         <TableHead className="w-[6%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unit')}</TableHead>
+                        <TableHead className="w-[8%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>🌡️ Température</TableHead>
                         <TableHead className="w-[9%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('common.unitWeight')}</TableHead>
                         <TableHead className="w-[12%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.currentStock')}</TableHead>
                         <TableHead className="w-[7%] font-semibold text-[#333333] text-[11px] py-1 px-1.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('inventory.minimumStock')}</TableHead>
@@ -3264,6 +3286,16 @@ export function Inventario() {
                               >
                                 {producto.unidad}
                               </Badge>
+                            </TableCell>
+                            <TableCell className="py-1 px-1.5 align-top">
+                              {(() => {
+                                const tempBadge = getTemperatureBadge(producto);
+                                return (
+                                  <Badge variant="outline" className={`${tempBadge.className} text-[10px] px-1.5 py-0`}>
+                                    {tempBadge.icon} {tempBadge.label}
+                                  </Badge>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="py-1 px-1.5 align-top">
                               {getDisplayWeight(producto) !== null ? (
@@ -3512,6 +3544,14 @@ export function Inventario() {
                           </div>
 
                           <div className="flex flex-wrap gap-1.5">
+                            {(() => {
+                              const tempBadge = getTemperatureBadge(producto);
+                              return (
+                                <Badge variant="outline" className={`${tempBadge.className} text-[10px] px-1.5 py-0`}>
+                                  {tempBadge.icon} {tempBadge.label}
+                                </Badge>
+                              );
+                            })()}
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                               {producto.unidad}
                             </Badge>
