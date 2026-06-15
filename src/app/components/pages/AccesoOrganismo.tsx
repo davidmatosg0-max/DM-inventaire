@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Key, Lock, Eye, EyeOff, LogIn, Shield, Sparkles, ShieldCheck, Building2 } from 'lucide-react';
+import { Key, Lock, Eye, EyeOff, LogIn, Shield, Sparkles, ShieldCheck, Building2, Home } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -12,6 +12,7 @@ import { useBranding } from '../../../hooks/useBranding';
 import { escucharCambiosOrganismo } from '../../utils/organismoEvents';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
 import { normalizarClaveAcceso } from '../../utils/claveAcceso';
+import { PERMISOS, tienePermiso } from '../../utils/permisos';
 
 type OrganismoPortal = Organismo & {
   participaPRS: boolean;
@@ -32,6 +33,14 @@ export function AccesoOrganismo() {
   const [organismoAutenticado, setOrganismoAutenticado] = useState<OrganismoPortal | null>(null);
   const [organismosDisponibles, setOrganismosDisponibles] = useState<OrganismoPortal[]>([]);
   const claveAccesoInputRef = useRef<HTMLInputElement | null>(null);
+  const mostrarRetornoMenuPrincipal = tienePermiso(PERMISOS.DESARROLLADOR);
+
+  const handleVolverMenuPrincipal = () => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 'dashboard');
+    window.location.href = url.toString();
+  };
 
   useEffect(() => {
     const recargarOrganismos = () => {
@@ -125,6 +134,8 @@ export function AccesoOrganismo() {
       <VistaPublicaOrganismo 
         organismo={organismoAutenticado} 
         onCerrarSesion={handleCerrarSesion}
+        mostrarBotonMenuPrincipalDesarrollador={mostrarRetornoMenuPrincipal}
+        onVolverMenuPrincipal={handleVolverMenuPrincipal}
       />
     );
   }
@@ -314,6 +325,21 @@ export function AccesoOrganismo() {
                   <LogIn className="mr-2 h-5 w-5" />
                   {t('organismPortal.accessButton')}
                 </Button>
+
+                {mostrarRetornoMenuPrincipal && (
+                  <Button
+                    onClick={handleVolverMenuPrincipal}
+                    variant="outline"
+                    className="h-11 w-full rounded-2xl border-slate-200 bg-slate-50/92 text-slate-700 shadow-[0_16px_30px_-28px_rgba(15,23,42,0.26)] hover:bg-slate-100"
+                    style={{
+                      fontFamily: 'Montserrat, sans-serif',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Volver al menú principal
+                  </Button>
+                )}
 
                 {organismesAvecCle.length > 0 && (
                   <div className="rounded-[24px] border border-slate-200 bg-slate-50/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">

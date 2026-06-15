@@ -5,7 +5,7 @@
 // - Badge "✓ PRS" en el título del organismo cuando participa en PRS
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Phone, Mail, MapPin, Users, Calendar, Package, History, TrendingUp, Award, CheckCircle, Eye, X, Printer, Edit2, Save, Plus, Thermometer, Download, FileText, FileSpreadsheet, Tag, ShoppingCart, Clock, AlertCircle, Minus, Trash2, Star, UserPlus, MessageSquare, Languages, ChefHat, Sparkles, ShieldCheck, Scale } from 'lucide-react';
+import { LogOut, Phone, Mail, MapPin, Users, Calendar, Package, History, TrendingUp, Award, CheckCircle, Eye, X, Printer, Edit2, Save, Plus, Thermometer, Download, FileText, FileSpreadsheet, Tag, ShoppingCart, Clock, AlertCircle, Minus, Trash2, Star, UserPlus, MessageSquare, Languages, ChefHat, Sparkles, ShieldCheck, Scale, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -76,6 +76,8 @@ interface VistaPublicaOrganismoProps {
     participaPRS?: boolean;
   };
   onCerrarSesion: () => void;
+  mostrarBotonMenuPrincipalDesarrollador?: boolean;
+  onVolverMenuPrincipal?: () => void;
 }
 
 type DatosEdicionOrganismo = {
@@ -88,7 +90,7 @@ type DatosEdicionOrganismo = {
   quartier: string;
 };
 
-export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublicaOrganismoProps) {
+export function VistaPublicaOrganismo({ organismo, onCerrarSesion, mostrarBotonMenuPrincipalDesarrollador = false, onVolverMenuPrincipal }: VistaPublicaOrganismoProps) {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
   const portalSectionCardClassName = 'overflow-hidden border border-white/78 bg-white/94 shadow-[0_24px_56px_-40px_rgba(15,45,71,0.28)]';
@@ -1271,6 +1273,21 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion }: VistaPublic
                   <Package className="mr-2 h-4 w-4" />
                   {t('organismPortal.myRequests')}
                 </Button>
+                {mostrarBotonMenuPrincipalDesarrollador && onVolverMenuPrincipal && (
+                  <Button
+                    onClick={onVolverMenuPrincipal}
+                    variant="outline"
+                    className="h-11 justify-start rounded-2xl border-slate-200 bg-slate-50/92 px-4 shadow-[0_16px_30px_-28px_rgba(15,23,42,0.26)] hover:bg-slate-100"
+                    style={{
+                      color: branding.primaryColor,
+                      fontFamily: 'Montserrat, sans-serif',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Volver al menú principal
+                  </Button>
+                )}
                 <Button
                   onClick={onCerrarSesion}
                   variant="outline"
