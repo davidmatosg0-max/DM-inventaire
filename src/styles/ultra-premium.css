@@ -1,0 +1,435 @@
+/* =====================================================================
+   ULTRA PREMIUM — Refinements du shell professionnel (topbar, sidebar,
+   dashboards, cartes, boutons, tables, focus, transitions).
+   Cette couche s'applique par sélecteurs data-slot / classes existantes
+   du Layout — elle NE remplace aucun composant.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. Ambiance de fond globale (grain subtile sur le shell)
+   Le shell principal (.app-professional-shell) possède déjà un dégradé
+   inline de marque + deux blobs blurés. On y ajoute un grain très léger
+   pour donner de la texture sans surcharger.
+   --------------------------------------------------------------------- */
+.app-professional-shell {
+  position: relative;
+}
+.app-professional-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 78%);
+}
+
+/* ---------------------------------------------------------------------
+   2. Topbar — liseré tricolore, textures et halo
+   --------------------------------------------------------------------- */
+.app-pro-topbar {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 22px 44px -30px rgba(6, 24, 44, 0.6);
+}
+.app-pro-topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #1E73BE 0%, #2E7D32 50%, #F59E0B 100%);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------
+   3. Sidebar — accent tricolore, séparateurs, meilleur scrollbar
+   --------------------------------------------------------------------- */
+.app-pro-sidebar {
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.08),
+    0 30px 60px -30px rgba(6, 24, 44, 0.55);
+}
+.app-pro-sidebar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #1E73BE 0%, #2E7D32 55%, #F59E0B 100%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.app-pro-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+.app-pro-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.app-pro-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  border: none;
+}
+.app-pro-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------------------------------------------------------------------
+   4. Barre d'outils du shell principal (breadcrumb)
+   --------------------------------------------------------------------- */
+.app-shell-toolbar {
+  position: relative;
+  overflow: hidden;
+}
+.app-shell-toolbar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #1E73BE, #2E7D32);
+  border-top-left-radius: 24px;
+  border-bottom-left-radius: 24px;
+}
+
+/* ---------------------------------------------------------------------
+   5. Cards — élévation multi-couches + hover shine
+   NOTE : on n'ajoute PAS overflow:hidden pour ne pas couper
+   les dropdowns/tooltips qui dépassent la carte.
+   --------------------------------------------------------------------- */
+[data-slot="card"] {
+  position: relative;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 6px 16px -8px rgba(15, 23, 42, 0.08);
+}
+[data-slot="card"]:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 4px 8px -4px rgba(15, 23, 42, 0.08),
+    0 24px 42px -22px rgba(30, 115, 190, 0.24);
+}
+
+/* ---------------------------------------------------------------------
+   6. Titles / hiérarchie typographique
+   --------------------------------------------------------------------- */
+h1, h2, h3 {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+h4, h5 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ---------------------------------------------------------------------
+   7. Buttons — variante primary avec léger dégradé
+   --------------------------------------------------------------------- */
+[data-slot="button"].bg-primary,
+[data-slot="button"][data-variant="default"] {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 55%);
+  background-repeat: no-repeat;
+}
+[data-slot="button"].bg-primary:not(:disabled):hover,
+[data-slot="button"][data-variant="default"]:not(:disabled):hover {
+  filter: brightness(1.04);
+}
+[data-slot="button"][data-variant="outline"] {
+  background: rgba(255, 255, 255, 0.85);
+}
+[data-slot="button"][data-variant="outline"]:not(:disabled):hover {
+  background: #fff;
+  border-color: rgba(30, 115, 190, 0.45) !important;
+  color: #1E73BE !important;
+}
+[data-slot="button"][data-variant="ghost"]:not(:disabled):hover {
+  background: rgba(30, 115, 190, 0.08);
+  color: #1E73BE;
+}
+[data-slot="button"][data-variant="destructive"] {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 55%);
+}
+
+/* ---------------------------------------------------------------------
+   8. Inputs — focus double ring (halo)
+   --------------------------------------------------------------------- */
+[data-slot="input"]:focus,
+[data-slot="textarea"]:focus,
+[data-slot="select-trigger"]:focus,
+[data-slot="input"]:focus-visible,
+[data-slot="textarea"]:focus-visible,
+[data-slot="select-trigger"]:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(30, 115, 190, 0.18),
+    0 0 0 6px rgba(30, 115, 190, 0.06) !important;
+}
+
+/* ---------------------------------------------------------------------
+   9. Tables — sticky header, coins ronds, densité pro
+   --------------------------------------------------------------------- */
+[data-slot="table-container"] {
+  position: relative;
+}
+[data-slot="table-header"] {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+[data-slot="table-body"] [data-slot="table-row"]:nth-child(2n) {
+  background: rgba(15, 23, 42, 0.015);
+}
+[data-slot="table-body"] [data-slot="table-row"]:hover {
+  background: rgba(30, 115, 190, 0.06) !important;
+  box-shadow: inset 3px 0 0 rgba(30, 115, 190, 0.5);
+}
+
+/* ---------------------------------------------------------------------
+   10. Progress bars — dégradé de marque
+   --------------------------------------------------------------------- */
+[data-slot="progress"] {
+  background: rgba(15, 23, 42, 0.06) !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+[data-slot="progress-indicator"] {
+  background: linear-gradient(90deg, #1E73BE 0%, #2E7D32 50%, #F59E0B 100%) !important;
+  transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ---------------------------------------------------------------------
+   11. Skeleton — shimmer subtile
+   --------------------------------------------------------------------- */
+[data-slot="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.05) 0%,
+    rgba(15, 23, 42, 0.10) 40%,
+    rgba(15, 23, 42, 0.05) 80%
+  );
+  background-size: 200% 100%;
+  animation: dm-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes dm-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* ---------------------------------------------------------------------
+   12. Sonner toasts — hairline coloré selon variant
+   --------------------------------------------------------------------- */
+[data-sonner-toast] {
+  position: relative;
+  padding-left: 16px !important;
+}
+[data-sonner-toast]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #1E73BE;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+[data-sonner-toast][data-type="success"]::before { background: #2E7D32; }
+[data-sonner-toast][data-type="warning"]::before { background: #F59E0B; }
+[data-sonner-toast][data-type="error"]::before   { background: #DC2626; }
+
+/* ---------------------------------------------------------------------
+   13. Popovers / menus — animation + hairline
+   --------------------------------------------------------------------- */
+[data-slot="popover-content"],
+[data-slot="dropdown-menu-content"],
+[data-slot="select-content"],
+[data-slot="context-menu-content"],
+[data-slot="menubar-content"] {
+  position: relative;
+}
+[data-slot="popover-content"]::before,
+[data-slot="dropdown-menu-content"]::before,
+[data-slot="select-content"]::before,
+[data-slot="context-menu-content"]::before,
+[data-slot="menubar-content"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(30, 115, 190, 0.35), transparent);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------
+   14. Utilitaires opt-in : dashboard heros, KPI cards, empty states
+   --------------------------------------------------------------------- */
+.dm-page-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background:
+    linear-gradient(140deg, rgba(30, 115, 190, 0.08) 0%, rgba(46, 125, 50, 0.05) 55%, rgba(255, 255, 255, 0.9) 100%);
+  box-shadow: 0 20px 40px -30px rgba(15, 45, 71, 0.28);
+  overflow: hidden;
+}
+.dm-page-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #1E73BE, #2E7D32, #F59E0B);
+}
+
+.dm-metric-card {
+  position: relative;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 20px -14px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+.dm-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 24px 40px -22px rgba(15, 23, 42, 0.22);
+}
+.dm-metric-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1E73BE, #2E7D32, #F59E0B);
+  opacity: 0.7;
+}
+.dm-metric-card__label {
+  font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #64748B;
+  font-weight: 700;
+}
+.dm-metric-card__value {
+  font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0F172A;
+  margin-top: 6px;
+}
+.dm-metric-card__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(46, 125, 50, 0.10);
+  color: #1B5E20;
+}
+.dm-metric-card__delta--down {
+  background: rgba(220, 38, 38, 0.10);
+  color: #B91C1C;
+}
+
+.dm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  border: 1px dashed rgba(15, 23, 42, 0.14);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.02);
+  color: #64748B;
+}
+
+/* ---------------------------------------------------------------------
+   15. Page transitions — apparition fluide au changement de page
+   --------------------------------------------------------------------- */
+.app-shell-content {
+  animation: dm-page-enter 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes dm-page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------------------------------------------------------------
+   16. Sélection texte, focus link
+   --------------------------------------------------------------------- */
+::selection {
+  background: rgba(30, 115, 190, 0.28);
+  color: #0F172A;
+}
+a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 115, 190, 0.25);
+  border-radius: 6px;
+}
+
+/* ---------------------------------------------------------------------
+   17. Séparateur premium
+   --------------------------------------------------------------------- */
+[data-slot="separator"] {
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12), transparent) !important;
+}
+
+/* ---------------------------------------------------------------------
+   18. Avatars — bordure marque
+   --------------------------------------------------------------------- */
+[data-slot="avatar"] {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6), 0 1px 3px rgba(15, 23, 42, 0.15);
+}
+
+/* ---------------------------------------------------------------------
+   19. Bouton flottant Guide/Actions — halo animé
+   --------------------------------------------------------------------- */
+.app-floating-organism-access,
+.app-floating-quick-actions button {
+  position: relative;
+}
+.app-floating-organism-access::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 2px solid rgba(46, 125, 50, 0.35);
+  animation: dm-pulse-ring 2.4s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes dm-pulse-ring {
+  0%   { transform: scale(0.95); opacity: 0.6; }
+  70%  { transform: scale(1.15); opacity: 0; }
+  100% { transform: scale(1.2); opacity: 0; }
+}

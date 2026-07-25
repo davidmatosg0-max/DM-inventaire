@@ -1988,6 +1988,9 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <p className="text-sm text-gray-700 mt-2">
                         L'ensemble de l'application adopte désormais un <strong>langage visuel unifié</strong> : fond clair avec dégradés subtils aux couleurs de la marque, boutons avec relief léger au survol, cartes aux coins arrondis, dialogues avec liseré supérieur bleu → vert → ambre, focus ring bleu, tables avec en-têtes typographiés et lignes surlignées au survol, menus et champs harmonisés.
                       </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Une couche <strong>ultra premium</strong> vient d'être appliquée à toute la plateforme : barre supérieure et sidebar avec liseré tricolore, cartes avec ombres multi-couches et halo au survol, boutons primaires avec léger dégradé, champs de saisie avec double focus ring, tableaux avec en-tête sticky et surlignage latéral, barres de progression aux couleurs de la marque, toasts avec hairline coloré selon leur type (succès, avertissement, erreur), popovers et menus avec liseré discret, transitions fluides à chaque changement de page.
+                      </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
