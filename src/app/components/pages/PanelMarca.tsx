@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
+import defaultLogo from '../../../assets/logo-dmi.svg';
 
 interface BrandingConfig {
   primaryColor: string;
@@ -38,12 +39,12 @@ const QUICK_COLOR_PRESETS = [
 const isValidHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
 const DEFAULT_BRANDING: BrandingConfig = {
-  primaryColor: '#1a4d7a',      // Azul marino profesional (coordina con logo DM)
+  primaryColor: '#1a4d7a',      // Azul marino profesional (coordina con logo DMi)
   secondaryColor: '#2d9561',    // Verde elegante
   successColor: '#2d9561',      // Verde éxito
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
-  logo: null,
+  logo: defaultLogo,           // Monogramme DMi par defaut
   systemName: 'Banque Alimentaire',
   phone: '',
   address: ''
@@ -146,12 +147,14 @@ export function PanelMarca() {
 
   const handleReset = () => {
     setConfig(DEFAULT_BRANDING);
-    setLogoPreview(null);
+    // On previsualise le monogramme DMi par defaut (asset importe, pas Base64)
+    setLogoPreview(defaultLogo);
     localStorage.removeItem('brandingConfig_permanent');
-    // Guardar los valores predeterminados nuevamente
-    localStorage.setItem('brandingConfig_permanent', JSON.stringify(DEFAULT_BRANDING));
-    // Aplicar cambios globalmente
-    window.dispatchEvent(new CustomEvent('brandingUpdated', { detail: DEFAULT_BRANDING }));
+    // On sauvegarde les valeurs par defaut sans stocker l'asset (logo: null en storage).
+    const configToSave = { ...DEFAULT_BRANDING, logo: null };
+    localStorage.setItem('brandingConfig_permanent', JSON.stringify(configToSave));
+    // Propager le changement (le hook useBranding retombera sur defaultLogo)
+    window.dispatchEvent(new CustomEvent('brandingUpdated', { detail: { ...DEFAULT_BRANDING, logo: null } }));
     toast.success(t('branding.changesReset'));
   };
 

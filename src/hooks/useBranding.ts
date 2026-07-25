@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import defaultLogo from '../assets/logo-dmi.svg';
 
 interface BrandingConfig {
   primaryColor: string;
@@ -41,16 +42,14 @@ interface BrandingConfig {
  * • Peligro (#c23934):    Errores, eliminaciones, estados rechazados
  * • Alerta (#e8a419):     Advertencias, estados pendientes, notificaciones
  * 
- * 🖼️ LOGO PREDETERMINADO:
+ * 🖼️ LOGO PAR DEFAUT :
  * -----------------------
- * Logo: "DMi - Gestion de banques alimentaires" 
- * Diseño 3D con:
- *   - "D" en turquesa/cyan (#4db8b8)
- *   - "M" en azul marino/gris oscuro (#5a6b7c)
- *   - Icono de lupa integrado en la "i"
- *   - Texto descriptivo: "Gestion de banques alimentaires"
- * Formato: PNG con transparencia, optimizado para relleno circular completo
- * Sistema: Banque Alimentaire
+ * Logo : monogramme « DMi » (hexagone bleu institutionnel + lettres blanches
+ * + point du "i" en dégradé vert-doré + barre solidaire verte/dorée).
+ * Fichier : src/assets/logo-dmi.svg (SVG vectoriel, évolutif à toute taille).
+ * Sistema : Banque Alimentaire.
+ * Note : ce logo est chargé dynamiquement et n'est PAS sérialisé dans
+ * localStorage (seuls les logos personnalisés en Base64 y sont stockés).
  * 
  * 💾 PERSISTENCIA:
  * ---------------
@@ -71,7 +70,7 @@ const DEFAULT_BRANDING: BrandingConfig = {
   successColor: '#2d9561',      // Verde éxito
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
-  logo: null,  // Se puede personalizar desde el módulo de Personalización
+  logo: defaultLogo,           // Monogramme DMi par defaut (peut etre remplace via PanelMarca)
   systemName: 'Banque Alimentaire',
   phone: '',
   address: ''
@@ -79,7 +78,7 @@ const DEFAULT_BRANDING: BrandingConfig = {
 
 export function useBranding() {
   const [config, setConfig] = useState<BrandingConfig>(() => {
-    // Inicializar con configuración predeterminada
+    // Inicializar con configuración predeterminada (logo DMi inclus)
     return DEFAULT_BRANDING;
   });
 
@@ -90,73 +89,72 @@ export function useBranding() {
       if (savedConfig) {
         try {
           const parsed = JSON.parse(savedConfig);
-          
-          // Si el logo guardado es null o está vacío, usar el logo por defecto
-          // Si el logo es una cadena Base64 (comienza con "data:"), usarlo
-          const finalLogo = parsed.logo && parsed.logo.startsWith('data:') 
-            ? parsed.logo 
-            : null;
-          
+
+          // Si le logo sauvegarde est une chaine Base64 ("data:"), on l'utilise
+          // (logo personnalise upload par l'utilisateur).
+          // Sinon, on retombe sur le monogramme DMi par defaut.
+          const finalLogo = parsed.logo && typeof parsed.logo === 'string' && parsed.logo.startsWith('data:')
+            ? parsed.logo
+            : defaultLogo;
+
           const finalConfig = {
             ...DEFAULT_BRANDING,
             ...parsed,
             logo: finalLogo
           };
-          
+
           setConfig(finalConfig);
           applyBranding(finalConfig);
-          console.log('✅ Colores cargados desde localStorage (permanentes)', finalConfig);
+          console.log('✅ Configuration de marque chargée depuis localStorage', finalConfig);
         } catch (error) {
           console.error('Error loading branding config:', error);
-          // Si hay error al cargar, guardar y usar configuración por defecto
-          const defaultConfig = { ...DEFAULT_BRANDING, logo: null };
-          const configToSave = { ...DEFAULT_BRANDING, logo: null }; // Guardar sin logo asset
+          // En cas d'erreur, on retombe sur la config par defaut (avec logo DMi)
+          const configToSave = { ...DEFAULT_BRANDING, logo: null }; // On ne stocke pas l'asset
           localStorage.setItem('brandingConfig_permanent', JSON.stringify(configToSave));
-          setConfig(defaultConfig);
-          applyBranding(defaultConfig);
-          console.log('✅ Colores predeterminados guardados (permanentes)');
+          setConfig(DEFAULT_BRANDING);
+          applyBranding(DEFAULT_BRANDING);
+          console.log('✅ Configuration par defaut restauree');
         }
       } else {
-        // PRIMERA CARGA: Guardar automáticamente los colores predeterminados (sin logo asset)
+        // PREMIERE CHARGE : on sauvegarde la config par defaut (sans l'asset SVG)
+        // Le logo DMi est resolu dynamiquement via l'import ES.
         const configToSave = { ...DEFAULT_BRANDING, logo: null };
         localStorage.setItem('brandingConfig_permanent', JSON.stringify(configToSave));
-        const defaultConfig = { ...DEFAULT_BRANDING, logo: null };
-        setConfig(defaultConfig);
-        applyBranding(defaultConfig);
-        console.log('✅ Colores predeterminados inicializados y guardados permanentemente');
+        setConfig(DEFAULT_BRANDING);
+        applyBranding(DEFAULT_BRANDING);
+        console.log('✅ Configuration par defaut initialisee (logo DMi actif)');
       }
     };
 
     loadConfig();
 
-    // Escuchar cambios en la configuración
+    // Ecouter les changements de configuration en direct (evenement custom)
     const handleBrandingUpdate = (event: CustomEvent<BrandingConfig>) => {
       const updatedConfig = {
         ...DEFAULT_BRANDING,
         ...event.detail,
       };
-      
-      // Si el logo es null o no es Base64, no guardarlo (se usará el predeterminado)
-      // Si el logo es Base64, guardarlo
+
+      // On ne sauvegarde que les logos personnalises (Base64) ; le logo DMi
+      // par defaut reste un asset importe et n'est jamais stocke dans localStorage.
       const configToSave = {
         ...updatedConfig,
-        logo: updatedConfig.logo && updatedConfig.logo.startsWith('data:') 
-          ? updatedConfig.logo 
+        logo: updatedConfig.logo && typeof updatedConfig.logo === 'string' && updatedConfig.logo.startsWith('data:')
+          ? updatedConfig.logo
           : null
       };
-      
-      // Guardar cambios permanentemente
+
       localStorage.setItem('brandingConfig_permanent', JSON.stringify(configToSave));
-      
-      // Usar el logo predeterminado si no hay logo personalizado
+
+      // Pour l'etat React : si aucun logo personnalise, on retombe sur le monogramme DMi.
       const finalConfig = {
         ...updatedConfig,
-        logo: updatedConfig.logo || null
+        logo: updatedConfig.logo || defaultLogo
       };
-      
+
       setConfig(finalConfig);
       applyBranding(finalConfig);
-      console.log('✅ Configuración de branding actualizada y guardada permanentemente');
+      console.log('✅ Configuration de marque mise a jour et sauvegardee');
     };
 
     window.addEventListener('brandingUpdated', handleBrandingUpdate as EventListener);

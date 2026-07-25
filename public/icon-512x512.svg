@@ -1,42 +1,35 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!-- Fondo con gradiente -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Logo DMi - Banque Alimentaire">
   <defs>
-    <linearGradient id="bgGradient512" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a4d7a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2d9561;stop-opacity:1" />
+    <linearGradient id="i512-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#215d8f"/>
+      <stop offset="1" stop-color="#123957"/>
     </linearGradient>
-    <filter id="shadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    <linearGradient id="i512-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#34a870"/>
+      <stop offset="1" stop-color="#e8a419"/>
+    </linearGradient>
+    <filter id="i512-shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.25"/>
     </filter>
   </defs>
-  
-  <!-- Fondo redondeado -->
-  <rect width="512" height="512" rx="80" fill="url(#bgGradient512)"/>
-  
-  <!-- Icono de comida/banco alimentario -->
-  <g transform="translate(256, 256)">
-    <!-- Canasta/Caja principal -->
-    <rect x="-120" y="-90" width="240" height="180" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
-    
-    <!-- Corazón grande (símbolo de ayuda) -->
-    <path d="M 0,-130 C -15,-145 -45,-145 -60,-120 C -75,-95 -60,-70 0,-35 C 60,-70 75,-95 60,-120 C 45,-145 15,-145 0,-130 Z" 
-          fill="#ffffff" opacity="0.98" filter="url(#shadow)"/>
-    
-    <!-- Líneas decorativas (representando productos apilados) -->
-    <line x1="-80" y1="-50" x2="-80" y2="40" stroke="white" stroke-width="8" opacity="0.8"/>
-    <line x1="-40" y1="-50" x2="-40" y2="40" stroke="white" stroke-width="8" opacity="0.8"/>
-    <line x1="0" y1="-50" x2="0" y2="40" stroke="white" stroke-width="8" opacity="0.8"/>
-    <line x1="40" y1="-50" x2="40" y2="40" stroke="white" stroke-width="8" opacity="0.8"/>
-    <line x1="80" y1="-50" x2="80" y2="40" stroke="white" stroke-width="8" opacity="0.8"/>
-    
-    <!-- Detalle de compartimiento -->
-    <rect x="-110" y="-80" width="220" height="40" rx="8" fill="none" stroke="white" stroke-width="4" opacity="0.6"/>
-    
-    <!-- Texto BA (Banque Alimentaire) -->
-    <text x="0" y="140" font-family="Arial, sans-serif" font-size="60" font-weight="bold" 
-          fill="white" text-anchor="middle" filter="url(#shadow)">BA</text>
-  </g>
-  
-  <!-- Borde decorativo opcional -->
-  <rect x="8" y="8" width="496" height="496" rx="76" fill="none" stroke="white" stroke-width="2" opacity="0.2"/>
+
+  <!-- Hexagone -->
+  <path d="M 256 24 L 476 148 L 476 364 L 256 488 L 36 364 L 36 148 Z" fill="url(#i512-bg)"/>
+  <path d="M 256 62 L 442 168 L 442 344 L 256 450 L 70 344 L 70 168 Z"
+        fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="2"/>
+
+  <!-- Lettre D -->
+  <path d="M 138 152 H 234 A 104 104 0 0 1 234 360 H 138 Z" fill="#ffffff" filter="url(#i512-shadow)"/>
+  <path d="M 182 196 H 234 A 60 60 0 0 1 234 316 H 182 Z" fill="url(#i512-bg)"/>
+
+  <!-- Lettre M -->
+  <path d="M 262 360 V 152 L 316 152 L 348 236 L 380 152 L 434 152 V 360 L 396 360 V 220 L 364 296 H 332 L 300 220 V 360 Z" fill="#ffffff" filter="url(#i512-shadow)"/>
+
+  <!-- Point du i -->
+  <circle cx="410" cy="118" r="18" fill="url(#i512-accent)"/>
+  <circle cx="410" cy="118" r="18" fill="none" stroke="#ffffff" stroke-width="3"/>
+
+  <!-- Barre verte solidaire -->
+  <rect x="138" y="380" width="296" height="8" rx="4" fill="#2d9561"/>
+  <rect x="138" y="392" width="180" height="4" rx="2" fill="#e8a419" opacity="0.9"/>
 </svg>

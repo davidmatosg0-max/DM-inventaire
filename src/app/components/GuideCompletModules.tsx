@@ -1991,6 +1991,9 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <p className="text-sm text-gray-700 mt-2">
                         Une couche <strong>ultra premium</strong> vient d'être appliquée à toute la plateforme : barre supérieure et sidebar avec liseré tricolore, cartes avec ombres multi-couches et halo au survol, boutons primaires avec léger dégradé, champs de saisie avec double focus ring, tableaux avec en-tête sticky et surlignage latéral, barres de progression aux couleurs de la marque, toasts avec hairline coloré selon leur type (succès, avertissement, erreur), popovers et menus avec liseré discret, transitions fluides à chaque changement de page.
                       </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Une nouvelle <strong>identité visuelle « monogramme DMi »</strong> est désormais active partout dans l'application : hexagone bleu institutionnel avec les lettres « DM » blanches, point du « i » en accent vert-doré et fine barre solidaire en base. Le logo est vectoriel (SVG) donc net à toute taille, du favicon aux impressions. Vous pouvez toujours importer votre propre logo depuis <strong>« Aide et Support &gt; Personnalisation »</strong> — le bouton « Rétablir » vous ramène au monogramme officiel.
+                      </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">

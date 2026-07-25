@@ -1,32 +1,32 @@
-<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
-  <!-- Fondo con gradiente -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192" role="img" aria-label="Logo DMi - Banque Alimentaire">
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a4d7a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2d9561;stop-opacity:1" />
+    <linearGradient id="i192-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#215d8f"/>
+      <stop offset="1" stop-color="#123957"/>
+    </linearGradient>
+    <linearGradient id="i192-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#34a870"/>
+      <stop offset="1" stop-color="#e8a419"/>
     </linearGradient>
   </defs>
-  
-  <!-- Fondo redondeado -->
-  <rect width="192" height="192" rx="32" fill="url(#bgGradient)"/>
-  
-  <!-- Icono de comida/banco alimentario -->
-  <g transform="translate(96, 96)">
-    <!-- Canasta/Caja -->
-    <rect x="-40" y="-30" width="80" height="60" rx="4" fill="white" opacity="0.9"/>
-    
-    <!-- Corazón (símbolo de ayuda) -->
-    <path d="M 0,-45 C -5,-50 -15,-50 -20,-40 C -25,-30 -20,-20 0,-10 C 20,-20 25,-30 20,-40 C 15,-50 5,-50 0,-45 Z" 
-          fill="#ffffff" opacity="0.95"/>
-    
-    <!-- Líneas decorativas (representando productos) -->
-    <line x1="-25" y1="-15" x2="-25" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
-    <line x1="-10" y1="-15" x2="-10" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
-    <line x1="10" y1="-15" x2="10" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
-    <line x1="25" y1="-15" x2="25" y2="10" stroke="white" stroke-width="3" opacity="0.7"/>
-    
-    <!-- Texto BA (Banque Alimentaire) -->
-    <text x="0" y="50" font-family="Arial, sans-serif" font-size="20" font-weight="bold" 
-          fill="white" text-anchor="middle">BA</text>
-  </g>
+
+  <!-- Hexagone -->
+  <path d="M 96 9 L 178.5 55.5 L 178.5 136.5 L 96 183 L 13.5 136.5 L 13.5 55.5 Z" fill="url(#i192-bg)"/>
+  <path d="M 96 23.25 L 166 63.25 L 166 128.75 L 96 168.75 L 26 128.75 L 26 63.25 Z"
+        fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="1"/>
+
+  <!-- Lettre D -->
+  <path d="M 51.75 57 H 87.75 A 39 39 0 0 1 87.75 135 H 51.75 Z" fill="#ffffff"/>
+  <path d="M 68.25 73.5 H 87.75 A 22.5 22.5 0 0 1 87.75 118.5 H 68.25 Z" fill="url(#i192-bg)"/>
+
+  <!-- Lettre M -->
+  <path d="M 98.25 135 V 57 L 118.5 57 L 130.5 88.5 L 142.5 57 L 162.75 57 V 135 L 148.5 135 V 82.5 L 136.5 111 H 124.5 L 112.5 82.5 V 135 Z" fill="#ffffff"/>
+
+  <!-- Point du i -->
+  <circle cx="153.75" cy="44.25" r="6.75" fill="url(#i192-accent)"/>
+  <circle cx="153.75" cy="44.25" r="6.75" fill="none" stroke="#ffffff" stroke-width="1.1"/>
+
+  <!-- Barre verte solidaire -->
+  <rect x="51.75" y="142.5" width="111" height="3" rx="1.5" fill="#2d9561"/>
+  <rect x="51.75" y="147" width="67.5" height="1.5" rx="0.75" fill="#e8a419" opacity="0.9"/>
 </svg>
