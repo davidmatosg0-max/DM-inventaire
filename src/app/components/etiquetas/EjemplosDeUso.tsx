@@ -12,15 +12,18 @@ function getStoredSystemName(): string {
   try {
     const savedConfig = localStorage.getItem('brandingConfig_permanent');
     if (!savedConfig) {
-      return 'Banque Alimentaire';
+      return 'DM inventaire';
     }
 
     const parsed = JSON.parse(savedConfig);
-    return typeof parsed?.systemName === 'string' && parsed.systemName.trim() !== ''
-      ? parsed.systemName.trim()
-      : 'Banque Alimentaire';
+    const stored = typeof parsed?.systemName === 'string' ? parsed.systemName.trim() : '';
+    // Migration douce : l'ancien nom par defaut est remplace par le nouveau.
+    if (!stored || stored === 'Banque Alimentaire') {
+      return 'DM inventaire';
+    }
+    return stored;
   } catch {
-    return 'Banque Alimentaire';
+    return 'DM inventaire';
   }
 }
 

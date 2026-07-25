@@ -1994,6 +1994,9 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <p className="text-sm text-gray-700 mt-2">
                         Une nouvelle <strong>identité visuelle « monogramme DMi »</strong> est désormais active partout dans l'application : hexagone bleu institutionnel avec les lettres « DM » blanches, point du « i » en accent vert-doré et fine barre solidaire en base. Le logo est vectoriel (SVG) donc net à toute taille, du favicon aux impressions. Vous pouvez toujours importer votre propre logo depuis <strong>« Aide et Support &gt; Personnalisation »</strong> — le bouton « Rétablir » vous ramène au monogramme officiel.
                       </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Le <strong>nom d'affichage par défaut</strong> de la plateforme est désormais <strong>« DM inventaire »</strong> — cohérent avec le monogramme DMi. Il apparaît partout où le nom du système est utilisé (onglet du navigateur, PWA, impressions, PDF, en-têtes d'étiquettes, rapports PRS). Vous pouvez toujours le personnaliser depuis <strong>« Aide et Support &gt; Personnalisation »</strong> pour l'adapter au nom exact de votre organisation.
+                      </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">

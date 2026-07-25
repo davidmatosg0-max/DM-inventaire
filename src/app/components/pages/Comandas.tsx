@@ -1385,7 +1385,7 @@ export function Comandas() {
       organismoTelefono: organismo?.telefono,
       horaCita: organismo?.horaCita,
       translations: {
-        foodBank: branding.systemName?.trim() || t('common.foodBank') || 'BANQUE ALIMENTAIRE',
+        foodBank: branding.systemName?.trim() || t('common.foodBank') || 'DM INVENTAIRE',
         brandSubtitle: esEtiquetaOferta ? 'Système de gestion des offres' : 'Système de gestion des commandes',
         orderLabel: esEtiquetaOferta ? 'Étiquette d\'Offre' : t('commands.orderLabel') || 'Étiquette de Commande',
         orderNumber: esEtiquetaOferta ? 'N° Offre' : t('commands.orderNumber') || 'N° Commande',

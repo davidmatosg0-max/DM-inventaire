@@ -47,7 +47,7 @@ interface BrandingConfig {
  * Logo : monogramme « DMi » (hexagone bleu institutionnel + lettres blanches
  * + point du "i" en dégradé vert-doré + barre solidaire verte/dorée).
  * Fichier : src/assets/logo-dmi.svg (SVG vectoriel, évolutif à toute taille).
- * Sistema : Banque Alimentaire.
+ * Sistema : Banque Alimentaire (nom d'affichage : DM inventaire).
  * Note : ce logo est chargé dynamiquement et n'est PAS sérialisé dans
  * localStorage (seuls les logos personnalisés en Base64 y sont stockés).
  * 
@@ -71,7 +71,7 @@ const DEFAULT_BRANDING: BrandingConfig = {
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
   logo: defaultLogo,           // Monogramme DMi par defaut (peut etre remplace via PanelMarca)
-  systemName: 'Banque Alimentaire',
+  systemName: 'DM inventaire',
   phone: '',
   address: ''
 };
@@ -97,9 +97,17 @@ export function useBranding() {
             ? parsed.logo
             : defaultLogo;
 
+          // Migration douce du nom d'affichage : si l'utilisateur avait l'ancien
+          // nom par defaut 'Banque Alimentaire', on le remplace par le nouveau.
+          // Les noms personnalises (differents) sont preserves.
+          const migratedSystemName = parsed.systemName === 'Banque Alimentaire'
+            ? DEFAULT_BRANDING.systemName
+            : parsed.systemName;
+
           const finalConfig = {
             ...DEFAULT_BRANDING,
             ...parsed,
+            systemName: migratedSystemName || DEFAULT_BRANDING.systemName,
             logo: finalLogo
           };
 

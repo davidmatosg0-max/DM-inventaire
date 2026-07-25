@@ -45,7 +45,7 @@ const DEFAULT_BRANDING: BrandingConfig = {
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
   logo: defaultLogo,           // Monogramme DMi par defaut
-  systemName: 'Banque Alimentaire',
+  systemName: 'DM inventaire',
   phone: '',
   address: ''
 };
@@ -288,7 +288,7 @@ export function PanelMarca() {
   const identitySignals = [
     {
       label: 'Nom du système',
-      value: config.systemName || 'Banque Alimentaire',
+      value: config.systemName || 'DM inventaire',
     },
     {
       label: 'Téléphone',

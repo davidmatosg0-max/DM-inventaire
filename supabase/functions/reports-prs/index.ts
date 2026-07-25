@@ -168,7 +168,7 @@ function formatCsvValue(value: string | number): string {
 function toCsv(report: ReturnType<typeof buildReport>): string {
   const lines: string[] = [];
 
-  lines.push('RAPPORT PRS - BANQUE ALIMENTAIRE');
+  lines.push('RAPPORT PRS - DM INVENTAIRE');
   lines.push(`Periode,${report.periodo.inicio} - ${report.periodo.fin}`);
   lines.push(`Genere le,${new Date(report.generadoEn).toLocaleString('fr-CA')}`);
   lines.push('');

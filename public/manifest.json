@@ -1,7 +1,7 @@
 {
-  "name": "Banque Alimentaire - Système de Gestion",
-  "short_name": "Banque Alimentaire",
-  "description": "Système intégral de gestion pour Banque Alimentaire avec support multilingue",
+  "name": "DM inventaire - Système de Gestion",
+  "short_name": "DM inventaire",
+  "description": "DM inventaire - Système intégral de gestion pour banque alimentaire avec support multilingue",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

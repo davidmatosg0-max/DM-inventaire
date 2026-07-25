@@ -499,7 +499,7 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
               ${rows}
             </tbody>
           </table>
-          <p class="footer">Banque Alimentaire • Module Comptoir</p>
+          <p class="footer">DM inventaire • Module Comptoir</p>
           <script>window.print();</script>
         </body>
       </html>

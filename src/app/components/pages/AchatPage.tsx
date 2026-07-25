@@ -594,7 +594,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
     doc.setFontSize(20);
     doc.text(t('achatPage.pdf.title'), 14, 16);
     doc.setFontSize(11);
-    doc.text(`${branding.systemName || 'Banque Alimentaire'}`, 14, 23);
+    doc.text(`${branding.systemName || 'DM inventaire'}`, 14, 23);
 
     doc.setTextColor('#111827');
     doc.setFontSize(11);

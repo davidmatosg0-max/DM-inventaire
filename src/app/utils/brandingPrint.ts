@@ -5,7 +5,7 @@ export interface BrandingPrintConfig {
 }
 
 const DEFAULT_BRANDING_PRINT_CONFIG: BrandingPrintConfig = {
-  systemName: 'Banque Alimentaire',
+  systemName: 'DM inventaire',
   phone: '',
   address: '',
 };
