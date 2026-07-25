@@ -45,31 +45,7 @@ import { useBranding } from '../../../hooks/useBranding';
 import { AsignarRolContacto } from '../AsignarRolContacto';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { registrarActividad } from '../../utils/actividadLogger';
-
-// Tipos de organismos predefinidos
-const getTiposOrganismo = (t: any) => [
-  { id: '1', nombre: t('organisms.organismTypes.communityKitchen'), icono: '🍽️' },
-  { id: '2', nombre: t('organisms.organismTypes.foundation'), icono: '🏛️' },
-  { id: '3', nombre: t('organisms.organismTypes.ngo'), icono: '🤝' },
-  { id: '4', nombre: t('organisms.organismTypes.shelter'), icono: '🏠' },
-  { id: '5', nombre: t('organisms.organismTypes.dayCenter'), icono: '☀️' },
-  { id: '21', nombre: 'Collation', icono: '🥪' },
-  { id: '6', nombre: t('organisms.organismTypes.school'), icono: '🎓' },
-  { id: '7', nombre: t('organisms.organismTypes.daycare'), icono: '👶' },
-  { id: '8', nombre: t('organisms.organismTypes.childrensHome'), icono: '👨‍👩‍👧‍👦' },
-  { id: '9', nombre: t('organisms.organismTypes.seniorsHome'), icono: '👴' },
-  { id: '10', nombre: t('organisms.organismTypes.rehabCenter'), icono: '💪' },
-  { id: '11', nombre: t('organisms.organismTypes.hospital'), icono: '🏥' },
-  { id: '12', nombre: t('organisms.organismTypes.church'), icono: '⛪' },
-  { id: '13', nombre: t('organisms.organismTypes.civilAssociation'), icono: '📋' },
-  { id: '14', nombre: t('organisms.organismTypes.communityCenter'), icono: '🏘️' },
-  { id: '15', nombre: t('organisms.organismTypes.homelessShelter'), icono: '🛏️' },
-  { id: '16', nombre: t('organisms.organismTypes.migrantCenter'), icono: '🌍' },
-  { id: '17', nombre: t('organisms.organismTypes.womensHome'), icono: '👩' },
-  { id: '18', nombre: t('organisms.organismTypes.disabilityCenter'), icono: '♿' },
-  { id: '19', nombre: t('organisms.organismTypes.foodBank'), icono: '🛒' },
-  { id: '20', nombre: t('organisms.organismTypes.other'), icono: '📌' }
-];
+import { obtenerTiposOrganismoCatalogo } from '../../utils/tiposOrganismoCatalogo';
 
 const diasCitaOptions = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -121,7 +97,7 @@ function getAcentoClasificacion(clasificacion: ClasificacionOrganismo): string {
 export function Organismos() {
   const { t } = useTranslation();
   const branding = useBranding();
-  const tiposOrganismo = getTiposOrganismo(t);
+  const tiposOrganismo = obtenerTiposOrganismoCatalogo(t);
   
   // Log para verificar que el código se recargó
   useEffect(() => {
