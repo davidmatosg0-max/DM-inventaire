@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Logo Panier de partage">
+  <defs>
+    <linearGradient id="p2-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2d9561"/>
+      <stop offset="1" stop-color="#1f7a4a"/>
+    </linearGradient>
+    <linearGradient id="p2-basket" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2b641"/>
+      <stop offset="1" stop-color="#c88510"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond arrondi (squircle) -->
+  <path d="M 96 12 H 416 A 100 100 0 0 1 500 96 V 416 A 100 100 0 0 1 416 500 H 96 A 100 100 0 0 1 12 416 V 96 A 100 100 0 0 1 96 12 Z"
+        fill="url(#p2-bg)"/>
+
+  <!-- Rayon lumineux -->
+  <circle cx="256" cy="240" r="170" fill="#ffffff" opacity="0.08"/>
+
+  <!-- Cœur au-dessus (produits qui deviennent amour) -->
+  <path d="M256 148 C 230 118, 176 118, 176 168 C 176 210, 232 240, 256 260 C 280 240, 336 210, 336 168 C 336 118, 282 118, 256 148 Z"
+        fill="#ffffff"/>
+  <path d="M256 148 C 230 118, 176 118, 176 168 C 176 210, 232 240, 256 260 C 280 240, 336 210, 336 168 C 336 118, 282 118, 256 148 Z"
+        fill="none" stroke="#e8a419" stroke-width="3" opacity="0.6"/>
+
+  <!-- Panier -->
+  <path d="M148 268 L 364 268 L 340 408 A 24 24 0 0 1 316 428 H 196 A 24 24 0 0 1 172 408 Z"
+        fill="url(#p2-basket)"/>
+  <!-- Tressage -->
+  <g stroke="#8b5a0a" stroke-width="3" opacity="0.55" fill="none">
+    <path d="M160 300 H 352"/>
+    <path d="M166 340 H 346"/>
+    <path d="M172 380 H 340"/>
+    <path d="M196 268 V 428"/>
+    <path d="M236 268 V 428"/>
+    <path d="M276 268 V 428"/>
+    <path d="M316 268 V 428"/>
+  </g>
+  <!-- Anse -->
+  <path d="M186 268 C 186 200, 326 200, 326 268"
+        fill="none" stroke="#c88510" stroke-width="12" stroke-linecap="round"/>
+</svg>

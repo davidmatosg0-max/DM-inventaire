@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Logo Épi solidaire">
+  <defs>
+    <linearGradient id="p1-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#215d8f"/>
+      <stop offset="1" stop-color="#1a4d7a"/>
+    </linearGradient>
+    <linearGradient id="p1-leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34a870"/>
+      <stop offset="1" stop-color="#2d9561"/>
+    </linearGradient>
+    <linearGradient id="p1-grain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0b53a"/>
+      <stop offset="1" stop-color="#e8a419"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cercle de fond avec anneau doré -->
+  <circle cx="256" cy="256" r="240" fill="url(#p1-bg)"/>
+  <circle cx="256" cy="256" r="222" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#e8a419" stroke-opacity="0.55" stroke-width="3" stroke-dasharray="4 8"/>
+
+  <!-- Mains stylisées (arc) qui soutiennent -->
+  <path d="M96 336 C 140 372, 200 388, 256 388 C 312 388, 372 372, 416 336 L 416 372 C 372 408, 312 424, 256 424 C 200 424, 140 408, 96 372 Z"
+        fill="#ffffff" opacity="0.95"/>
+  <path d="M96 336 C 140 372, 200 388, 256 388 C 312 388, 372 372, 416 336"
+        fill="none" stroke="#e8a419" stroke-width="4" opacity="0.7"/>
+
+  <!-- Tige centrale -->
+  <path d="M256 128 L256 340" stroke="#2d9561" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Épi (grains dorés) -->
+  <g fill="url(#p1-grain)" stroke="#a86d10" stroke-width="1.5">
+    <ellipse cx="256" cy="150" rx="18" ry="26"/>
+    <ellipse cx="230" cy="178" rx="16" ry="24" transform="rotate(-25 230 178)"/>
+    <ellipse cx="282" cy="178" rx="16" ry="24" transform="rotate(25 282 178)"/>
+    <ellipse cx="224" cy="212" rx="16" ry="24" transform="rotate(-25 224 212)"/>
+    <ellipse cx="288" cy="212" rx="16" ry="24" transform="rotate(25 288 212)"/>
+    <ellipse cx="220" cy="246" rx="16" ry="24" transform="rotate(-25 220 246)"/>
+    <ellipse cx="292" cy="246" rx="16" ry="24" transform="rotate(25 292 246)"/>
+    <ellipse cx="218" cy="280" rx="16" ry="24" transform="rotate(-25 218 280)"/>
+    <ellipse cx="294" cy="280" rx="16" ry="24" transform="rotate(25 294 280)"/>
+  </g>
+
+  <!-- Feuilles vertes latérales -->
+  <path d="M256 300 C 200 300, 170 260, 158 220 C 200 220, 236 250, 256 300 Z"
+        fill="url(#p1-leaf)"/>
+  <path d="M256 300 C 312 300, 342 260, 354 220 C 312 220, 276 250, 256 300 Z"
+        fill="url(#p1-leaf)"/>
+</svg>

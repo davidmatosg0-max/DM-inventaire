@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Logo Cercle solidaire">
+  <defs>
+    <linearGradient id="p6-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#215d8f"/>
+      <stop offset="1" stop-color="#1a4d7a"/>
+    </linearGradient>
+    <radialGradient id="p6-heart" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#f5c34b"/>
+      <stop offset="1" stop-color="#e8a419"/>
+    </radialGradient>
+    <linearGradient id="p6-hand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c9e2d1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cercle de fond -->
+  <circle cx="256" cy="256" r="240" fill="url(#p6-bg)"/>
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#2d9561" stroke-width="4" stroke-opacity="0.55"/>
+
+  <!-- Quatre mains disposées en cercle qui se rejoignent au centre -->
+  <g fill="url(#p6-hand)" stroke="#123957" stroke-width="2" stroke-opacity="0.15">
+    <!-- Main du haut -->
+    <path d="M 232 100
+             C 232 76, 280 76, 280 100
+             L 280 200
+             C 280 220, 232 220, 232 200 Z"/>
+    <!-- Main du bas -->
+    <path d="M 232 412
+             C 232 436, 280 436, 280 412
+             L 280 312
+             C 280 292, 232 292, 232 312 Z"/>
+    <!-- Main de gauche -->
+    <path d="M 100 232
+             C 76 232, 76 280, 100 280
+             L 200 280
+             C 220 280, 220 232, 200 232 Z"/>
+    <!-- Main de droite -->
+    <path d="M 412 232
+             C 436 232, 436 280, 412 280
+             L 312 280
+             C 292 280, 292 232, 312 232 Z"/>
+  </g>
+
+  <!-- Doigts stylisés (petits arcs sur chaque main) -->
+  <g stroke="#1a4d7a" stroke-width="2" opacity="0.35" fill="none">
+    <path d="M 240 118 v 22 M 250 114 v 26 M 262 114 v 26 M 272 118 v 22"/>
+    <path d="M 240 394 v -22 M 250 398 v -26 M 262 398 v -26 M 272 394 v -22"/>
+    <path d="M 118 240 h 22 M 114 250 h 26 M 114 262 h 26 M 118 272 h 22"/>
+    <path d="M 394 240 h -22 M 398 250 h -26 M 398 262 h -26 M 394 272 h -22"/>
+  </g>
+
+  <!-- Cœur central doré = amour / solidarité -->
+  <path d="M 256 208
+           C 232 180, 188 190, 188 232
+           C 188 268, 232 300, 256 322
+           C 280 300, 324 268, 324 232
+           C 324 190, 280 180, 256 208 Z"
+        fill="url(#p6-heart)"/>
+  <!-- Feuille discrète sur le cœur = alimentation -->
+  <path d="M 256 214 C 246 234, 250 254, 264 260 C 268 244, 264 226, 256 214 Z"
+        fill="#2d9561" opacity="0.85"/>
+</svg>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Logo Entrepôt intelligent">
+  <defs>
+    <linearGradient id="p5-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a4d7a"/>
+      <stop offset="1" stop-color="#0f3455"/>
+    </linearGradient>
+    <linearGradient id="p5-roof" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#34a870"/>
+      <stop offset="1" stop-color="#2d9561"/>
+    </linearGradient>
+    <linearGradient id="p5-bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5c34b"/>
+      <stop offset="1" stop-color="#e8a419"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond carré arrondi -->
+  <rect x="24" y="24" width="464" height="464" rx="90" fill="url(#p5-bg)"/>
+  <rect x="48" y="48" width="416" height="416" rx="74" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+
+  <!-- Sol -->
+  <rect x="72" y="396" width="368" height="12" rx="6" fill="#ffffff" opacity="0.4"/>
+
+  <!-- Toit vert -->
+  <path d="M 100 240 L 256 128 L 412 240 L 412 268 L 256 156 L 100 268 Z"
+        fill="url(#p5-roof)"/>
+
+  <!-- Bâtiment / entrepôt -->
+  <rect x="120" y="248" width="272" height="160" rx="10" fill="#ffffff"/>
+  <!-- Portes coulissantes -->
+  <rect x="152" y="292" width="88" height="116" rx="6" fill="#1a4d7a"/>
+  <rect x="272" y="292" width="88" height="116" rx="6" fill="#1a4d7a"/>
+  <!-- Fenêtres hautes -->
+  <rect x="152" y="268" width="88" height="18" rx="4" fill="#2d9561" opacity="0.8"/>
+  <rect x="272" y="268" width="88" height="18" rx="4" fill="#2d9561" opacity="0.8"/>
+  <!-- Lignes de rails -->
+  <line x1="152" y1="352" x2="360" y2="352" stroke="#e8a419" stroke-width="3" opacity="0.85"/>
+
+  <!-- Éclair = intelligence / temps réel -->
+  <path d="M 262 168 L 220 260 L 258 260 L 232 336 L 306 224 L 268 224 Z"
+        fill="url(#p5-bolt)" stroke="#8b5a0a" stroke-width="1.5" opacity="0.95"/>
+
+  <!-- Feuille discrète = alimentation -->
+  <path d="M 396 116 C 380 116, 360 132, 356 156 C 380 152, 396 140, 396 116 Z"
+        fill="#34a870"/>
+</svg>

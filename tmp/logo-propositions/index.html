@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Propositions de logo — Système Intégral de Gestion</title>
+  <style>
+    :root {
+      --primary: #1a4d7a;
+      --accent: #2d9561;
+      --gold: #e8a419;
+      --bg: #f4f6f9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: #1e2a3a;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary), #123957);
+      color: #fff;
+      padding: 32px 48px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    }
+    header h1 { margin: 0 0 6px; font-size: 26px; }
+    header p  { margin: 0; opacity: 0.85; font-size: 14px; }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 28px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+    }
+
+    .previews {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 26px;
+      min-height: 200px;
+    }
+    .preview.light { background: #ffffff; }
+    .preview.dark  { background: linear-gradient(135deg, #123957, #1a4d7a); }
+
+    .preview img { width: 132px; height: 132px; display: block; }
+
+    .thumb-row {
+      display: flex;
+      justify-content: space-around;
+      padding: 14px 20px;
+      background: #f7f9fc;
+      border-top: 1px solid #eef2f7;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .thumb {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #5b6b80;
+    }
+    .thumb img { display: block; }
+    .thumb.header img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+    .thumb.card-icon img { width: 48px; height: 48px; border-radius: 12px; }
+    .thumb.large img    { width: 72px; height: 72px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+
+    .info { padding: 20px 24px 24px; }
+    .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .badge.gold { background: var(--gold); }
+    .badge.blue { background: var(--primary); }
+
+    .info h2 {
+      margin: 10px 0 6px;
+      font-size: 18px;
+      color: var(--primary);
+    }
+    .info p {
+      margin: 0 0 10px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #4a5b70;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .tag {
+      font-size: 11px;
+      background: #eef4fb;
+      color: var(--primary);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #d6e4f3;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #6b7a8f;
+    }
+
+    .palette {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .swatch {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #4a5b70;
+    }
+    .swatch span.dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid rgba(0,0,0,.1);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Propositions de logo — Banque Alimentaire · Système Intégral de Gestion</h1>
+    <p>6 concepts alignés avec la palette de l'application (bleu institutionnel, vert solidaire, doré chaleureux). Chaque logo est en SVG vectoriel : évolutif à toute taille sans perte de qualité.</p>
+    <div class="palette">
+      <div class="swatch"><span class="dot" style="background:#1a4d7a"></span>#1a4d7a — Bleu institutionnel</div>
+      <div class="swatch"><span class="dot" style="background:#2d9561"></span>#2d9561 — Vert solidaire</div>
+      <div class="swatch"><span class="dot" style="background:#e8a419"></span>#e8a419 — Doré chaleureux</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1 -->
+    <div class="card">
+      <div class="previews">
+        <div class="preview light"><img src="1-epi-solidaire.svg" alt="Épi solidaire"></div>
+        <div class="preview dark"><img src="1-epi-solidaire.svg" alt="Épi solidaire fond foncé"></div>
+      </div>
+      <div class="thumb-row">
+        <div class="thumb header"><img src="1-epi-solidaire.svg" alt=""><span>En-tête</span></div>
+        <div class="thumb card-icon"><img src="1-epi-solidaire.svg" alt=""><span>Carte</span></div>
+        <div class="thumb large"><img src="1-epi-solidaire.svg" alt=""><span>Connexion</span></div>
+      </div>
+      <div class="info">
+        <span class="badge">Recommandé · Classique</span>
+        <h2>1. Épi solidaire</h2>
+        <p>Un épi de blé doré porté par des mains stylisées, symbole universel de la banque alimentaire. Anneau doré pointillé pour évoquer la traçabilité et l'inventaire.</p>
+        <div class="tags"><span class="tag">Blé</span><span class="tag">Solidarité</span><span class="tag">Feuilles</span></div>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="card">
+      <div class="previews">
+        <div class="preview light"><img src="2-panier-partage.svg" alt="Panier de partage"></div>
+        <div class="preview dark"><img src="2-panier-partage.svg" alt="Panier de partage fond foncé"></div>
+      </div>
+      <div class="thumb-row">
+        <div class="thumb header"><img src="2-panier-partage.svg" alt=""><span>En-tête</span></div>
+        <div class="thumb card-icon"><img src="2-panier-partage.svg" alt=""><span>Carte</span></div>
+        <div class="thumb large"><img src="2-panier-partage.svg" alt=""><span>Connexion</span></div>
+      </div>
+      <div class="info">
+        <span class="badge gold">Chaleureux</span>
+        <h2>2. Panier de partage</h2>
+        <p>Panier d'osier surmonté d'un cœur : la générosité qui remplit le panier. Excellent pour les documents destinés aux organismes bénéficiaires et donateurs.</p>
+        <div class="tags"><span class="tag">Panier</span><span class="tag">Cœur</span><span class="tag">Don</span></div>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="card">
+      <div class="previews">
+        <div class="preview light"><img src="3-monogramme-dmi.svg" alt="Monogramme DMi"></div>
+        <div class="preview dark"><img src="3-monogramme-dmi.svg" alt="Monogramme DMi fond foncé"></div>
+      </div>
+      <div class="thumb-row">
+        <div class="thumb header"><img src="3-monogramme-dmi.svg" alt=""><span>En-tête</span></div>
+        <div class="thumb card-icon"><img src="3-monogramme-dmi.svg" alt=""><span>Carte</span></div>
+        <div class="thumb large"><img src="3-monogramme-dmi.svg" alt=""><span>Connexion</span></div>
+      </div>
+      <div class="info">
+        <span class="badge blue">Corporatif · Évolution du logo actuel</span>
+        <h2>3. Monogramme DMi</h2>
+        <p>Version modernisée du logo DMi actuel : forme hexagonale (industrie/logistique), lettres blanches nettes et le point du « i » en dégradé vert-doré. Idéal pour un usage administratif.</p>
+        <div class="tags"><span class="tag">Monogramme</span><span class="tag">Hexagone</span><span class="tag">Corporatif</span></div>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="card">
+      <div class="previews">
+        <div class="preview light"><img src="4-feuille-fourchette.svg" alt="Feuille et fourchette"></div>
+        <div class="preview dark"><img src="4-feuille-fourchette.svg" alt="Feuille et fourchette fond foncé"></div>
+      </div>
+      <div class="thumb-row">
+        <div class="thumb header"><img src="4-feuille-fourchette.svg" alt=""><span>En-tête</span></div>
+        <div class="thumb card-icon"><img src="4-feuille-fourchette.svg" alt=""><span>Carte</span></div>
+        <div class="thumb large"><img src="4-feuille-fourchette.svg" alt=""><span>Connexion</span></div>
+      </div>
+      <div class="info">
+        <span class="badge">Écologique · Alimentation</span>
+        <h2>4. Feuille et fourchette</h2>
+        <p>Grande feuille verte et fourchette bleue croisées : anti-gaspillage et alimentation saine. Fond blanc, très lisible sur documents imprimés et en-têtes d'e-mail.</p>
+        <div class="tags"><span class="tag">Feuille</span><span class="tag">Fourchette</span><span class="tag">Écologie</span></div>
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="card">
+      <div class="previews">
+        <div class="preview light"><img src="5-entrepot-intelligent.svg" alt="Entrepôt intelligent"></div>
+        <div class="preview dark"><img src="5-entrepot-intelligent.svg" alt="Entrepôt intelligent fond foncé"></div>
+      </div>
+      <div class="thumb-row">
+        <div class="thumb header"><img src="5-entrepot-intelligent.svg" alt=""><span>En-tête</span></div>
+        <div class="thumb card-icon"><img src="5-entrepot-intelligent.svg" alt=""><span>Carte</span></div>
+        <div class="thumb large"><img src="5-entrepot-intelligent.svg" alt=""><span>Connexion</span></div>
+      </div>
+      <div class="info">
+        <span class="badge blue">Technologique</span>
+        <h2>5. Entrepôt intelligent</h2>
+        <p>Entrepôt avec toit vert et un éclair doré au centre : gestion en temps réel, distribution rapide, technologie au service de la mission. Traduit visuellement le côté « système intégral ».</p>
+        <div class="tags"><span class="tag">Entrepôt</span><span class="tag">Éclair</span><span class="tag">Tech</span></div>
+      </div>
+    </div>
+
+    <!-- 6 -->
+    <div class="card">
+      <div class="previews">
+        <div class="preview light"><img src="6-cercle-solidaire.svg" alt="Cercle solidaire"></div>
+        <div class="preview dark"><img src="6-cercle-solidaire.svg" alt="Cercle solidaire fond foncé"></div>
+      </div>
+      <div class="thumb-row">
+        <div class="thumb header"><img src="6-cercle-solidaire.svg" alt=""><span>En-tête</span></div>
+        <div class="thumb card-icon"><img src="6-cercle-solidaire.svg" alt=""><span>Carte</span></div>
+        <div class="thumb large"><img src="6-cercle-solidaire.svg" alt=""><span>Connexion</span></div>
+      </div>
+      <div class="info">
+        <span class="badge">Humain · Communautaire</span>
+        <h2>6. Cercle solidaire</h2>
+        <p>Quatre mains disposées en cercle qui se rejoignent sur un cœur doré central : bénévoles, employés, organismes et bénéficiaires unis. Message très fort pour la mission sociale.</p>
+        <div class="tags"><span class="tag">Mains</span><span class="tag">Cœur</span><span class="tag">Communauté</span></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Dis-moi le numéro (1 à 6) que tu préfères, et je l'intègre à l'app comme logo officiel dans le header, la connexion, les impressions et le favicon.
+  </footer>
+</body>
+</html>
