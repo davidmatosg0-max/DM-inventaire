@@ -451,7 +451,7 @@ export function FormularioBeneficiarioCompacto({
                           id="ingresoMensual"
                           type="number"
                           value={formulario.ingresoMensual}
-                          onChange={(e) => setFormulario({ ...formulario, ingresoMensual: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => setFormulario({ ...formulario, ingresoMensual: parseInt(e.target.value, 10) || 0 })}
                           placeholder="0"
                           className="h-9"
                         />

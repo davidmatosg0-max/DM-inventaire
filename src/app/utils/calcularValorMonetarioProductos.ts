@@ -45,7 +45,7 @@ export function calcularValorUnitarioProducto(
     return 0;
   }
   
-  return parseFloat((pesoUnitario * valorPorKg).toFixed(2));
+  return Math.round(pesoUnitario * valorPorKg);
 }
 
 /**
@@ -60,7 +60,7 @@ export function calcularValorTotalProducto(
     return 0;
   }
   
-  return parseFloat((stockActual * valorUnitario).toFixed(2));
+  return Math.round(stockActual * valorUnitario);
 }
 
 /**

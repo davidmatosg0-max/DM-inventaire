@@ -313,10 +313,10 @@ export function FormularioVehiculoCompacto({
                         <Input
                           id="capacidadM3"
                           type="number"
-                          step="0.1"
+                          step="1"
                           value={formulario.capacidadM3}
-                          onChange={(e) => setFormulario({ ...formulario, capacidadM3: parseFloat(e.target.value) || 0 })}
-                          placeholder="10.5"
+                          onChange={(e) => setFormulario({ ...formulario, capacidadM3: parseInt(e.target.value, 10) || 0 })}
+                          placeholder="10"
                           className="h-9"
                         />
                       </div>

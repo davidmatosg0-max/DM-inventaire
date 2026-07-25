@@ -302,18 +302,18 @@ export function ConversionDialog({
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
-                                step="0.01"
-                                min="0.01"
+                                step="1"
+                                min="1"
                                 value={destino.ratio || ''}
-                                onChange={(e) => onActualizarDestino(index, 'ratio', parseFloat(e.target.value) || 1)}
-                                placeholder="1.00"
+                                onChange={(e) => onActualizarDestino(index, 'ratio', parseInt(e.target.value, 10) || 1)}
+                                placeholder="1"
                                 className="h-10"
                               />
                               <span className="text-sm text-[#666666] whitespace-nowrap">: 1</span>
                             </div>
                             {productoDestino && formConversion.cantidadOrigen > 0 && (
                               <p className="text-xs text-[#4CAF50] font-medium">
-                                → {cantidadCalculada.toFixed(2)} {productoDestino.unidad}
+                                → {Math.round(cantidadCalculada)} {productoDestino.unidad}
                               </p>
                             )}
                           </div>

@@ -14,7 +14,7 @@ type ProductoValorable = {
 };
 
 function redondearMoneda(valor: number): number {
-  return parseFloat(valor.toFixed(2));
+  return Math.round(valor);
 }
 
 function normalizarNumero(valor: unknown): number {

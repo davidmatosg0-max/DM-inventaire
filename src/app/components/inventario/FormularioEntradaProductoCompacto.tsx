@@ -504,7 +504,7 @@ export function FormularioEntradaProductoCompacto({
                           min="0"
                           value={formulario.valorUnitario || ''}
                           onChange={(e) => {
-                            const valorUnitario = Math.round(parseFloat(e.target.value) || 0);
+                            const valorUnitario = parseInt(e.target.value, 10) || 0;
                             const cantidad = formulario.cantidad || 0;
                             setFormulario({ 
                               ...formulario, 

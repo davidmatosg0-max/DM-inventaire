@@ -61,7 +61,7 @@ export function AnalisisPredictivoStock() {
           productoId: producto.id,
           productoNombre: producto.nombre,
           stockActual: producto.stockActual,
-          consumoPromedioDiario: parseFloat(consumoPromedioDiario.toFixed(2)),
+          consumoPromedioDiario: Math.round(consumoPromedioDiario),
           diasRestantes,
           tendencia,
           fechaAgotamientoEstimada: fechaAgotamiento.toISOString(),

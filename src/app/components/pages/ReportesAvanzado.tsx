@@ -213,7 +213,7 @@ function clampPercent(value: number): number {
 
 function calculatePercent(part: number, total: number): number {
   if (!total) return 0;
-  return Number(((part / total) * 100).toFixed(1));
+  return Math.round((part / total) * 100);
 }
 
 function calculateVariation(current: number, previous: number): number | null {
@@ -221,7 +221,7 @@ function calculateVariation(current: number, previous: number): number | null {
     return current === 0 ? 0 : null;
   }
 
-  return Number((((current - previous) / previous) * 100).toFixed(1));
+  return Math.round(((current - previous) / previous) * 100);
 }
 
 function getMonthBuckets(reference: Date, count = 6): Array<{ key: string; label: string }> {
@@ -387,10 +387,10 @@ export function ReportesAvanzado() {
     (sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0),
     0
   );
-  const totalPrsKgLocal = Number(reportePrsLocal.resumen.totalPesoKg.toFixed(1));
+  const totalPrsKgLocal = Math.round(reportePrsLocal.resumen.totalPesoKg);
   const latestPrsEntries = reportePrsLocal.detalles.slice(0, 5);
   const averagePrsEntryWeight = reportePrsLocal.resumen.totalEntradas > 0
-    ? Number((totalPrsKgLocal / reportePrsLocal.resumen.totalEntradas).toFixed(1))
+    ? Math.round(totalPrsKgLocal / reportePrsLocal.resumen.totalEntradas)
     : 0;
 
   const rutasCompletadas = rutasFiltradas.filter((ruta) => ruta.estado === 'completada').length;
@@ -419,7 +419,7 @@ export function ReportesAvanzado() {
       return mapa;
     }, new Map<string, { categoria: string; stock: number; productos: number }>())
   )
-    .map(([, value]) => ({ ...value, stock: Number(value.stock.toFixed(1)) }))
+    .map(([, value]) => ({ ...value, stock: Math.round(value.stock) }))
     .sort((a, b) => b.stock - a.stock);
 
   const monthBuckets = getMonthBuckets(referenciaFin, 6);
@@ -437,7 +437,7 @@ export function ReportesAvanzado() {
     const delMes = reportePrsLocal.porMes.find((entry) => entry.mes === bucket.key);
     return {
       mes: bucket.label,
-      kg: Number((delMes?.totalPesoKg || 0).toFixed(1)),
+      kg: Math.round(delMes?.totalPesoKg || 0),
       entradas: delMes?.totalEntradas || 0,
     };
   });
@@ -446,7 +446,7 @@ export function ReportesAvanzado() {
     .slice(0, 8)
     .map((entry) => ({
       producto: entry.productoNombre.length > 20 ? `${entry.productoNombre.slice(0, 20)}...` : entry.productoNombre,
-      kg: Number(entry.totalPesoKg.toFixed(1)),
+      kg: Math.round(entry.totalPesoKg),
       entradas: entry.totalEntradas,
     }));
 
@@ -454,10 +454,9 @@ export function ReportesAvanzado() {
     const delMes = transformaciones.filter((transformacion) => getMonthKey(transformacion.fecha) === bucket.key && transformacion.estado === 'terminée');
     return {
       mes: bucket.label,
-      kg: Number(
+      kg: Math.round(
         delMes
           .reduce((sum, transformacion) => sum + transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0), 0)
-          .toFixed(1)
       ),
       rescates: delMes.length,
     };
@@ -580,15 +579,15 @@ export function ReportesAvanzado() {
     { Indicateur: 'Bénéficiaires couverts', Valeur: beneficiariosCubiertos },
     { Indicateur: 'Production cuisine (kg)', Valeur: formatQuantity(totalKgPRS) },
     { Indicateur: 'Routes analysées', Valeur: rutasFiltradas.length },
-    { Indicateur: 'Charge livrée (kg)', Valeur: Number(totalCargaRutas.toFixed(1)) },
+    { Indicateur: 'Charge livrée (kg)', Valeur: Math.round(totalCargaRutas) },
   ];
 
   const detallePRSExportable = transformacionesTerminadas.map((transformacion, index) => ({
     Référence: transformacion.id || `TR-${index + 1}`,
     Date: new Date(transformacion.fecha).toLocaleDateString('fr-CA'),
     'Produits générés': transformacion.productosGenerados.length,
-    'Poids total (kg)': Number(
-      transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0).toFixed(1)
+    'Poids total (kg)': Math.round(
+      transformacion.productosGenerados.reduce((subtotal, producto) => subtotal + producto.pesoTotal, 0)
     ),
     État: transformacion.estado,
   }));
@@ -599,7 +598,7 @@ export function ReportesAvanzado() {
     Produit: entry.productoNombre,
     Organisme: entry.organismoNombre || 'Sans organisme',
     Donateur: entry.donadorNombre || 'Sans donateur',
-    'Poids total (kg)': Number(entry.pesoTotal.toFixed(1)),
+    'Poids total (kg)': Math.round(entry.pesoTotal),
     Quantité: entry.cantidad,
   }));
 
@@ -609,8 +608,8 @@ export function ReportesAvanzado() {
     Conducteur: ruta.conductorNombre || ruta.conductor || 'Non assigné',
     Véhicule: ruta.vehiculoMatricula || ruta.vehiculo || 'Non assigné',
     Arrêts: ruta.paradas.length,
-    'Charge (kg)': Number((ruta.pesoTotalKg || 0).toFixed(1)),
-    'Distance (km)': Number((ruta.distanciaTotalKm ?? ruta.distanciaTotal ?? 0).toFixed(1)),
+    'Charge (kg)': Math.round(ruta.pesoTotalKg || 0),
+    'Distance (km)': Math.round(ruta.distanciaTotalKm ?? ruta.distanciaTotal ?? 0),
     État: ruta.estado,
   }));
 
@@ -757,7 +756,7 @@ export function ReportesAvanzado() {
                   { Indicateur: 'Période analysée', Valeur: periodoReporte },
                   { Indicateur: 'Routes analysées', Valeur: rutasFiltradas.length },
                   { Indicateur: 'Routes complétées', Valeur: rutasCompletadas },
-                  { Indicateur: 'Charge livrée (kg)', Valeur: Number(totalCargaRutas.toFixed(1)) },
+                  { Indicateur: 'Charge livrée (kg)', Valeur: Math.round(totalCargaRutas) },
                   { Indicateur: 'Chauffeurs actifs', Valeur: choferesActifs },
                 ],
               },
@@ -1479,7 +1478,7 @@ export function ReportesAvanzado() {
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="producto" angle={-20} textAnchor="end" interval={0} height={72} />
                           <YAxis />
-                          <Tooltip formatter={(value, name) => [name === 'kg' ? `${Number(value).toFixed(1)} kg` : value, name === 'kg' ? 'Poids PRS' : 'Entrées']} />
+                          <Tooltip formatter={(value, name) => [name === 'kg' ? `${formatQuantity(Number(value) || 0)} kg` : value, name === 'kg' ? 'Poids PRS' : 'Entrées']} />
                           <Legend />
                           <Bar dataKey="kg" fill="#4CAF50" name="Poids PRS" radius={[6, 6, 0, 0]} />
                         </BarChart>

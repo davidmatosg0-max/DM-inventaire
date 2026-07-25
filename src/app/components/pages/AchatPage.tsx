@@ -1746,7 +1746,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                           ))}
                         </SelectContent>
                       </Select>
-                      <Input className="h-11 text-base" type="number" min="0" step="0.01" placeholder={t('achatPage.create.price')} value={ligne.prixUnitaire} onChange={event => handleChangeLine(ligne.id, 'prixUnitaire', Number(event.target.value))} />
+                      <Input className="h-11 text-base" type="number" min="0" step="1" placeholder={t('achatPage.create.price')} value={ligne.prixUnitaire} onChange={event => handleChangeLine(ligne.id, 'prixUnitaire', Math.round(Number(event.target.value) || 0))} />
                       <div className="flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700">
                         {formatCurrencyValue(ligne.total)}
                       </div>
@@ -1857,7 +1857,7 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
               </div>
               <div className="space-y-2">
                 <Label>{t('achatPage.programDialog.annualBudget')}</Label>
-                <Input type="number" min="0" step="0.01" value={programmeForm.budgetAnnuel} onChange={event => setProgrammeForm(current => ({ ...current, budgetAnnuel: event.target.value }))} placeholder={t('achatPage.programDialog.budgetPlaceholder')} />
+                <Input type="number" min="0" step="1" value={programmeForm.budgetAnnuel} onChange={event => setProgrammeForm(current => ({ ...current, budgetAnnuel: event.target.value }))} placeholder={t('achatPage.programDialog.budgetPlaceholder')} />
               </div>
             </div>
             <div className="space-y-2">
@@ -1904,11 +1904,11 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>{t('achatPage.ruleDialog.minAmount')}</Label>
-                <Input type="number" min="0" step="0.01" value={reglaForm.montantMinimum} onChange={event => setReglaForm(current => ({ ...current, montantMinimum: event.target.value }))} />
+                <Input type="number" min="0" step="1" value={reglaForm.montantMinimum} onChange={event => setReglaForm(current => ({ ...current, montantMinimum: event.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label>{t('achatPage.ruleDialog.maxAmount')}</Label>
-                <Input type="number" min="0" step="0.01" value={reglaForm.montantMaximum} onChange={event => setReglaForm(current => ({ ...current, montantMaximum: event.target.value }))} placeholder={t('achatPage.ruleDialog.maxPlaceholder')} />
+                <Input type="number" min="0" step="1" value={reglaForm.montantMaximum} onChange={event => setReglaForm(current => ({ ...current, montantMaximum: event.target.value }))} placeholder={t('achatPage.ruleDialog.maxPlaceholder')} />
               </div>
             </div>
             <div className="space-y-2">

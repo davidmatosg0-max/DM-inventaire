@@ -728,12 +728,12 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                 <Input
                   type="number"
                   min="1"
-                  step="0.5"
+                  step="1"
                   value={formData.cantidadMultiplicador}
-                  onChange={(e) => setFormData({ ...formData, cantidadMultiplicador: parseFloat(e.target.value) || 1 })}
+                  onChange={(e) => setFormData({ ...formData, cantidadMultiplicador: parseInt(e.target.value, 10) || 1 })}
                 />
                 <p className="text-xs text-[#666666] mt-1">
-                  1 = quantité normale, 2 = double, 0.5 = moitié
+                  1 = quantité normale, 2 = double, 3 = triple
                 </p>
               </div>
 
@@ -1596,7 +1596,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {produccionPorMes.filter(m => parseFloat(m.kg) > 0).slice(-6).map((item, index) => (
+                {produccionPorMes.filter(m => parseInt(m.kg, 10) > 0).slice(-6).map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-2">
                     <span className="text-sm font-medium text-[#333333]">{item.mes}</span>
                     <div className="flex items-center gap-3">

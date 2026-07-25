@@ -3371,7 +3371,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion, mostrarBotonM
                               <p className="font-medium">{producto.nombre}</p>
                               <p className="text-xs text-gray-500">
                                 {producto.categoria} • {producto.unidad}
-                                {producto.pesoUnitario && ` • ${producto.pesoUnitario.toFixed(3)} kg`}
+                                {producto.pesoUnitario && ` • ${formatQuantity(Number(producto.pesoUnitario) || 0)} kg`}
                               </p>
                             </div>
                           </div>

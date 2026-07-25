@@ -419,7 +419,7 @@ function formatCurrencySummary(value: number): string {
 }
 
 function formatWeightSummary(value: number): string {
-  return `${Number(value.toFixed(1))} kg`;
+  return `${formatQuantity(value)} kg`;
 }
 
 function formatChartCategoryLabel(value: string, maxLength = 18): string {
@@ -658,7 +658,7 @@ export function Reportes() {
       mapa.set(categoria, (mapa.get(categoria) || 0) + getProductWeight(producto));
       return mapa;
     }, new Map<string, number>())
-  ).map(([categoria, stock]) => ({ categoria, stock: Number(stock.toFixed(1)) }));
+  ).map(([categoria, stock]) => ({ categoria, stock: Math.round(stock) }));
 
   const monthBuckets = getMonthBuckets(referenciaFin, 6);
   const datosComandasMes = monthBuckets.map((bucket) => {
@@ -689,7 +689,7 @@ export function Reportes() {
     const delMes = reportePrsLocal.porMes.find((entry) => entry.mes === bucket.key);
     return {
       mes: bucket.label,
-      kg: Number((delMes?.totalPesoKg || 0).toFixed(1)),
+      kg: Math.round(delMes?.totalPesoKg || 0),
       rescates: delMes?.totalEntradas || 0,
     };
   });
@@ -697,7 +697,7 @@ export function Reportes() {
   const datosPrsCategoria = reportePrsLocal.porProducto
     .map((producto) => ({
       categoria: producto.productoNombre,
-      kg: Number(producto.totalPesoKg.toFixed(1)),
+      kg: Math.round(producto.totalPesoKg),
       entradas: producto.totalEntradas,
     }))
     .sort((left, right) => right.kg - left.kg);
@@ -992,7 +992,7 @@ export function Reportes() {
                     SousCatégorie: producto.subcategoria || 'N/A',
                     Stock: producto.stockActual,
                     Unité: producto.unidad,
-                    PoidsKg: Number(getProductWeight(producto).toFixed(2)),
+                    PoidsKg: Math.round(getProductWeight(producto)),
                     État: producto.estado || 'Disponible',
                   }))
                 : [{ Note: 'Aucune donnée disponible.' }],
@@ -1014,7 +1014,7 @@ export function Reportes() {
                     SousCatégorie: producto.subcategoria || 'N/A',
                     Stock: producto.stockActual,
                     Unité: producto.unidad,
-                    PoidsKg: Number(getProductWeight(producto).toFixed(2)),
+                    PoidsKg: Math.round(getProductWeight(producto)),
                     État: producto.estado || 'Disponible',
                   }))
                 : [{ Note: 'Aucune donnée disponible.' }],
@@ -1140,7 +1140,7 @@ export function Reportes() {
                   Produit: entry.productoNombre,
                   Quantité: entry.cantidad,
                   Unité: entry.unidad,
-                  'Poids (kg)': Number(entry.pesoTotal.toFixed(1)),
+                  'Poids (kg)': Math.round(entry.pesoTotal),
                 })) : [{ Note: 'Aucune donnée disponible.' }],
               },
             ]);
@@ -1276,7 +1276,7 @@ export function Reportes() {
                 { Section: 'Résumé général', Indicateur: 'Stock total', Valeur: productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0) },
                 { Section: 'Résumé général', Indicateur: 'Commandes filtrées', Valeur: comandasExportablesFiltradas.length },
                 { Section: 'Résumé général', Indicateur: 'Organismes actifs', Valeur: organismos.filter((organismo) => organismo.activo).length },
-                { Section: 'Résumé général', Indicateur: 'Valeur totale', Valeur: Number(valorTotalCalculado.toFixed(2)) },
+                { Section: 'Résumé général', Indicateur: 'Valeur totale', Valeur: Math.round(valorTotalCalculado) },
                 ...(productosFiltrados.length > 0
                   ? productosFiltrados.map((producto) => ({
                       Section: 'Inventaire',
@@ -1346,7 +1346,7 @@ export function Reportes() {
                 { Section: 'Résumé général', Indicateur: 'Stock total', Valeur: productosFiltrados.reduce((sum, producto) => sum + producto.stockActual, 0) },
                 { Section: 'Résumé général', Indicateur: 'Commandes filtrées', Valeur: comandasExportablesFiltradas.length },
                 { Section: 'Résumé général', Indicateur: 'Organismes actifs', Valeur: organismos.filter((organismo) => organismo.activo).length },
-                { Section: 'Résumé général', Indicateur: 'Valeur totale', Valeur: Number(valorTotalCalculado.toFixed(2)) },
+                { Section: 'Résumé général', Indicateur: 'Valeur totale', Valeur: Math.round(valorTotalCalculado) },
                 ...(productosFiltrados.length > 0
                   ? productosFiltrados.map((producto) => ({
                       Section: 'Inventaire',
@@ -1441,8 +1441,8 @@ export function Reportes() {
 
       return {
         ...comanda,
-        filteredPeso: Number(filteredPeso.toFixed(1)),
-        filteredValor: Number(filteredValor.toFixed(2)),
+        filteredPeso: Math.round(filteredPeso),
+        filteredValor: Math.round(filteredValor),
       };
     })
     .filter((comanda) => selectedCategory === 'all' || comanda.filteredPeso > 0);
@@ -1450,15 +1450,15 @@ export function Reportes() {
     (sum, entry) => sum + getEntryMonetaryValue(entry, productIndex),
     0,
   );
-  const operationalEntriesKg = Number(
-    operationalEntries.reduce((sum, entry) => sum + getSafeNumericValue(entry.pesoTotal), 0).toFixed(1)
+  const operationalEntriesKg = Math.round(
+    operationalEntries.reduce((sum, entry) => sum + getSafeNumericValue(entry.pesoTotal), 0)
   );
   const distributionValue = operationalDistributions.reduce(
     (sum, comanda) => sum + getSafeNumericValue(comanda.filteredValor),
     0,
   );
-  const operationalDistributionsKg = Number(
-    operationalDistributions.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.filteredPeso), 0).toFixed(1)
+  const operationalDistributionsKg = Math.round(
+    operationalDistributions.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.filteredPeso), 0)
   );
   const operationalBalanceValue = procurementValue - distributionValue;
   const operationalDonors = new Set(operationalEntries.map((entry) => entry.donadorNombre).filter(Boolean)).size;
@@ -1468,12 +1468,12 @@ export function Reportes() {
     { Indicateur: 'Catégorie', Valeur: selectedCategory === 'all' ? 'Toutes' : selectedCategory },
     { Indicateur: 'Donateur / fournisseur', Valeur: selectedActor === 'all' ? 'Tous' : selectedActor },
     { Indicateur: 'Entrées', Valeur: operationalEntries.length },
-    { Indicateur: 'Kg entrants', Valeur: `${operationalEntriesKg.toFixed(1)} kg` },
-    { Indicateur: 'Valeur entrante', Valeur: `CAD$ ${procurementValue.toFixed(2)}` },
+    { Indicateur: 'Kg entrants', Valeur: `${formatQuantity(operationalEntriesKg)} kg` },
+    { Indicateur: 'Valeur entrante', Valeur: `CAD$ ${Math.round(procurementValue)}` },
     { Indicateur: 'Distributions', Valeur: operationalDistributions.length },
-    { Indicateur: 'Kg distribués', Valeur: `${operationalDistributionsKg.toFixed(1)} kg` },
-    { Indicateur: 'Valeur distribuée', Valeur: `CAD$ ${distributionValue.toFixed(2)}` },
-    { Indicateur: 'Balance monétaire', Valeur: `CAD$ ${operationalBalanceValue.toFixed(2)}` },
+    { Indicateur: 'Kg distribués', Valeur: `${formatQuantity(operationalDistributionsKg)} kg` },
+    { Indicateur: 'Valeur distribuée', Valeur: `CAD$ ${Math.round(distributionValue)}` },
+    { Indicateur: 'Balance monétaire', Valeur: `CAD$ ${Math.round(operationalBalanceValue)}` },
     { Indicateur: 'Donateurs actifs', Valeur: operationalDonors },
     { Indicateur: 'Programmes actifs', Valeur: operationalPrograms },
   ];
@@ -1504,12 +1504,12 @@ export function Reportes() {
     .slice(0, 5);
   const commandasTotalValue = comandasExportablesFiltradas.reduce((sum, comanda) => sum + getSafeNumericValue(comanda.valorTotal), 0);
   const averageOrderValue = comandasExportablesFiltradas.length > 0 ? commandasTotalValue / comandasExportablesFiltradas.length : 0;
-  const totalPrsKg = Number(reportePrsLocal.resumen.totalPesoKg.toFixed(1));
+  const totalPrsKg = Math.round(reportePrsLocal.resumen.totalPesoKg);
   const participatingPrsCount = reportePrsLocal.resumen.organismosUnicos;
   const latestPrsEntries = reportePrsLocal.detalles.slice(0, 5);
   const averagePrsEntryWeight = reportePrsLocal.resumen.totalEntradas > 0
-    ? (totalPrsKg / reportePrsLocal.resumen.totalEntradas).toFixed(1)
-    : '0.0';
+    ? formatQuantity(totalPrsKg / reportePrsLocal.resumen.totalEntradas)
+    : '0';
   const remotePrsTopOrganism = remotePrsReport?.porOrganismo?.[0];
   const remotePrsTopDonor = remotePrsReport?.porDonador?.[0];
   const remotePrsUpdatedAt = remotePrsReport?.generadoEn
@@ -2279,7 +2279,7 @@ export function Reportes() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Volume']}
+                          formatter={(value: number) => [`${formatQuantity(Number(value) || 0)} kg`, 'Volume']}
                           labelFormatter={(_, payload) => {
                             const item = payload?.[0]?.payload as { categoria?: string } | undefined;
                             return item?.categoria || 'Sans catégorie';
@@ -2294,8 +2294,8 @@ export function Reportes() {
                         .sort((left, right) => right.stock - left.stock)
                         .map((item, index) => {
                           const percentage = inventoryDistributionTotal > 0
-                            ? ((item.stock / inventoryDistributionTotal) * 100).toFixed(1)
-                            : '0.0';
+                            ? formatQuantity((item.stock / inventoryDistributionTotal) * 100)
+                            : '0';
 
                           return (
                             <div key={item.categoria} className="flex items-start gap-2 rounded-lg bg-gray-50/90 px-3 py-2">
@@ -2420,7 +2420,7 @@ export function Reportes() {
                           tick={{ fontSize: 10 }}
                         />
                         <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Poids PRS']} />
+                        <Tooltip formatter={(value: number) => [`${formatQuantity(Number(value) || 0)} kg`, 'Poids PRS']} />
                         <Bar dataKey="kg" fill="#2d9561" name="Poids PRS" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -2573,7 +2573,7 @@ export function Reportes() {
                         tick={{ fontSize: isCompactReportsViewport ? 10 : 11 }}
                       />
                       <YAxis />
-                      <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Poids PRS']} />
+                      <Tooltip formatter={(value: number) => [`${formatQuantity(Number(value) || 0)} kg`, 'Poids PRS']} />
                       <Legend />
                       <Bar dataKey="kg" fill="#2d9561" name="Poids PRS" radius={[6, 6, 0, 0]} />
                     </BarChart>
@@ -2722,7 +2722,7 @@ export function Reportes() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Volume']}
+                        formatter={(value: number) => [`${formatQuantity(Number(value) || 0)} kg`, 'Volume']}
                         labelFormatter={(_, payload) => {
                           const item = payload?.[0]?.payload as { categoria?: string } | undefined;
                           return item?.categoria || 'Sans catégorie';
@@ -2737,8 +2737,8 @@ export function Reportes() {
                       .sort((left, right) => right.stock - left.stock)
                       .map((item, index) => {
                         const percentage = inventoryDistributionTotal > 0
-                          ? ((item.stock / inventoryDistributionTotal) * 100).toFixed(1)
-                          : '0.0';
+                          ? formatQuantity((item.stock / inventoryDistributionTotal) * 100)
+                          : '0';
 
                         return (
                           <div key={`pdf-legend-${item.categoria}`} className="flex items-start gap-2 rounded-lg bg-gray-50/90 px-3 py-2">
@@ -2807,7 +2807,7 @@ export function Reportes() {
                       tick={{ fontSize: 11 }}
                     />
                     <YAxis />
-                    <Tooltip formatter={(value: number) => [`${Number(value).toFixed(1)} kg`, 'Poids PRS']} />
+                    <Tooltip formatter={(value: number) => [`${formatQuantity(Number(value) || 0)} kg`, 'Poids PRS']} />
                     <Legend />
                     <Bar dataKey="kg" fill="#2d9561" name="Poids PRS" radius={[6, 6, 0, 0]} />
                   </BarChart>

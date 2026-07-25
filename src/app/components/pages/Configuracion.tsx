@@ -819,7 +819,7 @@ export function Configuracion() {
     
     // Convertir valorMonetario a número si es string
     const valorMonetarioNumerico = typeof formCategoria.valorMonetario === 'string' 
-      ? parseFloat(formCategoria.valorMonetario) || 0 
+      ? parseInt(formCategoria.valorMonetario, 10) || 0 
       : formCategoria.valorMonetario;
     
     if (editandoCategoria) {
@@ -1542,8 +1542,8 @@ export function Configuracion() {
         codigo: codigoGenerado,
         icono: iconoVarianteFinal,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
-        valorPorKg: formVarianteSubcategoria.valorPorKg ? parseFloat(formVarianteSubcategoria.valorPorKg) : undefined,
-        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseFloat(formVarianteSubcategoria.pesoUnitario) : undefined,
+        valorPorKg: formVarianteSubcategoria.valorPorKg ? parseInt(formVarianteSubcategoria.valorPorKg, 10) : undefined,
+        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseInt(formVarianteSubcategoria.pesoUnitario, 10) : undefined,
         descripcion: formVarianteSubcategoria.descripcion.trim() || undefined,
         stockMinimo: formVarianteSubcategoria.stockMinimo || 0
       };
@@ -1589,8 +1589,8 @@ export function Configuracion() {
         icono: iconoVarianteFinal,
         activa: true,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
-        valorPorKg: formVarianteSubcategoria.valorPorKg ? parseFloat(formVarianteSubcategoria.valorPorKg) : undefined,
-        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseFloat(formVarianteSubcategoria.pesoUnitario) : undefined,
+        valorPorKg: formVarianteSubcategoria.valorPorKg ? parseInt(formVarianteSubcategoria.valorPorKg, 10) : undefined,
+        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseInt(formVarianteSubcategoria.pesoUnitario, 10) : undefined,
         descripcion: formVarianteSubcategoria.descripcion.trim() || undefined,
         stockMinimo: formVarianteSubcategoria.stockMinimo || 0
       };
@@ -2098,11 +2098,11 @@ export function Configuracion() {
                           </Label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             min="0"
                             placeholder={t('configuration.weightExamplePlaceholder')}
                             value={formSubcategoria.pesoUnitario === 0 ? '' : formSubcategoria.pesoUnitario || ''}
-                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, pesoUnitario: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, pesoUnitario: e.target.value === '' ? 0 : parseInt(e.target.value, 10) || 0 })}
                           />
                           {!formSubcategoria.pesoUnitario || formSubcategoria.pesoUnitario === 0 ? (
                             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -2118,7 +2118,7 @@ export function Configuracion() {
                             </div>
                           ) : (
                             <p className="text-xs text-[#4CAF50] font-medium">
-                              ✓ {t('configuration.unitWeightDefined', { weight: (formSubcategoria.pesoUnitario || 0).toFixed(1) })}
+                              ✓ {t('configuration.unitWeightDefined', { weight: Math.round(formSubcategoria.pesoUnitario || 0) })}
                             </p>
                           )}
                         </div>
@@ -2349,25 +2349,16 @@ export function Configuracion() {
                             <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666666]" />
                             <Input
                               type="text"
-                              inputMode="decimal"
+                              inputMode="numeric"
                               placeholder="0"
                               value={formCategoria.valorMonetario === 0 ? '' : formCategoria.valorMonetario}
                               onChange={(e) => {
-                                const value = e.target.value.replace(/[^0-9.]/g, ''); // Solo dígitos y punto decimal
-                                
-                                // Permitir solo un punto decimal
-                                const parts = value.split('.');
-                                const finalValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : value;
-                                
-                                // Guardar como string si termina en punto o está vacío, o como número si es completo
-                                if (finalValue === '' || finalValue === '.') {
+                                const finalValue = e.target.value.replace(/[^0-9]/g, '');
+
+                                if (finalValue === '') {
                                   setFormCategoria({ ...formCategoria, valorMonetario: 0 });
-                                } else if (finalValue.endsWith('.') || finalValue.includes('.')) {
-                                  // Mantener como string mientras tiene punto decimal
-                                  setFormCategoria({ ...formCategoria, valorMonetario: finalValue });
                                 } else {
-                                  // Convertir a número cuando no hay punto
-                                  setFormCategoria({ ...formCategoria, valorMonetario: parseFloat(finalValue) || 0 });
+                                  setFormCategoria({ ...formCategoria, valorMonetario: parseInt(finalValue, 10) || 0 });
                                 }
                               }}
                               className="pl-10"
@@ -2663,7 +2654,7 @@ export function Configuracion() {
                           )}
                           {categoria.valorPorKg && (
                             <Badge className="bg-gradient-to-r from-emerald-50 to-green-50 text-[#2d9561] border-2 border-[#2d9561]/30 px-3 py-1 rounded-full font-semibold shadow-sm">
-                              {t('configuration.valuePerKgBadge', { value: categoria.valorPorKg.toFixed(2) })}
+                              {t('configuration.valuePerKgBadge', { value: Math.round(categoria.valorPorKg) })}
                             </Badge>
                           )}
                           <Button
@@ -2890,7 +2881,7 @@ export function Configuracion() {
                                                     if (valorPorKg) {
                                                       return (
                                                         <Badge className={esHeredado ? "bg-amber-100 text-amber-700 border-amber-300 text-xs" : "bg-blue-100 text-[#1E73BE] border-[#1E73BE] text-xs"}>
-                                                          {t('configuration.valuePerKgBadge', { value: valorPorKg.toFixed(2) })} {esHeredado && t('configuration.inheritedBadge')}
+                                                          {t('configuration.valuePerKgBadge', { value: Math.round(valorPorKg) })} {esHeredado && t('configuration.inheritedBadge')}
                                                         </Badge>
                                                       );
                                                     }
@@ -3253,7 +3244,7 @@ export function Configuracion() {
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-[#2196F3]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        {productos.filter(p => p.esPRS === true).reduce((sum, p) => sum + (p.peso || 0), 0).toFixed(1)}
+                        {formatQuantity(productos.filter(p => p.esPRS === true).reduce((sum, p) => sum + (Number(p.peso) || 0), 0))}
                       </p>
                       <p className="text-xs text-[#666666]" style={{ fontFamily: 'Roboto, sans-serif' }}>
                         {t('configuration.totalKgPerUnit')}
@@ -3320,11 +3311,11 @@ export function Configuracion() {
                                   </Badge>
                                 )}
                                 <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                  ⚖️ {producto.peso} kg / {producto.unidad}
+                                  ⚖️ {formatQuantity(Number(producto.peso) || 0)} kg / {producto.unidad}
                                 </Badge>
                                 {producto.pesoUnitario && producto.pesoUnitario > 0 && (
                                   <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
-                                    📏 {t('configuration.prsUnitWeight')}: {producto.pesoUnitario} kg
+                                    📏 {t('configuration.prsUnitWeight')}: {formatQuantity(Number(producto.pesoUnitario) || 0)} kg
                                   </Badge>
                                 )}
                               </div>
@@ -3618,11 +3609,11 @@ export function Configuracion() {
                   </Label>
                   <Input
                     type="number"
-                    step="0.01"
+                    step="1"
                     min="0"
                     placeholder={t('configuration.prsWeightExamplePlaceholder')}
                     value={formProductoPRS.peso || ''}
-                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, peso: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, peso: parseInt(e.target.value, 10) || 0 })}
                     style={{ fontFamily: 'Roboto, sans-serif' }}
                   />
                   <p className="text-xs text-[#666666]">
@@ -3658,11 +3649,11 @@ export function Configuracion() {
                   </Label>
                   <Input
                     type="number"
-                    step="0.01"
+                    step="1"
                     min="0"
                     placeholder={t('configuration.prsWeightExamplePlaceholder')}
                     value={formProductoPRS.pesoUnitario || ''}
-                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, pesoUnitario: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, pesoUnitario: parseInt(e.target.value, 10) || 0 })}
                     style={{ fontFamily: 'Roboto, sans-serif' }}
                   />
                   <p className="text-xs text-[#666666]">
@@ -4530,10 +4521,10 @@ export function Configuracion() {
                     <span>⚖️</span> {t('configuration.unitWeight')} (kg)
                   </Label>
                   <Input
-                    step="0.01"
+                    step="1"
                     value={formVarianteSubcategoria.pesoUnitario}
                     onChange={(e) => setFormVarianteSubcategoria({ ...formVarianteSubcategoria, pesoUnitario: e.target.value })}
-                    placeholder="0.00"
+                    placeholder="0"
                     className="h-11"
                   />
                   <p className="text-xs text-[#666666] flex items-center gap-1">
@@ -4549,10 +4540,10 @@ export function Configuracion() {
                   </Label>
                   <Input
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={formVarianteSubcategoria.valorPorKg}
                     onChange={(e) => setFormVarianteSubcategoria({ ...formVarianteSubcategoria, valorPorKg: e.target.value })}
-                    placeholder="0.00"
+                    placeholder="0"
                     className="h-11"
                   />
                   <p className="text-xs text-[#666666] flex items-center gap-1">

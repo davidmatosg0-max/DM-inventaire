@@ -160,7 +160,7 @@ export function ConversionUnidadesDialog({
   // Calcular cantidad destino cuando cambia cantidad origen o factor
   useEffect(() => {
     const cantidad = parseQuantityText(cantidadOrigen, false);
-    const factor = parseFloat(factorConversion);
+    const factor = parseInt(factorConversion, 10);
 
     if (!isNaN(cantidad) && !isNaN(factor) && factor > 0) {
       setCantidadDestino(cantidad * factor);
@@ -203,7 +203,7 @@ export function ConversionUnidadesDialog({
     }
 
     const cantidad = parseQuantityText(cantidadOrigen, false);
-    const factor = parseFloat(factorConversion);
+    const factor = parseInt(factorConversion, 10);
 
     if (!isNaN(cantidad) && !isNaN(factor) && factor > 0 && cantidad > 0) {
       // 🎯 FÓRMULA DIRECTA: Peso Unitario Origen ÷ Factor de Conversión = Peso Unitario Destino
@@ -219,7 +219,7 @@ export function ConversionUnidadesDialog({
     if (!producto) return;
 
     const cantidad = parseQuantityText(cantidadOrigen, false);
-    const factor = parseFloat(factorConversion);
+    const factor = parseInt(factorConversion, 10);
 
     // Validaciones
     if (isNaN(cantidad) || cantidad <= 0) {

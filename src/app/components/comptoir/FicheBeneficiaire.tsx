@@ -265,7 +265,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
   // Effet pour calculer automatiquement le niveau de revenu
   React.useEffect(() => {
     if (revenuMensuel && nombrePersonnes) {
-      const revenu = parseFloat(revenuMensuel);
+      const revenu = parseInt(revenuMensuel, 10);
       if (!isNaN(revenu)) {
         const resultat = calculerNiveauRevenu(revenu, nombrePersonnes);
         setNiveauRevenu(resultat.niveau);
@@ -438,7 +438,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
       derniereAide: beneficiaire?.derniereAide || 'Aucune',
       notes: notesInternes,
       nombrePersonnes,
-      revenuMensuel: revenuMensuel ? Number.parseFloat(revenuMensuel) : undefined,
+      revenuMensuel: revenuMensuel ? Number.parseInt(revenuMensuel, 10) : undefined,
       revenus: niveauRevenu || beneficiaire?.revenus || '',
       hasEnfants,
       nombreEnfants,
@@ -1209,8 +1209,8 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                     </span>
                     <Input 
                       type="number"
-                      step="0.01"
-                      placeholder="0.00"
+                      step="1"
+                      placeholder="0"
                       value={revenuMensuel}
                       disabled={!isEditing}
                       className={`pl-16 ${!isEditing ? 'bg-[#F4F4F4]' : ''}`}
@@ -1232,7 +1232,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-[#666666]">{t('comptoir.declaredIncome')}:</span>
-                          <span className="font-semibold">{parseFloat(revenuMensuel).toFixed(2)} CAD$ / {t('comptoir.month').toLowerCase()}</span>
+                          <span className="font-semibold">{Math.round(Number.parseInt(revenuMensuel, 10) || 0)} CAD$ / {t('comptoir.month').toLowerCase()}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[#666666]">{t('comptoir.householdSize')}:</span>
@@ -1244,18 +1244,18 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                             <Badge 
                               className="font-semibold"
                               style={{ 
-                                backgroundColor: calculerNiveauRevenu(parseFloat(revenuMensuel), nombrePersonnes).couleur,
+                                backgroundColor: calculerNiveauRevenu(parseInt(revenuMensuel, 10), nombrePersonnes).couleur,
                                 color: 'white'
                               }}
                             >
-                              {calculerNiveauRevenu(parseFloat(revenuMensuel), nombrePersonnes).niveau}
+                              {calculerNiveauRevenu(parseInt(revenuMensuel, 10), nombrePersonnes).niveau}
                             </Badge>
                           </div>
                         </div>
                         <div className="bg-white/60 rounded p-2 mt-2 text-xs text-[#666666]">
                           <p className="font-medium mb-1">💡 {t('comptoir.mpcFormula')}:</p>
                           <p>{t('comptoir.mpcExplanation', {
-                            threshold: calculerNiveauRevenu(parseFloat(revenuMensuel), nombrePersonnes).seuil.toFixed(0)
+                            threshold: Math.round(calculerNiveauRevenu(parseInt(revenuMensuel, 10), nombrePersonnes).seuil)
                           })}</p>
                         </div>
                       </div>

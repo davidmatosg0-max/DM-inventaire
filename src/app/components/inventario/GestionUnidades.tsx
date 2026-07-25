@@ -281,8 +281,8 @@ export function GestionUnidades() {
                 type="number"
                 step="1"
                 min="0"
-                value={formData.pesoUnidad}
-                onChange={(e) => setFormData({ ...formData, pesoUnidad: Math.round(parseFloat(e.target.value) || 0) })}
+                  value={formData.pesoUnidad || ''}
+                  onChange={(e) => setFormData({ ...formData, pesoUnidad: parseInt(e.target.value, 10) || 0 })}
                 placeholder={t('inventory.unitManagement.form.tareWeightPlaceholder')}
               />
               <p className="text-xs text-[#666666]">

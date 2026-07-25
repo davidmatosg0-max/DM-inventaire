@@ -12,42 +12,33 @@ function getPrecision(step?: number | string) {
 }
 
 export function normalizeQuantityText(value: string, allowDecimal = true) {
-  if (!allowDecimal) {
-    return value.replace(/[^0-9]/g, '');
-  }
-
-  const normalized = value.replace(/\./g, ',').replace(/[^0-9,]/g, '');
-  const parts = normalized.split(',');
-
-  return parts.length > 2 ? `${parts[0]},${parts.slice(1).join('')}` : normalized;
+  void allowDecimal;
+  return value.replace(/[^0-9]/g, '');
 }
 
 export function parseQuantityText(value: string, allowDecimal = true): number | null {
-  const normalized = normalizeQuantityText(value, allowDecimal);
-  const canonical = allowDecimal ? normalized.replace(',', '.') : normalized;
+  void allowDecimal;
+  const normalized = normalizeQuantityText(value, false);
 
-  if (!canonical || canonical === '.') {
+  if (!normalized) {
     return null;
   }
 
-  const parsed = Number(canonical);
+  const parsed = Number.parseInt(normalized, 10);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function formatQuantityText(value: number | string, precision?: number) {
+  void precision;
   if (typeof value === 'string') {
-    return value.replace('.', ',');
+    return value.replace(/[^0-9]/g, '');
   }
 
   if (!Number.isFinite(value)) {
     return '';
   }
 
-  if (typeof precision === 'number' && precision > 0) {
-    return value.toFixed(precision).replace('.', ',');
-  }
-
-  return String(value).replace('.', ',');
+  return String(Math.round(value));
 }
 
 interface QuantityInputProps extends Omit<React.ComponentProps<typeof Input>, 'type' | 'value' | 'onChange'> {
@@ -81,9 +72,9 @@ export function QuantityInput({
   onBlur,
   ...props
 }: QuantityInputProps) {
-  const stepPrecision = getPrecision(step);
-  const allowDecimal = stepPrecision > 0;
-  const displayValue = React.useMemo(() => formatQuantityText(value, typeof value === 'number' ? stepPrecision : undefined), [stepPrecision, value]);
+  const stepPrecision = 0;
+  const allowDecimal = false;
+  const displayValue = React.useMemo(() => formatQuantityText(value, 0), [value]);
 
   const clampValue = React.useCallback((rawValue: number) => {
     let nextValue = rawValue;
@@ -103,7 +94,7 @@ export function QuantityInput({
     const currentValue = typeof value === 'number' ? value : parseQuantityText(String(value), allowDecimal) ?? 0;
     const stepValue = typeof step === 'number' ? step : Number(step);
     const safeStep = Number.isFinite(stepValue) && stepValue > 0 ? stepValue : 1;
-    const nextValue = clampValue(Number((currentValue + (delta * safeStep)).toFixed(stepPrecision)));
+    const nextValue = clampValue(Math.round(currentValue + (delta * safeStep)));
 
     onChangeText(formatQuantityText(nextValue, stepPrecision));
   }, [allowDecimal, clampValue, onChangeText, step, stepPrecision, value]);
@@ -125,7 +116,7 @@ export function QuantityInput({
       )}
       <Input
         type="text"
-        inputMode={allowDecimal ? 'decimal' : 'numeric'}
+        inputMode="numeric"
         value={displayValue}
         disabled={disabled}
         onChange={(event) => onChangeText(normalizeQuantityText(event.target.value, allowDecimal))}

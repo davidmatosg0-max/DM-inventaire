@@ -1099,7 +1099,7 @@ export function optimizarTodosLosContactos(): { optimizados: number; ahorroKB: n
 
     return { 
       optimizados, 
-      ahorroKB: parseFloat(ahorroKB.toFixed(2))
+      ahorroKB: Math.round(ahorroKB)
     };
   } catch (error) {
     console.error('Error al optimizar contactos:', error);

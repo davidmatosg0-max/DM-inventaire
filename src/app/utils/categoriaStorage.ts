@@ -76,7 +76,7 @@ export function obtenerCategorias(): Categoria[] {
       const categorias: Categoria[] = JSON.parse(stored);
       const categoriasConValores = categorias.map(cat => ({
         ...cat,
-        valorMonetario: typeof cat.valorMonetario === 'number' ? cat.valorMonetario : parseFloat(cat.valorMonetario as any) || 0,
+        valorMonetario: typeof cat.valorMonetario === 'number' ? cat.valorMonetario : parseInt(cat.valorMonetario as any, 10) || 0,
         valorPorKg: cat.valorMonetario || cat.valorPorKg || 0 // Sincronizar ambos campos
       }));
 
@@ -149,7 +149,7 @@ export function actualizarPesoUnitarioSubcategoria(
             if (unidad && pesoUnitario > 0 && unidad !== 'PLT') {
               const pesosUnidadActualizados = {
                 ...(sub.pesosUnidad || {}),
-                [unidad]: parseFloat(pesoUnitario.toFixed(3))
+                [unidad]: Math.round(pesoUnitario)
               };
               
               actualizado = true;
@@ -159,7 +159,7 @@ export function actualizarPesoUnitarioSubcategoria(
                 ...sub,
                 pesosUnidad: pesosUnidadActualizados,
                 unidad: unidad || sub.unidad, // Actualizar la unidad predeterminada
-                pesoUnitario: sub.pesoUnitario || parseFloat(pesoUnitario.toFixed(3)) // Mantener o establecer pesoUnitario general
+                pesoUnitario: sub.pesoUnitario || Math.round(pesoUnitario) // Mantener o establecer pesoUnitario general
               };
             }
             
@@ -177,7 +177,7 @@ export function actualizarPesoUnitarioSubcategoria(
                 
                 return {
                   ...sub,
-                  pesoUnitario: parseFloat(pesoUnitario.toFixed(3)), // Redondear a 3 decimales
+                  pesoUnitario: Math.round(pesoUnitario),
                   unidad: unidad || sub.unidad // Guardar la unidad si se proporciona
                 };
               }
@@ -473,7 +473,7 @@ export function actualizarPesoUnitarioVariante(
                   
                   return {
                     ...variante,
-                    pesoUnitario: parseFloat(pesoUnitario.toFixed(3)),
+                    pesoUnitario: Math.round(pesoUnitario),
                     unidad: unidad || variante.unidad
                   };
                 }
@@ -572,7 +572,7 @@ export function calcularValorMonetario(
     return undefined;
   }
   
-  return parseFloat((peso * valorPorKg).toFixed(2));
+  return Math.round(peso * valorPorKg);
 }
 
 /**

@@ -16,6 +16,7 @@ import { obtenerCategorias, guardarCategorias } from '../../utils/categoriaStora
 import { obtenerUnidades, type Unidad } from '../../utils/unidadStorage';
 import { sincronizarProductosPorVariante } from '../../utils/productStorage';
 import { generarIconoProducto } from '../../utils/iconoUtils';
+import { formatQuantity } from '../../utils/formatUtils';
 
 type GestionVariantesProps = {
   subcategoria: Subcategoria;
@@ -145,7 +146,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
       icono: iconoFinal,
       activa: true,
       unidad: formData.unidad.trim() || undefined,
-      valorPorKg: formData.valorPorKg ? parseFloat(formData.valorPorKg) : undefined,
+      valorPorKg: formData.valorPorKg ? parseInt(formData.valorPorKg, 10) : undefined,
       pesoUnitario: formData.pesoUnitario ? (parseQuantityText(formData.pesoUnitario) || 0) : undefined,
       descripcion: formData.descripcion.trim() || undefined
     };
@@ -331,7 +332,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                             <span>📦 {variante.unidad}</span>
                           )}
                           {variante.pesoUnitario && (
-                            <span>⚖️ {variante.pesoUnitario} kg</span>
+                            <span>⚖️ {formatQuantity(Number(variante.pesoUnitario) || 0)} kg</span>
                           )}
                           {variante.valorPorKg && (
                             <span>💰 ${variante.valorPorKg}/kg</span>
@@ -516,7 +517,7 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
                   </p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-[#666666]">
                     {formData.pesoUnitario && (
-                      <span>⚖️ {formData.pesoUnitario} kg</span>
+                      <span>⚖️ {formatQuantity(Number(formData.pesoUnitario) || 0)} kg</span>
                     )}
                     {formData.valorPorKg && (
                       <span>💰 ${formData.valorPorKg}/kg</span>

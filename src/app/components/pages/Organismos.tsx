@@ -248,7 +248,7 @@ export function Organismos() {
     if (totalServicios > 0) {
       // Fórmula: base de 1000 servicios = 100%
       const porcentaje = Math.min((totalServicios / 1000) * 100, 100);
-      setFormOrganismo({ ...formOrganismo, porcentajeReparticion: parseFloat(porcentaje.toFixed(2)) });
+      setFormOrganismo({ ...formOrganismo, porcentajeReparticion: Math.round(porcentaje) });
     }
   };
 

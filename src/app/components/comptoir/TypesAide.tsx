@@ -221,7 +221,7 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
               ...type,
               name: normalizedName,
               description: formData.description,
-              defaultValue: formData.defaultValue ? parseFloat(formData.defaultValue) : undefined,
+              defaultValue: formData.defaultValue ? parseInt(formData.defaultValue, 10) : undefined,
               color: formData.color,
               isActive: formData.isActive,
             }
@@ -258,7 +258,7 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
         id: `custom-${Date.now()}`,
         name: normalizedName,
         description: formData.description,
-        defaultValue: formData.defaultValue ? parseFloat(formData.defaultValue) : undefined,
+        defaultValue: formData.defaultValue ? parseInt(formData.defaultValue, 10) : undefined,
         color: formData.color,
         isActive: formData.isActive,
         isSystem: false,
@@ -336,7 +336,7 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
           <div className="flex flex-wrap gap-4 text-sm text-[#666666]">
             {type.defaultValue && (
               <div>
-                <span className="font-medium">{t('comptoir.defaultValue')}:</span> {type.defaultValue.toFixed(2)} CAD$
+                <span className="font-medium">{t('comptoir.defaultValue')}:</span> {Math.round(type.defaultValue)} CAD$
               </div>
             )}
             {(type.usageCount !== undefined || usageCounts[type.id] !== undefined) && (
@@ -480,11 +480,11 @@ export function TypesAide({ onNavigate, aidTypes, setAidTypes, systemAidTypes }:
               <Label>{t('comptoir.defaultValue')} (CAD$)</Label>
               <Input
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={formData.defaultValue}
                 onChange={(e) => setFormData(prev => ({ ...prev, defaultValue: e.target.value }))}
-                placeholder="45.00"
+                placeholder="45"
                 className="mt-2"
               />
               <p className="text-xs text-[#666666] mt-1">

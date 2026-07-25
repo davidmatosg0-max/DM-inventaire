@@ -128,7 +128,7 @@ function redondearValorMonetario(valor: number): number {
     return 0;
   }
 
-  return parseFloat(valor.toFixed(2));
+  return Math.round(valor);
 }
 
 function calcularValorInventarioProducto(producto: Pick<ProductoCreado, 'valorTotal' | 'valorUnitario' | 'stockActual'>): number {

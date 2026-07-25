@@ -726,7 +726,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       pesoCalculado = formData.cantidad * (pesoUnitario || 0);
     }
 
-    setFormData(prev => ({ ...prev, peso: parseFloat(pesoCalculado.toFixed(3)) }));
+    setFormData(prev => ({ ...prev, peso: Math.round(pesoCalculado) }));
   }, [formData.cantidad, formData.unidad, formData.pesoUnitario, varianteSeleccionada, subcategoriaSeleccionada]);
 
   // Calcular peso automáticamente - SIEMPRE ACTIVO
@@ -1008,7 +1008,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
           codigo: formVariante.codigo,
           icono: formVariante.icono || '🏷️',
           unidad: formVariante.unidad,
-          valorPorKg: formVariante.valorPorKg ? parseFloat(formVariante.valorPorKg) : undefined,
+          valorPorKg: formVariante.valorPorKg ? parseInt(formVariante.valorPorKg, 10) : undefined,
           pesoUnitario: formVariante.pesoUnitario ? (parseQuantityText(formVariante.pesoUnitario, false) || 0) : undefined,
           descripcion: formVariante.descripcion,
         }
@@ -2403,7 +2403,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                                     <span className="bg-emerald-50 px-1.5 py-0.5 rounded">{varianteSeleccionada.unidad}</span>
                                   )}
                                   {varianteSeleccionada?.pesoUnitario && (
-                                    <span>{varianteSeleccionada.pesoUnitario} kg</span>
+                                    <span>{formatQuantity(Number(varianteSeleccionada.pesoUnitario) || 0)} kg</span>
                                   )}
                                 </div>
                               </span>
@@ -2446,7 +2446,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                                           <span className="bg-emerald-50 px-1.5 py-0.5 rounded">{variante.unidad}</span>
                                         )}
                                         {variante.pesoUnitario && (
-                                          <span>{variante.pesoUnitario} kg</span>
+                                          <span>{formatQuantity(Number(variante.pesoUnitario) || 0)} kg</span>
                                         )}
                                       </div>
                                     </div>
@@ -2582,7 +2582,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     min="0"
                     step="1"
                     value={formData.peso ? formatQuantity(formData.peso) : ''}
-                    onChange={(e) => handleFieldChange('peso', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleFieldChange('peso', parseInt(e.target.value, 10) || 0)}
                     placeholder="0"
                     className="rounded-xl border-2 border-slate-200 h-9 text-sm bg-slate-50"
                     readOnly
@@ -3221,7 +3221,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   buttonClassName="border-blue-300 hover:bg-blue-50"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  💡 Poids moyen d'une unité de ce produit (exemple: 0.500 kg pour une boîte de 500g)
+                  💡 Poids moyen d'une unité de ce produit (exemple: 1 kg par unité)
                 </p>
               </div>
 

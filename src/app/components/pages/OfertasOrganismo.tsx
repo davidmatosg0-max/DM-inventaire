@@ -551,7 +551,7 @@ export function OfertasOrganismo() {
                       {oferta.productos.slice(0, 3).map((prod, idx) => {
                         const pesoUnitario = Number(prod.peso) || 0;
                         const detallePeso = pesoUnitario > 0
-                          ? ` · ${pesoUnitario} kg/${prod.unidad || 'unité'}`
+                          ? ` · ${formatQuantity(pesoUnitario)} kg/${prod.unidad || 'unité'}`
                           : '';
                         const limiteMax = Number(prod.limiteMaximoPorOrganismo) || 0;
                         return (

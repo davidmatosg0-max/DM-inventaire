@@ -372,7 +372,7 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
 
     let estimatedValue: number;
     if (valeurEstimee.trim()) {
-      const parsedValue = Number.parseFloat(valeurEstimee);
+      const parsedValue = Number.parseInt(valeurEstimee, 10);
       if (!Number.isFinite(parsedValue) || parsedValue < 0) {
         toast.error(t('common.error'), {
           description: 'La valeur estimée doit être un nombre valide supérieur ou égal à 0.',
@@ -912,8 +912,8 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
                 type="number" 
                 value={valeurEstimee}
                 onChange={(event) => setValeurEstimee(event.target.value)}
-                placeholder="45.00"
-                step="0.01"
+                placeholder="45"
+                step="1"
               />
               <p className="text-xs text-[#666666] mt-1">
                 {t('comptoir.optionalField')}

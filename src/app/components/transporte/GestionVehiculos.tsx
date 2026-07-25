@@ -562,10 +562,10 @@ export function GestionVehiculos() {
                   <Label>{t('transport.vehicles.fuelConsumption')} ({t('transport.vehicles.litersPer100')})</Label>
                   <Input
                     type="number"
-                    step="0.1"
-                    placeholder="8.5"
+                    step="1"
+                    placeholder="8"
                     value={formVehiculo.consumoCombustible}
-                    onChange={(e) => setFormVehiculo({ ...formVehiculo, consumoCombustible: parseFloat(e.target.value) })}
+                    onChange={(e) => setFormVehiculo({ ...formVehiculo, consumoCombustible: parseInt(e.target.value, 10) || 0 })}
                   />
                 </div>
               </div>

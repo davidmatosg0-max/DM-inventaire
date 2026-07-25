@@ -88,10 +88,7 @@ export function ModeloComanda({
   };
 
   const formatearCantidadProducto = (valor: number) => {
-    return new Intl.NumberFormat(defaultLocale, {
-      minimumFractionDigits: Number.isInteger(valor) ? 0 : 1,
-      maximumFractionDigits: 2,
-    }).format(valor);
+    return formatQuantity(Number(valor) || 0);
   };
 
   const obtenerEtiquetaProducto = (producto: any, nombreProducto?: string) => {
@@ -282,40 +279,30 @@ export function ModeloComanda({
   };
 
   const normalizarTextoCantidad = (value: string) => {
-    const normalizado = value.replace(/\./g, ',').replace(/[^0-9,]/g, '');
-    const partes = normalizado.split(',');
-
-    return partes.length > 2 ? `${partes[0]},${partes.slice(1).join('')}` : normalizado;
+    return value.replace(/[^0-9]/g, '');
   };
 
   const parsearCantidadEntrada = (value: string): number | null => {
-    const textoNormalizado = normalizarTextoCantidad(value).replace(',', '.');
+    const textoNormalizado = normalizarTextoCantidad(value);
 
-    if (!textoNormalizado || textoNormalizado === '.') {
+    if (!textoNormalizado) {
       return null;
     }
 
-    const cantidad = Number(textoNormalizado);
+    const cantidad = Number.parseInt(textoNormalizado, 10);
     return Number.isFinite(cantidad) ? cantidad : null;
   };
 
-  const formatearCantidadInput = (value: number) => String(value).replace('.', ',');
+  const formatearCantidadInput = (value: number) => String(Math.round(value));
 
-  const obtenerPrecisionCantidad = (texto: string) => {
-    const textoNormalizado = normalizarTextoCantidad(texto);
-    const decimales = textoNormalizado.split(',')[1] || '';
-
-    return decimales.length > 0 ? Math.min(decimales.length, 3) : 0;
-  };
+  const obtenerPrecisionCantidad = (_texto: string) => 0;
 
   const ajustarCantidadTexto = (textoActual: string, delta: number, minimo = 0) => {
     const precision = obtenerPrecisionCantidad(textoActual);
-    const paso = precision > 0 ? 1 / (10 ** precision) : 1;
+    const paso = 1;
     const cantidadBase = parsearCantidadEntrada(textoActual) ?? 0;
-    const siguienteCantidad = Math.max(Number((cantidadBase + (delta * paso)).toFixed(precision)), minimo);
-    const siguienteTexto = precision > 0
-      ? siguienteCantidad.toFixed(precision).replace('.', ',')
-      : String(siguienteCantidad);
+    const siguienteCantidad = Math.max(Math.round(cantidadBase + (delta * paso)), minimo);
+    const siguienteTexto = String(siguienteCantidad);
 
     return {
       cantidad: siguienteCantidad,

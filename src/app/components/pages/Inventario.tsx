@@ -4751,7 +4751,7 @@ export function Inventario() {
                   </div>
                   {productoBase && productoBase.pesoUnitario > 0 && (
                     <p className="text-xs text-[#666666]">
-                      Peso original: <span className="font-medium text-[#1a4d7a]">{productoBase.pesoUnitario} kg</span>
+                      Peso original: <span className="font-medium text-[#1a4d7a]">{formatQuantity(Number(productoBase.pesoUnitario) || 0)} kg</span>
                     </p>
                   )}
                 </div>
