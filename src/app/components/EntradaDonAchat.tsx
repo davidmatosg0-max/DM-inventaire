@@ -1786,14 +1786,14 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       
       <DialogContent className="w-[min(98vw,1920px)] max-w-[1920px] max-h-[98dvh] overflow-hidden border-0 bg-gradient-to-br from-slate-50 via-white to-slate-50/50 p-0 shadow-[0_40px_100px_-50px_rgba(15,23,42,0.6),0_0_1px_rgba(15,23,42,0.1)]" aria-describedby="entry-form-description">
         <div className="flex h-[98dvh] flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-50/30 via-white to-slate-50/30">
-          <DialogHeader className="relative overflow-hidden border-b-2 border-slate-200 bg-white px-3 py-1.5 sm:px-4 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
+          <DialogHeader className="relative overflow-hidden border-b-2 border-slate-200 bg-white px-3 py-1.5 pr-14 sm:px-4 sm:pr-16 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
             <div
               className="absolute inset-0"
               style={{
                 background: 'linear-gradient(135deg, rgba(26,77,122,0.06) 0%, rgba(45,149,97,0.05) 55%, rgba(255,255,255,0.98) 100%)'
               }}
             />
-            <div className="relative flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative flex flex-col gap-1.5 sm:gap-2 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] text-white shadow-lg shadow-[#1a4d7a]/30">
                   <Package className="h-4 w-4" />
@@ -1808,14 +1808,14 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1">
-                <div className="rounded-full border border-slate-200 bg-white/85 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+              <div className="flex flex-wrap items-center gap-1 lg:justify-end">
+                <div className="whitespace-nowrap rounded-full border border-slate-200 bg-white/85 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-[0.15em] text-slate-500">
                   Inventaire
                 </div>
-                <div className="rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#2d9561]">
+                <div className="whitespace-nowrap rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-[0.15em] text-[#2d9561]">
                   Guidée
                 </div>
-                <div className="rounded-full border border-[#1a4d7a]/15 bg-[#1a4d7a]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#1a4d7a]">
+                <div className="whitespace-nowrap rounded-full border border-[#1a4d7a]/15 bg-[#1a4d7a]/10 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-[0.15em] text-[#1a4d7a]">
                   {progressionFormulaire}%
                 </div>
               </div>
