@@ -15,6 +15,7 @@ import { type Subcategoria, type Variante } from '../../data/configuracionData';
 import { obtenerCategorias, guardarCategorias } from '../../utils/categoriaStorage';
 import { obtenerUnidades, type Unidad } from '../../utils/unidadStorage';
 import { sincronizarProductosPorVariante } from '../../utils/productStorage';
+import { generarIconoProducto } from '../../utils/iconoUtils';
 
 type GestionVariantesProps = {
   subcategoria: Subcategoria;
@@ -70,13 +71,22 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
     setUnidades(unidadesCargadas);
   };
 
+  const resolverIconoBaseSubcategoria = () => {
+    const categorias = obtenerCategorias();
+    const categoria = categorias.find(c => c.id === categoriaId);
+
+    return subcategoria.icono?.trim()
+      || categoria?.icono?.trim()
+      || generarIconoProducto(subcategoria.nombre, categoria?.nombre);
+  };
+
   const handleAbrirNuevo = () => {
     setModoEdicion(false);
     setVarianteEditando(null);
     setFormData({
       nombre: '',
       codigo: '',
-      icono: subcategoria.icono || '📦',
+      icono: resolverIconoBaseSubcategoria(),
       unidad: '',
       valorPorKg: '',
       pesoUnitario: '',
@@ -106,11 +116,16 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
       return;
     }
 
+    const iconoBase = resolverIconoBaseSubcategoria();
+    const iconoFinal = (formData.icono?.trim() && formData.icono !== '📦' && formData.icono !== '🏷️')
+      ? formData.icono
+      : iconoBase;
+
     const nuevaVariante: Variante = {
       id: modoEdicion && varianteEditando ? varianteEditando.id : `var-${Date.now()}`,
       nombre: formData.nombre.trim(),
       codigo: formData.codigo.trim() || undefined,
-      icono: formData.icono,
+      icono: iconoFinal,
       activa: true,
       unidad: formData.unidad.trim() || undefined,
       valorPorKg: formData.valorPorKg ? parseFloat(formData.valorPorKg) : undefined,

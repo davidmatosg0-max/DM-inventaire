@@ -1311,13 +1311,19 @@ export function Configuracion() {
     setVarianteDialogOpen(true);
   };
 
+  const resolverIconoBaseVariante = (categoria: Categoria, subcategoria: Subcategoria) => {
+    return subcategoria.icono?.trim()
+      || categoria.icono?.trim()
+      || generarIconoProducto(subcategoria.nombre, categoria.nombre);
+  };
+
   const handleCrearVarianteDesdeSubcategoria = (categoria: Categoria, subcategoria: Subcategoria) => {
     setSubcategoriaBase({ categoria, subcategoria });
     setEditandoVariante(null); // Limpiar edición
     setFormVarianteSubcategoria({
       nombre: subcategoria.nombre || '',
       codigo: '',
-      icono: subcategoria.icono || '📦',
+      icono: resolverIconoBaseVariante(categoria, subcategoria),
       pesoUnitario: '',
       valorPorKg: '',
       descripcion: subcategoria.descripcion || '',
@@ -1504,10 +1510,11 @@ export function Configuracion() {
     }
 
     const { categoria, subcategoria } = subcategoriaBase;
+    const iconoBaseVariante = resolverIconoBaseVariante(categoria, subcategoria);
     const iconoPersonalizadoVariante = formVarianteSubcategoria.icono?.trim();
     const iconoVarianteFinal = (iconoPersonalizadoVariante && iconoPersonalizadoVariante !== '📦' && iconoPersonalizadoVariante !== '🏷️')
       ? iconoPersonalizadoVariante
-      : (subcategoria.icono || categoria.icono);
+      : iconoBaseVariante;
 
     // Generar código automáticamente si no se proporcionó uno
     const codigoGenerado = formVarianteSubcategoria.codigo.trim() || 
