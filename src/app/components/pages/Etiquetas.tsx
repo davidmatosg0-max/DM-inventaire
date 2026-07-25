@@ -1050,6 +1050,9 @@ export function Etiquetas() {
           icon={<Tag className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
+          compact
+          showExperienceChips={false}
+          showContextChips={false}
           actions={(
             <div className="flex flex-wrap gap-2">
               <Badge className="rounded-full px-3 py-1 text-sm text-white" style={{ backgroundColor: branding.primaryColor }}>

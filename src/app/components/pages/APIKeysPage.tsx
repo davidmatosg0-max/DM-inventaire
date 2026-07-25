@@ -162,6 +162,9 @@ export function APIKeysPage() {
           icon={<Key className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
+          compact
+          showExperienceChips={false}
+          showContextChips={false}
           actions={(
             <>
               <Button
@@ -197,6 +200,8 @@ export function APIKeysPage() {
             icon={<Key className="h-5 w-5 text-white" />}
             accentColor={branding.primaryColor}
             secondaryColor={branding.primaryColor}
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label="Clés actives"
@@ -205,6 +210,8 @@ export function APIKeysPage() {
             accentColor="#16a34a"
             secondaryColor="#22c55e"
             valueColor="#16a34a"
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label="Requêtes aujourd'hui"
@@ -213,6 +220,8 @@ export function APIKeysPage() {
             accentColor="#ea580c"
             secondaryColor="#f97316"
             valueColor="#ea580c"
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label="Requêtes totales"
@@ -221,6 +230,8 @@ export function APIKeysPage() {
             accentColor="#9333ea"
             secondaryColor="#a855f7"
             valueColor="#9333ea"
+            compact
+            showPriorityView={false}
           />
         </ModuleStatsGrid>
 

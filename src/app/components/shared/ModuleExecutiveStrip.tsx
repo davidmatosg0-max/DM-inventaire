@@ -20,6 +20,7 @@ interface ModuleExecutiveStripProps {
   metrics: ModuleExecutiveMetric[];
   actions?: React.ReactNode;
   className?: string;
+  compact?: boolean;
 }
 
 export function ModuleExecutiveStrip({
@@ -31,6 +32,7 @@ export function ModuleExecutiveStrip({
   metrics,
   actions,
   className,
+  compact = false,
 }: ModuleExecutiveStripProps) {
   const { t } = useTranslation();
   const eyebrow = eyebrowProp ?? t('experience.quickPilotage');
@@ -38,7 +40,8 @@ export function ModuleExecutiveStrip({
   return (
     <section
       className={cn(
-        'card-glass relative overflow-hidden rounded-[32px] border border-white/80 px-4 py-4 shadow-[0_34px_84px_-48px_rgba(15,45,71,0.34)] ring-1 ring-slate-900/5 sm:px-5 sm:py-5',
+        'card-glass relative overflow-hidden rounded-[32px] border border-white/80 shadow-[0_34px_84px_-48px_rgba(15,45,71,0.34)] ring-1 ring-slate-900/5',
+        compact ? 'px-4 py-3.5 sm:px-4.5 sm:py-4' : 'px-4 py-4 sm:px-5 sm:py-5',
         className,
       )}
     >
@@ -53,50 +56,59 @@ export function ModuleExecutiveStrip({
       <div className="pointer-events-none absolute inset-y-0 right-0 w-48 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.94),transparent_68%)]" />
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent" />
 
-      <div className="relative flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div className={cn('relative flex flex-col xl:flex-row xl:items-start xl:justify-between', compact ? 'gap-3' : 'gap-4')}>
         <div className="min-w-0 max-w-3xl">
           <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/85 bg-white/82 px-3 py-1 shadow-sm backdrop-blur-md">
               <span className="h-2 w-2 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.5)]" style={{ backgroundColor: secondaryColor }} />
               {eyebrow}
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3 py-1 text-[10px] text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
-              {t('experience.executiveLevel')}
-            </div>
+            {!compact ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3 py-1 text-[10px] text-slate-400">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
+                {t('experience.executiveLevel')}
+              </div>
+            ) : null}
           </div>
 
-          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className={cn('flex flex-col lg:flex-row lg:items-end lg:justify-between', compact ? 'mt-2 gap-2.5' : 'mt-4 gap-4')}>
             <div className="min-w-0">
               <h2
-                className="text-xl leading-tight sm:text-[1.75rem]"
+                className={cn('leading-tight', compact ? 'text-lg sm:text-[1.45rem]' : 'text-xl sm:text-[1.75rem]')}
                 style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: accentColor }}
               >
                 {title}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5d7185] sm:text-[0.98rem]">{description}</p>
+              <p className={cn('max-w-2xl text-[#5d7185]', compact ? 'mt-1.5 text-[0.9rem] leading-5' : 'mt-2 text-sm leading-6 sm:text-[0.98rem]')}>
+                {description}
+              </p>
             </div>
 
-            <div className="inline-flex items-center gap-3 rounded-[20px] border border-white/80 bg-white/72 px-4 py-3 shadow-[0_18px_42px_-32px_rgba(15,45,71,0.4)] backdrop-blur-xl">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_18px_36px_-24px_rgba(15,45,71,0.36)]" style={{ background: `linear-gradient(135deg, ${accentColor} 0%, ${secondaryColor} 100%)` }}>
-                <span className="text-base font-bold">+</span>
+            {!compact ? (
+              <div className="inline-flex items-center gap-3 rounded-[20px] border border-white/80 bg-white/72 px-4 py-3 shadow-[0_18px_42px_-32px_rgba(15,45,71,0.4)] backdrop-blur-xl">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_18px_36px_-24px_rgba(15,45,71,0.36)]" style={{ background: `linear-gradient(135deg, ${accentColor} 0%, ${secondaryColor} 100%)` }}>
+                  <span className="text-base font-bold">+</span>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t('experience.activeCockpit')}</p>
+                  <p className="text-sm font-semibold text-slate-700">{t('experience.quickReadActions')}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t('experience.activeCockpit')}</p>
-                <p className="text-sm font-semibold text-slate-700">{t('experience.quickReadActions')}</p>
-              </div>
-            </div>
+            ) : null}
           </div>
         </div>
 
         {actions ? (
-          <div className="flex w-full flex-wrap gap-2 rounded-[24px] border border-white/75 bg-white/62 p-2.5 shadow-[0_22px_52px_-40px_rgba(15,45,71,0.38)] backdrop-blur-xl xl:w-auto xl:max-w-[36rem] xl:justify-end">
+          <div className={cn(
+            'flex w-full flex-wrap gap-2 rounded-[24px] border border-white/75 bg-white/62 shadow-[0_22px_52px_-40px_rgba(15,45,71,0.38)] backdrop-blur-xl xl:w-auto xl:max-w-[36rem] xl:justify-end',
+            compact ? 'p-2' : 'p-2.5',
+          )}>
             {actions}
           </div>
         ) : null}
       </div>
 
-      <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className={cn('relative grid gap-3 sm:grid-cols-2 xl:grid-cols-4', compact ? 'mt-3.5' : 'mt-5')}>
         {metrics.map((metric, index) => {
           const metricColor = metric.accentColor || accentColor;
           const isLeadMetric = index === 0 && metrics.length > 2;
@@ -105,7 +117,8 @@ export function ModuleExecutiveStrip({
             <article
               key={metric.id}
               className={cn(
-                'group relative rounded-[24px] border border-white/88 bg-white/82 p-3.5 shadow-[0_22px_48px_-34px_rgba(15,45,71,0.28)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_-36px_rgba(15,45,71,0.34)]',
+                'group relative rounded-[24px] border border-white/88 bg-white/82 shadow-[0_22px_48px_-34px_rgba(15,45,71,0.28)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_-36px_rgba(15,45,71,0.34)]',
+                compact ? 'p-3' : 'p-3.5',
                 isLeadMetric ? 'xl:col-span-2' : '',
               )}
             >
@@ -141,10 +154,12 @@ export function ModuleExecutiveStrip({
                 ) : null}
               </div>
 
-              <div className="mt-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: metricColor }} />
-                {t('experience.prioritySignal')}
-              </div>
+              {!compact ? (
+                <div className="mt-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: metricColor }} />
+                  {t('experience.prioritySignal')}
+                </div>
+              ) : null}
             </article>
           );
         })}

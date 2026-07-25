@@ -1649,7 +1649,7 @@ export function Comandas() {
       </div>
 
       {/* Contenido con z-index superior */}
-      <div className="relative z-10 space-y-3 sm:space-y-4">
+      <div className="relative z-10 space-y-2 sm:space-y-3">
         {/* Alerta de comandas urgentes */}
         <AlertaComandasUrgentes />
 
@@ -1659,6 +1659,9 @@ export function Comandas() {
           icon={<FileCheck className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
+          compact
+          showExperienceChips={false}
+          showContextChips={false}
         />
 
         <ModuleExecutiveStrip
@@ -1668,6 +1671,7 @@ export function Comandas() {
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
           metrics={ordersExecutiveMetrics}
+          compact
           actions={(
             <>
               <Button variant="outline" onClick={() => setTabActual('comandas')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
@@ -1713,12 +1717,16 @@ export function Comandas() {
             value={totalComandas}
             icon={<FileCheck className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
             accentColor={branding.primaryColor}
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label={t('orders.activeOrders')}
             value={comandasActivas}
             icon={<Eye className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
             accentColor={branding.secondaryColor}
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label={t('orders.pendingOrders')}
@@ -1726,6 +1734,8 @@ export function Comandas() {
             icon={<Printer className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
             accentColor="#FFC107"
             valueColor="#FFC107"
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label={t('orders.acceptedOrders')}
@@ -1733,6 +1743,8 @@ export function Comandas() {
             icon={<Check className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
             accentColor="#7E57C2"
             valueColor="#7E57C2"
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label={t('orders.completedOrders')}
@@ -1740,6 +1752,8 @@ export function Comandas() {
             icon={<FileCheck className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
             accentColor="#2E7D32"
             valueColor="#2E7D32"
+            compact
+            showPriorityView={false}
           />
         </ModuleStatsGrid>
 

@@ -103,6 +103,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const [entrepotQuickActionsDragStart, setEntrepotQuickActionsDragStart] = React.useState({ x: 0, y: 0 });
   const [entrepotQuickActionsDragDistance, setEntrepotQuickActionsDragDistance] = React.useState(0);
   const entrepotQuickActionsRef = React.useRef<HTMLDivElement>(null);
+  const topbarRef = React.useRef<HTMLElement>(null);
+  const [topbarHeight, setTopbarHeight] = React.useState(68);
   
   const { t } = useTranslation();
   const branding = useBranding();
@@ -125,12 +127,32 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const hideCommunicationFloaters = currentPage === 'communication';
   const useCommunicationFullscreenShell = currentPage === 'communication';
   const useCommunicationCompactSidebar = currentPage === 'communication';
-  const communicationTopOffsetClass = useCommunicationFullscreenShell
-    ? 'top-[52px] sm:top-[68px] lg:top-[128px]'
-    : 'top-[52px] sm:top-[68px]';
-  const communicationViewportClass = useCommunicationFullscreenShell
-    ? 'top-[52px] h-[calc(100vh-52px)] sm:top-[68px] sm:h-[calc(100vh-68px)] lg:top-[128px] lg:h-[calc(100vh-128px)] overflow-hidden pt-0'
-    : 'pt-[52px] sm:pt-[68px] h-screen overflow-y-auto';
+  const shellTopOffset = `${topbarHeight}px`;
+
+  React.useEffect(() => {
+    const topbarNode = topbarRef.current;
+    if (!topbarNode) {
+      return;
+    }
+
+    const syncTopbarHeight = () => {
+      const measuredHeight = Math.ceil(topbarNode.getBoundingClientRect().height);
+      if (measuredHeight > 0) {
+        setTopbarHeight(measuredHeight);
+      }
+    };
+
+    syncTopbarHeight();
+
+    const resizeObserver = new ResizeObserver(syncTopbarHeight);
+    resizeObserver.observe(topbarNode);
+    window.addEventListener('resize', syncTopbarHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', syncTopbarHeight);
+    };
+  }, []);
 
   const professionalShellBadges = [
     t('layout.shellBadges.operationsSuite'),
@@ -654,6 +676,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
       {/* Header con glassmorphism */}
       <header 
+        ref={topbarRef}
         className="app-pro-topbar fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b"
         style={{ 
           background: `linear-gradient(140deg, ${branding.primaryColor}f4 0%, ${branding.primaryColor}ea 46%, ${branding.secondaryColor}d8 100%)`,
@@ -792,10 +815,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Sidebar con glassmorphism */}
       {!hideSidebar && (
         <aside
-          className={`app-pro-sidebar fixed ${communicationTopOffsetClass} left-0 bottom-0 ${useCommunicationCompactSidebar ? 'w-[212px] sm:w-[224px]' : 'w-[232px] sm:w-[248px]'} shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
+          className={`app-pro-sidebar fixed left-0 bottom-0 ${useCommunicationCompactSidebar ? 'w-[212px] sm:w-[224px]' : 'w-[232px] sm:w-[248px]'} shadow-2xl transition-transform duration-300 z-40 overflow-y-auto backdrop-blur-xl border-r ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
           style={{ 
+            top: shellTopOffset,
             background: `linear-gradient(180deg, ${branding.primaryColor}fa 0%, ${branding.primaryColor}f3 58%, ${branding.primaryColor}ea 100%)`,
             borderColor: `${branding.primaryColor}30`
           }}
@@ -872,28 +896,14 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       )}
 
       {/* Main content */}
-      <main ref={mainStageRef} className={`app-main-stage box-border ${communicationViewportClass} ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden`}>
+      <main
+        ref={mainStageRef}
+        className={`app-main-stage box-border ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden ${useCommunicationFullscreenShell ? 'overflow-hidden' : 'overflow-y-auto'}`}
+        style={useCommunicationFullscreenShell
+          ? { top: shellTopOffset, height: `calc(100vh - ${shellTopOffset})` }
+          : { paddingTop: shellTopOffset, height: '100vh' }}
+      >
         <div ref={appShellRef} data-app-shell className={`app-shell-content ${useCommunicationFullscreenShell ? 'h-full overflow-hidden px-0 py-0' : 'px-2 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-4 xl:px-5 xl:py-5'}`}>
-          {!useCommunicationFullscreenShell && (
-            <div className="app-shell-toolbar mb-3 hidden lg:flex items-center justify-between gap-4 rounded-[24px] border border-white/55 bg-white/58 px-4 py-3 shadow-[0_24px_48px_-38px_rgba(15,45,71,0.32)] backdrop-blur-xl">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                {t('layout.activeWorkspace')}
-              </p>
-              <p className="mt-1 text-base font-semibold text-[#16324f]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {currentWorkspaceLabel}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <span className="rounded-full border border-[#16324f]/10 bg-[#16324f]/5 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#16324f]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                {t('layout.professionalInterface')}
-              </span>
-              <span className="rounded-full border border-[#2d9561]/15 bg-[#2d9561]/8 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#267d51]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
-                {t('layout.unifiedJourneys')}
-              </span>
-            </div>
-            </div>
-          )}
           {children}
         </div>
       </main>

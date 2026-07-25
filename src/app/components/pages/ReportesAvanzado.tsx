@@ -923,6 +923,9 @@ export function ReportesAvanzado() {
         icon={<BarChart3 className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
+        compact
+        showExperienceChips={false}
+        showContextChips={false}
         actions={(
           <>
             <Button onClick={handleExportarDatos} variant="outline" className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">

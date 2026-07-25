@@ -547,6 +547,9 @@ export function Organismos() {
           icon={<Users className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
+          compact
+          showExperienceChips={false}
+          showContextChips={false}
           actions={(
             <>
               <Button
@@ -720,6 +723,8 @@ export function Organismos() {
             icon={<Users className="h-5 w-5 text-white" />}
             accentColor={branding.primaryColor}
             secondaryColor={branding.primaryColor}
+            compact
+            showPriorityView={false}
             helper="Base visible dans le registre principal."
           />
           <ModuleStatCard
@@ -728,6 +733,8 @@ export function Organismos() {
             icon={<Check className="h-5 w-5 text-white" />}
             accentColor={branding.secondaryColor}
             secondaryColor={branding.secondaryColor}
+            compact
+            showPriorityView={false}
             helper="Organismes actuellement opérationnels."
           />
           <ModuleStatCard
@@ -737,6 +744,8 @@ export function Organismos() {
             accentColor="#FFC107"
             secondaryColor="#FFB300"
             valueColor="#FFC107"
+            compact
+            showPriorityView={false}
             helper="Population totale couverte par le réseau."
           />
         </ModuleStatsGrid>

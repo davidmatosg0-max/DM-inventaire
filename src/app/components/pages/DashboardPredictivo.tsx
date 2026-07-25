@@ -117,6 +117,9 @@ export function DashboardPredictivo() {
           icon={<Brain className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
+          compact
+          showExperienceChips={false}
+          showContextChips={false}
           actions={(
             <Button
               onClick={cargarAnalytics}

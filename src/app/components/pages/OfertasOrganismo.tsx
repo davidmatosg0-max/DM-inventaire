@@ -327,6 +327,9 @@ export function OfertasOrganismo() {
           icon={<Tag className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
+          compact
+          showExperienceChips={false}
+          showContextChips={false}
         />
 
       {/* Alertas de nuevas ofertas */}
@@ -366,6 +369,8 @@ export function OfertasOrganismo() {
           icon={<Tag className="h-5 w-5 text-white" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.primaryColor}
+          compact
+          showPriorityView={false}
         />
         <ModuleStatCard
           label={t('offers.activeOffers')}
@@ -374,6 +379,8 @@ export function OfertasOrganismo() {
           accentColor="#4CAF50"
           secondaryColor="#4CAF50"
           valueColor="#4CAF50"
+          compact
+          showPriorityView={false}
         />
         <ModuleStatCard
           label={t('offers.newOffers')}
@@ -382,6 +389,8 @@ export function OfertasOrganismo() {
           accentColor="#FFC107"
           secondaryColor="#FFB300"
           valueColor="#FFC107"
+          compact
+          showPriorityView={false}
         />
       </ModuleStatsGrid>
 

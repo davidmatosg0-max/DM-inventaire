@@ -26,6 +26,9 @@ export function ContactosAlmacenPage({ onNavigate: _onNavigate }: ContactosAlmac
         icon={<Users className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
+        compact
+        showExperienceChips={false}
+        showContextChips={false}
       />
       <ContactosAlmacen />
     </div>

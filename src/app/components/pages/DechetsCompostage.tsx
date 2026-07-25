@@ -588,6 +588,9 @@ export function DechetsCompostage() {
         icon={<Recycle className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
+        compact
+        showExperienceChips={false}
+        showContextChips={false}
       />
 
       <ModuleStatsGrid defaultLayout="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -596,6 +599,8 @@ export function DechetsCompostage() {
           value={formatKg(resumenGlobal.totalKg)}
           icon={<Scale className="h-4 w-4 text-white" />}
           accentColor={branding.primaryColor}
+          compact
+          showPriorityView={false}
         />
         {resumeTypesGlobal.map((typeSummary) => (
           <ModuleStatCard
@@ -605,6 +610,8 @@ export function DechetsCompostage() {
             icon={<Leaf className="h-4 w-4 text-white" />}
             accentColor={typeSummary.accentColor}
             valueColor={typeSummary.accentColor}
+            compact
+            showPriorityView={false}
           />
         ))}
         <ModuleStatCard
@@ -613,6 +620,8 @@ export function DechetsCompostage() {
           icon={<PackageCheck className="h-4 w-4 text-white" />}
           accentColor="#7C3AED"
           valueColor="#7C3AED"
+          compact
+          showPriorityView={false}
         />
       </ModuleStatsGrid>
 

@@ -2700,13 +2700,16 @@ export function Inventario() {
       style={inventoryViewportZoom < 1 ? { zoom: inventoryViewportZoom } : undefined}
     >
       <Card className="border-none bg-transparent shadow-none flex flex-col overflow-visible rounded-none w-full relative z-10">
-        <div className="space-y-3 px-3 pt-3 sm:px-4 sm:pt-4 lg:px-6">
+        <div className="space-y-2 px-3 pt-2.5 sm:px-4 sm:pt-3 lg:px-6">
           <ModulePageHeader
             title={t('inventory.title')}
             subtitle={t('inventory.subtitle')}
             icon={<Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
             accentColor={branding.primaryColor}
             secondaryColor={branding.secondaryColor}
+            compact
+            showExperienceChips={false}
+            showContextChips={false}
             actions={(
               <Button
                 variant="outline"
@@ -2728,6 +2731,7 @@ export function Inventario() {
             accentColor={branding.primaryColor}
             secondaryColor={branding.secondaryColor}
             metrics={inventoryExecutiveMetrics}
+            compact
             actions={(
               <>
                 <Button variant="outline" onClick={() => setActiveTab('productos')} className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
@@ -2763,12 +2767,16 @@ export function Inventario() {
               value={todosLosProductos.length}
               icon={<Package className="h-4 w-4 text-white" />}
               accentColor={branding.primaryColor}
+              compact
+              showPriorityView={false}
             />
             <ModuleStatCard
               label={t('inventory.subcategories')}
               value={subcategoriasInventario.length}
               icon={<Grid3x3 className="h-4 w-4 text-white" />}
               accentColor={branding.secondaryColor}
+              compact
+              showPriorityView={false}
             />
             <ModuleStatCard
               label={t('inventory.totalStock')}
@@ -2776,6 +2784,8 @@ export function Inventario() {
               icon={<FileText className="h-4 w-4 text-white" />}
               accentColor="#e8a419"
               valueColor="#e8a419"
+              compact
+              showPriorityView={false}
             />
             <ModuleStatCard
               label={t('inventory.inCart')}
@@ -2783,6 +2793,8 @@ export function Inventario() {
               icon={<ShoppingCart className="h-4 w-4 text-white" />}
               accentColor="#c23934"
               valueColor="#c23934"
+              compact
+              showPriorityView={false}
             />
           </ModuleStatsGrid>
 

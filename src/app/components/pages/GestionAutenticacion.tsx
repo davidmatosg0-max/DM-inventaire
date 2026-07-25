@@ -61,6 +61,9 @@ export function GestionAutenticacion() {
         icon={<Shield className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
+        compact
+        showExperienceChips={false}
+        showContextChips={false}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

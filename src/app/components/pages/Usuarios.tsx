@@ -433,6 +433,9 @@ export function Usuarios() {
           icon={<UsersRound className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
           accentColor={branding.primaryColor}
           secondaryColor={branding.secondaryColor}
+          compact
+          showExperienceChips={false}
+          showContextChips={false}
           actions={(
             <Button
               onClick={handleAbrirCreacion}
@@ -459,6 +462,8 @@ export function Usuarios() {
             accentColor="#DC3545"
             secondaryColor="#e11d48"
             valueColor="#DC3545"
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label="Coordinateurs"
@@ -466,6 +471,8 @@ export function Usuarios() {
             icon={<UsersRound className="h-5 w-5 text-white" />}
             accentColor={branding.primaryColor}
             secondaryColor={branding.primaryColor}
+            compact
+            showPriorityView={false}
           />
           <ModuleStatCard
             label="Utilisateurs"
@@ -473,6 +480,8 @@ export function Usuarios() {
             icon={<UsersRound className="h-5 w-5 text-white" />}
             accentColor={branding.secondaryColor}
             secondaryColor={branding.secondaryColor}
+            compact
+            showPriorityView={false}
           />
         </ModuleStatsGrid>
 

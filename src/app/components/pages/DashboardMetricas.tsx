@@ -447,6 +447,9 @@ export function DashboardMetricas() {
         icon={<LayoutDashboard className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
+        compact
+        showExperienceChips={false}
+        showContextChips={false}
         actions={(
           <Button
             onClick={cargarMetricas}
@@ -472,6 +475,8 @@ export function DashboardMetricas() {
           value={formatNumber(metrics.inventario.stockTotal)}
           icon={<Package className="h-5 w-5 text-white" />}
           accentColor="#1a4d7a"
+          compact
+          showPriorityView={false}
           helper={`${metrics.inventario.totalProductos} produits`}
         />
         <ModuleStatCard
@@ -479,6 +484,8 @@ export function DashboardMetricas() {
           value={metrics.organismos.activos}
           icon={<Building className="h-5 w-5 text-white" />}
           accentColor="#2d9561"
+          compact
+          showPriorityView={false}
           helper={`${metrics.organismos.beneficiariosTotales} bénéficiaires`}
         />
         <ModuleStatCard
@@ -487,6 +494,8 @@ export function DashboardMetricas() {
           icon={<ClipboardList className="h-5 w-5 text-white" />}
           accentColor="#FFC107"
           valueColor="#FFC107"
+          compact
+          showPriorityView={false}
           helper={`${metrics.comandas.urgentes} urgentes`}
         />
         <ModuleStatCard
@@ -495,6 +504,8 @@ export function DashboardMetricas() {
           icon={<DollarSign className="h-5 w-5 text-white" />}
           accentColor="#9C27B0"
           valueColor="#9C27B0"
+          compact
+          showPriorityView={false}
           helper="Inventaire total"
         />
       </ModuleStatsGrid>

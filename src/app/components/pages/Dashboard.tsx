@@ -245,6 +245,9 @@ export function Dashboard() {
         icon={<LayoutDashboard className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
         accentColor={branding.primaryColor}
         secondaryColor={branding.secondaryColor}
+        compact
+        showExperienceChips={false}
+        showContextChips={false}
         actions={(
           <>
             <VerificacionesRecientes />
@@ -259,6 +262,8 @@ export function Dashboard() {
           value={formatLargeNumber(stockTotal)}
           icon={<Package className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
           accentColor={branding.primaryColor}
+          compact
+          showPriorityView={false}
           helper={<div className="badge-primary text-xs">{totalProductos} {t('dashboard.differentProducts')}</div>}
         />
         <ModuleStatCard
@@ -266,6 +271,8 @@ export function Dashboard() {
           value={organismosActivos}
           icon={<Building className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
           accentColor={branding.secondaryColor}
+          compact
+          showPriorityView={false}
           helper={<div className="badge-secondary text-xs">{t('organisms.totalBeneficiaries')}: {stats.personasAtendidas}</div>}
         />
         <ModuleStatCard
@@ -274,6 +281,8 @@ export function Dashboard() {
           icon={<ClipboardList className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
           accentColor="#FFC107"
           valueColor="#FFC107"
+          compact
+          showPriorityView={false}
           helper={<div className="badge-warning text-xs">{t('dashboard.inPreparationAndPending') || 'En preparación y pendientes'}</div>}
         />
         <ModuleStatCard
@@ -282,6 +291,8 @@ export function Dashboard() {
           icon={<ClipboardList className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
           accentColor="#7E57C2"
           valueColor="#7E57C2"
+          compact
+          showPriorityView={false}
           helper={<div className="inline-flex rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-[#7E57C2]">En attente de préparation</div>}
         />
         <ModuleStatCard
@@ -290,6 +301,8 @@ export function Dashboard() {
           icon={<AlertTriangle className="h-4 w-4 text-white sm:h-5 sm:w-5" />}
           accentColor="#DC3545"
           valueColor="#DC3545"
+          compact
+          showPriorityView={false}
           helper={<div className="badge-danger text-xs">{t('inventory.lowStock')}</div>}
         />
       </ModuleStatsGrid>

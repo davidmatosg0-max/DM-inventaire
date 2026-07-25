@@ -11,6 +11,9 @@ interface ModulePageHeaderProps {
   secondaryColor: string;
   actions?: React.ReactNode;
   className?: string;
+  compact?: boolean;
+  showExperienceChips?: boolean;
+  showContextChips?: boolean;
 }
 
 interface ModuleStatCardProps {
@@ -22,6 +25,8 @@ interface ModuleStatCardProps {
   valueColor?: string;
   helper?: React.ReactNode;
   className?: string;
+  compact?: boolean;
+  showPriorityView?: boolean;
 }
 
 interface ModuleStatsGridProps {
@@ -40,11 +45,18 @@ export function ModulePageHeader({
   secondaryColor,
   actions,
   className,
+  compact = false,
+  showExperienceChips = true,
+  showContextChips = true,
 }: ModulePageHeaderProps) {
   const { t } = useTranslation();
 
   return (
-    <section className={cn('card-glass relative overflow-hidden rounded-[32px] border border-white/75 px-4 py-4 shadow-[0_34px_86px_-48px_rgba(15,45,71,0.36)] ring-1 ring-slate-900/5 sm:px-6 sm:py-6 lg:px-7', className)}>
+    <section className={cn(
+      'card-glass relative overflow-hidden rounded-[32px] border border-white/75 shadow-[0_34px_86px_-48px_rgba(15,45,71,0.36)] ring-1 ring-slate-900/5',
+      compact ? 'px-4 py-4 sm:px-5 sm:py-4.5 lg:px-6' : 'px-4 py-4 sm:px-6 sm:py-6 lg:px-7',
+      className,
+    )}>
       <div
         className="pointer-events-none absolute inset-0 opacity-95"
         style={{
@@ -56,18 +68,20 @@ export function ModulePageHeader({
       <div className="pointer-events-none absolute inset-y-0 right-0 w-52 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.92),transparent_68%)]" />
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent" />
 
-      <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+      <div className={cn('relative flex flex-col xl:flex-row xl:items-center xl:justify-between', compact ? 'gap-4' : 'gap-5')}>
         <div className="min-w-0">
-          <div className="mb-4 flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-3 py-1 shadow-sm backdrop-blur-md">
-              <span className="h-2 w-2 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.48)]" style={{ backgroundColor: secondaryColor }} />
-              {t('experience.unifiedExperience')}
+          {showExperienceChips ? (
+            <div className={cn('flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500', compact ? 'mb-2.5' : 'mb-4')}>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-3 py-1 shadow-sm backdrop-blur-md">
+                <span className="h-2 w-2 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.48)]" style={{ backgroundColor: secondaryColor }} />
+                {t('experience.unifiedExperience')}
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/75 bg-white/60 px-3 py-1 text-[10px] text-slate-400">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
+                {t('experience.executiveCadence')}
+              </div>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/75 bg-white/60 px-3 py-1 text-[10px] text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
-              {t('experience.executiveCadence')}
-            </div>
-          </div>
+          ) : null}
 
           <div className="flex items-start gap-3 sm:gap-4 min-w-0">
             <div
@@ -87,18 +101,20 @@ export function ModulePageHeader({
                 </h1>
                 <Sparkles className="mt-1 h-4 w-4 flex-shrink-0 animate-pulse sm:h-5 sm:w-5" style={{ color: secondaryColor }} />
               </div>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5d7185] sm:text-[1rem]">{subtitle}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <div className="rounded-full border border-white/85 bg-white/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm">
-                  {t('experience.responsive')}
+              <p className={cn('max-w-3xl text-sm leading-6 text-[#5d7185] sm:text-[1rem]', compact ? 'mt-1.5' : 'mt-2')}>{subtitle}</p>
+              {showContextChips ? (
+                <div className={cn('flex flex-wrap gap-2', compact ? 'mt-3' : 'mt-4')}>
+                  <div className="rounded-full border border-white/85 bg-white/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm">
+                    {t('experience.responsive')}
+                  </div>
+                  <div className="rounded-full border border-white/85 bg-white/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm">
+                    {t('experience.professionalInterface')}
+                  </div>
+                  <div className="rounded-full border border-white/75 bg-white/62 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 shadow-sm">
+                    {t('experience.prioritySignal')}
+                  </div>
                 </div>
-                <div className="rounded-full border border-white/85 bg-white/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm">
-                  {t('experience.professionalInterface')}
-                </div>
-                <div className="rounded-full border border-white/75 bg-white/62 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 shadow-sm">
-                  {t('experience.prioritySignal')}
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -122,13 +138,16 @@ export function ModuleStatCard({
   valueColor,
   helper,
   className,
+  compact = false,
+  showPriorityView = true,
 }: ModuleStatCardProps) {
   const { t } = useTranslation();
 
   return (
     <article
       className={cn(
-        'card-glass relative overflow-hidden rounded-[26px] border border-white/80 p-3.5 shadow-[0_22px_46px_-34px_rgba(15,45,71,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_-36px_rgba(15,45,71,0.36)] sm:p-4',
+        'card-glass relative overflow-hidden rounded-[26px] border border-white/80 shadow-[0_22px_46px_-34px_rgba(15,45,71,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_-36px_rgba(15,45,71,0.36)]',
+        compact ? 'p-3 sm:p-3.5' : 'p-3.5 sm:p-4',
         className,
       )}
       style={{
@@ -156,11 +175,13 @@ export function ModuleStatCard({
           {icon}
         </div>
       </div>
-      {helper ? <div className="mt-3 text-sm text-slate-500">{helper}</div> : null}
-      <div className="mt-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
-        {t('experience.priorityView')}
-      </div>
+      {helper ? <div className={cn('text-sm text-slate-500', compact ? 'mt-2' : 'mt-3')}>{helper}</div> : null}
+      {showPriorityView ? (
+        <div className={cn('flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400', compact ? 'mt-2' : 'mt-3')}>
+          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
+          {t('experience.priorityView')}
+        </div>
+      ) : null}
     </article>
   );
 }
