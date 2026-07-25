@@ -18,7 +18,7 @@ import { Textarea } from '../ui/textarea';
 import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { mockProductos } from '../../data/mockData';
-import { ICONOS_NO_ALIMENTARIOS, ICONOS_PRINCIPALES, ICONOS_SECCIONES_ALIMENTARIAS, ICONOS_SUBCATEGORIAS } from '../../data/iconosAlimentos';
+import { ICONOS_NO_ALIMENTARIOS, ICONOS_PRINCIPALES, ICONOS_SECCIONES_ALIMENTARIAS, ICONOS_SUBCATEGORIAS, obtenerIconosRecomendadosPorFamilia } from '../../data/iconosAlimentos';
 import { VersionHistory } from '../VersionHistory';
 import { 
   obtenerProductos, 
@@ -2183,6 +2183,24 @@ export function Configuracion() {
                             </div>
                           )}
                           <div className="border rounded-lg max-h-80 overflow-y-auto p-3 bg-gray-50">
+                            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-2">
+                              <p className="text-xs font-semibold text-[#1E73BE] mb-2">✨ Icônes recommandées</p>
+                              <div className="grid grid-cols-8 gap-1">
+                                {obtenerIconosRecomendadosPorFamilia(`${formSubcategoria.nombre || ''} ${formSubcategoria.descripcion || ''} ${formCategoria.nombre || ''}`).slice(0, 16).map((icono) => (
+                                  <button
+                                    key={`rec-sub-${icono}`}
+                                    onClick={() => setFormSubcategoria({ ...formSubcategoria, icono })}
+                                    className={`text-lg p-1 rounded hover:bg-blue-100 ${
+                                      formSubcategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white'
+                                    }`}
+                                    type="button"
+                                  >
+                                    {icono}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
                             <div className="mb-4">
                               <p className="text-xs font-semibold text-[#1a4d7a] mb-2">{t('configuration.foodIconsSection')}</p>
                               {ICONOS_SECCIONES_ALIMENTARIAS.map((seccion) => (
@@ -2360,6 +2378,24 @@ export function Configuracion() {
                           <div className="space-y-2">
                             <Label>{t('configuration.icon')}</Label>
                             <div className="border rounded-lg max-h-80 overflow-y-auto p-3 bg-gray-50">
+                              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-2">
+                                <p className="text-xs font-semibold text-[#1E73BE] mb-2">✨ Icônes recommandées</p>
+                                <div className="grid grid-cols-8 gap-1">
+                                  {obtenerIconosRecomendadosPorFamilia(`${formCategoria.nombre || ''} ${formCategoria.descripcion || ''}`).slice(0, 16).map((icono) => (
+                                    <button
+                                      key={`rec-cat-${icono}`}
+                                      onClick={() => setFormCategoria({ ...formCategoria, icono })}
+                                      className={`text-lg p-1 rounded hover:bg-blue-100 ${
+                                        formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white'
+                                      }`}
+                                      type="button"
+                                    >
+                                      {icono}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
                               {/* Sección: Alimentarios */}
                               <div className="mb-4">
                                 <p className="text-xs font-semibold text-[#1a4d7a] mb-2">{t('configuration.foodIconsSection')}</p>
@@ -4391,6 +4427,26 @@ export function Configuracion() {
               {/* Selector de Icono Expandible */}
               <div id="iconPickerVarianteConfig" className="hidden p-4 bg-[#F4F4F4] rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
                 <p className="text-xs text-[#666666] mb-3">{t('configuration.selectVariantIconHelp')}</p>
+                <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50 p-2">
+                  <p className="text-xs font-semibold text-[#7B1FA2] mb-2">✨ Icônes recommandées</p>
+                  <div className="grid grid-cols-8 gap-1">
+                    {obtenerIconosRecomendadosPorFamilia(`${formVarianteSubcategoria.nombre || ''} ${subcategoriaBase?.subcategoria?.nombre || ''} ${subcategoriaBase?.categoria?.nombre || ''}`).slice(0, 16).map((icono) => (
+                      <button
+                        key={`rec-var-${icono}`}
+                        type="button"
+                        onClick={() => {
+                          setFormVarianteSubcategoria({ ...formVarianteSubcategoria, icono });
+                          document.getElementById('iconPickerVarianteConfig')?.classList.add('hidden');
+                        }}
+                        className={`text-lg p-1 rounded hover:bg-purple-100 ${
+                          formVarianteSubcategoria.icono === icono ? 'bg-purple-100 ring-2 ring-purple-500' : 'bg-white'
+                        }`}
+                      >
+                        {icono}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 
                 <div className="mb-4">
                   <p className="text-xs font-semibold text-[#1a4d7a] mb-2">🍽️ {t('configuration.foodIconsSection')}</p>

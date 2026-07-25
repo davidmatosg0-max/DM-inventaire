@@ -8,12 +8,15 @@ import {
   FAMILIAS_OPERATIVAS_ICONOS_ALIMENTARIOS,
   ICONOS_CATEGORIAS,
   ICONOS_SECCIONES_ALIMENTARIAS,
+  obtenerIconosRecomendadosPorFamilia,
 } from '../../data/iconosAlimentos';
 
 interface IconSelectorProps {
   value: string;
   onChange: (icono: string) => void;
   label?: string;
+  contextoNombre?: string;
+  iconosRecomendados?: string[];
   gridCols?: number;
   maxHeight?: string;
 }
@@ -22,6 +25,8 @@ export function IconSelector({
   value, 
   onChange, 
   label,
+  contextoNombre,
+  iconosRecomendados,
   gridCols = 8,
   maxHeight = 'max-h-40'
 }: IconSelectorProps) {
@@ -79,7 +84,32 @@ export function IconSelector({
       }
     });
 
-    return Array.from(uniqueEntries.values());
+    const recomendados = (iconosRecomendados && iconosRecomendados.length > 0)
+      ? iconosRecomendados
+      : obtenerIconosRecomendadosPorFamilia(contextoNombre || '');
+
+    const prioridad = new Map(recomendados.map((emoji, index) => [emoji, index]));
+    return Array.from(uniqueEntries.values()).sort((a, b) => {
+      const indexA = prioridad.get(a.emoji);
+      const indexB = prioridad.get(b.emoji);
+      const prioridadA = indexA !== undefined ? indexA : Number.MAX_SAFE_INTEGER;
+      const prioridadB = indexB !== undefined ? indexB : Number.MAX_SAFE_INTEGER;
+
+      if (prioridadA !== prioridadB) {
+        return prioridadA - prioridadB;
+      }
+
+      return a.title.localeCompare(b.title);
+    });
+  })();
+
+  const iconosRecomendadosVisibles = (() => {
+    const recomendados = (iconosRecomendados && iconosRecomendados.length > 0)
+      ? iconosRecomendados
+      : obtenerIconosRecomendadosPorFamilia(contextoNombre || '');
+
+    const visibles = new Set(iconosFiltrados.map((icono) => icono.emoji));
+    return recomendados.filter((emoji) => visibles.has(emoji)).slice(0, 8);
   })();
 
   return (
@@ -115,6 +145,27 @@ export function IconSelector({
           </button>
         ))}
       </div>
+
+      {iconosRecomendadosVisibles.length > 0 && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
+          <p className="mb-2 text-xs font-medium text-[#1E73BE]">Icônes recommandées</p>
+          <div className="flex flex-wrap gap-1">
+            {iconosRecomendadosVisibles.map((icono) => (
+              <button
+                key={`reco-${icono}`}
+                type="button"
+                onClick={() => onChange(icono)}
+                className={`text-xl p-1.5 rounded hover:bg-blue-100 transition-colors ${
+                  value === icono ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white'
+                }`}
+                title="Icône recommandée"
+              >
+                {icono}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Grid de iconos */}
       <div className={`grid grid-cols-${gridCols} gap-2 p-4 border rounded-lg ${maxHeight} overflow-y-auto`}>

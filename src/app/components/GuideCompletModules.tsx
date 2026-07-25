@@ -717,6 +717,12 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                         Le formulaire principal conserve le flux standard, avec un <strong>cockpit produit</strong>, un calcul de poids automatique et un bouton <strong>Annuler</strong> directement visible pendant la saisie.
                       </p>
                     </div>
+                    <div className="bg-white p-4 rounded-lg border border-emerald-200 md:col-span-2">
+                      <p className="font-bold mb-2">Bibliothèque d'icônes enrichie</p>
+                      <p>
+                        Les catégories, sous-catégories et variantes disposent maintenant d'un choix plus large d'icônes alimentaires: <strong>bouteilles d'eau et de boisson gazeuse</strong>, <strong>sauces et tartinades</strong>, <strong>pâtes</strong>, <strong>conserves en boîte</strong>, <strong>porc</strong>, <strong>yogourt</strong> ainsi que davantage de <strong>fruits et légumes</strong>.
+                      </p>
+                    </div>
                   </div>
                 </div>
 

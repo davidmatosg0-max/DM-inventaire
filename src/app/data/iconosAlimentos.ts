@@ -58,9 +58,12 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   
   // Conservas
   { emoji: '🥫', nombre: 'Conservas', categoria: 'Conservas' },
+  { emoji: '🥫', nombre: 'Latas de Conservación', categoria: 'Conservas' },
   
   // Lácteos
   { emoji: '🥛', nombre: 'Leche', categoria: 'Lácteos' },
+  { emoji: '🥛', nombre: 'Yogourt', categoria: 'Lácteos' },
+  { emoji: '🥛', nombre: 'Yogur', categoria: 'Lácteos' },
   { emoji: '🧀', nombre: 'Queso', categoria: 'Lácteos' },
   { emoji: '🧈', nombre: 'Mantequilla', categoria: 'Lácteos' },
   { emoji: '🥤', nombre: 'Yogurt/Bebida', categoria: 'Lácteos' },
@@ -80,6 +83,8 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   { emoji: '🍍', nombre: 'Piña', categoria: 'Frutas' },
   { emoji: '🥝', nombre: 'Kiwi', categoria: 'Frutas' },
   { emoji: '🥭', nombre: 'Mango', categoria: 'Frutas' },
+  { emoji: '🫐', nombre: 'Arándanos', categoria: 'Frutas' },
+  { emoji: '🍊', nombre: 'Mandarina', categoria: 'Frutas' },
   { emoji: '🍏', nombre: 'Manzana Verde', categoria: 'Frutas' },
   { emoji: '🍐', nombre: 'Pera', categoria: 'Frutas' },
   { emoji: '🥥', nombre: 'Coco', categoria: 'Frutas' },
@@ -95,6 +100,9 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   { emoji: '🥒', nombre: 'Pepino', categoria: 'Verduras' },
   { emoji: '🧅', nombre: 'Cebolla', categoria: 'Verduras' },
   { emoji: '🧄', nombre: 'Ajo', categoria: 'Verduras' },
+  { emoji: '🥬', nombre: 'Espinaca', categoria: 'Verduras' },
+  { emoji: '🥦', nombre: 'Coliflor', categoria: 'Verduras' },
+  { emoji: '🧅', nombre: 'Puerro', categoria: 'Verduras' },
   { emoji: '🍆', nombre: 'Berenjena', categoria: 'Verduras' },
   { emoji: '🥑', nombre: 'Aguacate', categoria: 'Verduras' },
   { emoji: '🌶️', nombre: 'Chile/Pimiento picante', categoria: 'Verduras' },
@@ -103,6 +111,7 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   
   // Proteínas
   { emoji: '🥩', nombre: 'Carne', categoria: 'Proteínas' },
+  { emoji: '🍖', nombre: 'Cerdo', categoria: 'Proteínas' },
   { emoji: '🍗', nombre: 'Pollo', categoria: 'Proteínas' },
   { emoji: '🐟', nombre: 'Pescado', categoria: 'Proteínas' },
   { emoji: '🍤', nombre: 'Camarón', categoria: 'Proteínas' },
@@ -119,6 +128,8 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   
   // Bebidas
   { emoji: '☕', nombre: 'Café', categoria: 'Bebidas' },
+  { emoji: '🧴', nombre: 'Botella de Agua', categoria: 'Bebidas' },
+  { emoji: '🧴', nombre: 'Botella de Refresco', categoria: 'Bebidas' },
   { emoji: '☕', nombre: 'Espresso/Latte', categoria: 'Bebidas' },
   { emoji: '🧃', nombre: 'Jugo en Caja', categoria: 'Bebidas' },
   { emoji: '🧃', nombre: 'Jus', categoria: 'Bebidas' },
@@ -148,6 +159,8 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   
   // Condimentos y Salsas
   { emoji: '🍯', nombre: 'Miel', categoria: 'Condimentos y Salsas' },
+  { emoji: '🫙', nombre: 'Salsas', categoria: 'Condimentos y Salsas' },
+  { emoji: '🫙', nombre: 'Aderezos', categoria: 'Condimentos y Salsas' },
   { emoji: '🍯', nombre: 'Sirop', categoria: 'Condimentos y Salsas' },
   { emoji: '🧂', nombre: 'Sal', categoria: 'Condimentos y Salsas' },
   { emoji: '🫙', nombre: 'Frasco/Condimento', categoria: 'Condimentos y Salsas' },
@@ -331,7 +344,7 @@ export const ICONOS_SECCIONES_ALIMENTARIAS: SeccionIconos[] = [
     id: 'boissons-froides',
     labelKey: 'configuration.coldDrinksIcons',
     commonLabelKey: 'common.iconCategories.coldDrinks',
-    iconos: ['🧃', '🥤', '🧋', '🧊', '💧', '🍹', '🍸', '🍶', '🍾', '🍷', '🍺', '🍻', '🥂'],
+    iconos: ['🧃', '🥤', '🧋', '🧊', '💧', '🧴', '🍹', '🍸', '🍶', '🍾', '🍷', '🍺', '🍻', '🥂'],
   },
   {
     id: 'boissons-chaudes',
@@ -373,13 +386,13 @@ export const ICONOS_SECCIONES_ALIMENTARIAS: SeccionIconos[] = [
     id: 'epicerie-seche',
     labelKey: 'configuration.dryGroceryIcons',
     commonLabelKey: 'common.iconCategories.dryGrocery',
-    iconos: ['🍚', '🍝', '🌾', '🫘', '🥫', '🫙', '🥜', '🫛'],
+    iconos: ['🍚', '🍝', '🍜', '🌾', '🫘', '🥫', '🫙', '🥜', '🫛'],
   },
   {
     id: 'fruits',
     labelKey: 'configuration.fruitsIcons',
     commonLabelKey: 'common.iconCategories.fruits',
-    iconos: ['🍎', '🍊', '🍌', '🍇', '🍓', '🍋', '🍉', '🍍', '🥝', '🥭', '🍏', '🍐', '🥥', '🍈', '🫐', '🍒', '🍑'],
+    iconos: ['🍎', '🍊', '🍌', '🍇', '🍓', '🫐', '🍋', '🍉', '🍍', '🥝', '🥭', '🍏', '🍐', '🥥', '🍈', '🍒', '🍑'],
   },
   {
     id: 'legumes',
@@ -391,7 +404,7 @@ export const ICONOS_SECCIONES_ALIMENTARIAS: SeccionIconos[] = [
     id: 'proteines',
     labelKey: 'configuration.proteinsIcons',
     commonLabelKey: 'common.iconCategories.proteins',
-    iconos: ['🥩', '🍗', '🐟', '🍤', '🥚', '🍖', '🥓', '🌭', '🍔', '🍣', '🍢', '🧆'],
+    iconos: ['🥩', '🍖', '🍗', '🐟', '🍤', '🥚', '🥓', '🌭', '🍔', '🍣', '🍢', '🧆'],
   },
   {
     id: 'produits-laitiers',
@@ -416,8 +429,76 @@ export const ICONOS_SECCIONES_ALIMENTARIAS: SeccionIconos[] = [
 export const ICONOS_NO_ALIMENTARIOS = uniqueIcons([
   '🧴', '🧼', '🪥', '🧻', '🪒', '💊', '🩹', '🧹', '🧺', '🪣', '🧽', '🍼', '👶', '🧸',
   '👕', '👖', '🧥', '👟', '🧦', '🎒', '📚', '📓', '✏️', '🖊️', '📏', '✂️', '🖍️',
-  '🐕', '🐈', '🦴', '🎁', '💝', '🔋', '💡', '🏥', '🕯️', '🧰', '🌡️'
+  '🐕', '🐈', '🦴', '🎁', '💝', '🔋', '💡', '🏥', '🕯️', '🧰', '🌡️',
 ]);
+
+type ReglaIconosRecomendados = {
+  keywords: string[];
+  iconos: string[];
+};
+
+const REGLAS_ICONOS_RECOMENDADOS: ReglaIconosRecomendados[] = [
+  {
+    keywords: ['boisson', 'bebida', 'agua', 'jus', 'jugo', 'cafe', 'caf', 'te', 'té', 'soda', 'refresco'],
+    iconos: ['🧴', '💧', '🥤', '🧃', '☕', '🍵', '🧋', '🫖'],
+  },
+  {
+    keywords: ['fruit', 'fruta', 'frutas'],
+    iconos: ['🍎', '🍊', '🍌', '🍓', '🫐', '🍇', '🍍', '🥝'],
+  },
+  {
+    keywords: ['legume', 'légume', 'verdura', 'vegetal', 'vegetal'],
+    iconos: ['🥬', '🥕', '🥦', '🍅', '🥒', '🧅', '🧄', '🍆'],
+  },
+  {
+    keywords: ['protein', 'protéine', 'proteina', 'carne', 'pollo', 'poisson', 'pescado', 'porc', 'cerdo'],
+    iconos: ['🥩', '🍗', '🐟', '🍤', '🍖', '🥚', '🥓', '🍔'],
+  },
+  {
+    keywords: ['lait', 'laitier', 'lácteo', 'lacteo', 'yogourt', 'yaourt', 'queso', 'fromage'],
+    iconos: ['🥛', '🧀', '🧈', '🍦', '🧁', '🍮'],
+  },
+  {
+    keywords: ['pain', 'boulangerie', 'panaderia', 'panadería', 'bakery', 'pasta', 'cereal', 'grano', 'grain'],
+    iconos: ['🍞', '🥖', '🥐', '🥯', '🍝', '🍚', '🥣', '🌾'],
+  },
+  {
+    keywords: ['sauce', 'condiment', 'aderezo', 'conserva', 'enlatado', 'epicerie', 'épicerie', 'sec', 'dry'],
+    iconos: ['🫙', '🥫', '🧂', '🍯', '🥜', '🫘', '🍘', '🫒'],
+  },
+  {
+    keywords: ['higiene', 'hygiène', 'limpieza', 'nettoyage', 'ropa', 'textil', 'bebe', 'bébé', 'scolaire', 'mascota'],
+    iconos: ['🧴', '🧼', '🧻', '🧹', '👕', '🍼', '📚', '🐕'],
+  },
+];
+
+const ICONOS_RECOMENDADOS_POR_DEFECTO = ['📦', '🛒', '🍽️', '🫙', '🥫', '🥬', '🥛', '🧃'];
+
+function normalizarTexto(valor: string): string {
+  return valor
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+export function obtenerIconosRecomendadosPorFamilia(contexto: string): string[] {
+  const texto = normalizarTexto(contexto || '');
+
+  if (!texto.trim()) {
+    return ICONOS_RECOMENDADOS_POR_DEFECTO;
+  }
+
+  const recomendados = REGLAS_ICONOS_RECOMENDADOS
+    .filter((regla) => regla.keywords.some((keyword) => texto.includes(normalizarTexto(keyword))))
+    .flatMap((regla) => regla.iconos);
+
+  const resultado = uniqueIcons([
+    ...recomendados,
+    ...ICONOS_RECOMENDADOS_POR_DEFECTO,
+  ]);
+
+  return resultado.slice(0, 16);
+}
 
 export const ICONOS_ALIMENTARIOS = uniqueIcons(
   ICONOS_SECCIONES_ALIMENTARIAS.flatMap((seccion) => seccion.iconos)

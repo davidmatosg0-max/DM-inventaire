@@ -9,9 +9,18 @@ type IconoMap = {
 };
 
 const mapeoIconos: IconoMap[] = [
+  // Embotellados y formatos de bebida
+  { keywords: ['botella de agua', 'agua en botella', 'eau en bouteille', 'agua mineral', 'botellon'], icono: '🧴' },
+  { keywords: ['botella de refresco', 'refresco en botella', 'soda en botella', 'boisson gazeuse bouteille'], icono: '🧴' },
+
   // Frutas
   { keywords: ['manzana', 'apple'], icono: '🍎' },
+  { keywords: ['arándano', 'arandano', 'blueberry', 'bleuet'], icono: '🫐' },
+  { keywords: ['frambuesa', 'raspberry', 'framboise'], icono: '🍓' },
+  { keywords: ['mora', 'blackberry', 'mure'], icono: '🍇' },
   { keywords: ['naranja', 'orange'], icono: '🍊' },
+  { keywords: ['mandarina', 'tangerine', 'clementina', 'clementine'], icono: '🍊' },
+  { keywords: ['pomelo', 'grapefruit', 'pamplemousse'], icono: '🍊' },
   { keywords: ['plátano', 'platano', 'banana'], icono: '🍌' },
   { keywords: ['uva', 'grape'], icono: '🍇' },
   { keywords: ['fresa', 'frutilla', 'strawberry'], icono: '🍓' },
@@ -29,21 +38,29 @@ const mapeoIconos: IconoMap[] = [
   
   // Verduras
   { keywords: ['lechuga', 'lettuce'], icono: '🥬' },
+  { keywords: ['espinaca', 'spinach', 'epinard'], icono: '🥬' },
+  { keywords: ['acelga', 'chard', 'blette'], icono: '🥬' },
   { keywords: ['tomate', 'tomato'], icono: '🍅' },
   { keywords: ['zanahoria', 'carrot'], icono: '🥕' },
   { keywords: ['brócoli', 'brocoli', 'broccoli'], icono: '🥦' },
+  { keywords: ['coliflor', 'cauliflower', 'chou-fleur'], icono: '🥦' },
+  { keywords: ['repollo', 'col', 'cabbage', 'chou'], icono: '🥬' },
   { keywords: ['berenjena', 'eggplant'], icono: '🍆' },
   { keywords: ['papa', 'patata', 'potato'], icono: '🥔' },
+  { keywords: ['camote', 'batata', 'sweet potato'], icono: '🥔' },
   { keywords: ['maíz', 'maiz', 'corn', 'choclo'], icono: '🌽' },
   { keywords: ['pimiento', 'pepper', 'chile'], icono: '🌶️' },
   { keywords: ['pepino', 'cucumber'], icono: '🥒' },
+  { keywords: ['calabacín', 'calabacin', 'zucchini', 'courgette'], icono: '🥒' },
   { keywords: ['cebolla', 'onion'], icono: '🧅' },
+  { keywords: ['puerro', 'leek', 'poireau'], icono: '🧅' },
   { keywords: ['ajo', 'garlic'], icono: '🧄' },
   { keywords: ['calabaza', 'pumpkin'], icono: '🎃' },
   { keywords: ['champiñón', 'champiñon', 'hongo', 'mushroom'], icono: '🍄' },
   
   // Proteínas y carnes
   { keywords: ['carne', 'beef', 'res'], icono: '🥩' },
+  { keywords: ['cerdo', 'pork', 'porc', 'cochon'], icono: '🍖' },
   { keywords: ['pollo', 'chicken'], icono: '🍗' },
   { keywords: ['pescado', 'fish', 'pez'], icono: '🐟' },
   { keywords: ['salmón', 'salmon'], icono: '🐟' },
@@ -59,6 +76,7 @@ const mapeoIconos: IconoMap[] = [
   { keywords: ['queso', 'cheese'], icono: '🧀' },
   { keywords: ['mantequilla', 'butter'], icono: '🧈' },
   { keywords: ['yogurt', 'yogur'], icono: '🥛' },
+  { keywords: ['yogourt', 'yaourt', 'yoghurt'], icono: '🥛' },
   { keywords: ['helado', 'ice cream'], icono: '🍨' },
   
   // Panadería
@@ -77,6 +95,8 @@ const mapeoIconos: IconoMap[] = [
   // Granos y cereales
   { keywords: ['arroz', 'rice'], icono: '🍚' },
   { keywords: ['pasta', 'spaghetti'], icono: '🍝' },
+  { keywords: ['macarrón', 'macarron', 'penne', 'fusilli', 'farfalle', 'ravioli', 'lasaña', 'lasagna'], icono: '🍝' },
+  { keywords: ['fideos', 'nouilles', 'noodles'], icono: '🍜' },
   { keywords: ['cereal'], icono: '🥣' },
   { keywords: ['céréales déjeuner', 'cereales desayuno', 'breakfast cereal'], icono: '🥣' },
   { keywords: ['granola', 'muesli', 'porridge', 'oatmeal'], icono: '🥣' },
@@ -86,6 +106,7 @@ const mapeoIconos: IconoMap[] = [
   
   // Conservas y enlatados
   { keywords: ['conserva', 'lata', 'enlatado', 'canned'], icono: '🥫' },
+  { keywords: ['conservación', 'conservacion', 'atún en lata', 'atun en lata', 'sardina en lata', 'haricots en conserve'], icono: '🥫' },
   { keywords: ['sopa', 'soup'], icono: '🥫' },
   
   // Aceites y condimentos
@@ -109,7 +130,8 @@ const mapeoIconos: IconoMap[] = [
   { keywords: ['nutella', 'sweet spread', 'tartinade sucrée', 'tartinade sucree'], icono: '🍫' },
   { keywords: ['houmous', 'hummus', 'falafel'], icono: '🧆' },
   { keywords: ['trempette', 'dip', 'tahini'], icono: '🫙' },
-  { keywords: ['ketchup', 'salsa'], icono: '🍅' },
+  { keywords: ['salsa', 'sauce', 'aderezo', 'dressing', 'vinaigrette', 'sofrito'], icono: '🫙' },
+  { keywords: ['ketchup'], icono: '🍅' },
   { keywords: ['mostaza', 'mustard'], icono: '🌭' },
   { keywords: ['mayonesa', 'mayo'], icono: '🥚' },
   

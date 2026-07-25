@@ -3119,6 +3119,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   value={formVariante.icono}
                   onChange={(icono) => setFormVariante(prev => ({ ...prev, icono }))}
                   label="Icône de la variante"
+                  contextoNombre={`${formData.categoriaNombre} ${formData.subcategoriaNombre} ${formVariante.nombre}`}
                   gridCols={10}
                   maxHeight="max-h-36"
                 />
@@ -3266,6 +3267,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   value={formSubcategoria.icono}
                   onChange={(icono) => setFormSubcategoria(prev => ({ ...prev, icono }))}
                   label="Icône de la sous-catégorie"
+                  contextoNombre={`${formData.categoriaNombre} ${formSubcategoria.nombre}`}
                   gridCols={10}
                   maxHeight="max-h-36"
                 />
