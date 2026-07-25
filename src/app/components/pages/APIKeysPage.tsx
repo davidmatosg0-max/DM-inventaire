@@ -18,6 +18,7 @@ import {
 } from '../../utils/apiKeyManager';
 import { toast } from 'sonner';
 import { useBranding } from '../../../hooks/useBranding';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
 
 export function APIKeysPage() {
@@ -153,108 +154,75 @@ export function APIKeysPage() {
         />
       </div>
 
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 
-              className="text-3xl font-bold flex items-center gap-3"
-              style={{ 
-                fontFamily: 'Montserrat, sans-serif',
-                color: branding.primaryColor 
-              }}
-            >
-              <Key className="w-8 h-8" />
-              Gestion des clés API
-            </h1>
-            <p className="text-gray-600 mt-2">Gestion complète des clés API et des permissions</p>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={exportarDocumentacion}
-              variant="outline"
-              className="gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Documentation
-            </Button>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="gap-2"
-              style={{ backgroundColor: branding.primaryColor }}
-            >
-              <Plus className="w-4 h-4" />
-              Nouvelle clé API
-            </Button>
-          </div>
-        </div>
+      <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
+        {/* Header professionnel unifié */}
+        <ModulePageHeader
+          title="Gestion des clés API"
+          subtitle="Gestion complète des clés API et des permissions"
+          icon={<Key className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          actions={(
+            <>
+              <Button
+                onClick={exportarDocumentacion}
+                variant="outline"
+                className="h-10 rounded-2xl border-white/70 bg-white/82 px-4 text-[#16324f] hover:bg-white"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Documentation
+              </Button>
+              <Button
+                onClick={() => setShowCreateModal(true)}
+                className="h-10 rounded-2xl px-4 text-white"
+                style={{
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 500,
+                  background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
+                  boxShadow: `0 10px 24px -18px ${branding.primaryColor}`,
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nouvelle clé API
+              </Button>
+            </>
+          )}
+        />
 
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="backdrop-blur-lg bg-white/80 border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg" style={{ backgroundColor: `${branding.primaryColor}20` }}>
-                  <Key className="w-6 h-6" style={{ color: branding.primaryColor }} />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Clés API totales</p>
-                  <p className="text-2xl font-bold" style={{ color: branding.primaryColor }}>
-                    {estadisticas.totalKeys}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-lg bg-white/80 border-l-4 border-l-green-500">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg bg-green-100">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Clés actives</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {estadisticas.activeKeys}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-lg bg-white/80 border-l-4 border-l-orange-500">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg bg-orange-100">
-                  <Activity className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Requêtes aujourd'hui</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {estadisticas.requestsToday.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-lg bg-white/80 border-l-4 border-l-purple-500">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg bg-purple-100">
-                  <Zap className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Requêtes totales</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {estadisticas.totalRequests.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Estadísticas — grille responsive normalisée */}
+        <ModuleStatsGrid defaultLayout="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <ModuleStatCard
+            label="Clés API totales"
+            value={estadisticas.totalKeys}
+            icon={<Key className="h-5 w-5 text-white" />}
+            accentColor={branding.primaryColor}
+            secondaryColor={branding.primaryColor}
+          />
+          <ModuleStatCard
+            label="Clés actives"
+            value={estadisticas.activeKeys}
+            icon={<CheckCircle className="h-5 w-5 text-white" />}
+            accentColor="#16a34a"
+            secondaryColor="#22c55e"
+            valueColor="#16a34a"
+          />
+          <ModuleStatCard
+            label="Requêtes aujourd'hui"
+            value={estadisticas.requestsToday.toLocaleString()}
+            icon={<Activity className="h-5 w-5 text-white" />}
+            accentColor="#ea580c"
+            secondaryColor="#f97316"
+            valueColor="#ea580c"
+          />
+          <ModuleStatCard
+            label="Requêtes totales"
+            value={estadisticas.totalRequests.toLocaleString()}
+            icon={<Zap className="h-5 w-5 text-white" />}
+            accentColor="#9333ea"
+            secondaryColor="#a855f7"
+            valueColor="#9333ea"
+          />
+        </ModuleStatsGrid>
 
         {/* Lista de API Keys */}
         <Card className="backdrop-blur-lg bg-white/90">

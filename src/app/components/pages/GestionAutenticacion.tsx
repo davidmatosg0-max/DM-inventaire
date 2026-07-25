@@ -27,9 +27,12 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { obtenerEstadisticasJWT } from '../../utils/jwtManager';
 import { obtenerEstadisticasAPI } from '../../utils/apiKeyManager';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModulePageHeader } from '../shared/ModulePageHeader';
+import { useBranding } from '../../../hooks/useBranding';
 
 export function GestionAutenticacion() {
   const { t } = useTranslation();
+  const branding = useBranding();
   const { usuario, isAuthenticated } = useAuth();
   const [statsJWT, setStatsJWT] = useState(obtenerEstadisticasJWT());
   const [statsAPI, setStatsAPI] = useState(obtenerEstadisticasAPI());
@@ -50,26 +53,15 @@ export function GestionAutenticacion() {
   }, []);
 
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Encabezado */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-3 bg-[#1a4d7a] rounded-xl shadow-lg">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 
-              className="text-3xl font-bold text-gray-800"
-              style={{ fontFamily: 'Montserrat, sans-serif' }}
-            >
-              Gestion d'Authentification
-            </h1>
-            <p className="text-gray-600">
-              Système hybride JWT + API Keys
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header professionnel unifié */}
+      <ModulePageHeader
+        title="Gestion d'Authentification"
+        subtitle="Système hybride JWT + API Keys"
+        icon={<Shield className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+        accentColor={branding.primaryColor}
+        secondaryColor={branding.secondaryColor}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <ModuleControlSurface>

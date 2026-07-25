@@ -43,6 +43,7 @@ import {
 import { PERMISOS, tieneAlgunoDeEstosPermisos } from '../../utils/permisos';
 import { useBranding } from '../../../hooks/useBranding';
 import { AsignarRolContacto } from '../AsignarRolContacto';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { registrarActividad } from '../../utils/actividadLogger';
 
 // Tipos de organismos predefinidos
@@ -539,55 +540,21 @@ export function Organismos() {
 
       {/* Contenido con z-index superior */}
       <div className="app-compact-page__content relative z-10 space-y-3 sm:space-y-4">
-        {/* Header con glassmorphism */}
-        <div className="app-compact-panel rounded-[28px] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-38px_rgba(15,45,71,0.34)] backdrop-blur-xl sm:p-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              {branding.logo ? (
-                <AdaptiveBrandLogo
-                  src={branding.logo}
-                  alt="Logo"
-                  wrapperClassName="h-11 w-11 sm:h-12 sm:w-12"
-                  containerClassName="border shadow-md"
-                  containerStyle={{ borderColor: branding.primaryColor }}
-                  squareRadiusClassName="rounded-[18px]"
-                  shadowClassName=""
-                />
-              ) : (
-                <div 
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-md sm:h-12 sm:w-12"
-                  style={{ backgroundColor: branding.primaryColor }}
-                >
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-                    Liaison
-                  </span>
-                  <h1 
-                    className="break-words text-xl font-bold tracking-tight sm:text-2xl md:text-[30px]"
-                    style={{ 
-                      fontFamily: 'Montserrat, sans-serif',
-                      color: branding.primaryColor 
-                    }}
-                  >
-                    {t('organisms.title')}
-                  </h1>
-                </div>
-                <p className="mt-1 text-sm font-medium text-slate-600">
-                  Gestion centralisée des organismes bénéficiaires, de leurs contacts et des accès de portail.
-                </p>
-              </div>
-            </div>
-            <div className="flex w-full flex-wrap gap-2 xl:w-auto xl:justify-end">
-              <Button 
+        {/* Header professionnel unifié */}
+        <ModulePageHeader
+          title={t('organisms.title')}
+          subtitle="Gestion centralisée des organismes bénéficiaires, de leurs contacts et des accès de portail."
+          icon={<Users className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          actions={(
+            <>
+              <Button
                 onClick={handleAbrirEmailGrupal}
-                className="h-10 flex-1 rounded-2xl px-4 text-white xl:flex-none"
-                style={{ 
-                  fontFamily: 'Montserrat, sans-serif', 
-                  fontWeight: 500, 
+                className="h-10 rounded-2xl px-4 text-white"
+                style={{
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 500,
                   background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)`,
                   boxShadow: `0 10px 24px -18px ${branding.secondaryColor}`
                 }}
@@ -595,11 +562,11 @@ export function Organismos() {
                 <Send className="w-4 h-4 mr-2" />
                 {t('organisms.email.send')}
               </Button>
-              <Button 
-                className={puedeGestionarOrganismos ? "h-10 flex-1 rounded-2xl px-4 text-white xl:flex-none" : "h-10 flex-1 cursor-not-allowed rounded-2xl bg-gray-300 px-4 text-gray-500 opacity-60 xl:flex-none"} 
-                style={puedeGestionarOrganismos ? { 
-                  fontFamily: 'Montserrat, sans-serif', 
-                  fontWeight: 500, 
+              <Button
+                className={puedeGestionarOrganismos ? 'h-10 rounded-2xl px-4 text-white' : 'h-10 cursor-not-allowed rounded-2xl bg-gray-300 px-4 text-gray-500 opacity-60'}
+                style={puedeGestionarOrganismos ? {
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 500,
                   background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`,
                   boxShadow: `0 10px 24px -18px ${branding.primaryColor}`
                 } : { fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
@@ -621,186 +588,158 @@ export function Organismos() {
                 <Plus className="w-4 h-4 mr-2" />
                 {t('organisms.newOrganism')}
               </Button>
+            </>
+          )}
+        />
 
-              <FormularioOrganismoCompacto
-                abierto={organismoDialogOpen}
-                onCerrar={() => {
-                  setOrganismoDialogOpen(false);
-                  setModoEdicion(false);
-                  setModoVisualizacion(false);
-                  setOrganismoSeleccionado(null);
-                }}
-                formulario={formOrganismo}
-                setFormulario={setFormOrganismo}
-                modoEdicion={modoEdicion}
-                modoVisualizacion={modoVisualizacion}
-                onGuardar={modoEdicion ? handleGuardarCambios : handleCrearOrganismo}
-                tiposOrganismo={tiposOrganismo}
-                encabezadoExtra={organismoSeleccionado ? (
-                  <div className="overflow-hidden rounded-[28px] border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.10)_100%)] shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-md">
-                    <div className="border-b border-white/15 px-5 py-4">
-                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                        <div className="flex items-start gap-4 min-w-0">
-                          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[20px] bg-white/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-                            <Building2 className="h-7 w-7 text-white" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-lg font-semibold text-white sm:text-xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                {organismoSeleccionado.nombre}
-                              </h3>
-                              <Badge className="border-0 bg-white/15 text-white backdrop-blur-sm">
-                                {organismoSeleccionado.activo ? 'Actif' : 'Inactif'}
-                              </Badge>
-                            </div>
-                            <p className="mt-1 text-sm text-white/80">
-                              Portail organisme avec acces direct et gestion centralisee de la cle d'acces.
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/90">
-                              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
-                                {organismoSeleccionado.tipo || 'Type a definir'}
-                              </span>
-                              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
-                                {organismoSeleccionado.responsable || 'Responsable non renseigne'}
-                              </span>
-                              <span className="rounded-full border border-white/15 bg-emerald-400/15 px-3 py-1 text-emerald-50">
-                                {organismoSeleccionadoAccessKey ? 'Cle disponible' : 'Cle non disponible'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 sm:flex-row xl:flex-col xl:min-w-[220px]">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="border-amber-200/50 bg-amber-400/10 text-white hover:bg-amber-400/20"
-                            onClick={handleReinicializarClaveAcceso}
-                          >
-                            <History className="mr-2 h-4 w-4" />
-                            Reinitialiser la cle
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="border-white/25 bg-white/10 text-white hover:bg-white/20"
-                            onClick={async () => {
-                              const exito = await copiarAlPortapapeles(organismoSeleccionadoAccessKey);
-                              if (exito) {
-                                toast.success('Clé d\'accès copiée');
-                              }
-                            }}
-                            disabled={!organismoSeleccionadoAccessKey}
-                          >
-                            <Copy className="mr-2 h-4 w-4" />
-                            Copier la cle
-                          </Button>
-                          <Button
-                            type="button"
-                            className="bg-white text-slate-900 shadow-lg hover:bg-white/90"
-                            onClick={() => window.open(organismoSeleccionadoAccessUrl, '_blank', 'noopener,noreferrer')}
-                            disabled={!organismoSeleccionadoAccessUrl}
-                          >
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            Ouvrir le portail
-                          </Button>
-                        </div>
-                      </div>
+        {/* Dialog de création / édition (piloté par organismoDialogOpen) */}
+        <FormularioOrganismoCompacto
+          abierto={organismoDialogOpen}
+          onCerrar={() => {
+            setOrganismoDialogOpen(false);
+            setModoEdicion(false);
+            setModoVisualizacion(false);
+            setOrganismoSeleccionado(null);
+          }}
+          formulario={formOrganismo}
+          setFormulario={setFormOrganismo}
+          modoEdicion={modoEdicion}
+          modoVisualizacion={modoVisualizacion}
+          onGuardar={modoEdicion ? handleGuardarCambios : handleCrearOrganismo}
+          tiposOrganismo={tiposOrganismo}
+          encabezadoExtra={organismoSeleccionado ? (
+            <div className="overflow-hidden rounded-[28px] border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.10)_100%)] shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-md">
+              <div className="border-b border-white/15 px-5 py-4">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="flex items-start gap-4 min-w-0">
+                    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[20px] bg-white/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+                      <Building2 className="h-7 w-7 text-white" />
                     </div>
-
-                    <div className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                        <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Cle d'acces</p>
-                          <p className="mt-2 font-mono text-sm text-white break-all">
-                            {organismoSeleccionadoAccessKey || 'Cle non disponible'}
-                          </p>
-                        </div>
-                        <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Coordonnees</p>
-                          <div className="mt-2 space-y-1 text-sm text-white/90">
-                            <p className="break-all">{organismoSeleccionado.email || 'Aucun email'}</p>
-                            <p>{organismoSeleccionado.telefono || 'Aucun telephone'}</p>
-                          </div>
-                        </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-semibold text-white sm:text-xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                          {organismoSeleccionado.nombre}
+                        </h3>
+                        <Badge className="border-0 bg-white/15 text-white backdrop-blur-sm">
+                          {organismoSeleccionado.activo ? 'Actif' : 'Inactif'}
+                        </Badge>
                       </div>
-
-                      <div className="rounded-3xl border border-white/15 bg-[#0f172a]/16 px-4 py-3">
-                        <div className="flex items-center gap-2 text-white/85">
-                          <ExternalLink className="h-4 w-4" />
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em]">Lien du portail</p>
-                        </div>
-                        <p className="mt-2 text-sm text-white/75">
-                          Ce lien ouvre le portail organisme en conservant sa cle de connexion pre-remplie.
-                        </p>
-                        <div className="mt-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 font-mono text-[11px] text-white/92 break-all">
-                          {organismoSeleccionadoAccessUrl || 'Lien non disponible tant qu\'aucune cle n\'est definie.'}
-                        </div>
+                      <p className="mt-1 text-sm text-white/80">
+                        Portail organisme avec acces direct et gestion centralisee de la cle d'acces.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/90">
+                        <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                          {organismoSeleccionado.tipo || 'Type a definir'}
+                        </span>
+                        <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                          {organismoSeleccionado.responsable || 'Responsable non renseigne'}
+                        </span>
+                        <span className="rounded-full border border-white/15 bg-emerald-400/15 px-3 py-1 text-emerald-50">
+                          {organismoSeleccionadoAccessKey ? 'Cle disponible' : 'Cle non disponible'}
+                        </span>
                       </div>
                     </div>
                   </div>
-                ) : undefined}
-              />
-            </div>
-          </div>
-        </div>
+                  <div className="flex flex-col gap-2 sm:flex-row xl:flex-col xl:min-w-[220px]">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-amber-200/50 bg-amber-400/10 text-white hover:bg-amber-400/20"
+                      onClick={handleReinicializarClaveAcceso}
+                    >
+                      <History className="mr-2 h-4 w-4" />
+                      Reinitialiser la cle
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-white/25 bg-white/10 text-white hover:bg-white/20"
+                      onClick={async () => {
+                        const exito = await copiarAlPortapapeles(organismoSeleccionadoAccessKey);
+                        if (exito) {
+                          toast.success('Clé d\'accès copiée');
+                        }
+                      }}
+                      disabled={!organismoSeleccionadoAccessKey}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copier la cle
+                    </Button>
+                    <Button
+                      type="button"
+                      className="bg-white text-slate-900 shadow-lg hover:bg-white/90"
+                      onClick={() => window.open(organismoSeleccionadoAccessUrl, '_blank', 'noopener,noreferrer')}
+                      disabled={!organismoSeleccionadoAccessUrl}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Ouvrir le portail
+                    </Button>
+                  </div>
+                </div>
+              </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="card-glass cursor-pointer rounded-2xl border border-white/70 p-3 shadow-sm" style={{ borderLeft: `4px solid ${branding.primaryColor}` }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('organisms.totalOrganisms')}</p>
-              <p className="text-xl font-bold sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                {organismos.length}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">Base visible dans le registre principal.</p>
-            </div>
-            <div 
-              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-md sm:h-10 sm:w-10"
-              style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)` }}
-            >
-              <Users className="h-5 w-5 text-white" />
-            </div>
-          </div>
-        </div>
+              <div className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                  <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Cle d'acces</p>
+                    <p className="mt-2 font-mono text-sm text-white break-all">
+                      {organismoSeleccionadoAccessKey || 'Cle non disponible'}
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-white/15 bg-white/10 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Coordonnees</p>
+                    <div className="mt-2 space-y-1 text-sm text-white/90">
+                      <p className="break-all">{organismoSeleccionado.email || 'Aucun email'}</p>
+                      <p>{organismoSeleccionado.telefono || 'Aucun telephone'}</p>
+                    </div>
+                  </div>
+                </div>
 
-        <div className="card-glass cursor-pointer rounded-2xl border border-white/70 p-3 shadow-sm" style={{ borderLeft: `4px solid ${branding.secondaryColor}` }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('organisms.activeOrganisms')}</p>
-              <p className="text-xl font-bold sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.secondaryColor }}>
-                {organismosActivos}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">Organismes actuellement opérationnels.</p>
+                <div className="rounded-3xl border border-white/15 bg-[#0f172a]/16 px-4 py-3">
+                  <div className="flex items-center gap-2 text-white/85">
+                    <ExternalLink className="h-4 w-4" />
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em]">Lien du portail</p>
+                  </div>
+                  <p className="mt-2 text-sm text-white/75">
+                    Ce lien ouvre le portail organisme en conservant sa cle de connexion pre-remplie.
+                  </p>
+                  <div className="mt-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 font-mono text-[11px] text-white/92 break-all">
+                    {organismoSeleccionadoAccessUrl || 'Lien non disponible tant qu\'aucune cle n\'est definie.'}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div 
-              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-md sm:h-10 sm:w-10"
-              style={{ background: `linear-gradient(135deg, ${branding.secondaryColor} 0%, ${branding.secondaryColor}dd 100%)` }}
-            >
-              <Check className="h-5 w-5 text-white" />
-            </div>
-          </div>
-        </div>
+          ) : undefined}
+        />
 
-        <div className="card-glass cursor-pointer rounded-2xl border border-white/70 p-3 shadow-sm" style={{ borderLeft: '4px solid #FFC107' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif' }}>{t('organisms.totalBeneficiaries')}</p>
-              <p className="text-xl font-bold text-[#FFC107] sm:text-2xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {totalBeneficiarios}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">Population totale couverte par le réseau.</p>
-            </div>
-            <div 
-              className="flex h-9 w-9 items-center justify-center rounded-xl shadow-md sm:h-10 sm:w-10"
-              style={{ background: 'linear-gradient(135deg, #FFC107 0%, #FFB300 100%)' }}
-            >
-              <Users className="h-5 w-5 text-white" />
-            </div>
-          </div>
-        </div>
-
-        </div>
+        {/* Stats — grille responsive normalisée */}
+        <ModuleStatsGrid defaultLayout="grid grid-cols-1 md:grid-cols-3">
+          <ModuleStatCard
+            label={t('organisms.totalOrganisms')}
+            value={organismos.length}
+            icon={<Users className="h-5 w-5 text-white" />}
+            accentColor={branding.primaryColor}
+            secondaryColor={branding.primaryColor}
+            helper="Base visible dans le registre principal."
+          />
+          <ModuleStatCard
+            label={t('organisms.activeOrganisms')}
+            value={organismosActivos}
+            icon={<Check className="h-5 w-5 text-white" />}
+            accentColor={branding.secondaryColor}
+            secondaryColor={branding.secondaryColor}
+            helper="Organismes actuellement opérationnels."
+          />
+          <ModuleStatCard
+            label={t('organisms.totalBeneficiaries')}
+            value={totalBeneficiarios}
+            icon={<Users className="h-5 w-5 text-white" />}
+            accentColor="#FFC107"
+            secondaryColor="#FFB300"
+            valueColor="#FFC107"
+            helper="Population totale couverte par le réseau."
+          />
+        </ModuleStatsGrid>
 
         {/* Search con glassmorphism */}
         <div className="app-compact-panel rounded-[24px] border border-white/70 bg-white/92 p-3 shadow-[0_18px_45px_-34px_rgba(15,45,71,0.3)] backdrop-blur-xl sm:p-4">

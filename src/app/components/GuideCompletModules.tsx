@@ -1997,6 +1997,9 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <p className="text-sm text-gray-700 mt-2">
                         Le <strong>nom d'affichage par défaut</strong> de la plateforme est désormais <strong>« DM inventaire »</strong> — cohérent avec le monogramme DMi. Il apparaît partout où le nom du système est utilisé (onglet du navigateur, PWA, impressions, PDF, en-têtes d'étiquettes, rapports PRS). Vous pouvez toujours le personnaliser depuis <strong>« Aide et Support &gt; Personnalisation »</strong> pour l'adapter au nom exact de votre organisation.
                       </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        L'ensemble des modules opérationnels — <strong>Organismes, Utilisateurs, Authentification, Étiquettes, Rapports avancés, Tableaux de bord (Métriques &amp; Prédictif), Offres, Clés API, Contacts entrepôt</strong> — adopte désormais un <strong>en-tête professionnel unifié</strong> et des <strong>cartes KPI harmonisées</strong> (couleurs de la marque, icônes, disposition responsive). Les écrans-portail (Marque, Départements, Configuration, Recrutement) conservent leur identité dédiée. Résultat : navigation plus cohérente et lecture plus rapide de l'état de chaque module.
+                      </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">

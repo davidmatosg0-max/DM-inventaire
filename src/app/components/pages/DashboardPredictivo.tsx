@@ -32,6 +32,7 @@ import {
 } from '../../utils/predictiveAnalytics';
 import { formatLargeNumber } from '../../utils/formatUtils';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ModulePageHeader } from '../shared/ModulePageHeader';
 
 export function DashboardPredictivo() {
   const branding = useBranding();
@@ -108,31 +109,30 @@ export function DashboardPredictivo() {
         />
       </div>
 
-      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 
-              className="text-2xl sm:text-3xl lg:text-4xl font-bold flex items-center gap-2 sm:gap-3"
-              style={{ 
+      <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
+        {/* Header professionnel unifié */}
+        <ModulePageHeader
+          title="Tableau de bord prédictif IA"
+          subtitle="Analytique avancée et intelligence des données"
+          icon={<Brain className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          actions={(
+            <Button
+              onClick={cargarAnalytics}
+              className="h-10 rounded-2xl px-4 text-white"
+              style={{
                 fontFamily: 'Montserrat, sans-serif',
-                color: branding.primaryColor 
+                fontWeight: 500,
+                background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
+                boxShadow: `0 10px 24px -18px ${branding.primaryColor}`,
               }}
             >
-              <Brain className="w-6 h-6 sm:w-8 sm:h-8" />
-              <span className="truncate">Tableau de bord prédictif IA</span>
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Analytique avancée et intelligence des données</p>
-          </div>
-          <Button
-            onClick={cargarAnalytics}
-            className="gap-2 w-full sm:w-auto"
-            style={{ backgroundColor: branding.primaryColor }}
-          >
-            <Zap className="w-4 h-4" />
-            <span className="text-sm sm:text-base">Actualiser l'analyse</span>
-          </Button>
-        </div>
+              <Zap className="mr-2 h-4 w-4" />
+              <span className="text-sm sm:text-base">Actualiser l'analyse</span>
+            </Button>
+          )}
+        />
 
         {/* Alertas Inteligentes */}
         {alertas.length > 0 && (

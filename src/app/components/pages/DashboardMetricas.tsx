@@ -48,6 +48,7 @@ import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos } from '../../utils/organismosStorage';
 import { obtenerRutas } from '../../utils/transporteLogic';
 import { obtenerMovimientos, type MovimientoExtendido } from '../../utils/movimientoStorage';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 
 function obtenerFechaValida(valor?: string): Date | null {
   if (!valor) {
@@ -438,74 +439,65 @@ export function DashboardMetricas() {
   const COLORS = ['#1a4d7a', '#2d9561', '#FFC107', '#DC3545', '#9C27B0', '#FF9800'];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header Mejorado */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl p-6 backdrop-blur-xl border border-white/20 shadow-xl"
-        style={{ 
-          background: `linear-gradient(135deg, ${branding.primaryColor}15 0%, ${branding.secondaryColor}10 100%)`,
-        }}
-      >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl flex items-center gap-3 mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: branding.primaryColor }}>
-              <LayoutDashboard className="w-8 h-8" />
-              {t('dashboard.title')} - Métriques en Temps Réel
-            </h1>
-            <p className="text-sm text-[#666666] flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              {t('dashboard.lastUpdated')}: {lastUpdate.toLocaleTimeString('fr-FR')}
-            </p>
-          </div>
+    <div className="space-y-3 sm:space-y-4 animate-fade-in">
+      {/* Header professionnel unifié */}
+      <ModulePageHeader
+        title={`${t('dashboard.title')} — Métriques en Temps Réel`}
+        subtitle={`${t('dashboard.lastUpdated')} : ${lastUpdate.toLocaleTimeString('fr-FR')}`}
+        icon={<LayoutDashboard className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+        accentColor={branding.primaryColor}
+        secondaryColor={branding.secondaryColor}
+        actions={(
           <Button
             onClick={cargarMetricas}
             disabled={refreshing}
-            className="flex items-center gap-2"
-            style={{ backgroundColor: branding.primaryColor }}
+            className="h-10 rounded-2xl px-4 text-white"
+            style={{
+              fontFamily: 'Montserrat, sans-serif',
+              fontWeight: 500,
+              background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
+              boxShadow: `0 10px 24px -18px ${branding.primaryColor}`,
+            }}
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Actualiser
           </Button>
-        </div>
-      </motion.div>
+        )}
+      />
 
-      {/* KPIs Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title={t('dashboard.totalInventory')}
+      {/* KPIs Principales — grille responsive normalisée */}
+      <ModuleStatsGrid defaultLayout="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <ModuleStatCard
+          label={t('dashboard.totalInventory')}
           value={formatNumber(metrics.inventario.stockTotal)}
-          subtitle={`${metrics.inventario.totalProductos} produits`}
-          icon={<Package className="w-7 h-7 text-white" />}
-          color="#1a4d7a"
-          bgColor="#1a4d7a"
+          icon={<Package className="h-5 w-5 text-white" />}
+          accentColor="#1a4d7a"
+          helper={`${metrics.inventario.totalProductos} produits`}
         />
-        <KPICard
-          title="Organismes Actifs"
+        <ModuleStatCard
+          label="Organismes Actifs"
           value={metrics.organismos.activos}
-          subtitle={`${metrics.organismos.beneficiariosTotales} bénéficiaires`}
-          icon={<Building className="w-7 h-7 text-white" />}
-          color="#2d9561"
-          bgColor="#2d9561"
+          icon={<Building className="h-5 w-5 text-white" />}
+          accentColor="#2d9561"
+          helper={`${metrics.organismos.beneficiariosTotales} bénéficiaires`}
         />
-        <KPICard
-          title="Commandes Actives"
+        <ModuleStatCard
+          label="Commandes Actives"
           value={metrics.comandas.activas}
-          subtitle={`${metrics.comandas.urgentes} urgentes`}
-          icon={<ClipboardList className="w-7 h-7 text-white" />}
-          color="#FFC107"
-          bgColor="#FFC107"
+          icon={<ClipboardList className="h-5 w-5 text-white" />}
+          accentColor="#FFC107"
+          valueColor="#FFC107"
+          helper={`${metrics.comandas.urgentes} urgentes`}
         />
-        <KPICard
-          title="Valeur Estimée"
+        <ModuleStatCard
+          label="Valeur Estimée"
           value={formatCurrency(metrics.inventario.valorEstimado)}
-          subtitle="Inventaire total"
-          icon={<DollarSign className="w-7 h-7 text-white" />}
-          color="#9C27B0"
-          bgColor="#9C27B0"
+          icon={<DollarSign className="h-5 w-5 text-white" />}
+          accentColor="#9C27B0"
+          valueColor="#9C27B0"
+          helper="Inventaire total"
         />
-      </div>
+      </ModuleStatsGrid>
 
       {/* Alertas y Actividad */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

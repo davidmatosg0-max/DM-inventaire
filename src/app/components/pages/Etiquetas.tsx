@@ -47,6 +47,7 @@ import { generateBrandedQrDataUrl } from '../../utils/brandedQr';
 import { openAutoPrintPopup } from '../../utils/printPopup';
 import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModulePageHeader } from '../shared/ModulePageHeader';
 
 type LabelSize = 'pequena' | 'mediana' | 'grande';
 type CodeFormat = 'EAN13' | 'CODE128' | 'CODE39';
@@ -1042,37 +1043,24 @@ export function Etiquetas() {
       }}
     >
       <div className="space-y-3 sm:space-y-4">
-        <Card className="border-0 shadow-xl">
-          <CardContent className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl text-white shadow-lg"
-                  style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
-                >
-                  <Tag className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold" style={{ color: branding.primaryColor }}>
-                    {t('labels.inventoryTitle')}
-                  </h1>
-                  <p className="text-xs text-[#666666]">
-                    {t('labels.inventorySubtitle')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
+        {/* Header professionnel unifié */}
+        <ModulePageHeader
+          title={t('labels.inventoryTitle')}
+          subtitle={t('labels.inventorySubtitle')}
+          icon={<Tag className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          actions={(
             <div className="flex flex-wrap gap-2">
-              <Badge className="rounded-full px-3 py-1 text-sm" style={{ backgroundColor: branding.primaryColor }}>
+              <Badge className="rounded-full px-3 py-1 text-sm text-white" style={{ backgroundColor: branding.primaryColor }}>
                 {t('labels.activeZones', { count: formatQuantity(zonas.length) })}
               </Badge>
-              <Badge className="rounded-full px-3 py-1 text-sm" style={{ backgroundColor: branding.secondaryColor }}>
+              <Badge className="rounded-full px-3 py-1 text-sm text-white" style={{ backgroundColor: branding.secondaryColor }}>
                 {t('labels.queuedLabels', { count: formatQuantity(colaEtiquetas.length) })}
               </Badge>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        />
 
         <div className={`grid gap-3 ${isCompactLabelsViewport ? 'grid-cols-4' : 'md:grid-cols-2 xl:grid-cols-4'}`}>
           <MetricCard

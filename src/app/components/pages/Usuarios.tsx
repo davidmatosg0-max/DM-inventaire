@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Edit, Trash2, Eye, EyeOff, Copy } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Copy, UsersRound } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -23,6 +23,7 @@ import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { Rol, permisos as permisosCatalogo } from '../../data/rolesPermisos';
 import { registrarActividad } from '../../utils/actividadLogger';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 export function Usuarios() {
@@ -424,59 +425,56 @@ export function Usuarios() {
       </div>
 
       {/* Contenedor principal con glassmorphism */}
-      <div className="relative z-10 p-6 space-y-6">
-        {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-6 border border-white/60">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '2rem', color: branding.primaryColor }}>
-                {t('users.title')}
-              </h1>
-              <p className="text-[#666666]">{t('users.subtitle')}</p>
-            </div>
-            <Button 
+      <div className="relative z-10 p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
+        {/* Header professionnel unifié */}
+        <ModulePageHeader
+          title={t('users.title')}
+          subtitle={t('users.subtitle')}
+          icon={<UsersRound className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+          actions={(
+            <Button
               onClick={handleAbrirCreacion}
-              style={{ 
-                fontFamily: 'Montserrat, sans-serif', 
+              className="h-10 rounded-2xl px-4 text-white"
+              style={{
+                fontFamily: 'Montserrat, sans-serif',
                 fontWeight: 500,
-                background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.primaryColor}dd 100%)`
+                background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
+                boxShadow: `0 10px 24px -18px ${branding.primaryColor}`,
               }}
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               {t('users.newUser')}
             </Button>
-          </div>
-        </div>
+          )}
+        />
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-6 border-l-4 border-l-[#DC3545] transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-            <div>
-              <p className="text-sm text-[#666666]">Administrateurs</p>
-              <p className="font-bold" style={{ fontSize: '1.5rem', color: '#DC3545' }}>
-                {usuariosPorRol.administrador}
-              </p>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-6 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl" style={{ borderLeftColor: branding.primaryColor }}>
-            <div>
-              <p className="text-sm text-[#666666]">Coordinateurs</p>
-              <p className="font-bold" style={{ fontSize: '1.5rem', color: branding.primaryColor }}>
-                {usuariosPorRol.coordinador}
-              </p>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/90 rounded-xl shadow-lg p-6 border-l-4 transition-all duration-300 hover:scale-105 hover:shadow-2xl" style={{ borderLeftColor: branding.secondaryColor }}>
-            <div>
-              <p className="text-sm text-[#666666]">Utilisateurs</p>
-              <p className="font-bold" style={{ fontSize: '1.5rem', color: branding.secondaryColor }}>
-                {usuariosPorRol.operativo}
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Stats — grille responsive normalisée */}
+        <ModuleStatsGrid defaultLayout="grid grid-cols-1 md:grid-cols-3">
+          <ModuleStatCard
+            label="Administrateurs"
+            value={usuariosPorRol.administrador}
+            icon={<UsersRound className="h-5 w-5 text-white" />}
+            accentColor="#DC3545"
+            secondaryColor="#e11d48"
+            valueColor="#DC3545"
+          />
+          <ModuleStatCard
+            label="Coordinateurs"
+            value={usuariosPorRol.coordinador}
+            icon={<UsersRound className="h-5 w-5 text-white" />}
+            accentColor={branding.primaryColor}
+            secondaryColor={branding.primaryColor}
+          />
+          <ModuleStatCard
+            label="Utilisateurs"
+            value={usuariosPorRol.operativo}
+            icon={<UsersRound className="h-5 w-5 text-white" />}
+            accentColor={branding.secondaryColor}
+            secondaryColor={branding.secondaryColor}
+          />
+        </ModuleStatsGrid>
 
         {/* Tabs */}
         <Tabs defaultValue="usuarios" className="space-y-6">

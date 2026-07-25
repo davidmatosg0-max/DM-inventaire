@@ -62,6 +62,8 @@ import { obtenerComandasReporte, type ReportComanda } from '../reports/reportCom
 import { isActiveReportComanda } from '../reports/reportComandaStatus';
 import type { Comanda } from '../../types';
 import { ModuleControlSurface, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
+import { ModulePageHeader } from '../shared/ModulePageHeader';
+import { useBranding } from '../../../hooks/useBranding';
 
 type TipoReporte = 'general' | 'inventario' | 'comandas' | 'prs' | 'organismos' | 'transporte';
 type PeriodoComparacion = 'dia' | 'semana' | 'mes' | 'anio';
@@ -265,6 +267,7 @@ function renderEmptyState(message: string) {
 
 export function ReportesAvanzado() {
   const { t } = useTranslation();
+  const branding = useBranding();
   const initialRange = getDatePresetRange('month');
   const [tipoReporte, setTipoReporte] = useState<TipoReporte>('general');
   const [fechaInicio, setFechaInicio] = useState(initialRange.start);
@@ -912,25 +915,32 @@ export function ReportesAvanzado() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '1.8rem', color: '#333333' }}>
-            {t('reports.title')}
-          </h1>
-          <p className="text-[#666666]">{t('reports.subtitle')}</p>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Button onClick={handleExportarDatos} variant="outline" className="border-[#1E73BE] text-[#1E73BE]">
-            <RefreshCcw className="w-4 h-4 mr-2" />
-            Actualiser l'analyse
-          </Button>
-          <Button onClick={() => handleGenerarReporte('excel')} variant="outline" className="border-[#1E73BE] text-[#1E73BE]" disabled={!rangoValido}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Exporter le rapport actif
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-3 sm:space-y-4">
+      {/* Header professionnel unifié */}
+      <ModulePageHeader
+        title={t('reports.title')}
+        subtitle={t('reports.subtitle')}
+        icon={<BarChart3 className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+        accentColor={branding.primaryColor}
+        secondaryColor={branding.secondaryColor}
+        actions={(
+          <>
+            <Button onClick={handleExportarDatos} variant="outline" className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white">
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              Actualiser l'analyse
+            </Button>
+            <Button
+              onClick={() => handleGenerarReporte('excel')}
+              variant="outline"
+              className="border-white/70 bg-white/82 text-[#16324f] hover:bg-white"
+              disabled={!rangoValido}
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Exporter le rapport actif
+            </Button>
+          </>
+        )}
+      />
 
       <Card className="border-l-4 border-l-[#1E73BE]">
         <CardHeader>

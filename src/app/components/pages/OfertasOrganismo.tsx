@@ -32,6 +32,7 @@ import { useCompactViewport } from '../../../hooks/useCompactViewport';
 import { obtenerProductos } from '../../utils/productStorage';
 import { calcularValorMonetario } from '../../utils/categoriaStorage';
 import { obtenerOrganismos } from '../../utils/organismosStorage';
+import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 
 export function OfertasOrganismo() {
   const { t } = useTranslation();
@@ -319,19 +320,14 @@ export function OfertasOrganismo() {
 
       {/* Contenido con z-index superior */}
       <div className="relative z-10 space-y-3 sm:space-y-4 p-3 sm:p-4">
-        {/* Header con glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                🏷️ {t('offers.availableOffers')}
-              </h1>
-              <p className="text-gray-700 mt-1 text-sm sm:text-base">
-                {resumenDestinatario.label}: <span className="font-semibold">{resumenDestinatario.value}</span>
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Header professionnel unifié */}
+        <ModulePageHeader
+          title={t('offers.availableOffers')}
+          subtitle={`${resumenDestinatario.label} : ${resumenDestinatario.value}`}
+          icon={<Tag className="h-6 w-6 text-white sm:h-7 sm:w-7" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+        />
 
       {/* Alertas de nuevas ofertas */}
       {notificacionesNoLeidas.length > 0 && (
@@ -362,44 +358,32 @@ export function OfertasOrganismo() {
         </div>
       )}
 
-      {/* Estadísticas con glassmorphism */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-4 sm:p-6 border border-white/60 border-l-4" style={{ borderLeftColor: branding.primaryColor }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-gray-600">{t('offers.totalOffers')}</p>
-              <p className="text-2xl sm:text-3xl font-bold mt-1" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                {contadores.total}
-              </p>
-            </div>
-            <Tag className="w-10 h-10 sm:w-12 sm:h-12 opacity-20" style={{ color: branding.primaryColor }} />
-          </div>
-        </div>
-
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60 border-l-4 border-l-[#4CAF50]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-gray-600">{t('offers.activeOffers')}</p>
-              <p className="text-2xl sm:text-3xl font-bold text-[#4CAF50] mt-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {contadores.activas}
-              </p>
-            </div>
-            <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12 text-[#4CAF50] opacity-20" />
-          </div>
-        </div>
-
-        <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 sm:p-4 border border-white/60 border-l-4 border-l-[#FFC107]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-gray-600">{t('offers.newOffers')}</p>
-              <p className="text-2xl sm:text-3xl font-bold text-[#FFC107] mt-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {contadores.nuevas}
-              </p>
-            </div>
-            <Bell className="w-10 h-10 sm:w-12 sm:h-12 text-[#FFC107] opacity-20" />
-          </div>
-        </div>
-      </div>
+      {/* Estadísticas — grille responsive normalisée */}
+      <ModuleStatsGrid defaultLayout="grid grid-cols-1 sm:grid-cols-3">
+        <ModuleStatCard
+          label={t('offers.totalOffers')}
+          value={contadores.total}
+          icon={<Tag className="h-5 w-5 text-white" />}
+          accentColor={branding.primaryColor}
+          secondaryColor={branding.primaryColor}
+        />
+        <ModuleStatCard
+          label={t('offers.activeOffers')}
+          value={contadores.activas}
+          icon={<CheckCircle2 className="h-5 w-5 text-white" />}
+          accentColor="#4CAF50"
+          secondaryColor="#4CAF50"
+          valueColor="#4CAF50"
+        />
+        <ModuleStatCard
+          label={t('offers.newOffers')}
+          value={contadores.nuevas}
+          icon={<Bell className="h-5 w-5 text-white" />}
+          accentColor="#FFC107"
+          secondaryColor="#FFB300"
+          valueColor="#FFC107"
+        />
+      </ModuleStatsGrid>
 
       {/* Filtros y búsqueda con glassmorphism */}
       <div className="backdrop-blur-xl bg-white/90 rounded-2xl shadow-xl p-3 border border-white/60">
