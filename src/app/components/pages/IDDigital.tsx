@@ -71,6 +71,9 @@ export interface AidRequest {
   quantite: number;
   dateRequested: string;
   status: 'pending' | 'approved' | 'rejected';
+  deliveryStatus?: 'scheduled' | 'completed' | 'delivered' | 'absent';
+  deliveredDate?: string;
+  deliveredBy?: string;
   processedDate?: string;
   processedBy?: string;
   notes?: string;
@@ -257,6 +260,21 @@ export function IDDigital() {
     { id: 'contactos', label: contactsViewLabel, icon: <Users className="w-5 h-5" /> },
   ];
 
+  const getAideAlimentaireReturnView = (): 'dashboard' | 'evenements-speciaux' => {
+    const lastEntry = navigationHistory[navigationHistory.length - 1];
+    const previousEntry = navigationHistory[navigationHistory.length - 2];
+
+    if (lastEntry?.view === 'evenements-speciaux') {
+      return 'evenements-speciaux';
+    }
+
+    if (lastEntry?.view === 'fiche-beneficiaire' && previousEntry?.view === 'evenements-speciaux') {
+      return 'evenements-speciaux';
+    }
+
+    return 'dashboard';
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
@@ -270,7 +288,14 @@ export function IDDigital() {
       case 'evenements-speciaux':
         return <EvenementsSpeciaux onNavigate={handleNavigate} aidTypes={allAidTypes} />;
       case 'aide-alimentaire':
-        return <AideAlimentaire onNavigate={handleNavigate} aidTypes={allAidTypes} preselectedBeneficiaireId={selectedBeneficiaireId} />;
+        return (
+          <AideAlimentaire
+            onNavigate={handleNavigate}
+            aidTypes={allAidTypes}
+            preselectedBeneficiaireId={selectedBeneficiaireId}
+            returnViewAfterSave={getAideAlimentaireReturnView()}
+          />
+        );
       case 'demandes-aide':
         return <DemandesAide onNavigate={handleNavigate} aidRequests={aidRequests} setAidRequests={setAidRequests} />;
       case 'types-aide':

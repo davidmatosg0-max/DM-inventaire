@@ -884,6 +884,7 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                   <div className="bg-white p-4 rounded-lg border border-indigo-200 text-sm text-gray-700">
                     <p className="font-medium">Idéal pour:</p>
                     <p className="mt-1">consulter rapidement l'organisme, les produits, les quantités, les notes et le statut sans devoir basculer manuellement vers un affichage plus dense.</p>
+                    <p className="mt-2">Dans le bloc <strong>Reçu par</strong>, la <strong>date</strong> et l'<strong>heure</strong> se complètent automatiquement à partir du rendez-vous de l'organisme.</p>
                   </div>
                 </div>
 
@@ -1185,6 +1186,8 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <div className="flex-1 bg-violet-50 p-4 rounded-lg border border-violet-200">
                         <p className="font-bold mb-2">Création d'un bon d'achat</p>
                         <p className="text-sm text-gray-700">Rattachez un fournisseur, un programme d'achat, un montant, une date de livraison souhaitée et préparez la demande avant soumission.</p>
+                        <p className="text-sm text-gray-700 mt-2">Les lignes permettent la <strong>saisie manuelle directe de la quantité</strong> (sans boutons +/-) avec des <strong>valeurs entières</strong> uniquement.</p>
+                        <p className="text-sm text-gray-700 mt-2">Chaque colonne est décrite pour plus de clarté: <strong>Produit</strong> (article), <strong>Quantité</strong> (nombre entier), <strong>Unité</strong> (mesure) et <strong>Prix</strong> (coût unitaire).</p>
                       </div>
                     </div>
                     <div className="flex gap-4 items-start">
@@ -1751,8 +1754,14 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                   </h4>
                   <div className="space-y-2 text-sm text-gray-700">
                     <p>Le menu Comptoir inclut désormais une vue <strong>Événements spéciaux</strong> pour planifier des distributions saisonnières, journées thématiques ou activités ciblées, avec <strong>période de début et de fin</strong>.</p>
-                    <p>Chaque événement peut recevoir une <strong>liste d’inscriptions de bénéficiaires</strong>, avec <strong>statut défini dès l’inscription</strong>, <strong>type d'aide associé</strong>, <strong>jour et heure de cita par inscription</strong> et <strong>sélection du jour limitée aux dates programmées de l'événement</strong>, suivi de présence et consultation rapide du profil du bénéficiaire.</p>
-                    <p>Les inscriptions restent <strong>filtrables par événement, statut et type d'aide</strong>, avec <strong>édition directe du type d'aide et du statut</strong> dans la table, une <strong>option explicite de modification d'inscription</strong> (statut, type d'aide, date et heure de cita), un <strong>bouton d'inscription actif tant que la capacité maximale n'est pas atteinte</strong> même si aucun bénéficiaire n'est encore disponible dans la liste, un <strong>résumé des quantités par type d'aide dans l'en-tête des inscriptions</strong>, une <strong>prévention des doublons d'inscription</strong> (1 bénéficiaire par événement) et un <strong>contrôle de capacité au moment de l'enregistrement</strong>, dans une <strong>présentation empilée</strong> affichant désormais les <strong>événements au-dessus</strong> puis les <strong>inscriptions en dessous</strong>, avec <strong>métriques supérieures compactées</strong>, <strong>barre de filtres compactée</strong>, <strong>menu unique pour les exportations</strong>, <strong>en-tête d'inscriptions allégé</strong>, <strong>métadonnées d'événement condensées en badges</strong> et <strong>lignes d'inscription resserrées dans une zone plus haute</strong> pour une lecture plus complète à l'écran, tout en permettant de générer un <strong>rapport PDF ou Excel par événement</strong> avec résumé, <strong>répartition par type d'aide</strong> et liste détaillée.</p>
+                    <p>Dans <strong>Aide alimentaire</strong>, le formulaire de demande permet aussi de définir un <strong>intervalle de rendez-vous (minutes)</strong>, une <strong>capacité de personnes par horaire</strong> et d'afficher la <strong>disponibilité restante pour chaque horaire</strong> au moment de la sélection, puis redirige automatiquement vers la <strong>vue principale des événements</strong> si l'action vient d'un flux événementiel, sinon vers la <strong>page principale du module Comptoir</strong>.</p>
+                    <p>Dans la vue <strong>Rendez-vous</strong>, les demandes d'aide approuvées peuvent maintenant être marquées comme <strong>complétées</strong> ou <strong>livrées</strong> dès que le bénéficiaire se présente à son créneau, et les rendez-vous peuvent aussi être marqués <strong>absent</strong> en cas de non-présentation. Ces états sont repris automatiquement dans la <strong>liste des demandes approuvées</strong> du module et sont disponibles dans le <strong>filtre de statut</strong> (planifié, complété, livré, absent).</p>
+                    <p>La vue <strong>Demandes d'aide</strong> propose aussi un bouton <strong>Imprimer la liste</strong> pour imprimer la liste actuellement filtrée avec bénéficiaire, type d'aide, quantité, rendez-vous et statut.</p>
+                    <p>La section <strong>Programmation des réservations</strong> de la page principale du module inclut désormais aussi le champ <strong>Personnes par horaire</strong> pour centraliser cette logique.</p>
+                    <p>Les changements de programmation (heure de début/fin, intervalle et personnes par horaire) sont automatiquement appliqués aux <strong>formulaires de création de demandes</strong> et au <strong>formulaire de création de rendez-vous des bénéficiaires</strong>.</p>
+                    <p>La vue <strong>Rapports</strong> du Comptoir propose maintenant deux rapports distincts: <strong>Aides régulières</strong> et <strong>Événements spéciaux</strong>, avec filtres et exports séparés, dont un <strong>filtre par type d'événement</strong> dans le rapport des événements spéciaux.</p>
+                    <p>Chaque événement peut recevoir une <strong>liste d’inscriptions de bénéficiaires</strong>, avec <strong>statut défini dès l’inscription</strong>, <strong>type d'aide associé</strong>, <strong>jour et heure de cita par inscription</strong>, une <strong>capacité configurable par horaire</strong> et une <strong>sélection du jour limitée aux dates programmées de l'événement</strong>, suivi de présence et consultation rapide du profil du bénéficiaire.</p>
+                    <p>Les inscriptions restent <strong>filtrables par événement, statut et type d'aide</strong>, avec <strong>édition directe du type d'aide et du statut</strong> dans la table, une <strong>option explicite de modification d'inscription</strong> (statut, type d'aide, date et heure de cita), un <strong>bouton d'inscription actif tant que l’objectif de distribution n'est pas atteint</strong> même si aucun bénéficiaire n'est encore disponible dans la liste, un <strong>résumé des quantités par type d'aide dans l'en-tête des inscriptions</strong>, une <strong>prévention des doublons d'inscription</strong> (1 bénéficiaire par événement), un <strong>contrôle d’objectif au moment de l'enregistrement basé sur les paniers assignés</strong> et des <strong>créneaux automatiquement masqués lorsqu'ils sont complets selon la capacité par horaire</strong>, dans une <strong>présentation empilée</strong> affichant désormais les <strong>événements au-dessus</strong> puis les <strong>inscriptions en dessous</strong>, avec <strong>métriques supérieures compactées</strong>, <strong>barre de filtres compactée</strong>, <strong>menu unique pour les exportations</strong>, <strong>en-tête d'inscriptions allégé</strong>, <strong>métadonnées d'événement condensées en badges</strong> et <strong>lignes d'inscription resserrées dans une zone plus haute</strong> pour une lecture plus complète à l'écran, tout en permettant de générer un <strong>rapport PDF ou Excel par événement</strong> avec résumé, <strong>répartition par type d'aide</strong> et liste détaillée.</p>
                     <p>Une <strong>feuille de présence imprimable</strong> peut être lancée depuis l’événement sélectionné, avec colonnes présence et signature pour le jour de l’activité.</p>
                     <p>La <strong>fiche du bénéficiaire</strong> affiche aussi l’historique de ses participations aux événements spéciaux, les ajoute à sa timeline d’activité et permet désormais de <strong>créer directement une inscription à un événement</strong> depuis le profil (événement, statut, type d'aide, date et heure de cita), tandis que le bouton <strong>Ajouter une aide</strong> du bloc historique est actif, ouvre la vue d'aide alimentaire et <strong>pré-sélectionne automatiquement le bénéficiaire du profil</strong>.</p>
                   </div>
@@ -1960,6 +1969,24 @@ export function GuideCompletModules({ onClose }: GuideCompletModulesProps) {
                       <h5 className="font-bold text-blue-900 mb-2">🛒 Commandes</h5>
                       <p className="text-sm text-gray-700">
                         Gestion des commandes organismes avec suivi des statuts, préparation, livraison et lecture compacte de la commande.
+                      </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        La création de distribution affiche maintenant un <strong>encadré de prévisualisation</strong> plus professionnel avant validation, avec l'organisme, les totaux et un aperçu des lignes.
+                      </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Cette prévisualisation inclut aussi un <strong>sello visuel</strong> en monogramme pour renforcer l'aspect document officiel.
+                      </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Pour les distributions de groupe, un <strong>graphique de répartition</strong> en barres affiche visuellement les pourcentages de chaque organisme avant la création.
+                      </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Lors du clic sur <strong>« Créer les commandes »</strong>, une <strong>animation professionnelle</strong> s'affiche : barre de progression globale, étapes (Validation → Génération → Notification) et remplissage progressif par organisme avec ses couleurs et son pourcentage, pour un rendu visuel clair pendant la création.
+                      </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Cette même simulation visuelle apparaît aussi pour les distributions <strong>individuelles</strong>, les distributions <strong>Collation</strong> et la publication d'une <strong>offre</strong>, garantissant une expérience homogène sur toutes les créations.
+                      </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        L'ensemble de l'application adopte désormais un <strong>langage visuel unifié</strong> : fond clair avec dégradés subtils aux couleurs de la marque, boutons avec relief léger au survol, cartes aux coins arrondis, dialogues avec liseré supérieur bleu → vert → ambre, focus ring bleu, tables avec en-têtes typographiés et lignes surlignées au survol, menus et champs harmonisés.
                       </p>
                     </div>
 

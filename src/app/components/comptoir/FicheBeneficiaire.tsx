@@ -120,6 +120,37 @@ function getEventAvailableDates(event: { fechaInicio?: string; fechaFin?: string
   return dates;
 }
 
+function getRegistrationPanierQuantity(registration?: ComptoirSpecialEventRegistration | null): number {
+  if (!registration || registration.statut === 'annule') {
+    return 0;
+  }
+
+  if (Array.isArray(registration.aidItems) && registration.aidItems.length > 0) {
+    const total = registration.aidItems.reduce((sum, item) => {
+      const quantity = Number(item?.quantity);
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return sum;
+      }
+      return sum + Math.trunc(quantity);
+    }, 0);
+
+    if (total > 0) {
+      return total;
+    }
+  }
+
+  const quantity = Number(registration.aidQuantity);
+  if (Number.isFinite(quantity) && quantity > 0) {
+    return Math.trunc(quantity);
+  }
+
+  if (registration.aidTypeId || registration.aidTypeName) {
+    return 1;
+  }
+
+  return 0;
+}
+
 function dedupeSpecialEventRegistrations(registrations: ComptoirSpecialEventRegistration[]): ComptoirSpecialEventRegistration[] {
   const byEventAndBeneficiary = new Map<string, ComptoirSpecialEventRegistration>();
 
@@ -277,6 +308,8 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
           action: `${
             appointment.statut === 'annule'
               ? 'Rendez-vous annulé'
+              : appointment.statut === 'absent'
+                ? 'Rendez-vous absent'
               : appointment.statut === 'attente'
                 ? 'Rendez-vous en attente'
                 : 'Rendez-vous confirmé'
@@ -459,7 +492,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
 
     const availableDates = getEventAvailableDates(selectedEvent);
     if (registrationAppointmentDate && availableDates.length > 0 && !availableDates.includes(registrationAppointmentDate)) {
-      toast.error('La date de cita doit être une date programmée de l’événement.');
+      toast.error('La date du rendez-vous doit être une date programmée de l’événement.');
       return;
     }
 
@@ -481,20 +514,21 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
       }
     }
 
-    const occupiedPlaces = specialEventRegistrations.filter((registration) => (
-      registration.eventId === selectedEvent.id
-      && registration.statut !== 'annule'
-      && registration.beneficiaireId !== beneficiaire.id
-    )).length;
-    const willOccupyPlace = registrationStatus !== 'annule';
+    const occupiedPaniers = specialEventRegistrations
+      .filter((registration) => (
+        registration.eventId === selectedEvent.id
+        && registration.beneficiaireId !== beneficiaire.id
+      ))
+      .reduce((total, registration) => total + getRegistrationPanierQuantity(registration), 0);
+    const panierForCurrentRegistration = registrationStatus === 'annule'
+      ? 0
+      : (registrationAidTypeId ? 1 : 0);
 
     if (
       typeof selectedEvent.capaciteMax === 'number'
-      && willOccupyPlace
-      && occupiedPlaces >= selectedEvent.capaciteMax
-      && !existingRegistration
+      && (occupiedPaniers + panierForCurrentRegistration) > selectedEvent.capaciteMax
     ) {
-      toast.error('La capacité maximale de cet événement est atteinte.');
+      toast.error('L’objectif de paniers à distribuer de cet événement est atteint.');
       return;
     }
 
@@ -1368,7 +1402,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                           {eventItem.heureCita ? ` • ${eventItem.heureCita}` : eventItem.horaire ? ` • ${eventItem.horaire}` : ''}
                         </div>
                         {(eventItem.dateCita || eventItem.heureCita) && (
-                          <div className="text-sm text-[#666666]">Cita: {eventItem.dateCita ? formatDateLabel(eventItem.dateCita) : 'Date non définie'}{eventItem.heureCita ? ` • ${eventItem.heureCita}` : ''}</div>
+                          <div className="text-sm text-[#666666]">Rendez-vous: {eventItem.dateCita ? formatDateLabel(eventItem.dateCita) : 'Date non définie'}{eventItem.heureCita ? ` • ${eventItem.heureCita}` : ''}</div>
                         )}
                         {eventItem.typeAide && (
                           <div className="text-sm text-[#666666]">Type d'aide: {eventItem.typeAide}</div>
@@ -1449,7 +1483,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                 </div>
 
                 <div>
-                  <Label>Jour de la cita</Label>
+                  <Label>Jour du rendez-vous</Label>
                   <Select value={registrationAppointmentDate && selectedRegistrationEventDates.includes(registrationAppointmentDate) ? registrationAppointmentDate : '__none__'} onValueChange={(value) => setRegistrationAppointmentDate(value === '__none__' ? '' : value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Sélectionner un jour" />
@@ -1464,7 +1498,7 @@ export function FicheBeneficiaire({ beneficiaireId, onNavigate }: FicheBeneficia
                 </div>
 
                 <div>
-                  <Label>Heure de la cita</Label>
+                  <Label>Heure du rendez-vous</Label>
                   <Input
                     type="time"
                     value={registrationAppointmentTime}

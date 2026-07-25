@@ -16,7 +16,10 @@ import {
   comptoirStorageEvents,
   comptoirStorageKeys,
   obtenirBeneficiairesComptoir,
+  obtenirDemandesAideComptoir,
+  obtenirReservationSettingsComptoir,
   obtenirRendezVousComptoir,
+  sauvegarderDemandesAideComptoir,
   type ComptoirAppointment,
   type ComptoirBeneficiary,
   upsertRendezVousComptoir,
@@ -35,7 +38,7 @@ interface RendezVousRecord {
   date: string;
   heure: string;
   motif: string;
-  statut: 'confirme' | 'attente' | 'annule';
+  statut: 'confirme' | 'attente' | 'annule' | 'absent' | 'completado' | 'entregado';
   notes: string;
   type: 'regular' | 'aidRequest';
   quantity?: number;
@@ -61,22 +64,70 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
   const [statusFilter, setStatusFilter] = useState<'all' | RendezVousRecord['statut']>('all');
   const [beneficiaires, setBeneficiaires] = useState<ComptoirBeneficiary[]>(() => obtenirBeneficiairesComptoir());
   const [rendezvous, setRendezvous] = useState<ComptoirAppointment[]>(() => obtenirRendezVousComptoir());
+  const [reservationSettings, setReservationSettings] = useState(() => obtenirReservationSettingsComptoir());
   const [selectedBeneficiaireId, setSelectedBeneficiaireId] = useState('');
   const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [appointmentTime, setAppointmentTime] = useState('09:00');
+  const [appointmentTime, setAppointmentTime] = useState(() => obtenirReservationSettingsComptoir().startTime || '09:00');
   const [appointmentReason, setAppointmentReason] = useState('distribution');
   const [appointmentNotes, setAppointmentNotes] = useState('');
+
+  const parseTimeToMinutes = (value: string): number | null => {
+    if (!/^\d{2}:\d{2}$/.test(value)) {
+      return null;
+    }
+
+    const [hours, minutes] = value.split(':').map((part) => Number.parseInt(part, 10));
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return null;
+    }
+
+    return (hours * 60) + minutes;
+  };
+
+  const formatMinutesToTime = (totalMinutes: number): string => {
+    const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+    const hours = Math.floor(normalized / 60);
+    const minutes = normalized % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
+  const reservationTimeSlots = (() => {
+    const start = parseTimeToMinutes(reservationSettings.startTime);
+    const end = parseTimeToMinutes(reservationSettings.endTime);
+    if (start === null || end === null || end < start || reservationSettings.intervalMinutes <= 0) {
+      return [] as string[];
+    }
+
+    const slots: string[] = [];
+    for (let current = start; current <= end; current += reservationSettings.intervalMinutes) {
+      slots.push(formatMinutesToTime(current));
+    }
+
+    return slots;
+  })();
+
+  useEffect(() => {
+    if (reservationTimeSlots.length === 0) {
+      return;
+    }
+
+    if (!reservationTimeSlots.includes(appointmentTime)) {
+      setAppointmentTime(reservationTimeSlots[0]);
+    }
+  }, [appointmentTime, reservationTimeSlots]);
 
   useEffect(() => {
     const refreshData = () => {
       setBeneficiaires(obtenirBeneficiairesComptoir());
       setRendezvous(obtenirRendezVousComptoir());
+      setReservationSettings(obtenirReservationSettingsComptoir());
     };
 
     const handleStorageChange = (event: StorageEvent) => {
       if (
         event.key === comptoirStorageKeys.beneficiaries ||
-        event.key === comptoirStorageKeys.appointments
+        event.key === comptoirStorageKeys.appointments ||
+        event.key === comptoirStorageKeys.reservationSettings
       ) {
         refreshData();
       }
@@ -86,7 +137,8 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
       const { detail } = event as CustomEvent<{ key?: string }>;
       if (
         detail?.key === comptoirStorageKeys.beneficiaries ||
-        detail?.key === comptoirStorageKeys.appointments
+        detail?.key === comptoirStorageKeys.appointments ||
+        detail?.key === comptoirStorageKeys.reservationSettings
       ) {
         refreshData();
       }
@@ -121,7 +173,7 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
     setEditingRdvId(null);
     setSelectedBeneficiaireId('');
     setAppointmentDate(new Date().toISOString().split('T')[0]);
-    setAppointmentTime('09:00');
+    setAppointmentTime(reservationSettings.startTime || '09:00');
     setAppointmentReason('distribution');
     setAppointmentNotes('');
   };
@@ -164,6 +216,22 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
   };
 
   // Convertir demandes aprobadas en citas
+  const getAidRequestAppointmentStatus = (request: any): RendezVousRecord['statut'] => {
+    if (request.deliveryStatus === 'absent') {
+      return 'absent';
+    }
+
+    if (request.deliveryStatus === 'delivered') {
+      return 'entregado';
+    }
+
+    if (request.deliveryStatus === 'completed') {
+      return 'completado';
+    }
+
+    return 'confirme';
+  };
+
   const approvedAidAppointments: RendezVousRecord[] = aidRequests
     .filter(req => req.status === 'approved' && req.appointmentDate && req.appointmentTime)
     .map(req => ({
@@ -173,7 +241,7 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
       date: req.appointmentDate,
       heure: req.appointmentTime,
       motif: `Distribution: ${req.type}`,
-      statut: 'confirme',
+      statut: getAidRequestAppointmentStatus(req),
       notes: req.notes || '',
       type: 'aidRequest',
       quantity: req.quantite,
@@ -242,6 +310,53 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
       confirme: 'Rendez-vous confirmé',
       attente: 'Rendez-vous mis en attente',
       annule: 'Rendez-vous annulé',
+      absent: 'Bénéficiaire marqué absent',
+    }[newStatus];
+
+    toast.success(successMessage);
+  };
+
+  const handleUpdateAidRequestDeliveryStatus = (newStatus: 'completed' | 'delivered' | 'absent') => {
+    if (!selectedRdv || selectedRdv.type !== 'aidRequest') {
+      return;
+    }
+
+    const requestId = Number.parseInt(selectedRdv.id.replace('aid-', ''), 10);
+    if (!Number.isFinite(requestId)) {
+      toast.error('Impossible d\'identifier la demande d\'aide.');
+      return;
+    }
+
+    const existingRequests = obtenirDemandesAideComptoir();
+    const request = existingRequests.find((currentRequest) => currentRequest.id === requestId);
+    if (!request) {
+      toast.error('La demande d\'aide sélectionnée est introuvable.');
+      return;
+    }
+
+    const currentDeliveryStatus = request.deliveryStatus || 'scheduled';
+    if (currentDeliveryStatus === newStatus) {
+      return;
+    }
+
+    const updatedRequests = existingRequests.map((currentRequest) => {
+      if (currentRequest.id !== requestId) {
+        return currentRequest;
+      }
+
+      return {
+        ...currentRequest,
+        deliveryStatus: newStatus,
+        deliveredDate: newStatus === 'absent' ? undefined : new Date().toLocaleString('fr-CA'),
+        deliveredBy: newStatus === 'absent' ? undefined : 'Comptoir',
+      };
+    });
+
+    sauvegarderDemandesAideComptoir(updatedRequests);
+    const successMessage = {
+      completed: 'Aide marquée comme complétée.',
+      delivered: 'Aide marquée comme livrée.',
+      absent: 'Bénéficiaire marqué absent.',
     }[newStatus];
 
     toast.success(successMessage);
@@ -320,6 +435,12 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
         return <Badge className="bg-[#FFC107] hover:bg-[#FFC107] text-[#333333]">{t('comptoir.pending')}</Badge>;
       case 'annule':
         return <Badge className="bg-[#DC3545] hover:bg-[#DC3545]">{t('comptoir.cancelled')}</Badge>;
+      case 'absent':
+        return <Badge className="bg-[#9C27B0] hover:bg-[#9C27B0]">Absent</Badge>;
+      case 'completado':
+        return <Badge className="bg-[#1E73BE] hover:bg-[#1E73BE]">Complété</Badge>;
+      case 'entregado':
+        return <Badge className="bg-[#2E7D32] hover:bg-[#2E7D32]">Livré</Badge>;
       default:
         return null;
     }
@@ -330,6 +451,9 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
       case 'confirme': return '#4CAF50';
       case 'attente': return '#FFC107';
       case 'annule': return '#DC3545';
+      case 'absent': return '#9C27B0';
+      case 'completado': return '#1E73BE';
+      case 'entregado': return '#2E7D32';
       default: return '#1E73BE';
     }
   };
@@ -392,6 +516,9 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
                       <SelectItem value="confirme">{t('comptoir.confirmed')}</SelectItem>
                       <SelectItem value="attente">{t('comptoir.pending')}</SelectItem>
                       <SelectItem value="annule">{t('comptoir.cancelled')}</SelectItem>
+                      <SelectItem value="absent">Absent</SelectItem>
+                      <SelectItem value="completado">Complété</SelectItem>
+                      <SelectItem value="entregado">Livré</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -444,7 +571,20 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
                         </div>
                         <div>
                           <Label>{t('comptoir.time')} *</Label>
-                          <Input type="time" value={appointmentTime} onChange={(event) => setAppointmentTime(event.target.value)} />
+                          {reservationTimeSlots.length > 0 ? (
+                            <Select value={appointmentTime} onValueChange={setAppointmentTime}>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t('comptoir.time')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {reservationTimeSlots.map((slot) => (
+                                  <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input type="time" value={appointmentTime} onChange={(event) => setAppointmentTime(event.target.value)} />
+                          )}
                         </div>
                       </div>
 
@@ -518,6 +658,12 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
                       style={{ backgroundColor: `${getStatusColor(rdv.statut)}20`, borderLeft: `3px solid ${getStatusColor(rdv.statut)}` }}
                       onClick={() => setSelectedRdv(rdv)}
                     >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="scale-90 origin-left">
+                          {getStatusBadge(rdv.statut)}
+                        </div>
+                      </div>
+
                       <div className="flex items-center gap-1 mb-1">
                         <Clock className="w-3 h-3 text-[#666666]" />
                         <span className="text-xs font-medium">{rdv.heure}</span>
@@ -651,7 +797,7 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
             {selectedRdv.type === 'regular' && (
               <div className="space-y-2">
                 <span className="text-sm text-[#666666] block">Gestion du statut</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                   <Button
                     variant="outline"
                     className="border-[#4CAF50] text-[#2E7D32] hover:bg-[#4CAF50] hover:text-white"
@@ -675,6 +821,46 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
                     disabled={selectedRdv.statut === 'annule'}
                   >
                     Annuler
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-[#9C27B0] hover:text-white"
+                    onClick={() => handleUpdateRegularAppointmentStatus('absent')}
+                    disabled={selectedRdv.statut === 'absent'}
+                  >
+                    Marquer absent
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {selectedRdv.type === 'aidRequest' && (
+              <div className="space-y-2">
+                <span className="text-sm text-[#666666] block">Présence et remise</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    className="border-[#1E73BE] text-[#1E73BE] hover:bg-[#1E73BE] hover:text-white"
+                    onClick={() => handleUpdateAidRequestDeliveryStatus('completed')}
+                    disabled={selectedRdv.statut === 'completado'}
+                  >
+                    Marquer complété
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white"
+                    onClick={() => handleUpdateAidRequestDeliveryStatus('delivered')}
+                    disabled={selectedRdv.statut === 'entregado'}
+                  >
+                    Marquer livré
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-[#9C27B0] hover:text-white"
+                    onClick={() => handleUpdateAidRequestDeliveryStatus('absent')}
+                    disabled={selectedRdv.statut === 'absent'}
+                  >
+                    Marquer absent
                   </Button>
                 </div>
               </div>

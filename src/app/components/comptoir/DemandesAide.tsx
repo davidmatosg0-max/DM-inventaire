@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Package, Calendar, User, Filter, CheckCircle, XCircle, Clock, AlertCircle, FileText } from 'lucide-react';
+import { Package, Calendar, User, Filter, CheckCircle, XCircle, Clock, AlertCircle, FileText, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -34,6 +34,9 @@ interface AidRequest {
   quantite: number;
   dateRequested: string;
   status: 'pending' | 'approved' | 'rejected';
+  deliveryStatus?: 'scheduled' | 'completed' | 'delivered' | 'absent';
+  deliveredDate?: string;
+  deliveredBy?: string;
   processedDate?: string;
   processedBy?: string;
   notes?: string;
@@ -42,6 +45,16 @@ interface AidRequest {
   appointmentDate?: string;
   appointmentTime?: string;
 }
+
+type DemandesFilterStatus =
+  | 'all'
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'scheduled'
+  | 'completed'
+  | 'delivered'
+  | 'absent';
 
 const DEMANDES_AIDE_APPROVAL_SCHEDULE_STORAGE_KEY = 'comptoir_demandes_aide_approval_schedule';
 
@@ -76,7 +89,7 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
   };
 
   const rememberedApprovalSchedule = getRememberedApprovalSchedule();
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<DemandesFilterStatus>('all');
   const [selectedRequest, setSelectedRequest] = useState<AidRequest | null>(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -208,9 +221,46 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
     }
   };
 
-  const filteredRequests = aidRequests.filter(req => {
-    if (filterStatus === 'all') return true;
-    return req.status === filterStatus;
+  const getDeliveryStatusBadge = (request: AidRequest) => {
+    if (request.status !== 'approved') {
+      return null;
+    }
+
+    switch (request.deliveryStatus || 'scheduled') {
+      case 'completed':
+        return <Badge className="bg-[#1E73BE] hover:bg-[#1E73BE]">Complété</Badge>;
+      case 'delivered':
+        return <Badge className="bg-[#2E7D32] hover:bg-[#2E7D32]">Livré</Badge>;
+      case 'absent':
+        return <Badge className="bg-[#9C27B0] hover:bg-[#9C27B0]">Absent</Badge>;
+      case 'scheduled':
+      default:
+        return <Badge className="bg-[#607D8B] hover:bg-[#607D8B]">Rendez-vous planifié</Badge>;
+    }
+  };
+
+  const getRequestFilterStatus = (request: AidRequest): DemandesFilterStatus => {
+    if (request.status !== 'approved') {
+      return request.status;
+    }
+
+    return request.deliveryStatus || 'scheduled';
+  };
+
+  const filteredRequests = aidRequests.filter((request) => {
+    if (filterStatus === 'all') {
+      return true;
+    }
+
+    if (filterStatus === 'approved') {
+      return request.status === 'approved';
+    }
+
+    if (filterStatus === 'pending' || filterStatus === 'rejected') {
+      return request.status === filterStatus;
+    }
+
+    return getRequestFilterStatus(request) === filterStatus;
   });
 
   const handleApprove = () => {
@@ -268,6 +318,9 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
         ? {
             ...req,
             status: 'approved' as const,
+            deliveryStatus: 'scheduled' as const,
+            deliveredDate: undefined,
+            deliveredBy: undefined,
             processedDate: new Date().toLocaleString('fr-CA'),
             processedBy: 'Admin Système',
             appointmentDate: appointmentDate,
@@ -301,6 +354,9 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
         ? {
             ...req,
             status: 'rejected' as const,
+            deliveryStatus: undefined,
+            deliveredDate: undefined,
+            deliveredBy: undefined,
             processedDate: new Date().toLocaleString('fr-CA'),
             processedBy: 'Admin Système',
             rejectionReason: rejectionReason || 'Non spécifié'
@@ -325,6 +381,130 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
 
   const getStatusCount = (status: string) => {
     return aidRequests.filter(req => req.status === status).length;
+  };
+
+  const getRequestStatusLabel = (request: AidRequest): string => {
+    if (request.status === 'pending') {
+      return t('comptoir.pending');
+    }
+
+    if (request.status === 'rejected') {
+      return t('comptoir.rejected');
+    }
+
+    const deliveryStatus = request.deliveryStatus || 'scheduled';
+    if (deliveryStatus === 'completed') {
+      return 'Complété';
+    }
+
+    if (deliveryStatus === 'delivered') {
+      return 'Livré';
+    }
+
+    if (deliveryStatus === 'absent') {
+      return 'Absent';
+    }
+
+    return 'Rendez-vous planifié';
+  };
+
+  const getFilterLabel = (status: DemandesFilterStatus): string => {
+    switch (status) {
+      case 'pending':
+        return t('comptoir.pending');
+      case 'approved':
+        return t('comptoir.approved');
+      case 'rejected':
+        return t('comptoir.rejected');
+      case 'scheduled':
+        return 'Rendez-vous planifié';
+      case 'completed':
+        return 'Complété';
+      case 'delivered':
+        return 'Livré';
+      case 'absent':
+        return 'Absent';
+      case 'all':
+      default:
+        return t('comptoir.allStatuses');
+    }
+  };
+
+  const handlePrintDemandes = () => {
+    if (filteredRequests.length === 0) {
+      toast.info('Aucune demande à imprimer pour ce filtre.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=1100,height=800');
+    if (!printWindow) {
+      toast.error('Impossible d\'ouvrir la fenêtre d\'impression.');
+      return;
+    }
+
+    const rows = filteredRequests.map((request) => {
+      const appointmentLabel = request.appointmentDate
+        ? `${request.appointmentDate}${request.appointmentTime ? ` ${request.appointmentTime}` : ''}`
+        : '-';
+      const estimatedValue = typeof request.estimatedValue === 'number'
+        ? `${request.estimatedValue.toFixed(2)} CAD$`
+        : '-';
+
+      return `
+        <tr>
+          <td>${request.id}</td>
+          <td>${request.beneficiaire}</td>
+          <td>${request.type}</td>
+          <td>${request.quantite}</td>
+          <td>${estimatedValue}</td>
+          <td>${appointmentLabel}</td>
+          <td>${getRequestStatusLabel(request)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8" />
+          <title>Demandes d'aide - Impression</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+            h1 { margin: 0 0 6px; font-size: 22px; }
+            .meta { margin: 0 0 16px; color: #4b5563; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+            th { background: #f3f4f6; font-weight: 700; }
+            .footer { margin-top: 12px; font-size: 11px; color: #6b7280; }
+            @media print { body { margin: 10mm; } }
+          </style>
+        </head>
+        <body>
+          <h1>Demandes d'aide</h1>
+          <p class="meta">Filtre: ${getFilterLabel(filterStatus)} • Total: ${filteredRequests.length} • Généré: ${new Date().toLocaleString('fr-CA')}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Bénéficiaire</th>
+                <th>Type d'aide</th>
+                <th>Qté</th>
+                <th>Valeur estimée</th>
+                <th>Rendez-vous</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+          <p class="footer">Banque Alimentaire • Module Comptoir</p>
+          <script>window.print();</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
@@ -400,9 +580,17 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
               <Package className="w-5 h-5" />
               {t('comptoir.aidRequests')}
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrintDemandes}
+              >
+                <Printer className="w-4 h-4 mr-1" />
+                Imprimer la liste
+              </Button>
               <Filter className="w-4 h-4 text-[#666666]" />
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as DemandesFilterStatus)}>
                 <SelectTrigger className="w-[200px] bg-white">
                   <SelectValue />
                 </SelectTrigger>
@@ -424,6 +612,30 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
                     <div className="flex items-center gap-2">
                       <XCircle className="w-4 h-4 text-[#DC3545]" />
                       {t('comptoir.rejected')}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="scheduled">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[#607D8B]" />
+                      Rendez-vous planifié
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="completed">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-[#1E73BE]" />
+                      Complété
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="delivered">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-[#2E7D32]" />
+                      Livré
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="absent">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="w-4 h-4 text-[#9C27B0]" />
+                      Absent
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -500,6 +712,14 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
                             </div>
                           </>
                         )}
+                        {request.status === 'approved' && request.deliveredDate && (
+                          <>
+                            <span>•</span>
+                            <div>
+                              Traité au RDV: {request.deliveredDate}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -515,6 +735,7 @@ export function DemandesAide({ onNavigate, aidRequests, setAidRequests }: Demand
                       </Button>
 
                       {getStatusBadge(request.status)}
+                      {getDeliveryStatusBadge(request)}
                       
                       {request.status === 'pending' && (
                         <div className="flex gap-2">

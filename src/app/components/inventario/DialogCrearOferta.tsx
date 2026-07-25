@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Tag, Calendar, Building2, AlertCircle, CheckCircle2, 
-  Package, DollarSign, Scale, X, Users, Globe, FileText, ChefHat
+  Package, DollarSign, Scale, X, Users, Globe, FileText, ChefHat, Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -20,6 +20,7 @@ import { obtenerOrganismos } from '../../utils/organismosStorage';
 import { obtenerResumenReservasInventario } from '../../utils/inventoryReservations';
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
+import { SimulacionCreacionOverlay, useSimulacionCreacion, type SimulacionDestinatario } from './SimulacionCreacionOverlay';
 
 type CarritoItem = {
   productoId: string;
@@ -64,6 +65,7 @@ export function DialogCrearOferta({
 
   const usuarioActual = t('inventory.offerDialog.systemUser');
   const organismosActivos = obtenerOrganismos().filter(organismo => organismo.activo);
+  const simulacion = useSimulacionCreacion();
 
   // Reiniciar formulario cuando se abre el diálogo
   useEffect(() => {
@@ -169,6 +171,25 @@ export function DialogCrearOferta({
   const handleCrearOferta = () => {
     if (!validarFormulario()) return;
 
+    const destinatariosOrg = destinatarioTipo === 'todos'
+      ? organismosActivos
+      : organismosActivos.filter(org => organismosSeleccionados.includes(org.id));
+
+    const dests: SimulacionDestinatario[] = destinatariosOrg.slice(0, 12).map(org => ({
+      id: org.id,
+      nombre: org.nombre,
+    }));
+    if (destinatariosOrg.length > 12) {
+      dests.push({ id: 'extra', nombre: `+${destinatariosOrg.length - 12} organisme(s)…` });
+    }
+    if (dests.length === 0) {
+      dests.push({ nombre: destinatarioTipo === 'todos' ? 'Tous les organismes actifs' : 'Organismes sélectionnés' });
+    }
+
+    simulacion.iniciar(dests, () => ejecutarCrearOferta());
+  };
+
+  const ejecutarCrearOferta = () => {
     try {
       const oferta = crearOferta({
         titulo,
@@ -257,6 +278,19 @@ export function DialogCrearOferta({
             {t('inventory.offerDialog.description')}
           </DialogDescription>
         </DialogHeader>
+
+        {simulacion.activo && (
+          <SimulacionCreacionOverlay
+            activo={simulacion.activo}
+            progreso={simulacion.progreso}
+            etapa={simulacion.etapa}
+            destinatarios={simulacion.destinatarios}
+            titulo="Publication de l'offre aux organismes"
+            subtitulo="Création de l'offre"
+            etiquetaDestinatarios="Destinataires de l'offre"
+            nota="Génération de l'offre et envoi automatique des notifications aux organismes ciblés."
+          />
+        )}
 
         <div className="flex-1 overflow-auto py-4 space-y-6">
           {/* Información básica */}
@@ -593,15 +627,20 @@ export function DialogCrearOferta({
         </div>
 
         <DialogFooter className="border-t pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={simulacion.activo}>
             <X className="w-4 h-4 mr-2" />
             {t('inventory.offerDialog.cancel')}
           </Button>
           <Button 
             onClick={handleCrearOferta}
             className="bg-[#FFC107] hover:bg-[#FFA000] text-gray-900"
+            disabled={simulacion.activo}
           >
-            <Tag className="w-4 h-4 mr-2" />
+            {simulacion.activo ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Tag className="w-4 h-4 mr-2" />
+            )}
             {t('inventory.offerDialog.createButton')}
           </Button>
         </DialogFooter>

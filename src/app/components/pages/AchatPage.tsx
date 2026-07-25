@@ -28,7 +28,6 @@ import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
-import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -441,7 +440,9 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
         [field]: value
       } as LigneFormulaire;
 
-      const quantite = updatedLine.quantite === '' ? '' : Number(updatedLine.quantite) || 0;
+      const quantite = updatedLine.quantite === ''
+        ? ''
+        : Math.max(0, Math.trunc(Number(updatedLine.quantite) || 0));
       const prixUnitaire = Number(updatedLine.prixUnitaire) || 0;
 
       return {
@@ -1654,6 +1655,54 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                     {t('inventory.unitManagement.empty')}
                   </p>
                 )}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 md:hidden">
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Produit</p>
+                      <p className="text-xs text-slate-500">Nom de l'article ou description courte du produit a acheter.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Quantite</p>
+                      <p className="text-xs text-slate-500">Nombre d'unites, en entier seulement (sans decimales).</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Unite</p>
+                      <p className="text-xs text-slate-500">Selectionnez l'unite de mesure (ex: boite, kg, paquet).</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Prix</p>
+                      <p className="text-xs text-slate-500">Prix unitaire en CAD pour une seule unite.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Total</p>
+                      <p className="text-xs text-slate-500">Calcul automatique: quantite x prix unitaire.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="hidden rounded-2xl border border-slate-200 bg-slate-50/70 p-3 md:block">
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(132px,0.9fr)_minmax(132px,0.9fr)_minmax(148px,1fr)_minmax(156px,1fr)]">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Produit</p>
+                      <p className="text-xs text-slate-500">Nom de l'article ou description courte du produit a acheter.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Quantite</p>
+                      <p className="text-xs text-slate-500">Nombre d'unites, en entier seulement (sans decimales).</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Unite</p>
+                      <p className="text-xs text-slate-500">Selectionnez l'unite de mesure (ex: boite, kg, paquet).</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Prix</p>
+                      <p className="text-xs text-slate-500">Prix unitaire en CAD pour une seule unite.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">Total</p>
+                      <p className="text-xs text-slate-500">Calcul automatique: quantite x prix unitaire.</p>
+                    </div>
+                  </div>
+                </div>
                 {lignes.map((ligne, index) => (
                   <div key={ligne.id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="mb-3 flex items-center justify-between">
@@ -1666,7 +1715,25 @@ export function AchatPage({ onNavigate }: { onNavigate?: (page: string) => void 
                     </div>
                     <div className="grid gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(132px,0.9fr)_minmax(132px,0.9fr)_minmax(148px,1fr)_minmax(156px,1fr)]">
                       <Input className="h-11" placeholder={t('achatPage.create.purchaseDescription')} value={ligne.description} onChange={event => handleChangeLine(ligne.id, 'description', event.target.value)} />
-                      <QuantityInput className="h-11 text-base" buttonClassName="h-11 w-11" min={0} step={0.01} placeholder={t('achatPage.create.manualQty')} value={ligne.quantite} onChangeText={value => handleChangeLine(ligne.id, 'quantite', value === '' ? '' : (parseQuantityText(value) ?? ''))} />
+                      <Input
+                        className="h-11 min-w-[72px] px-2 text-center text-base font-semibold text-slate-900"
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        placeholder={t('achatPage.create.manualQty')}
+                        value={ligne.quantite === '' ? '' : ligne.quantite}
+                        onChange={(event) => {
+                          const rawValue = event.target.value;
+                          if (rawValue === '') {
+                            handleChangeLine(ligne.id, 'quantite', '');
+                            return;
+                          }
+
+                          const nextValue = Math.max(0, Math.trunc(Number(rawValue) || 0));
+                          handleChangeLine(ligne.id, 'quantite', nextValue);
+                        }}
+                      />
                       <Select value={resolveUnitId(ligne.unite, unitOptions) || undefined} onValueChange={value => handleChangeLine(ligne.id, 'unite', value)} disabled={unitOptions.length === 0}>
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder={t('achatPage.create.selectUnit')} />

@@ -14,11 +14,16 @@ import {
   comptoirStorageEvents,
   comptoirStorageKeys,
   obtenirDistributionsComptoir,
+  obtenirEvenementsSpeciauxComptoir,
+  obtenirInscriptionsEvenementsSpeciauxComptoir,
   type ComptoirDistribution,
+  type ComptoirSpecialEvent,
+  type ComptoirSpecialEventRegistration,
 } from '../../utils/comptoirStorage';
 import type { AidRequest, AidType } from '../pages/IDDigital';
 
 type ReportPeriod = 'week' | 'month' | 'quarter' | 'year' | 'custom';
+type ReportCategory = 'regular' | 'special';
 type ReportSourceFilter = 'all' | ReportDistributionRecord['source'];
 
 interface RapportsProps {
@@ -45,7 +50,10 @@ interface ReportDistributionRecord {
   quantite: number;
   estimatedValue?: number;
   date: string;
-  source: 'distribution' | 'approvedRequest';
+  source: 'distribution' | 'approvedRequest' | 'specialEvent';
+  eventId?: string;
+  eventName?: string;
+  status?: ComptoirSpecialEventRegistration['statut'];
 }
 
 const DEFAULT_TYPE_COLORS = ['#1E73BE', '#4CAF50', '#FFC107', '#DC3545', '#7E57C2'];
@@ -161,11 +169,15 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
   const { t } = useTranslation();
   const currentMonthRange = getPeriodRange('month');
   const [periode, setPeriode] = useState<ReportPeriod>('month');
+  const [reportCategory, setReportCategory] = useState<ReportCategory>('regular');
   const [typeAide, setTypeAide] = useState('all');
   const [sourceFilter, setSourceFilter] = useState<ReportSourceFilter>('all');
+  const [specialEventFilter, setSpecialEventFilter] = useState('all');
   const [dateDebut, setDateDebut] = useState(currentMonthRange.start);
   const [dateFin, setDateFin] = useState(currentMonthRange.end);
   const [distributions, setDistributions] = useState<ComptoirDistribution[]>(() => obtenirDistributionsComptoir());
+  const [specialEvents, setSpecialEvents] = useState<ComptoirSpecialEvent[]>(() => obtenirEvenementsSpeciauxComptoir());
+  const [specialEventRegistrations, setSpecialEventRegistrations] = useState<ComptoirSpecialEventRegistration[]>(() => obtenirInscriptionsEvenementsSpeciauxComptoir());
 
   useEffect(() => {
     if (periode === 'custom') return;
@@ -175,31 +187,41 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
   }, [periode]);
 
   useEffect(() => {
-    const refreshDistributions = () => {
+    const refreshData = () => {
       setDistributions(obtenirDistributionsComptoir());
+      setSpecialEvents(obtenirEvenementsSpeciauxComptoir());
+      setSpecialEventRegistrations(obtenirInscriptionsEvenementsSpeciauxComptoir());
     };
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === comptoirStorageKeys.distributions) {
-        refreshDistributions();
+      if (
+        event.key === comptoirStorageKeys.distributions
+        || event.key === comptoirStorageKeys.specialEvents
+        || event.key === comptoirStorageKeys.specialEventRegistrations
+      ) {
+        refreshData();
       }
     };
 
     const handleComptoirStorageUpdated = (event: Event) => {
       const { detail } = event as CustomEvent<{ key?: string }>;
-      if (detail?.key === comptoirStorageKeys.distributions) {
-        refreshDistributions();
+      if (
+        detail?.key === comptoirStorageKeys.distributions
+        || detail?.key === comptoirStorageKeys.specialEvents
+        || detail?.key === comptoirStorageKeys.specialEventRegistrations
+      ) {
+        refreshData();
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener(comptoirStorageEvents.updated, handleComptoirStorageUpdated);
-    window.addEventListener('focus', refreshDistributions);
+    window.addEventListener('focus', refreshData);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener(comptoirStorageEvents.updated, handleComptoirStorageUpdated);
-      window.removeEventListener('focus', refreshDistributions);
+      window.removeEventListener('focus', refreshData);
     };
   }, []);
 
@@ -239,7 +261,55 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
       source: 'approvedRequest' as const,
     })),
   ];
-  const derivedAidTypes = reportRecords.reduce<Array<{ name: string; color: string; defaultValue?: number }>>((acc, record, index) => {
+
+  const specialEventById = specialEvents.reduce<Map<string, ComptoirSpecialEvent>>((acc, event) => {
+    acc.set(event.id, event);
+    return acc;
+  }, new Map<string, ComptoirSpecialEvent>());
+
+  const specialEventRecords = specialEventRegistrations
+    .filter((registration) => registration.statut !== 'annule')
+    .flatMap((registration) => {
+      const event = specialEventById.get(registration.eventId);
+      const eventName = event?.nom || 'Evenement special';
+      const fallbackDate = registration.appointmentDate || event?.fechaInicio || registration.createdAt;
+
+      if (Array.isArray(registration.aidItems) && registration.aidItems.length > 0) {
+        return registration.aidItems.map((aidItem, index) => ({
+          id: `${registration.id}-${index + 1}`,
+          beneficiaire: registration.beneficiaireNom,
+          beneficiaireId: registration.beneficiaireId,
+          type: aidItem.aidTypeName || registration.aidTypeName || 'Sans type defini',
+          quantite: Math.max(1, aidItem.quantity || 0),
+          date: fallbackDate,
+          source: 'specialEvent' as const,
+          eventId: registration.eventId,
+          eventName,
+          status: registration.statut,
+        }));
+      }
+
+      return [{
+        id: registration.id,
+        beneficiaire: registration.beneficiaireNom,
+        beneficiaireId: registration.beneficiaireId,
+        type: registration.aidTypeName || 'Sans type defini',
+        quantite: Math.max(1, registration.aidQuantity || 1),
+        date: fallbackDate,
+        source: 'specialEvent' as const,
+        eventId: registration.eventId,
+        eventName,
+        status: registration.statut,
+      }];
+    });
+
+  const availableSpecialEventFilters = specialEvents
+    .map((event) => ({ id: event.id, name: event.nom }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+
+  const recordsForCategory = reportCategory === 'special' ? specialEventRecords : reportRecords;
+
+  const derivedAidTypes = recordsForCategory.reduce<Array<{ name: string; color: string; defaultValue?: number }>>((acc, record, index) => {
     if (acc.some((type) => type.name === record.type)) {
       return acc;
     }
@@ -250,12 +320,16 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
     return acc;
   }, []);
   const aidTypeOptions = [...selectedAidTypes, ...derivedAidTypes.filter((type) => !selectedAidTypes.some((option) => option.name === type.name))];
-  const recordsByTypeAndSource = reportRecords.filter((record) => {
+  const recordsByTypeAndSource = recordsForCategory.filter((record) => {
     if (typeAide !== 'all' && record.type !== typeAide) {
       return false;
     }
 
-    if (sourceFilter !== 'all' && record.source !== sourceFilter) {
+    if (reportCategory === 'special' && specialEventFilter !== 'all' && record.eventId !== specialEventFilter) {
+      return false;
+    }
+
+    if (reportCategory === 'regular' && sourceFilter !== 'all' && record.source !== sourceFilter) {
       return false;
     }
 
@@ -331,13 +405,15 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
     ? (totalDistributions > 0 ? 100 : 0)
     : ((totalDistributions - previousTotalDistributions) / previousTotalDistributions) * 100;
   const trendLabel = `${trendValue >= 0 ? '+' : ''}${Math.round(trendValue)}%`;
-  const hasDirectDistributions = filteredRecords.some((record) => record.source === 'distribution');
-  const hasApprovedRequests = filteredRecords.some((record) => record.source === 'approvedRequest');
-  const exportDetailTitle = hasDirectDistributions && hasApprovedRequests
-    ? 'Distributions et demandes approuvees'
-    : hasDirectDistributions
-      ? 'Distributions enregistrees'
-      : 'Demandes approuvees';
+  const hasDirectDistributions = reportCategory === 'regular' && filteredRecords.some((record) => record.source === 'distribution');
+  const hasApprovedRequests = reportCategory === 'regular' && filteredRecords.some((record) => record.source === 'approvedRequest');
+  const exportDetailTitle = reportCategory === 'special'
+    ? 'Aides en evenements speciaux'
+    : hasDirectDistributions && hasApprovedRequests
+      ? 'Distributions et demandes approuvees'
+      : hasDirectDistributions
+        ? 'Distributions enregistrees'
+        : 'Demandes approuvees';
 
   const distributionsParType = Array.from(distributionsByTypeMap.values())
     .map((item) => {
@@ -368,12 +444,44 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
     tendance: trendLabel,
   };
 
+  useEffect(() => {
+    if (typeAide === 'all') {
+      return;
+    }
+
+    const typeExists = aidTypeOptions.some((option) => option.name === typeAide);
+    if (!typeExists) {
+      setTypeAide('all');
+    }
+  }, [typeAide, aidTypeOptions]);
+
+  useEffect(() => {
+    if (reportCategory !== 'special') {
+      return;
+    }
+
+    if (specialEventFilter === 'all') {
+      return;
+    }
+
+    const eventExists = availableSpecialEventFilters.some((event) => event.id === specialEventFilter);
+    if (!eventExists) {
+      setSpecialEventFilter('all');
+    }
+  }, [reportCategory, specialEventFilter, availableSpecialEventFilters]);
+
+  const selectedSpecialEventName = specialEventFilter === 'all'
+    ? 'Tous les evenements'
+    : availableSpecialEventFilters.find((event) => event.id === specialEventFilter)?.name || 'Evenement special';
+
   const getSourceLabel = (source: ReportSourceFilter) => {
     switch (source) {
       case 'distribution':
         return 'Distributions directes';
       case 'approvedRequest':
         return 'Demandes approuvees';
+      case 'specialEvent':
+        return 'Evenements speciaux';
       case 'all':
       default:
         return 'Toutes les origines';
@@ -396,8 +504,10 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
     }
 
     exportarReportePersonalizado(
-      'Rapport Comptoir',
-      `Periode: ${dateDebut} - ${dateFin} | Type: ${typeAide === 'all' ? 'Tous' : typeAide} | Origine: ${getSourceLabel(sourceFilter)}`,
+      reportCategory === 'special' ? 'Rapport evenements speciaux' : 'Rapport aides regulieres',
+      reportCategory === 'special'
+        ? `Periode: ${dateDebut} - ${dateFin} | Type: ${typeAide === 'all' ? 'Tous' : typeAide} | Evenement: ${selectedSpecialEventName}`
+        : `Periode: ${dateDebut} - ${dateFin} | Type: ${typeAide === 'all' ? 'Tous' : typeAide} | Origine: ${getSourceLabel(sourceFilter)}`,
       [
         {
           titulo: 'Resume',
@@ -418,16 +528,30 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
         },
         {
           titulo: exportDetailTitle,
-          columnas: ['ID', 'Beneficiaire', 'Numero', 'Type', 'Origine', 'Quantite', 'Date', 'Valeur'],
+          columnas: reportCategory === 'special'
+            ? ['ID', 'Evenement', 'Beneficiaire', 'Numero', 'Type', 'Quantite', 'Date', 'Valeur']
+            : ['ID', 'Beneficiaire', 'Numero', 'Type', 'Origine', 'Quantite', 'Date', 'Valeur'],
           datos: filteredRecords.map((record) => [
             record.id,
-            record.beneficiaire,
-            record.beneficiaireId,
-            record.type,
-            record.source === 'distribution' ? 'Distribution directe' : 'Demande approuvee',
-            record.quantite,
-            record.date || '-',
-            `${formatMoney(getRecordValue(record))} CAD$`,
+            ...(reportCategory === 'special'
+              ? [
+                record.eventName || 'Evenement special',
+                record.beneficiaire,
+                record.beneficiaireId,
+                record.type,
+                record.quantite,
+                record.date || '-',
+                `${formatMoney(getRecordValue(record))} CAD$`,
+              ]
+              : [
+                record.beneficiaire,
+                record.beneficiaireId,
+                record.type,
+                record.source === 'distribution' ? 'Distribution directe' : 'Demande approuvee',
+                record.quantite,
+                record.date || '-',
+                `${formatMoney(getRecordValue(record))} CAD$`,
+              ]),
           ]),
         },
       ]
@@ -440,7 +564,7 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
       return;
     }
 
-    exportarDatosPersonalizados('rapport-comptoir', [
+    exportarDatosPersonalizados(reportCategory === 'special' ? 'rapport-evenements-speciaux' : 'rapport-aides-regulieres', [
       {
         nombre: 'Resume',
         datos: [{
@@ -450,7 +574,9 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
           tendance: stats.tendance,
           periode: `${dateDebut} - ${dateFin}`,
           typeAide: typeAide === 'all' ? 'Tous' : typeAide,
-          origine: getSourceLabel(sourceFilter),
+          rapport: reportCategory === 'special' ? 'Evenements speciaux' : 'Aides regulieres',
+          typeEvenement: reportCategory === 'special' ? selectedSpecialEventName : '-',
+          origine: reportCategory === 'special' ? 'Evenements speciaux' : getSourceLabel(sourceFilter),
         }],
       },
       {
@@ -468,10 +594,15 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
         nombre: exportDetailTitle,
         datos: filteredRecords.map((record) => ({
           id: record.id,
+          evenement: reportCategory === 'special' ? (record.eventName || 'Evenement special') : '-',
           beneficiaire: record.beneficiaire,
           numeroDossier: record.beneficiaireId,
           type: record.type,
-          origine: record.source === 'distribution' ? 'Distribution directe' : 'Demande approuvee',
+          origine: reportCategory === 'special'
+            ? 'Evenement special'
+            : record.source === 'distribution'
+              ? 'Distribution directe'
+              : 'Demande approuvee',
           quantite: record.quantite,
           date: record.date || '-',
           valeur: formatMoney(getRecordValue(record)),
@@ -486,7 +617,30 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4">
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              <div>
+                <Label>Rapport</Label>
+                <Select
+                  value={reportCategory}
+                  onValueChange={(value) => {
+                    const nextValue = value as ReportCategory;
+                    setReportCategory(nextValue);
+                    if (nextValue === 'special') {
+                      setSourceFilter('all');
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <FileText className="w-4 h-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="regular">Aides regulieres</SelectItem>
+                    <SelectItem value="special">Evenements speciaux</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <Label>{t('comptoir.period')}</Label>
                 <Select value={periode} onValueChange={setPeriode}>
@@ -520,20 +674,40 @@ export function Rapports({ aidRequests = [], aidTypes = [] }: RapportsProps) {
                 </Select>
               </div>
 
-              <div>
-                <Label>Origine</Label>
-                <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger>
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Toutes les origines</SelectItem>
-                    <SelectItem value="distribution">Distributions directes</SelectItem>
-                    <SelectItem value="approvedRequest">Demandes approuvees</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {reportCategory === 'special' && (
+                <div>
+                  <Label>Type d'evenement</Label>
+                  <Select value={specialEventFilter} onValueChange={setSpecialEventFilter}>
+                    <SelectTrigger>
+                      <Filter className="w-4 h-4 mr-2" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les evenements</SelectItem>
+                      {availableSpecialEventFilters.map((event) => (
+                        <SelectItem key={event.id} value={event.id}>{event.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {reportCategory === 'regular' && (
+                <div>
+                  <Label>Origine</Label>
+                  <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                    <SelectTrigger>
+                      <Filter className="w-4 h-4 mr-2" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les origines</SelectItem>
+                      <SelectItem value="distribution">Distributions directes</SelectItem>
+                      <SelectItem value="approvedRequest">Demandes approuvees</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div>
                 <Label>{t('comptoir.startDate')}</Label>

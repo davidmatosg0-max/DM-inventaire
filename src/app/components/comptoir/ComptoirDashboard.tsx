@@ -335,7 +335,7 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div>
               <Label>Heure de début</Label>
               <Input
@@ -364,6 +364,20 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
                 onChange={(event) => setReservationSettings((current) => ({
                   ...current,
                   intervalMinutes: Number.parseInt(event.target.value || '0', 10) || 0,
+                }))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Personnes par horaire</Label>
+              <Input
+                type="number"
+                min="1"
+                max="50"
+                value={String(reservationSettings.slotCapacity)}
+                onChange={(event) => setReservationSettings((current) => ({
+                  ...current,
+                  slotCapacity: Number.parseInt(event.target.value || '0', 10) || 0,
                 }))}
                 className="mt-1"
               />
@@ -400,10 +414,15 @@ export function ComptoirDashboard({ onNavigate }: ComptoirDashboardProps) {
                   return;
                 }
 
+                if (reservationSettings.slotCapacity < 1 || reservationSettings.slotCapacity > 50) {
+                  return;
+                }
+
                 sauvegarderReservationSettingsComptoir({
                   startTime: reservationSettings.startTime,
                   endTime: reservationSettings.endTime,
                   intervalMinutes: reservationSettings.intervalMinutes,
+                  slotCapacity: reservationSettings.slotCapacity,
                 });
               }}
             >

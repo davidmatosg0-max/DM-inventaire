@@ -26,11 +26,13 @@ interface AideAlimentaireProps {
   onNavigate: (view: string, id?: string) => void;
   aidTypes: any[];
   preselectedBeneficiaireId?: string;
+  returnViewAfterSave?: 'dashboard' | 'evenements-speciaux';
 }
 
 const AIDE_ALIMENTAIRE_SCHEDULE_STORAGE_KEY = 'comptoir_aide_alimentaire_schedule';
+const AIDE_ALIMENTAIRE_DEFAULT_SLOT_CAPACITY = 1;
 
-export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireId }: AideAlimentaireProps) {
+export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireId, returnViewAfterSave = 'dashboard' }: AideAlimentaireProps) {
   const { t } = useTranslation();
   const getRememberedSchedule = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -42,19 +44,34 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
         return {
           date: today,
           time: defaultSettings.startTime,
+          intervalMinutes: defaultSettings.intervalMinutes,
+          slotCapacity: defaultSettings.slotCapacity || AIDE_ALIMENTAIRE_DEFAULT_SLOT_CAPACITY,
         };
       }
 
-      const parsedValue = JSON.parse(rawValue) as { date?: string; time?: string };
+      const parsedValue = JSON.parse(rawValue) as { date?: string; time?: string; intervalMinutes?: number; slotCapacity?: number };
+      const parsedInterval = Number(parsedValue.intervalMinutes);
+      const intervalMinutes = Number.isFinite(parsedInterval) && parsedInterval > 0
+        ? Math.trunc(parsedInterval)
+        : defaultSettings.intervalMinutes;
+      const parsedSlotCapacity = Number(parsedValue.slotCapacity);
+      const slotCapacity = Number.isFinite(parsedSlotCapacity) && parsedSlotCapacity > 0
+        ? Math.trunc(parsedSlotCapacity)
+        : (defaultSettings.slotCapacity || AIDE_ALIMENTAIRE_DEFAULT_SLOT_CAPACITY);
+
       return {
         date: parsedValue.date || today,
         time: parsedValue.time || defaultSettings.startTime,
+        intervalMinutes,
+        slotCapacity,
       };
     } catch (error) {
       console.error('Erreur lors de la lecture de la date/heure mémorisées pour l\'aide alimentaire :', error);
       return {
         date: today,
         time: defaultSettings.startTime,
+        intervalMinutes: defaultSettings.intervalMinutes,
+        slotCapacity: defaultSettings.slotCapacity || AIDE_ALIMENTAIRE_DEFAULT_SLOT_CAPACITY,
       };
     }
   };
@@ -68,6 +85,8 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
   const [quantite, setQuantite] = useState('1');
   const [dateAide, setDateAide] = useState(rememberedSchedule.date);
   const [reservationSettings, setReservationSettings] = useState(() => obtenirReservationSettingsComptoir());
+  const [intervalMinutesAide, setIntervalMinutesAide] = useState(() => rememberedSchedule.intervalMinutes);
+  const [slotCapacityAide, setSlotCapacityAide] = useState(() => rememberedSchedule.slotCapacity);
   const [heureAide, setHeureAide] = useState(rememberedSchedule.time);
   const [valeurEstimee, setValeurEstimee] = useState('');
   const [notes, setNotes] = useState('');
@@ -100,12 +119,12 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
 
     const start = parseTime(reservationSettings.startTime);
     const end = parseTime(reservationSettings.endTime);
-    if (start === null || end === null || end < start || reservationSettings.intervalMinutes <= 0) {
+    if (start === null || end === null || end < start || intervalMinutesAide <= 0) {
       return [] as string[];
     }
 
     const slots: string[] = [];
-    for (let current = start; current <= end; current += reservationSettings.intervalMinutes) {
+    for (let current = start; current <= end; current += intervalMinutesAide) {
       const hours = Math.floor(current / 60);
       const minutes = current % 60;
       slots.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
@@ -116,18 +135,32 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
 
   const reservationTimeSlots = generateReservationSlots();
 
-  const occupiedTimesForSelectedDate = new Set(
-    obtenirDemandesAideComptoir()
-      .filter((request) => request.status !== 'rejected')
-      .filter((request) => {
-        const requestDate = request.appointmentDate || request.dateRequested?.split(' ')[0] || '';
-        return Boolean(dateAide) && requestDate === dateAide;
-      })
-      .map((request) => request.appointmentTime || request.dateRequested?.split(' ')[1] || '')
-      .filter((value) => Boolean(value))
-  );
+  const occupiedTimesForSelectedDate = obtenirDemandesAideComptoir()
+    .filter((request) => request.status !== 'rejected')
+    .filter((request) => {
+      const requestDate = request.appointmentDate || request.dateRequested?.split(' ')[0] || '';
+      return Boolean(dateAide) && requestDate === dateAide;
+    })
+    .map((request) => request.appointmentTime || request.dateRequested?.split(' ')[1] || '')
+    .filter((value) => Boolean(value));
 
-  const availableReservationTimeSlots = reservationTimeSlots.filter((slot) => !occupiedTimesForSelectedDate.has(slot));
+  const occupiedCountByTimeSlot = occupiedTimesForSelectedDate.reduce<Map<string, number>>((acc, slot) => {
+    acc.set(slot, (acc.get(slot) || 0) + 1);
+    return acc;
+  }, new Map());
+
+  const getRemainingCapacityForTimeSlot = (slot: string) => {
+    const occupiedCount = occupiedCountByTimeSlot.get(slot) || 0;
+    return Math.max(slotCapacityAide - occupiedCount, 0);
+  };
+
+  const availableReservationTimeSlots = reservationTimeSlots.filter((slot) => getRemainingCapacityForTimeSlot(slot) > 0);
+
+  useEffect(() => {
+    setIntervalMinutesAide(reservationSettings.intervalMinutes);
+    setSlotCapacityAide(reservationSettings.slotCapacity);
+    setHeureAide((currentTime) => currentTime || reservationSettings.startTime);
+  }, [reservationSettings.startTime, reservationSettings.intervalMinutes, reservationSettings.slotCapacity]);
 
   const planReservationSchedule = (baseDate: string, baseTime: string, offsetMinutes: number) => {
     const hasDate = Boolean(baseDate);
@@ -188,6 +221,19 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
   const currentAidType = aidTypes.find(type => type.id === selectedAidType);
 
   useEffect(() => {
+    if (!currentAidType) {
+      setValeurEstimee('');
+      return;
+    }
+
+    const quantity = parseQuantityText(quantite, false) || 0;
+    const defaultValue = Number(currentAidType.defaultValue || 0);
+    const estimatedValue = defaultValue * quantity;
+
+    setValeurEstimee(estimatedValue > 0 ? estimatedValue.toFixed(2) : '');
+  }, [currentAidType, quantite]);
+
+  useEffect(() => {
     const refreshBeneficiaires = () => {
       setBeneficiaires(obtenirBeneficiairesComptoir());
     };
@@ -204,7 +250,6 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
       if (event.key === comptoirStorageKeys.reservationSettings) {
         const updatedSettings = obtenirReservationSettingsComptoir();
         setReservationSettings(updatedSettings);
-        setHeureAide((currentTime) => currentTime || updatedSettings.startTime);
       }
     };
 
@@ -221,7 +266,6 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
       if (detail?.key === comptoirStorageKeys.reservationSettings) {
         const updatedSettings = obtenirReservationSettingsComptoir();
         setReservationSettings(updatedSettings);
-        setHeureAide((currentTime) => currentTime || updatedSettings.startTime);
       }
     };
 
@@ -239,9 +283,9 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
   useEffect(() => {
     localStorage.setItem(
       AIDE_ALIMENTAIRE_SCHEDULE_STORAGE_KEY,
-      JSON.stringify({ date: dateAide, time: heureAide })
+      JSON.stringify({ date: dateAide, time: heureAide, intervalMinutes: intervalMinutesAide, slotCapacity: slotCapacityAide })
     );
-  }, [dateAide, heureAide]);
+  }, [dateAide, heureAide, intervalMinutesAide, slotCapacityAide]);
 
   useEffect(() => {
     if (availableReservationTimeSlots.length === 0) {
@@ -340,10 +384,17 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
       estimatedValue = (currentAidType.defaultValue || 0) * quantity;
     }
 
-    const intervalMinutes = reservationSettings.intervalMinutes;
+    const intervalMinutes = intervalMinutesAide;
     if (!Number.isFinite(intervalMinutes) || intervalMinutes <= 0) {
       toast.error(t('common.error'), {
-        description: 'Programmez un intervalle valide dans le tableau de bord du Comptoir.',
+        description: 'Définissez un intervalle de rendez-vous valide (minutes).',
+      });
+      return;
+    }
+
+    if (!Number.isFinite(slotCapacityAide) || slotCapacityAide <= 0) {
+      toast.error(t('common.error'), {
+        description: 'Définissez une capacité valide de personnes par horaire.',
       });
       return;
     }
@@ -378,13 +429,17 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
 
     const demandasActuales = obtenirDemandesAideComptoir();
     let siguienteIdDemanda = generarSiguienteIdDemanda();
+    const occupiedReservationSlotCounts = demandasActuales
+      .filter((request) => request.status !== 'rejected')
+      .reduce<Map<string, number>>((acc, request) => {
+        const slotKey = getRequestReservationSlotKey(request);
+        if (!slotKey) {
+          return acc;
+        }
 
-    const occupiedReservationSlots = new Set(
-      demandasActuales
-        .filter((request) => request.status !== 'rejected')
-        .map((request) => getRequestReservationSlotKey(request))
-        .filter((slotKey): slotKey is string => Boolean(slotKey))
-    );
+        acc.set(slotKey, (acc.get(slotKey) || 0) + 1);
+        return acc;
+      }, new Map());
 
     const beneficiariesWithExistingReservation = selectedBeneficiaires.filter((beneficiaire) => (
       demandasActuales.some((request) => request.beneficiaireId === beneficiaire.id && request.status !== 'rejected')
@@ -417,9 +472,17 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
     let addedCount = 0;
     const baseSlotIndex = Math.max(reservationTimeSlots.indexOf(heureAide), 0);
     const eligibleBeneficiaries = selectedBeneficiaires.filter((beneficiaire) => !beneficiariesWithExistingReservation.some((item) => item.id === beneficiaire.id));
-    const availableSlots = reservationTimeSlots
-      .slice(baseSlotIndex)
-      .filter((slot) => !occupiedReservationSlots.has(`${dateAide}__${slot}`));
+
+    const availableSlots = reservationTimeSlots.slice(baseSlotIndex).flatMap((slot) => {
+      if (!dateAide) {
+        return [] as string[];
+      }
+
+      const slotKey = `${dateAide}__${slot}`;
+      const occupiedCount = occupiedReservationSlotCounts.get(slotKey) || 0;
+      const remainingCount = Math.max(slotCapacityAide - occupiedCount, 0);
+      return remainingCount > 0 ? Array.from({ length: remainingCount }, () => slot) : [];
+    });
 
     if (availableSlots.length < eligibleBeneficiaries.length) {
       toast.error(t('common.error'), {
@@ -464,7 +527,7 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
 
       const assignedSlotKey = getRequestReservationSlotKey(reservationSchedule);
       if (assignedSlotKey) {
-        occupiedReservationSlots.add(assignedSlotKey);
+        occupiedReservationSlotCounts.set(assignedSlotKey, (occupiedReservationSlotCounts.get(assignedSlotKey) || 0) + 1);
       }
 
       siguienteIdDemanda += 1;
@@ -504,6 +567,8 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
         { duration: 6000 }
       );
     }
+
+    onNavigate(returnViewAfterSave);
   };
 
   return (
@@ -788,6 +853,32 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
                 </div>
               </div>
 
+              {/* Intervalle des rendez-vous */}
+              <div>
+                <Label>Intervalle des rendez-vous (minutes)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="240"
+                  value={String(intervalMinutesAide)}
+                  onChange={(event) => setIntervalMinutesAide(Number.parseInt(event.target.value || '0', 10) || 0)}
+                />
+                <p className="text-xs text-[#666666] mt-1">Définissez l'espacement entre deux rendez-vous consécutifs.</p>
+              </div>
+
+              {/* Capacité par horaire */}
+              <div>
+                <Label>Personnes par horaire</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={String(slotCapacityAide)}
+                  onChange={(event) => setSlotCapacityAide(Number.parseInt(event.target.value || '0', 10) || 0)}
+                />
+                <p className="text-xs text-[#666666] mt-1">Nombre maximum de bénéficiaires autorisés pour chaque horaire.</p>
+              </div>
+
               {/* Heure */}
               <div>
                 <Label>{t('comptoir.time')}</Label>
@@ -796,9 +887,18 @@ export function AideAlimentaire({ onNavigate, aidTypes, preselectedBeneficiaireI
                     <SelectValue placeholder="Sélectionner une heure" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableReservationTimeSlots.map((slot) => (
-                      <SelectItem key={slot} value={slot}>{slot}</SelectItem>
-                    ))}
+                    {reservationTimeSlots.map((slot) => {
+                      const remainingCapacity = getRemainingCapacityForTimeSlot(slot);
+                      const isAvailable = remainingCapacity > 0;
+                      return (
+                        <SelectItem key={slot} value={slot} disabled={!isAvailable}>
+                          {slot} ({remainingCapacity} {remainingCapacity > 1 ? 'personnes disponibles' : 'personne disponible'})
+                        </SelectItem>
+                      );
+                    })}
+                    {reservationTimeSlots.length === 0 && (
+                      <SelectItem value="__none__" disabled>Aucun créneau disponible</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-[#666666] mt-1">Créneaux libres: {availableReservationTimeSlots.length}/{reservationTimeSlots.length} pour le {dateAide || 'jour sélectionné'}.</p>

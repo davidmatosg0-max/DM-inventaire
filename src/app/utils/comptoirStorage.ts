@@ -18,6 +18,9 @@ export interface ComptoirAidRequest {
   quantite: number;
   dateRequested: string;
   status: 'pending' | 'approved' | 'rejected';
+  deliveryStatus?: 'scheduled' | 'completed' | 'delivered' | 'absent';
+  deliveredDate?: string;
+  deliveredBy?: string;
   processedDate?: string;
   processedBy?: string;
   notes?: string;
@@ -74,7 +77,7 @@ export interface ComptoirAppointment {
   date: string;
   heure: string;
   motif: string;
-  statut: 'confirme' | 'attente' | 'annule';
+  statut: 'confirme' | 'attente' | 'annule' | 'absent';
   notes?: string;
   type: 'regular';
   createdAt: string;
@@ -93,6 +96,7 @@ export interface ComptoirSpecialEvent {
   reservationIntervalMinutes?: number;
   lieu?: string;
   capaciteMax?: number;
+  capaciteParHoraire?: number;
   statut: 'planifie' | 'ouvert' | 'complet' | 'termine' | 'annule';
   createdAt: string;
   updatedAt: string;
@@ -123,6 +127,7 @@ export interface ComptoirReservationSettings {
   startTime: string;
   endTime: string;
   intervalMinutes: number;
+  slotCapacity: number;
   updatedAt: string;
 }
 
@@ -140,6 +145,7 @@ const DEFAULT_RESERVATION_SETTINGS: ComptoirReservationSettings = {
   startTime: '08:00',
   endTime: '17:00',
   intervalMinutes: 15,
+  slotCapacity: 1,
   updatedAt: new Date().toISOString(),
 };
 
@@ -348,12 +354,17 @@ export function obtenirEvenementsSpeciauxComptoir(): ComptoirSpecialEvent[] {
       const reservationIntervalMinutes = Number.isFinite(parsedInterval) && parsedInterval > 0
         ? Math.trunc(parsedInterval)
         : undefined;
+      const parsedSlotCapacity = Number(event.capaciteParHoraire);
+      const capaciteParHoraire = Number.isFinite(parsedSlotCapacity) && parsedSlotCapacity > 0
+        ? Math.trunc(parsedSlotCapacity)
+        : undefined;
 
       return {
         ...event,
         fechaInicio,
         fechaFin,
         reservationIntervalMinutes,
+        capaciteParHoraire,
       };
     })
     .filter((event) => Boolean(event.fechaInicio));
@@ -465,6 +476,7 @@ export function obtenirReservationSettingsComptoir(): ComptoirReservationSetting
 
     const parsedValue = JSON.parse(rawValue) as Partial<ComptoirReservationSettings>;
     const intervalMinutes = Number(parsedValue.intervalMinutes);
+    const slotCapacity = Number(parsedValue.slotCapacity);
 
     return {
       startTime: parsedValue.startTime || DEFAULT_RESERVATION_SETTINGS.startTime,
@@ -472,6 +484,9 @@ export function obtenirReservationSettingsComptoir(): ComptoirReservationSetting
       intervalMinutes: Number.isFinite(intervalMinutes) && intervalMinutes > 0
         ? Math.trunc(intervalMinutes)
         : DEFAULT_RESERVATION_SETTINGS.intervalMinutes,
+      slotCapacity: Number.isFinite(slotCapacity) && slotCapacity > 0
+        ? Math.trunc(slotCapacity)
+        : DEFAULT_RESERVATION_SETTINGS.slotCapacity,
       updatedAt: parsedValue.updatedAt || DEFAULT_RESERVATION_SETTINGS.updatedAt,
     };
   } catch (error) {
@@ -487,6 +502,7 @@ export function sauvegarderReservationSettingsComptoir(
     startTime: settings.startTime,
     endTime: settings.endTime,
     intervalMinutes: Math.trunc(settings.intervalMinutes),
+    slotCapacity: Math.max(1, Math.trunc(settings.slotCapacity)),
     updatedAt: new Date().toISOString(),
   };
 

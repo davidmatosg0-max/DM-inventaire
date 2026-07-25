@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Users, Building2, Calendar, FileText, Plus, Minus, 
-  Trash2, Package, DollarSign, Scale, CheckCircle2, AlertCircle, Calculator, Tag
+  Trash2, Package, DollarSign, Scale, CheckCircle2, AlertCircle, Calculator, Tag,
+  Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -19,12 +20,11 @@ import { guardarNotificacion, crearNotificacionNuevaComanda } from '../../utils/
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
 import { enviarEmailAutomaticoNuevaComanda } from '../../utils/organismoEmailNotifications';
 import { Comanda } from '../../types';
-import { SimulacionRecepcionNotificacion } from '../organismo/SimulacionRecepcionNotificacion';
 import { DialogCrearOferta } from './DialogCrearOferta';
+import { SimulacionCreacionOverlay, useSimulacionCreacion, type SimulacionDestinatario } from './SimulacionCreacionOverlay';
 import { obtenerResumenReservasInventario } from '../../utils/inventoryReservations';
 import { formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { calcularValorDistribucionProducto } from '../../utils/distributionValue';
-import { construirRutaAccesoOrganismo } from '../../utils/organismoAccessLinks';
 import { resolverModalidadDistribucionComanda } from '../../utils/comandaDistributionMode';
 import {
   resolverTemperaturaProductoCanonica,
@@ -216,6 +216,20 @@ function obtenerOrganismosConProductosAsignados(
   return organismos.filter(organismo => distribucionKeysConProductos.has(organismo.distribucionKey));
 }
 
+function obtenerMonograma(texto: string): string {
+  const partes = texto
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (partes.length === 0) {
+    return 'BA';
+  }
+
+  return partes.slice(0, 2).map(parte => parte.charAt(0).toUpperCase()).join('');
+}
+
 interface DialogDistribuirProductosProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -261,6 +275,9 @@ export function DialogDistribuirProductos({
   
   // Estado para diálogo de ofertas
   const [ofertaDialogOpen, setOfertaDialogOpen] = useState(false);
+
+  // Simulación visual profesional para la creación de comandas
+  const simulacion = useSimulacionCreacion();
 
   const usuarioActual = t('inventory.distributionDialog.systemUser'); // En producción vendría del contexto de autenticación
   const reservasInventario = React.useMemo(
@@ -421,7 +438,6 @@ export function DialogDistribuirProductos({
       { duration: 6000 }
     );
   };
-
   const calcularPorcentajeTotal = () => {
     return organismosConPorcentajes.reduce((sum, org) => sum + org.porcentaje, 0);
   };
@@ -443,13 +459,7 @@ export function DialogDistribuirProductos({
       return;
     }
 
-    const { valorTotal, pesoTotal } = calcularTotales();
-    const numeroComanda = generarNumeroComanda();
     const organismoData = organismosSeleccionablesIndividuales.find(organismo => organismo.id === organismoSeleccionado);
-    const modalidadDistribucion = tipoDistribucion === 'collation' ? 'collation' : 'standard';
-    const observacionesComanda = modalidadDistribucion === 'collation'
-      ? `Distribution Collation${observaciones ? `\n${observaciones}` : ''}`
-      : observaciones;
 
     if (!organismoData) {
       toast.error(tipoDistribucion === 'collation'
@@ -457,7 +467,21 @@ export function DialogDistribuirProductos({
         : 'Sélectionnez un organisme valide pour la distribution.');
       return;
     }
-    
+
+    simulacion.iniciar(
+      [{ id: organismoData.id, nombre: organismoData.nombre, porcentaje: 100 }],
+      () => ejecutarCrearComandaIndividual(organismoData)
+    );
+  };
+
+  const ejecutarCrearComandaIndividual = (organismoData: Organismo) => {
+    const { valorTotal, pesoTotal } = calcularTotales();
+    const numeroComanda = generarNumeroComanda();
+    const modalidadDistribucion = tipoDistribucion === 'collation' ? 'collation' : 'standard';
+    const observacionesComanda = modalidadDistribucion === 'collation'
+      ? `Distribution Collation${observaciones ? `\n${observaciones}` : ''}`
+      : observaciones;
+
     const comanda: Comanda = {
       id: `comanda-${Date.now()}`,
       numero: numeroComanda,
@@ -544,6 +568,48 @@ export function DialogDistribuirProductos({
       toast.error(error instanceof Error ? error.message : t('inventory.distributionDialog.errors.createOrder'));
       console.error(error);
     }
+  };
+
+  const iniciarSimulacionCreacionGrupo = () => {
+    const distribucionActual = obtenerDistribucionAutomaticaOrganismos(organismosDisponibles, modalidadDistribucionAgrupada);
+
+    if (distribucionActual.length === 0) {
+      toast.error(
+        tipoDistribucion === 'collation'
+          ? 'Aucun organisme Collation avec pourcentage de répartition n\'est disponible.'
+          : t('inventory.distributionDialog.errors.noRegularOrganizationsWithShare')
+      );
+      return;
+    }
+
+    const validacion = validarDistribucionGrupo(distribucionActual);
+    if (!validacion.valido) {
+      if (Math.abs(validacion.porcentajeTotal - 100) >= 0.01) {
+        toast.error(t('inventory.distributionDialog.errors.totalPercentageMustBe100', { current: redondearPorcentajeTotal(validacion.porcentajeTotal) }));
+      } else {
+        toast.error(t('inventory.distributionDialog.errors.completeAllFieldsCorrectly'));
+      }
+      return;
+    }
+
+    const productosDistribuibles = productosEditables.filter(item => item.cantidad > 0);
+    if (productosDistribuibles.length === 0) {
+      toast.error(t('inventory.distributionDialog.errors.atLeastOnePositiveProduct'));
+      return;
+    }
+
+    const asignados = obtenerOrganismosConProductosAsignados(productosEditables, distribucionActual);
+    if (asignados.length === 0) {
+      toast.error(t('inventory.distributionDialog.errors.noAssignedProducts'));
+      return;
+    }
+
+    const dests: SimulacionDestinatario[] = asignados.map(o => ({
+      id: o.distribucionKey || o.id,
+      nombre: o.nombre,
+      porcentaje: o.porcentaje,
+    }));
+    simulacion.iniciar(dests, () => crearComandasGrupo());
   };
 
   const crearComandasGrupo = () => {
@@ -805,6 +871,7 @@ export function DialogDistribuirProductos({
   const porcentajeTotalGrupo = calcularPorcentajeTotal();
   const porcentajeTotalGrupoRedondeado = redondearPorcentajeTotal(porcentajeTotalGrupo);
   const porcentajeGrupoValido = Math.abs(porcentajeTotalGrupo - 100) < 0.01;
+  const coloresGraficoDistribucion = ['#1E73BE', '#4CAF50', '#F59E0B', '#7E57C2', '#EC4899', '#06B6D4'];
   const porcentajeReparticionTotalConfigurado = organismosElegiblesDistribucionAgrupada.reduce(
     (sum, organismo) => sum + normalizarPorcentajeEntero(organismo.porcentajeReparticion),
     0
@@ -851,14 +918,6 @@ export function DialogDistribuirProductos({
           })),
         valorTotal: redondearTotalDistribucion(totales.valorTotal),
       } as Comanda)
-    : null;
-  const notificacionPreviewIndividual = comandaPreviewIndividual
-    ? {
-        mensaje: t('inventory.distributionDialog.previewNotificationMessage', { number: comandaPreviewIndividual.numero }),
-        fecha: new Date().toISOString(),
-        leida: false,
-        urlAcceso: construirRutaAccesoOrganismo(organismoPreviewIndividual?.claveAcceso),
-      }
     : null;
   const organismoPreviewGrupo = organismosDisponibles.find(
     organismo => organismo.id === organismosConAsignacionGrupo[0]?.id
@@ -913,15 +972,6 @@ export function DialogDistribuirProductos({
         valorTotal: redondearTotalDistribucion(valorPreviewGrupo),
       } as Comanda)
     : null;
-  const notificacionPreviewGrupo = comandaPreviewGrupo
-    ? {
-        mensaje: t('inventory.distributionDialog.previewNotificationMessage', { number: comandaPreviewGrupo.numero }),
-        fecha: new Date().toISOString(),
-        leida: false,
-        urlAcceso: construirRutaAccesoOrganismo(organismoPreviewGrupo?.claveAcceso),
-      }
-    : null;
-
   const tituloPaso = {
     seleccion_tipo: t('inventory.distributionDialog.stepTitles.selectType'),
     editar_cantidades: t('inventory.distributionDialog.stepTitles.editQuantities'),
@@ -956,6 +1006,25 @@ export function DialogDistribuirProductos({
               {descripcionPaso}
             </DialogDescription>
           </DialogHeader>
+
+          {simulacion.activo && (
+            <SimulacionCreacionOverlay
+              activo={simulacion.activo}
+              progreso={simulacion.progreso}
+              etapa={simulacion.etapa}
+              destinatarios={simulacion.destinatarios}
+              titulo={simulacion.destinatarios.length > 1
+                ? (tipoDistribucion === 'collation'
+                    ? 'Distribution Collation aux organismes'
+                    : 'Distribution des commandes aux organismes')
+                : 'Création de la commande à l\'organisme'}
+              subtitulo="Création en cours"
+              etiquetaDestinatarios={simulacion.destinatarios.length > 1
+                ? 'Répartition simulée par organisme'
+                : 'Organisme destinataire'}
+              nota="Génération sécurisée des commandes et envoi des notifications automatiques aux organismes sélectionnés."
+            />
+          )}
 
           <div className="flex-1 overflow-auto py-4">
             {/* Paso 1: Selección de tipo de distribución */}
@@ -1250,11 +1319,94 @@ export function DialogDistribuirProductos({
                 {organismoPreviewIndividual && comandaPreviewIndividual && (
                   <div className="space-y-2">
                     <Label>{t('inventory.distributionDialog.individualSimulation')}</Label>
-                    <SimulacionRecepcionNotificacion
-                      organismo={organismoPreviewIndividual}
-                      comanda={comandaPreviewIndividual}
-                      notificacion={notificacionPreviewIndividual}
-                    />
+                    <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_22px_60px_-40px_rgba(15,23,42,0.42)]">
+                      <div className="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(30,115,190,0.98)_0%,rgba(46,125,50,0.96)_100%)] px-4 py-4 text-white">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-sm font-bold tracking-[0.18em] text-white shadow-[0_16px_30px_-20px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                              {obtenerMonograma(organismoPreviewIndividual.nombre)}
+                            </div>
+                            <div>
+                              <p className="text-[11px] uppercase tracking-[0.28em] text-white/75">Dossier de distribution</p>
+                              <h4 className="mt-1 text-xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                {comandaPreviewIndividual.numero}
+                              </h4>
+                              <p className="mt-1 text-sm text-white/85">{organismoPreviewIndividual.nombre}</p>
+                              <span className="mt-2 inline-flex rounded-full border border-white/25 bg-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
+                                Prévisualisation officielle
+                              </span>
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border border-white/20 bg-white/12 px-3 py-2 text-right backdrop-blur-sm">
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-white/70">État</p>
+                            <p className="text-sm font-semibold">Préparation simulée</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                        <div className="space-y-4">
+                          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2">
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Organisme</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{organismoPreviewIndividual.nombre}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Date prévue</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{fechaCaducidadGrupo || 'À définir'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Articles</p>
+                              <p className="mt-1 text-2xl font-bold text-[#1E73BE]">{formatQuantity(totales.totalItems)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Statut</p>
+                              <p className="mt-1 inline-flex rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
+                                En attente de validation
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Poids</p>
+                              <p className="mt-1 text-lg font-bold text-slate-900">{pesoTotalFormateado} kg</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Valeur</p>
+                              <p className="mt-1 text-lg font-bold text-slate-900">CAD$ {valorTotalFormateado}</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Priorité</p>
+                              <p className="mt-1 text-lg font-bold text-slate-900">Normale</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Aperçu des lignes</p>
+                          </div>
+                          <div className="space-y-2 p-3">
+                            {comandaPreviewIndividual.items.slice(0, 4).map((item) => (
+                              <div key={`${item.productoId}-${item.nombreProducto}`} className="rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-3 py-2.5">
+                                <div className="flex items-start justify-between gap-3">
+                                  <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.nombreProducto}</p>
+                                  <span className="shrink-0 rounded-full bg-[#E3F2FD] px-2.5 py-1 text-[11px] font-semibold text-[#1E73BE]">
+                                    {item.cantidad} {item.unidad}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {comandaPreviewIndividual.items.length > 4 && (
+                            <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                              ... et {comandaPreviewIndividual.items.length - 4} produits supplémentaires
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1323,47 +1475,11 @@ export function DialogDistribuirProductos({
                   </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center mb-3">
-                    <Label>{t('inventory.distributionDialog.group.organizationsAndPercentages')}</Label>
-                  </div>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                  {organismosConPorcentajes.map((org, index) => {
+                    const porcentajeReparticionOrganismo = org.porcentajeReparticionConfigurado;
 
-                  {organismosElegiblesDistribucionAgrupada.length > 0 && (
-                    <Card className="border border-[#90CAF9] bg-[#F4F9FF]">
-                      <CardContent className="p-3 text-xs text-gray-700 space-y-2">
-                        <p className="font-semibold text-[#1E73BE]">
-                          {tipoDistribucion === 'collation'
-                            ? 'Diagnostic des organismes Collation admissibles'
-                            : t('inventory.distributionDialog.group.eligibleDiagnosis')}
-                        </p>
-                        <div className="space-y-1">
-                          {organismosElegiblesDistribucionAgrupada.map((organismo) => (
-                            <div key={`${organismo.id}-${organismo.nombre}`} className="flex flex-wrap gap-2">
-                              <span>{organismo.nombre}</span>
-                              <span className="text-gray-500">{t('inventory.distributionDialog.group.idPrefix')} {organismo.id}</span>
-                              <span className="text-gray-500">{t('inventory.distributionDialog.group.sharePrefix', { share: normalizarPorcentajeEntero(organismo.porcentajeReparticion) })}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {organismosConPorcentajes.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                      <p>{t('inventory.distributionDialog.group.noOrganizationsAvailable')}</p>
-                      <p className="text-sm">
-                        {t('inventory.distributionDialog.group.noOrganizationsAvailableDescription')}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                    {organismosConPorcentajes.map((org, index) => {
-                      const porcentajeReparticionOrganismo = org.porcentajeReparticionConfigurado;
-
-                      return (
+                    return (
                       <Card key={org.distribucionKey || index} className="border-2 border-gray-200">
                         <CardContent className="p-4">
                           <div className="flex gap-3 items-start">
@@ -1406,9 +1522,9 @@ export function DialogDistribuirProductos({
                           </div>
                         </CardContent>
                       </Card>
-                      );
-                    })}
-                  </div>
+                    );
+                  })}
+                </div>
 
                   {organismosConPorcentajes.length > 0 && (
                     <Card className={`border-2 ${porcentajeGrupoValido ? 'border-[#4CAF50] bg-[#E8F5E9]' : 'border-[#FFC107] bg-[#FFF8E1]'}`}>
@@ -1434,7 +1550,6 @@ export function DialogDistribuirProductos({
                       </CardContent>
                     </Card>
                   )}
-                </div>
 
                 <div className="rounded-xl border-2 border-[#90CAF9] bg-[#F4F9FF] px-4 py-4 shadow-sm">
                   <div className="mb-3 flex items-center justify-between gap-3">
@@ -1496,11 +1611,93 @@ export function DialogDistribuirProductos({
                     <p className="text-xs text-gray-500">
                       {t('inventory.distributionDialog.group.internalSimulationDescription')}
                     </p>
-                    <SimulacionRecepcionNotificacion
-                      organismo={organismoPreviewGrupo}
-                      comanda={comandaPreviewGrupo}
-                      notificacion={notificacionPreviewGrupo}
-                    />
+                    <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] shadow-[0_22px_60px_-40px_rgba(15,23,42,0.42)]">
+                      <div className="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(30,115,190,0.98)_0%,rgba(91,122,164,0.96)_44%,rgba(46,125,50,0.95)_100%)] px-4 py-4 text-white">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-sm font-bold tracking-[0.18em] text-white shadow-[0_16px_30px_-20px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                              {obtenerMonograma(comandaPreviewGrupo.grupoDistribucionEtiqueta)}
+                            </div>
+                            <div>
+                              <p className="text-[11px] uppercase tracking-[0.28em] text-white/75">Dossier de groupe</p>
+                              <h4 className="mt-1 text-xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                {comandaPreviewGrupo.numero}
+                              </h4>
+                              <p className="mt-1 text-sm text-white/85">{comandaPreviewGrupo.grupoDistribucionEtiqueta}</p>
+                              <span className="mt-2 inline-flex rounded-full border border-white/25 bg-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
+                                Prévisualisation officielle
+                              </span>
+                            </div>
+                          </div>
+                          <Badge className="border border-white/25 bg-white/15 text-white hover:bg-white/20">
+                            {organismosConAsignacionGrupo.length} commandes
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                        <div className="space-y-4">
+                          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2">
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Organisme de référence</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{organismoPreviewGrupo.nombre}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Date prévue</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{fechaCaducidadGrupo || 'À définir'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Articles</p>
+                              <p className="mt-1 text-2xl font-bold text-[#1E73BE]">{formatQuantity(itemsPreviewGrupo.reduce((sum, item) => sum + item.cantidad, 0))}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Statut</p>
+                              <p className="mt-1 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800 ring-1 ring-emerald-200">
+                                Répartition simulée
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Poids</p>
+                              <p className="mt-1 text-lg font-bold text-slate-900">{formatQuantity(totales.pesoTotal)} kg</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Valeur</p>
+                              <p className="mt-1 text-lg font-bold text-slate-900">CAD$ {formatMoney(valorPreviewGrupo)}</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Commandes</p>
+                              <p className="mt-1 text-lg font-bold text-slate-900">{organismosConAsignacionGrupo.length}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Répartition simulée</p>
+                          </div>
+                          <div className="space-y-2 p-3">
+                            {itemsPreviewGrupo.slice(0, 4).map((item) => (
+                              <div key={`${item.productoId}-${item.nombreProducto}`} className="rounded-xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-3 py-2.5">
+                                <div className="flex items-start justify-between gap-3">
+                                  <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.nombreProducto}</p>
+                                  <span className="shrink-0 rounded-full bg-[#E8F5E9] px-2.5 py-1 text-[11px] font-semibold text-[#2E7D32]">
+                                    {item.cantidad} {item.unidad}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {itemsPreviewGrupo.length > 4 && (
+                            <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                              ... et {itemsPreviewGrupo.length - 4} produits supplémentaires
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1599,19 +1796,27 @@ export function DialogDistribuirProductos({
                   <Button 
                     onClick={crearComandaIndividual} 
                     className="bg-[#4CAF50] hover:bg-[#45a049]"
-                    disabled={!organismoSeleccionado}
+                    disabled={simulacion.activo || !organismoSeleccionado}
                   >
-                    <FileText className="w-4 h-4 mr-2" />
+                    {simulacion.activo ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4 mr-2" />
+                    )}
                     {t('inventory.distributionDialog.createOrder')}
                   </Button>
                 )}
                 {paso === 'distribuir_grupo' && (
                   <Button 
-                    onClick={crearComandasGrupo} 
+                    onClick={iniciarSimulacionCreacionGrupo} 
                     className="bg-[#4CAF50] hover:bg-[#45a049]"
-                    disabled={!porcentajeGrupoValido || organismosConPorcentajes.length === 0 || organismosConAsignacionGrupo.length === 0}
+                    disabled={simulacion.activo || !porcentajeGrupoValido || organismosConPorcentajes.length === 0 || organismosConAsignacionGrupo.length === 0}
                   >
-                    <FileText className="w-4 h-4 mr-2" />
+                    {simulacion.activo ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4 mr-2" />
+                    )}
                     {t('inventory.distributionDialog.createOrders', { count: organismosConAsignacionGrupo.length })}
                   </Button>
                 )}

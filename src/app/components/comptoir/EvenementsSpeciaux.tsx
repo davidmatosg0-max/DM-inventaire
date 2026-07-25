@@ -73,6 +73,7 @@ interface EventFormState {
   reservationIntervalMinutes: string;
   lieu: string;
   capaciteMax: string;
+  capaciteParHoraire: string;
   statut: ComptoirSpecialEvent['statut'];
 }
 
@@ -91,6 +92,7 @@ const EMPTY_EVENT_FORM: EventFormState = {
   reservationIntervalMinutes: '',
   lieu: '',
   capaciteMax: '',
+  capaciteParHoraire: '',
   statut: 'planifie',
 };
 
@@ -183,6 +185,37 @@ function generateReservationTimeSlots(
   }
 
   return slots;
+}
+
+function getRegistrationPanierQuantity(registration?: ComptoirSpecialEventRegistration | null): number {
+  if (!registration || registration.statut === 'annule') {
+    return 0;
+  }
+
+  if (Array.isArray(registration.aidItems) && registration.aidItems.length > 0) {
+    const total = registration.aidItems.reduce((sum, item) => {
+      const quantity = Number(item?.quantity);
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return sum;
+      }
+      return sum + Math.trunc(quantity);
+    }, 0);
+
+    if (total > 0) {
+      return total;
+    }
+  }
+
+  const fallbackQuantity = Number(registration.aidQuantity);
+  if (Number.isFinite(fallbackQuantity) && fallbackQuantity > 0) {
+    return Math.trunc(fallbackQuantity);
+  }
+
+  if (registration.aidTypeId || registration.aidTypeName) {
+    return 1;
+  }
+
+  return 0;
 }
 
 function getStatusBadgeClass(status: ComptoirSpecialEvent['statut'] | ComptoirSpecialEventRegistration['statut']): string {
@@ -403,16 +436,22 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
     registrationsForSelectedEvent.map((registration) => [registration.beneficiaireId, registration])
   );
   const occupiedRegistrationsForSelectedEvent = registrationsForSelectedEvent.filter((registration) => registration.statut !== 'annule');
+  const selectedEventAssignedPanierTotal = occupiedRegistrationsForSelectedEvent.reduce((total, registration) => (
+    total + getRegistrationPanierQuantity(registration)
+  ), 0);
   const selectedEventCapacityReached = selectedEvent
-    ? typeof selectedEvent.capaciteMax === 'number' && occupiedRegistrationsForSelectedEvent.length >= selectedEvent.capaciteMax
+    ? typeof selectedEvent.capaciteMax === 'number' && selectedEventAssignedPanierTotal >= selectedEvent.capaciteMax
     : false;
   const selectedEventRemainingSlots = selectedEvent && typeof selectedEvent.capaciteMax === 'number'
-    ? Math.max(selectedEvent.capaciteMax - occupiedRegistrationsForSelectedEvent.length, 0)
+    ? Math.max(selectedEvent.capaciteMax - selectedEventAssignedPanierTotal, 0)
     : null;
   const selectedEventAvailableDates = selectedEvent ? getEventAvailableDates(selectedEvent) : [];
   const selectedEventTimeSlots = selectedEvent
     ? generateReservationTimeSlots(selectedEvent.heureDebut, selectedEvent.heureFin, selectedEvent.reservationIntervalMinutes)
     : [];
+  const selectedEventSlotCapacity = selectedEvent && typeof selectedEvent.capaciteParHoraire === 'number' && selectedEvent.capaciteParHoraire > 0
+    ? selectedEvent.capaciteParHoraire
+    : 1;
   const availableAidTypes = aidTypes.filter((aidType) => aidType.isActive !== false);
 
   const normalizeAidQuantity = (value?: number) => {
@@ -502,6 +541,48 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
     return availableAidTypes.find((aidType) => aidType.id === aidTypeId)?.name || fallbackName || '';
   };
 
+  const selectedEventAidTypeBadges = registrationsForSelectedEvent.reduce<Array<{ label: string; total: number }>>((acc, registration) => {
+    const aidItems = getAidItemsFromRegistration(registration);
+
+    if (aidItems.length === 0) {
+      const noneEntry = acc.find((item) => item.label === 'Sans type défini');
+      if (noneEntry) {
+        noneEntry.total += 1;
+      } else {
+        acc.push({ label: 'Sans type défini', total: 1 });
+      }
+
+      return acc;
+    }
+
+    aidItems.forEach((item) => {
+      const label = getAidTypeNameById(item.aidTypeId);
+      const existingEntry = acc.find((currentItem) => currentItem.label === label);
+      if (existingEntry) {
+        existingEntry.total += item.quantity;
+        return;
+      }
+
+      acc.push({ label, total: item.quantity });
+    });
+
+    return acc;
+  }, []);
+
+  const selectedEventAidTypeBadgeNodes = selectedEvent
+    ? (selectedEventAidTypeBadges.length > 0
+      ? selectedEventAidTypeBadges.map((item) => (
+        <Badge key={item.label} variant="outline" className="text-[10px] font-medium text-[#5B6570]">
+          {item.label}: {item.total}
+        </Badge>
+      ))
+      : [
+        <Badge key="no-panier" variant="outline" className="text-[10px] font-medium text-[#666666]">
+          Aucun panier inscrit
+        </Badge>,
+      ])
+    : [];
+
   const getAidTypeFilterLabel = () => {
     if (registrationAidTypeFilter === 'all') {
       return 'Tous';
@@ -565,32 +646,6 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       }
       return left.beneficiaireNom.localeCompare(right.beneficiaireNom);
     });
-  const registrationCountsByAidType = filteredRegistrations.reduce<Array<{ label: string; total: number }>>((acc, registration) => {
-    const aidItems = getAidItemsFromRegistration(registration);
-    if (aidItems.length === 0) {
-      const noneEntry = acc.find((item) => item.label === 'Sans type défini');
-      if (noneEntry) {
-        noneEntry.total += 1;
-      } else {
-        acc.push({ label: 'Sans type défini', total: 1 });
-      }
-
-      return acc;
-    }
-
-    aidItems.forEach((item) => {
-      const label = getAidTypeNameById(item.aidTypeId);
-      const existingEntry = acc.find((currentItem) => currentItem.label === label);
-      if (existingEntry) {
-        existingEntry.total += item.quantity;
-        return;
-      }
-
-      acc.push({ label, total: item.quantity });
-    });
-
-    return acc;
-  }, []);
   const groupedRegistrations = Array.from(
     filteredRegistrations.reduce<Map<string, {
       appointmentDate?: string;
@@ -645,6 +700,9 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       editingRegistrationEvent.reservationIntervalMinutes,
     )
     : [];
+  const editingRegistrationSlotCapacity = editingRegistrationEvent && typeof editingRegistrationEvent.capaciteParHoraire === 'number' && editingRegistrationEvent.capaciteParHoraire > 0
+    ? editingRegistrationEvent.capaciteParHoraire
+    : 1;
 
   const availableBeneficiaries = [...beneficiaries]
     .filter((beneficiary) => {
@@ -668,19 +726,8 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
     return `${appointmentDate}__${appointmentTime}`;
   };
 
-  const getOccupiedSlotKeysForBeneficiary = (beneficiaryId: string) => {
-    const occupiedSlotKeys = new Set<string>();
-
-    registrationsForSelectedEvent.forEach((registration) => {
-      if (registration.beneficiaireId === beneficiaryId || registration.statut === 'annule') {
-        return;
-      }
-
-      const slotKey = buildAppointmentSlotKey(registration.appointmentDate, registration.appointmentTime);
-      if (slotKey) {
-        occupiedSlotKeys.add(slotKey);
-      }
-    });
+  const getSlotUsageByBeneficiarySelection = (beneficiaryId: string) => {
+    const slotUsage = new Map<string, number>();
 
     selectedBeneficiaryIds.forEach((selectedBeneficiaryId) => {
       if (selectedBeneficiaryId === beneficiaryId) {
@@ -696,12 +743,14 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       const selectedDate = registrationAppointmentDates[selectedBeneficiaryId] || existingRegistration?.appointmentDate;
       const selectedTime = registrationAppointmentTimes[selectedBeneficiaryId] || existingRegistration?.appointmentTime;
       const slotKey = buildAppointmentSlotKey(selectedDate, selectedTime);
-      if (slotKey) {
-        occupiedSlotKeys.add(slotKey);
+      if (!slotKey) {
+        return;
       }
+
+      slotUsage.set(slotKey, (slotUsage.get(slotKey) || 0) + 1);
     });
 
-    return occupiedSlotKeys;
+    return slotUsage;
   };
 
   const getAvailableDatesForBeneficiary = (beneficiaryId: string) => {
@@ -709,9 +758,9 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       return selectedEventAvailableDates;
     }
 
-    const occupiedSlotKeys = getOccupiedSlotKeysForBeneficiary(beneficiaryId);
+    const slotUsage = getSlotUsageByBeneficiarySelection(beneficiaryId);
     return selectedEventAvailableDates.filter((availableDate) => (
-      selectedEventTimeSlots.some((slot) => !occupiedSlotKeys.has(`${availableDate}__${slot}`))
+      selectedEventTimeSlots.some((slot) => (slotUsage.get(`${availableDate}__${slot}`) || 0) < selectedEventSlotCapacity)
     ));
   };
 
@@ -720,8 +769,65 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       return selectedEventTimeSlots;
     }
 
-    const occupiedSlotKeys = getOccupiedSlotKeysForBeneficiary(beneficiaryId);
-    return selectedEventTimeSlots.filter((slot) => !occupiedSlotKeys.has(`${appointmentDate}__${slot}`));
+    const slotUsage = getSlotUsageByBeneficiarySelection(beneficiaryId);
+    return selectedEventTimeSlots.filter((slot) => (slotUsage.get(`${appointmentDate}__${slot}`) || 0) < selectedEventSlotCapacity);
+  };
+
+  const getRemainingSlotCapacityForBeneficiary = (beneficiaryId: string, appointmentDate: string, slot: string) => {
+    if (!appointmentDate || !slot) {
+      return selectedEventSlotCapacity;
+    }
+
+    const slotUsage = getSlotUsageByBeneficiarySelection(beneficiaryId);
+    return Math.max(selectedEventSlotCapacity - (slotUsage.get(`${appointmentDate}__${slot}`) || 0), 0);
+  };
+
+  const getSlotUsageForEditingRegistration = () => {
+    const slotUsage = new Map<string, number>();
+
+    if (!editingRegistrationEvent || !editingRegistration) {
+      return slotUsage;
+    }
+
+    registrations.forEach((registration) => {
+      if (
+        registration.eventId !== editingRegistrationEvent.id
+        || registration.id === editingRegistration.id
+        || registration.statut === 'annule'
+      ) {
+        return;
+      }
+
+      const slotKey = buildAppointmentSlotKey(registration.appointmentDate, registration.appointmentTime);
+      if (!slotKey) {
+        return;
+      }
+
+      slotUsage.set(slotKey, (slotUsage.get(slotKey) || 0) + 1);
+    });
+
+    return slotUsage;
+  };
+
+  const getAvailableTimeSlotsForEditingRegistration = (appointmentDate: string) => {
+    if (!editingRegistrationEvent || !editingRegistration || editingRegistrationTimeSlots.length === 0 || !appointmentDate) {
+      return editingRegistrationTimeSlots;
+    }
+
+    const slotUsage = getSlotUsageForEditingRegistration();
+
+    return editingRegistrationTimeSlots.filter((slot) => (
+      (slotUsage.get(`${appointmentDate}__${slot}`) || 0) < editingRegistrationSlotCapacity
+    ));
+  };
+
+  const getRemainingSlotCapacityForEditingRegistration = (appointmentDate: string, slot: string) => {
+    if (!appointmentDate || !slot) {
+      return editingRegistrationSlotCapacity;
+    }
+
+    const slotUsage = getSlotUsageForEditingRegistration();
+    return Math.max(editingRegistrationSlotCapacity - (slotUsage.get(`${appointmentDate}__${slot}`) || 0), 0);
   };
 
   const totalEventCount = sortedEvents.length;
@@ -752,6 +858,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       reservationIntervalMinutes: typeof event.reservationIntervalMinutes === 'number' ? String(event.reservationIntervalMinutes) : '',
       lieu: event.lieu || '',
       capaciteMax: typeof event.capaciteMax === 'number' ? String(event.capaciteMax) : '',
+      capaciteParHoraire: typeof event.capaciteParHoraire === 'number' ? String(event.capaciteParHoraire) : '',
       statut: event.statut,
     });
     setEventDialogOpen(true);
@@ -781,6 +888,9 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
     const reservationIntervalMinutes = eventForm.reservationIntervalMinutes
       ? Number.parseInt(eventForm.reservationIntervalMinutes, 10)
       : undefined;
+    const capaciteParHoraire = eventForm.capaciteParHoraire
+      ? Number.parseInt(eventForm.capaciteParHoraire, 10)
+      : undefined;
 
     if (eventForm.reservationIntervalMinutes && (!Number.isFinite(reservationIntervalMinutes) || reservationIntervalMinutes! <= 0)) {
       toast.error('L’intervalle entre réservations doit être un nombre de minutes valide.');
@@ -794,6 +904,11 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
 
     if (reservationIntervalMinutes && (!eventForm.heureDebut || !eventForm.heureFin)) {
       toast.error('Définissez l’heure de début et l’heure de fin pour utiliser un intervalle de réservations.');
+      return;
+    }
+
+    if (eventForm.capaciteParHoraire && (!Number.isFinite(capaciteParHoraire) || capaciteParHoraire! <= 0)) {
+      toast.error('La capacité par horaire doit être un nombre valide.');
       return;
     }
 
@@ -816,6 +931,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       reservationIntervalMinutes,
       lieu: eventForm.lieu.trim() || undefined,
       capaciteMax: eventForm.capaciteMax ? Number.parseInt(eventForm.capaciteMax, 10) : undefined,
+      capaciteParHoraire,
       statut: eventForm.statut,
     });
 
@@ -850,7 +966,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
     }
 
     if (selectedEventCapacityReached) {
-      toast.info('La capacité maximale de cet événement est déjà atteinte.');
+      toast.info('L’objectif de paniers à distribuer de cet événement est déjà atteint.');
       return;
     }
 
@@ -977,16 +1093,6 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
         .map((registration) => [registration.beneficiaireId, registration])
     );
 
-    const occupiedSelectedCount = selectedBeneficiaryIds.filter((beneficiaryId) => {
-      const currentStatus = registrationStatuses[beneficiaryId] || eventRegistrationsMap.get(beneficiaryId)?.statut || 'inscrit';
-      return currentStatus !== 'annule';
-    }).length;
-
-    if (typeof selectedEvent.capaciteMax === 'number' && occupiedSelectedCount > selectedEvent.capaciteMax) {
-      toast.error(`La capacité maximale de ${selectedEvent.capaciteMax} place(s) serait dépassée.`);
-      return;
-    }
-
     const addedBeneficiaryIds = selectedBeneficiaryIds.filter((beneficiaryId) => !initialSelectedBeneficiaryIds.includes(beneficiaryId));
 
     const existingSelectedRegistrations = addedBeneficiaryIds
@@ -1057,28 +1163,34 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       })
       .filter((registration): registration is ComptoirSpecialEventRegistration => registration !== null);
 
-    const duplicatedSlots = new Set<string>();
-    const usedSlots = new Set<string>();
+    const selectedPanierTotal = nextEventRegistrations.reduce((total, registration) => (
+      total + getRegistrationPanierQuantity(registration)
+    ), 0);
+
+    if (typeof selectedEvent.capaciteMax === 'number' && selectedPanierTotal > selectedEvent.capaciteMax) {
+      toast.error(`L’objectif de ${selectedEvent.capaciteMax} panier(s) serait dépassé (${selectedPanierTotal} panier(s) assigné(s)).`);
+      return;
+    }
+
+    const slotUsage = new Map<string, number>();
     nextEventRegistrations.forEach((registration) => {
       if (registration.statut === 'annule') {
         return;
       }
 
       const slotKey = buildAppointmentSlotKey(registration.appointmentDate, registration.appointmentTime);
-      if (!slotKey) {
-        return;
+      if (slotKey) {
+        slotUsage.set(slotKey, (slotUsage.get(slotKey) || 0) + 1);
       }
-
-      if (usedSlots.has(slotKey)) {
-        duplicatedSlots.add(slotKey);
-        return;
-      }
-
-      usedSlots.add(slotKey);
     });
 
-    if (duplicatedSlots.size > 0) {
-      toast.error('Certains créneaux sont déjà réservés. Choisissez des jours/heures différents.');
+    const hasOverCapacitySlot = Array.from(slotUsage.values()).some((slotCount) => slotCount > selectedEventSlotCapacity);
+    if (hasOverCapacitySlot) {
+      if (selectedEventSlotCapacity <= 1) {
+        toast.error('Certains créneaux sont déjà réservés. Choisissez des jours/heures différents.');
+      } else {
+        toast.error(`La capacité par horaire (${selectedEventSlotCapacity}) serait dépassée pour certains créneaux.`);
+      }
       return;
     }
 
@@ -1124,8 +1236,41 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       && registrationEditAppointmentDate
       && !editingRegistrationAvailableDates.includes(registrationEditAppointmentDate)
     ) {
-      toast.error('La date de cita doit correspondre aux dates programmées de l’événement.');
+      toast.error('La date du rendez-vous doit correspondre aux dates programmées de l’événement.');
       return;
+    }
+
+    if (
+      editingRegistration
+      && editingRegistrationEvent
+      && registrationEditStatus !== 'annule'
+      && registrationEditAppointmentDate
+      && registrationEditAppointmentTime
+    ) {
+      const slotKey = buildAppointmentSlotKey(registrationEditAppointmentDate, registrationEditAppointmentTime);
+      if (slotKey) {
+        const occupiedCount = registrations.reduce((count, registration) => {
+          if (
+            registration.id === editingRegistration.id
+            || registration.eventId !== editingRegistrationEvent.id
+            || registration.statut === 'annule'
+          ) {
+            return count;
+          }
+
+          const currentSlotKey = buildAppointmentSlotKey(registration.appointmentDate, registration.appointmentTime);
+          return currentSlotKey === slotKey ? count + 1 : count;
+        }, 0);
+
+        if (occupiedCount >= editingRegistrationSlotCapacity) {
+          if (editingRegistrationSlotCapacity <= 1) {
+            toast.error('Ce créneau est déjà réservé. Choisissez un autre horaire.');
+          } else {
+            toast.error(`Ce créneau est déjà complet (${editingRegistrationSlotCapacity} réservation(s) max).`);
+          }
+          return;
+        }
+      }
     }
 
     const updatedRegistrations = registrations.map((registration) => {
@@ -1223,7 +1368,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
       [
         {
           titulo: 'Résumé de l’événement',
-          columnas: ['Événement', 'Début', 'Fin', 'Lieu', 'Capacité', 'Inscriptions'],
+          columnas: ['Événement', 'Début', 'Fin', 'Lieu', 'Objectif distribution', 'Inscriptions'],
           datos: [[
             selectedEvent.nom,
             formatDateLabel(selectedEvent.fechaInicio),
@@ -1245,7 +1390,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
         },
         {
           titulo: 'Liste des bénéficiaires inscrits',
-          columnas: ['Bénéficiaire', 'Numéro', 'Type d\'aide', 'Cita', 'Statut', 'Téléphone', 'Email'],
+          columnas: ['Bénéficiaire', 'Numéro', 'Type d\'aide', 'Rendez-vous', 'Statut', 'Téléphone', 'Email'],
           datos: eventRegistrations.map((registration) => {
             const beneficiary = beneficiaries.find((item) => item.id === registration.beneficiaireId);
             return [
@@ -1311,7 +1456,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
           periode: formatEventDateRange(selectedEvent),
           lieu: selectedEvent.lieu || '-',
           statut: getStatusLabel(selectedEvent.statut),
-          capacite: selectedEvent.capaciteMax || '-',
+          objectifDistribution: selectedEvent.capaciteMax || '-',
           inscriptions: eventRegistrations.length,
         }],
       },
@@ -1674,13 +1819,15 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
           </CardHeader>
           <CardContent className="p-2.5 sm:p-3">
             {sortedEvents.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
                 {sortedEvents.map((event) => {
-              const participantCount = registrations.filter((registration) => registration.eventId === event.id && registration.statut !== 'annule').length;
+              const panierCount = registrations
+                .filter((registration) => registration.eventId === event.id)
+                .reduce((total, registration) => total + getRegistrationPanierQuantity(registration), 0);
               const isSelected = selectedEventId === event.id;
-              const capacityReached = typeof event.capaciteMax === 'number' && participantCount >= event.capaciteMax;
+              const capacityReached = typeof event.capaciteMax === 'number' && panierCount >= event.capaciteMax;
               const remainingSlots = typeof event.capaciteMax === 'number'
-                ? Math.max(event.capaciteMax - participantCount, 0)
+                ? Math.max(event.capaciteMax - panierCount, 0)
                 : null;
 
               return (
@@ -1688,17 +1835,17 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                   key={event.id}
                   type="button"
                   onClick={() => setSelectedEventId(event.id)}
-                  className={`w-full rounded-lg border p-2.5 text-left transition-all ${isSelected ? 'border-[#1E73BE] bg-[#EAF4FF] shadow-sm' : 'border-[#E0E0E0] hover:border-[#BFD8F6] hover:bg-[#FAFAFA]'}`}
+                  className={`w-full rounded-lg border p-3 text-left transition-all ${isSelected ? 'border-[#1E73BE] bg-[#EAF4FF] shadow-sm' : 'border-[#E0E0E0] hover:border-[#BFD8F6] hover:bg-[#FAFAFA]'}`}
                 >
-                  <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <h3 className="truncate text-[13px] font-semibold leading-tight text-[#333333]">{event.nom}</h3>
                         <Badge className={getStatusBadgeClass(capacityReached && event.statut === 'ouvert' ? 'complet' : event.statut)} variant="outline">
-                          {capacityReached && event.statut === 'ouvert' ? 'Capacité atteinte' : getStatusLabel(event.statut)}
+                          {capacityReached && event.statut === 'ouvert' ? 'Objectif atteint' : getStatusLabel(event.statut)}
                         </Badge>
                       </div>
-                      <div className="mt-1.5 flex flex-wrap gap-1">
+                      <div className="mt-2 flex flex-wrap gap-1.5">
                         <span className="inline-flex items-center gap-1 rounded-full border border-[#D8E5F2] bg-white px-2 py-0.5 text-[10px] font-medium leading-none text-[#5B6570]">
                           <Calendar className="h-3 w-3 shrink-0" />
                           <span>{formatEventDateRange(event)}</span>
@@ -1715,13 +1862,13 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                     </div>
 
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <div className="flex flex-col items-end gap-1 text-right text-[10px] leading-none">
-                        <span className="rounded-full bg-[#EAF4FF] px-2 py-1 font-semibold text-[#1E73BE]">{participantCount} place(s) inscrite(s)</span>
+                      <div className="flex flex-col items-end gap-1 text-right text-[11px] leading-tight">
+                        <span className="rounded-full bg-[#EAF4FF] px-2 py-1 font-semibold text-[#1E73BE]">{panierCount} panier(s) assigné(s)</span>
                         {remainingSlots !== null && (
-                          <span className="rounded-full bg-[#E8F5E9] px-2 py-1 font-semibold text-[#2E7D32]">{remainingSlots} place(s) restante(s)</span>
+                          <span className="rounded-full bg-[#E8F5E9] px-2 py-1 font-semibold text-[#2E7D32]">{remainingSlots} panier(s) restant(s) sur objectif</span>
                         )}
                         <span className="rounded-full bg-[#F3F4F6] px-2 py-1 text-[#666666]">
-                          {typeof event.capaciteMax === 'number' ? `${event.capaciteMax} places` : 'Capacité libre'}
+                          {typeof event.capaciteMax === 'number' ? `Objectif: ${event.capaciteMax} paniers` : 'Objectif libre'}
                         </span>
                       </div>
                       <div className="flex gap-1">
@@ -1767,11 +1914,6 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                       <Badge variant="outline" className="text-[10px] font-medium text-[#1E73BE]">
                         {filteredRegistrations.length} visible(s)
                       </Badge>
-                      {registrationCountsByAidType.map((item) => (
-                        <Badge key={item.label} variant="outline" className="text-[10px] font-medium text-[#5B6570]">
-                          {item.label}: {item.total}
-                        </Badge>
-                      ))}
                     </>
                   ) : (
                     <Badge variant="outline" className="text-[10px] font-medium text-[#666666]">
@@ -1780,7 +1922,11 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+
+              <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+                {selectedEventAidTypeBadgeNodes}
+              </div>
+              <div className="flex flex-wrap gap-2 xl:justify-end">
                 <div className="relative min-w-[220px] sm:min-w-[260px]">
                   <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#666666]" />
                   <Input
@@ -1809,7 +1955,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                     <th className="p-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Bénéficiaire</th>
                     <th className="p-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Événement</th>
                     <th className="p-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Type d'aide</th>
-                    <th className="p-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Cita</th>
+                    <th className="p-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Rendez-vous</th>
                     <th className="p-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Statut</th>
                     <th className="p-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Coordonnées</th>
                     <th className="p-2 text-right text-[10px] font-semibold uppercase tracking-[0.06em] text-[#333333]">Actions</th>
@@ -2018,8 +2164,19 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
             </div>
 
             <div>
-              <Label>Capacité maximale</Label>
+              <Label>Objectif de distribution</Label>
               <Input type="number" min="1" value={eventForm.capaciteMax} onChange={(event) => setEventForm((current) => ({ ...current, capaciteMax: event.target.value }))} placeholder="Optionnel" />
+            </div>
+
+            <div>
+              <Label>Capacité par horaire</Label>
+              <Input
+                type="number"
+                min="1"
+                value={eventForm.capaciteParHoraire}
+                onChange={(event) => setEventForm((current) => ({ ...current, capaciteParHoraire: event.target.value }))}
+                placeholder="1 = un bénéficiaire par créneau"
+              />
             </div>
 
             <div className="md:col-span-2">
@@ -2049,7 +2206,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
           <DialogHeader>
             <DialogTitle>Modifier l'inscription</DialogTitle>
             <DialogDescription id="registration-edit-description">
-              Ajustez le statut, le type d'aide et la cita du bénéficiaire sélectionné.
+              Ajustez le statut, le type d'aide et le rendez-vous du bénéficiaire sélectionné.
             </DialogDescription>
           </DialogHeader>
 
@@ -2062,6 +2219,12 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
+                {editingRegistrationEvent?.reservationIntervalMinutes && (
+                  <p className="sm:col-span-2 text-[11px] text-[#5B6570]">
+                    Capacité de créneau: {editingRegistrationSlotCapacity} réservation(s) par horaire.
+                  </p>
+                )}
+
                 <div>
                   <Label className="text-xs text-[#666666]">Statut de l'inscription</Label>
                   <Select value={registrationEditStatus} onValueChange={(value) => setRegistrationEditStatus(value as ComptoirSpecialEventRegistration['statut'])}>
@@ -2155,7 +2318,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#666666]">Jour de la cita</Label>
+                  <Label className="text-xs text-[#666666]">Jour du rendez-vous</Label>
                   <Select
                     value={registrationEditAppointmentDate && editingRegistrationAvailableDates.includes(registrationEditAppointmentDate) ? registrationEditAppointmentDate : '__none__'}
                     onValueChange={(value) => setRegistrationEditAppointmentDate(value === '__none__' ? '' : value)}
@@ -2173,10 +2336,15 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[#666666]">Heure de la cita</Label>
+                  <Label className="text-xs text-[#666666]">Heure du rendez-vous</Label>
                   {editingRegistrationTimeSlots.length > 0 ? (
                     <Select
-                      value={registrationEditAppointmentTime || '__none__'}
+                      value={
+                        registrationEditAppointmentDate
+                        && getAvailableTimeSlotsForEditingRegistration(registrationEditAppointmentDate).includes(registrationEditAppointmentTime)
+                          ? registrationEditAppointmentTime
+                          : '__none__'
+                      }
                       onValueChange={(value) => setRegistrationEditAppointmentTime(value === '__none__' ? '' : value)}
                     >
                       <SelectTrigger className="mt-1 bg-white">
@@ -2184,8 +2352,10 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none__">Aucune heure</SelectItem>
-                        {editingRegistrationTimeSlots.map((slot) => (
-                          <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                        {getAvailableTimeSlotsForEditingRegistration(registrationEditAppointmentDate).map((slot) => (
+                          <SelectItem key={slot} value={slot}>
+                            {slot} ({getRemainingSlotCapacityForEditingRegistration(registrationEditAppointmentDate, slot)} place(s) disponible(s))
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -2241,8 +2411,9 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
               </div>
               <div className="text-sm text-[#666666]">
                 {selectedBeneficiaryIds.length} bénéficiaire(s) sélectionné(s)
-                {selectedEventRemainingSlots !== null ? ` • ${selectedEventRemainingSlots} place(s) restante(s)` : ''}
+                {selectedEventRemainingSlots !== null ? ` • ${selectedEventRemainingSlots} panier(s) restant(s) sur objectif` : ''}
                 {selectedEvent?.reservationIntervalMinutes ? ` • Intervalle ${selectedEvent.reservationIntervalMinutes} min` : ''}
+                {selectedEvent?.reservationIntervalMinutes ? ` • ${selectedEventSlotCapacity} réservation(s)/horaire` : ''}
               </div>
             </div>
 
@@ -2306,7 +2477,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-xs text-[#666666]">Jour de la cita</Label>
+                            <Label className="text-xs text-[#666666]">Jour du rendez-vous</Label>
                             <Select
                               value={normalizedAppointmentDate}
                               onValueChange={(value) => handleRegistrationAppointmentDateChange(beneficiary.id, value === '__none__' ? '' : value)}
@@ -2323,7 +2494,7 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-xs text-[#666666]">Heure de la cita</Label>
+                            <Label className="text-xs text-[#666666]">Heure du rendez-vous</Label>
                             {selectedEventTimeSlots.length > 0 ? (
                               <Select
                                 value={normalizedAppointmentTime}
@@ -2335,7 +2506,9 @@ export function EvenementsSpeciaux({ onNavigate, aidTypes = [] }: EvenementsSpec
                                 <SelectContent>
                                   <SelectItem value="__none__">Aucune heure</SelectItem>
                                   {availableTimeSlotsForBeneficiary.map((slot) => (
-                                    <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                    <SelectItem key={slot} value={slot}>
+                                      {slot} ({getRemainingSlotCapacityForBeneficiary(beneficiary.id, normalizedAppointmentDate, slot)} place(s) disponible(s))
+                                    </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>

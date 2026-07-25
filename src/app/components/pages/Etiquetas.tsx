@@ -128,6 +128,36 @@ function buildDefaultZoneForm(): ZoneFormState {
   };
 }
 
+function looksLikeTechnicalCode(value?: string) {
+  const normalized = value?.trim() || '';
+  return Boolean(normalized) && /^[A-Z0-9]{3,}(-[A-Z0-9]+)*$/.test(normalized);
+}
+
+function getReadableProductTitle(producto: ProductoEtiqueta) {
+  const name = producto.nombre?.trim() || '';
+  const variantName = producto.varianteNombre?.trim() || '';
+  const subcategoryName = producto.subcategoria?.trim() || '';
+  const categoryName = producto.categoria?.trim() || '';
+
+  if (name && !looksLikeTechnicalCode(name) && name !== producto.codigo) {
+    return name;
+  }
+
+  if (variantName && !looksLikeTechnicalCode(variantName)) {
+    return variantName;
+  }
+
+  if (subcategoryName && !looksLikeTechnicalCode(subcategoryName)) {
+    return subcategoryName;
+  }
+
+  if (categoryName && !looksLikeTechnicalCode(categoryName)) {
+    return categoryName;
+  }
+
+  return name || variantName || subcategoryName || categoryName || producto.codigo || producto.id;
+}
+
 function MetricCard({
   title,
   value,
@@ -717,13 +747,15 @@ export function Etiquetas() {
 
   const buildProductLabel = (producto: ProductoEtiqueta): DatosEtiqueta => {
     const ubicacion = normalizeLocationCode(producto.ubicacion);
+    const displayTitle = getReadableProductTitle(producto);
+    const displaySubtitle = ubicacion ? `${producto.codigo} · ${ubicacion}` : producto.codigo;
 
     return {
       tipo: 'producto',
       productoId: producto.id,
-      titulo: producto.nombre,
+      titulo: displayTitle,
       codigo: generarCodigoBarrasEAN13(producto.id),
-      subtitulo: ubicacion ? `${producto.codigo} · ${ubicacion}` : producto.codigo,
+      subtitulo: displaySubtitle,
       descripcion: ubicacion
         ? t('labels.productDescriptionWithLocation', { category: getCategoriaLabel(producto.categoria), location: ubicacion })
         : t('labels.productDescriptionWithoutLocation', { category: getCategoriaLabel(producto.categoria) }),
@@ -1646,8 +1678,12 @@ export function Etiquetas() {
                             <div className="flex items-center gap-2">
                               <span className="text-lg">{etiqueta.icono || '🏷️'}</span>
                               <div>
-                                <p className="truncate text-sm font-semibold text-[#111827]">{etiqueta.titulo}</p>
-                                <p className="truncate text-xs text-[#666666]">{etiqueta.subtitulo || etiqueta.codigo}</p>
+                                <p className="truncate text-sm font-semibold text-[#111827]">
+                                  {etiqueta.titulo || etiqueta.subtitulo || etiqueta.codigo}
+                                </p>
+                                <p className="truncate text-xs text-[#666666]">
+                                  {looksLikeTechnicalCode(etiqueta.subtitulo) ? etiqueta.subtitulo : etiqueta.codigo}
+                                </p>
                               </div>
                             </div>
                           </div>

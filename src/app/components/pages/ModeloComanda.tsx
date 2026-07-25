@@ -906,6 +906,29 @@ export function ModeloComanda({
     return persona || null;
   }, [organismo?.id]);
 
+  const fechaCitaRecogida = comanda?.fechaEntrega
+    ? formatDisplayDate(comanda.fechaEntrega)
+    : '_____________________';
+
+  const horaCitaRecogida = (() => {
+    if (typeof comanda?.horaRecogida === 'string' && comanda.horaRecogida.trim()) {
+      return comanda.horaRecogida.trim();
+    }
+
+    if (typeof organismo?.horaCita === 'string' && organismo.horaCita.trim()) {
+      return organismo.horaCita.trim();
+    }
+
+    if (typeof comanda?.fechaEntrega === 'string' && /[T ]\d{1,2}:\d{2}/.test(comanda.fechaEntrega)) {
+      const parsedDate = new Date(comanda.fechaEntrega);
+      if (!Number.isNaN(parsedDate.getTime())) {
+        return parsedDate.toLocaleTimeString(defaultLocale, { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+
+    return '_____________________';
+  })();
+
   return (
     <Dialog open={mostrar} onOpenChange={onCerrar}>
       <DialogContent
@@ -1787,8 +1810,8 @@ export function ModeloComanda({
                     <p><strong>Téléphone :</strong> {personaAutorizada.telefono}</p>
                   </>
                 )}
-                <p><strong>Date :</strong> _____________________</p>
-                <p><strong>Heure :</strong> _____________________</p>
+                <p><strong>Date :</strong> {fechaCitaRecogida}</p>
+                <p><strong>Heure :</strong> {horaCitaRecogida}</p>
               </div>
             </div>
           </div>
