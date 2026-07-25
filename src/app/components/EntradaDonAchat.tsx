@@ -107,6 +107,20 @@ interface ProductoAgregado {
   valorTotal?: number; // Valor monetario total en CAD$
 }
 
+interface GrupoProductoAgregado {
+  key: string;
+  nombre: string;
+  icono: string;
+  unidad: string;
+  temperatura: string;
+  cantidadTotal: number;
+  pesoTotalBruto: number;
+  pesoNetoTotal: number;
+  valorTotal: number;
+  indices: number[];
+  productos: ProductoAgregado[];
+}
+
 interface FormSubcategoria {
   codigo: string;
   nombre: string;
@@ -603,6 +617,90 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     subcategoriaSeleccionada?.variantes?.find(v => v.id === formData.varianteId),
     [subcategoriaSeleccionada, formData.varianteId]
   );
+
+  const normalizarNombreProductoParaGrupo = useCallback((producto: ProductoAgregado) => {
+    if (producto.nombreProductoBase?.trim()) {
+      return producto.nombreProductoBase.trim();
+    }
+
+    return (producto.nombreProducto || '')
+      .replace(/\s*-\s*(Paleta|Palette|Benne|Unidad)\s+\d+\/\d+$/i, '')
+      .trim();
+  }, []);
+
+  const productosAgregadosAgrupados = useMemo(() => {
+    const grupos = new Map<string, GrupoProductoAgregado>();
+
+    productosAgregados.forEach((producto, index) => {
+      const nombreGrupo = normalizarNombreProductoParaGrupo(producto);
+      const claveGrupo = [
+        nombreGrupo,
+        producto.productoIcono || '',
+        producto.categoriaId || producto.categoria || '',
+        producto.subcategoriaId || producto.subcategoria || '',
+        producto.varianteId || producto.variante || '',
+        producto.unidad || '',
+        producto.temperatura || '',
+        producto.detallesEmpaque || '',
+        producto.observaciones || '',
+        producto.valorUnitario || 0,
+      ].join('|');
+
+      const pesoTaraLinea = (producto.pesoUnidad && producto.pesoUnidad > 0)
+        ? producto.pesoUnidad * producto.cantidad
+        : 0;
+      const pesoNetoLinea = pesoTaraLinea > 0
+        ? Math.max(0, producto.pesoTotal - pesoTaraLinea)
+        : producto.pesoTotal;
+
+      if (!grupos.has(claveGrupo)) {
+        grupos.set(claveGrupo, {
+          key: claveGrupo,
+          nombre: nombreGrupo || producto.nombreProducto || 'Produit',
+          icono: producto.productoIcono || '📦',
+          unidad: producto.unidad,
+          temperatura: producto.temperatura,
+          cantidadTotal: 0,
+          pesoTotalBruto: 0,
+          pesoNetoTotal: 0,
+          valorTotal: 0,
+          indices: [],
+          productos: [],
+        });
+      }
+
+      const grupo = grupos.get(claveGrupo)!;
+      grupo.cantidadTotal += producto.cantidad;
+      grupo.pesoTotalBruto += producto.pesoTotal;
+      grupo.pesoNetoTotal += pesoNetoLinea;
+      grupo.valorTotal += producto.valorTotal || 0;
+      grupo.indices.push(index);
+      grupo.productos.push(producto);
+    });
+
+    return Array.from(grupos.values());
+  }, [productosAgregados, normalizarNombreProductoParaGrupo]);
+
+  const resolverIconoBaseVariante = useCallback(() => {
+    const iconoSubcategoria = subcategoriaSeleccionada?.icono?.trim();
+    const iconoCategoria = categoriaSeleccionada?.icono?.trim();
+    const iconoProducto = formData.productoIcono?.trim();
+    const esIconoAutomatico = (icono?: string) => !icono || icono === '📦' || icono === '🏷️';
+
+    if (!esIconoAutomatico(iconoSubcategoria)) {
+      return iconoSubcategoria;
+    }
+
+    if (!esIconoAutomatico(iconoCategoria)) {
+      return iconoCategoria;
+    }
+
+    if (!esIconoAutomatico(iconoProducto)) {
+      return iconoProducto;
+    }
+
+    return generarIconoAutomatico(formData.subcategoriaNombre || formData.categoriaNombre || 'Produit');
+  }, [subcategoriaSeleccionada?.icono, categoriaSeleccionada?.icono, formData.productoIcono, formData.subcategoriaNombre, formData.categoriaNombre]);
 
   // ==================== FUNCIONES DE CÁLCULO ====================
   
@@ -1566,6 +1664,20 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     toast.info('Produit retiré de la liste');
   }, []);
 
+  const eliminarGrupoProductosAgregados = useCallback((indices: number[]) => {
+    const indicesSet = new Set(indices);
+    setProductosAgregados(prev => prev.filter((_, i) => !indicesSet.has(i)));
+    toast.info(`${indices.length} produit(s) retiré(s) de la liste`);
+  }, []);
+
+  const imprimirGrupoProductosAgregados = useCallback(async (productos: ProductoAgregado[]) => {
+    for (const producto of productos) {
+      await imprimirEtiquetaProducto(producto);
+    }
+
+    toast.success(`${productos.length} étiquette(s) envoyée(s) à l'impression`);
+  }, [imprimirEtiquetaProducto]);
+
   const editarProductoAgregado = useCallback((index: number) => {
     const producto = productosAgregados[index];
     
@@ -2255,7 +2367,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                           // Copiar nombre de subcategoría por defecto
                           setFormVariante({
                             ...FORM_VARIANTE_INICIAL,
-                            nombre: formData.subcategoriaNombre || ''
+                            nombre: formData.subcategoriaNombre || '',
+                            icono: resolverIconoBaseVariante()
                           });
                           setNuevaVarianteDialogOpen(true);
                         }}
@@ -2725,6 +2838,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     {productosAgregados.length > 0 && (
                       <p className="mt-0.5 text-[10px] text-slate-600">
                         {productosAgregados.length} produit{productosAgregados.length > 1 ? 's' : ''}
+                        {productosAgregadosAgrupados.length !== productosAgregados.length && (
+                          <span className="ml-1">({productosAgregadosAgrupados.length} groupe{productosAgregadosAgrupados.length > 1 ? 's' : ''})</span>
+                        )}
                       </p>
                     )}
                   </div>
@@ -2760,43 +2876,44 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <div className="flex-1 overflow-y-auto px-2 py-2">
                     {productosAgregados.length > 0 ? (
                       <div className="space-y-1.5">
-                        {productosAgregados.map((producto, index) => {
-                          const pesoTaraTotal = (producto.pesoUnidad && producto.pesoUnidad > 0) 
-                            ? producto.pesoUnidad * producto.cantidad 
-                            : 0;
-                          const pesoNeto = pesoTaraTotal > 0
-                            ? Math.max(0, producto.pesoTotal - pesoTaraTotal)
-                            : producto.pesoTotal;
-                          const tieneTara = producto.pesoUnidad && producto.pesoUnidad > 0;
+                        {productosAgregadosAgrupados.map((grupo) => {
+                          const primerIndice = grupo.indices[0];
+                          const tieneTara = grupo.pesoNetoTotal < grupo.pesoTotalBruto;
+                          const esGrupo = grupo.indices.length > 1;
 
                           return (
-                            <div key={index} className="flex items-start gap-2 rounded-xl border-2 border-slate-200 bg-white p-2 shadow-sm hover:shadow-md transition-shadow">
-                              <span className="text-base flex-shrink-0">{producto.productoIcono}</span>
+                            <div key={grupo.key} className="flex items-start gap-2 rounded-xl border-2 border-slate-200 bg-white p-2 shadow-sm hover:shadow-md transition-shadow">
+                              <span className="text-base flex-shrink-0">{grupo.icono}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-xs truncate text-slate-900">{producto.nombreProducto}</p>
+                                <p className="font-medium text-xs truncate text-slate-900">
+                                  {grupo.nombre}
+                                  {esGrupo && (
+                                    <span className="ml-1 text-[10px] font-semibold text-[#1a4d7a]">x{grupo.indices.length}</span>
+                                  )}
+                                </p>
                                 <div className="flex flex-col gap-0.5 mt-1">
                                   <div className="flex items-center gap-1 text-[10px] text-gray-600">
-                                    <span className="font-semibold">{formatQuantity(producto.cantidad)} {producto.unidad}</span>
+                                    <span className="font-semibold">{formatQuantity(grupo.cantidadTotal)} {grupo.unidad}</span>
                                     <span>•</span>
                                     {tieneTara ? (
-                                      <span className="font-semibold text-green-700" title={`Brut: ${formatQuantity(producto.pesoTotal)}kg - Tare: ${formatQuantity(pesoTaraTotal)}kg`}>
-                                        {formatQuantity(pesoNeto)} kg
+                                      <span className="font-semibold text-green-700" title={`Brut: ${formatQuantity(grupo.pesoTotalBruto)}kg - Net: ${formatQuantity(grupo.pesoNetoTotal)}kg`}>
+                                        {formatQuantity(grupo.pesoNetoTotal)} kg
                                       </span>
                                     ) : (
-                                      <span>{formatQuantity(producto.pesoTotal)} kg</span>
+                                      <span>{formatQuantity(grupo.pesoTotalBruto)} kg</span>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-1 flex-wrap">
-                                    <Badge className={cn("text-[9px] py-0 px-1.5", getTemperatureColor(producto.temperatura))}>
-                                      {getTemperatureIcon(producto.temperatura)}
+                                    <Badge className={cn("text-[9px] py-0 px-1.5", getTemperatureColor(grupo.temperatura))}>
+                                      {getTemperatureIcon(grupo.temperatura)}
                                       <span className="ml-0.5">
-                                        {producto.temperatura === 'ambiente' ? 'AMB' :
-                                         producto.temperatura === 'refrigerado' ? 'RÉF' : 'CONG'}
+                                        {grupo.temperatura === 'ambiente' ? 'AMB' :
+                                         grupo.temperatura === 'refrigerado' ? 'RÉF' : 'CONG'}
                                       </span>
                                     </Badge>
-                                    {producto.valorTotal && producto.valorTotal > 0 && (
+                                    {grupo.valorTotal > 0 && (
                                       <span className="text-[10px] font-semibold text-green-700">
-                                        CAD$ {formatMoney(producto.valorTotal)}
+                                        CAD$ {formatMoney(grupo.valorTotal)}
                                       </span>
                                     )}
                                   </div>
@@ -2805,27 +2922,46 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => imprimirEtiquetaProducto(producto)}
+                                    onClick={() => {
+                                      if (esGrupo) {
+                                        void imprimirGrupoProductosAgregados(grupo.productos);
+                                        return;
+                                      }
+                                      void imprimirEtiquetaProducto(grupo.productos[0]);
+                                    }}
                                     className="h-6 px-1.5 text-[10px] text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                    title="Réimprimer"
+                                    title={esGrupo ? 'Imprimer le groupe' : 'Réimprimer'}
                                   >
                                     <Printer className="w-3 h-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => editarProductoAgregado(index)}
+                                    onClick={() => {
+                                      if (esGrupo) {
+                                        toast.info('Pour éditer, retirez le groupe puis recréez la ligne souhaitée.');
+                                        return;
+                                      }
+                                      editarProductoAgregado(primerIndice);
+                                    }}
+                                    disabled={esGrupo}
                                     className="h-6 px-1.5 text-[10px] text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                                    title="Éditer"
+                                    title={esGrupo ? 'Édition indisponible pour un groupe' : 'Éditer'}
                                   >
                                     <Edit className="w-3 h-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => eliminarProductoAgregado(index)}
+                                    onClick={() => {
+                                      if (esGrupo) {
+                                        eliminarGrupoProductosAgregados(grupo.indices);
+                                        return;
+                                      }
+                                      eliminarProductoAgregado(primerIndice);
+                                    }}
                                     className="h-6 px-1.5 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    title="Supprimer"
+                                    title={esGrupo ? 'Supprimer le groupe' : 'Supprimer'}
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </Button>

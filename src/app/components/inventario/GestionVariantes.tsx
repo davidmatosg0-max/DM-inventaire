@@ -28,6 +28,11 @@ const iconosVariantes = [
   '🟣', '🟤', '⚫', '⚪', '🔸', '🔹', '💠', '🎨', '✨', '🌟'
 ];
 
+const esIconoAutomatico = (icono?: string) => {
+  const iconoNormalizado = icono?.trim();
+  return !iconoNormalizado || iconoNormalizado === '📦' || iconoNormalizado === '🏷️';
+};
+
 export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: GestionVariantesProps) {
   const { t } = useTranslation();
   const [variantes, setVariantes] = useState<Variante[]>(subcategoria.variantes || []);
@@ -74,10 +79,18 @@ export function GestionVariantes({ subcategoria, categoriaId, onActualizar }: Ge
   const resolverIconoBaseSubcategoria = () => {
     const categorias = obtenerCategorias();
     const categoria = categorias.find(c => c.id === categoriaId);
+    const iconoSubcategoria = subcategoria.icono?.trim();
+    const iconoCategoria = categoria?.icono?.trim();
 
-    return subcategoria.icono?.trim()
-      || categoria?.icono?.trim()
-      || generarIconoProducto(subcategoria.nombre, categoria?.nombre);
+    if (!esIconoAutomatico(iconoSubcategoria)) {
+      return iconoSubcategoria as string;
+    }
+
+    if (!esIconoAutomatico(iconoCategoria)) {
+      return iconoCategoria as string;
+    }
+
+    return generarIconoProducto(subcategoria.nombre, categoria?.nombre);
   };
 
   const handleAbrirNuevo = () => {

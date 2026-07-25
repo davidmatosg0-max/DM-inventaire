@@ -1311,10 +1311,24 @@ export function Configuracion() {
     setVarianteDialogOpen(true);
   };
 
+  const esIconoAutomatico = (icono?: string) => {
+    const iconoNormalizado = icono?.trim();
+    return !iconoNormalizado || iconoNormalizado === '📦' || iconoNormalizado === '🏷️';
+  };
+
   const resolverIconoBaseVariante = (categoria: Categoria, subcategoria: Subcategoria) => {
-    return subcategoria.icono?.trim()
-      || categoria.icono?.trim()
-      || generarIconoProducto(subcategoria.nombre, categoria.nombre);
+    const iconoSubcategoria = subcategoria.icono?.trim();
+    const iconoCategoria = categoria.icono?.trim();
+
+    if (!esIconoAutomatico(iconoSubcategoria)) {
+      return iconoSubcategoria as string;
+    }
+
+    if (!esIconoAutomatico(iconoCategoria)) {
+      return iconoCategoria as string;
+    }
+
+    return generarIconoProducto(subcategoria.nombre, categoria.nombre);
   };
 
   const handleCrearVarianteDesdeSubcategoria = (categoria: Categoria, subcategoria: Subcategoria) => {
