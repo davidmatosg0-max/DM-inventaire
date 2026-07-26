@@ -60,6 +60,103 @@ import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/Mod
 import { ModuleControlSurface, ModuleControlSurfaceBody, ModuleControlSurfaceTabs } from '../shared/ModuleControlSurface';
 import { ModuleExecutiveStrip } from '../shared/ModuleExecutiveStrip';
 
+const BORRADOR_COMANDA_GRUPO_KEY = 'borrador_comanda_grupo';
+const BORRADORES_PREPARACION_KEY = 'brouillons_preparation_comandes';
+
+type BorradorComandaGrupo = {
+  selectedOrganismos: string[];
+  grupoItems: ItemComanda[];
+  fechaEntregaGrupo: string;
+  observacionesGrupo: string;
+  cantidadesInventario: Record<string, number>;
+};
+
+function leerBorradorComandaGrupo(): BorradorComandaGrupo | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(BORRADOR_COMANDA_GRUPO_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<BorradorComandaGrupo>;
+    return {
+      selectedOrganismos: Array.isArray(parsed.selectedOrganismos) ? parsed.selectedOrganismos.filter(Boolean) : [],
+      grupoItems: Array.isArray(parsed.grupoItems)
+        ? parsed.grupoItems
+            .map((item) => ({
+              productoId: String(item?.productoId || '').trim(),
+              cantidad: Number(item?.cantidad || 0),
+              nombreProducto: String(item?.nombreProducto || '').trim(),
+              unidad: String(item?.unidad || '').trim(),
+            }))
+            .filter((item) => item.productoId || item.nombreProducto)
+        : [],
+      fechaEntregaGrupo: String(parsed.fechaEntregaGrupo || ''),
+      observacionesGrupo: String(parsed.observacionesGrupo || ''),
+      cantidadesInventario: parsed.cantidadesInventario && typeof parsed.cantidadesInventario === 'object'
+        ? Object.fromEntries(
+            Object.entries(parsed.cantidadesInventario).map(([key, value]) => [key, Number(value || 0)])
+          )
+        : {},
+    };
+  } catch {
+    return null;
+  }
+}
+
+function guardarBorradorComandaGrupo(borrador: BorradorComandaGrupo): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const gruposNormalizados = {
+      selectedOrganismos: Array.from(new Set(borrador.selectedOrganismos.filter(Boolean))),
+      grupoItems: borrador.grupoItems
+        .map((item) => ({
+          productoId: String(item.productoId || '').trim(),
+          cantidad: Number(item.cantidad || 0),
+          nombreProducto: String(item.nombreProducto || '').trim(),
+          unidad: String(item.unidad || '').trim(),
+        }))
+        .filter((item) => item.productoId && item.cantidad > 0),
+      fechaEntregaGrupo: String(borrador.fechaEntregaGrupo || ''),
+      observacionesGrupo: String(borrador.observacionesGrupo || ''),
+      cantidadesInventario: Object.fromEntries(
+        Object.entries(borrador.cantidadesInventario || {}).filter(([, cantidad]) => Number(cantidad) > 0)
+      ),
+    };
+
+    const tieneContenido =
+      gruposNormalizados.selectedOrganismos.length > 0 ||
+      gruposNormalizados.grupoItems.length > 0 ||
+      Boolean(gruposNormalizados.fechaEntregaGrupo) ||
+      Boolean(gruposNormalizados.observacionesGrupo) ||
+      Object.keys(gruposNormalizados.cantidadesInventario).length > 0;
+
+    if (!tieneContenido) {
+      localStorage.removeItem(BORRADOR_COMANDA_GRUPO_KEY);
+      return;
+    }
+
+    localStorage.setItem(BORRADOR_COMANDA_GRUPO_KEY, JSON.stringify(gruposNormalizados));
+  } catch {
+    // Ignorar si localStorage no está disponible.
+  }
+}
+
+function vaciarBorradorComandaGrupo(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.removeItem(BORRADOR_COMANDA_GRUPO_KEY);
+}
+
 export function Comandas() {
   const { t, i18n } = useTranslation();
   const tFr = i18n.getFixedT('fr');
@@ -144,6 +241,83 @@ export function Comandas() {
       .replace(/Persona que recogerá:\s*/i, 'Personne qui récupérera : ')
       .replace(/\(Tel:\s*/i, '(Tél. : ');
   };
+  const leerBorradorPreparacionComanda = (comandaId: string): Record<string, boolean> => {
+    if (typeof window === 'undefined' || !comandaId) {
+      return {};
+    }
+
+    try {
+      const raw = localStorage.getItem(BORRADORES_PREPARACION_KEY);
+      if (!raw) {
+        return {};
+      }
+
+      const parsed = JSON.parse(raw) as Record<string, Record<string, boolean>>;
+      const borrador = parsed?.[comandaId];
+      return borrador && typeof borrador === 'object' ? borrador : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const construirClavePreparacionItem = (item: any, index: number) => {
+    if (typeof item?.lineaId === 'string' && item.lineaId.trim()) {
+      return `linea-${item.lineaId.trim()}`;
+    }
+
+    if (item?.id) {
+      return `item-${String(item.id)}`;
+    }
+
+    const temperaturaRaw = String(item?.temperatura || '').trim();
+    const temperatura = temperaturaRaw === 'refrigerado' || temperaturaRaw === 'Réfrigéré'
+      ? 'refrigerado'
+      : temperaturaRaw === 'congelado' || temperaturaRaw === 'Congelé'
+        ? 'congelado'
+        : 'ambiente';
+    const codigo = String(item?.productoCodigo || item?.codigo || '').trim();
+    const unidad = String(item?.unidad || '').trim();
+
+    return `item-${String(item?.productoId || '')}-${codigo}-${temperatura}-${unidad}-${index}`;
+  };
+
+  const obtenerPorcentajePreparacionComanda = (comanda: Comanda) => {
+    if (comanda.estado !== 'en_preparacion') {
+      return 0;
+    }
+
+    const items = Array.isArray(comanda.items) ? comanda.items : [];
+    const totalUnidades = items.reduce((total, item) => total + Math.max(0, Number(item.cantidad || 0)), 0);
+
+    if (totalUnidades <= 0) {
+      return 0;
+    }
+
+    const unidadesPreparadasDesdeItem = items.reduce((total, item) => {
+      const cantidadTotal = Math.max(0, Number(item.cantidad || 0));
+      const cantidadPreparada = Math.max(0, Number(item.cantidadPreparada || 0));
+
+      if (cantidadTotal <= 0 || cantidadPreparada <= 0) {
+        return total;
+      }
+
+      return total + Math.min(cantidadPreparada, cantidadTotal);
+    }, 0);
+
+    const borradorPreparacion = leerBorradorPreparacionComanda(comanda.id);
+    const unidadesPreparadasDesdeBorrador = items.reduce((total, item, index) => {
+      const clave = construirClavePreparacionItem(item, index);
+      if (!borradorPreparacion[clave]) {
+        return total;
+      }
+
+      return total + Math.max(0, Number(item.cantidad || 0));
+    }, 0);
+
+    const unidadesPreparadas = Math.max(unidadesPreparadasDesdeItem, unidadesPreparadasDesdeBorrador);
+
+    return Math.max(0, Math.min(100, (unidadesPreparadas / totalUnidades) * 100));
+  };
   const formatDateInputValue = (value: string) => {
     const fecha = parseDateForDisplay(value);
 
@@ -197,6 +371,30 @@ export function Comandas() {
   const [dialogAnularOfertaOpen, setDialogAnularOfertaOpen] = useState(false);
   const [nuevaFechaCaducidadOferta, setNuevaFechaCaducidadOferta] = useState('');
   const [refreshOfertas, setRefreshOfertas] = useState(0);
+
+  useEffect(() => {
+    const borrador = leerBorradorComandaGrupo();
+
+    if (!borrador) {
+      return;
+    }
+
+    setSelectedOrganismos(borrador.selectedOrganismos);
+    setGrupoItems(borrador.grupoItems.length > 0 ? borrador.grupoItems : [{ productoId: '', cantidad: 1, nombreProducto: '', unidad: '' }]);
+    setFechaEntregaGrupo(borrador.fechaEntregaGrupo);
+    setObservacionesGrupo(borrador.observacionesGrupo);
+    setCantidadesInventario(borrador.cantidadesInventario);
+  }, []);
+
+  useEffect(() => {
+    guardarBorradorComandaGrupo({
+      selectedOrganismos,
+      grupoItems,
+      fechaEntregaGrupo,
+      observacionesGrupo,
+      cantidadesInventario,
+    });
+  }, [selectedOrganismos, grupoItems, fechaEntregaGrupo, observacionesGrupo, cantidadesInventario]);
   
   // Obtener ofertas actualizadas
   const ofertas = obtenerOfertas();
@@ -611,6 +809,8 @@ export function Comandas() {
     setGrupoItems([{ productoId: '', cantidad: 1 }]);
     setFechaEntregaGrupo('');
     setObservacionesGrupo('');
+    setCantidadesInventario({});
+    vaciarBorradorComandaGrupo();
   };
 
   const handleAddGrupoItem = () => {
@@ -1953,6 +2153,8 @@ export function Comandas() {
                               const rendezVousTexte = fechaRendezVous && horaRendezVous
                                 ? `${fechaRendezVous} • ${horaRendezVous}`
                                 : fechaRendezVous || horaRendezVous || '--';
+                              const porcentajePreparacion = obtenerPorcentajePreparacionComanda(comanda);
+                              const mostrarProgresoPreparacion = comanda.estado === 'en_preparacion' && porcentajePreparacion < 100;
 
                               return (
                                 <div
@@ -1977,6 +2179,17 @@ export function Comandas() {
                                             <span className="text-[#cbd5e1]">•</span>
                                             <span>{comanda.items?.length || 0} {t('inventory.products')}</span>
                                           </div>
+                                          {mostrarProgresoPreparacion && (
+                                            <div className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#1E73BE]">
+                                              <span className="rounded-full bg-[#edf5ff] px-2 py-0.5">Préparation {Math.round(porcentajePreparacion)}%</span>
+                                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e2e8f0]">
+                                                <div
+                                                  className="h-full rounded-full bg-[#1E73BE] transition-all duration-300"
+                                                  style={{ width: `${porcentajePreparacion}%` }}
+                                                />
+                                              </div>
+                                            </div>
+                                          )}
                                           {comanda.preparadoPor && ['en_preparacion', 'completada', 'entregada'].includes(comanda.estado) && (
                                             <p className="mt-1 text-[11px] font-medium text-[#0f766e]">
                                               Préparée par : {comanda.preparadoPor}
@@ -2085,6 +2298,20 @@ export function Comandas() {
                                           </p>
                                         </div>
                                       </div>
+                                      {comanda.estado === 'en_preparacion' && porcentajePreparacion < 100 && (
+                                        <div className="mt-2 rounded-lg border border-[#dbeafe] bg-[#eff6ff] px-2.5 py-2 text-xs text-[#1E73BE]">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <span className="font-semibold">Préparation en cours</span>
+                                            <span className="font-bold">{Math.round(porcentajePreparacion)}%</span>
+                                          </div>
+                                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/80">
+                                            <div
+                                              className="h-full rounded-full bg-[#1E73BE] transition-all duration-300"
+                                              style={{ width: `${porcentajePreparacion}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
                                       {comanda.preparadoPor && ['en_preparacion', 'completada', 'entregada'].includes(comanda.estado) && (
                                         <div className="mt-2 rounded-lg bg-[#ecfeff] px-2.5 py-2 text-xs text-[#0f766e]">
                                           <span className="font-semibold">Préparée par :</span> {comanda.preparadoPor}
