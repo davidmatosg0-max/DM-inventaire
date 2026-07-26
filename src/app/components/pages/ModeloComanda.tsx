@@ -320,7 +320,19 @@ export function ModeloComanda({
       .join(' · ');
   };
 
-  const getItemKey = (item: any, index: number) => {
+  function normalizarTemperaturaPersistida(temperatura?: string) {
+    if (temperatura === 'refrigerado' || temperatura === 'Réfrigéré') {
+      return 'refrigerado';
+    }
+
+    if (temperatura === 'congelado' || temperatura === 'Congelé') {
+      return 'congelado';
+    }
+
+    return 'ambiente';
+  }
+
+  function getItemKey(item: any, index: number) {
     if (item?.id) {
       return `item-${String(item.id)}`;
     }
@@ -330,7 +342,7 @@ export function ModeloComanda({
     const unidad = String(item?.unidad || '').trim();
 
     return `item-${String(item?.productoId || '')}-${codigo}-${temperatura}-${unidad}-${index}`;
-  };
+  }
 
   const getCantidadVisible = (item: any, index: number) => {
     const itemKey = getItemKey(item, index);
@@ -388,18 +400,6 @@ export function ModeloComanda({
     });
     setCantidadesEditadas(cantidadesIniciales);
     setCantidadesEditadasTexto({});
-  };
-
-  const normalizarTemperaturaPersistida = (temperatura?: string) => {
-    if (temperatura === 'refrigerado' || temperatura === 'Réfrigéré') {
-      return 'refrigerado';
-    }
-
-    if (temperatura === 'congelado' || temperatura === 'Congelé') {
-      return 'congelado';
-    }
-
-    return 'ambiente';
   };
 
   const construirItemPersistido = (item: any, cantidad: number) => {
