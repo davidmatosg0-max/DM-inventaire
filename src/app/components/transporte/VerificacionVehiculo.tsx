@@ -427,125 +427,147 @@ export function VerificacionVehiculo() {
             }
 
             .print-verificacion-documento-header {
-              padding: 18px 20px 16px;
-              background:
-                radial-gradient(circle at top center, rgba(76, 175, 80, 0.12), transparent 45%),
-                linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-              border-bottom: 2px solid #1e73be;
+              position: relative;
+              padding: 24px 28px 20px;
+              background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+              border-bottom: 4px solid #3b82f6;
               text-align: center;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .print-verificacion-documento-header::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 3px;
+              background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
             }
 
             .print-verificacion-documento-kicker {
-              margin: 0 0 6px;
-              font-size: 11pt;
-              font-weight: 700;
-              letter-spacing: 0.2em;
+              margin: 0 0 8px;
+              font-size: 10pt;
+              font-weight: 800;
+              letter-spacing: 0.25em;
               text-transform: uppercase;
-              color: #145ca1;
+              color: #93c5fd;
             }
 
             .print-verificacion-documento-subtitulo {
-              margin: 0 0 4px;
-              font-size: 11pt;
-              line-height: 1.5;
-              color: #475569;
+              margin: 0 0 6px;
+              font-size: 10pt;
+              line-height: 1.6;
+              color: #cbd5e1;
+              font-weight: 500;
             }
 
             .print-verificacion-documento-encabezado {
-              margin: 10px 0 8px;
-              font-size: 24pt;
-              line-height: 1.15;
-              font-weight: 800;
-              color: #0f1f33;
-              letter-spacing: -0.02em;
+              margin: 12px 0 10px;
+              font-size: 26pt;
+              line-height: 1.1;
+              font-weight: 900;
+              color: #ffffff;
+              letter-spacing: -0.03em;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             }
 
             .print-verificacion-documento-titulo {
-              margin: 8px 0 8px;
-              font-size: 16pt;
+              margin: 10px 0;
+              padding: 8px 16px;
+              font-size: 15pt;
               line-height: 1.3;
               font-weight: 700;
-              color: #1e73be;
+              color: #1e293b;
+              background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+              border-radius: 8px;
+              display: inline-block;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
 
             .print-verificacion-documento-resumen-header {
-              margin: 0 auto;
-              max-width: 85%;
-              font-size: 11pt;
-              line-height: 1.55;
-              color: #334155;
+              margin: 10px auto 0;
+              max-width: 90%;
+              font-size: 10pt;
+              line-height: 1.6;
+              color: #e2e8f0;
+              font-weight: 500;
             }
 
             .print-verificacion-documento-status {
-              margin: 14px auto 0;
-              max-width: 420px;
-              padding: 14px 18px;
-              border-radius: 12px;
-              background: linear-gradient(135deg, #1e73be 0%, #145ca1 100%);
-              border: 2px solid #1e73be;
-              color: #ffffff;
+              margin: 16px auto 0;
+              max-width: 450px;
+              padding: 16px 20px;
+              border-radius: 10px;
+              background: #ffffff;
+              border: 2px solid #e2e8f0;
+              color: #0f172a;
               text-align: center;
-              box-shadow: 0 4px 12px rgba(30, 115, 190, 0.25);
+              box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
             }
 
             .print-verificacion-documento-status-label {
-              margin: 0 0 6px;
-              font-size: 10pt;
-              font-weight: 700;
-              letter-spacing: 0.18em;
+              margin: 0 0 8px;
+              font-size: 9pt;
+              font-weight: 800;
+              letter-spacing: 0.2em;
               text-transform: uppercase;
-              color: rgba(255, 255, 255, 0.9);
+              color: #64748b;
             }
 
             .print-verificacion-documento-status-value {
-              margin: 0;
-              font-size: 20pt;
-              line-height: 1.1;
-              font-weight: 800;
-              color: #ffffff;
+              margin: 0 0 12px;
+              font-size: 22pt;
+              line-height: 1;
+              font-weight: 900;
+              color: #1e293b;
+              text-transform: uppercase;
             }
 
             .print-verificacion-documento-badges {
               display: flex;
               flex-wrap: wrap;
               justify-content: center;
-              gap: 8px;
-              margin-top: 10px;
+              gap: 10px;
+              margin-top: 0;
             }
 
             .print-verificacion-documento-badge {
               display: inline-flex;
               align-items: center;
-              padding: 6px 12px;
-              border-radius: 999px;
-              border: 1px solid rgba(255, 255, 255, 0.3);
-              background: rgba(255, 255, 255, 0.2);
+              padding: 7px 14px;
+              border-radius: 6px;
+              border: 1px solid #cbd5e1;
+              background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
               font-size: 9pt;
               font-weight: 700;
-              letter-spacing: 0.06em;
+              letter-spacing: 0.05em;
               text-transform: uppercase;
-              color: #ffffff;
+              color: #475569;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             }
 
             .print-verificacion-documento-badge--estado {
-              background: rgba(76, 175, 80, 0.35);
-              border-color: rgba(76, 175, 80, 0.6);
+              background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+              border-color: #60a5fa;
+              color: #1e40af;
             }
 
             .print-verificacion-documento-meta {
               display: grid;
               grid-template-columns: repeat(4, minmax(0, 1fr));
-              gap: 10px;
-              padding: 12px 16px 0;
+              gap: 12px;
+              padding: 16px 20px 0;
             }
 
             .print-verificacion-documento-meta-card,
             .print-verificacion-documento-resumen div,
             .print-verificacion-documento-footer-card {
-              border: 1px solid #dbe4ee;
-              border-radius: 14px;
-              background: #f9fbfd;
-              padding: 10px 12px;
+              border: 2px solid #e2e8f0;
+              border-radius: 10px;
+              background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+              padding: 12px 14px;
+              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
             }
 
             .print-verificacion-documento-meta-card span,
@@ -654,34 +676,49 @@ export function VerificacionVehiculo() {
 
             .print-verificacion-documento-categoria {
               break-inside: avoid;
-              margin-bottom: 12px;
-              border: 1px solid #dbe4ee;
-              border-radius: 14px;
+              margin-bottom: 14px;
+              border: 2px solid #e2e8f0;
+              border-radius: 12px;
               overflow: hidden;
               background: #ffffff;
+              box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
             }
 
             .print-verificacion-documento-categoria-header {
-              padding: 11px 14px;
-              background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-              border-bottom: 2px solid #1e73be;
+              padding: 13px 16px;
+              background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+              border-bottom: 3px solid #3b82f6;
               text-align: center;
+              position: relative;
+            }
+
+            .print-verificacion-documento-categoria-header::after {
+              content: '';
+              position: absolute;
+              bottom: -3px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 60px;
+              height: 3px;
+              background: #60a5fa;
             }
 
             .print-verificacion-documento-categoria-header h3 {
-              margin: 0 0 4px;
-              font-size: 14pt;
-              line-height: 1.3;
+              margin: 0 0 6px;
+              font-size: 13pt;
+              line-height: 1.2;
               font-weight: 800;
-              color: #0d47a1;
-              letter-spacing: 0.02em;
+              color: #ffffff;
+              letter-spacing: 0.03em;
+              text-transform: uppercase;
             }
 
             .print-verificacion-documento-categoria-header p {
               margin: 0;
-              font-size: 10pt;
-              color: #1565c0;
+              font-size: 9pt;
+              color: #cbd5e1;
               font-weight: 600;
+              letter-spacing: 0.02em;
             }
 
             .print-verificacion-documento-tabla {
@@ -703,14 +740,16 @@ export function VerificacionVehiculo() {
             }
 
             .print-verificacion-documento-fila--cabecera {
-              padding: 10px 14px;
-              background: #f1f5f9;
-              font-size: 10pt;
+              padding: 11px 16px;
+              background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+              font-size: 9pt;
               font-weight: 800;
-              letter-spacing: 0.08em;
+              letter-spacing: 0.1em;
               text-transform: uppercase;
-              color: #1e293b;
-              text-align: center
+              color: #475569;
+              text-align: center;
+              border-bottom: 2px solid #e2e8f0;
+            }
 
             .print-verificacion-documento-fila--conforme {
               background: rgba(76, 175, 80, 0.05);
