@@ -281,21 +281,45 @@ export function Comandas() {
     return `item-${String(item?.productoId || '')}-${codigo}-${temperatura}-${unidad}-${index}`;
   };
 
+  const parsearCantidadSegura = (value: unknown) => {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof value === 'string') {
+      const normalizado = value.replace(',', '.').trim();
+      const cantidad = Number(normalizado);
+      return Number.isFinite(cantidad) ? cantidad : 0;
+    }
+
+    return 0;
+  };
+
   const obtenerPorcentajePreparacionComanda = (comanda: Comanda) => {
     if (comanda.estado !== 'en_preparacion') {
       return 0;
     }
 
     const items = Array.isArray(comanda.items) ? comanda.items : [];
-    const totalUnidades = items.reduce((total, item) => total + Math.max(0, Number(item.cantidad || 0)), 0);
+    const totalProductos = items.length;
+    const borradorPreparacion = leerBorradorPreparacionComanda(comanda.id);
+    const productosMarcados = items.reduce((total, item, index) => {
+      const clave = construirClavePreparacionItem(item, index);
+      return total + (borradorPreparacion[clave] ? 1 : 0);
+    }, 0);
 
+    if (totalProductos > 0 && productosMarcados > 0) {
+      return Math.max(0, Math.min(100, (productosMarcados / totalProductos) * 100));
+    }
+
+    const totalUnidades = items.reduce((total, item) => total + Math.max(0, parsearCantidadSegura(item.cantidad)), 0);
     if (totalUnidades <= 0) {
       return 0;
     }
 
     const unidadesPreparadasDesdeItem = items.reduce((total, item) => {
-      const cantidadTotal = Math.max(0, Number(item.cantidad || 0));
-      const cantidadPreparada = Math.max(0, Number(item.cantidadPreparada || 0));
+      const cantidadTotal = Math.max(0, parsearCantidadSegura(item.cantidad));
+      const cantidadPreparada = Math.max(0, parsearCantidadSegura(item.cantidadPreparada));
 
       if (cantidadTotal <= 0 || cantidadPreparada <= 0) {
         return total;
@@ -304,17 +328,19 @@ export function Comandas() {
       return total + Math.min(cantidadPreparada, cantidadTotal);
     }, 0);
 
-    const borradorPreparacion = leerBorradorPreparacionComanda(comanda.id);
     const unidadesPreparadasDesdeBorrador = items.reduce((total, item, index) => {
       const clave = construirClavePreparacionItem(item, index);
       if (!borradorPreparacion[clave]) {
         return total;
       }
 
-      return total + Math.max(0, Number(item.cantidad || 0));
+      return total + Math.max(0, parsearCantidadSegura(item.cantidad));
     }, 0);
 
     const unidadesPreparadas = Math.max(unidadesPreparadasDesdeItem, unidadesPreparadasDesdeBorrador);
+    if (!Number.isFinite(unidadesPreparadas)) {
+      return 0;
+    }
 
     return Math.max(0, Math.min(100, (unidadesPreparadas / totalUnidades) * 100));
   };
