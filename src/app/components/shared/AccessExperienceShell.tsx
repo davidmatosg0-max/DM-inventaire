@@ -1,4 +1,5 @@
 import React from 'react';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 interface AccessShellBranding {
   primaryColor: string;
@@ -53,6 +54,8 @@ export function AccessExperienceShell({
           </section>
         </div>
       </div>
+
+      <ScrollToTopButton />
     </div>
   );
 }

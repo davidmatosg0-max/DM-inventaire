@@ -125,6 +125,22 @@ function seleccionarFechaReciente(fechaActual?: string, fechaDuplicada?: string)
   return new Date(fechaDuplicada).getTime() > new Date(fechaActual).getTime() ? fechaDuplicada : fechaActual;
 }
 
+function esEntradaPRS(entrada?: Pick<EntradaInventario, 'tipoEntrada' | 'programaCodigo' | 'programaNombre' | 'participantePRSId' | 'participantePRSNombre'>): boolean {
+  if (!entrada) {
+    return false;
+  }
+
+  const tipo = String(entrada.tipoEntrada || '').trim().toLowerCase();
+  const codigo = String(entrada.programaCodigo || '').trim().toLowerCase();
+  const nombre = String(entrada.programaNombre || '').trim().toLowerCase();
+
+  return tipo === 'prs'
+    || codigo === 'prs'
+    || nombre.includes('prs')
+    || Boolean(entrada.participantePRSId)
+    || Boolean(entrada.participantePRSNombre);
+}
+
 function sincronizarProductoEnMemoria(productoId: string): void {
   const productoActualizado = obtenerProductoPorId(productoId);
   if (!productoActualizado) return;
@@ -146,7 +162,7 @@ function recalcularProductoDesdeEntradas(productoId: string, entradaReferencia?:
   if (!producto) return;
 
   const entradasActivasProducto = obtenerTodasLasEntradas().filter(
-    entrada => entrada.activo && entrada.productoId === productoId
+    entrada => entrada.activo && entrada.productoId === productoId && !esEntradaPRS(entrada)
   );
 
   const stockActual = entradasActivasProducto.reduce((total, entrada) => total + entrada.cantidad, 0);
@@ -372,9 +388,12 @@ export function guardarEntrada(entrada: Omit<EntradaInventario, 'id' | 'fechaCre
     activo: true,
   };
 
-  // ✅ REGISTRAR AUTOMÁTICAMENTE EN EL INVENTARIO
-  const productoIdReal = registrarEnInventario(nuevaEntrada);
-  nuevaEntrada.productoId = productoIdReal;
+  const entradaPRS = esEntradaPRS(nuevaEntrada);
+
+  if (!entradaPRS) {
+    const productoIdReal = registrarEnInventario(nuevaEntrada);
+    nuevaEntrada.productoId = productoIdReal;
+  }
 
   const entradas = obtenerTodasLasEntradas();
   entradas.push(nuevaEntrada);
@@ -580,21 +599,23 @@ function registrarEnInventario(entrada: EntradaInventario): string {
     mockProductos.push(nuevoProductoMock);
   }
 
-  // 📝 PASO 3: Registrar movimiento de entrada
-  registrarMovimientoEntrada(
-    productoId,
-    entrada.cantidad,
-    `Entrada ${entrada.programaCodigo} - ${entrada.donadorNombre}`,
-    entrada.creadoPor || 'Usuario Actual',
-    entrada.id, // documentoReferencia
-    undefined, // cantidadAnterior
-    undefined, // cantidadActual
-    entrada.pesoUnidad, // pesoUnitario
-    entrada.fecha // fechaEntrada - usar la fecha de la entrada, no la fecha de caducidad
-  );
-  
-  console.log(`✅ Movimiento registrado: ${entrada.programaCodigo} - ${entrada.nombreProducto}`);
-  console.log(`📊 Resumen: Producto ID ${productoId} ahora tiene stock actualizado en localStorage`);
+  if (!esEntradaPRS(entrada)) {
+    // 📝 PASO 3: Registrar movimiento de entrada
+    registrarMovimientoEntrada(
+      productoId,
+      entrada.cantidad,
+      `Entrada ${entrada.programaCodigo} - ${entrada.donadorNombre}`,
+      entrada.creadoPor || 'Usuario Actual',
+      entrada.id, // documentoReferencia
+      undefined, // cantidadAnterior
+      undefined, // cantidadActual
+      entrada.pesoUnidad, // pesoUnitario
+      entrada.fecha // fechaEntrada - usar la fecha de la entrada, no la fecha de caducidad
+    );
+
+    console.log(`✅ Movimiento registrado: ${entrada.programaCodigo} - ${entrada.nombreProducto}`);
+    console.log(`📊 Resumen: Producto ID ${productoId} ahora tiene stock actualizado en localStorage`);
+  }
 
   return productoId;
 }
@@ -762,4 +783,16 @@ export function limpiarTodasLasEntradas(): boolean {
   });
 
   return true;
+}
+
+/**
+ * Recalcular todo el inventario ignorando las entradas PRS
+ */
+export function recalcularInventarioSinPRS(): void {
+  const entradas = obtenerTodasLasEntradas();
+  const productoIds = Array.from(new Set(entradas.map((entrada) => entrada.productoId)));
+
+  productoIds.forEach((productoId) => {
+    recalcularProductoDesdeEntradas(productoId);
+  });
 }

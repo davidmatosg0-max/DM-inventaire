@@ -24,7 +24,7 @@ import './migrateCostcoFlags';
 import { migrarProgramasEntrada, yaMigradoProgramas, marcarMigracionProgramas } from './migrateProgramasEntrada';
 import './migrateProgramasEntrada';
 import { migrarPesoUnitarioProductos } from './productStorage';
-import { migrarProductosDuplicadosInventario } from './entradaInventarioStorage';
+import { migrarProductosDuplicadosInventario, recalcularInventarioSinPRS } from './entradaInventarioStorage';
 import { inicializarProteccionDatos } from './proteccionDatos';
 import './debugBenevoles';
 import { sincronizarTodosLosBenevolesConContactos } from './debugBenevoles';
@@ -62,6 +62,7 @@ export async function runAppBootstrap() {
   logger.info('🛡️ Limpieza automática PERMANENTEMENTE DESHABILITADA');
 
   runDataMigrations();
+  recalcularInventarioSinPRS();
   limpiarDatosObsoletosCuisine();
   logger.info('✅ Sistema protegido - Limpieza automática omitida');
 

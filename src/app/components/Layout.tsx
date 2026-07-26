@@ -51,6 +51,7 @@ import { GlobalSearch } from './GlobalSearch';
 import { GuideCompletModules } from './GuideCompletModules';
 import { PWAFloatingButton } from './PWAInstallButton';
 import { PWAInstallButton } from './PWAInstallButton';
+import { ScrollToTopButton } from './shared/ScrollToTopButton';
 import { savePendingEntrepotQuickAction } from '../utils/pendingEntrepotQuickAction';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -1025,6 +1026,8 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
       {/* Botón de instalación PWA flotante */}
       {!hideCommunicationFloaters && <PWAFloatingButton />}
+
+      <ScrollToTopButton getScrollTarget={() => mainStageRef.current} />
     </div>
   );
 }

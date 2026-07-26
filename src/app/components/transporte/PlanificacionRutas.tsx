@@ -158,7 +158,7 @@ export function PlanificacionRutas() {
         return false;
       }
 
-      return comanda.estado !== 'anulada';
+      return comanda.estado === 'confirmada' || comanda.estado === 'completada';
     });
   };
 

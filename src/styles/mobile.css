@@ -200,6 +200,10 @@
   display: inline;
 }
 
+.app-floating-scroll-top {
+  bottom: calc(env(safe-area-inset-bottom) + 5.25rem) !important;
+}
+
 @media (max-width: 1024px) {
   [data-app-shell] > [class*="min-h-screen"] {
     min-height: auto !important;
@@ -282,6 +286,13 @@
   .app-floating-pwa {
     right: 0.75rem !important;
     bottom: calc(env(safe-area-inset-bottom) + 0.75rem) !important;
+  }
+
+  .app-floating-scroll-top {
+    right: 0.75rem !important;
+    bottom: calc(env(safe-area-inset-bottom) + 8.75rem) !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
   }
 
   .app-floating-pwa__glow,
