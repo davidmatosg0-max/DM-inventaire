@@ -649,9 +649,11 @@ export function VerificacionVehiculo() {
               overflow: hidden;
               background: #ffffff;
             }
-padding: 11px 14px;
-              background: linear-gradient(135deg, #1e73be 0%, #2d88d4 100%);
-              border-bottom: none;
+
+            .print-verificacion-documento-categoria-header {
+              padding: 11px 14px;
+              background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+              border-bottom: 2px solid #1e73be;
               text-align: center;
             }
 
@@ -660,17 +662,15 @@ padding: 11px 14px;
               font-size: 14pt;
               line-height: 1.3;
               font-weight: 800;
-              color: #ffffff;
+              color: #0d47a1;
               letter-spacing: 0.02em;
             }
 
             .print-verificacion-documento-categoria-header p {
               margin: 0;
               font-size: 10pt;
-              color: rgba(255, 255, 255, 0.95);
-              font-weight: 6000;
-              font-size: 12pt;
-              color: #334155;
+              color: #1565c0;
+              font-weight: 600;
             }
 
             .print-verificacion-documento-tabla {
