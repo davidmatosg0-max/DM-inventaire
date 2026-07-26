@@ -397,6 +397,17 @@ export function VerificacionVehiculo() {
               z-index: -1;
             }
 
+            body[data-print-mode='completo'] .print-verificacion-root {
+              position: static;
+              opacity: 1;
+              pointer-events: auto;
+              z-index: 9999;
+            }
+
+            body[data-print-mode='completo'] > :not(.print-verificacion-root) {
+              display: none !important;
+            }
+
             .print-verificacion-documento {
               width: 190mm;
               margin: 0 auto;
@@ -762,30 +773,19 @@ export function VerificacionVehiculo() {
                 background: #ffffff !important;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
+                margin: 0;
+                padding: 0;
               }
 
-              body > :not([data-verificacion-print-root]) {
-                display: none !important;
-              }
-
-              [data-verificacion-print-root] {
+              .print-verificacion-root {
                 position: static !important;
-                inset: auto !important;
                 opacity: 1 !important;
                 pointer-events: auto !important;
                 z-index: auto !important;
               }
 
-              body[data-print-mode='completo'] > :not([data-verificacion-print-root]) {
+              body > *:not(.print-verificacion-root) {
                 display: none !important;
-              }
-
-              body[data-print-mode='completo'] [data-verificacion-print-root] {
-                position: static !important;
-                inset: auto !important;
-                opacity: 1 !important;
-                pointer-events: auto !important;
-                z-index: auto !important;
               }
 
               .print-verificacion-documento {
