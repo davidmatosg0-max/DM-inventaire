@@ -818,7 +818,8 @@ export function VerificacionVehiculo() {
                 letter-spacing: 0.05em;
               }
 
-              .print-verifi22pt !important;
+              .print-verificacion-documento-encabezado {
+                font-size: 22pt !important;
                 line-height: 1.15 !important;
               }
 
@@ -844,12 +845,23 @@ export function VerificacionVehiculo() {
               }
               
               .print-verificacion-documento-categoria-header p {
-                font-size: 9cion-documento-status-value {
-                font-size: 15pt !important;
+                font-size: 9pt !important;
               }
 
               .print-verificacion-documento-categorias {
-                columns: 1 !important;fr) 0.78fr minmax(0, 1fr);
+                columns: 1 !important;
+                column-gap: 0 !important;
+                padding-top: 10px;
+              }
+
+              .print-verificacion-documento-categoria {
+                break-inside: avoid-page;
+                page-break-inside: avoid;
+                margin-bottom: 8px;
+              }
+
+              .print-verificacion-documento-fila {
+                grid-template-columns: minmax(0, 1.3fr) 0.78fr minmax(0, 1fr);
                 gap: 8px;
                 padding: 8px 12px;
               }
@@ -864,19 +876,7 @@ export function VerificacionVehiculo() {
               }
               
               .print-verificacion-documento-col--estado {
-                text-align: centerd;
-                margin-bottom: 8px;
-              }
-
-              .print-verificacion-documento-fila {
-                grid-template-columns: minmax(0, 1.35fr) 0.72fr minmax(0, 1fr);
-                gap: 6px;
-                padding: 7px 10px;
-              }
-
-              .print-verificacion-documento-col {
-                word-break: break-word;
-                overflow-wrap: anywhere;
+                text-align: center;
               }
 
               .print-verificacion-documento-footer {
