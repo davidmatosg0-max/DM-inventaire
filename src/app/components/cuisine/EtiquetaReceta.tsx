@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Printer, Download, X, Calendar, Clock, Package, ChefHat, AlertCircle } from 'lucide-react';
 import { type Receta } from '../../utils/recetaStorage';
+import { formatQuantity } from '../../utils/formatUtils';
 import { Label } from '../ui/label';
 import { toast } from 'sonner';
 import { openAutoPrintPopup } from '../../utils/printPopup';
@@ -576,7 +577,7 @@ export function EtiquetaReceta({
                   >
                     <div><strong>LOT:</strong> {loteGenerado}</div>
                     <div><strong>Date:</strong> {formatearFechaCorta(fechaElab)}</div>
-                    <div><strong>Poids:</strong> {cantidadFinal} {receta.productoElaborado.unidad} {!esFormatoCompleto && `× ${receta.productoElaborado.pesoUnitario} kg`}</div>
+                    <div><strong>Poids:</strong> {cantidadFinal} {receta.productoElaborado.unidad} {!esFormatoCompleto && `× ${formatQuantity(receta.productoElaborado.pesoUnitario || 0)} kg`}</div>
                   </div>
 
                   {/* Separador decorativo */}

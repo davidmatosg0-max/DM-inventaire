@@ -544,28 +544,30 @@ export function GestionVehiculos() {
                   <Label>{t('transport.vehicles.capacityKg')} *</Label>
                   <Input
                     type="number"
+                    step="0.1"
                     placeholder="10000"
                     value={formVehiculo.capacidadKg}
-                    onChange={(e) => setFormVehiculo({ ...formVehiculo, capacidadKg: parseInt(e.target.value) })}
+                    onChange={(e) => setFormVehiculo({ ...formVehiculo, capacidadKg: Number.parseFloat(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('transport.vehicles.capacityM3')} *</Label>
                   <Input
                     type="number"
+                    step="0.1"
                     placeholder="45"
                     value={formVehiculo.capacidadM3}
-                    onChange={(e) => setFormVehiculo({ ...formVehiculo, capacidadM3: parseInt(e.target.value) })}
+                    onChange={(e) => setFormVehiculo({ ...formVehiculo, capacidadM3: Number.parseFloat(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('transport.vehicles.fuelConsumption')} ({t('transport.vehicles.litersPer100')})</Label>
                   <Input
                     type="number"
-                    step="1"
+                    step="0.1"
                     placeholder="8"
                     value={formVehiculo.consumoCombustible}
-                    onChange={(e) => setFormVehiculo({ ...formVehiculo, consumoCombustible: parseInt(e.target.value, 10) || 0 })}
+                    onChange={(e) => setFormVehiculo({ ...formVehiculo, consumoCombustible: Number.parseFloat(e.target.value) || 0 })}
                   />
                 </div>
               </div>

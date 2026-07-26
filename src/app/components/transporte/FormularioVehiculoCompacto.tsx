@@ -299,8 +299,9 @@ export function FormularioVehiculoCompacto({
                         <Input
                           id="capacidadKg"
                           type="number"
+                          step="0.1"
                           value={formulario.capacidadKg}
-                          onChange={(e) => setFormulario({ ...formulario, capacidadKg: parseInt(e.target.value) || 0 })}
+                          onChange={(e) => setFormulario({ ...formulario, capacidadKg: Number.parseFloat(e.target.value) || 0 })}
                           placeholder="1000"
                           className="h-9"
                         />
@@ -313,9 +314,9 @@ export function FormularioVehiculoCompacto({
                         <Input
                           id="capacidadM3"
                           type="number"
-                          step="1"
+                          step="0.1"
                           value={formulario.capacidadM3}
-                          onChange={(e) => setFormulario({ ...formulario, capacidadM3: parseInt(e.target.value, 10) || 0 })}
+                          onChange={(e) => setFormulario({ ...formulario, capacidadM3: Number.parseFloat(e.target.value) || 0 })}
                           placeholder="10"
                           className="h-9"
                         />

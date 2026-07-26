@@ -481,8 +481,9 @@ export function FormularioEntradaProductoCompacto({
                         <QuantityInput
                           id="peso"
                           value={formulario.peso}
-                          onChangeText={(value) => setFormulario({ ...formulario, peso: parseQuantityText(value, false) || 0 })}
-                          step={1}
+                          onChangeText={(value) => setFormulario({ ...formulario, peso: parseQuantityText(value, true) || 0 })}
+                          step={0.1}
+                          allowDecimal
                           min={0}
                           placeholder="26"
                           className="h-9"

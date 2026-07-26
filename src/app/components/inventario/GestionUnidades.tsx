@@ -279,10 +279,10 @@ export function GestionUnidades() {
               <Label>{t('inventory.unitManagement.form.tareWeight')}</Label>
               <Input
                 type="number"
-                step="1"
+                step="0.1"
                 min="0"
                   value={formData.pesoUnidad || ''}
-                  onChange={(e) => setFormData({ ...formData, pesoUnidad: parseInt(e.target.value, 10) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, pesoUnidad: Number.parseFloat(e.target.value) || 0 })}
                 placeholder={t('inventory.unitManagement.form.tareWeightPlaceholder')}
               />
               <p className="text-xs text-[#666666]">

@@ -187,15 +187,23 @@ export function formatLargeNumber(number: number): string {
 }
 
 /**
- * Formatear cualquier número sin separadores ni decimales
- * Ejemplo: 600000 → 600000 (sin puntos ni comas)
+ * Formatear número sin separadores de miles y con decimales útiles
+ * Ejemplo: 600000 -> 600000, 1.500 -> 1.5
  */
 export function formatNumberSimple(number: number): string {
-  return Math.round(number).toString();
+  if (!Number.isFinite(number)) {
+    return '0';
+  }
+
+  const rounded = Math.round(number * 1000) / 1000;
+  const asText = rounded.toString();
+  return asText.includes('.')
+    ? asText.replace(/\.0+$/, '').replace(/(\.\d*?[1-9])0+$/, '$1')
+    : asText;
 }
 
 /**
- * Formatear cantidades como enteros sin decimales
+ * Formatear cantidades con decimales útiles (sin ceros finales)
  */
 export function formatQuantity(number: number): string {
   return formatNumberSimple(number);

@@ -48,6 +48,7 @@ export function ConversionUnidadesDialog({
   const [pesoUnitarioDestino, setPesoUnitarioDestino] = useState<number | null>(null);
   const [pesoUnitarioOrigen, setPesoUnitarioOrigen] = useState<number | null>(null); // 🎯 NUEVO: guardar peso unitario origen
   const [unidadesDestino, setUnidadesDestino] = useState<Unidad[]>([]);
+  const cantidadOrigenPermiteDecimal = unidadOrigen.toLowerCase().includes('kg') || unidadOrigen.toLowerCase().includes('kilo');
 
   // Cargar unidades dinámicas al montar el componente
   useEffect(() => {
@@ -159,7 +160,7 @@ export function ConversionUnidadesDialog({
 
   // Calcular cantidad destino cuando cambia cantidad origen o factor
   useEffect(() => {
-    const cantidad = parseQuantityText(cantidadOrigen, false);
+    const cantidad = parseQuantityText(cantidadOrigen, cantidadOrigenPermiteDecimal);
     const factor = parseInt(factorConversion, 10);
 
     if (!isNaN(cantidad) && !isNaN(factor) && factor > 0) {
@@ -167,7 +168,7 @@ export function ConversionUnidadesDialog({
     } else {
       setCantidadDestino(0);
     }
-  }, [cantidadOrigen, factorConversion]);
+  }, [cantidadOrigen, cantidadOrigenPermiteDecimal, factorConversion]);
 
   // Calcular peso unitario de la unidad destino
   useEffect(() => {
@@ -202,7 +203,7 @@ export function ConversionUnidadesDialog({
       return;
     }
 
-    const cantidad = parseQuantityText(cantidadOrigen, false);
+    const cantidad = parseQuantityText(cantidadOrigen, cantidadOrigenPermiteDecimal);
     const factor = parseInt(factorConversion, 10);
 
     if (!isNaN(cantidad) && !isNaN(factor) && factor > 0 && cantidad > 0) {
@@ -213,12 +214,12 @@ export function ConversionUnidadesDialog({
     } else {
       setPesoUnitarioDestino(null);
     }
-  }, [producto, cantidadOrigen, factorConversion, cantidadDestino, unidadOrigen, unidadDestino]);
+  }, [producto, cantidadOrigen, cantidadDestino, cantidadOrigenPermiteDecimal, factorConversion, unidadDestino, unidadOrigen]);
 
   const handleConvertir = () => {
     if (!producto) return;
 
-    const cantidad = parseQuantityText(cantidadOrigen, false);
+    const cantidad = parseQuantityText(cantidadOrigen, cantidadOrigenPermiteDecimal);
     const factor = parseInt(factorConversion, 10);
 
     // Validaciones
@@ -391,7 +392,8 @@ export function ConversionUnidadesDialog({
                 id="cantidadOrigen"
                 value={cantidadOrigen}
                 onChangeText={setCantidadOrigen}
-                step={1}
+                step={cantidadOrigenPermiteDecimal ? 0.1 : 1}
+                allowDecimal={cantidadOrigenPermiteDecimal}
                 min={0}
                 max={producto?.stockActual}
                 placeholder="0"
@@ -429,7 +431,7 @@ export function ConversionUnidadesDialog({
                 <div className="flex-1 text-sm">
                   <p className="font-medium text-blue-900">{t('inventory.conversionDialog.resultTitle')}</p>
                   <p className="text-blue-700 mt-1">
-                    {formatQuantity(parseQuantityText(cantidadOrigen, false) || 0)} {unidadOrigen} × {factorConversion} = <strong>{formatQuantity(cantidadDestino)} {unidadDestino}</strong>
+                    {formatQuantity(parseQuantityText(cantidadOrigen, cantidadOrigenPermiteDecimal) || 0)} {unidadOrigen} × {factorConversion} = <strong>{formatQuantity(cantidadDestino)} {unidadDestino}</strong>
                   </p>
                   
                   {/* PESO UNITARIO DESTACADO */}

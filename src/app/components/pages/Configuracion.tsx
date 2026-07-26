@@ -1543,7 +1543,7 @@ export function Configuracion() {
         icono: iconoVarianteFinal,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
         valorPorKg: formVarianteSubcategoria.valorPorKg ? parseInt(formVarianteSubcategoria.valorPorKg, 10) : undefined,
-        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseInt(formVarianteSubcategoria.pesoUnitario, 10) : undefined,
+        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? Number.parseFloat(formVarianteSubcategoria.pesoUnitario) : undefined,
         descripcion: formVarianteSubcategoria.descripcion.trim() || undefined,
         stockMinimo: formVarianteSubcategoria.stockMinimo || 0
       };
@@ -1590,7 +1590,7 @@ export function Configuracion() {
         activa: true,
         unidad: formVarianteSubcategoria.unidad.trim() || undefined,
         valorPorKg: formVarianteSubcategoria.valorPorKg ? parseInt(formVarianteSubcategoria.valorPorKg, 10) : undefined,
-        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? parseInt(formVarianteSubcategoria.pesoUnitario, 10) : undefined,
+        pesoUnitario: formVarianteSubcategoria.pesoUnitario ? Number.parseFloat(formVarianteSubcategoria.pesoUnitario) : undefined,
         descripcion: formVarianteSubcategoria.descripcion.trim() || undefined,
         stockMinimo: formVarianteSubcategoria.stockMinimo || 0
       };
@@ -2098,11 +2098,11 @@ export function Configuracion() {
                           </Label>
                           <Input
                             type="number"
-                            step="1"
+                            step="0.1"
                             min="0"
                             placeholder={t('configuration.weightExamplePlaceholder')}
                             value={formSubcategoria.pesoUnitario === 0 ? '' : formSubcategoria.pesoUnitario || ''}
-                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, pesoUnitario: e.target.value === '' ? 0 : parseInt(e.target.value, 10) || 0 })}
+                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, pesoUnitario: e.target.value === '' ? 0 : Number.parseFloat(e.target.value) || 0 })}
                           />
                           {!formSubcategoria.pesoUnitario || formSubcategoria.pesoUnitario === 0 ? (
                             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -2118,7 +2118,7 @@ export function Configuracion() {
                             </div>
                           ) : (
                             <p className="text-xs text-[#4CAF50] font-medium">
-                              ✓ {t('configuration.unitWeightDefined', { weight: Math.round(formSubcategoria.pesoUnitario || 0) })}
+                              ✓ {t('configuration.unitWeightDefined', { weight: formatQuantity(formSubcategoria.pesoUnitario || 0) })}
                             </p>
                           )}
                         </div>
@@ -3609,11 +3609,11 @@ export function Configuracion() {
                   </Label>
                   <Input
                     type="number"
-                    step="1"
+                    step="0.1"
                     min="0"
                     placeholder={t('configuration.prsWeightExamplePlaceholder')}
                     value={formProductoPRS.peso || ''}
-                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, peso: parseInt(e.target.value, 10) || 0 })}
+                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, peso: Number.parseFloat(e.target.value) || 0 })}
                     style={{ fontFamily: 'Roboto, sans-serif' }}
                   />
                   <p className="text-xs text-[#666666]">
@@ -3649,11 +3649,11 @@ export function Configuracion() {
                   </Label>
                   <Input
                     type="number"
-                    step="1"
+                    step="0.1"
                     min="0"
                     placeholder={t('configuration.prsWeightExamplePlaceholder')}
                     value={formProductoPRS.pesoUnitario || ''}
-                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, pesoUnitario: parseInt(e.target.value, 10) || 0 })}
+                    onChange={(e) => setFormProductoPRS({ ...formProductoPRS, pesoUnitario: Number.parseFloat(e.target.value) || 0 })}
                     style={{ fontFamily: 'Roboto, sans-serif' }}
                   />
                   <p className="text-xs text-[#666666]">
@@ -4521,7 +4521,8 @@ export function Configuracion() {
                     <span>⚖️</span> {t('configuration.unitWeight')} (kg)
                   </Label>
                   <Input
-                    step="1"
+                    type="number"
+                    step="0.1"
                     value={formVarianteSubcategoria.pesoUnitario}
                     onChange={(e) => setFormVarianteSubcategoria({ ...formVarianteSubcategoria, pesoUnitario: e.target.value })}
                     placeholder="0"
@@ -4646,7 +4647,7 @@ export function Configuracion() {
                     {formVarianteSubcategoria.pesoUnitario && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F4F4] rounded-lg">
                         <span className="text-sm">⚖️</span>
-                        <span className="text-sm font-medium">{formVarianteSubcategoria.pesoUnitario} kg</span>
+                        <span className="text-sm font-medium">{formatQuantity(Number(formVarianteSubcategoria.pesoUnitario) || 0)} kg</span>
                       </div>
                     )}
                     {formVarianteSubcategoria.valorPorKg && (

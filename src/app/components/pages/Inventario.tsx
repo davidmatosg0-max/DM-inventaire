@@ -4734,8 +4734,9 @@ export function Inventario() {
                     <QuantityInput
                       id="variantePesoUnitario"
                       value={formVariante.pesoUnitario}
-                      onChangeText={(value) => setFormVariante({ ...formVariante, pesoUnitario: parseQuantityText(value, false) || 0 })}
-                      step={1}
+                      onChangeText={(value) => setFormVariante({ ...formVariante, pesoUnitario: parseQuantityText(value, true) || 0 })}
+                      step={0.1}
+                      allowDecimal
                       min={0}
                       placeholder="0"
                       style={{ fontFamily: 'Roboto, sans-serif' }}

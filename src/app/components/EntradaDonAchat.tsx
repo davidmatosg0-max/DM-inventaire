@@ -2554,9 +2554,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs font-semibold text-slate-700">Poids Unitaire (kg/unité)</Label>
                   <QuantityInput
                     value={formData.pesoUnitario || ''}
-                    onChangeText={(value) => handleFieldChange('pesoUnitario', parseQuantityText(value, false) || 0)}
+                    onChangeText={(value) => handleFieldChange('pesoUnitario', parseQuantityText(value, true) || 0)}
                     min={0}
-                    step={1}
+                    step={0.1}
+                    allowDecimal
                     placeholder="0"
                     wrapperClassName="mt-1.5"
                     className="rounded-xl border-2 border-slate-200 bg-white text-sm h-9 focus:border-[#2d9561] transition-colors"
@@ -2582,7 +2583,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     min="0"
                     step="1"
                     value={formData.peso ? formatQuantity(formData.peso) : ''}
-                    onChange={(e) => handleFieldChange('peso', parseInt(e.target.value, 10) || 0)}
+                    onChange={(e) => handleFieldChange('peso', Number.parseFloat(e.target.value) || 0)}
                     placeholder="0"
                     className="rounded-xl border-2 border-slate-200 h-9 text-sm bg-slate-50"
                     readOnly
@@ -3213,9 +3214,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 <QuantityInput
                   id="peso-unitario-input"
                   value={formSubcategoria.pesoUnitario || ''}
-                  onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseQuantityText(value, false) || 0 }))}
+                  onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseQuantityText(value, true) || 0 }))}
                   min={0}
-                  step={1}
+                  step={0.1}
+                  allowDecimal
                   placeholder="0"
                   className="border-2 border-blue-300 focus:border-blue-500"
                   buttonClassName="border-blue-300 hover:bg-blue-50"
@@ -3229,9 +3231,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 <Label className="text-xs">Poids Unitaire Héritage (kg) (optionnel)</Label>
                 <QuantityInput
                   value={formSubcategoria.pesoUnitario || ''}
-                  onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseQuantityText(value, false) || 0 }))}
+                  onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUnitario: parseQuantityText(value, true) || 0 }))}
                   min={0}
-                  step={1}
+                  step={0.1}
+                  allowDecimal
                   placeholder="0"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -3280,9 +3283,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs">Palette (PLT)</Label>
                   <QuantityInput
                     value={formSubcategoria.pesoPLT || ''}
-                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoPLT: parseQuantityText(value, false) || 0 }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoPLT: parseQuantityText(value, true) || 0 }))}
                     min={0}
-                    step={1}
+                    step={0.1}
+                    allowDecimal
                     placeholder="0"
                   />
                 </div>
@@ -3290,9 +3294,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs">Boîte (CJA)</Label>
                   <QuantityInput
                     value={formSubcategoria.pesoCJA || ''}
-                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoCJA: parseQuantityText(value, false) || 0 }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoCJA: parseQuantityText(value, true) || 0 }))}
                     min={0}
-                    step={1}
+                    step={0.1}
+                    allowDecimal
                     placeholder="0"
                   />
                 </div>
@@ -3300,9 +3305,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs">Unité (UND)</Label>
                   <QuantityInput
                     value={formSubcategoria.pesoUND || ''}
-                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUND: parseQuantityText(value, false) || 0 }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoUND: parseQuantityText(value, true) || 0 }))}
                     min={0}
-                    step={1}
+                    step={0.1}
+                    allowDecimal
                     placeholder="0"
                   />
                 </div>
@@ -3310,9 +3316,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs">Sac (SAC)</Label>
                   <QuantityInput
                     value={formSubcategoria.pesoSAC || ''}
-                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoSAC: parseQuantityText(value, false) || 0 }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoSAC: parseQuantityText(value, true) || 0 }))}
                     min={0}
-                    step={1}
+                    step={0.1}
+                    allowDecimal
                     placeholder="0"
                   />
                 </div>
@@ -3320,9 +3327,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs">Bac Noir (BN)</Label>
                   <QuantityInput
                     value={formSubcategoria.pesoBN || ''}
-                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoBN: parseQuantityText(value, false) || 0 }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoBN: parseQuantityText(value, true) || 0 }))}
                     min={0}
-                    step={1}
+                    step={0.1}
+                    allowDecimal
                     placeholder="0"
                   />
                 </div>
@@ -3330,9 +3338,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Label className="text-xs">Kilogramme (kg)</Label>
                   <QuantityInput
                     value={formSubcategoria.pesoKg || ''}
-                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoKg: parseQuantityText(value, false) || 0 }))}
+                    onChangeText={(value) => setFormSubcategoria(prev => ({ ...prev, pesoKg: parseQuantityText(value, true) || 0 }))}
                     min={0}
-                    step={1}
+                    step={0.1}
+                    allowDecimal
                     placeholder="1"
                   />
                 </div>

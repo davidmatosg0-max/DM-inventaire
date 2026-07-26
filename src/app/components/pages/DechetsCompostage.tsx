@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
+import { formatQuantity } from '../../utils/formatUtils';
 import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import {
@@ -66,7 +67,7 @@ function createFormulaireInitial(tipo: string): FormulaireDechet {
 }
 
 function formatKg(value: number): string {
-  return `${value.toFixed(value % 1 === 0 ? 0 : 2)} kg`;
+  return `${formatQuantity(value)} kg`;
 }
 
 function formatDateLabel(value: string): string {
