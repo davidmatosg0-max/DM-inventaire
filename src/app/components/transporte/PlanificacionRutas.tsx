@@ -8,15 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
+import { Checkbox } from '../ui/checkbox';
 import { Textarea } from '../ui/textarea';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { mockComandas } from '../../data/mockData';
 import { MapLink, DirectionsButton, EmbeddedMap } from '../ui/map-link';
 import { getGoogleMapsMultipleStops } from '../../utils/maps';
 import { TRANSPORTE_MODULE_EVENT, actualizarRuta, cambiarEstadoRuta, crearRuta, eliminarRuta, obtenerChoferes, obtenerRutas, obtenerVehiculos, type Chofer, type ParadaRuta as Parada, type Ruta, type Vehiculo } from '../../utils/transporteLogic';
+import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
 import { obtenerContactosPorDepartamentoYTipo, obtenerIdDepartamentoEntrepot, type ContactoDepartamento } from '../../utils/contactosDepartamentoStorage';
+import type { Comanda } from '../../types';
 
 type DestinoRutaDisponible = {
   id: string;
@@ -81,6 +83,7 @@ export function PlanificacionRutas() {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>(() => obtenerVehiculos());
   const [conductores, setConductores] = useState<Chofer[]>(() => obtenerChoferes());
   const [organismos, setOrganismos] = useState<Organismo[]>(() => obtenerOrganismos());
+  const [comandas, setComandas] = useState<Comanda[]>(() => obtenerComandas());
   const [destinosDisponibles, setDestinosDisponibles] = useState<DestinoRutaDisponible[]>(() => obtenerDestinosRutaDisponibles());
   const [rutaDialogOpen, setRutaDialogOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -97,6 +100,7 @@ export function PlanificacionRutas() {
       setVehiculos(obtenerVehiculos());
       setConductores(obtenerChoferes());
       setOrganismos(obtenerOrganismos());
+      setComandas(obtenerComandas());
       setDestinosDisponibles(obtenerDestinosRutaDisponibles());
     };
 
@@ -119,7 +123,7 @@ export function PlanificacionRutas() {
     paradas: [] as Array<{
       organismoId: string;
       tipoDestino: 'todos' | 'organisme' | 'donateur' | 'fournisseur';
-      comandaId: string;
+      comandaIds: string[];
       tiempoEstimadoLlegada: string;
       tiempoEstimadoDescarga: number;
     }>
@@ -143,6 +147,27 @@ export function PlanificacionRutas() {
     const matchEstado = filtroEstado === 'todas' || r.estado === filtroEstado;
     return matchSearch && matchEstado;
   });
+
+  const obtenerComandasPorDestino = (organismoId: string) => {
+    if (!organismoId) {
+      return [] as Comanda[];
+    }
+
+    return comandas.filter((comanda) => {
+      if (comanda.organismoId !== organismoId) {
+        return false;
+      }
+
+      return comanda.estado !== 'anulada';
+    });
+  };
+
+  const obtenerEtiquetaComanda = (comanda: Comanda) => {
+    const numero = comanda.numero || comanda.numeroComanda || comanda.id;
+    const fecha = comanda.fechaEntrega || comanda.fecha;
+    const fechaLabel = fecha ? new Date(fecha).toLocaleDateString('fr-CA') : 'Date non définie';
+    return `${numero} • ${comanda.estado} • ${fechaLabel}`;
+  };
 
   const getEstadoBadge = (estado: string) => {
     const config = {
@@ -204,7 +229,7 @@ export function PlanificacionRutas() {
       paradas: ruta.paradas.map(p => ({
         organismoId: p.organismoId,
         tipoDestino: 'todos',
-        comandaId: p.comandaId || '',
+        comandaIds: Array.isArray(p.comandaIds) ? p.comandaIds : (p.comandaId ? [p.comandaId] : []),
         tiempoEstimadoLlegada: p.tiempoEstimadoLlegada || p.horaEstimada || '',
         tiempoEstimadoDescarga: p.tiempoEstimadoDescarga || 15
       }))
@@ -246,7 +271,8 @@ export function PlanificacionRutas() {
         organismoId: parada.organismoId,
         organismoNombre: destinoSeleccionado?.nombre || '',
         direccion: destinoSeleccionado?.direccion || '',
-        comandaId: parada.comandaId === 'noorder' ? '' : parada.comandaId,
+        comandaId: parada.comandaIds[0] || '',
+        comandaIds: parada.comandaIds,
         orden: index + 1,
         horaEstimada: parada.tiempoEstimadoLlegada,
         tiempoEstimadoLlegada: parada.tiempoEstimadoLlegada,
@@ -330,7 +356,7 @@ export function PlanificacionRutas() {
         {
           organismoId: '',
           tipoDestino: 'todos',
-          comandaId: '',
+          comandaIds: [],
           tiempoEstimadoLlegada: '',
           tiempoEstimadoDescarga: 15
         }
@@ -760,6 +786,7 @@ export function PlanificacionRutas() {
                                   if (!destinoCoincideConFiltro(newParadas[index].organismoId, value)) {
                                     newParadas[index].organismoId = '';
                                   }
+                                  newParadas[index].comandaIds = [];
                                   setFormRuta({ ...formRuta, paradas: newParadas });
                                 }}
                               >
@@ -781,6 +808,7 @@ export function PlanificacionRutas() {
                                 onValueChange={(value) => {
                                   const newParadas = [...formRuta.paradas];
                                   newParadas[index].organismoId = value;
+                                  newParadas[index].comandaIds = [];
                                   setFormRuta({ ...formRuta, paradas: newParadas });
                                 }}
                               >
@@ -842,26 +870,50 @@ export function PlanificacionRutas() {
                             </div>
                             <div className="space-y-2">
                               <Label>{t('transport.routes.order')} ({t('transport.routes.optional')})</Label>
-                              <Select
-                                value={parada.comandaId}
-                                onValueChange={(value) => {
-                                  const newParadas = [...formRuta.paradas];
-                                  newParadas[index].comandaId = value;
-                                  setFormRuta({ ...formRuta, paradas: newParadas });
-                                }}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t('transport.routes.noOrder')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="noorder">{t('transport.routes.noOrder')}</SelectItem>
-                                  {mockComandas.filter(c => c.estado === 'completada').map(comanda => (
-                                    <SelectItem key={comanda.id} value={comanda.id}>
-                                      {comanda.numero}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                                {parada.organismoId ? (() => {
+                                  const comandasRelacionadas = obtenerComandasPorDestino(parada.organismoId);
+
+                                  if (comandasRelacionadas.length === 0) {
+                                    return (
+                                      <p className="text-sm text-slate-500">
+                                        {t('transport.routes.noOrder')}.
+                                      </p>
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="space-y-2">
+                                      {comandasRelacionadas.map((comanda) => {
+                                        const checked = parada.comandaIds.includes(comanda.id);
+                                        return (
+                                          <label key={comanda.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-white bg-white px-3 py-2 shadow-sm">
+                                            <Checkbox
+                                              checked={checked}
+                                              onCheckedChange={(nextChecked) => {
+                                                const newParadas = [...formRuta.paradas];
+                                                const currentIds = newParadas[index].comandaIds;
+                                                newParadas[index].comandaIds = nextChecked
+                                                  ? [...currentIds, comanda.id]
+                                                  : currentIds.filter((comandaId) => comandaId !== comanda.id);
+                                                setFormRuta({ ...formRuta, paradas: newParadas });
+                                              }}
+                                            />
+                                            <div className="min-w-0">
+                                              <p className="text-sm font-medium text-slate-800">{comanda.numero || comanda.numeroComanda || comanda.id}</p>
+                                              <p className="text-xs text-slate-500">{obtenerEtiquetaComanda(comanda)}</p>
+                                            </div>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })() : (
+                                  <p className="text-sm text-slate-500">
+                                    Sélectionnez d'abord un organisme pour afficher ses commandes.
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <div className="space-y-2">
                               <Label>{t('transport.routes.estimatedArrival')} *</Label>

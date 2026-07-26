@@ -47,6 +47,7 @@ export interface ParadaRuta {
   direccion: string;
   orden: number;
   comandaId?: string;
+  comandaIds?: string[];
   horaEstimada?: string;
   tiempoEstimadoLlegada?: string;
   horaReal?: string;
@@ -190,6 +191,12 @@ function normalizarEstadoParada(estado: unknown): 'pendiente' | 'entregado' | 'n
 }
 
 function normalizarParada(parada: any, index: number): ParadaRuta {
+  const comandaIds = Array.isArray(parada?.comandaIds)
+    ? parada.comandaIds.map((comandaId: unknown) => String(comandaId)).filter(Boolean)
+    : parada?.comandaId
+      ? [String(parada.comandaId)]
+      : [];
+
   return {
     ...parada,
     id: parada?.id ? String(parada.id) : `parada-${index + 1}`,
@@ -197,6 +204,8 @@ function normalizarParada(parada: any, index: number): ParadaRuta {
     organismoNombre: String(parada?.organismoNombre ?? ''),
     direccion: String(parada?.direccion ?? ''),
     orden: Number(parada?.orden ?? index + 1),
+    comandaId: comandaIds[0] || '',
+    comandaIds,
     horaEstimada: parada?.horaEstimada ?? parada?.tiempoEstimadoLlegada ?? '',
     tiempoEstimadoLlegada: parada?.tiempoEstimadoLlegada ?? parada?.horaEstimada ?? '',
     estado: normalizarEstadoParada(parada?.estado),
