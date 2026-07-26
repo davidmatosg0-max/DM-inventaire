@@ -333,15 +333,21 @@ export function ModeloComanda({
   }
 
   function getItemKey(item: any, index: number) {
+    if (typeof item?.lineaId === 'string' && item.lineaId.trim()) {
+      return `linea-${item.lineaId.trim()}`;
+    }
+
     if (item?.id) {
       return `item-${String(item.id)}`;
     }
+
+    const indiceFuente = typeof item?.sourceIndex === 'number' ? item.sourceIndex : index;
 
     const temperatura = normalizarTemperaturaPersistida(item?.temperatura);
     const codigo = String(item?.productoCodigo || item?.codigo || '').trim();
     const unidad = String(item?.unidad || '').trim();
 
-    return `item-${String(item?.productoId || '')}-${codigo}-${temperatura}-${unidad}-${index}`;
+    return `item-${String(item?.productoId || '')}-${codigo}-${temperatura}-${unidad}-${indiceFuente}`;
   }
 
   const getCantidadVisible = (item: any, index: number) => {
@@ -445,7 +451,7 @@ export function ModeloComanda({
 
   const productosOrdenados = React.useMemo(() => {
     const todosLosProductos = obtenerProductos();
-    const items = itemsComanda.map((item: any) => {
+    const items = itemsComanda.map((item: any, sourceIndex: number) => {
       const productoPersistido = todosLosProductos.find(p => p.id === item.productoId);
       const productoEnMemoria = mockProductos.find(p => p.id === item.productoId);
       const producto = productoPersistido || productoEnMemoria;
@@ -463,6 +469,7 @@ export function ModeloComanda({
 
       return {
         ...item,
+        sourceIndex,
         producto,
         temperatura,
         temperaturaOriginalEntrada,

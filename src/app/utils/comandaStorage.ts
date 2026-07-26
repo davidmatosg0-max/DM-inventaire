@@ -62,7 +62,20 @@ type ComandaPersistida = Omit<Comanda, 'estado'> & {
   items?: Comanda['items'] | unknown;
 };
 
-function normalizarItemComanda(item: any, productos = obtenerProductos()) {
+function construirLineaIdComanda(item: any, comandaId = '', index = 0): string {
+  if (typeof item?.lineaId === 'string' && item.lineaId.trim()) {
+    return item.lineaId.trim();
+  }
+
+  if (typeof item?.itemId === 'string' && item.itemId.trim()) {
+    return item.itemId.trim();
+  }
+
+  const productoId = String(item?.productoId || 'sin-producto');
+  return `${comandaId || 'comanda'}:${index}:${productoId}`;
+}
+
+function normalizarItemComanda(item: any, productos = obtenerProductos(), comandaId = '', index = 0) {
   const producto = productos.find(productoActual => productoActual.id === item?.productoId);
   const nombreProducto = item?.nombreProducto || item?.productoNombre || producto?.nombre || '';
   const productoNombre = item?.productoNombre || item?.nombreProducto || producto?.nombre || '';
@@ -91,6 +104,7 @@ function normalizarItemComanda(item: any, productos = obtenerProductos()) {
 
   return {
     ...item,
+    lineaId: construirLineaIdComanda(item, comandaId, index),
     nombreProducto,
     productoNombre,
     unidad: item?.unidad || producto?.unidad || 'kg',
@@ -138,7 +152,9 @@ function normalizarComanda(comanda: ComandaPersistida, productos = obtenerProduc
     nombreOrganismo: comanda.nombreOrganismo || comanda.organismoNombre || '',
     usuarioCreacion: comanda.usuarioCreacion || comanda.creadoPor || '',
     creadoPor: comanda.creadoPor || comanda.usuarioCreacion || '',
-    items: Array.isArray(comanda.items) ? comanda.items.map(item => normalizarItemComanda(item, productos)) : [],
+    items: Array.isArray(comanda.items)
+      ? comanda.items.map((item, index) => normalizarItemComanda(item, productos, String(comanda.id || ''), index))
+      : [],
     estado: normalizarEstadoComanda(comanda.estado)
   } as Comanda;
 }
