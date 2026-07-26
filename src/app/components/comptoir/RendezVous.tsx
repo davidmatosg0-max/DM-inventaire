@@ -58,6 +58,7 @@ function parseLocalDate(dateValue: string): Date {
 export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: RendezVousProps) {
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedRdv, setSelectedRdv] = useState<RendezVousRecord | null>(null);
   const [editingRdvId, setEditingRdvId] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -656,7 +657,10 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
                       key={rdv.id}
                       className="p-2 rounded cursor-pointer hover:opacity-80 transition-opacity"
                       style={{ backgroundColor: `${getStatusColor(rdv.statut)}20`, borderLeft: `3px solid ${getStatusColor(rdv.statut)}` }}
-                      onClick={() => setSelectedRdv(rdv)}
+                      onClick={() => {
+                        setSelectedRdv(rdv);
+                        setDetailsDialogOpen(true);
+                      }}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <div className="scale-90 origin-left">
@@ -729,162 +733,164 @@ export function RendezVous({ onNavigate, aidRequests = [], aidTypes = [] }: Rend
         </Card>
       )}
 
-      {/* Panneau latéral - Détails du RDV sélectionné */}
-      {selectedRdv && (
-        <Card className="border-2 border-[#1E73BE]">
-          <CardHeader className="bg-[#E3F2FD]">
-            <div className="flex items-center justify-between">
-              <CardTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                {t('comptoir.appointmentDetails')}
-              </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setSelectedRdv(null)}
-              >
-                ✕
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 space-y-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <User className="w-4 h-4 text-[#666666]" />
-                <span className="text-sm text-[#666666]">{t('comptoir.beneficiary')}</span>
-              </div>
-              <p className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {selectedRdv.beneficiaire}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+      {/* Dialog - Détails du RDV sélectionné */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-lg" aria-describedby="rdv-details-description">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
+              {t('comptoir.appointmentDetails')}
+            </DialogTitle>
+            <DialogDescription id="rdv-details-description">
+              Informations complètes sur le rendez-vous sélectionné
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRdv && (
+            <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-[#666666]" />
-                  <span className="text-sm text-[#666666]">{t('common.date')}</span>
+                  <User className="w-4 h-4 text-[#666666]" />
+                  <span className="text-sm text-[#666666]">{t('comptoir.beneficiary')}</span>
                 </div>
-                <p className="font-medium">{selectedRdv.date}</p>
+                <p className="font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  {selectedRdv.beneficiaire}
+                </p>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-4 h-4 text-[#666666]" />
+                    <span className="text-sm text-[#666666]">{t('common.date')}</span>
+                  </div>
+                  <p className="font-medium">{selectedRdv.date}</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-[#666666]" />
+                    <span className="text-sm text-[#666666]">{t('comptoir.time')}</span>
+                  </div>
+                  <p className="font-medium">{selectedRdv.heure}</p>
+                </div>
+              </div>
+
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-[#666666]" />
-                  <span className="text-sm text-[#666666]">{t('comptoir.time')}</span>
+                  <FileText className="w-4 h-4 text-[#666666]" />
+                  <span className="text-sm text-[#666666]">{t('comptoir.reason')}</span>
                 </div>
-                <p className="font-medium">{selectedRdv.heure}</p>
+                <p className="font-medium">{selectedRdv.motif}</p>
               </div>
-            </div>
 
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-[#666666]" />
-                <span className="text-sm text-[#666666]">{t('comptoir.reason')}</span>
-              </div>
-              <p className="font-medium">{selectedRdv.motif}</p>
-            </div>
-
-            <div>
-              <span className="text-sm text-[#666666] mb-2 block">{t('common.status')}</span>
-              {getStatusBadge(selectedRdv.statut)}
-            </div>
-
-            {selectedRdv.notes && (
               <div>
-                <span className="text-sm text-[#666666] mb-2 block">{t('comptoir.notes')}</span>
-                <p className="text-sm bg-[#F4F4F4] p-3 rounded">{selectedRdv.notes}</p>
+                <span className="text-sm text-[#666666] mb-2 block">{t('common.status')}</span>
+                {getStatusBadge(selectedRdv.statut)}
               </div>
-            )}
 
-            {selectedRdv.type === 'regular' && (
-              <div className="space-y-2">
-                <span className="text-sm text-[#666666] block">Gestion du statut</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  <Button
-                    variant="outline"
-                    className="border-[#4CAF50] text-[#2E7D32] hover:bg-[#4CAF50] hover:text-white"
-                    onClick={() => handleUpdateRegularAppointmentStatus('confirme')}
-                    disabled={selectedRdv.statut === 'confirme'}
-                  >
-                    Confirmer
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-[#FFC107] text-[#8A6D00] hover:bg-[#FFC107] hover:text-[#333333]"
-                    onClick={() => handleUpdateRegularAppointmentStatus('attente')}
-                    disabled={selectedRdv.statut === 'attente'}
-                  >
-                    Mettre en attente
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-[#DC3545] text-[#DC3545] hover:bg-[#DC3545] hover:text-white"
-                    onClick={() => handleUpdateRegularAppointmentStatus('annule')}
-                    disabled={selectedRdv.statut === 'annule'}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-[#9C27B0] hover:text-white"
-                    onClick={() => handleUpdateRegularAppointmentStatus('absent')}
-                    disabled={selectedRdv.statut === 'absent'}
-                  >
-                    Marquer absent
-                  </Button>
+              {selectedRdv.notes && (
+                <div>
+                  <span className="text-sm text-[#666666] mb-2 block">{t('comptoir.notes')}</span>
+                  <p className="text-sm bg-[#F4F4F4] p-3 rounded">{selectedRdv.notes}</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {selectedRdv.type === 'aidRequest' && (
-              <div className="space-y-2">
-                <span className="text-sm text-[#666666] block">Présence et remise</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Button
-                    variant="outline"
-                    className="border-[#1E73BE] text-[#1E73BE] hover:bg-[#1E73BE] hover:text-white"
-                    onClick={() => handleUpdateAidRequestDeliveryStatus('completed')}
-                    disabled={selectedRdv.statut === 'completado'}
-                  >
-                    Marquer complété
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white"
-                    onClick={() => handleUpdateAidRequestDeliveryStatus('delivered')}
-                    disabled={selectedRdv.statut === 'entregado'}
-                  >
-                    Marquer livré
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-[#9C27B0] hover:text-white"
-                    onClick={() => handleUpdateAidRequestDeliveryStatus('absent')}
-                    disabled={selectedRdv.statut === 'absent'}
-                  >
-                    Marquer absent
-                  </Button>
+              {selectedRdv.type === 'regular' && (
+                <div className="space-y-2">
+                  <span className="text-sm text-[#666666] block">Gestion du statut</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      className="border-[#4CAF50] text-[#2E7D32] hover:bg-[#4CAF50] hover:text-white"
+                      onClick={() => handleUpdateRegularAppointmentStatus('confirme')}
+                      disabled={selectedRdv.statut === 'confirme'}
+                    >
+                      Confirmer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-[#FFC107] text-[#8A6D00] hover:bg-[#FFC107] hover:text-[#333333]"
+                      onClick={() => handleUpdateRegularAppointmentStatus('attente')}
+                      disabled={selectedRdv.statut === 'attente'}
+                    >
+                      Mettre en attente
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-[#DC3545] text-[#DC3545] hover:bg-[#DC3545] hover:text-white"
+                      onClick={() => handleUpdateRegularAppointmentStatus('annule')}
+                      disabled={selectedRdv.statut === 'annule'}
+                    >
+                      Annuler
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-[#9C27B0] text-[#9C27B0] hover:bg-[#9C27B0] hover:text-white"
+                      onClick={() => handleUpdateRegularAppointmentStatus('absent')}
+                      disabled={selectedRdv.statut === 'absent'}
+                    >
+                      Marquer absent
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="flex gap-2 pt-4 border-t">
-              <Button 
-                className="flex-1 bg-[#1E73BE] hover:bg-[#1557A0]"
-                onClick={() => onNavigate('fiche-beneficiaire', selectedRdv.beneficiaireId)}
-              >
-                {t('comptoir.viewBeneficiary')}
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={openEditDialog}
-                disabled={selectedRdv.type !== 'regular'}
-              >
-                {t('common.edit')}
-              </Button>
+              {selectedRdv.type === 'aidRequest' && (
+                <div className="space-y-2">
+                  <span className="text-sm text-[#666666] block">Présence et remise</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <Button
+                      variant="outline"
+                      className="border-[#1E73BE] text-[#1E73BE] hover:bg-[#1E73BE] hover:text-white"
+                      onClick={() => handleUpdateAidRequestDeliveryStatus('completed')}
+                      disabled={selectedRdv.statut === 'completado'}
+                    >
+                      Marquer complété
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white"
+                      onClick={() => handleUpdateAidRequestDeliveryStatus('delivered')}
+                      disabled={selectedRdv.statut === 'entregado'}
+                    >
+                      Marquer livré
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-[#9C27B0] text-[#9C27B0] hover:bg-[#9C27B0] hover:text-white"
+                      onClick={() => handleUpdateAidRequestDeliveryStatus('absent')}
+                      disabled={selectedRdv.statut === 'absent'}
+                    >
+                      Marquer absent
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4 border-t">
+                <Button 
+                  className="flex-1 bg-[#1E73BE] hover:bg-[#1557A0]"
+                  onClick={() => {
+                    setDetailsDialogOpen(false);
+                    onNavigate('fiche-beneficiaire', selectedRdv.beneficiaireId);
+                  }}
+                >
+                  {t('comptoir.viewBeneficiary')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setDetailsDialogOpen(false);
+                    openEditDialog();
+                  }}
+                  disabled={selectedRdv.type !== 'regular'}
+                >
+                  {t('common.edit')}
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
