@@ -777,8 +777,8 @@ export function VerificacionVehiculo() {
               .print-verificacion-documento {
                 width: 100%;
                 padding: 0;
-                font-size: 10pt !important;
-                line-height: 1.35 !important;
+                font-size: 11pt !important;
+                line-height: 1.45 !important;
               }
 
               .print-verificacion-documento-shell {
@@ -792,7 +792,7 @@ export function VerificacionVehiculo() {
               }
 
               .print-verificacion-documento-kicker {
-                font-size: 8pt !important;
+                font-size: 9pt !important;
               }
 
               .print-verificacion-documento-subtitulo,
@@ -804,35 +804,35 @@ export function VerificacionVehiculo() {
               .print-verificacion-documento-meta-card strong,
               .print-verificacion-documento-resumen strong,
               .print-verificacion-documento-footer-card strong {
-                font-size: 9pt !important;
-                line-height: 1.35 !important;
+                font-size: 10pt !important;
+                line-height: 1.45 !important;
               }
 
               .print-verificacion-documento-meta-card span,
               .print-verificacion-documento-resumen span,
               .print-verificacion-documento-footer-card span,
               .print-verificacion-documento-fila--cabecera {
-                font-size: 7.5pt !important;
+                font-size: 8.5pt !important;
                 letter-spacing: 0.05em;
               }
 
               .print-verificacion-documento-encabezado {
-                font-size: 16pt !important;
+                font-size: 19pt !important;
                 line-height: 1.1 !important;
               }
 
               .print-verificacion-documento-titulo {
-                font-size: 11pt !important;
+                font-size: 13pt !important;
                 line-height: 1.25 !important;
               }
 
               .print-verificacion-documento-status-label,
               .print-verificacion-documento-badge {
-                font-size: 7.5pt !important;
+                font-size: 8.5pt !important;
               }
 
               .print-verificacion-documento-status-value {
-                font-size: 13pt !important;
+                font-size: 15pt !important;
               }
 
               .print-verificacion-documento-categorias {
@@ -848,9 +848,14 @@ export function VerificacionVehiculo() {
               }
 
               .print-verificacion-documento-fila {
-                grid-template-columns: minmax(0, 1.5fr) 0.62fr minmax(0, 1fr);
+                grid-template-columns: minmax(0, 1.35fr) 0.72fr minmax(0, 1fr);
                 gap: 6px;
-                padding: 6px 10px;
+                padding: 7px 10px;
+              }
+
+              .print-verificacion-documento-col {
+                word-break: break-word;
+                overflow-wrap: anywhere;
               }
 
               .print-verificacion-documento-footer {
