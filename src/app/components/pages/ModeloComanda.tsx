@@ -29,6 +29,54 @@ import { obtenerReservaInventarioProducto } from '../../utils/inventoryReservati
 import { useBranding } from '../../../hooks/useBranding';
 import { toast } from 'sonner';
 
+const BORRADORES_PREPARACION_KEY = 'brouillons_preparation_comandes';
+
+function leerBorradoresPreparacion(): Record<string, Record<string, boolean>> {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const raw = localStorage.getItem(BORRADORES_PREPARACION_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function guardarBorradorPreparacion(comandaId: string, selecciones: Record<string, boolean>): void {
+  if (typeof window === 'undefined' || !comandaId) {
+    return;
+  }
+
+  try {
+    const borradores = leerBorradoresPreparacion();
+    const seleccionesActivas = Object.fromEntries(Object.entries(selecciones).filter(([, valor]) => Boolean(valor)));
+
+    if (Object.keys(seleccionesActivas).length === 0) {
+      delete borradores[comandaId];
+    } else {
+      borradores[comandaId] = seleccionesActivas;
+    }
+
+    localStorage.setItem(BORRADORES_PREPARACION_KEY, JSON.stringify(borradores));
+  } catch {
+    // Ignorar si localStorage no está disponible.
+  }
+}
+
+function leerBorradorPreparacion(comandaId: string): Record<string, boolean> {
+  const borradores = leerBorradoresPreparacion();
+  const borrador = borradores[comandaId];
+
+  return borrador && typeof borrador === 'object' ? borrador : {};
+}
+
 interface ModeloComandaProps {
   comanda: any;
   organismo: any;
@@ -166,6 +214,11 @@ export function ModeloComanda({
         ...prev,
         [itemKey]: !prev[itemKey],
       };
+
+      if (comanda.estado === 'en_preparacion') {
+        guardarBorradorPreparacion(comanda.id, siguiente);
+      }
+
       const totalMarcados = productosOrdenados.reduce((total: number, item: any, index: number) => {
         const claveActual = getItemKey(item, index);
         return total + (siguiente[claveActual] ? 1 : 0);
@@ -195,7 +248,7 @@ export function ModeloComanda({
         return total;
       }
 
-      const itemKey = `${item.productoId}-${index}`;
+      const itemKey = getItemKey(item, index);
       const cantidadVisible = (modoEdicion || modoEdicionInterna) && cantidadesEditadas[itemKey] !== undefined
         ? cantidadesEditadas[itemKey]
         : Number(item?.cantidad || 0);
@@ -267,7 +320,17 @@ export function ModeloComanda({
       .join(' · ');
   };
 
-  const getItemKey = (item: any, index: number) => `${item.productoId}-${index}`;
+  const getItemKey = (item: any, index: number) => {
+    if (item?.id) {
+      return `item-${String(item.id)}`;
+    }
+
+    const temperatura = normalizarTemperaturaPersistida(item?.temperatura);
+    const codigo = String(item?.productoCodigo || item?.codigo || '').trim();
+    const unidad = String(item?.unidad || '').trim();
+
+    return `item-${String(item?.productoId || '')}-${codigo}-${temperatura}-${unidad}-${index}`;
+  };
 
   const getCantidadVisible = (item: any, index: number) => {
     const itemKey = getItemKey(item, index);
@@ -538,7 +601,7 @@ export function ModeloComanda({
     if (mostrar && modoOrganismo) {
       const cantidadesIniciales: {[key: string]: number} = {};
       productosOrdenados.forEach((item: any, index: number) => {
-        cantidadesIniciales[`${item.productoId}-${index}`] = item.cantidad;
+        cantidadesIniciales[getItemKey(item, index)] = item.cantidad;
       });
       setCantidadesEditadas(cantidadesIniciales);
     }
@@ -546,14 +609,32 @@ export function ModeloComanda({
 
   useEffect(() => {
     if (!mostrar) {
+      return;
+    }
+
+    if (comanda.estado !== 'en_preparacion') {
       setProductosCompletados({});
       autoCompletarPreparacionRef.current = null;
       return;
     }
 
-    setProductosCompletados({});
+    const borradorGuardado = leerBorradorPreparacion(comanda.id);
+    const clavesValidas = new Set(productosOrdenados.map((item: any, index: number) => getItemKey(item, index)));
+    const borradorFiltrado = Object.fromEntries(
+      Object.entries(borradorGuardado).filter(([clave, valor]) => clavesValidas.has(clave) && Boolean(valor))
+    );
+
+    setProductosCompletados(borradorFiltrado);
     autoCompletarPreparacionRef.current = null;
-  }, [mostrar, comanda.id]);
+  }, [mostrar, comanda.id, comanda.estado, productosOrdenados]);
+
+  useEffect(() => {
+    if (!mostrar || comanda.estado !== 'en_preparacion') {
+      return;
+    }
+
+    guardarBorradorPreparacion(comanda.id, productosCompletados);
+  }, [mostrar, comanda.id, comanda.estado, productosCompletados]);
 
   useEffect(() => {
     setProductosCompletados((prev) => {
@@ -868,7 +949,7 @@ export function ModeloComanda({
   const handleAceptarModificado = () => {
     if (onAceptarComanda) {
       const itemsAceptados = productosOrdenados.map((item: any, index: number) => {
-        const itemKey = `${item.productoId}-${index}`;
+        const itemKey = getItemKey(item, index);
         return {
           ...item,
           cantidadAceptada: cantidadesEditadas[itemKey] ?? item.cantidad
