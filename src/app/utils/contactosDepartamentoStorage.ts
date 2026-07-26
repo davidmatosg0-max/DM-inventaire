@@ -566,16 +566,17 @@ export function obtenerContactosPorDepartamentoYTipo(
     
     // Los contactos de Entrepot pueden ser duales (donateur + fournisseur).
     // En esos casos, los flags son la fuente de verdad y el tipo queda como valor canonico.
+    const tipoNormalizado = String((c as any)?.tipo || '').toLowerCase();
     const esTipoCorrecto = tipos.some(tipo => {
       if (tipo === 'donador') {
-        return c.isDonateur === true || c.tipo === 'donador';
+        return c.isDonateur === true || tipoNormalizado === 'donador' || tipoNormalizado === 'donateur';
       }
 
       if (tipo === 'fournisseur') {
-        return c.isFournisseur === true || c.tipo === 'fournisseur';
+        return c.isFournisseur === true || tipoNormalizado === 'fournisseur' || tipoNormalizado === 'proveedor';
       }
 
-      return c.tipo === tipo;
+      return tipoNormalizado === tipo;
     });
     
     // Retornar solo si cumple ambas condiciones

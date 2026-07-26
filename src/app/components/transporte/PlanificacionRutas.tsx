@@ -17,7 +17,7 @@ import { getGoogleMapsMultipleStops } from '../../utils/maps';
 import { TRANSPORTE_MODULE_EVENT, actualizarRuta, cambiarEstadoRuta, crearRuta, eliminarRuta, obtenerChoferes, obtenerRutas, obtenerVehiculos, type Chofer, type ParadaRuta as Parada, type Ruta, type Vehiculo } from '../../utils/transporteLogic';
 import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
-import { obtenerContactosPorDepartamentoYTipo, obtenerIdDepartamentoEntrepot, type ContactoDepartamento } from '../../utils/contactosDepartamentoStorage';
+import { obtenerContactosPorDepartamentoYTipo, obtenerIdDepartamentoEntrepot, sincronizarDonateursFournisseurs, type ContactoDepartamento } from '../../utils/contactosDepartamentoStorage';
 import type { Comanda } from '../../types';
 
 type DestinoRutaDisponible = {
@@ -28,8 +28,9 @@ type DestinoRutaDisponible = {
 };
 
 function obtenerTipoDestinoContacto(contacto: ContactoDepartamento): DestinoRutaDisponible['tipo'] {
-  const esDonador = contacto.isDonateur === true || contacto.tipo === 'donador';
-  const esFournisseur = contacto.isFournisseur === true || contacto.tipo === 'fournisseur';
+  const tipoNormalizado = String((contacto as any)?.tipo || '').toLowerCase();
+  const esDonador = contacto.isDonateur === true || tipoNormalizado === 'donador' || tipoNormalizado === 'donateur';
+  const esFournisseur = contacto.isFournisseur === true || tipoNormalizado === 'fournisseur' || tipoNormalizado === 'proveedor';
 
   if (esDonador && esFournisseur) {
     return 'donador-fournisseur';
@@ -58,6 +59,9 @@ function obtenerEtiquetaDestino(tipo: DestinoRutaDisponible['tipo']): string {
 }
 
 function obtenerDestinosRutaDisponibles(): DestinoRutaDisponible[] {
+  // Sincroniza primero para incluir contactos legacy de donateurs/fournisseurs.
+  sincronizarDonateursFournisseurs();
+
   const organismos = obtenerOrganismos().map((organismo: Organismo) => ({
     id: organismo.id,
     nombre: organismo.nombre,
