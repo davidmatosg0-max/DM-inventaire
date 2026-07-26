@@ -416,107 +416,109 @@ export function VerificacionVehiculo() {
             }
 
             .print-verificacion-documento-header {
-              display: grid;
-              grid-template-columns: minmax(0, 1.5fr) minmax(185px, 0.8fr);
-              gap: 14px;
-              padding: 14px 16px 12px;
+              padding: 18px 20px 16px;
               background:
-                radial-gradient(circle at top right, rgba(76, 175, 80, 0.18), transparent 34%),
-                linear-gradient(135deg, #eff6ff 0%, #ffffff 62%, #f8fff6 100%);
-              border-bottom: 1px solid #dbe7f3;
+                radial-gradient(circle at top center, rgba(76, 175, 80, 0.12), transparent 45%),
+                linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+              border-bottom: 2px solid #1e73be;
+              text-align: center;
             }
 
             .print-verificacion-documento-kicker {
-              margin: 0 0 4px;
-              font-size: 10pt;
+              margin: 0 0 6px;
+              font-size: 11pt;
               font-weight: 700;
-              letter-spacing: 0.18em;
+              letter-spacing: 0.2em;
               text-transform: uppercase;
               color: #145ca1;
             }
 
             .print-verificacion-documento-subtitulo {
-              margin: 0;
-              font-size: 12pt;
-              line-height: 1.6;
-              color: #334155;
+              margin: 0 0 4px;
+              font-size: 11pt;
+              line-height: 1.5;
+              color: #475569;
             }
 
             .print-verificacion-documento-encabezado {
-              margin: 8px 0 2px;
-              font-size: 22pt;
-              line-height: 1.08;
-              font-weight: 700;
+              margin: 10px 0 8px;
+              font-size: 24pt;
+              line-height: 1.15;
+              font-weight: 800;
               color: #0f1f33;
+              letter-spacing: -0.02em;
             }
 
             .print-verificacion-documento-titulo {
-              margin: 10px 0 6px;
+              margin: 8px 0 8px;
               font-size: 16pt;
-              line-height: 1.35;
+              line-height: 1.3;
               font-weight: 700;
-              color: #0f172a;
+              color: #1e73be;
             }
 
             .print-verificacion-documento-resumen-header {
-              margin: 0;
-              font-size: 12pt;
-              line-height: 1.6;
-              color: #243447;
+              margin: 0 auto;
+              max-width: 85%;
+              font-size: 11pt;
+              line-height: 1.55;
+              color: #334155;
             }
 
             .print-verificacion-documento-status {
-              display: flex;
-              flex-direction: column;
-              gap: 10px;
-              align-self: stretch;
-              padding: 12px 14px;
-              border-radius: 16px;
-              background: linear-gradient(180deg, rgba(8, 23, 43, 1) 0%, rgba(14, 42, 74, 1) 100%);
-              border: 1px solid rgba(255, 255, 255, 0.12);
-              color: #f8fbff;
+              margin: 14px auto 0;
+              max-width: 420px;
+              padding: 14px 18px;
+              border-radius: 12px;
+              background: linear-gradient(135deg, #1e73be 0%, #145ca1 100%);
+              border: 2px solid #1e73be;
+              color: #ffffff;
+              text-align: center;
+              box-shadow: 0 4px 12px rgba(30, 115, 190, 0.25);
             }
 
             .print-verificacion-documento-status-label {
-              margin: 0;
+              margin: 0 0 6px;
               font-size: 10pt;
               font-weight: 700;
-              letter-spacing: 0.16em;
+              letter-spacing: 0.18em;
               text-transform: uppercase;
-              color: rgba(255, 255, 255, 0.82);
+              color: rgba(255, 255, 255, 0.9);
             }
 
             .print-verificacion-documento-status-value {
-              margin: 2px 0 0;
-              font-size: 18pt;
-              line-height: 1.15;
-              font-weight: 700;
+              margin: 0;
+              font-size: 20pt;
+              line-height: 1.1;
+              font-weight: 800;
               color: #ffffff;
             }
 
             .print-verificacion-documento-badges {
               display: flex;
               flex-wrap: wrap;
-              gap: 6px;
+              justify-content: center;
+              gap: 8px;
+              margin-top: 10px;
             }
 
             .print-verificacion-documento-badge {
               display: inline-flex;
               align-items: center;
-              padding: 7px 11px;
+              padding: 6px 12px;
               border-radius: 999px;
-              border: 1px solid rgba(255, 255, 255, 0.24);
-              background: rgba(255, 255, 255, 0.16);
-              font-size: 10pt;
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              background: rgba(255, 255, 255, 0.2);
+              font-size: 9pt;
               font-weight: 700;
-              letter-spacing: 0.04em;
+              letter-spacing: 0.06em;
               text-transform: uppercase;
               color: #ffffff;
             }
 
             .print-verificacion-documento-badge--estado {
-              background: rgba(76, 175, 80, 0.28);
-              border-color: rgba(76, 175, 80, 0.45);
+              background: rgba(76, 175, 80, 0.35);
+              border-color: rgba(76, 175, 80, 0.6);
             }
 
             .print-verificacion-documento-meta {
@@ -647,27 +649,26 @@ export function VerificacionVehiculo() {
               overflow: hidden;
               background: #ffffff;
             }
-
-            .print-verificacion-documento-categoria-header {
-              display: flex;
-              align-items: flex-start;
-              justify-content: space-between;
-              gap: 12px;
-              padding: 10px 12px;
-              background: linear-gradient(180deg, #f7fbff 0%, #eff5fb 100%);
-              border-bottom: 1px solid #dbe4ee;
+padding: 11px 14px;
+              background: linear-gradient(135deg, #1e73be 0%, #2d88d4 100%);
+              border-bottom: none;
+              text-align: center;
             }
 
             .print-verificacion-documento-categoria-header h3 {
-              margin: 0;
-              font-size: 13pt;
-              line-height: 1.35;
+              margin: 0 0 4px;
+              font-size: 14pt;
+              line-height: 1.3;
               font-weight: 800;
-              color: #10253d;
+              color: #ffffff;
+              letter-spacing: 0.02em;
             }
 
             .print-verificacion-documento-categoria-header p {
-              margin: 3px 0 0;
+              margin: 0;
+              font-size: 10pt;
+              color: rgba(255, 255, 255, 0.95);
+              font-weight: 6000;
               font-size: 12pt;
               color: #334155;
             }
@@ -679,10 +680,11 @@ export function VerificacionVehiculo() {
             .print-verificacion-documento-fila {
               display: grid;
               grid-template-columns: minmax(0, 1.55fr) 0.72fr minmax(0, 1fr);
-              gap: 8px;
+              gap: 8px;4fr) 0.75fr minmax(0, 1fr);
+              gap: 10px;
               align-items: start;
-              padding: 8px 12px;
-              border-bottom: 1px solid #eef2f7;
+              padding: 9px 14px;
+              border-bottom: 1px solid #e2e8f0;
             }
 
             .print-verificacion-documento-fila:last-child {
@@ -690,15 +692,14 @@ export function VerificacionVehiculo() {
             }
 
             .print-verificacion-documento-fila--cabecera {
-              padding-top: 8px;
-              padding-bottom: 8px;
-              background: #f8fafc;
-              font-size: 12pt;
+              padding: 10px 14px;
+              background: #f1f5f9;
+              font-size: 10pt;
               font-weight: 800;
-              letter-spacing: 0.06em;
+              letter-spacing: 0.08em;
               text-transform: uppercase;
-              color: #334155;
-            }
+              color: #1e293b;
+              text-align: center
 
             .print-verificacion-documento-fila--conforme {
               background: rgba(76, 175, 80, 0.05);
@@ -713,9 +714,9 @@ export function VerificacionVehiculo() {
             }
 
             .print-verificacion-documento-col {
-              font-size: 12pt;
-              line-height: 1.6;
-              color: #162436;
+              font-size: 11pt;
+              line-height: 1.5;
+              color: #1e293b;
             }
 
             .print-verificacion-documento-col--descripcion {
@@ -726,10 +727,11 @@ export function VerificacionVehiculo() {
             .print-verificacion-documento-col--estado {
               font-weight: 800;
               color: #0b1f36;
+              text-align: center;
             }
 
             .print-verificacion-documento-col--observacion {
-              color: #243447;
+              color: #475569;
             }
 
             .print-verificacion-documento-footer {
@@ -816,34 +818,53 @@ export function VerificacionVehiculo() {
                 letter-spacing: 0.05em;
               }
 
-              .print-verificacion-documento-encabezado {
-                font-size: 19pt !important;
-                line-height: 1.1 !important;
+              .print-verifi22pt !important;
+                line-height: 1.15 !important;
               }
 
               .print-verificacion-documento-titulo {
-                font-size: 13pt !important;
+                font-size: 15pt !important;
                 line-height: 1.25 !important;
               }
 
-              .print-verificacion-documento-status-label,
+              .print-verificacion-documento-status-label {
+                font-size: 9pt !important;
+              }
+              
               .print-verificacion-documento-badge {
-                font-size: 8.5pt !important;
+                font-size: 8pt !important;
               }
 
               .print-verificacion-documento-status-value {
+                font-size: 18pt !important;
+              }
+              
+              .print-verificacion-documento-categoria-header h3 {
+                font-size: 13pt !important;
+              }
+              
+              .print-verificacion-documento-categoria-header p {
+                font-size: 9cion-documento-status-value {
                 font-size: 15pt !important;
               }
 
               .print-verificacion-documento-categorias {
-                columns: 1 !important;
-                column-gap: 0 !important;
-                padding-top: 10px;
+                columns: 1 !important;fr) 0.78fr minmax(0, 1fr);
+                gap: 8px;
+                padding: 8px 12px;
+              }
+              
+              .print-verificacion-documento-fila--cabecera {
+                padding: 9px 12px;
               }
 
-              .print-verificacion-documento-categoria {
-                break-inside: avoid-page;
-                page-break-inside: avoid;
+              .print-verificacion-documento-col {
+                word-break: break-word;
+                overflow-wrap: anywhere;
+              }
+              
+              .print-verificacion-documento-col--estado {
+                text-align: centerd;
                 margin-bottom: 8px;
               }
 
@@ -867,23 +888,20 @@ export function VerificacionVehiculo() {
         <div className="print-verificacion-documento">
           <div className="print-verificacion-documento-shell">
             <div className="print-verificacion-documento-header">
-              <div>
-                <p className="print-verificacion-documento-kicker">{nombreSistemaImpresion}</p>
-                {brandingContactLine && (
-                  <p className="print-verificacion-documento-subtitulo">{brandingContactLine}</p>
-                )}
-                <h1 className="print-verificacion-documento-encabezado">Verification de vehicule SAAQ</h1>
-                <p className="print-verificacion-documento-subtitulo">Modele d'impression compact, professionnel et archive</p>
-                <h2 className="print-verificacion-documento-titulo">{tituloVehiculo}</h2>
-                <p className="print-verificacion-documento-resumen-header">
-                  Controle realise par {verDetalle.conductorNombre} le {fechaImpresion} a {verDetalle.hora}. Document concu pour impression rapide, lecture terrain et classement administratif.
-                </p>
-              </div>
+              <p className="print-verificacion-documento-kicker">{nombreSistemaImpresion}</p>
+              {brandingContactLine && (
+                <p className="print-verificacion-documento-subtitulo">{brandingContactLine}</p>
+              )}
+              <h1 className="print-verificacion-documento-encabezado">Verification de vehicule SAAQ</h1>
+              <p className="print-verificacion-documento-subtitulo">Modele d'impression professionnel et lisible</p>
+              <h2 className="print-verificacion-documento-titulo">{tituloVehiculo}</h2>
+              <p className="print-verificacion-documento-resumen-header">
+                Controle realise par {verDetalle.conductorNombre} le {fechaImpresion} a {verDetalle.hora}.
+              </p>
+              
               <div className="print-verificacion-documento-status">
-                <div>
-                  <p className="print-verificacion-documento-status-label">Statut final</p>
-                  <p className="print-verificacion-documento-status-value">{getEstadoGeneralTexto(verDetalle.estadoGeneral)}</p>
-                </div>
+                <p className="print-verificacion-documento-status-label">Statut final</p>
+                <p className="print-verificacion-documento-status-value">{getEstadoGeneralTexto(verDetalle.estadoGeneral)}</p>
                 <div className="print-verificacion-documento-badges">
                   <span className="print-verificacion-documento-badge">
                     {getTipoVerificacionTexto(verDetalle.tipoVerificacion)}
@@ -968,15 +986,10 @@ export function VerificacionVehiculo() {
                 return (
                   <section key={`print-${categoria}`} className="print-verificacion-documento-categoria">
                     <div className="print-verificacion-documento-categoria-header">
-                      <div>
-                        <h3>{getCategoriaIcono(categoria)} {getCategoriaLabel(categoria)}</h3>
-                        <p>
-                          {itemsCategoria.length} {t('transport.saaqVerification.elements')} • {itemsCategoriaConformes} OK • {itemsConObservaciones} a revoir
-                        </p>
-                      </div>
-                      <div>
-                        <p>{Math.round((itemsCategoriaConformes / Math.max(itemsCategoria.length, 1)) * 100)}% conforme</p>
-                      </div>
+                      <h3>{getCategoriaIcono(categoria)} {getCategoriaLabel(categoria)}</h3>
+                      <p>
+                        {itemsCategoria.length} {t('transport.saaqVerification.elements')} • {itemsCategoriaConformes} OK • {itemsConObservaciones} a revoir • {Math.round((itemsCategoriaConformes / Math.max(itemsCategoria.length, 1)) * 100)}% conforme
+                      </p>
                     </div>
                     <div className="print-verificacion-documento-tabla">
                       <div className="print-verificacion-documento-fila print-verificacion-documento-fila--cabecera">
