@@ -750,8 +750,8 @@ export function VerificacionVehiculo() {
             }
 
             @page {
-              size: auto;
-              margin: 8mm;
+              size: Letter portrait;
+              margin: 9mm;
             }
 
             @media print {
@@ -777,10 +777,84 @@ export function VerificacionVehiculo() {
               .print-verificacion-documento {
                 width: 100%;
                 padding: 0;
+                font-size: 10pt !important;
+                line-height: 1.35 !important;
               }
 
               .print-verificacion-documento-shell {
                 box-shadow: none;
+                border-radius: 10px;
+              }
+
+              .print-verificacion-documento * {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+              }
+
+              .print-verificacion-documento-kicker {
+                font-size: 8pt !important;
+              }
+
+              .print-verificacion-documento-subtitulo,
+              .print-verificacion-documento-resumen-header,
+              .print-verificacion-documento-col,
+              .print-verificacion-documento-categoria-header p,
+              .print-verificacion-documento-nota p:last-child,
+              .print-verificacion-documento-nota ul,
+              .print-verificacion-documento-meta-card strong,
+              .print-verificacion-documento-resumen strong,
+              .print-verificacion-documento-footer-card strong {
+                font-size: 9pt !important;
+                line-height: 1.35 !important;
+              }
+
+              .print-verificacion-documento-meta-card span,
+              .print-verificacion-documento-resumen span,
+              .print-verificacion-documento-footer-card span,
+              .print-verificacion-documento-fila--cabecera {
+                font-size: 7.5pt !important;
+                letter-spacing: 0.05em;
+              }
+
+              .print-verificacion-documento-encabezado {
+                font-size: 16pt !important;
+                line-height: 1.1 !important;
+              }
+
+              .print-verificacion-documento-titulo {
+                font-size: 11pt !important;
+                line-height: 1.25 !important;
+              }
+
+              .print-verificacion-documento-status-label,
+              .print-verificacion-documento-badge {
+                font-size: 7.5pt !important;
+              }
+
+              .print-verificacion-documento-status-value {
+                font-size: 13pt !important;
+              }
+
+              .print-verificacion-documento-categorias {
+                columns: 1 !important;
+                column-gap: 0 !important;
+                padding-top: 10px;
+              }
+
+              .print-verificacion-documento-categoria {
+                break-inside: avoid-page;
+                page-break-inside: avoid;
+                margin-bottom: 8px;
+              }
+
+              .print-verificacion-documento-fila {
+                grid-template-columns: minmax(0, 1.5fr) 0.62fr minmax(0, 1fr);
+                gap: 6px;
+                padding: 6px 10px;
+              }
+
+              .print-verificacion-documento-footer {
+                page-break-inside: avoid;
               }
             }
           `}
