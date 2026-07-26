@@ -764,6 +764,18 @@ export function VerificacionVehiculo() {
                 -webkit-print-color-adjust: exact;
               }
 
+              body > :not([data-verificacion-print-root]) {
+                display: none !important;
+              }
+
+              [data-verificacion-print-root] {
+                position: static !important;
+                inset: auto !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                z-index: auto !important;
+              }
+
               body[data-print-mode='completo'] > :not([data-verificacion-print-root]) {
                 display: none !important;
               }
