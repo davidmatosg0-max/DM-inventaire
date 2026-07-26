@@ -429,10 +429,10 @@ export function VerificacionVehiculo() {
             .print-verificacion-documento-header {
               position: relative;
               padding: 24px 28px 20px;
-              background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-              border-bottom: 4px solid #3b82f6;
+              background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+              border-bottom: 3px solid #3b82f6;
               text-align: center;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             }
 
             .print-verificacion-documento-header::before {
@@ -441,7 +441,7 @@ export function VerificacionVehiculo() {
               top: 0;
               left: 0;
               right: 0;
-              height: 3px;
+              height: 4px;
               background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
             }
 
@@ -451,14 +451,14 @@ export function VerificacionVehiculo() {
               font-weight: 800;
               letter-spacing: 0.25em;
               text-transform: uppercase;
-              color: #93c5fd;
+              color: #3b82f6;
             }
 
             .print-verificacion-documento-subtitulo {
               margin: 0 0 6px;
               font-size: 10pt;
               line-height: 1.6;
-              color: #cbd5e1;
+              color: #64748b;
               font-weight: 500;
             }
 
@@ -467,9 +467,8 @@ export function VerificacionVehiculo() {
               font-size: 26pt;
               line-height: 1.1;
               font-weight: 900;
-              color: #ffffff;
+              color: #0f172a;
               letter-spacing: -0.03em;
-              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             }
 
             .print-verificacion-documento-titulo {
@@ -479,10 +478,11 @@ export function VerificacionVehiculo() {
               line-height: 1.3;
               font-weight: 700;
               color: #1e293b;
-              background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+              background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
               border-radius: 8px;
               display: inline-block;
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+              box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+              border: 1px solid #93c5fd;
             }
 
             .print-verificacion-documento-resumen-header {
@@ -490,7 +490,7 @@ export function VerificacionVehiculo() {
               max-width: 90%;
               font-size: 10pt;
               line-height: 1.6;
-              color: #e2e8f0;
+              color: #475569;
               font-weight: 500;
             }
 
