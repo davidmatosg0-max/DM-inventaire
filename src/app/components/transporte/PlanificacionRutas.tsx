@@ -17,7 +17,7 @@ import { getGoogleMapsMultipleStops } from '../../utils/maps';
 import { TRANSPORTE_MODULE_EVENT, actualizarRuta, cambiarEstadoRuta, crearRuta, eliminarRuta, obtenerChoferes, obtenerRutas, obtenerVehiculos, type Chofer, type ParadaRuta as Parada, type Ruta, type Vehiculo } from '../../utils/transporteLogic';
 import { obtenerComandas } from '../../utils/comandaStorage';
 import { obtenerOrganismos, type Organismo } from '../../utils/organismosStorage';
-import { obtenerContactosPorDepartamentoYTipo, obtenerIdDepartamentoEntrepot, sincronizarDonateursFournisseurs, type ContactoDepartamento } from '../../utils/contactosDepartamentoStorage';
+import { obtenerContactosDepartamento, obtenerContactosPorDepartamentoYTipo, obtenerIdDepartamentoEntrepot, sincronizarDonateursFournisseurs, type ContactoDepartamento } from '../../utils/contactosDepartamentoStorage';
 import type { Comanda } from '../../types';
 
 type DestinoRutaDisponible = {
@@ -78,7 +78,34 @@ function obtenerDestinosRutaDisponibles(): DestinoRutaDisponible[] {
       tipo: obtenerTipoDestinoContacto(contacto),
     }));
 
-  return [...organismos, ...contactosEntrepot];
+  const contactosGlobales = contactosEntrepot.length > 0
+    ? []
+    : obtenerContactosDepartamento()
+        .filter((contacto) => {
+          if (!contacto.activo) {
+            return false;
+          }
+
+          const tipoNormalizado = String((contacto as any)?.tipo || '').toLowerCase();
+          return contacto.isDonateur === true
+            || contacto.isFournisseur === true
+            || tipoNormalizado === 'donador'
+            || tipoNormalizado === 'donateur'
+            || tipoNormalizado === 'fournisseur'
+            || tipoNormalizado === 'proveedor';
+        })
+        .map((contacto) => ({
+          id: contacto.id,
+          nombre: obtenerNombreContactoRuta(contacto),
+          direccion: contacto.direccion || '',
+          tipo: obtenerTipoDestinoContacto(contacto),
+        }));
+
+  const contactosDonateursFournisseurs = contactosEntrepot.length > 0
+    ? contactosEntrepot
+    : Array.from(new Map(contactosGlobales.map((contacto) => [contacto.id, contacto])).values());
+
+  return [...organismos, ...contactosDonateursFournisseurs];
 }
 
 export function PlanificacionRutas() {
