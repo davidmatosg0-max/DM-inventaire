@@ -1,1 +1,0 @@
-const f={ambiente:0,refrigerado:1,congelado:2};function a(e){const r=String(e||"").trim().toLowerCase();return r.includes("congel")?"congelado":r.includes("refrig")?"refrigerado":"ambiente"}function u(e){return f[a(e)]}function c(e,r,n){return[...e].sort((t,i)=>{const o=u(r(t))-u(r(i));return o!==0?o:n?n(t,i):0})}export{c as s};

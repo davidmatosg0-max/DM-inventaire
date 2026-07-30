@@ -1,27 +1,36 @@
-<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <!-- Fondo con gradiente -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Logo Monogramme DMi">
   <defs>
-    <linearGradient id="favGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a4d7a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2d9561;stop-opacity:1" />
+    <linearGradient id="p3-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#215d8f"/>
+      <stop offset="1" stop-color="#123957"/>
+    </linearGradient>
+    <linearGradient id="p3-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#34a870"/>
+      <stop offset="1" stop-color="#e8a419"/>
     </linearGradient>
   </defs>
-  
-  <!-- Fondo -->
-  <rect width="32" height="32" rx="6" fill="url(#favGradient)"/>
-  
-  <!-- Icono simplificado -->
-  <g transform="translate(16, 16)">
-    <!-- Canasta/Caja -->
-    <rect x="-8" y="-6" width="16" height="12" rx="1" fill="white" opacity="0.9"/>
-    
-    <!-- Corazón pequeño -->
-    <path d="M 0,-9 C -1,-10 -3,-10 -4,-8 C -5,-6 -4,-4 0,-2 C 4,-4 5,-6 4,-8 C 3,-10 1,-10 0,-9 Z" 
-          fill="#ffffff" opacity="0.95"/>
-    
-    <!-- Líneas -->
-    <line x1="-5" y1="-3" x2="-5" y2="3" stroke="white" stroke-width="1" opacity="0.7"/>
-    <line x1="0" y1="-3" x2="0" y2="3" stroke="white" stroke-width="1" opacity="0.7"/>
-    <line x1="5" y1="-3" x2="5" y2="3" stroke="white" stroke-width="1" opacity="0.7"/>
-  </g>
+
+  <!-- Fond hexagonal moderne -->
+  <path d="M 256 24 L 476 148 L 476 364 L 256 488 L 36 364 L 36 148 Z"
+        fill="url(#p3-bg)"/>
+  <path d="M 256 62 L 442 168 L 442 344 L 256 450 L 70 344 L 70 168 Z"
+        fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="2"/>
+
+  <!-- Lettre D -->
+  <path d="M138 152 H 234 A 104 104 0 0 1 234 360 H 138 Z"
+        fill="#ffffff"/>
+  <path d="M182 196 H 234 A 60 60 0 0 1 234 316 H 182 Z"
+        fill="url(#p3-bg)"/>
+
+  <!-- Lettre M superposée -->
+  <path d="M262 360 V 152 L 316 152 L 348 236 L 380 152 L 434 152 V 360 L 396 360 V 220 L 364 296 H 332 L 300 220 V 360 Z"
+        fill="#ffffff"/>
+
+  <!-- Point i (i pour « intégral / inventaire ») en accent doré -->
+  <circle cx="410" cy="118" r="18" fill="url(#p3-accent)"/>
+  <circle cx="410" cy="118" r="18" fill="none" stroke="#ffffff" stroke-width="3"/>
+
+  <!-- Barre verte solidaire en base -->
+  <rect x="138" y="380" width="296" height="8" rx="4" fill="#2d9561"/>
+  <rect x="138" y="392" width="180" height="4" rx="2" fill="#e8a419" opacity="0.9"/>
 </svg>

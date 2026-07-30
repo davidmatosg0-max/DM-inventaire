@@ -1,0 +1,1 @@
+const o="acceso-organismo";function t(r){const n=new URLSearchParams;return n.set("page",o),r?.trim()&&n.set("clave",r.trim()),`/?${n.toString()}`}function i(r){const n=t(r);return typeof window>"u"?n:`${window.location.origin}${n}`}export{t as a,i as c};

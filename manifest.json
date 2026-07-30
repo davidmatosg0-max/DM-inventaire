@@ -1,7 +1,7 @@
 {
-  "name": "Banque Alimentaire - Système de Gestion",
-  "short_name": "Banque Alimentaire",
-  "description": "Système intégral de gestion pour Banque Alimentaire avec support multilingue",
+  "name": "DM inventaire",
+  "short_name": "DM inventaire",
+  "description": "DM inventaire",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -12,15 +12,15 @@
   "categories": ["business", "productivity", "food"],
   "icons": [
     {
-      "src": "/icon-192x192.svg",
+      "src": "/dm-inventaire-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.svg",
+      "src": "/dm-inventaire-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
@@ -44,14 +44,14 @@
       "short_name": "Dashboard",
       "description": "Accéder au tableau de bord",
       "url": "/?page=dashboard",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/dm-inventaire-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Inventaire",
       "short_name": "Inventaire",
       "description": "Gérer l'inventaire",
       "url": "/?page=inventario",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/dm-inventaire-192.png", "sizes": "192x192" }]
     }
   ]
 }
