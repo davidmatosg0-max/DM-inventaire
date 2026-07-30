@@ -1,18 +1,18 @@
 // Service Worker pour PWA - Banque Alimentaire
-// Version: 1.0.4
+// Version: 1.0.5
 
-const CACHE_NAME = 'banque-alimentaire-v5';
+const CACHE_NAME = 'banque-alimentaire-v6';
 const RUNTIME_CACHE = 'banque-alimentaire-runtime';
 
 // Recursos esenciales para cachear
 const ESSENTIAL_RESOURCES = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/dm-inventaire-apple-touch.png',
-  '/dm-inventaire-192.png',
-  '/dm-inventaire-512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './favicon.svg',
+  './dm-inventaire-apple-touch.png',
+  './dm-inventaire-192.png',
+  './dm-inventaire-512.png'
 ];
 
 // Instalación del Service Worker
@@ -97,7 +97,7 @@ self.addEventListener('fetch', (event) => {
           
           // Si es una navegación y no hay cache, servir página offline
           if (request.mode === 'navigate') {
-            return caches.match('/index.html');
+            return caches.match('./index.html');
           }
           
           // Para otros recursos, retornar respuesta vacía
@@ -153,8 +153,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: event.data ? event.data.text() : 'Nueva notificación',
-    icon: '/dm-inventaire-192.png',
-    badge: '/dm-inventaire-192.png',
+    icon: './dm-inventaire-192.png',
+    badge: './dm-inventaire-192.png',
     vibrate: [200, 100, 200],
     tag: 'banque-alimentaire-notification',
     requireInteraction: false
