@@ -51,7 +51,7 @@ export function NotificacionComanda({ comanda, organismo }: NotificacionComandaP
     'Merci de confirmer la réception de votre commande dans le système.',
     '',
     '---',
-    `${nombreSistemaImpresion} - Système de Gestion`,
+    `${nombreSistemaImpresion}`,
     brandingContactLine,
     `Si vous avez des questions, n'hésitez pas à nous contacter.`,
   ].filter(Boolean).join('\n');

@@ -1899,7 +1899,7 @@ export function ModeloComanda({
                 ? `Pour toute question, scannez le code QR ou contactez-nous : ${brandingContactLine}`
                 : 'Pour toute question, scannez le code QR pour retrouver les informations de la commande.'}
             </p>
-            <p className="mt-1">© 2026 {nombreSistemaImpresion} - Système de gestion intégral</p>
+            <p className="mt-1">© 2026 {nombreSistemaImpresion}</p>
           </div>
         </div>
       </DialogContent>

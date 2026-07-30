@@ -171,7 +171,7 @@ export function GuiaUsuarioSimple({ open, onClose, initialTab = 'modules' }: Gui
             <div className="flex items-center gap-3">
               <BookOpen className="w-8 h-8 text-[#1E73BE]" />
               <h2 className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Guide Utilisateur - Système de Gestion
+                Guide Utilisateur - DM inventaire
               </h2>
             </div>
             <button

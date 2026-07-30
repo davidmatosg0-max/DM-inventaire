@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import defaultLogo from '../assets/logo-dmi.svg';
 
+const FIXED_SYSTEM_NAME = 'DM inventaire';
+
 interface BrandingConfig {
   primaryColor: string;
   secondaryColor: string;
@@ -71,7 +73,7 @@ const DEFAULT_BRANDING: BrandingConfig = {
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
   logo: defaultLogo,           // Monogramme DMi par defaut (peut etre remplace via PanelMarca)
-  systemName: 'DM inventaire',
+  systemName: FIXED_SYSTEM_NAME,
   phone: '',
   address: ''
 };
@@ -100,14 +102,11 @@ export function useBranding() {
           // Migration douce du nom d'affichage : si l'utilisateur avait l'ancien
           // nom par defaut 'Banque Alimentaire', on le remplace par le nouveau.
           // Les noms personnalises (differents) sont preserves.
-          const migratedSystemName = parsed.systemName === 'Banque Alimentaire'
-            ? DEFAULT_BRANDING.systemName
-            : parsed.systemName;
-
           const finalConfig = {
             ...DEFAULT_BRANDING,
             ...parsed,
-            systemName: migratedSystemName || DEFAULT_BRANDING.systemName,
+            // El nombre del sistema es fijo para mantener la marca consistente.
+            systemName: FIXED_SYSTEM_NAME,
             logo: finalLogo
           };
 
@@ -141,6 +140,7 @@ export function useBranding() {
       const updatedConfig = {
         ...DEFAULT_BRANDING,
         ...event.detail,
+        systemName: FIXED_SYSTEM_NAME,
       };
 
       // On ne sauvegarde que les logos personnalises (Base64) ; le logo DMi
@@ -178,6 +178,7 @@ export function useBranding() {
     document.documentElement.style.setProperty('--color-success', brandingConfig.successColor);
     document.documentElement.style.setProperty('--color-danger', brandingConfig.dangerColor);
     document.documentElement.style.setProperty('--color-warning', brandingConfig.warningColor);
+    document.title = FIXED_SYSTEM_NAME;
   };
 
   return config;

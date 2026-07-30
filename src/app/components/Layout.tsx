@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
 import { AdaptiveBrandLogo } from './shared/AdaptiveBrandLogo';

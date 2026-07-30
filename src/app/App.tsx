@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useRef, useMemo } from 'react';
 import '../i18n/config'; // Inicializar i18n
 // Última actualización: 17/03/2026 - Actualización nombre completo en actividades
 import { useTranslation } from 'react-i18next';
@@ -100,6 +100,7 @@ function AppContent() {
 
     return localStorage.getItem(CURRENT_PAGE_STORAGE_KEY) || 'dashboard';
   });
+  const [mountedPages, setMountedPages] = useState<Set<string>>(new Set([currentPage]));
   const { isAuthenticated, isLoading, logout: logoutAuth } = useAuth();
   const { i18n } = useTranslation();
 
@@ -168,82 +169,132 @@ function AppContent() {
     }
   }, [currentPage, isAuthenticated]);
 
-  const renderWithSuspense = (content: React.ReactNode) => (
-    <Suspense fallback={<PageLoadingState />}>
-      {content}
-    </Suspense>
-  );
+  // Actualizar páginas montadas cuando se navega a una nueva
+  useEffect(() => {
+    setMountedPages(prev => new Set([...prev, currentPage]));
+  }, [currentPage]);
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return renderWithSuspense(<Dashboard />);
-      case 'dashboard-metricas':
-        return renderWithSuspense(<DashboardMetricas />);
-      case 'dashboard-predictivo':
-        return renderWithSuspense(<DashboardPredictivo />);
-      case 'inventario':
-        return renderWithSuspense(<Inventario />);
-      case 'etiquetas':
-        return renderWithSuspense(<Etiquetas />);
-      case 'comandas':
-        return renderWithSuspense(<Comandas />);
-      case 'organismos':
-        return renderWithSuspense(<Organismos />);
-      case 'ofertas-organismo':
-        return renderWithSuspense(<OfertasOrganismo />);
-      case 'transporte':
-        return renderWithSuspense(<Transporte />);
-      case 'reportes':
-        return renderWithSuspense(<Reportes />);
-      case 'reportes-avanzado':
-        return renderWithSuspense(<ReportesAvanzado />);
-      case 'usuarios':
-        return renderWithSuspense(<Usuarios />);
-      case 'id-digital':
-        return renderWithSuspense(<IDDigital />);
-      case 'api-keys':
-        return renderWithSuspense(<APIKeysPage />);
-      case 'gestion-autenticacion':
-        return renderWithSuspense(<GestionAutenticacion />);
-      case 'panel-marca':
-        return renderWithSuspense(<PanelMarca />);
-      case 'configuracion':
-        return renderWithSuspense(<Configuracion />);
-      case 'acceso-organismo':
-        return renderWithSuspense(<AccesoOrganismo />);
-      case 'departamentos':
-        return renderWithSuspense(<Departamentos onNavigate={setCurrentPage} />);
-      case 'recrutement':
-        return renderWithSuspense(<Recrutement />);
-      case 'achat':
-        return renderWithSuspense(<AchatPage onNavigate={setCurrentPage} />);
-      case 'liaison':
-        return renderWithSuspense(<EmailOrganismos onNavigate={setCurrentPage} />);
-      case 'email-organismos':
-        return renderWithSuspense(<EmailOrganismos onNavigate={setCurrentPage} />);
-      case 'contact':
-        return renderWithSuspense(<Contact />);
-      case 'communication':
-        return renderWithSuspense(<CommunicationInterne />);
-      case 'cuisine':
-        return renderWithSuspense(<CuisinePage onNavigate={setCurrentPage} />);
-      case 'donateurs-fournisseurs':
-        return renderWithSuspense(<GestionDonateursFournisseurs onNavigate={setCurrentPage} />);
-      case 'contactos-almacen':
-        return renderWithSuspense(<ContactosAlmacenPage onNavigate={setCurrentPage} />);
-      case 'dechets-compostage':
-        return renderWithSuspense(<DechetsCompostage />);
-      default:
-        return renderWithSuspense(<Dashboard />);
-    }
+  const renderWithSuspense = (content: React.ReactNode, pageId: string) => {
+    const isActive = currentPage === pageId;
+    return (
+      <div
+        key={pageId}
+        style={{
+          display: isActive ? 'block' : 'none',
+          width: '100%',
+          height: '100%'
+        }}
+      >
+        <Suspense fallback={<PageLoadingState />}>
+          {content}
+        </Suspense>
+      </div>
+    );
   };
+
+  // Renderizar solo las páginas que han sido visitadas (mantenerlas en caché)
+  const renderPage = useMemo(() => {
+    const pages: React.ReactNode[] = [];
+
+    // Solo renderizar páginas que han sido montadas
+    if (mountedPages.has('dashboard')) {
+      pages.push(renderWithSuspense(<Dashboard />, 'dashboard'));
+    }
+    if (mountedPages.has('dashboard-metricas')) {
+      pages.push(renderWithSuspense(<DashboardMetricas />, 'dashboard-metricas'));
+    }
+    if (mountedPages.has('dashboard-predictivo')) {
+      pages.push(renderWithSuspense(<DashboardPredictivo />, 'dashboard-predictivo'));
+    }
+    if (mountedPages.has('inventario')) {
+      pages.push(renderWithSuspense(<Inventario />, 'inventario'));
+    }
+    if (mountedPages.has('etiquetas')) {
+      pages.push(renderWithSuspense(<Etiquetas />, 'etiquetas'));
+    }
+    if (mountedPages.has('comandas')) {
+      pages.push(renderWithSuspense(<Comandas />, 'comandas'));
+    }
+    if (mountedPages.has('organismos')) {
+      pages.push(renderWithSuspense(<Organismos />, 'organismos'));
+    }
+    if (mountedPages.has('ofertas-organismo')) {
+      pages.push(renderWithSuspense(<OfertasOrganismo />, 'ofertas-organismo'));
+    }
+    if (mountedPages.has('transporte')) {
+      pages.push(renderWithSuspense(<Transporte />, 'transporte'));
+    }
+    if (mountedPages.has('reportes')) {
+      pages.push(renderWithSuspense(<Reportes />, 'reportes'));
+    }
+    if (mountedPages.has('reportes-avanzado')) {
+      pages.push(renderWithSuspense(<ReportesAvanzado />, 'reportes-avanzado'));
+    }
+    if (mountedPages.has('usuarios')) {
+      pages.push(renderWithSuspense(<Usuarios />, 'usuarios'));
+    }
+    if (mountedPages.has('id-digital')) {
+      pages.push(renderWithSuspense(<IDDigital />, 'id-digital'));
+    }
+    if (mountedPages.has('api-keys')) {
+      pages.push(renderWithSuspense(<APIKeysPage />, 'api-keys'));
+    }
+    if (mountedPages.has('gestion-autenticacion')) {
+      pages.push(renderWithSuspense(<GestionAutenticacion />, 'gestion-autenticacion'));
+    }
+    if (mountedPages.has('panel-marca')) {
+      pages.push(renderWithSuspense(<PanelMarca />, 'panel-marca'));
+    }
+    if (mountedPages.has('configuracion')) {
+      pages.push(renderWithSuspense(<Configuracion />, 'configuracion'));
+    }
+    if (mountedPages.has('acceso-organismo')) {
+      pages.push(renderWithSuspense(<AccesoOrganismo />, 'acceso-organismo'));
+    }
+    if (mountedPages.has('departamentos')) {
+      pages.push(renderWithSuspense(<Departamentos onNavigate={setCurrentPage} />, 'departamentos'));
+    }
+    if (mountedPages.has('recrutement')) {
+      pages.push(renderWithSuspense(<Recrutement />, 'recrutement'));
+    }
+    if (mountedPages.has('achat')) {
+      pages.push(renderWithSuspense(<AchatPage onNavigate={setCurrentPage} />, 'achat'));
+    }
+    if (mountedPages.has('liaison')) {
+      pages.push(renderWithSuspense(<EmailOrganismos onNavigate={setCurrentPage} />, 'liaison'));
+    }
+    if (mountedPages.has('email-organismos')) {
+      pages.push(renderWithSuspense(<EmailOrganismos onNavigate={setCurrentPage} />, 'email-organismos'));
+    }
+    if (mountedPages.has('contact')) {
+      pages.push(renderWithSuspense(<Contact />, 'contact'));
+    }
+    if (mountedPages.has('communication')) {
+      pages.push(renderWithSuspense(<CommunicationInterne />, 'communication'));
+    }
+    if (mountedPages.has('cuisine')) {
+      pages.push(renderWithSuspense(<CuisinePage onNavigate={setCurrentPage} />, 'cuisine'));
+    }
+    if (mountedPages.has('donateurs-fournisseurs')) {
+      pages.push(renderWithSuspense(<GestionDonateursFournisseurs onNavigate={setCurrentPage} />, 'donateurs-fournisseurs'));
+    }
+    if (mountedPages.has('contactos-almacen')) {
+      pages.push(renderWithSuspense(<ContactosAlmacenPage onNavigate={setCurrentPage} />, 'contactos-almacen'));
+    }
+    if (mountedPages.has('dechets-compostage')) {
+      pages.push(renderWithSuspense(<DechetsCompostage />, 'dechets-compostage'));
+    }
+
+    return pages;
+  }, [mountedPages, currentPage]);
 
   // Si está en vista pública, mostrar directamente sin Layout
   if (currentPage === 'acceso-organismo') {
     return (
       <>
-        {renderWithSuspense(<AccesoOrganismo />)}
+        <Suspense fallback={<PageLoadingState />}>
+          <AccesoOrganismo />
+        </Suspense>
         <Toaster position="top-right" />
       </>
     );
@@ -253,7 +304,9 @@ function AppContent() {
   if (currentPage === 'benevoles-public' || currentPage === 'recrutement-public') {
     return (
       <>
-        {renderWithSuspense(<Recrutement isPublicAccess={true} />)}
+        <Suspense fallback={<PageLoadingState />}>
+          <Recrutement isPublicAccess={true} />
+        </Suspense>
         <Toaster position="top-right" />
       </>
     );
@@ -263,7 +316,7 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <>
-        {renderWithSuspense(
+        <Suspense fallback={<PageLoadingState />}>
           <Login 
             onLogin={() => {
               setCurrentPage('dashboard');
@@ -272,7 +325,7 @@ function AppContent() {
               setCurrentPage(page);
             }}
           />
-        )}
+        </Suspense>
         <Toaster position="top-right" />
       </>
     );
@@ -289,7 +342,7 @@ function AppContent() {
         }}
         hideSidebar={currentPage === 'departamentos'}
       >
-        {renderPage()}
+        {renderPage}
       </Layout>
       <Toaster position="top-right" />
       {currentPage !== 'communication' && <PWAInstaller />}

@@ -119,6 +119,63 @@ type ListaProductos = {
   compartidaCon: string[];
 };
 
+const BORRADOR_CARRITO_KEY = 'borrador_carrito_inventario';
+
+function leerBorradorCarrito(): CarritoItem[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = localStorage.getItem(BORRADOR_CARRITO_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((item) => ({
+        productoId: String(item?.productoId || '').trim(),
+        cantidad: Number(item?.cantidad || 0),
+      }))
+      .filter((item) => item.productoId && item.cantidad > 0);
+  } catch {
+    return [];
+  }
+}
+
+function guardarBorradorCarrito(carrito: CarritoItem[]): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const carritoNormalizado = carrito
+    .map((item) => ({
+      productoId: String(item.productoId || '').trim(),
+      cantidad: Number(item.cantidad || 0),
+    }))
+    .filter((item) => item.productoId && item.cantidad > 0);
+
+  if (carritoNormalizado.length === 0) {
+    localStorage.removeItem(BORRADOR_CARRITO_KEY);
+    return;
+  }
+
+  localStorage.setItem(BORRADOR_CARRITO_KEY, JSON.stringify(carritoNormalizado));
+}
+
+function vaciarBorradorCarrito(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.removeItem(BORRADOR_CARRITO_KEY);
+}
+
 type AccionUbicacionEscaneada = 'localizar_productos' | 'delocalizar_productos';
 
 type UbicacionEscaneadaPendiente = {
@@ -387,6 +444,17 @@ export function Inventario() {
   const [floatingButtonsPosition, setFloatingButtonsPosition] = useState({ x: 0, y: 0 });
   const [floatingButtonsDragStart, setFloatingButtonsDragStart] = useState({ x: 0, y: 0 });
   const [floatingButtonsDragDistance, setFloatingButtonsDragDistance] = useState(0);
+
+  useEffect(() => {
+    const borradorCarrito = leerBorradorCarrito();
+    if (borradorCarrito.length > 0) {
+      setCarrito(borradorCarrito);
+    }
+  }, []);
+
+  useEffect(() => {
+    guardarBorradorCarrito(carrito);
+  }, [carrito]);
 
   const comandasUltimaDistribucionGrupo = ultimaDistribucionGrupoCreada
     ? obtenerComandas().filter(

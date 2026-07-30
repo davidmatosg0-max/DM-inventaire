@@ -1,32 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192" role="img" aria-label="Logo DMi - Banque Alimentaire">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Logo Monogramme DMi">
   <defs>
-    <linearGradient id="i192-bg" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="p3-bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#215d8f"/>
       <stop offset="1" stop-color="#123957"/>
     </linearGradient>
-    <linearGradient id="i192-accent" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="p3-accent" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#34a870"/>
       <stop offset="1" stop-color="#e8a419"/>
     </linearGradient>
   </defs>
 
-  <!-- Hexagone -->
-  <path d="M 96 9 L 178.5 55.5 L 178.5 136.5 L 96 183 L 13.5 136.5 L 13.5 55.5 Z" fill="url(#i192-bg)"/>
-  <path d="M 96 23.25 L 166 63.25 L 166 128.75 L 96 168.75 L 26 128.75 L 26 63.25 Z"
-        fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="1"/>
+  <!-- Fond hexagonal moderne -->
+  <path d="M 256 24 L 476 148 L 476 364 L 256 488 L 36 364 L 36 148 Z"
+        fill="url(#p3-bg)"/>
+  <path d="M 256 62 L 442 168 L 442 344 L 256 450 L 70 344 L 70 168 Z"
+        fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="2"/>
 
   <!-- Lettre D -->
-  <path d="M 51.75 57 H 87.75 A 39 39 0 0 1 87.75 135 H 51.75 Z" fill="#ffffff"/>
-  <path d="M 68.25 73.5 H 87.75 A 22.5 22.5 0 0 1 87.75 118.5 H 68.25 Z" fill="url(#i192-bg)"/>
+  <path d="M138 152 H 234 A 104 104 0 0 1 234 360 H 138 Z"
+        fill="#ffffff"/>
+  <path d="M182 196 H 234 A 60 60 0 0 1 234 316 H 182 Z"
+        fill="url(#p3-bg)"/>
 
-  <!-- Lettre M -->
-  <path d="M 98.25 135 V 57 L 118.5 57 L 130.5 88.5 L 142.5 57 L 162.75 57 V 135 L 148.5 135 V 82.5 L 136.5 111 H 124.5 L 112.5 82.5 V 135 Z" fill="#ffffff"/>
+  <!-- Lettre M superposée -->
+  <path d="M262 360 V 152 L 316 152 L 348 236 L 380 152 L 434 152 V 360 L 396 360 V 220 L 364 296 H 332 L 300 220 V 360 Z"
+        fill="#ffffff"/>
 
-  <!-- Point du i -->
-  <circle cx="153.75" cy="44.25" r="6.75" fill="url(#i192-accent)"/>
-  <circle cx="153.75" cy="44.25" r="6.75" fill="none" stroke="#ffffff" stroke-width="1.1"/>
+  <!-- Point i (i pour « intégral / inventaire ») en accent doré -->
+  <circle cx="410" cy="118" r="18" fill="url(#p3-accent)"/>
+  <circle cx="410" cy="118" r="18" fill="none" stroke="#ffffff" stroke-width="3"/>
 
-  <!-- Barre verte solidaire -->
-  <rect x="51.75" y="142.5" width="111" height="3" rx="1.5" fill="#2d9561"/>
-  <rect x="51.75" y="147" width="67.5" height="1.5" rx="0.75" fill="#e8a419" opacity="0.9"/>
+  <!-- Barre verte solidaire en base -->
+  <rect x="138" y="380" width="296" height="8" rx="4" fill="#2d9561"/>
+  <rect x="138" y="392" width="180" height="4" rx="2" fill="#e8a419" opacity="0.9"/>
 </svg>

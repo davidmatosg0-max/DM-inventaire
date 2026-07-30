@@ -74,7 +74,7 @@ export function EnviarCredencialesID({ idDigital, organismo }: EnviarCredenciale
     `✉️ ${organismo.email || 'Courriel non disponible'}`,
     '',
     '---',
-    `${nombreSistemaImpresion} - Système de Gestion`,
+    `${nombreSistemaImpresion}`,
     brandingContactLine,
     'Au service des communautés, un aliment à la fois.',
   ].filter(Boolean).join('\n');

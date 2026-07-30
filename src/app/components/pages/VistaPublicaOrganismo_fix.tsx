@@ -3938,7 +3938,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion, mostrarBotonM
                       
                       <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
                         <p className="text-xs text-gray-700 mb-2">
-                          Ce portail fait partie du système intégral de gestion de ${branding.systemName} qui permet à l'équipe interne de gérer efficacement tous les aspects des opérations:
+                          Ce portail fait partie de ${branding.systemName} et permet à l'équipe interne de gérer efficacement tous les aspects des opérations:
                         </p>
                         <ul className="text-xs text-gray-600 space-y-1 ml-4">
                           <li>• Gestion complète de l'inventaire et des stocks</li>
@@ -4035,7 +4035,7 @@ export function VistaPublicaOrganismo({ organismo, onCerrarSesion, mostrarBotonM
                     {/* Footer */}
                     <div className="text-center pt-2 border-t" style={{ borderColor: `${branding.primaryColor}20` }}>
                       <p className="text-xs text-gray-500">
-                        {branding.systemName} • Système Intégral de Gestion v2.0
+                        {branding.systemName}
                       </p>
                     </div>
                   </div>

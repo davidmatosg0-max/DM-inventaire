@@ -63,11 +63,23 @@ El sistema Banque Alimentaire ahora incluye soporte completo para **Progressive 
 El sistema está configurado con:
 - **Icono 192x192**: Para pantallas pequeñas y medianas
 - **Icono 512x512**: Para pantallas de alta resolución
+- **Logo oficial activo**: Monogramme DMi (`tmp/logo-propositions/3-monogramme-dmi.svg`)
+- **Archivos instalables sincronizados**:
+   - `public/icon-192x192.png`
+   - `public/icon-512x512.png`
+   - `public/apple-touch-icon.png`
+   - `public/favicon.svg`
 - **Colores del sistema**: 
   - 🔵 Azul marino primario: `#1a4d7a`
   - 🟢 Verde elegante secundario: `#2d9561`
 
 ### 📝 Crear Iconos Personalizados
+
+Comando recomendado para este proyecto (genera PNG transparentes desde el monograma oficial):
+
+```bash
+npm run icons:generate:transparent
+```
 
 Si desea personalizar los iconos:
 

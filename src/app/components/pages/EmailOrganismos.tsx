@@ -295,7 +295,7 @@ export function EmailOrganismos({ onNavigate }: { onNavigate?: (page: string) =>
             ${brandingContactLine ? `<p><strong>Coordonnées:</strong> ${brandingContactLine}</p>` : ''}
             ${contenido}
             <div class="footer">
-              <p>© ${new Date().getFullYear()} ${nombreSistemaImpresion} - Système de Gestion</p>
+              <p>© ${new Date().getFullYear()} ${nombreSistemaImpresion}</p>
               ${brandingContactLine ? `<p>${brandingContactLine}</p>` : ''}
             </div>
           </body>

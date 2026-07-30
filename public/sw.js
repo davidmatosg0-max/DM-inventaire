@@ -1,7 +1,7 @@
 // Service Worker pour PWA - Banque Alimentaire
-// Version: 1.0.0
+// Version: 1.0.3
 
-const CACHE_NAME = 'banque-alimentaire-v1';
+const CACHE_NAME = 'banque-alimentaire-v4';
 const RUNTIME_CACHE = 'banque-alimentaire-runtime';
 
 // Recursos esenciales para cachear
@@ -9,6 +9,8 @@ const ESSENTIAL_RESOURCES = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.svg',
+  '/apple-touch-icon.png',
   '/icon-192x192.png',
   '/icon-512x512.png'
 ];

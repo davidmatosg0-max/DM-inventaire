@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
 import defaultLogo from '../../../assets/logo-dmi.svg';
 
+const FIXED_SYSTEM_NAME = 'DM inventaire';
+
 interface BrandingConfig {
   primaryColor: string;
   secondaryColor: string;
@@ -45,7 +47,7 @@ const DEFAULT_BRANDING: BrandingConfig = {
   dangerColor: '#c23934',       // Rojo elegante
   warningColor: '#e8a419',      // Naranja/amarillo profesional
   logo: defaultLogo,           // Monogramme DMi par defaut
-  systemName: 'DM inventaire',
+  systemName: FIXED_SYSTEM_NAME,
   phone: '',
   address: ''
 };
@@ -65,6 +67,7 @@ export function PanelMarca() {
         const hydratedConfig = {
           ...DEFAULT_BRANDING,
           ...parsed,
+          systemName: FIXED_SYSTEM_NAME,
         };
         setConfig(hydratedConfig);
         if (hydratedConfig.logo) {
@@ -422,10 +425,10 @@ export function PanelMarca() {
                 </label>
                 <input
                   type="text"
-                  value={config.systemName}
-                  onChange={(e) => handleColorChange('systemName', e.target.value)}
+                  value={FIXED_SYSTEM_NAME}
+                  readOnly
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
-                  placeholder={t('branding.systemNamePlaceholder')}
+                  placeholder={FIXED_SYSTEM_NAME}
                 />
               </div>
 
