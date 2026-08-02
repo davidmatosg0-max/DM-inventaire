@@ -6,6 +6,7 @@ import '../utils/translationChecker'; // Verificador de sincronización de tradu
 import { Layout } from './components/Layout';
 import { Toaster } from './components/ui/sonner';
 import { PWAInstaller } from './components/PWAInstaller';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { cerrarSesionUsuario } from './utils/sesionStorage';
 import { moduloDisponible } from './utils/permisos';
 import { BalanceProvider } from '../contexts/BalanceContext';
@@ -207,7 +208,31 @@ function AppContent() {
       pages.push(renderWithSuspense(<DashboardPredictivo />, 'dashboard-predictivo'));
     }
     if (mountedPages.has('inventario')) {
-      pages.push(renderWithSuspense(<Inventario />, 'inventario'));
+      pages.push(renderWithSuspense(
+        <ErrorBoundary
+          title="Impossible d'ouvrir l'inventaire"
+          description="Le module a rencontré une erreur de chargement. Vous pouvez réessayer ou réinitialiser les données locales de l'inventaire."
+          recoveryLabel="Réinitialiser l'inventaire"
+          recoveryAction={() => {
+            if (typeof window === 'undefined') {
+              return;
+            }
+
+            const inventoryStorageKeys = [
+              'banco_alimentos_productos',
+              'banco_alimentos_entradas_inventario',
+              'banco_alimentos_categorias',
+              'banco_alimentos_movimientos',
+              'banco_alimentos_comandas',
+            ];
+
+            inventoryStorageKeys.forEach((key) => window.localStorage.removeItem(key));
+          }}
+        >
+          <Inventario />
+        </ErrorBoundary>,
+        'inventario'
+      ));
     }
     if (mountedPages.has('etiquetas')) {
       pages.push(renderWithSuspense(<Etiquetas />, 'etiquetas'));

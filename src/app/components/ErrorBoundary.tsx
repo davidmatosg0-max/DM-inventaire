@@ -4,30 +4,37 @@ import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
+  title?: string;
+  description?: string;
+  recoveryLabel?: string;
+  recoveryAction?: () => void | Promise<void>;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  isRecovering: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
-    errorInfo: null
+    errorInfo: null,
+    isRecovering: false,
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, errorInfo: null };
+    return { hasError: true, error, errorInfo: null, isRecovering: false };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error capturado por ErrorBoundary:', error, errorInfo);
     this.setState({
       error,
-      errorInfo
+      errorInfo,
+      isRecovering: false,
     });
     
     // Aquí podrías enviar el error a un servicio como Sentry
@@ -40,8 +47,25 @@ export class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
+  private handleRecover = async () => {
+    if (!this.props.recoveryAction) {
+      this.handleReload();
+      return;
+    }
+
+    this.setState({ isRecovering: true });
+
+    try {
+      await this.props.recoveryAction();
+    } catch (error) {
+      console.error('Error al intentar recuperar el estado:', error);
+    }
+
+    window.location.reload();
+  };
+
   private handleGoHome = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState({ hasError: false, error: null, errorInfo: null, isRecovering: false });
     window.location.href = '/';
   };
 
@@ -56,10 +80,10 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Une erreur s'est produite
+                  {this.props.title || "Une erreur s'est produite"}
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Nous sommes désolés, quelque chose s'est mal passé
+                  {this.props.description || "Nous sommes désolés, quelque chose s'est mal passé"}
                 </p>
               </div>
             </div>
@@ -86,6 +110,16 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
 
             <div className="flex flex-col sm:flex-row gap-3">
+              {this.props.recoveryAction && (
+                <button
+                  onClick={this.handleRecover}
+                  disabled={this.state.isRecovering}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#2d9561] text-white rounded-lg hover:bg-[#2d9561]/90 transition-colors disabled:opacity-70"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  {this.state.isRecovering ? 'Réinitialisation...' : (this.props.recoveryLabel || 'Réessayer')}
+                </button>
+              )}
               <button
                 onClick={this.handleReload}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#1a4d7a] text-white rounded-lg hover:bg-[#1a4d7a]/90 transition-colors"
