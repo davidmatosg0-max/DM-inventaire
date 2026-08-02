@@ -25,11 +25,17 @@ import {
   eliminarProductoInventario,
   obtenerMovimientosPorProducto,
   obtenerEstadisticasInventarioCocina,
+  crearProductoInventarioCocina,
   type ProductoInventarioCocina,
   type MovimientoStock
 } from '../../utils/inventarioCocinaStorage';
+import { guardarProducto } from '../../utils/productStorage';
 
-export function InventarioCocina() {
+interface InventarioCocinaProps {
+  onProductoCreado?: () => void;
+}
+
+export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   const { t } = useTranslation();
   const [inventario, setInventario] = useState<ProductoInventarioCocina[]>([]);
   const [inventarioFiltrado, setInventarioFiltrado] = useState<ProductoInventarioCocina[]>([]);
@@ -47,10 +53,23 @@ export function InventarioCocina() {
   const [modalAjustarOpen, setModalAjustarOpen] = useState(false);
   const [modalMermaOpen, setModalMermaOpen] = useState(false);
   const [modalMovimientosOpen, setModalMovimientosOpen] = useState(false);
+  const [modalCrearOpen, setModalCrearOpen] = useState(false);
   const [movimientos, setMovimientos] = useState<MovimientoStock[]>([]);
-  
+   
   // Estados de formularios
   const [nuevoStock, setNuevoStock] = useState(0);
+  const [nuevoProductoForm, setNuevoProductoForm] = useState({
+    nombre: '',
+    codigo: '',
+    categoria: 'Autre',
+    subcategoria: '',
+    unidad: 'kg' as string,
+    stockActual: 0,
+    stockMinimo: 0,
+    zona: 'seco' as 'refrigerado' | 'congelado' | 'seco' | 'fresco' | '',
+    icono: '📦',
+    notas: ''
+  });
   const [motivoAjuste, setMotivoAjuste] = useState('');
   const [cantidadMerma, setCantidadMerma] = useState(0);
   const [motivoMerma, setMotivoMerma] = useState('');
@@ -68,6 +87,72 @@ export function InventarioCocina() {
     const inv = obtenerInventarioCocina();
     setInventario(inv);
     setEstadisticas(obtenerEstadisticasInventarioCocina());
+  };
+
+  const resetearFormularioProducto = () => {
+    setNuevoProductoForm({
+      nombre: '',
+      codigo: '',
+      categoria: 'Autre',
+      subcategoria: '',
+      unidad: 'kg',
+      stockActual: 0,
+      stockMinimo: 0,
+      zona: 'seco',
+      icono: '📦',
+      notas: ''
+    });
+  };
+
+  const guardarNuevoProducto = () => {
+    if (!nuevoProductoForm.nombre.trim()) {
+      toast.error('Le nom du produit est requis');
+      return;
+    }
+
+    const codigo = nuevoProductoForm.codigo.trim() || `${nuevoProductoForm.nombre.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'PRODUIT'}-${Date.now().toString().slice(-4)}`;
+    const productoCreado = guardarProducto({
+      codigo,
+      nombre: nuevoProductoForm.nombre.trim(),
+      categoria: nuevoProductoForm.categoria.trim() || 'Autre',
+      subcategoria: nuevoProductoForm.subcategoria.trim(),
+      unidad: nuevoProductoForm.unidad,
+      icono: nuevoProductoForm.icono || '📦',
+      peso: 0,
+      pesoUnitario: 0,
+      stockActual: nuevoProductoForm.stockActual,
+      stockMinimo: nuevoProductoForm.stockMinimo,
+      ubicacion: '',
+      lote: '',
+      fechaVencimiento: '',
+      esPRS: false,
+      activo: true,
+      fechaCreacion: new Date().toISOString(),
+    }, { estrategiaDeduplicacion: 'inventario-canonico' });
+
+    crearProductoInventarioCocina({
+      productoId: productoCreado.id,
+      productoNombre: productoCreado.nombre,
+      productoCodigo: productoCreado.codigo,
+      categoria: productoCreado.categoria || 'Autre',
+      subcategoria: productoCreado.subcategoria || '',
+      icono: productoCreado.icono || '📦',
+      stockActual: nuevoProductoForm.stockActual,
+      unidad: productoCreado.unidad || nuevoProductoForm.unidad,
+      peso: productoCreado.pesoUnitario ?? productoCreado.peso ?? 0,
+      zona: nuevoProductoForm.zona || undefined,
+      fechaRecepcion: new Date().toISOString(),
+      origenEnvio: 'Ajout manuel',
+      notas: nuevoProductoForm.notas,
+      stockMinimo: nuevoProductoForm.stockMinimo,
+      alertaBaja: nuevoProductoForm.stockActual <= (nuevoProductoForm.stockMinimo || 0),
+    });
+
+    toast.success('Produit créé et ajouté à l\'inventaire cuisine');
+    setModalCrearOpen(false);
+    resetearFormularioProducto();
+    cargarDatos();
+    onProductoCreado?.();
   };
 
   const aplicarFiltros = () => {
@@ -344,7 +429,7 @@ export function InventarioCocina() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 mt-4">
+          <div className="flex flex-wrap items-center gap-4 mt-4">
             <Button
               variant={filtroAlerta ? 'default' : 'outline'}
               onClick={() => setFiltroAlerta(!filtroAlerta)}
@@ -352,6 +437,16 @@ export function InventarioCocina() {
             >
               <AlertCircle className="w-4 h-4 mr-2" />
               Stock bas seulement
+            </Button>
+            <Button
+              onClick={() => {
+                resetearFormularioProducto();
+                setModalCrearOpen(true);
+              }}
+              className="bg-[#4CAF50] hover:bg-[#45a049] text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nouveau produit
             </Button>
             <Button variant="outline" onClick={cargarDatos}>
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -480,13 +575,161 @@ export function InventarioCocina() {
         </CardContent>
       </Card>
 
+      {/* Modal Crear Producto */}
+      <Dialog open={modalCrearOpen} onOpenChange={(open) => {
+        setModalCrearOpen(open);
+        if (!open) {
+          resetearFormularioProducto();
+        }
+      }}>
+        <DialogContent className="max-w-2xl" aria-describedby="crear-producto-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Plus className="w-5 h-5 text-[#4CAF50]" />
+              Ajouter un nouveau produit
+            </DialogTitle>
+            <DialogDescription id="crear-producto-description">
+              Créez un produit dans le catalogue de cuisine et ajoutez-le immédiatement à l'inventaire.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <Label htmlFor="nuevoProductoNombre">Nom du produit *</Label>
+              <Input
+                id="nuevoProductoNombre"
+                value={nuevoProductoForm.nombre}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, nombre: e.target.value })}
+                placeholder="Ex: Tomates cerises"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoCodigo">Code</Label>
+              <Input
+                id="nuevoProductoCodigo"
+                value={nuevoProductoForm.codigo}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, codigo: e.target.value })}
+                placeholder="Optionnel"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoCategoria">Catégorie</Label>
+              <Input
+                id="nuevoProductoCategoria"
+                value={nuevoProductoForm.categoria}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, categoria: e.target.value })}
+                placeholder="Ex: Légumes"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoSubcategoria">Sous-catégorie</Label>
+              <Input
+                id="nuevoProductoSubcategoria"
+                value={nuevoProductoForm.subcategoria}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, subcategoria: e.target.value })}
+                placeholder="Optionnel"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoUnidad">Unité</Label>
+              <select
+                id="nuevoProductoUnidad"
+                value={nuevoProductoForm.unidad}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, unidad: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+              >
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="L">L</option>
+                <option value="ml">ml</option>
+                <option value="unité">unité</option>
+                <option value="pièce">pièce</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoStock">Stock initial</Label>
+              <QuantityInput
+                id="nuevoProductoStock"
+                value={nuevoProductoForm.stockActual}
+                onChangeText={(value) => setNuevoProductoForm({ ...nuevoProductoForm, stockActual: parseQuantityText(value) || 0 })}
+                min={0}
+                step={0.01}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoStockMin">Stock minimum</Label>
+              <QuantityInput
+                id="nuevoProductoStockMin"
+                value={nuevoProductoForm.stockMinimo}
+                onChangeText={(value) => setNuevoProductoForm({ ...nuevoProductoForm, stockMinimo: parseQuantityText(value) || 0 })}
+                min={0}
+                step={0.01}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoZona">Zone</Label>
+              <select
+                id="nuevoProductoZona"
+                value={nuevoProductoForm.zona}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, zona: e.target.value as 'refrigerado' | 'congelado' | 'seco' | 'fresco' | '' })}
+                className="w-full px-3 py-2 border rounded-md"
+              >
+                <option value="">Sélectionner</option>
+                <option value="refrigerado">Réfrigéré</option>
+                <option value="congelado">Congelé</option>
+                <option value="seco">Sec</option>
+                <option value="fresco">Frais</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="nuevoProductoIcono">Icône</Label>
+              <Input
+                id="nuevoProductoIcono"
+                value={nuevoProductoForm.icono}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, icono: e.target.value })}
+                placeholder="📦"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="nuevoProductoNotas">Notes</Label>
+              <Textarea
+                id="nuevoProductoNotas"
+                value={nuevoProductoForm.notas}
+                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, notas: e.target.value })}
+                placeholder="Informations supplémentaires..."
+                className="min-h-[90px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalCrearOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={guardarNuevoProducto} className="bg-[#4CAF50] hover:bg-[#45a049] text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Créer le produit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal Ajustar Stock */}
       <Dialog open={modalAjustarOpen} onOpenChange={setModalAjustarOpen}>
         <DialogContent aria-describedby="ajustar-stock-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <span className="text-3xl">{productoSeleccionado?.icono}</span>
-              Ajustar Stock - {productoSeleccionado?.nombre}
+              Ajustar Stock - {productoSeleccionado?.productoNombre}
             </DialogTitle>
             <DialogDescription id="ajustar-stock-description">
               Ajuster la quantité de stock disponible pour ce produit

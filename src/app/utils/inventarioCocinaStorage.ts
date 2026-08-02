@@ -81,6 +81,50 @@ export function obtenerProductosPorZona(zona: string): ProductoInventarioCocina[
   return inventario.filter(producto => producto.zona === zona);
 }
 
+export function crearProductoInventarioCocina(
+  producto: Omit<ProductoInventarioCocina, 'id' | 'fechaCreacion' | 'ultimaActualizacion'> & {
+    id?: string;
+    fechaCreacion?: string;
+    ultimaActualizacion?: string;
+  }
+): ProductoInventarioCocina {
+  const inventario = obtenerInventarioCocina();
+  const productoCompleto: ProductoInventarioCocina = {
+    id: producto.id || `inv-cocina-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    productoId: producto.productoId,
+    productoNombre: producto.productoNombre,
+    productoCodigo: producto.productoCodigo,
+    categoria: producto.categoria,
+    subcategoria: producto.subcategoria,
+    icono: producto.icono || '📦',
+    stockActual: producto.stockActual ?? 0,
+    unidad: producto.unidad || 'kg',
+    peso: producto.peso ?? 0,
+    ubicacion: producto.ubicacion,
+    zona: producto.zona,
+    lote: producto.lote,
+    fechaRecepcion: producto.fechaRecepcion || new Date().toISOString(),
+    fechaCaducidad: producto.fechaCaducidad,
+    origenEnvio: producto.origenEnvio,
+    notas: producto.notas,
+    stockMinimo: producto.stockMinimo ?? 0,
+    alertaBaja: producto.alertaBaja ?? false,
+    fechaCreacion: producto.fechaCreacion || new Date().toISOString(),
+    ultimaActualizacion: producto.ultimaActualizacion || new Date().toISOString(),
+  };
+
+  const indexExistente = inventario.findIndex(item => item.productoId === productoCompleto.productoId);
+
+  if (indexExistente >= 0) {
+    inventario[indexExistente] = productoCompleto;
+  } else {
+    inventario.push(productoCompleto);
+  }
+
+  guardarInventario(inventario);
+  return productoCompleto;
+}
+
 function guardarInventario(inventario: ProductoInventarioCocina[]): void {
   localStorage.setItem(INVENTARIO_COCINA_KEY, JSON.stringify(inventario));
 }

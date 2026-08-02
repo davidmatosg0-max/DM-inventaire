@@ -1527,7 +1527,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
         titre="Inventaire Cuisine"
       />
       {renderHeader('Inventaire Cuisine', <Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#9C27B0')}
-      <InventarioCocina />
+      <InventarioCocina onProductoCreado={cargarDatos} />
     </div>
   );
 
