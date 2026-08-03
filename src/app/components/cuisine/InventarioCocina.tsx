@@ -173,7 +173,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
       productoCodigo: productoCreado.codigo,
       categoria: productoCreado.categoria || 'Autre',
       subcategoria: productoCreado.subcategoria || '',
-    icono: '📦',
+      icono: productoCreado.icono || icono,
       stockActual: nuevoProductoForm.stockActual,
       unidad: productoCreado.unidad || nuevoProductoForm.unidad,
       peso: productoCreado.pesoUnitario ?? productoCreado.peso ?? 0,
