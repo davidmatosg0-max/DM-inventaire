@@ -27,7 +27,6 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   const [recordarme, setRecordarme] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [postLoginPage, setPostLoginPage] = useState<'dashboard' | 'recrutement'>('dashboard');
   const authRemotaActiva = isSupabaseAuthEnabled();
   const brandInitials = branding.systemName
     .split(/\s+/)
@@ -87,7 +86,10 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
     });
     
     setTimeout(() => {
-      onLogin(postLoginPage);
+      const entryView = typeof window !== 'undefined'
+        ? window.localStorage.getItem('banque_aliments_recruitment_entry_view')
+        : null;
+      onLogin(entryView === 'timesheets' ? 'recrutement' : undefined);
     }, 500);
   };
 
@@ -367,8 +369,10 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
           <div className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <button
               onClick={() => {
-                setPostLoginPage('recrutement');
-                toast.info('Connectez-vous pour ouvrir la feuille de temps avec votre utilisateur');
+                if (typeof window !== 'undefined') {
+                  window.localStorage.setItem('banque_aliments_recruitment_entry_view', 'timesheets');
+                }
+                toast.info('Sélectionnez vos identifiants pour ouvrir la feuille de temps des volontaires');
               }}
               className="mb-3 w-full rounded-[24px] border border-slate-200 bg-white/70 p-4 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/85 hover:shadow-xl"
               style={{ boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.08)' }}
@@ -383,10 +387,10 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                   </div>
                   <div className="text-left">
                     <h3 className="mb-0.5 text-base font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {t('login.internalTimesheetTitle') || 'Feuille de temps avec utilisateur'}
+                      {t('login.internalTimesheetTitle') || 'Feuille de temps des volontaires'}
                     </h3>
                     <p className="text-xs font-medium text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      {t('login.internalTimesheetDescription') || 'Ouvrir la feuille de temps après connexion'}
+                      {t('login.internalTimesheetDescription') || 'Accès direct à la feuille de temps des volontaires'}
                     </p>
                   </div>
                 </div>
