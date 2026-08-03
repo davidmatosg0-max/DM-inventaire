@@ -47,6 +47,8 @@ import { BoutonRetourHeader } from '../shared/BoutonRetour';
 import { formatQuantity } from '../../utils/formatUtils';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { exportarDatosPersonalizados } from '../../utils/exportarExcel';
+import { exportarReportePersonalizado } from '../../utils/exportarPDF';
 
 interface CuisinePageProps {
   onNavigate?: (page: string) => void;
@@ -105,14 +107,59 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
       .join(' ');
 
+  const obtenerCategoriaTransformacion = (transformacion: Transformacion): string => {
+    const receta = recetas.find((r) => r.id === transformacion.recetaId);
+    return receta?.categoria || 'autre';
+  };
+
+  const obtenerEtiquetaCategoriaReceta = (categoria: string): string => {
+    const etiquetasCategoria: Record<string, string> = {
+      'plat-principal': 'Plat principal',
+      soupe: 'Soupe',
+      dessert: 'Dessert',
+      pain: 'Pain',
+      sauce: 'Sauce',
+      conserve: 'Conserve',
+      autre: 'Autre',
+    };
+
+    return etiquetasCategoria[categoria] || formatearEtiquetaCategoria(categoria);
+  };
+
+  const obtenerPorcionesTransformadasPorCategoria = () =>
+    Array.from(
+      transformaciones
+        .filter((t) => t.estado === 'terminée')
+        .reduce((mapa, transformacion) => {
+          const categoria = obtenerCategoriaTransformacion(transformacion);
+          const etiquetaCategoria = obtenerEtiquetaCategoriaReceta(categoria);
+          const porcionesTransformadas = transformacion.productosGenerados.reduce(
+            (total, producto) => total + (producto.cantidadReal || 0),
+            0
+          );
+
+          const actual = mapa.get(etiquetaCategoria) || { categoria: etiquetaCategoria, porciones: 0 };
+          actual.porciones += porcionesTransformadas;
+          mapa.set(etiquetaCategoria, actual);
+          return mapa;
+        }, new Map<string, { categoria: string; porciones: number }>())
+    )
+      .map(([, value]) => value)
+      .sort((a, b) => b.porciones - a.porciones);
+
   const generarResumenReporteCocina = (): string => {
     const terminadas = transformaciones.filter((t) => t.estado === 'terminée');
     const enCurso = transformaciones.filter((t) => t.estado === 'en-cours');
     const planificadas = transformaciones.filter((t) => t.estado === 'planifiée');
     const anuladas = transformaciones.filter((t) => t.estado === 'annulée');
-    const totalKg = terminadas.reduce((sum, t) =>
+    const totalKgTransformado = terminadas.reduce((sum, t) =>
       sum + t.productosGenerados.reduce((s, p) => s + (p.pesoTotal || 0), 0), 0
     );
+    const porcionesPorCategoria = obtenerPorcionesTransformadasPorCategoria();
+    const totalPorcionesTransformadas = porcionesPorCategoria.reduce((sum, item) => sum + item.porciones, 0);
+    const detallePorCategoria = porcionesPorCategoria.length > 0
+      ? porcionesPorCategoria.map((item) => `- ${item.categoria}: ${formatQuantity(item.porciones)} portions`).join('\n')
+      : '- Aucune portion transformée';
 
     return [
       `Date du rapport: ${new Date().toLocaleString('fr-FR')}`,
@@ -122,8 +169,11 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       `En cours: ${enCurso.length}`,
       `Planifiees: ${planificadas.length}`,
       `Annulees: ${anuladas.length}`,
-      `Production totale: ${totalKg.toFixed(1)} kg`,
-      `Produits en inventaire cuisine: ${productos.length}`
+      `Kg transformados totales: ${totalKgTransformado.toFixed(1)} kg`,
+      `Produits en inventaire cuisine: ${productos.length}`,
+      `Portions transformees totales: ${formatQuantity(totalPorcionesTransformadas)}`,
+      'Portions transformees par categorie:',
+      detallePorCategoria
     ].join('\\n');
   };
 
@@ -146,6 +196,92 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       console.error('Erreur enregistrement rapport cuisine:', error);
       toast.error('Impossible de sauvegarder le rapport');
     }
+  };
+
+  const exportarReporteCocinaExcel = () => {
+    const terminadas = transformaciones.filter((t) => t.estado === 'terminée');
+    const enCurso = transformaciones.filter((t) => t.estado === 'en-cours');
+    const planificadas = transformaciones.filter((t) => t.estado === 'planifiée');
+    const anuladas = transformaciones.filter((t) => t.estado === 'annulée');
+    const totalKgTransformado = terminadas.reduce(
+      (sum, t) => sum + t.productosGenerados.reduce((s, p) => s + (p.pesoTotal || 0), 0),
+      0
+    );
+    const porcionesPorCategoria = obtenerPorcionesTransformadasPorCategoria();
+    const totalPorcionesTransformadas = porcionesPorCategoria.reduce((sum, item) => sum + item.porciones, 0);
+
+    exportarDatosPersonalizados('rapport-cuisine-portions-categories', [
+      {
+        nombre: 'Résumé',
+        datos: [
+          { Métrica: 'Date du rapport', Valeur: new Date().toLocaleString('fr-FR') },
+          { Métrica: 'Recettes totales', Valeur: recetas.length },
+          { Métrica: 'Transformations totales', Valeur: transformaciones.length },
+          { Métrica: 'Terminées', Valeur: terminadas.length },
+          { Métrica: 'En cours', Valeur: enCurso.length },
+          { Métrica: 'Planifiées', Valeur: planificadas.length },
+          { Métrica: 'Annulées', Valeur: anuladas.length },
+          { Métrica: 'Kg transformados totales', Valeur: Number(totalKgTransformado.toFixed(1)) },
+          { Métrica: 'Produits en inventaire cuisine', Valeur: productos.length },
+          { Métrica: 'Portions transformées totales', Valeur: Number(totalPorcionesTransformadas.toFixed(2)) },
+        ],
+      },
+      {
+        nombre: 'Portions par catégorie',
+        datos: porcionesPorCategoria.length > 0
+          ? porcionesPorCategoria.map((item) => ({
+              Catégorie: item.categoria,
+              'Portions transformées': Number(item.porciones.toFixed(2)),
+            }))
+          : [{ Catégorie: 'Aucune donnée', 'Portions transformées': 0 }],
+      },
+    ]);
+  };
+
+  const exportarReporteCocinaPDF = () => {
+    const terminadas = transformaciones.filter((t) => t.estado === 'terminée');
+    const enCurso = transformaciones.filter((t) => t.estado === 'en-cours');
+    const planificadas = transformaciones.filter((t) => t.estado === 'planifiée');
+    const anuladas = transformaciones.filter((t) => t.estado === 'annulée');
+    const totalKgTransformado = terminadas.reduce(
+      (sum, t) => sum + t.productosGenerados.reduce((s, p) => s + (p.pesoTotal || 0), 0),
+      0
+    );
+    const porcionesPorCategoria = obtenerPorcionesTransformadasPorCategoria();
+    const totalPorcionesTransformadas = porcionesPorCategoria.reduce((sum, item) => sum + item.porciones, 0);
+
+    exportarReportePersonalizado(
+      'Rapport Cuisine',
+      `Statistiques et portions transformées par catégorie • ${new Date().toLocaleString('fr-FR')}`,
+      [
+        {
+          titulo: 'Résumé général',
+          columnas: ['Indicateur', 'Valeur'],
+          datos: [
+            ['Recettes totales', String(recetas.length)],
+            ['Transformations totales', String(transformaciones.length)],
+            ['Terminées', String(terminadas.length)],
+            ['En cours', String(enCurso.length)],
+            ['Planifiées', String(planificadas.length)],
+            ['Annulées', String(anuladas.length)],
+            ['Kg transformados totales', `${totalKgTransformado.toFixed(1)} kg`],
+            ['Produits en inventaire cuisine', String(productos.length)],
+            ['Portions transformées totales', `${formatQuantity(totalPorcionesTransformadas)} portions`],
+          ],
+        },
+        {
+          titulo: 'Portions transformées par catégorie de recette',
+          columnas: ['Catégorie', 'Portions transformées'],
+          datos: porcionesPorCategoria.length > 0
+            ? porcionesPorCategoria.map((item) => [item.categoria, `${formatQuantity(item.porciones)} portions`])
+            : [['Aucune donnée', '0 portions']],
+        },
+      ],
+      'rapport-cuisine-portions-categories',
+      porcionesPorCategoria.length > 0
+        ? [{ id: 'cuisine-report-portions-category-chart', title: 'Graphique des portions transformées par catégorie' }]
+        : []
+    );
   };
 
   const imprimerReporteCocina = () => {
@@ -1825,18 +1961,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       transformaciones
         .filter((t) => t.estado === 'terminée')
         .reduce((mapa, t) => {
-          const receta = recetas.find((r) => r.id === t.recetaId);
-          const categoria = receta?.categoria || 'autre';
-          const etiquetasCategoria = {
-            'plat-principal': 'Plat principal',
-            soupe: 'Soupe',
-            dessert: 'Dessert',
-            pain: 'Pain',
-            sauce: 'Sauce',
-            conserve: 'Conserve',
-            autre: 'Autre',
-          };
-          const categoriaNormalizada = etiquetasCategoria[categoria] || categoria.replace('-', ' ');
+          const categoriaNormalizada = obtenerEtiquetaCategoriaReceta(obtenerCategoriaTransformacion(t));
           const actual = mapa.get(categoriaNormalizada) || { categoria: categoriaNormalizada, cantidad: 0 };
           actual.cantidad += 1;
           mapa.set(categoriaNormalizada, actual);
@@ -1845,6 +1970,9 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     )
       .map(([, value]) => value)
       .sort((a, b) => b.cantidad - a.cantidad);
+
+    const porcionesTransformadasPorCategoria = obtenerPorcionesTransformadasPorCategoria();
+    const totalPorcionesTransformadas = porcionesTransformadasPorCategoria.reduce((sum, item) => sum + item.porciones, 0);
 
     const transformacionesPorEstado = [
       { estado: 'Terminées', valor: transformaciones.filter((t) => t.estado === 'terminée').length, color: '#4CAF50' },
@@ -1883,6 +2011,14 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
               <Button onClick={imprimerReporteCocina} className="bg-[#4CAF50] hover:bg-[#45a049] text-white">
                 <Printer className="w-4 h-4 mr-2" />
                 Imprimer Rapport
+              </Button>
+              <Button onClick={exportarReporteCocinaPDF} variant="outline" className="border-[#DC3545] text-[#DC3545]">
+                <FileText className="w-4 h-4 mr-2" />
+                Exporter PDF
+              </Button>
+              <Button onClick={exportarReporteCocinaExcel} variant="outline" className="border-[#4CAF50] text-[#4CAF50]">
+                <FileText className="w-4 h-4 mr-2" />
+                Exporter Excel
               </Button>
               <Button onClick={registrarReporteCocina} variant="outline" className="border-[#1E73BE] text-[#1E73BE]">
                 <Save className="w-4 h-4 mr-2" />
@@ -1971,6 +2107,84 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
               </div>
             ) : (
               <p className="text-center text-[#666666] py-8">Aucune donnée disponible</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Portions transformées par catégorie de recette</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {porcionesTransformadasPorCategoria.length > 0 ? (
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="rounded-2xl border border-[#DCEBFF] bg-gradient-to-br from-[#EAF5FF] to-[#F8FBFF] p-4 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#1E73BE]">Kg transformés</p>
+                    <p className="mt-3 text-3xl font-bold text-[#0F172A]">
+                      {(estadisticas?.totalKgElaborados ?? 0).toFixed(1)}
+                      <span className="ml-1 text-base font-medium text-[#666666]">kg</span>
+                    </p>
+                    <p className="mt-1 text-sm text-[#666666]">Total cumulé des transformations enregistrées</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#FFE2D6] bg-gradient-to-br from-[#FFF7F3] to-[#FFFDFB] p-4 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF6B35]">Portions transformées</p>
+                    <p className="mt-3 text-3xl font-bold text-[#0F172A]">{formatQuantity(totalPorcionesTransformadas)}</p>
+                    <p className="mt-1 text-sm text-[#666666]">Somme totale des portions produites</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#E8E0FF] bg-gradient-to-br from-[#F7F4FF] to-[#FCFBFF] p-4 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7C3AED]">Catégories</p>
+                    <p className="mt-3 text-3xl font-bold text-[#0F172A]">{porcionesTransformadasPorCategoria.length}</p>
+                    <p className="mt-1 text-sm text-[#666666]">Catégories de recette avec données</p>
+                  </div>
+                </div>
+                <div id="cuisine-report-portions-category-chart" className="h-72 rounded-lg bg-white p-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={porcionesTransformadasPorCategoria} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="categoria" tick={{ fill: '#666666', fontSize: 12 }} />
+                      <YAxis tick={{ fill: '#666666', fontSize: 12 }} />
+                      <Tooltip
+                        labelFormatter={(label) => `Catégorie : ${label}`}
+                        formatter={(value) => [`${formatQuantity(Number(value))} portions`, 'Portions transformées']}
+                      />
+                      <Bar dataKey="porciones" name="Portions transformées" radius={[6, 6, 0, 0]} fill="#FF6B35" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="rounded-xl border border-[#FFE2D6] bg-[#FFF7F3] p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[#C04E1A]">Totaux du rapport</p>
+                    <Badge variant="outline" className="border-[#9C27B0] text-[#9C27B0]">
+                      {estadisticas?.totalKgElaborados?.toFixed(1) || '0.0'} kg
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between rounded-lg bg-white/90 px-3 py-2">
+                      <span className="text-sm font-medium text-[#333333]">Kg transformés</span>
+                      <span className="text-sm font-semibold text-[#9C27B0]">
+                        {estadisticas?.totalKgElaborados?.toFixed(1) || '0.0'} kg
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-white/90 px-3 py-2">
+                      <span className="text-sm font-medium text-[#333333]">Portions transformées</span>
+                      <span className="text-sm font-semibold text-[#FF6B35]">
+                        {formatQuantity(totalPorcionesTransformadas)} portions
+                      </span>
+                    </div>
+                    {porcionesTransformadasPorCategoria.map((item) => (
+                      <div key={item.categoria} className="flex items-center justify-between rounded-lg bg-white/90 px-3 py-2">
+                        <span className="text-sm font-medium text-[#333333]">{item.categoria}</span>
+                        <span className="text-sm font-semibold text-[#FF6B35]">{formatQuantity(item.porciones)} portions</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-[#666666] py-8">Aucune portion transformée disponible</p>
             )}
           </CardContent>
         </Card>
@@ -2265,10 +2479,5 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     </div>
   );
 }
-
-
-
-
-
 
 

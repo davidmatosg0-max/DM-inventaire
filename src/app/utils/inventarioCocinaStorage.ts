@@ -1,5 +1,5 @@
 /**
- * Sistema de Gestión de Inventario de Cuisine
+ * Sistema de GestiÃƒÆ’Ã‚Â³n de Inventario de Cuisine
  * Gestiona el stock de productos recibidos desde el inventario general
  * y utilizados en recetas y transformaciones
  */
@@ -20,7 +20,7 @@ export interface ProductoInventarioCocina {
   unidad: string;
   peso: number; // peso unitario en kg
   
-  // Ubicación en cocina
+  // UbicaciÃƒÆ’Ã‚Â³n en cocina
   ubicacion?: string; // ej: "Refrigerador A", "Despensa 1", etc.
   zona?: 'refrigerado' | 'congelado' | 'seco' | 'fresco';
   
@@ -30,7 +30,7 @@ export interface ProductoInventarioCocina {
   fechaCaducidad?: string;
   
   // Metadata
-  origenEnvio?: string; // número de envío de donde proviene (ENV-2024-001)
+  origenEnvio?: string; // nÃƒÆ’Ã‚Âºmero de envÃƒÆ’Ã‚Â­o de donde proviene (ENV-2024-001)
   notas?: string;
   
   // Control
@@ -45,10 +45,17 @@ const MOVIMIENTOS_COCINA_KEY = 'movimientos_cocina';
 const CATEGORIAS_PRODUCTOS_COCINA_KEY = 'categorias_productos_cocina';
 const CATEGORIA_PRODUCTO_POR_DEFECTO = 'Autre';
 
+function notificarCambioInventarioCocina(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('inventario-cocina-updated'));
+  }
+}
+
 export interface MovimientoStock {
   id: string;
   productoInventarioCocinaId: string;
   productoNombre: string;
+  categoria?: string;
   tipo: MovimientoInventarioCocina;
   cantidad: number;
   unidad: string;
@@ -100,7 +107,7 @@ export function obtenerCategoriasProductosCocina(): string[] {
 
     return categoriasLimpias.length > 0 ? categoriasLimpias : [CATEGORIA_PRODUCTO_POR_DEFECTO];
   } catch (error) {
-    console.error('Error al obtener categorías de productos de cocina:', error);
+    console.error('Error al obtener categorÃƒÆ’Ã‚Â­as de productos de cocina:', error);
     return [CATEGORIA_PRODUCTO_POR_DEFECTO];
   }
 }
@@ -118,9 +125,10 @@ export function crearCategoriaProductoCocina(nombre: string): string | null {
     : categoriasActualizadas;
 
   localStorage.setItem(CATEGORIAS_PRODUCTOS_COCINA_KEY, JSON.stringify(categoriasOrdenadas));
+  notificarCambioInventarioCocina();
   return categoria;
-}
 
+}
 export function crearProductoInventarioCocina(
   producto: Omit<ProductoInventarioCocina, 'id' | 'fechaCreacion' | 'ultimaActualizacion'> & {
     id?: string;
@@ -136,7 +144,7 @@ export function crearProductoInventarioCocina(
     productoCodigo: producto.productoCodigo,
     categoria: producto.categoria,
     subcategoria: producto.subcategoria,
-    icono: producto.icono || '📦',
+    icono: producto.icono || 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦',
     stockActual: producto.stockActual ?? 0,
     unidad: producto.unidad || 'kg',
     peso: producto.peso ?? 0,
@@ -167,8 +175,8 @@ export function crearProductoInventarioCocina(
 
 function guardarInventario(inventario: ProductoInventarioCocina[]): void {
   localStorage.setItem(INVENTARIO_COCINA_KEY, JSON.stringify(inventario));
+  notificarCambioInventarioCocina();
 }
-
 /**
  * Consumir productos del inventario (para recetas/transformaciones)
  */
@@ -206,6 +214,7 @@ export function consumirProducto(
   registrarMovimiento({
     productoInventarioCocinaId: producto.id,
     productoNombre: producto.productoNombre,
+    categoria: producto.categoria,
     tipo: 'salida',
     cantidad,
     unidad: producto.unidad,
@@ -221,7 +230,7 @@ export function consumirProducto(
   });
   
   guardarInventario(inventario);
-  console.log('✅ Producto consumido:', producto.productoNombre, cantidad, producto.unidad);
+  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Producto consumido:', producto.productoNombre, cantidad, producto.unidad);
   return true;
 }
 
@@ -253,6 +262,7 @@ export function ajustarStock(
   registrarMovimiento({
     productoInventarioCocinaId: producto.id,
     productoNombre: producto.productoNombre,
+    categoria: producto.categoria,
     tipo: 'ajuste',
     cantidad: Math.abs(nuevoStock - stockAnterior),
     unidad: producto.unidad,
@@ -265,12 +275,12 @@ export function ajustarStock(
   });
   
   guardarInventario(inventario);
-  console.log('✅ Stock ajustado:', producto.productoNombre, 'de', stockAnterior, 'a', nuevoStock);
+  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Stock ajustado:', producto.productoNombre, 'de', stockAnterior, 'a', nuevoStock);
   return true;
 }
 
 /**
- * Registrar merma/pérdida
+ * Registrar merma/pÃƒÆ’Ã‚Â©rdida
  */
 export function registrarMerma(
   productoId: string,
@@ -303,6 +313,7 @@ export function registrarMerma(
   registrarMovimiento({
     productoInventarioCocinaId: producto.id,
     productoNombre: producto.productoNombre,
+    categoria: producto.categoria,
     tipo: 'merma',
     cantidad,
     unidad: producto.unidad,
@@ -315,12 +326,12 @@ export function registrarMerma(
   });
   
   guardarInventario(inventario);
-  console.log('✅ Merma registrada:', producto.productoNombre, cantidad, producto.unidad);
+  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Merma registrada:', producto.productoNombre, cantidad, producto.unidad);
   return true;
 }
 
 /**
- * Actualizar información de producto
+ * Actualizar informaciÃƒÆ’Ã‚Â³n de producto
  */
 export function actualizarProductoInventario(
   productoId: string,
@@ -341,7 +352,7 @@ export function actualizarProductoInventario(
   };
   
   guardarInventario(inventario);
-  console.log('✅ Producto actualizado:', inventario[index].productoNombre);
+  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Producto actualizado:', inventario[index].productoNombre);
   return true;
 }
 
@@ -358,7 +369,7 @@ export function eliminarProductoInventario(productoId: string): boolean {
   }
   
   guardarInventario(nuevoInventario);
-  console.log('✅ Producto eliminado del inventario');
+  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Producto eliminado del inventario');
   return true;
 }
 
@@ -376,8 +387,8 @@ function obtenerMovimientos(): MovimientoStock[] {
 
 function guardarMovimientos(movimientos: MovimientoStock[]): void {
   localStorage.setItem(MOVIMIENTOS_COCINA_KEY, JSON.stringify(movimientos));
+  notificarCambioInventarioCocina();
 }
-
 function registrarMovimiento(movimiento: Omit<MovimientoStock, 'id'>): void {
   const movimientos = obtenerMovimientos();
   const nuevoMovimiento: MovimientoStock = {
@@ -416,7 +427,7 @@ export function obtenerMovimientosPorFecha(fechaInicio: Date, fechaFin: Date): M
   });
 }
 
-// ========== ESTADÍSTICAS ==========
+// ========== ESTADÃƒÆ’Ã‚ÂSTICAS ==========
 
 export function obtenerEstadisticasInventarioCocina() {
   const inventario = obtenerInventarioCocina();
@@ -467,10 +478,10 @@ export function obtenerEstadisticasInventarioCocina() {
 }
 
 /**
- * Limpiar inventario (usar con precaución)
+ * Limpiar inventario (usar con precauciÃƒÆ’Ã‚Â³n)
  */
 export function limpiarInventarioCocina(): void {
   localStorage.removeItem(INVENTARIO_COCINA_KEY);
   localStorage.removeItem(MOVIMIENTOS_COCINA_KEY);
-  console.log('⚠️ Inventario de cocina limpiado');
+  console.log('ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Inventario de cocina limpiado');
 }

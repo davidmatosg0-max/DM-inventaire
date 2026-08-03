@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { formatBrandingContactLine, getStoredBrandingPrintConfig } from './brandingPrint';
 
 // Configuración de colores del sistema
@@ -408,46 +409,99 @@ export function exportarReportePersonalizado(
     columnas: string[];
     datos: any[][];
   }>,
-  nombreArchivo?: string
+  nombreArchivo?: string,
+  charts: Array<{ id: string; title?: string }> = [],
+  opciones: { orientation?: 'portrait' | 'landscape' } = {}
 ) {
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+    orientation: opciones.orientation || 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
 
   agregarEncabezado(doc, titulo, subtitulo);
 
-  let startY = 55;
+  const renderTables = (startY: number) => {
+    tablas.forEach((tabla, index) => {
+      if (index > 0) {
+        startY += 15;
+      }
 
-  tablas.forEach((tabla, index) => {
-    // Título de la sección
-    if (index > 0) {
-      startY += 15;
-    }
+      doc.setFontSize(11);
+      doc.setTextColor(...COLORS.gray);
+      doc.text(tabla.titulo, 20, startY);
 
-    doc.setFontSize(11);
-    doc.setTextColor(...COLORS.gray);
-    doc.text(tabla.titulo, 20, startY);
+      startY += 5;
 
-    startY += 5;
+      autoTable(doc, {
+        head: [tabla.columnas],
+        body: tabla.datos,
+        startY,
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: COLORS.primary,
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+      });
 
-    // Crear tabla
-    autoTable(doc, {
-      head: [tabla.columnas],
-      body: tabla.datos,
-      startY,
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-      },
-      headStyles: {
-        fillColor: COLORS.primary,
-        textColor: 255,
-        fontStyle: 'bold',
-      },
+      startY = (doc as any).lastAutoTable.finalY + 5;
     });
 
-    startY = (doc as any).lastAutoTable.finalY + 5;
-  });
+    agregarPieDePagina(doc);
+    doc.save(`${nombreArchivo || 'Reporte'}_${Date.now()}.pdf`);
+  };
 
-  agregarPieDePagina(doc);
-  doc.save(`${nombreArchivo || 'Reporte'}_${Date.now()}.pdf`);
+  void (async () => {
+    let startY = 55;
+
+    for (const [index, chart] of charts.entries()) {
+      const chartElement = typeof document !== 'undefined' ? document.getElementById(chart.id) : null;
+      if (!chartElement) {
+        continue;
+      }
+
+      try {
+        if (index > 0 || startY > 55) {
+          startY += 8;
+        }
+
+        if (chart.title) {
+          doc.setFontSize(11);
+          doc.setTextColor(...COLORS.gray);
+          doc.text(chart.title, 20, startY);
+          startY += 6;
+        }
+
+        const canvas = await html2canvas(chartElement, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          logging: false,
+        });
+
+        const imageData = canvas.toDataURL('image/png');
+        const pageWidth = doc.internal.pageSize.width;
+        const imageWidth = pageWidth - 40;
+        const imageHeight = (canvas.height * imageWidth) / canvas.width;
+
+        if (startY + imageHeight > doc.internal.pageSize.height - 20) {
+          doc.addPage();
+          startY = 20;
+        }
+
+        doc.addImage(imageData, 'PNG', 20, startY, imageWidth, imageHeight);
+        startY += imageHeight + 8;
+      } catch (error) {
+        console.error(`Error al capturar gráfico ${chart.id}:`, error);
+      }
+    }
+
+    renderTables(startY);
+  })().catch((error) => {
+    console.error('Error al exportar reporte con gráficos:', error);
+  });
 }

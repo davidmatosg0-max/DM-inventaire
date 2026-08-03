@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Package, Search, Edit, Trash2, AlertCircle, TrendingDown,
@@ -15,6 +15,7 @@ import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { IconSelector } from '../ui/IconSelector';
 import { toast } from 'sonner';
 import {
@@ -28,12 +29,16 @@ import {
   obtenerCategoriasProductosCocina,
   crearCategoriaProductoCocina,
   consumirProducto,
+  obtenerMovimientosPorTipo,
   type ProductoInventarioCocina,
   type MovimientoStock
 } from '../../utils/inventarioCocinaStorage';
 import { guardarProducto } from '../../utils/productStorage';
 import { generarIconoProducto, sugerirIconos } from '../../utils/iconoUtils';
 import { obtenerRecetas, type Receta } from '../../utils/recetaStorage';
+import { exportarDatosPersonalizados } from '../../utils/exportarExcel';
+import { exportarReportePersonalizado } from '../../utils/exportarPDF';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 
 interface InventarioCocinaProps {
   onProductoCreado?: () => void;
@@ -41,9 +46,19 @@ interface InventarioCocinaProps {
 
 export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   const { t } = useTranslation();
+  const INVENTARIO_KEYS = ['inventario_cocina', 'movimientos_cocina', 'categorias_productos_cocina'];
+  const REFRESH_FALLBACK_MS = 3000;
   const [inventario, setInventario] = useState<ProductoInventarioCocina[]>([]);
   const [inventarioFiltrado, setInventarioFiltrado] = useState<ProductoInventarioCocina[]>([]);
   const [estadisticas, setEstadisticas] = useState<any>(null);
+  const [tendenciaMetricas, setTendenciaMetricas] = useState<Record<string, 'up' | 'down' | null>>({
+    totalProductos: null,
+    pesoTotal: null,
+    productosAlertaBaja: null,
+    movimientosMes: null,
+  });
+  const estadisticasPreviasRef = useRef<any>(null);
+  const resetTendenciaRef = useRef<number | null>(null);
   
   // Estados de filtros
   const [busqueda, setBusqueda] = useState('');
@@ -58,6 +73,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   const [modalMovimientosOpen, setModalMovimientosOpen] = useState(false);
   const [modalCrearOpen, setModalCrearOpen] = useState(false);
   const [movimientos, setMovimientos] = useState<MovimientoStock[]>([]);
+  const [movimientosSalidaState, setMovimientosSalidaState] = useState<MovimientoStock[]>([]);
   const [categoriasProductos, setCategoriasProductos] = useState<string[]>(() => obtenerCategoriasProductosCocina());
   const [mostrarCampoNuevaCategoria, setMostrarCampoNuevaCategoria] = useState(false);
   const [nuevaCategoria, setNuevaCategoria] = useState('');
@@ -100,12 +116,112 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   useEffect(() => {
     aplicarFiltros();
   }, [inventario, busqueda, filtroZona, filtroAlerta, ordenamiento]);
+  useEffect(() => {
+    const refrescar = () => {
+      cargarDatos();
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key && INVENTARIO_KEYS.includes(event.key)) {
+        refrescar();
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refrescar();
+      }
+    };
+
+    const intervalId = window.setInterval(refrescar, REFRESH_FALLBACK_MS);
+
+    window.addEventListener('inventario-cocina-updated', refrescar);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', refrescar);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('inventario-cocina-updated', refrescar);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', refrescar);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!estadisticas) {
+      return;
+    }
+
+    const previas = estadisticasPreviasRef.current;
+    if (!previas) {
+      estadisticasPreviasRef.current = estadisticas;
+      return;
+    }
+
+    const nuevasTendencias: Record<string, 'up' | 'down' | null> = {
+      totalProductos: estadisticas.totalProductos > previas.totalProductos ? 'up' : estadisticas.totalProductos < previas.totalProductos ? 'down' : null,
+      pesoTotal: estadisticas.pesoTotal > previas.pesoTotal ? 'up' : estadisticas.pesoTotal < previas.pesoTotal ? 'down' : null,
+      productosAlertaBaja: estadisticas.productosAlertaBaja > previas.productosAlertaBaja ? 'up' : estadisticas.productosAlertaBaja < previas.productosAlertaBaja ? 'down' : null,
+      movimientosMes: estadisticas.movimientosMes > previas.movimientosMes ? 'up' : estadisticas.movimientosMes < previas.movimientosMes ? 'down' : null,
+    };
+
+    if (Object.values(nuevasTendencias).some((valor) => valor !== null)) {
+      setTendenciaMetricas(nuevasTendencias);
+
+      if (resetTendenciaRef.current) {
+        window.clearTimeout(resetTendenciaRef.current);
+      }
+
+      resetTendenciaRef.current = window.setTimeout(() => {
+        setTendenciaMetricas({
+          totalProductos: null,
+          pesoTotal: null,
+          productosAlertaBaja: null,
+          movimientosMes: null,
+        });
+      }, 900);
+    }
+
+    estadisticasPreviasRef.current = estadisticas;
+  }, [estadisticas]);
+
+  useEffect(() => {
+    return () => {
+      if (resetTendenciaRef.current) {
+        window.clearTimeout(resetTendenciaRef.current);
+      }
+    };
+  }, []);
+
+  const claseTendenciaNumero = (metrica: keyof typeof tendenciaMetricas) => {
+    if (tendenciaMetricas[metrica] === 'up') {
+      return 'text-emerald-700';
+    }
+    if (tendenciaMetricas[metrica] === 'down') {
+      return 'text-rose-700';
+    }
+    return 'text-slate-900';
+  };
+
+  const claseTendenciaSubtitulo = (metrica: keyof typeof tendenciaMetricas) => {
+    if (tendenciaMetricas[metrica] === 'up') {
+      return 'text-emerald-700/85';
+    }
+    if (tendenciaMetricas[metrica] === 'down') {
+      return 'text-rose-700/85';
+    }
+    return 'text-slate-600';
+  };
 
   const recetasDisponibles: Receta[] = obtenerRecetas().filter(receta => receta.activa);
 
   const cargarDatos = () => {
     const inv = obtenerInventarioCocina();
+    const salidas = obtenerMovimientosPorTipo('salida');
     setInventario(inv);
+    setMovimientosSalidaState(salidas);
     setEstadisticas(obtenerEstadisticasInventarioCocina());
   };
 
@@ -348,6 +464,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
       setRecetaCarritoId('');
       setMotivoCarrito('Utilisation en recette');
       setNotasCarrito('');
+      setModalCarritoOpen(false);
       cargarDatos();
     } else {
       toast.error('Erreur lors de la sortie du panier');
@@ -480,59 +597,294 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
     return <Badge className={`${conf.color} text-white`}>{conf.label}</Badge>;
   };
 
+  const movimientosSalida = movimientosSalidaState;
+  const reporteSalidasPorCategoria = Array.from(
+    movimientosSalida.reduce((mapa, movimiento) => {
+      const categoriaInventario = inventario.find((producto) => producto.id === movimiento.productoInventarioCocinaId)?.categoria;
+      const categoria = (movimiento.categoria || categoriaInventario || 'Autre').trim() || 'Autre';
+      const motivo = movimiento.motivo.trim() || 'Sans motif';
+      const unidad = movimiento.unidad.trim();
+      const key = `${categoria}||${motivo}||${unidad}`;
+      const actual = mapa.get(key) || {
+        categoria,
+        motivo,
+        unidad,
+        cantidadTotal: 0,
+        movimientos: 0,
+        ultimaFecha: movimiento.fecha,
+      };
+
+      actual.cantidadTotal += movimiento.cantidad;
+      actual.movimientos += 1;
+      if (new Date(movimiento.fecha).getTime() > new Date(actual.ultimaFecha).getTime()) {
+        actual.ultimaFecha = movimiento.fecha;
+      }
+
+      mapa.set(key, actual);
+      return mapa;
+    }, new Map<string, {
+      categoria: string;
+      motivo: string;
+      unidad: string;
+      cantidadTotal: number;
+      movimientos: number;
+      ultimaFecha: string;
+    }>())
+  )
+    .map(([, value]) => value)
+    .sort((a, b) => {
+      if (b.cantidadTotal !== a.cantidadTotal) {
+        return b.cantidadTotal - a.cantidadTotal;
+      }
+
+      return new Date(b.ultimaFecha).getTime() - new Date(a.ultimaFecha).getTime();
+    });
+  const totalCantidadesSalida = movimientosSalida.reduce((sum, movimiento) => sum + movimiento.cantidad, 0);
+  const totalCategoriasSalida = new Set(reporteSalidasPorCategoria.map((item) => item.categoria)).size;
+  const totalMotivosSalida = new Set(reporteSalidasPorCategoria.map((item) => item.motivo)).size;
+  const colorsSalida = ['#1E73BE', '#4CAF50', '#FF6B35', '#9C27B0', '#F59E0B', '#14B8A6', '#DC3545'];
+  const motivosSalidaOrdenados = Array.from(
+    movimientosSalida.reduce((mapa, movimiento) => {
+      const motivo = movimiento.motivo.trim() || 'Sans motif';
+      const actual = mapa.get(motivo) || 0;
+      mapa.set(motivo, actual + movimiento.cantidad);
+      return mapa;
+    }, new Map<string, number>())
+  )
+    .sort((left, right) => right[1] - left[1])
+    .map(([motivo]) => motivo);
+  const reporteSalidasAgrupadoPorCategoria = Array.from(
+    reporteSalidasPorCategoria.reduce((mapa, item) => {
+      const actual = mapa.get(item.categoria) || { categoria: item.categoria, cantidadTotal: 0 };
+      actual.cantidadTotal += item.cantidadTotal;
+      mapa.set(item.categoria, actual);
+      return mapa;
+    }, new Map<string, { categoria: string; cantidadTotal: number }>())
+  )
+    .map(([, value]) => value)
+    .sort((a, b) => b.cantidadTotal - a.cantidadTotal);
+  const reporteSalidasPorCategoriaYMotivo = Array.from(
+    movimientosSalida.reduce((mapa, movimiento) => {
+      const categoriaInventario = inventario.find((producto) => producto.id === movimiento.productoInventarioCocinaId)?.categoria;
+      const categoria = (movimiento.categoria || categoriaInventario || 'Autre').trim() || 'Autre';
+      const motivo = movimiento.motivo.trim() || 'Sans motif';
+      const actual = mapa.get(categoria) || { categoria };
+      actual[motivo] = (actual[motivo] || 0) + movimiento.cantidad;
+      mapa.set(categoria, actual);
+      return mapa;
+    }, new Map<string, Record<string, string | number>>())
+  )
+    .map(([, value]) => value as Record<string, string | number>)
+    .sort((a, b) => {
+      const totalA = motivosSalidaOrdenados.reduce((sum, motivo) => sum + Number(a[motivo] || 0), 0);
+      const totalB = motivosSalidaOrdenados.reduce((sum, motivo) => sum + Number(b[motivo] || 0), 0);
+      return totalB - totalA;
+    });
+  const totalKgSalida = movimientosSalida.reduce((sum, movimiento) => {
+    const producto = inventario.find((item) => item.id === movimiento.productoInventarioCocinaId);
+    const pesoUnitario = Number(producto?.peso || 0);
+
+    if (Number.isFinite(pesoUnitario) && pesoUnitario > 0) {
+      return sum + (movimiento.cantidad * pesoUnitario);
+    }
+
+    if (movimiento.unidad === 'kg') {
+      return sum + movimiento.cantidad;
+    }
+
+    if (movimiento.unidad === 'g') {
+      return sum + (movimiento.cantidad / 1000);
+    }
+
+    return sum + movimiento.cantidad;
+  }, 0);
+
+  const exportarReporteSalidasExcel = () => {
+    exportarDatosPersonalizados('rapport-sorties-cuisine', [
+      {
+        nombre: 'Résumé',
+        datos: [
+          { Métrica: 'Kg sortis totaux', Valeur: Number(totalKgSalida.toFixed(2)) },
+          { Métrica: 'Quantité totale', Valeur: Number(totalCantidadesSalida.toFixed(2)) },
+          { Métrica: 'Catégories suivies', Valeur: totalCategoriasSalida },
+          { Métrica: 'Motifs utilisés', Valeur: totalMotivosSalida },
+        ],
+      },
+      {
+        nombre: 'Résumé sorties',
+        datos: reporteSalidasPorCategoria.length > 0
+          ? reporteSalidasPorCategoria.map((item) => ({
+              Catégorie: item.categoria,
+              Motif: item.motivo,
+              'Quantité totale': Number(item.cantidadTotal.toFixed(2)),
+              Unité: item.unidad,
+              Mouvements: item.movimientos,
+              'Dernière sortie': new Date(item.ultimaFecha).toLocaleString('fr-FR'),
+            }))
+          : [{ Catégorie: 'Aucune donnée', Motif: '-', 'Quantité totale': 0, Unité: '-', Mouvements: 0, 'Dernière sortie': '-' }],
+      },
+      {
+        nombre: 'Catégorie Motif',
+        datos: reporteSalidasPorCategoriaYMotivo.length > 0
+          ? reporteSalidasPorCategoriaYMotivo.map((item) => ({
+              Catégorie: item.categoria,
+              ...Object.fromEntries(
+                motivosSalidaOrdenados.map((motivo) => [motivo, Number((Number(item[motivo] || 0)).toFixed(2))])
+              ),
+            }))
+          : [{ Catégorie: 'Aucune donnée' }],
+      },
+      {
+        nombre: 'Détail mouvements',
+        datos: movimientosSalida.length > 0
+          ? movimientosSalida.map((movimiento) => ({
+              Produit: movimiento.productoNombre,
+              Catégorie: movimiento.categoria || inventario.find((producto) => producto.id === movimiento.productoInventarioCocinaId)?.categoria || 'Autre',
+              Motif: movimiento.motivo,
+              Quantité: Number(movimiento.cantidad.toFixed(2)),
+              Unité: movimiento.unidad,
+              Référence: movimiento.referencia || '',
+              Recette: movimiento.recetaNombre || '',
+              Utilisateur: movimiento.usuario,
+              Date: new Date(movimiento.fecha).toLocaleString('fr-FR'),
+              Notes: movimiento.notas || '',
+            }))
+          : [{ Produit: 'Aucune sortie enregistrée', Catégorie: '-', Motif: '-', Quantité: 0, Unité: '-', Référence: '', Recette: '', Utilisateur: '', Date: '-', Notes: '' }],
+      },
+    ]);
+  };
+
+  const exportarReporteSalidasPDF = () => {
+    exportarReportePersonalizado(
+      'Rapport des sorties - Inventaire cuisine',
+      `Catégories, motifs et quantités • ${new Date().toLocaleString('fr-FR')}`,
+      [
+        {
+          titulo: 'Résumé global',
+          columnas: ['Indicateur', 'Valeur'],
+          datos: [
+            ['Kg sortis totaux', `${totalKgSalida.toFixed(2)} kg`],
+            ['Quantité totale', totalCantidadesSalida.toFixed(2).toString()],
+            ['Catégories suivies', String(totalCategoriasSalida)],
+            ['Motifs utilisés', String(totalMotivosSalida)],
+          ],
+        },
+        {
+          titulo: 'Résumé des sorties par catégorie',
+          columnas: ['Catégorie', 'Motif', 'Quantité totale', 'Mouvements', 'Dernière sortie'],
+          datos: reporteSalidasPorCategoria.length > 0
+            ? reporteSalidasPorCategoria.map((item) => [
+                item.categoria,
+                item.motivo,
+                `${item.cantidadTotal.toFixed(2)} ${item.unidad}`,
+                String(item.movimientos),
+                new Date(item.ultimaFecha).toLocaleString('fr-FR'),
+              ])
+            : [['Aucune donnée', '-', '0', '0', '-']],
+        },
+        {
+          titulo: 'Catégorie et motif',
+          columnas: ['Catégorie', ...motivosSalidaOrdenados, 'Total'],
+          datos: reporteSalidasPorCategoriaYMotivo.length > 0
+            ? reporteSalidasPorCategoriaYMotivo.map((item) => {
+                const total = motivosSalidaOrdenados.reduce((sum, motivo) => sum + Number(item[motivo] || 0), 0);
+                return [
+                  item.categoria,
+                  ...motivosSalidaOrdenados.map((motivo) => Number((Number(item[motivo] || 0)).toFixed(2))),
+                  Number(total.toFixed(2)),
+                ];
+              })
+            : [['Aucune donnée', ...motivosSalidaOrdenados.map(() => 0), 0]],
+        },
+        {
+          titulo: 'Détail des mouvements de sortie',
+          columnas: ['Produit', 'Catégorie', 'Motif', 'Quantité', 'Référence', 'Recette', 'Date'],
+          datos: movimientosSalida.length > 0
+            ? movimientosSalida.map((movimiento) => [
+                movimiento.productoNombre,
+                movimiento.categoria || inventario.find((producto) => producto.id === movimiento.productoInventarioCocinaId)?.categoria || 'Autre',
+                movimiento.motivo,
+                `${movimiento.cantidad.toFixed(2)} ${movimiento.unidad}`,
+                movimiento.referencia || '-',
+                movimiento.recetaNombre || '-',
+                new Date(movimiento.fecha).toLocaleString('fr-FR'),
+              ])
+            : [['Aucune sortie enregistrée', '-', '-', '0', '-', '-', '-']],
+        },
+      ],
+      'rapport-sorties-cuisine',
+      [
+        {
+          id: 'cuisine-output-category-chart',
+          title: 'Graphique des quantités sorties par catégorie et motif',
+        },
+      ],
+      {
+        orientation: 'landscape',
+      }
+    );
+  };
+
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="inventario-actual" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[420px]">
+          <TabsTrigger value="inventario-actual">Inventario actual</TabsTrigger>
+          <TabsTrigger value="reporte-salidas">Reporte de salidas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inventario-actual" className="mt-6 space-y-6">
       {/* Estadísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-[#1E73BE] to-[#1a5fa0] text-white">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-[#1E2A44]">
               <Package className="w-4 h-4" />
               Total Produits
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{estadisticas?.totalProductos || 0}</div>
-            <p className="text-xs opacity-90 mt-1">produits en stock</p>
+            <div className={`text-3xl font-bold transition-colors duration-300 ${claseTendenciaNumero('totalProductos')}`}>{estadisticas?.totalProductos || 0}</div>
+            <p className={`text-xs mt-1 transition-colors duration-300 ${claseTendenciaSubtitulo('totalProductos')}`}>produits en stock</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-[#4CAF50] to-[#45a049] text-white">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-[#1E2A44]">
               <Scale className="w-4 h-4" />
               Poids Total
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{estadisticas?.pesoTotal?.toFixed(1) || '0.0'}</div>
-            <p className="text-xs opacity-90 mt-1">kg en inventaire</p>
+            <div className={`text-3xl font-bold transition-colors duration-300 ${claseTendenciaNumero('pesoTotal')}`}>{estadisticas?.pesoTotal?.toFixed(1) || '0.0'}</div>
+            <p className={`text-xs mt-1 transition-colors duration-300 ${claseTendenciaSubtitulo('pesoTotal')}`}>kg en inventaire</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-[#FFC107] to-[#FFA000] text-white">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-[#1E2A44]">
               <AlertCircle className="w-4 h-4" />
               Alertes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{estadisticas?.productosAlertaBaja || 0}</div>
-            <p className="text-xs opacity-90 mt-1">stock bas</p>
+            <div className={`text-3xl font-bold transition-colors duration-300 ${claseTendenciaNumero('productosAlertaBaja')}`}>{estadisticas?.productosAlertaBaja || 0}</div>
+            <p className={`text-xs mt-1 transition-colors duration-300 ${claseTendenciaSubtitulo('productosAlertaBaja')}`}>stock bas</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-[#9C27B0] to-[#7B1FA2] text-white">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-[#1E2A44]">
               <TrendingDown className="w-4 h-4" />
               Mouvements ce mois
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{estadisticas?.movimientosMes || 0}</div>
-            <p className="text-xs opacity-90 mt-1">
+            <div className={`text-3xl font-bold transition-colors duration-300 ${claseTendenciaNumero('movimientosMes')}`}>{estadisticas?.movimientosMes || 0}</div>
+            <p className={`text-xs mt-1 transition-colors duration-300 ${claseTendenciaSubtitulo('movimientosMes')}`}>
               {estadisticas?.entradasMes || 0} entrées • {estadisticas?.salidasMes || 0} sorties
             </p>
           </CardContent>
@@ -770,6 +1122,146 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
           )}
         </CardContent>
       </Card>
+
+        </TabsContent>
+
+        <TabsContent value="reporte-salidas" className="mt-6">
+          <Card>
+            <CardHeader className="gap-3">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingDown className="w-5 h-5 text-[#1E73BE]" />
+                    Rapport des sorties par catégorie
+                  </CardTitle>
+                  <p className="text-sm text-slate-600">
+                    Regroupement des sorties de stock par catégorie, motif et quantité enregistrée.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="border-[#1E73BE] text-[#1E73BE]">
+                    {movimientosSalida.length} sorties
+                  </Badge>
+                  <Badge variant="outline" className="border-[#4CAF50] text-[#4CAF50]">
+                    {totalCategoriasSalida} catégories
+                  </Badge>
+                  <Badge variant="outline" className="border-[#FF6B35] text-[#FF6B35]">
+                    {totalMotivosSalida} motifs
+                  </Badge>
+                  <Button variant="outline" className="border-[#DC3545] text-[#DC3545]" onClick={exportarReporteSalidasPDF}>
+                    Exporter PDF
+                  </Button>
+                  <Button variant="outline" className="border-[#4CAF50] text-[#4CAF50]" onClick={exportarReporteSalidasExcel}>
+                    Exporter Excel
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <Card className="border border-[#DCEBFF] bg-white shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#1E73BE]">Kg sortis</p>
+                    <p className="mt-2 text-3xl font-bold text-slate-900">{totalKgSalida.toFixed(2)}</p>
+                    <p className="mt-1 text-sm text-slate-600">Poids cumulé des sorties enregistrées</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-[#DDF4E0] bg-white shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#4CAF50]">Quantité totale</p>
+                    <p className="mt-2 text-3xl font-bold text-slate-900">{totalCantidadesSalida.toFixed(2)}</p>
+                    <p className="mt-1 text-sm text-slate-600">Somme de toutes les quantités sorties</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-[#FFE2D6] bg-white shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF6B35]">Catégories suivies</p>
+                    <p className="mt-2 text-3xl font-bold text-slate-900">{totalCategoriasSalida}</p>
+                    <p className="mt-1 text-sm text-slate-600">Catégories avec au moins une sortie</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-[#E8E0FF] bg-white shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9C27B0]">Motifs utilisés</p>
+                    <p className="mt-2 text-3xl font-bold text-slate-900">{totalMotivosSalida}</p>
+                    <p className="mt-1 text-sm text-slate-600">Motifs distincts de sortie de stock</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div id="cuisine-output-category-chart" className="h-80 rounded-xl border border-slate-200 bg-white p-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={reporteSalidasPorCategoriaYMotivo} margin={{ top: 10, right: 20, left: 0, bottom: 18 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="categoria" tick={{ fontSize: 12, fill: '#666666' }} interval={0} angle={-15} textAnchor="end" height={55} />
+                    <YAxis tick={{ fontSize: 12, fill: '#666666' }} />
+                    <Tooltip
+                      formatter={(value: number) => [`${value.toFixed(2)}`, 'Quantité']}
+                      labelFormatter={(label) => `Catégorie : ${label}`}
+                    />
+                    <Legend />
+                    {motivosSalidaOrdenados.map((motivo, index) => (
+                      <Bar
+                        key={motivo}
+                        dataKey={motivo}
+                        stackId="motivos"
+                        name={motivo}
+                        radius={index === motivosSalidaOrdenados.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+                      >
+                        {reporteSalidasPorCategoriaYMotivo.map((entry) => (
+                          <Cell
+                            key={`${entry.categoria}-${motivo}`}
+                            fill={colorsSalida[index % colorsSalida.length]}
+                          />
+                        ))}
+                      </Bar>
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {reporteSalidasPorCategoria.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-slate-500">
+                  Aucune sortie de produit enregistrée pour le moment.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Catégorie</TableHead>
+                        <TableHead>Motif</TableHead>
+                        <TableHead>Quantité totale</TableHead>
+                        <TableHead>Mouvements</TableHead>
+                        <TableHead>Dernière sortie</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reporteSalidasPorCategoria.map((item) => (
+                        <TableRow key={`${item.categoria}-${item.motivo}-${item.unidad}`}>
+                          <TableCell>
+                            <Badge variant="outline" className="border-slate-300 text-slate-700">
+                              {item.categoria}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium text-slate-800">{item.motivo}</TableCell>
+                          <TableCell>
+                            <span className="font-semibold text-slate-900">
+                              {item.cantidadTotal.toFixed(2)} {item.unidad}
+                            </span>
+                          </TableCell>
+                          <TableCell>{item.movimientos}</TableCell>
+                          <TableCell>{new Date(item.ultimaFecha).toLocaleString('fr-FR')}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Modal Carrito de commande */}
       <Dialog open={modalCarritoOpen} onOpenChange={setModalCarritoOpen}>
