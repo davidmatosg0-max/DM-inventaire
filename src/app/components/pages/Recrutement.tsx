@@ -533,10 +533,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       return 'timesheets';
     }
 
-    if (typeof window !== 'undefined' && window.localStorage.getItem('banque_aliments_recruitment_entry_view') === 'timesheets') {
-      return 'timesheets';
-    }
-
     return 'candidatures';
   });
   const [timesheetDepartmentFilter, setTimesheetDepartmentFilter] = useState<TimesheetDepartmentFilter>('all');
@@ -568,16 +564,6 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       setMainView('timesheets');
     }
   }, [isPublicAccess, mainView]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    if (window.localStorage.getItem('banque_aliments_recruitment_entry_view') === 'timesheets') {
-      window.localStorage.removeItem('banque_aliments_recruitment_entry_view');
-    }
-  }, []);
 
   useEffect(() => {
     if (!isPublicAccess || typeof window === 'undefined') {

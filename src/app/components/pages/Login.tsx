@@ -27,6 +27,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   const [recordarme, setRecordarme] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [destination, setDestination] = useState<'dashboard' | 'recruitment'>('dashboard');
   const authRemotaActiva = isSupabaseAuthEnabled();
   const brandInitials = branding.systemName
     .split(/\s+/)
@@ -41,6 +42,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   }, []);
 
   const handleDeveloperAccess = () => {
+    setDestination('dashboard');
     setUsuario('David');
     setContrasena('Lettycia26');
     toast.success('🔧 Accès Développeur', { 
@@ -86,10 +88,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
     });
     
     setTimeout(() => {
-      const entryView = typeof window !== 'undefined'
-        ? window.localStorage.getItem('banque_aliments_recruitment_entry_view')
-        : null;
-      onLogin(entryView === 'timesheets' ? 'recrutement' : undefined);
+      onLogin(destination === 'recruitment' ? 'recrutement' : undefined);
     }, 500);
   };
 
@@ -369,9 +368,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
           <div className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <button
               onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.localStorage.setItem('banque_aliments_recruitment_entry_view', 'timesheets');
-                }
+                setDestination('recruitment');
                 toast.info('Sélectionnez vos identifiants pour ouvrir la feuille de temps des volontaires');
               }}
               className="mb-3 w-full rounded-[24px] border border-slate-200 bg-white/70 p-4 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/85 hover:shadow-xl"
