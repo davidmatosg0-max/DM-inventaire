@@ -114,6 +114,7 @@ type FlattenedCandidateTimesheet = FeuilleTiempoCandidato & {
 
 interface RecrutementProps {
   isPublicAccess?: boolean;
+  publicAccessMode?: 'key' | 'direct';
 }
 
 const diasSemana = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -509,7 +510,7 @@ const optimizarImagenCandidato = (source: string): Promise<string> => {
   });
 };
 
-export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
+export function Recrutement({ isPublicAccess = false, publicAccessMode = 'key' }: RecrutementProps) {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
   const tiposOrganismoRecrutement = getTiposOrganismoRecrutement(t);
@@ -528,13 +529,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   
   // 🎯 Estado para el panel de perfil detallado
   const [candidatoParaPerfil, setCandidatoParaPerfil] = useState<Candidate | null>(null);
-  const [mainView, setMainView] = useState<RecruitmentMainView>(() => {
-    if (isPublicAccess) {
-      return 'timesheets';
-    }
-
-    return 'candidatures';
-  });
+  const [mainView, setMainView] = useState<RecruitmentMainView>(isPublicAccess ? 'timesheets' : 'candidatures');
   const [timesheetDepartmentFilter, setTimesheetDepartmentFilter] = useState<TimesheetDepartmentFilter>('all');
   const [timesheetMonthFilter, setTimesheetMonthFilter] = useState('');
   const [reportYearFilter, setReportYearFilter] = useState('all');
@@ -728,13 +723,24 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     };
   }, [cargarOrganismosAcreditados]);
 
+  const resolveDirectAccessOrganism = useCallback(() => {
+    const foodBankOrganism = organismosAcreditados.find((organismo) => organismo.activo && isFoodBankOrganism(organismo));
+    if (foodBankOrganism) {
+      return foodBankOrganism;
+    }
+
+    return organismosAcreditados.find((organismo) => organismo.activo) || null;
+  }, [organismosAcreditados]);
+
   const publicAccessOrganismMatch = isPublicAccess && publicAccessSessionKey
     ? organismosAcreditados.find(
         (organismo) => normalizarClaveAcceso(organismo.claveAcceso || '') === publicAccessSessionKey
       ) || null
-    : organismosAcreditados.find(
-        (organismo) => organismo.activo && isFoodBankOrganism(organismo)
-      ) || null;
+    : isPublicAccess && publicAccessMode === 'direct'
+      ? resolveDirectAccessOrganism()
+      : organismosAcreditados.find(
+          (organismo) => organismo.activo && isFoodBankOrganism(organismo)
+        ) || null;
 
   const publicAccessOrganism = publicAccessOrganismMatch?.activo ? publicAccessOrganismMatch : null;
   const publicAccessOrganismId = publicAccessOrganism?.id || '';
@@ -744,12 +750,16 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
       return true;
     }
 
+    if (publicAccessMode === 'direct' && !publicAccessOrganismId) {
+      return true;
+    }
+
     if (!publicAccessOrganismId) {
       return false;
     }
 
     return (candidate.organismosAcreditadosIds || []).includes(publicAccessOrganismId);
-  }, [isPublicAccess, publicAccessOrganismId]);
+  }, [isPublicAccess, publicAccessMode, publicAccessOrganismId]);
 
   const handleAuthenticatePublicAccess = useCallback(() => {
     const claveNormalizada = normalizarClaveAcceso(publicAccessCodeInput);
@@ -2226,6 +2236,28 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   const renderPublicTimesheetsLayout = () => {
     if (!publicAccessOrganism) {
+      if (publicAccessMode === 'direct') {
+        return (
+          <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+            <CardContent className="p-4 sm:p-5">
+              <div className="mx-auto flex max-w-2xl flex-col gap-4">
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                    Accès direct
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Feuille de temps interne
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Accès ouvert pour le banc alimentaire. Sélectionnez un bénévole puis enregistrez l'entrée ou la sortie sans clé d'accès.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      }
+
       return (
         <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
           <CardContent className="p-4 sm:p-5">

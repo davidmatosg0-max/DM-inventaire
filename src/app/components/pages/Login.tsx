@@ -14,7 +14,7 @@ import { inicializarUsuarios } from '../../utils/usuarios';
 import { isSupabaseAuthEnabled } from '../../utils/supabaseClient';
 
 interface LoginProps {
-  onLogin: (page?: string) => void;
+  onLogin: () => void;
   onAccessPublic?: (page: string) => void;
 }
 
@@ -27,7 +27,6 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   const [recordarme, setRecordarme] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [destination, setDestination] = useState<'dashboard' | 'recruitment'>('dashboard');
   const authRemotaActiva = isSupabaseAuthEnabled();
   const brandInitials = branding.systemName
     .split(/\s+/)
@@ -42,7 +41,6 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
   }, []);
 
   const handleDeveloperAccess = () => {
-    setDestination('dashboard');
     setUsuario('David');
     setContrasena('Lettycia26');
     toast.success('🔧 Accès Développeur', { 
@@ -88,7 +86,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
     });
     
     setTimeout(() => {
-      onLogin(destination === 'recruitment' ? 'recrutement' : undefined);
+      onLogin();
     }, 500);
   };
 
@@ -367,42 +365,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
         {onAccessPublic && (
           <div className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <button
-              onClick={() => {
-                setDestination('recruitment');
-                toast.info('Sélectionnez vos identifiants pour ouvrir la feuille de temps des volontaires');
-              }}
-              className="mb-3 w-full rounded-[24px] border border-slate-200 bg-white/70 p-4 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/85 hover:shadow-xl"
-              style={{ boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.08)' }}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-4">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-lg shadow-md transition-transform duration-300"
-                    style={{ background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)` }}
-                  >
-                    <User size={22} className="text-white" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="mb-0.5 text-base font-bold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                      {t('login.internalTimesheetTitle') || 'Feuille de temps des volontaires'}
-                    </h3>
-                    <p className="text-xs font-medium text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      {t('login.internalTimesheetDescription') || 'Accès direct à la feuille de temps des volontaires'}
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-full transition-transform duration-300"
-                  style={{ backgroundColor: `${branding.primaryColor}15` }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style={{ color: branding.primaryColor }}>
-                    <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-            <button
-              onClick={() => onAccessPublic('recrutement-public')}
+              onClick={() => onAccessPublic('benevoles-public')}
               className="w-full backdrop-blur-xl bg-gradient-to-r from-white/70 to-white/50 rounded-[24px] shadow-lg p-4 border border-white/60 group hover:shadow-xl hover:from-white/80 hover:to-white/60 transition-all duration-300 transform hover:-translate-y-1"
               style={{
                 boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.08)',
@@ -429,10 +392,10 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                         color: '#333333' 
                       }}
                     >
-                      {t('login.volunteerAccessTitle')}
+                      Hoja de tiempo interna
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-600 font-medium" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      {t('login.volunteerAccessDescription')}
+                      Abrir la hoja de tiempo sin llave y registrar entradas de voluntarios.
                     </p>
                   </div>
                 </div>
@@ -471,7 +434,7 @@ export function Login({ onLogin, onAccessPublic }: LoginProps) {
                   }}
                 >
                   <Sparkles size={11} />
-                  {t('login.forVolunteers')}
+                  Acceso interno
                 </div>
               </div>
             </button>

@@ -327,10 +327,11 @@ function AppContent() {
 
   // Compatibilidad: la ruta pública heredada ahora usa el flujo de Recrutement
   if (currentPage === 'benevoles-public' || currentPage === 'recrutement-public') {
+    const publicAccessMode = currentPage === 'benevoles-public' ? 'direct' : 'key';
     return (
       <>
         <Suspense fallback={<PageLoadingState />}>
-          <Recrutement isPublicAccess={true} />
+          <Recrutement isPublicAccess={true} publicAccessMode={publicAccessMode} />
         </Suspense>
         <Toaster position="top-right" />
       </>
@@ -343,8 +344,8 @@ function AppContent() {
       <>
         <Suspense fallback={<PageLoadingState />}>
           <Login 
-            onLogin={(page) => {
-              setCurrentPage(page || 'dashboard');
+            onLogin={() => {
+              setCurrentPage('dashboard');
             }}
             onAccessPublic={(page) => {
               setCurrentPage(page);
