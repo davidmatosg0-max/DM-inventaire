@@ -5,7 +5,15 @@
 
 export type UnidadMedida = 'kg' | 'g' | 'L' | 'ml' | 'unité' | 'pièce';
 
-export type CategoriaReceta = 'plat-principal' | 'soupe' | 'dessert' | 'pain' | 'sauce' | 'conserve' | 'autre';
+export type CategoriaReceta =
+  | 'plat-principal'
+  | 'soupe'
+  | 'dessert'
+  | 'pain'
+  | 'sauce'
+  | 'conserve'
+  | 'autre'
+  | (string & {});
 
 export type EstadoTransformacion = 'planifiée' | 'en-cours' | 'terminée' | 'annulée';
 
@@ -100,6 +108,88 @@ export interface Transformacion {
 
 const RECETAS_STORAGE_KEY = 'recetas_cocina';
 const TRANSFORMACIONES_STORAGE_KEY = 'transformaciones_cocina';
+const CATEGORIAS_RECETAS_STORAGE_KEY = 'categorias_recetas_cocina';
+
+const CATEGORIAS_RECETA_BASE: CategoriaReceta[] = [
+  'plat-principal',
+  'soupe',
+  'dessert',
+  'pain',
+  'sauce',
+  'conserve',
+  'autre'
+];
+
+export function obtenerCategoriasRecetaBase(): CategoriaReceta[] {
+  return [...CATEGORIAS_RECETA_BASE];
+}
+
+export function obtenerCategoriasReceta(): CategoriaReceta[] {
+  try {
+    const data = localStorage.getItem(CATEGORIAS_RECETAS_STORAGE_KEY);
+    const personalizadas: string[] = data ? JSON.parse(data) : [];
+
+    const validas = personalizadas
+      .filter((cat): cat is string => typeof cat === 'string')
+      .map((cat) => cat.trim())
+      .filter(Boolean);
+
+    const categoriasEnRecetas = obtenerRecetas()
+      .map((r) => (r.categoria || '').trim())
+      .filter(Boolean);
+
+    return Array.from(new Set([...CATEGORIAS_RECETA_BASE, ...validas, ...categoriasEnRecetas])) as CategoriaReceta[];
+  } catch (error) {
+    console.error('Error al obtener categorías de receta:', error);
+    return [...CATEGORIAS_RECETA_BASE];
+  }
+}
+
+export function crearCategoriaReceta(nombre: string): CategoriaReceta | null {
+  const categoria = nombre.trim().toLowerCase().replace(/\s+/g, '-');
+  if (!categoria) {
+    return null;
+  }
+
+  const categoriasActuales = obtenerCategoriasReceta();
+  if (categoriasActuales.includes(categoria)) {
+    return categoria as CategoriaReceta;
+  }
+
+  const baseSet = new Set(CATEGORIAS_RECETA_BASE);
+  const personalizadas = categoriasActuales.filter((cat) => !baseSet.has(cat as CategoriaReceta));
+  const actualizadas = Array.from(new Set([...personalizadas, categoria]));
+
+  localStorage.setItem(CATEGORIAS_RECETAS_STORAGE_KEY, JSON.stringify(actualizadas));
+  return categoria as CategoriaReceta;
+}
+
+export function eliminarCategoriaReceta(categoria: string): boolean {
+  const categoriaNormalizada = categoria.trim();
+  if (!categoriaNormalizada) {
+    return false;
+  }
+
+  if (CATEGORIAS_RECETA_BASE.includes(categoriaNormalizada as CategoriaReceta)) {
+    return false;
+  }
+
+  const categoriaEnUso = obtenerRecetas().some((receta) => receta.categoria === categoriaNormalizada);
+  if (categoriaEnUso) {
+    return false;
+  }
+
+  try {
+    const data = localStorage.getItem(CATEGORIAS_RECETAS_STORAGE_KEY);
+    const personalizadas: string[] = data ? JSON.parse(data) : [];
+    const filtradas = personalizadas.filter((cat) => cat !== categoriaNormalizada);
+    localStorage.setItem(CATEGORIAS_RECETAS_STORAGE_KEY, JSON.stringify(filtradas));
+    return true;
+  } catch (error) {
+    console.error('Error al eliminar categoría de receta:', error);
+    return false;
+  }
+}
 
 // ========== RECETAS ==========
 

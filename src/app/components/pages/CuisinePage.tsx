@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../../hooks/useBranding';
 import {
@@ -25,6 +25,10 @@ import {
   actualizarReceta,
   eliminarReceta,
   duplicarReceta,
+  obtenerCategoriasReceta,
+  obtenerCategoriasRecetaBase,
+  crearCategoriaReceta,
+  eliminarCategoriaReceta,
   crearTransformacion,
   actualizarTransformacion,
   eliminarTransformacion,
@@ -35,19 +39,22 @@ import {
   type UnidadMedida,
   type EstadoTransformacion
 } from '../../utils/recetaStorage';
-import { obtenerProductos, type ProductoCreado } from '../../utils/productStorage';
+import { obtenerInventarioCocina, type ProductoInventarioCocina } from '../../utils/inventarioCocinaStorage';
 import { InventarioCocina } from '../cuisine/InventarioCocina';
 import { EtiquetaReceta } from '../cuisine/EtiquetaReceta';
 import { GestionContactosDepartamento } from '../departamentos/GestionContactosDepartamento';
 import { BoutonRetourHeader } from '../shared/BoutonRetour';
 import { formatQuantity } from '../../utils/formatUtils';
 import { ModulePageHeader, ModuleStatCard, ModuleStatsGrid } from '../shared/ModulePageHeader';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 interface CuisinePageProps {
   onNavigate?: (page: string) => void;
 }
 
 type VistaActual = 'dashboard' | 'recetas' | 'transformaciones' | 'produccion' | 'inventario' | 'estadisticas' | 'perdidas' | 'contactos';
+
+const REPORTES_COCINA_STORAGE_KEY = 'reportes_cocina_registrados';
 
 export function CuisinePage({ onNavigate }: CuisinePageProps) {
   const { t } = useTranslation();
@@ -57,7 +64,8 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [transformaciones, setTransformaciones] = useState<Transformacion[]>([]);
   const [estadisticas, setEstadisticas] = useState<any>(null);
-  const [productos, setProductos] = useState<ProductoCreado[]>([]);
+  const [productos, setProductos] = useState<ProductoInventarioCocina[]>([]);
+  const [categoriasRecetaDisponibles, setCategoriasRecetaDisponibles] = useState<CategoriaReceta[]>(() => obtenerCategoriasReceta());
   
   // Estados para modales
   const [modalRecetaAbierto, setModalRecetaAbierto] = useState(false);
@@ -71,7 +79,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
   
   // Búsqueda y filtros
   const [busqueda, setBusqueda] = useState('');
-  const [filtroCategoria, setFiltroCategoria] = useState<CategoriaReceta | 'todas'>('todas');
+  const [filtroCategoria, setFiltroCategoria] = useState<string>('todas');
   const [filtroEstado, setFiltroEstado] = useState<EstadoTransformacion | 'todos'>('todos');
 
   useEffect(() => {
@@ -82,7 +90,98 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     setRecetas(obtenerRecetas());
     setTransformaciones(obtenerTransformaciones());
     setEstadisticas(obtenerEstadisticasCocina());
-    setProductos(obtenerProductos());
+    setProductos(
+      obtenerInventarioCocina()
+        .filter((producto) => producto.stockActual > 0)
+        .sort((a, b) => a.productoNombre.localeCompare(b.productoNombre, 'fr', { sensitivity: 'base' }))
+    );
+    setCategoriasRecetaDisponibles(obtenerCategoriasReceta());
+  };
+
+  const formatearEtiquetaCategoria = (categoria: string): string =>
+    categoria
+      .split('-')
+      .filter(Boolean)
+      .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
+      .join(' ');
+
+  const generarResumenReporteCocina = (): string => {
+    const terminadas = transformaciones.filter((t) => t.estado === 'terminée');
+    const enCurso = transformaciones.filter((t) => t.estado === 'en-cours');
+    const planificadas = transformaciones.filter((t) => t.estado === 'planifiée');
+    const anuladas = transformaciones.filter((t) => t.estado === 'annulée');
+    const totalKg = terminadas.reduce((sum, t) =>
+      sum + t.productosGenerados.reduce((s, p) => s + (p.pesoTotal || 0), 0), 0
+    );
+
+    return [
+      `Date du rapport: ${new Date().toLocaleString('fr-FR')}`,
+      `Recettes totales: ${recetas.length}`,
+      `Transformations totales: ${transformaciones.length}`,
+      `Terminees: ${terminadas.length}`,
+      `En cours: ${enCurso.length}`,
+      `Planifiees: ${planificadas.length}`,
+      `Annulees: ${anuladas.length}`,
+      `Production totale: ${totalKg.toFixed(1)} kg`,
+      `Produits en inventaire cuisine: ${productos.length}`
+    ].join('\\n');
+  };
+
+  const registrarReporteCocina = () => {
+    const registro = {
+      id: Date.now().toString(),
+      fecha: new Date().toISOString(),
+      modulo: 'cuisine',
+      tipo: 'statistiques',
+      resumen: generarResumenReporteCocina()
+    };
+
+    try {
+      const data = localStorage.getItem(REPORTES_COCINA_STORAGE_KEY);
+      const actuales = data ? JSON.parse(data) : [];
+      const actualizados = [registro, ...(Array.isArray(actuales) ? actuales : [])].slice(0, 50);
+      localStorage.setItem(REPORTES_COCINA_STORAGE_KEY, JSON.stringify(actualizados));
+      toast.success('Rapport enregistre');
+    } catch (error) {
+      console.error('Erreur enregistrement rapport cuisine:', error);
+      toast.error('Impossible de sauvegarder le rapport');
+    }
+  };
+
+  const imprimerReporteCocina = () => {
+    const resumen = generarResumenReporteCocina();
+    const printWindow = window.open('', '_blank', 'width=900,height=900');
+    if (!printWindow) {
+      toast.error('Le navigateur a bloque la fenetre d\'impression');
+      return;
+    }
+
+    printWindow.document.write(`<!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8" />
+          <title>Rapport Cuisine</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #222; padding: 24px; }
+            h1 { font-size: 24px; margin-bottom: 8px; }
+            .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-top: 16px; }
+            pre { white-space: pre-wrap; font-family: inherit; margin: 0; }
+          </style>
+        </head>
+        <body>
+          <h1>Rapport Cuisine - Statistiques</h1>
+          <div class="card">
+            <pre>${resumen}</pre>
+          </div>
+        </body>
+      </html>`);
+
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   // Renderizar header común
@@ -124,15 +223,15 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       notas: ''
     });
 
-    const categorias: { value: CategoriaReceta; label: string }[] = [
-      { value: 'plat-principal', label: 'Plat Principal' },
-      { value: 'soupe', label: 'Soupe' },
-      { value: 'dessert', label: 'Dessert' },
-      { value: 'pain', label: 'Pain' },
-      { value: 'sauce', label: 'Sauce' },
-      { value: 'conserve', label: 'Conserve' },
-      { value: 'autre', label: 'Autre' }
-    ];
+    const [mostrarNuevaCategoria, setMostrarNuevaCategoria] = useState(false);
+    const [nuevaCategoria, setNuevaCategoria] = useState('');
+    const [categoriaParaSupprimer, setCategoriaParaSupprimer] = useState('');
+    const categoriasBase = new Set(obtenerCategoriasRecetaBase());
+    const usosPorCategoria = recetas.reduce<Record<string, number>>((acc, receta) => {
+      const key = receta.categoria || 'autre';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
 
     const unidades: UnidadMedida[] = ['kg', 'g', 'L', 'ml', 'unité', 'pièce'];
 
@@ -147,7 +246,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
       const ingrediente: IngredienteReceta = {
         productoId: producto.id,
-        productoNombre: producto.nombre,
+        productoNombre: producto.productoNombre,
         cantidad: nuevoIngrediente.cantidad,
         unidad: nuevoIngrediente.unidad,
         esOpcional: nuevoIngrediente.esOpcional,
@@ -176,6 +275,44 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
         ingredientes: formData.ingredientes.filter((_, i) => i !== index)
       });
       toast.success('Ingrédient supprimé');
+    };
+
+    const crearNuevaCategoria = () => {
+      const categoriaCreada = crearCategoriaReceta(nuevaCategoria);
+      if (!categoriaCreada) {
+        toast.error('Le nom de la catégorie est requis');
+        return;
+      }
+
+      setCategoriasRecetaDisponibles(obtenerCategoriasReceta());
+      setFormData({ ...formData, categoria: categoriaCreada });
+      setNuevaCategoria('');
+      setMostrarNuevaCategoria(false);
+      toast.success('Catégorie créée');
+    };
+
+    const supprimerCategorie = (categoria: string) => {
+      const cantidadEnUso = usosPorCategoria[categoria] || 0;
+      const categoriaEnUso = cantidadEnUso > 0;
+      if (categoriaEnUso) {
+        toast.error(`Cette catégorie est utilisée par ${cantidadEnUso} recette(s)`);
+        return;
+      }
+
+      if (!eliminarCategoriaReceta(categoria)) {
+        toast.error('Cette catégorie ne peut pas être supprimée');
+        return;
+      }
+
+      const categoriesActualizadas = obtenerCategoriasReceta();
+      setCategoriasRecetaDisponibles(categoriesActualizadas);
+      if (formData.categoria === categoria) {
+        setFormData({ ...formData, categoria: 'autre' });
+      }
+      if (categoriaParaSupprimer === categoria) {
+        setCategoriaParaSupprimer('');
+      }
+      toast.success('Catégorie supprimée');
     };
 
     const guardarReceta = () => {
@@ -271,10 +408,72 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                   onChange={(e) => setFormData({ ...formData, categoria: e.target.value as CategoriaReceta })}
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  {categorias.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  {categoriasRecetaDisponibles.map((cat) => (
+                    <option key={cat} value={cat}>{formatearEtiquetaCategoria(cat)}</option>
                   ))}
                 </select>
+
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMostrarNuevaCategoria((v) => !v)}
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Nouvelle catégorie
+                  </Button>
+                </div>
+
+                {mostrarNuevaCategoria && (
+                  <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                    <Input
+                      value={nuevaCategoria}
+                      onChange={(e) => setNuevaCategoria(e.target.value)}
+                      placeholder="Ex: salade-fraîche"
+                    />
+                    <Button
+                      type="button"
+                      onClick={crearNuevaCategoria}
+                      className="bg-[#4CAF50] hover:bg-[#45a049] text-white"
+                    >
+                      Créer
+                    </Button>
+                  </div>
+                )}
+
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+                  <select
+                    value={categoriaParaSupprimer}
+                    onChange={(e) => setCategoriaParaSupprimer(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="">Choisir une catégorie à supprimer</option>
+                    {categoriasRecetaDisponibles
+                      .filter((cat) => !categoriasBase.has(cat as CategoriaReceta))
+                      .map((cat) => {
+                        const cantidadEnUso = usosPorCategoria[cat] || 0;
+                        return (
+                          <option key={cat} value={cat} disabled={cantidadEnUso > 0}>
+                            {formatearEtiquetaCategoria(cat)}{cantidadEnUso > 0 ? ` (${cantidadEnUso} recette(s))` : ''}
+                          </option>
+                        );
+                      })}
+                  </select>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-[#DC3545] border-[#DC3545] hover:bg-[#DC354510]"
+                    disabled={!categoriaParaSupprimer || (usosPorCategoria[categoriaParaSupprimer] || 0) > 0}
+                    onClick={() => supprimerCategorie(categoriaParaSupprimer)}
+                  >
+                    Supprimer
+                  </Button>
+                </div>
+                <p className="text-xs text-[#666666] mt-1">
+                  Les catégories utilisées par des recettes sont désactivées dans la liste.
+                </p>
               </div>
 
               <div className="md:col-span-2">
@@ -347,7 +546,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                       >
                         <option value="">Sélectionner...</option>
                         {productos.map(prod => (
-                          <option key={prod.id} value={prod.id}>{prod.nombre}</option>
+                          <option key={prod.id} value={prod.id}>{prod.productoNombre} ({prod.stockActual} {prod.unidad})</option>
                         ))}
                       </select>
                     </div>
@@ -951,7 +1150,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                 <BookOpen className="w-6 h-6 text-[#4CAF50]" />
               </div>
               <h3 className="text-lg font-bold text-[#4CAF50]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Gestion des Recettes
+                Gestion des recettes
               </h3>
             </div>
             <p className="text-sm text-gray-700 mb-3">
@@ -971,7 +1170,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                 <ClipboardList className="w-6 h-6 text-[#FF6B35]" />
               </div>
               <h3 className="text-lg font-bold text-[#FF6B35]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Registre des Transformations
+                Registre des transformations
               </h3>
             </div>
             <p className="text-sm text-gray-700 mb-3">
@@ -991,7 +1190,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                 <Calendar className="w-6 h-6" style={{ color: branding.primaryColor }} />
               </div>
               <h3 className="text-lg font-bold" style={{ fontFamily: 'Montserrat, sans-serif', color: branding.primaryColor }}>
-                Planification Production
+                Planification de la production
               </h3>
             </div>
             <p className="text-sm text-gray-700 mb-3">
@@ -1011,7 +1210,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                 <Package className="w-6 h-6 text-[#9C27B0]" />
               </div>
               <h3 className="text-lg font-bold text-[#9C27B0]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Inventaire Cuisine</h3>
+                Inventaire de cuisine</h3>
             </div>
             <p className="text-sm text-gray-700 mb-3">
               Consulter les stocks disponibles pour la production.
@@ -1050,7 +1249,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                 <Users className="w-6 h-6 text-[#3B82F6]" />
               </div>
               <h3 className="text-lg font-bold text-[#3B82F6]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Gestion des Contacts
+                Gestion des contacts
               </h3>
             </div>
             <p className="text-sm text-gray-700 mb-3">
@@ -1091,9 +1290,9 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       <div className="p-6 space-y-6">
         <BoutonRetourHeader 
           onClick={() => setVistaActual('dashboard')} 
-          titre="Gestion des Recettes"
+          titre="Gestion des recettes"
         />
-        {renderHeader('Gestion des Recettes', <BookOpen className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#4CAF50')}
+        {renderHeader('Gestion des recettes', <BookOpen className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#4CAF50')}
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -1112,13 +1311,9 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
               className="px-3 py-2 border rounded-md"
             >
               <option value="todas">Toutes catégories</option>
-              <option value="plat-principal">Plat Principal</option>
-              <option value="soupe">Soupe</option>
-              <option value="dessert">Dessert</option>
-              <option value="pain">Pain</option>
-              <option value="sauce">Sauce</option>
-              <option value="conserve">Conserve</option>
-              <option value="autre">Autre</option>
+              {categoriasRecetaDisponibles.map((categoria) => (
+                <option key={categoria} value={categoria}>{formatearEtiquetaCategoria(categoria)}</option>
+              ))}
             </select>
           </div>
           <Button
@@ -1271,9 +1466,9 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       <div className="p-6 space-y-6">
         <BoutonRetourHeader 
           onClick={() => setVistaActual('dashboard')} 
-          titre="Registre des Transformations"
+          titre="Registre des transformations"
         />
-        {renderHeader('Registre des Transformations', <ClipboardList className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#FF6B35')}
+        {renderHeader('Registre des transformations', <ClipboardList className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#FF6B35')}
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -1612,9 +1807,9 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     <div className="p-6 space-y-6">
       <BoutonRetourHeader 
         onClick={() => setVistaActual('dashboard')} 
-        titre="Inventaire Cuisine"
+        titre="Inventaire de cuisine"
       />
-      {renderHeader('Inventaire Cuisine', <Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#9C27B0')}
+      {renderHeader('Inventaire de cuisine', <Package className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#9C27B0')}
       <InventarioCocina onProductoCreado={cargarDatos} />
     </div>
   );
@@ -1625,6 +1820,38 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       receta: receta.nombre,
       cantidad: transformaciones.filter(t => t.recetaId === receta.id && t.estado === 'terminée').length
     })).filter(r => r.cantidad > 0).sort((a, b) => b.cantidad - a.cantidad);
+
+    const transformacionesPorCategoria = Array.from(
+      transformaciones
+        .filter((t) => t.estado === 'terminée')
+        .reduce((mapa, t) => {
+          const receta = recetas.find((r) => r.id === t.recetaId);
+          const categoria = receta?.categoria || 'autre';
+          const etiquetasCategoria = {
+            'plat-principal': 'Plat principal',
+            soupe: 'Soupe',
+            dessert: 'Dessert',
+            pain: 'Pain',
+            sauce: 'Sauce',
+            conserve: 'Conserve',
+            autre: 'Autre',
+          };
+          const categoriaNormalizada = etiquetasCategoria[categoria] || categoria.replace('-', ' ');
+          const actual = mapa.get(categoriaNormalizada) || { categoria: categoriaNormalizada, cantidad: 0 };
+          actual.cantidad += 1;
+          mapa.set(categoriaNormalizada, actual);
+          return mapa;
+        }, new Map())
+    )
+      .map(([, value]) => value)
+      .sort((a, b) => b.cantidad - a.cantidad);
+
+    const transformacionesPorEstado = [
+      { estado: 'Terminées', valor: transformaciones.filter((t) => t.estado === 'terminée').length, color: '#4CAF50' },
+      { estado: 'En cours', valor: transformaciones.filter((t) => t.estado === 'en-cours').length, color: '#FFC107' },
+      { estado: 'Planifiées', valor: transformaciones.filter((t) => t.estado === 'planifiée').length, color: '#1E73BE' },
+      { estado: 'Annulées', valor: transformaciones.filter((t) => t.estado === 'annulée').length, color: '#DC3545' },
+    ].filter((entry) => entry.valor > 0);
 
     const produccionPorMes = Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1;
@@ -1649,11 +1876,26 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
           titre="Statistiques de Production"
         />
         {renderHeader('Statistiques de Production', <BarChart3 className="h-6 w-6 text-white sm:h-7 sm:w-7" />, '#C89200')}
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={imprimerReporteCocina} className="bg-[#4CAF50] hover:bg-[#45a049] text-white">
+                <Printer className="w-4 h-4 mr-2" />
+                Imprimer Rapport
+              </Button>
+              <Button onClick={registrarReporteCocina} variant="outline" className="border-[#1E73BE] text-[#1E73BE]">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer Rapport
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recettes les Plus Utilisées</CardTitle>
+              <CardTitle>Recettes les plus utilisées</CardTitle>
             </CardHeader>
             <CardContent>
               {transformacionesPorReceta.length > 0 ? (
@@ -1680,25 +1922,95 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Production par Mois</CardTitle>
+              <CardTitle>Production par mois</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {produccionPorMes.filter(m => parseInt(m.kg, 10) > 0).slice(-6).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-2">
-                    <span className="text-sm font-medium text-[#333333]">{item.mes}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-[#666666]">{item.transformaciones} trans.</span>
-                      <Badge variant="outline" className="text-[#9C27B0] border-[#9C27B0]">
-                        {item.kg} kg
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={produccionPorMes} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="mes" tick={{ fill: '#666666', fontSize: 12 }} />
+                    <YAxis yAxisId="left" tick={{ fill: '#666666', fontSize: 12 }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fill: '#666666', fontSize: 12 }} />
+                    <Tooltip
+                      labelFormatter={(label) => `Mois : ${label}`}
+                      formatter={(value: number | string, name: string) => [
+                        name === 'transformaciones' ? `${value} transformations` : `${value} kg`,
+                        name === 'transformaciones' ? 'Transformations' : 'Production',
+                      ]}
+                    />
+                    <Legend />
+                    <Line yAxisId="right" type="monotone" dataKey="transformaciones" name="Transformations" stroke="#1E73BE" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line yAxisId="left" type="monotone" dataKey="kg" name="Production (kg)" stroke="#9C27B0" strokeWidth={3} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Transformations par Catégorie</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {transformacionesPorCategoria.length > 0 ? (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={transformacionesPorCategoria} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="categoria" tick={{ fill: '#666666', fontSize: 12 }} />
+                    <YAxis tick={{ fill: '#666666', fontSize: 12 }} allowDecimals={false} />
+                    <Tooltip
+                      labelFormatter={(label) => `Catégorie : ${label}`}
+                      formatter={(value) => [value + ' transformations', 'Volume']}
+                    />
+                    <Bar dataKey="cantidad" name="Transformations" radius={[6, 6, 0, 0]} fill="#1E73BE" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-center text-[#666666] py-8">Aucune donnée disponible</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition des Transformations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {transformacionesPorEstado.length > 0 ? (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={transformacionesPorEstado}
+                      dataKey="valor"
+                      nameKey="estado"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={95}
+                      innerRadius={45}
+                      label={({ estado, percent }) => `${estado} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {transformacionesPorEstado.map((entry) => (
+                        <Cell key={entry.estado} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <Tooltip
+                      labelFormatter={(label) => `État : ${label}`}
+                      formatter={(value) => [value + ' transformations', 'Nombre']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-center text-[#666666] py-8">Aucune donnée disponible</p>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -1858,7 +2170,7 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     <div className="p-6 space-y-6">
       <BoutonRetourHeader 
         onClick={() => setVistaActual('dashboard')} 
-        titre="Gestion des Contacts"
+        titre="Gestion des contacts"
       />
       <GestionContactosDepartamento 
         departamentoId="3"
@@ -1953,3 +2265,10 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
     </div>
   );
 }
+
+
+
+
+
+
+
