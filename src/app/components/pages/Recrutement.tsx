@@ -2235,29 +2235,7 @@ export function Recrutement({ isPublicAccess = false, publicAccessMode = 'key' }
   };
 
   const renderPublicTimesheetsLayout = () => {
-    if (!publicAccessOrganism) {
-      if (publicAccessMode === 'direct') {
-        return (
-          <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
-            <CardContent className="p-4 sm:p-5">
-              <div className="mx-auto flex max-w-2xl flex-col gap-4">
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                    Accès direct
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    Feuille de temps interne
-                  </h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Accès ouvert pour le banc alimentaire. Sélectionnez un bénévole puis enregistrez l'entrée ou la sortie sans clé d'accès.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      }
-
+    if (!publicAccessOrganism && publicAccessMode !== 'direct') {
       return (
         <Card className="border-slate-200/90 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
           <CardContent className="p-4 sm:p-5">
@@ -2330,6 +2308,8 @@ export function Recrutement({ isPublicAccess = false, publicAccessMode = 'key' }
       .join('')
       .slice(0, 2)
       .toUpperCase() || 'BA';
+    const publicAccessDisplayName = publicAccessOrganism?.nombre || 'Banque alimentaire';
+    const publicAccessDisplayKey = publicAccessOrganism?.claveAcceso || 'Accès direct';
 
     return (
       <div className="grid grid-cols-1 gap-3 md:h-[412px] md:grid-cols-[minmax(292px,1.02fr)_minmax(330px,1.18fr)_minmax(248px,0.96fr)]">
@@ -2339,9 +2319,9 @@ export function Recrutement({ isPublicAccess = false, publicAccessMode = 'key' }
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
                 Organisme identifie
               </p>
-              <p className="mt-1 font-semibold">{publicAccessOrganism.nombre}</p>
+              <p className="mt-1 font-semibold">{publicAccessDisplayName}</p>
               <p className="mt-1 text-xs text-emerald-800">
-                Cle: {publicAccessOrganism.claveAcceso || publicAccessSessionKey}
+                Cle: {publicAccessDisplayKey}
               </p>
             </div>
 
