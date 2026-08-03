@@ -220,6 +220,40 @@ function normalizarCantidadOperacion(valor: unknown): number {
   return Number(numero.toFixed(4));
 }
 
+function generarCodigoProducto(
+  producto: Pick<ProductoCreado, 'nombre' | 'categoria' | 'codigo'>,
+  productosExistentes: ProductoCreado[] = []
+): string {
+  const codigoPropuesto = typeof producto.codigo === 'string' ? producto.codigo.trim() : '';
+  if (codigoPropuesto) {
+    return codigoPropuesto;
+  }
+
+  const textoBase = [producto.categoria, producto.nombre]
+    .filter((valor): valor is string => typeof valor === 'string')
+    .map(valor => valor.trim())
+    .filter(Boolean)
+    .join(' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '')
+    .toUpperCase();
+
+  const prefijo = textoBase.slice(0, 8) || 'PROD';
+  const sufijo = Date.now().toString().slice(-4);
+  const aleatorio = Math.random().toString(36).slice(2, 6).toUpperCase();
+
+  let codigo = `${prefijo}-${sufijo}${aleatorio}`;
+  let intento = 1;
+
+  while (productosExistentes.some(productoExistente => productoExistente.codigo === codigo)) {
+    codigo = `${prefijo}-${sufijo}${aleatorio}${intento}`;
+    intento += 1;
+  }
+
+  return codigo;
+}
+
 /**
  * Obtener todos los productos guardados
  */
@@ -276,7 +310,11 @@ export function guardarProducto(
     const productoConId: ProductoCreado = 'id' in producto 
       ? producto as ProductoCreado
       : { ...producto, id: Date.now().toString() } as ProductoCreado;
-    const productoNormalizado = aplicarTemperaturaProducto(normalizeStoredProduct(productoConId, standardLocations));
+    const productoConCodigo = {
+      ...productoConId,
+      codigo: generarCodigoProducto(productoConId, productos),
+    };
+    const productoNormalizado = aplicarTemperaturaProducto(normalizeStoredProduct(productoConCodigo, standardLocations));
 
     if (estrategiaDeduplicacion === 'inventario-canonico') {
       const claveProducto = construirClaveProductoInventario(productoNormalizado);

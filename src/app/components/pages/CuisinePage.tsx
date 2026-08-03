@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { QuantityInput, parseQuantityText } from '../ui/quantity-input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
@@ -65,6 +66,8 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
   const [transformacionEditando, setTransformacionEditando] = useState<Transformacion | null>(null);
   const [modalEtiquetaAbierto, setModalEtiquetaAbierto] = useState(false);
   const [recetaParaEtiquetar, setRecetaParaEtiquetar] = useState<Receta | null>(null);
+  const [modalRecetaDetalleAbierto, setModalRecetaDetalleAbierto] = useState(false);
+  const [recetaDetalleSeleccionada, setRecetaDetalleSeleccionada] = useState<Receta | null>(null);
   
   // Búsqueda y filtros
   const [busqueda, setBusqueda] = useState('');
@@ -356,8 +359,9 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                         onChangeText={(value) => setNuevoIngrediente({ ...nuevoIngrediente, cantidad: parseQuantityText(value) || 0 })}
                         step={0.01}
                         min={0}
-                        className="text-sm"
-                        buttonClassName="h-9 w-9"
+                        showButtons={false}
+                        className="text-sm w-full text-left"
+                        wrapperClassName="w-full"
                       />
                     </div>
 
@@ -430,6 +434,9 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                     onChangeText={(value) => setFormData({ ...formData, productoCantidad: parseQuantityText(value, false) || 0 })}
                     min={0}
                     step={1}
+                    showButtons={false}
+                    className="w-full text-left"
+                    wrapperClassName="w-full"
                   />
                 </div>
 
@@ -527,6 +534,79 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
   };
 
   // ==================== MODAL TRANSFORMACION ====================
+  const abrirDetalleReceta = (transformacion: Transformacion) => {
+    const receta = recetas.find((item) => item.id === transformacion.recetaId) || null;
+    setRecetaDetalleSeleccionada(receta);
+    setModalRecetaDetalleAbierto(true);
+  };
+
+  const imprimirRecetaDetalle = () => {
+    if (!recetaDetalleSeleccionada) return;
+
+    const receta = recetaDetalleSeleccionada;
+    const ingredientesHtml = receta.ingredientes
+      .map((ingrediente, index) => {
+        const notas = ingrediente.notas ? ` <span class="text-xs text-[#666666]">(${ingrediente.notas})</span>` : '';
+        return `<li style="margin-bottom: 8px;"><strong>${index + 1}.</strong> ${ingrediente.productoNombre} — ${formatQuantity(ingrediente.cantidad)} ${ingrediente.unidad}${notas}</li>`;
+      })
+      .join('');
+
+    const instruccionesHtml = receta.instrucciones
+      .split(/\n+/)
+      .filter((linea) => linea.trim())
+      .map((linea, index) => `<li style="margin-bottom: 8px;">${index + 1}. ${linea.trim()}</li>`)
+      .join('');
+
+    const printWindow = window.open('', '_blank', 'width=900,height=900');
+    if (!printWindow) {
+      toast.error('Votre navigateur a bloqué la fenêtre d’impression');
+      return;
+    }
+
+    printWindow.document.write(`<!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8" />
+          <title>${receta.nombre}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #222; padding: 24px; }
+            h1 { font-size: 24px; margin-bottom: 8px; }
+            h2 { font-size: 16px; margin-top: 24px; margin-bottom: 8px; }
+            .muted { color: #666; font-size: 13px; }
+            .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+            ul { padding-left: 20px; }
+            li { margin-bottom: 6px; }
+          </style>
+        </head>
+        <body>
+          <h1>${receta.nombre}</h1>
+          <p class="muted">${receta.codigo} • ${receta.categoria} • ${receta.tiempoPreparacion} min</p>
+          <div class="card">
+            <h2>Produit élaboré</h2>
+            <p><strong>${receta.productoElaborado.nombre}</strong> — ${formatQuantity(receta.productoElaborado.cantidad)} ${receta.productoElaborado.unidad}</p>
+            <p class="muted">Poids unitaire: ${formatQuantity(receta.productoElaborado.pesoUnitario)} kg • Conservation: ${receta.productoElaborado.diasConservacion} jours</p>
+          </div>
+          <div class="card">
+            <h2>Ingrédients</h2>
+            <ul>${ingredientesHtml}</ul>
+          </div>
+          <div class="card">
+            <h2>Instructions</h2>
+            <ol>${instruccionesHtml}</ol>
+          </div>
+          ${receta.notasAdicionales ? `<div class="card"><h2>Notes</h2><p>${receta.notasAdicionales}</p></div>` : ''}
+        </body>
+      </html>`);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
   const ModalTransformacion = () => {
     const recetasActivas = recetas.filter(r => r.activa);
     const [recetaSeleccionada, setRecetaSeleccionada] = useState<Receta | null>(
@@ -1343,6 +1423,14 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => abrirDetalleReceta(trans)}
+                      >
+                        <BookOpen className="w-4 h-4 mr-1" />
+                        Voir / Imprimer
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setTransformacionEditando(trans);
                           setModalTransformacionAbierto(true);
@@ -1784,6 +1872,79 @@ export function CuisinePage({ onNavigate }: CuisinePageProps) {
       {renderVistaActual()}
       <ModalReceta />
       <ModalTransformacion />
+      <Dialog open={modalRecetaDetalleAbierto} onOpenChange={setModalRecetaDetalleAbierto}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="receta-detalle-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[#4CAF50]" />
+              {recetaDetalleSeleccionada?.nombre || 'Détails de la recette'}
+            </DialogTitle>
+            <DialogDescription id="receta-detalle-description">
+              Consultez les ingrédients et les instructions de cette recette avant l’impression.
+            </DialogDescription>
+          </DialogHeader>
+
+          {recetaDetalleSeleccionada ? (
+            <div className="space-y-5 py-2">
+              <div className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4 space-y-2">
+                <p className="text-sm text-[#666666]">{recetaDetalleSeleccionada.codigo}</p>
+                <p className="font-semibold text-[#333333]">Produit élaboré: {recetaDetalleSeleccionada.productoElaborado.nombre}</p>
+                <p className="text-sm text-[#666666]">
+                  {formatQuantity(recetaDetalleSeleccionada.productoElaborado.cantidad)} {recetaDetalleSeleccionada.productoElaborado.unidad} • {recetaDetalleSeleccionada.tiempoPreparacion} min
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-[#E5E7EB] p-4">
+                  <h3 className="font-semibold text-[#333333] mb-3">Ingrédients</h3>
+                  <ul className="space-y-2 text-sm text-[#666666]">
+                    {recetaDetalleSeleccionada.ingredientes.map((ingrediente, index) => (
+                      <li key={`${ingrediente.productoId}-${index}`} className="flex items-start gap-2">
+                        <span className="font-medium text-[#333333]">•</span>
+                        <span>
+                          {ingrediente.productoNombre} — {formatQuantity(ingrediente.cantidad)} {ingrediente.unidad}
+                          {ingrediente.notas ? ` (${ingrediente.notas})` : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-lg border border-[#E5E7EB] p-4">
+                  <h3 className="font-semibold text-[#333333] mb-3">Instructions</h3>
+                  <ol className="space-y-2 text-sm text-[#666666] list-decimal list-inside">
+                    {recetaDetalleSeleccionada.instrucciones
+                      .split(/\n+/)
+                      .filter((linea) => linea.trim())
+                      .map((linea, index) => (
+                        <li key={`${linea}-${index}`}>{linea.trim()}</li>
+                      ))}
+                  </ol>
+                </div>
+              </div>
+
+              {recetaDetalleSeleccionada.notasAdicionales && (
+                <div className="rounded-lg border border-[#E5E7EB] p-4">
+                  <h3 className="font-semibold text-[#333333] mb-3">Notes</h3>
+                  <p className="text-sm text-[#666666] whitespace-pre-wrap">{recetaDetalleSeleccionada.notasAdicionales}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="py-4 text-sm text-[#666666]">Aucune recette sélectionnée.</p>
+          )}
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setModalRecetaDetalleAbierto(false)}>
+              Fermer
+            </Button>
+            <Button onClick={imprimirRecetaDetalle} className="bg-[#4CAF50] hover:bg-[#45a049] text-white">
+              <Printer className="w-4 h-4 mr-2" />
+              Imprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <EtiquetaReceta
         open={modalEtiquetaAbierto}
         onOpenChange={setModalEtiquetaAbierto}

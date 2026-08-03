@@ -187,6 +187,16 @@ const mapeoIconos: IconoMap[] = [
   { keywords: ['curry'], icono: '🍛' },
   { keywords: ['sushi'], icono: '🍱' },
   { keywords: ['ramen', 'fideos', 'nouilles', 'noodles'], icono: '🍜' },
+  { keywords: ['sopa', 'soupe', 'guiso', 'estofado', 'ragout', 'ragoût', 'stew', 'broth'], icono: '🍲' },
+  { keywords: ['horneado', 'baked', 'gratinado', 'gratin', 'lasaña', 'lasagna', 'pastel de carne'], icono: '🫕' },
+  { keywords: ['puré', 'pure', 'compota', 'mousse', 'crema', 'crème', 'pudding', 'flan'], icono: '🍮' },
+  { keywords: ['congelado', 'frozen', 'ready to serve', 'listo para servir'], icono: '🧊' },
+  { keywords: ['transformado', 'elaborado', 'preparado', 'meal prep', 'batch cooking'], icono: '🍱' },
+  { keywords: ['cocido', 'cooked', 'salteado', 'sauté', 'asado', 'roasted', 'bandeja'], icono: '🥘' },
+  { keywords: ['conserva preparada', 'ready meal', 'comida lista', 'plato listo'], icono: '🥫' },
+  { keywords: ['brocheta', 'brochette', 'skewer'], icono: '🍢' },
+  { keywords: ['dumpling', 'empanadilla', 'gyoza'], icono: '🥟' },
+  { keywords: ['falafel', 'houmous', 'hummus', 'trempette'], icono: '🧆' },
   
   // Categorías generales
   { keywords: ['fruta', 'fruit'], icono: '🍎' },

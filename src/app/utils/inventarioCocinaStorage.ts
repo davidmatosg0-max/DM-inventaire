@@ -42,6 +42,8 @@ export interface ProductoInventarioCocina {
 
 const INVENTARIO_COCINA_KEY = 'inventario_cocina';
 const MOVIMIENTOS_COCINA_KEY = 'movimientos_cocina';
+const CATEGORIAS_PRODUCTOS_COCINA_KEY = 'categorias_productos_cocina';
+const CATEGORIA_PRODUCTO_POR_DEFECTO = 'Autre';
 
 export interface MovimientoStock {
   id: string;
@@ -54,6 +56,8 @@ export interface MovimientoStock {
   stockNuevo: number;
   motivo: string;
   referencia?: string;
+  recetaId?: string;
+  recetaNombre?: string;
   usuario: string;
   fecha: string;
   notas?: string;
@@ -79,6 +83,42 @@ export function obtenerProductosAlertaBaja(): ProductoInventarioCocina[] {
 export function obtenerProductosPorZona(zona: string): ProductoInventarioCocina[] {
   const inventario = obtenerInventarioCocina();
   return inventario.filter(producto => producto.zona === zona);
+}
+
+export function obtenerCategoriasProductosCocina(): string[] {
+  try {
+    const data = localStorage.getItem(CATEGORIAS_PRODUCTOS_COCINA_KEY);
+    if (!data) {
+      return [CATEGORIA_PRODUCTO_POR_DEFECTO];
+    }
+
+    const categorias = JSON.parse(data) as string[];
+    const categoriasLimpias = categorias
+      .filter((categoria): categoria is string => typeof categoria === 'string')
+      .map(categoria => categoria.trim())
+      .filter(Boolean);
+
+    return categoriasLimpias.length > 0 ? categoriasLimpias : [CATEGORIA_PRODUCTO_POR_DEFECTO];
+  } catch (error) {
+    console.error('Error al obtener categorías de productos de cocina:', error);
+    return [CATEGORIA_PRODUCTO_POR_DEFECTO];
+  }
+}
+
+export function crearCategoriaProductoCocina(nombre: string): string | null {
+  const categoria = nombre.trim();
+  if (!categoria) {
+    return null;
+  }
+
+  const categorias = obtenerCategoriasProductosCocina();
+  const categoriasActualizadas = Array.from(new Set([...categorias.filter(c => c !== CATEGORIA_PRODUCTO_POR_DEFECTO), categoria]));
+  const categoriasOrdenadas = categorias.includes(CATEGORIA_PRODUCTO_POR_DEFECTO)
+    ? [CATEGORIA_PRODUCTO_POR_DEFECTO, ...categoriasActualizadas.filter(c => c !== CATEGORIA_PRODUCTO_POR_DEFECTO)]
+    : categoriasActualizadas;
+
+  localStorage.setItem(CATEGORIAS_PRODUCTOS_COCINA_KEY, JSON.stringify(categoriasOrdenadas));
+  return categoria;
 }
 
 export function crearProductoInventarioCocina(
@@ -137,7 +177,10 @@ export function consumirProducto(
   cantidad: number,
   motivo: string,
   referencia: string,
-  usuario: string
+  usuario: string,
+  recetaId?: string,
+  recetaNombre?: string,
+  notas?: string
 ): boolean {
   const inventario = obtenerInventarioCocina();
   const index = inventario.findIndex(p => p.id === productoId);
@@ -170,8 +213,11 @@ export function consumirProducto(
     stockNuevo: producto.stockActual,
     motivo,
     referencia,
+    recetaId,
+    recetaNombre,
     usuario,
-    fecha: new Date().toISOString()
+    fecha: new Date().toISOString(),
+    notas
   });
   
   guardarInventario(inventario);

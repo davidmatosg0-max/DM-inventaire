@@ -208,6 +208,19 @@ export const ICONOS_CATEGORIAS: IconoAlimento[] = [
   { emoji: '🍱', nombre: 'Comida Preparada', categoria: 'Comidas Preparadas' },
   { emoji: '🍜', nombre: 'Nouilles/Ramen', categoria: 'Comidas Preparadas' },
   { emoji: '🍛', nombre: 'Curry/Plat en sauce', categoria: 'Comidas Preparadas' },
+  { emoji: '🫕', nombre: 'Gratin/Fondue', categoria: 'Comidas Preparadas' },
+  { emoji: '🥘', nombre: 'Paella/Ragoût', categoria: 'Comidas Preparadas' },
+  { emoji: '🥙', nombre: 'Kebab/Falafel', categoria: 'Comidas Preparadas' },
+  { emoji: '🥪', nombre: 'Sandwich préparé', categoria: 'Comidas Preparadas' },
+  { emoji: '🍢', nombre: 'Brochettes', categoria: 'Comidas Preparadas' },
+  { emoji: '🥟', nombre: 'Dumplings', categoria: 'Comidas Preparadas' },
+  { emoji: '🧆', nombre: 'Falafel', categoria: 'Comidas Preparadas' },
+  { emoji: '🍣', nombre: 'Sushi', categoria: 'Comidas Preparadas' },
+  { emoji: '🍮', nombre: 'Crème/Pudding', categoria: 'Comidas Preparadas' },
+  { emoji: '🥧', nombre: 'Tarte préparée', categoria: 'Comidas Preparadas' },
+  { emoji: '🍰', nombre: 'Gâteau préparé', categoria: 'Comidas Preparadas' },
+  { emoji: '🧊', nombre: 'Produit prêt à servir congelé', categoria: 'Comidas Preparadas' },
+  { emoji: '🥫', nombre: 'Produit cuisiné en conserve', categoria: 'Comidas Preparadas' },
   
   // Snacks
   { emoji: '🥜', nombre: 'Nueces/Maní', categoria: 'Snacks' },
@@ -317,7 +330,12 @@ export const FAMILIAS_OPERATIVAS_ICONOS_ALIMENTARIOS: FamiliaOperativaIconos[] =
   {
     id: 'op-pret-a-manger',
     label: 'Prêt à consommer',
-    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍔', '🍣', '🥙'],
+    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍔', '🍣', '🥙', '🫕', '🥘', '🥟', '🧆', '🍢', '🥧', '🍰'],
+  },
+  {
+    id: 'op-transformados',
+    label: 'Transformados',
+    iconos: ['🫕', '🥘', '🍲', '🍛', '🍜', '🍱', '🥫', '🧊', '🥟', '🧆', '🍢', '🍮', '🥧', '🍰', '🥪'],
   },
   {
     id: 'op-boissons',
@@ -416,7 +434,7 @@ export const ICONOS_SECCIONES_ALIMENTARIAS: SeccionIconos[] = [
     id: 'plats-prepares-collations',
     labelKey: 'configuration.preparedMealsSnacksIcons',
     commonLabelKey: 'common.iconCategories.preparedSnacks',
-    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍿', '🍟', '🍘', '🍝', '🍔', '🍣', '🥙'],
+    iconos: ['🥗', '🍲', '🌮', '🌯', '🍕', '🍱', '🥪', '🍜', '🍛', '🍿', '🍟', '🍘', '🍝', '🍔', '🍣', '🥙', '🫕', '🥘', '🥟', '🧆', '🍢', '🥧', '🍰'],
   },
   {
     id: 'generiques-alimentaires',
@@ -529,7 +547,7 @@ export const ICONOS_PRINCIPALES = [
   // Alimentarios
   '🍚', '🍝', '🥫', '🥛', '🥬', '🫒', '🍞', '🥩', '🐟', '🧀', 
   '🥚', '🍎', '🥕', '🥔', '🌽', '🥤', '☕', '🍯', '🧈', '🥗', 
-  '🌮', '📦', '🛒', '🍽️', '🍲', '🥘',
+  '🌮', '📦', '🛒', '🍽️', '🍲', '🥘', '🫕', '🥟', '🧆', '🍢', '🍮', '🥧',
   // No Alimentarios - Higiene
   '🧴', '🧼', '🪥', '🧻', '🪒', '💊', '🩹',
   // No Alimentarios - Limpieza

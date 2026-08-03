@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Package, Search, Filter, Edit, Trash2, AlertCircle, TrendingDown,
-  MapPin, Calendar, Eye, Plus, Scale, ArrowUpDown, RefreshCw, FileText
+  Package, Search, Edit, Trash2, AlertCircle, TrendingDown,
+  Plus, Scale, RefreshCw, ShoppingCart, Eye,
+  Refrigerator, Snowflake, Sun, Leaf, HelpCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -14,22 +15,25 @@ import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { IconSelector } from '../ui/IconSelector';
 import { toast } from 'sonner';
 import {
   obtenerInventarioCocina,
-  obtenerProductosAlertaBaja,
-  obtenerProductosPorZona,
-  actualizarProductoInventario,
   ajustarStock,
   registrarMerma,
   eliminarProductoInventario,
   obtenerMovimientosPorProducto,
   obtenerEstadisticasInventarioCocina,
   crearProductoInventarioCocina,
+  obtenerCategoriasProductosCocina,
+  crearCategoriaProductoCocina,
+  consumirProducto,
   type ProductoInventarioCocina,
   type MovimientoStock
 } from '../../utils/inventarioCocinaStorage';
 import { guardarProducto } from '../../utils/productStorage';
+import { generarIconoProducto, sugerirIconos } from '../../utils/iconoUtils';
+import { obtenerRecetas, type Receta } from '../../utils/recetaStorage';
 
 interface InventarioCocinaProps {
   onProductoCreado?: () => void;
@@ -49,12 +53,14 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   
   // Estados de modales
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoInventarioCocina | null>(null);
-  const [modalEditarOpen, setModalEditarOpen] = useState(false);
   const [modalAjustarOpen, setModalAjustarOpen] = useState(false);
   const [modalMermaOpen, setModalMermaOpen] = useState(false);
   const [modalMovimientosOpen, setModalMovimientosOpen] = useState(false);
   const [modalCrearOpen, setModalCrearOpen] = useState(false);
   const [movimientos, setMovimientos] = useState<MovimientoStock[]>([]);
+  const [categoriasProductos, setCategoriasProductos] = useState<string[]>(() => obtenerCategoriasProductosCocina());
+  const [mostrarCampoNuevaCategoria, setMostrarCampoNuevaCategoria] = useState(false);
+  const [nuevaCategoria, setNuevaCategoria] = useState('');
    
   // Estados de formularios
   const [nuevoStock, setNuevoStock] = useState(0);
@@ -62,7 +68,6 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
     nombre: '',
     codigo: '',
     categoria: 'Autre',
-    subcategoria: '',
     unidad: 'kg' as string,
     stockActual: 0,
     stockMinimo: 0,
@@ -74,6 +79,19 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   const [cantidadMerma, setCantidadMerma] = useState(0);
   const [motivoMerma, setMotivoMerma] = useState('');
   const [notasMerma, setNotasMerma] = useState('');
+  const [productosSeleccionados, setProductosSeleccionados] = useState<string[]>([]);
+  const [carritoComanda, setCarritoComanda] = useState<Array<{
+    productoId: string;
+    productoNombre: string;
+    productoCodigo: string;
+    unidad: string;
+    stockActual: number;
+    cantidad: number;
+  }>>([]);
+  const [modalCarritoOpen, setModalCarritoOpen] = useState(false);
+  const [motivoCarrito, setMotivoCarrito] = useState('Utilisation en recette');
+  const [recetaCarritoId, setRecetaCarritoId] = useState('');
+  const [notasCarrito, setNotasCarrito] = useState('');
 
   useEffect(() => {
     cargarDatos();
@@ -83,6 +101,8 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
     aplicarFiltros();
   }, [inventario, busqueda, filtroZona, filtroAlerta, ordenamiento]);
 
+  const recetasDisponibles: Receta[] = obtenerRecetas().filter(receta => receta.activa);
+
   const cargarDatos = () => {
     const inv = obtenerInventarioCocina();
     setInventario(inv);
@@ -90,11 +110,11 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   };
 
   const resetearFormularioProducto = () => {
+    const categoriaPorDefecto = categoriasProductos[0] || 'Autre';
     setNuevoProductoForm({
       nombre: '',
       codigo: '',
-      categoria: 'Autre',
-      subcategoria: '',
+      categoria: categoriaPorDefecto,
       unidad: 'kg',
       stockActual: 0,
       stockMinimo: 0,
@@ -102,6 +122,22 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
       icono: '📦',
       notas: ''
     });
+    setMostrarCampoNuevaCategoria(false);
+    setNuevaCategoria('');
+  };
+
+  const agregarCategoriaProducto = () => {
+    const categoria = crearCategoriaProductoCocina(nuevaCategoria);
+    if (!categoria) {
+      toast.error('Le nom de la catégorie est requis');
+      return;
+    }
+
+    setCategoriasProductos(obtenerCategoriasProductosCocina());
+    setNuevoProductoForm(prev => ({ ...prev, categoria }));
+    setNuevaCategoria('');
+    setMostrarCampoNuevaCategoria(false);
+    toast.success('Catégorie créée');
   };
 
   const guardarNuevoProducto = () => {
@@ -111,13 +147,14 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
     }
 
     const codigo = nuevoProductoForm.codigo.trim() || `${nuevoProductoForm.nombre.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'PRODUIT'}-${Date.now().toString().slice(-4)}`;
+    const icono = nuevoProductoForm.icono.trim() || generarIconoProducto(nuevoProductoForm.nombre, nuevoProductoForm.categoria);
     const productoCreado = guardarProducto({
       codigo,
       nombre: nuevoProductoForm.nombre.trim(),
       categoria: nuevoProductoForm.categoria.trim() || 'Autre',
-      subcategoria: nuevoProductoForm.subcategoria.trim(),
+      subcategoria: '',
       unidad: nuevoProductoForm.unidad,
-      icono: nuevoProductoForm.icono || '📦',
+      icono,
       peso: 0,
       pesoUnitario: 0,
       stockActual: nuevoProductoForm.stockActual,
@@ -128,7 +165,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
       esPRS: false,
       activo: true,
       fechaCreacion: new Date().toISOString(),
-    }, { estrategiaDeduplicacion: 'inventario-canonico' });
+    }, { estrategiaDeduplicacion: 'id' });
 
     crearProductoInventarioCocina({
       productoId: productoCreado.id,
@@ -136,7 +173,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
       productoCodigo: productoCreado.codigo,
       categoria: productoCreado.categoria || 'Autre',
       subcategoria: productoCreado.subcategoria || '',
-      icono: productoCreado.icono || '📦',
+    icono: '📦',
       stockActual: nuevoProductoForm.stockActual,
       unidad: productoCreado.unidad || nuevoProductoForm.unidad,
       peso: productoCreado.pesoUnitario ?? productoCreado.peso ?? 0,
@@ -158,7 +195,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   const aplicarFiltros = () => {
     let resultado = [...inventario];
 
-    // Filtro de búsqueda
+    // Filtro de bùsqueda
     if (busqueda.trim()) {
       const busquedaLower = busqueda.toLowerCase();
       resultado = resultado.filter(p =>
@@ -195,11 +232,6 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
     setInventarioFiltrado(resultado);
   };
 
-  const handleEditarProducto = (producto: ProductoInventarioCocina) => {
-    setProductoSeleccionado(producto);
-    setModalEditarOpen(true);
-  };
-
   const handleAjustarStock = (producto: ProductoInventarioCocina) => {
     setProductoSeleccionado(producto);
     setNuevoStock(producto.stockActual);
@@ -220,6 +252,106 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
     const movs = obtenerMovimientosPorProducto(producto.id);
     setMovimientos(movs);
     setModalMovimientosOpen(true);
+  };
+
+  const toggleSeleccionProducto = (productoId: string) => {
+    setProductosSeleccionados(prev =>
+      prev.includes(productoId)
+        ? prev.filter(id => id !== productoId)
+        : [...prev, productoId]
+    );
+  };
+
+  const agregarSeleccionadosAlCarrito = () => {
+    if (productosSeleccionados.length === 0) {
+      toast.error('Sélectionnez au moins un produit');
+      return;
+    }
+
+    const productosAgregados = productosSeleccionados
+      .map(id => inventario.find(producto => producto.id === id))
+      .filter((producto): producto is ProductoInventarioCocina => Boolean(producto));
+
+    setCarritoComanda(prev => {
+      const actualizado = [...prev];
+      productosAgregados.forEach(producto => {
+        const existente = actualizado.find(item => item.productoId === producto.id);
+        if (existente) {
+          existente.cantidad = Math.max(existente.cantidad, 1);
+          return;
+        }
+        actualizado.push({
+          productoId: producto.id,
+          productoNombre: producto.productoNombre,
+          productoCodigo: producto.productoCodigo,
+          unidad: producto.unidad,
+          stockActual: producto.stockActual,
+          cantidad: 1
+        });
+      });
+      return actualizado;
+    });
+
+    setProductosSeleccionados([]);
+    setModalCarritoOpen(true);
+    toast.success('Produits ajoutés au panier de commande');
+  };
+
+  const actualizarCantidadCarrito = (productoId: string, cantidad: number) => {
+    setCarritoComanda(prev => prev.map(item =>
+      item.productoId === productoId ? { ...item, cantidad: Math.max(0, cantidad) } : item
+    ).filter(item => item.cantidad > 0));
+  };
+
+  const eliminarDelCarrito = (productoId: string) => {
+    setCarritoComanda(prev => prev.filter(item => item.productoId !== productoId));
+  };
+
+  const crearSalidaCarrito = () => {
+    if (carritoComanda.length === 0) {
+      toast.error('Le panier est vide');
+      return;
+    }
+
+    const recetaSeleccionada = recetasDisponibles.find(receta => receta.id === recetaCarritoId);
+    const recetaNombre = recetaSeleccionada?.nombre || '';
+
+    const inventarioActual = obtenerInventarioCocina();
+    const productosSinStock = carritoComanda.filter(item => {
+      const producto = inventarioActual.find(prod => prod.id === item.productoId);
+      return !producto || producto.stockActual < item.cantidad;
+    });
+
+    if (productosSinStock.length > 0) {
+      toast.error('Un ou plusieurs produits n\'ont pas assez de stock');
+      return;
+    }
+
+    const resultados = carritoComanda.map(item => {
+      const producto = inventarioActual.find(prod => prod.id === item.productoId);
+      return producto ? consumirProducto(
+        item.productoId,
+        item.cantidad,
+        motivoCarrito.trim() || 'Utilisation en recette',
+        recetaNombre ? `Utilisation en recette: ${recetaNombre}` : 'Sortie de stock',
+        'Chef Cuisine',
+        recetaSeleccionada?.id,
+        recetaNombre,
+        notasCarrito
+      ) : false;
+    });
+
+    if (resultados.every(Boolean)) {
+      toast.success(`${carritoComanda.length} produits retirés du stock`);
+      setCarritoComanda([]);
+      setProductosSeleccionados([]);
+      setRecetaCarritoId('');
+      setMotivoCarrito('Utilisation en recette');
+      setNotasCarrito('');
+      cargarDatos();
+    } else {
+      toast.error('Erreur lors de la sortie du panier');
+    }
   };
 
   const guardarAjuste = () => {
@@ -296,17 +428,43 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
   };
 
   const getZonaBadge = (zona?: string) => {
-    const colores: Record<string, string> = {
-      'refrigerado': 'bg-blue-500',
-      'congelado': 'bg-cyan-500',
-      'seco': 'bg-amber-500',
-      'fresco': 'bg-green-500'
+    const config: Record<string, { icono: React.ReactNode; label: string; clases: string }> = {
+      'refrigerado': {
+        icono: <Refrigerator className="w-4 h-4" />,
+        label: 'Réfrigéré',
+        clases: 'bg-blue-50 text-blue-600 border-blue-200'
+      },
+      'congelado': {
+        icono: <Snowflake className="w-4 h-4" />,
+        label: 'Congelé',
+        clases: 'bg-cyan-50 text-cyan-600 border-cyan-200'
+      },
+      'seco': {
+        icono: <Sun className="w-4 h-4" />,
+        label: 'Sec',
+        clases: 'bg-amber-50 text-amber-600 border-amber-200'
+      },
+      'fresco': {
+        icono: <Leaf className="w-4 h-4" />,
+        label: 'Frais',
+        clases: 'bg-green-50 text-green-600 border-green-200'
+      }
+    };
+
+    const conf = config[zona || ''] || {
+      icono: <HelpCircle className="w-4 h-4" />,
+      label: 'Non défini',
+      clases: 'bg-gray-50 text-gray-400 border-gray-200'
     };
 
     return (
-      <Badge className={`${colores[zona || '']} text-white`}>
-        {zona || 'Non défini'}
-      </Badge>
+      <span
+        title={conf.label}
+        aria-label={conf.label}
+        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border shadow-sm ${conf.clases}`}
+      >
+        {conf.icono}
+      </span>
     );
   };
 
@@ -381,7 +539,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
         </Card>
       </div>
 
-      {/* Filtros y búsqueda */}
+      {/* Filtros y bùsqueda */}
       <Card>
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -447,6 +605,20 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
             >
               <Plus className="w-4 h-4 mr-2" />
               Nouveau produit
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (productosSeleccionados.length > 0) {
+                  agregarSeleccionadosAlCarrito();
+                } else {
+                  setModalCarritoOpen(true);
+                }
+              }}
+              disabled={carritoComanda.length === 0 && productosSeleccionados.length === 0}
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              {carritoComanda.length > 0 ? `Voir le panier (${carritoComanda.length})` : `Ajouter au panier (${productosSeleccionados.length})`}
             </Button>
             <Button variant="outline" onClick={cargarDatos}>
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -523,7 +695,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                       <TableCell>
                         <p className="text-sm">{producto.origenEnvio || 'Direct'}</p>
                       </TableCell>
-                      <TableCell>
+                                            <TableCell>
                         <p className="text-sm">
                           {new Date(producto.fechaRecepcion).toLocaleDateString('fr-FR')}
                         </p>
@@ -531,36 +703,60 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end">
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleVerMovimientos(producto)}
-                            title="Voir historique"
+                            title={productosSeleccionados.includes(producto.id) ? 'Retirer du panier' : 'Ajouter au panier'}
+                            aria-label={productosSeleccionados.includes(producto.id) ? 'Retirer du panier' : 'Ajouter au panier'}
+                            className={`relative ${productosSeleccionados.includes(producto.id) ? 'text-[#1E73BE]' : 'text-slate-500'}`}
+                            onClick={() => toggleSeleccionProducto(producto.id)}
                           >
-                            <Eye className="w-4 h-4" />
+                            <ShoppingCart className="w-4 h-4" />
+                            {productosSeleccionados.includes(producto.id) && (
+                              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#4CAF50] border border-white" />
+                            )}
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
+                            title="Modifier"
+                            aria-label="Modifier"
+                            className="text-slate-500 hover:text-[#1E73BE]"
                             onClick={() => handleAjustarStock(producto)}
-                            title="Ajuster stock"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
+                            title="Enregistrer une perte"
+                            aria-label="Enregistrer une perte"
+                            className="text-slate-500 hover:text-orange-600"
                             onClick={() => handleRegistrarMerma(producto)}
-                            title="Enregistrer perte"
-                            className="text-orange-600"
                           >
                             <TrendingDown className="w-4 h-4" />
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleEliminar(producto)}
+                            title="Voir l'historique"
+                            aria-label="Voir l'historique"
+                            className="text-slate-500 hover:text-[#1E73BE]"
+                            onClick={() => handleVerMovimientos(producto)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
                             title="Supprimer"
-                            className="text-red-600"
+                            aria-label="Supprimer"
+                            className="text-slate-500 hover:text-[#DC3545]"
+                            onClick={() => handleEliminar(producto)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -574,6 +770,117 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal Carrito de commande */}
+      <Dialog open={modalCarritoOpen} onOpenChange={setModalCarritoOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" aria-describedby="carrito-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <ShoppingCart className="w-5 h-5 text-[#1E73BE]" />
+              Panier de sortie de stock
+            </DialogTitle>
+            <DialogDescription id="carrito-description">
+              Consultez, ajustez et confirmez la sortie groupée des produits sélectionnés.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="motivoCarrito">Motif *</Label>
+                  <Select value={motivoCarrito} onValueChange={setMotivoCarrito}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez un motif" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Utilisation en recette">Utilisation en recette</SelectItem>
+                      <SelectItem value="Préparation">Préparation</SelectItem>
+                      <SelectItem value="Service">Service</SelectItem>
+                      <SelectItem value="Autre">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="recetaCarrito">Recette associée (optionnel)</Label>
+                  <Select value={recetaCarritoId || 'none'} onValueChange={(value) => setRecetaCarritoId(value === 'none' ? '' : value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez une recette" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucune recette</SelectItem>
+                      {recetasDisponibles.map((receta) => (
+                        <SelectItem key={receta.id} value={receta.id}>{receta.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label htmlFor="notasCarrito">Notes (optionnel)</Label>
+                <Textarea
+                  id="notasCarrito"
+                  value={notasCarrito}
+                  onChange={(e) => setNotasCarrito(e.target.value)}
+                  placeholder="Détails supplémentaires..."
+                  className="min-h-[90px]"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Produits du panier</p>
+                  <p className="text-xs text-slate-500">{carritoComanda.length} article(s) prêt(s) à sortir</p>
+                </div>
+                <Badge className="bg-[#1E73BE] text-white">{carritoComanda.length} produits</Badge>
+              </div>
+
+              <div className="space-y-3">
+                {carritoComanda.map((item) => (
+                  <div key={item.productoId} className="rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800">{item.productoNombre}</p>
+                        <p className="text-xs text-slate-500">{item.productoCodigo}</p>
+                        <p className="text-xs text-slate-500 mt-1">Stock disponible: {item.stockActual} {item.unidad}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                        <div className="w-full sm:w-[140px]">
+                          <Label className="mb-1 block text-xs">Quantité</Label>
+                          <QuantityInput
+                            value={item.cantidad}
+                            onChangeText={(value) => actualizarCantidadCarrito(item.productoId, parseQuantityText(value) || 0)}
+                            min={0}
+                            step={0.01}
+                            showButtons={false}
+                            className="w-full"
+                          />
+                        </div>
+                        <span className="text-sm text-slate-600">{item.unidad}</span>
+                        <Button variant="ghost" size="sm" onClick={() => eliminarDelCarrito(item.productoId)} className="text-red-600">
+                          Retirer
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-4">
+              <Button onClick={crearSalidaCarrito} className="bg-[#1E73BE] text-white">
+                Créer la sortie du panier
+              </Button>
+              <Button variant="outline" onClick={() => setCarritoComanda([])}>
+                Vider le panier
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal Crear Producto */}
       <Dialog open={modalCrearOpen} onOpenChange={(open) => {
@@ -614,24 +921,43 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <Label htmlFor="nuevoProductoCategoria">Catégorie</Label>
-              <Input
-                id="nuevoProductoCategoria"
-                value={nuevoProductoForm.categoria}
-                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, categoria: e.target.value })}
-                placeholder="Ex: Légumes"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="nuevoProductoSubcategoria">Sous-catégorie</Label>
-              <Input
-                id="nuevoProductoSubcategoria"
-                value={nuevoProductoForm.subcategoria}
-                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, subcategoria: e.target.value })}
-                placeholder="Optionnel"
-              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  id="nuevoProductoCategoria"
+                  value={nuevoProductoForm.categoria}
+                  onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, categoria: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  {categoriasProductos.map((categoria) => (
+                    <option key={categoria} value={categoria}>
+                      {categoria}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMostrarCampoNuevaCategoria((prev) => !prev)}
+                  className="whitespace-nowrap"
+                >
+                  {mostrarCampoNuevaCategoria ? 'Annuler' : 'Nouvelle catégorie'}
+                </Button>
+              </div>
+              {mostrarCampoNuevaCategoria && (
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={nuevaCategoria}
+                    onChange={(e) => setNuevaCategoria(e.target.value)}
+                    placeholder="Nom de la catégorie"
+                  />
+                  <Button type="button" onClick={agregarCategoriaProducto} className="bg-[#4CAF50] hover:bg-[#45a049] text-white">
+                    Créer
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div>
@@ -659,6 +985,9 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                 onChangeText={(value) => setNuevoProductoForm({ ...nuevoProductoForm, stockActual: parseQuantityText(value) || 0 })}
                 min={0}
                 step={0.01}
+                showButtons={false}
+                className="w-full text-left"
+                wrapperClassName="w-full"
               />
             </div>
 
@@ -670,6 +999,9 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                 onChangeText={(value) => setNuevoProductoForm({ ...nuevoProductoForm, stockMinimo: parseQuantityText(value) || 0 })}
                 min={0}
                 step={0.01}
+                showButtons={false}
+                className="w-full text-left"
+                wrapperClassName="w-full"
               />
             </div>
 
@@ -690,13 +1022,21 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
             </div>
 
             <div>
-              <Label htmlFor="nuevoProductoIcono">Icône</Label>
-              <Input
-                id="nuevoProductoIcono"
-                value={nuevoProductoForm.icono}
-                onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, icono: e.target.value })}
-                placeholder="📦"
-              />
+              <Label>Icône</Label>
+              <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+                <IconSelector
+                  value={nuevoProductoForm.icono}
+                  onChange={(icono) => setNuevoProductoForm({ ...nuevoProductoForm, icono })}
+                  label="Icône alimentaire"
+                  contextoNombre={`${nuevoProductoForm.nombre} ${nuevoProductoForm.categoria}`}
+                  iconosRecomendados={sugerirIconos(`${nuevoProductoForm.nombre} ${nuevoProductoForm.categoria}`)}
+                  gridCols={6}
+                  maxHeight="max-h-48"
+                />
+              </div>
+              <p className="mt-2 text-xs text-[#666666]">
+                Choisissez un icône pour les produits frais, préparés ou transformés.
+              </p>
             </div>
 
             <div className="md:col-span-2">
@@ -792,7 +1132,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
               {productoSeleccionado?.productoNombre} - {productoSeleccionado?.productoCodigo}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg border-2 border-orange-200">
               <Label className="text-sm text-gray-600">Stock disponible</Label>
@@ -864,7 +1204,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
               {productoSeleccionado?.productoNombre} - Stock actuel: {productoSeleccionado?.stockActual} {productoSeleccionado?.unidad}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-3">
             {movimientos.length === 0 ? (
               <p className="text-center text-gray-600 py-8">Aucun mouvement enregistré</p>
@@ -895,6 +1235,11 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                         <p className="font-bold">{mov.stockNuevo}</p>
                       </div>
                     </div>
+                    {mov.recetaNombre && (
+                      <p className="text-sm text-blue-700 mt-2">
+                        Associé à la recette: <span className="font-semibold">{mov.recetaNombre}</span>
+                      </p>
+                    )}
                     {mov.notas && (
                       <p className="text-sm text-gray-700 mt-2 italic">{mov.notas}</p>
                     )}
