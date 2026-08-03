@@ -331,7 +331,7 @@ function AppContent() {
     return (
       <>
         <Suspense fallback={<PageLoadingState />}>
-          <Recrutement isPublicAccess={true} publicAccessMode={publicAccessMode} />
+          <Recrutement isPublicAccess={true} publicAccessMode={publicAccessMode} onNavigate={setCurrentPage} />
         </Suspense>
         <Toaster position="top-right" />
       </>

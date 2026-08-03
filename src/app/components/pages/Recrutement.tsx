@@ -115,6 +115,7 @@ type FlattenedCandidateTimesheet = FeuilleTiempoCandidato & {
 interface RecrutementProps {
   isPublicAccess?: boolean;
   publicAccessMode?: 'key' | 'direct';
+  onNavigate?: (page: string) => void;
 }
 
 const diasSemana = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -510,7 +511,7 @@ const optimizarImagenCandidato = (source: string): Promise<string> => {
   });
 };
 
-export function Recrutement({ isPublicAccess = false, publicAccessMode = 'key' }: RecrutementProps) {
+export function Recrutement({ isPublicAccess = false, publicAccessMode = 'key', onNavigate }: RecrutementProps) {
   const { t, i18n } = useTranslation();
   const branding = useBranding();
   const tiposOrganismoRecrutement = getTiposOrganismoRecrutement(t);
@@ -3683,11 +3684,7 @@ export function Recrutement({ isPublicAccess = false, publicAccessMode = 'key' }
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      if (typeof window !== 'undefined') {
-                        window.location.href = window.location.pathname;
-                      }
-                    }}
+                    onClick={() => onNavigate ? onNavigate('dashboard') : undefined}
                     style={{ fontFamily: 'Montserrat, sans-serif' }}
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
