@@ -343,8 +343,8 @@ function AppContent() {
       <>
         <Suspense fallback={<PageLoadingState />}>
           <Login 
-            onLogin={() => {
-              setCurrentPage('dashboard');
+            onLogin={(page) => {
+              setCurrentPage(page || 'dashboard');
             }}
             onAccessPublic={(page) => {
               setCurrentPage(page);
