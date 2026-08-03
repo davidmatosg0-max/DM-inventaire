@@ -276,6 +276,36 @@ const getCurrentLocalTime = () => {
 
 const getCurrentTimestamp = () => new Date().toISOString();
 
+const normalizeSearchText = (value: string) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const isFoodBankOrganism = (organismo?: Partial<OrganismoRecrutement> | null) => {
+  if (!organismo) {
+    return false;
+  }
+
+  const normalizedText = normalizeSearchText([
+    organismo.tipo,
+    organismo.nombre,
+    organismo.responsable,
+  ].filter(Boolean).join(' '));
+
+  return (
+    normalizedText.includes('food bank') ||
+    normalizedText.includes('foodbank') ||
+    normalizedText.includes('banque alimentaire') ||
+    normalizedText.includes('banco alimentario') ||
+    normalizedText.includes('banco de alimentos') ||
+    normalizedText.includes('despensa popular') ||
+    normalizedText.includes('reseau alimentaire') ||
+    normalizedText.includes('red alimentaria')
+  );
+};
+
 const formatCorrectionTimestamp = (timestamp: string) => {
   const date = new Date(timestamp);
   const year = date.getFullYear();
@@ -696,7 +726,9 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
     ? organismosAcreditados.find(
         (organismo) => normalizarClaveAcceso(organismo.claveAcceso || '') === publicAccessSessionKey
       ) || null
-    : null;
+    : organismosAcreditados.find(
+        (organismo) => organismo.activo && isFoodBankOrganism(organismo)
+      ) || null;
 
   const publicAccessOrganism = publicAccessOrganismMatch?.activo ? publicAccessOrganismMatch : null;
   const publicAccessOrganismId = publicAccessOrganism?.id || '';
@@ -1387,13 +1419,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   const handleCopyRemoteTimesheetLinkForOrganism = async (organismo: OrganismoRecrutement) => {
     const organismoKey = normalizarClaveAcceso(organismo.claveAcceso || '');
+    const allowDirectAccess = isFoodBankOrganism(organismo);
 
-    if (!organismoKey) {
+    if (!allowDirectAccess && !organismoKey) {
       toast.error('Cet organisme ne dispose pas encore de clé d\'accès.');
       return;
     }
 
-    const personalizedUrl = buildOrganismRemoteTimesheetUrl(organismoKey);
+    const personalizedUrl = buildOrganismRemoteTimesheetUrl(allowDirectAccess ? '' : organismoKey);
 
     try {
       await navigator.clipboard.writeText(personalizedUrl);
@@ -1409,13 +1442,14 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
 
   const handleOpenRemoteTimesheetForOrganism = (organismo: OrganismoRecrutement) => {
     const organismoKey = normalizarClaveAcceso(organismo.claveAcceso || '');
+    const allowDirectAccess = isFoodBankOrganism(organismo);
 
-    if (!organismoKey) {
+    if (!allowDirectAccess && !organismoKey) {
       toast.error('Cet organisme ne dispose pas encore de clé d\'accès.');
       return;
     }
 
-    window.open(buildOrganismRemoteTimesheetUrl(organismoKey), '_blank', 'noopener,noreferrer');
+    window.open(buildOrganismRemoteTimesheetUrl(allowDirectAccess ? '' : organismoKey), '_blank', 'noopener,noreferrer');
   };
 
   const handleResetRemoteAccessKeyForOrganism = () => {
@@ -1441,9 +1475,12 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
   };
 
   const selectedRecruitmentOrganismAccessKey = normalizarClaveAcceso(organismoRecrutementSeleccionado?.claveAcceso || '');
-  const selectedRecruitmentOrganismRemoteUrl = selectedRecruitmentOrganismAccessKey
-    ? buildOrganismRemoteTimesheetUrl(selectedRecruitmentOrganismAccessKey)
-    : '';
+  const selectedRecruitmentOrganismAllowsDirectAccess = isFoodBankOrganism(organismoRecrutementSeleccionado);
+  const selectedRecruitmentOrganismRemoteUrl = selectedRecruitmentOrganismAllowsDirectAccess
+    ? buildOrganismRemoteTimesheetUrl('')
+    : selectedRecruitmentOrganismAccessKey
+      ? buildOrganismRemoteTimesheetUrl(selectedRecruitmentOrganismAccessKey)
+      : '';
 
   const buildTimesheetCorrectionHistory = (
     originalTimesheet: FeuilleTiempoCandidato,
@@ -4968,7 +5005,7 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                     <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Accès distant feuille de temps</p>
                                     <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                       <span className="rounded-md bg-white px-2 py-1 font-mono text-[11px] text-slate-700 break-all">
-                                        {organismoAccessKey || 'Clé non disponible'}
+                                        {organismoAccessKey || (isFoodBankOrganism(organismo) ? 'Accès direct' : 'Clé non disponible')}
                                       </span>
                                       <div className="flex gap-2">
                                         <Button
@@ -4982,8 +5019,8 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                             borderColor: `${cardColor}30`
                                           }}
                                           onClick={() => handleCopyRemoteTimesheetLinkForOrganism(organismo)}
-                                          disabled={!organismoAccessKey}
-                                          title={!organismoAccessKey ? 'Clé d\'accès indisponible' : 'Copier le lien personnalisé'}
+                                          disabled={!organismoAccessKey && !isFoodBankOrganism(organismo)}
+                                          title={!organismoAccessKey && !isFoodBankOrganism(organismo) ? 'Clé d\'accès indisponible' : 'Copier le lien personnalisé'}
                                         >
                                           <Copy className="h-3.5 w-3.5 sm:mr-1.5" />
                                           <span className="hidden sm:inline">Copier</span>
@@ -4999,8 +5036,8 @@ export function Recrutement({ isPublicAccess = false }: RecrutementProps) {
                                             borderColor: `${cardColor}30`
                                           }}
                                           onClick={() => handleOpenRemoteTimesheetForOrganism(organismo)}
-                                          disabled={!organismoAccessKey}
-                                          title={!organismoAccessKey ? 'Clé d\'accès indisponible' : 'Ouvrir le lien personnalisé'}
+                                          disabled={!organismoAccessKey && !isFoodBankOrganism(organismo)}
+                                          title={!organismoAccessKey && !isFoodBankOrganism(organismo) ? 'Clé d\'accès indisponible' : 'Ouvrir le lien personnalisé'}
                                         >
                                           <ExternalLink className="h-3.5 w-3.5 sm:mr-1.5" />
                                           <span className="hidden sm:inline">Ouvrir</span>
