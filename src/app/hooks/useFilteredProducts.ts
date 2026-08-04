@@ -12,28 +12,62 @@ import type { ProductoCreado } from '../utils/productStorage';
 
 export interface FilterState {
   searchTerm: string;
+  searchLote: string;
+  searchUbicacion: string;
   selectedCategories: string[];
-  selectedZonas: string[];
-  sortBy: 'nombre' | 'categoria' | 'stock' | 'fecha';
+  sortBy: 'nombre' | 'categoria' | 'stock' | 'fecha' | 'valor';
   sortOrder: 'asc' | 'desc';
 }
 
 const DEFAULT_FILTER_STATE: FilterState = {
   searchTerm: '',
+  searchLote: '',
+  searchUbicacion: '',
   selectedCategories: [],
-  selectedZonas: [],
   sortBy: 'nombre',
   sortOrder: 'asc',
 };
 
+export interface UseFilteredProductsOptions {
+  getCategoryLabel?: (producto: ProductoCreado) => string;
+  matchesSearch?: (producto: ProductoCreado, searchTerm: string) => boolean;
+  matchesLot?: (producto: ProductoCreado, searchLote: string) => boolean;
+  matchesLocation?: (producto: ProductoCreado, searchUbicacion: string) => boolean;
+  onlyWithStock?: boolean;
+  customSorters?: Partial<Record<FilterState['sortBy'], (a: ProductoCreado, b: ProductoCreado) => number>>;
+}
+
 /**
  * Hook para filtrar y ordenar una lista de productos con memoización
  */
-export function useFilteredProducts(productos: ProductoCreado[], initialFilters?: Partial<FilterState>) {
+export function useFilteredProducts(
+  productos: ProductoCreado[],
+  initialFilters?: Partial<FilterState>,
+  options: UseFilteredProductsOptions = {}
+) {
   // ✅ PERFORMANCE: Combinar estado relacionado en un solo objeto
   const [filters, setFilters] = useState<FilterState>({
     ...DEFAULT_FILTER_STATE,
     ...initialFilters,
+  });
+
+  const getCategoryLabel = options.getCategoryLabel || ((producto: ProductoCreado) => producto.categoria || '');
+  const matchesSearch = options.matchesSearch || ((producto: ProductoCreado, searchTerm: string) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      producto.nombre.toLowerCase().includes(searchLower) ||
+      producto.codigo?.toLowerCase().includes(searchLower) ||
+      producto.categoria?.toLowerCase().includes(searchLower)
+    );
+  });
+  const matchesLot = options.matchesLot || ((producto: ProductoCreado, searchLote: string) => {
+    const lote = (producto.lote || '').toLowerCase();
+    return lote.includes(searchLote.toLowerCase());
+  });
+  const matchesLocation = options.matchesLocation || ((producto: ProductoCreado, searchUbicacion: string) => {
+    const ubicacion = (producto.ubicacion || '').trim().toLowerCase();
+    const normalizedQuery = searchUbicacion.trim().toLowerCase();
+    return ubicacion === normalizedQuery;
   });
 
   // ✅ PERFORMANCE: Memoizar lista filtrada
@@ -43,27 +77,36 @@ export function useFilteredProducts(productos: ProductoCreado[], initialFilters?
 
     // Filtrar por búsqueda
     if (filters.searchTerm.trim()) {
-      const searchLower = filters.searchTerm.toLowerCase();
-      result = result.filter(
-        p =>
-          p.nombre.toLowerCase().includes(searchLower) ||
-          p.codigo?.toLowerCase().includes(searchLower) ||
-          p.categoria?.toLowerCase().includes(searchLower)
-      );
+      result = result.filter((producto) => matchesSearch(producto, filters.searchTerm));
+    }
+
+    // Filtrar por lote
+    if (filters.searchLote.trim()) {
+      result = result.filter((producto) => matchesLot(producto, filters.searchLote));
+    }
+
+    // Filtrar por ubicación
+    if (filters.searchUbicacion.trim()) {
+      result = result.filter((producto) => matchesLocation(producto, filters.searchUbicacion));
     }
 
     // Filtrar por categorías
     if (filters.selectedCategories.length > 0) {
-      result = result.filter(p => filters.selectedCategories.includes(p.categoria));
+      result = result.filter((producto) => filters.selectedCategories.includes(getCategoryLabel(producto)));
     }
 
-    // Filtrar por zonas
-    if (filters.selectedZonas.length > 0) {
-      result = result.filter(p => filters.selectedZonas.includes(p.ubicacion));
+    if (options.onlyWithStock) {
+      result = result.filter((producto) => (producto.stockActual || 0) > 0);
     }
 
     // Ordenar
     result.sort((a, b) => {
+      const customSorter = options.customSorters?.[filters.sortBy];
+      if (customSorter) {
+        const customResult = customSorter(a, b);
+        return filters.sortOrder === 'asc' ? customResult : -customResult;
+      }
+
       let compareResult = 0;
 
       switch (filters.sortBy) {
@@ -71,7 +114,7 @@ export function useFilteredProducts(productos: ProductoCreado[], initialFilters?
           compareResult = a.nombre.localeCompare(b.nombre);
           break;
         case 'categoria':
-          compareResult = (a.categoria || '').localeCompare(b.categoria || '');
+          compareResult = getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr-CA');
           break;
         case 'stock':
           compareResult = (a.stockActual || 0) - (b.stockActual || 0);
@@ -79,25 +122,32 @@ export function useFilteredProducts(productos: ProductoCreado[], initialFilters?
         case 'fecha':
           compareResult = new Date(a.fechaCreacion).getTime() - new Date(b.fechaCreacion).getTime();
           break;
+        case 'valor':
+          compareResult = ((a.valorTotal || a.valorUnitario || 0) - (b.valorTotal || b.valorUnitario || 0));
+          break;
       }
 
       return filters.sortOrder === 'asc' ? compareResult : -compareResult;
     });
 
     return result;
-  }, [productos, filters]); // Dependencias explícitas
+  }, [productos, filters, getCategoryLabel, matchesLot, matchesLocation, matchesSearch, options.onlyWithStock, options.customSorters]); // Dependencias explícitas
 
   // ✅ PERFORMANCE: Memoizar callbacks para pasar a componentes hijos
   const handleSearchChange = useCallback((searchTerm: string) => {
     setFilters(prev => ({ ...prev, searchTerm }));
   }, []);
 
-  const handleCategoriesChange = useCallback((categories: string[]) => {
-    setFilters(prev => ({ ...prev, selectedCategories: categories }));
+  const handleLotChange = useCallback((searchLote: string) => {
+    setFilters(prev => ({ ...prev, searchLote }));
   }, []);
 
-  const handleZonasChange = useCallback((zonas: string[]) => {
-    setFilters(prev => ({ ...prev, selectedZonas: zonas }));
+  const handleLocationChange = useCallback((searchUbicacion: string) => {
+    setFilters(prev => ({ ...prev, searchUbicacion }));
+  }, []);
+
+  const handleCategoriesChange = useCallback((categories: string[]) => {
+    setFilters(prev => ({ ...prev, selectedCategories: categories }));
   }, []);
 
   const handleSortChange = useCallback((sortBy: FilterState['sortBy'], sortOrder?: FilterState['sortOrder']) => {
@@ -117,8 +167,9 @@ export function useFilteredProducts(productos: ProductoCreado[], initialFilters?
     filters,
     setFilters,
     handleSearchChange,
+    handleLotChange,
+    handleLocationChange,
     handleCategoriesChange,
-    handleZonasChange,
     handleSortChange,
     resetFilters,
   };

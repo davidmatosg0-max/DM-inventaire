@@ -58,6 +58,7 @@ import type { Producto, ProductoCreado, HistorialEntrada, ProductoConversion, Fo
 import { filterByThreeLettersMultiple } from '../../utils/searchUtils';
 import { formatLargeNumber, formatMoney, formatQuantity } from '../../utils/formatUtils';
 import { loadLazyNamedModule } from '../../utils/lazyImportRecovery';
+import { useFilteredProducts } from '../../hooks/useFilteredProducts';
 import {
   guardarConversion,
   revertirConversion,
@@ -356,10 +357,6 @@ export function Inventario() {
             ? 'إدخال جديد'
             : 'Registrer Entrée';
   const [activeTab, setActiveTab] = useState('productos');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchLote, setSearchLote] = useState('');
-  const [searchUbicacion, setSearchUbicacion] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [vistaMode, setVistaMode] = useState<'grid' | 'list'>('list');
   const {
     isCompactViewport: isCompactInventoryViewport,
@@ -394,7 +391,6 @@ export function Inventario() {
   const [carritoOpen, setCarritoOpen] = useState(false);
   const [dialogListaDistribuidosOpen, setDialogListaDistribuidosOpen] = useState(false);
   const [ultimaDistribucionGrupoCreada, setUltimaDistribucionGrupoCreada] = useState<UltimaDistribucionGrupoResumen | null>(() => cargarUltimaDistribucionGrupo());
-  const [sortBy, setSortBy] = useState<'nombre' | 'stock' | 'categoria' | 'valor'>('nombre');
   
   // Estado para forzar actualización de productos sin recargar página
   const [refreshKey, setRefreshKey] = useState(0);
@@ -838,12 +834,12 @@ export function Inventario() {
     return buildLocationSections(zonasUbicacionConfiguradas, ubicacionesEscaneables);
   }, [zonasUbicacionConfiguradas, ubicacionesEscaneables]);
 
-  const getCategoriaLabel = (categoria: string) => categoriasInfo[categoria]?.label || categoria;
+  const getCategoriaLabel = React.useCallback((categoria: string) => categoriasInfo[categoria]?.label || categoria, []);
 
-  const getInventorySubcategoriaLabel = (producto: Pick<ProductoCreado, 'categoria' | 'subcategoria'>) => {
+  const getInventorySubcategoriaLabel = React.useCallback((producto: Pick<ProductoCreado, 'categoria' | 'subcategoria'>) => {
     const subcategoria = producto.subcategoria?.trim();
     return subcategoria && subcategoria.length > 0 ? subcategoria : getCategoriaLabel(producto.categoria);
-  };
+  }, [getCategoriaLabel]);
 
   const normalizeInventoryNameToken = (value?: string) =>
     typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').toLowerCase() : '';
@@ -887,8 +883,50 @@ export function Inventario() {
     return Array.from(subcategoriasMap, ([label, icon]) => ({ label, icon }));
   }, [todosLosProductos]);
 
-  const normalizeQrMatch = (value?: string | null) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : '';
+  const normalizeQrMatch = React.useCallback((value?: string | null) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : '', []);
+
+  const matchInventorySearch = React.useCallback((producto: ProductoCreado, searchTerm: string) => {
+    return filterByThreeLettersMultiple([producto.nombre, producto.codigo], searchTerm);
+  }, []);
+
+  const matchInventoryLot = React.useCallback((producto: ProductoCreado, searchLote: string) => {
+    return !searchLote || (producto.lote && producto.lote.toLowerCase().includes(searchLote.toLowerCase()));
+  }, []);
+
+  const matchInventoryLocation = React.useCallback((producto: ProductoCreado, searchUbicacion: string) => {
+    return !searchUbicacion || normalizeQrMatch(producto.ubicacion) === normalizeQrMatch(searchUbicacion);
+  }, [normalizeQrMatch]);
+
+  const inventorySorters = React.useMemo(() => ({
+    valor: (a: ProductoCreado, b: ProductoCreado) => {
+      const valorA = categoriasInfo[a.categoria]?.valorMonetario || 0;
+      const valorB = categoriasInfo[b.categoria]?.valorMonetario || 0;
+      return valorA - valorB;
+    },
+  }), []);
+
+  const {
+    filteredProducts: productosFiltrados,
+    filters: inventoryFilters,
+    handleSearchChange,
+    handleLotChange,
+    handleLocationChange,
+    handleCategoriesChange,
+    handleSortChange,
+    resetFilters: limpiarFiltros,
+  } = useFilteredProducts(
+    todosLosProductos,
+    undefined,
+    {
+      getCategoryLabel: getInventorySubcategoriaLabel,
+      onlyWithStock: true,
+      matchesSearch: matchInventorySearch,
+      matchesLot: matchInventoryLot,
+      matchesLocation: matchInventoryLocation,
+      customSorters: inventorySorters,
+    }
+  );
 
   const findProductoByScannedData = (rawData: unknown) => {
     const productData = normalizeScannedProductQR(rawData);
@@ -975,11 +1013,11 @@ export function Inventario() {
   const focusProductFromQr = (producto: ProductoCreado) => {
     setEscanerQROpen(false);
     setActiveTab('productos');
-    setSelectedCategories([]);
+    handleCategoriesChange([]);
     setShowFilters(false);
-    setSearchUbicacion('');
-    setSearchTerm(getInventoryProductName(producto));
-    setSearchLote(producto.lote || '');
+    handleLocationChange('');
+    handleSearchChange(getInventoryProductName(producto));
+    handleLotChange(producto.lote || '');
   };
 
   const applyLocationContextFromQr = (ubicacion: string, options?: { clearPending?: boolean; closeScanner?: boolean }) => {
@@ -994,11 +1032,11 @@ export function Inventario() {
     }
 
     setActiveTab('productos');
-    setSelectedCategories([]);
+    handleCategoriesChange([]);
     setShowFilters(false);
-    setSearchTerm('');
-    setSearchLote('');
-    setSearchUbicacion(normalizedLocation);
+    handleSearchChange('');
+    handleLotChange('');
+    handleLocationChange(normalizedLocation);
 
     return normalizedLocation;
   };
@@ -1117,8 +1155,8 @@ export function Inventario() {
         setEscanerQROpen(false);
         setScannerDefaultProductAction(null);
         setActiveTab('prediccion');
-        setSearchTerm(getInventoryProductName(producto));
-        setSearchLote(producto.lote || '');
+        handleSearchChange(getInventoryProductName(producto));
+        handleLotChange(producto.lote || '');
         toast.info('Module d\'analyse ouvert pour ce produit');
         return;
       case 'compartir_producto':
@@ -1350,55 +1388,13 @@ export function Inventario() {
   );
 
   const toggleCategoria = (categoria: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoria)
-        ? prev.filter(c => c !== categoria)
-        : [...prev, categoria]
-    );
+    const categoriasActuales = inventoryFilters.selectedCategories;
+    const nuevasCategorias = categoriasActuales.includes(categoria)
+      ? categoriasActuales.filter((c) => c !== categoria)
+      : [...categoriasActuales, categoria];
+
+    handleCategoriesChange(nuevasCategorias);
   };
-
-  const limpiarFiltros = () => {
-    setSelectedCategories([]);
-    setSearchTerm('');
-    setSearchLote('');
-    setSearchUbicacion('');
-  };
-
-  const productosFiltrados = todosLosProductos
-    .filter(p => {
-      const matchSearch = filterByThreeLettersMultiple(
-        [p.nombre, p.codigo],
-        searchTerm
-      );
-
-      const matchLote = !searchLote || (p.lote && p.lote.toLowerCase().includes(searchLote.toLowerCase()));
-      const matchUbicacion = !searchUbicacion || normalizeQrMatch(p.ubicacion) === normalizeQrMatch(searchUbicacion);
-
-      const matchCategory =
-        selectedCategories.length === 0 ||
-        selectedCategories.includes(getInventorySubcategoriaLabel(p));
-
-      // Solo mostrar productos con stock mayor a cero
-      const tieneStock = p.stockActual > 0;
-
-      return matchSearch && matchLote && matchUbicacion && matchCategory && tieneStock;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'nombre':
-          return a.nombre.localeCompare(b.nombre);
-        case 'stock':
-          return b.stockActual - a.stockActual;
-        case 'categoria':
-          return getInventorySubcategoriaLabel(a).localeCompare(getInventorySubcategoriaLabel(b), 'fr-CA');
-        case 'valor':
-          const valorA = categoriasInfo[a.categoria]?.valorMonetario || 0;
-          const valorB = categoriasInfo[b.categoria]?.valorMonetario || 0;
-          return valorB - valorA;
-        default:
-          return 0;
-      }
-    });
 
   const showCompactProductsOverview = isCompactInventoryViewport && activeTab === 'productos';
 
@@ -2993,8 +2989,8 @@ export function Inventario() {
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
                     <Input
                       placeholder={t('inventory.searchPlaceholder', { defaultValue: t('inventory.searchByNameOrCode') })}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      value={inventoryFilters.searchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
                       className="pl-10 h-9 text-xs"
                     />
                   </div>
@@ -3003,8 +2999,8 @@ export function Inventario() {
                     <Package className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
                     <Input
                       placeholder={t('inventory.searchByLotNumber')}
-                      value={searchLote}
-                      onChange={(e) => setSearchLote(e.target.value)}
+                      value={inventoryFilters.searchLote}
+                      onChange={(e) => handleLotChange(e.target.value)}
                       className="pl-10 h-9 text-xs"
                     />
                   </div>
@@ -3018,7 +3014,7 @@ export function Inventario() {
                     {t('common.filter')}
                   </Button>
 
-                  <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
+                  <Select value={inventoryFilters.sortBy} onValueChange={(value: string) => handleSortChange(value as 'nombre' | 'stock' | 'categoria' | 'valor')}>
                     <SelectTrigger className="w-[160px] h-9 text-xs">
                       <SelectValue />
                     </SelectTrigger>
@@ -3124,10 +3120,10 @@ export function Inventario() {
                           {subcategoriasInventario.map(subcategoria => (
                             <Button
                               key={subcategoria.label}
-                              variant={selectedCategories.includes(subcategoria.label) ? 'default' : 'outline'}
+                              variant={inventoryFilters.selectedCategories.includes(subcategoria.label) ? 'default' : 'outline'}
                               size="sm"
                               onClick={() => toggleCategoria(subcategoria.label)}
-                              className={selectedCategories.includes(subcategoria.label) ? 'bg-[#1a4d7a]' : ''}
+                              className={inventoryFilters.selectedCategories.includes(subcategoria.label) ? 'bg-[#1a4d7a]' : ''}
                             >
                               <span className="emoji-icon">{subcategoria.icon}</span> {subcategoria.label}
                             </Button>
@@ -3146,32 +3142,32 @@ export function Inventario() {
               )}
 
               {/* Indicador de Filtros Activos */}
-              {(searchLote || searchUbicacion || selectedCategories.length > 0) && (
+              {(inventoryFilters.searchLote || inventoryFilters.searchUbicacion || inventoryFilters.selectedCategories.length > 0) && (
                 <div className="flex flex-wrap gap-2 items-center flex-shrink-0">
                   <span className="text-sm text-[#666666]">{t('inventory.activeFilters')}</span>
-                  {searchUbicacion && (
+                  {inventoryFilters.searchUbicacion && (
                     <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
-                      📍 Emplacement: {searchUbicacion}
+                      📍 Emplacement: {inventoryFilters.searchUbicacion}
                       <button
-                        onClick={() => setSearchUbicacion('')}
+                        onClick={() => handleLocationChange('')}
                         className="ml-2 hover:text-[#c23934]"
                       >
                         ×
                       </button>
                     </Badge>
                   )}
-                  {searchLote && (
+                  {inventoryFilters.searchLote && (
                     <Badge variant="outline" className="bg-blue-50 text-[#1a4d7a] border-[#1a4d7a]">
-                      📦 Lot: {searchLote}
+                      📦 Lot: {inventoryFilters.searchLote}
                       <button
-                        onClick={() => setSearchLote('')}
+                        onClick={() => handleLotChange('')}
                         className="ml-2 hover:text-[#c23934]"
                       >
                         ×
                       </button>
                     </Badge>
                   )}
-                  {selectedCategories.map(cat => {
+                  {inventoryFilters.selectedCategories.map(cat => {
                     const subcategoria = subcategoriasInventario.find(item => item.label === cat);
 
                     return (
