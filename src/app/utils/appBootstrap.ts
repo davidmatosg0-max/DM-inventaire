@@ -111,6 +111,13 @@ export async function runAppBootstrap() {
     }
   }
 
+  try {
+    await inicializarFileSystem();
+    logger.info('📁 Sistema de archivos inicializado antes del backup automático');
+  } catch (error) {
+    logger.warn('⚠️ No se pudo inicializar el sistema de archivos antes del backup automático:', error);
+  }
+
   inicializarAutoBackup();
   logger.info('✅ Sistema de backup automático inicializado');
 
@@ -125,12 +132,6 @@ export async function runAppBootstrap() {
     console.log('  - verificarBackups() - Ver tamaño y uso de espacio ✅ NUEVO');
     console.log('  - nettoyerSauvegardes() - Nettoyer TOUTES les sauvegardes (urgence) ✅ NOUVEAU');
   }
-
-  inicializarFileSystem().then(() => {
-    logger.info('📁 Sistema de archivos inicializado');
-  }).catch((error) => {
-    logger.warn('⚠️ No se pudo inicializar el sistema de archivos:', error);
-  });
 
   inicializarSincronizacionAutomatica();
   logger.info('🔄 Sincronización automática de voluntarios Entrepôt inicializada');

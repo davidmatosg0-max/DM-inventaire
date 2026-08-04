@@ -6,8 +6,7 @@
 import {
   soportaFileSystemAccess,
   guardarArchivoEnCarpeta,
-  tieneCarpetaSeleccionada,
-  obtenerNombreCarpeta
+  inicializarFileSystem
 } from './fileSystemAccess';
 
 export type BackupFrequency = 'daily' | 'weekly' | 'monthly' | 'manual';
@@ -462,7 +461,13 @@ export async function descargarBackup(backup: StoredBackup, customPrefix?: strin
     });
     
     // Si está configurada carpeta personalizada y es soportada, intentar guardar ahí
-    if (config.customFolder && soportaFileSystemAccess() && tieneCarpetaSeleccionada()) {
+    if (config.customFolder && soportaFileSystemAccess()) {
+      try {
+        await inicializarFileSystem();
+      } catch (error) {
+        console.warn('⚠️ No se pudo restaurar la carpeta de backups desde el almacenamiento persistente', error);
+      }
+
       console.log('📁 Tentative d’enregistrement dans le dossier personnalisé...');
       const resultado = await guardarArchivoEnCarpeta(nombreArchivo, backup.data);
       
@@ -477,7 +482,6 @@ export async function descargarBackup(backup: StoredBackup, customPrefix?: strin
       if (config.customFolder) {
         console.log('ℹ️ Dossier personnalisé configuré mais indisponible :');
         console.log('  - Prise en charge de File System Access :', soportaFileSystemAccess());
-        console.log('  - Dossier sélectionné :', tieneCarpetaSeleccionada());
       }
     }
     
