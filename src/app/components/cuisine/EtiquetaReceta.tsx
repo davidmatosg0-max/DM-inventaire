@@ -252,13 +252,10 @@ export function EtiquetaReceta({
     if (!contenidoEtiqueta) return;
 
     try {
-      // Crear una copia del contenido para capturar los estilos correctamente
+      // Clonar el elemento completo con todos sus estilos inline
       const etiquetaClone = contenidoEtiqueta.cloneNode(true) as HTMLElement;
       
-      // Asegurar que el borde se aplica al contenedor
-      etiquetaClone.style.border = '4px solid #000';
-      etiquetaClone.style.boxShadow = 'inset 0 0 0 1px #000';
-      
+      // Convertir a HTML string
       const contenidoHTML = etiquetaClone.outerHTML;
 
       openAutoPrintPopup(`
@@ -278,96 +275,19 @@ export function EtiquetaReceta({
                 box-sizing: border-box;
               }
               body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                font-size: 12pt;
-                line-height: 1.3;
-                color: #000;
+                font-family: Georgia, "Times New Roman", serif;
                 background: white;
-                margin: 0;
-                padding: 0;
-              }
-              [style*="width"][style*="height"] {
-                border: 4px solid #000 !important;
-                box-shadow: inset 0 0 0 1px #000 !important;
-              }
-              .nombre-receta {
-                font-size: ${config.fontSize.titulo};
-                font-weight: bold;
-                text-align: center;
-                padding: ${esHorizontal ? '4px' : '12px'};
-                background: #4CAF50;
-                color: white;
-                border-radius: 6px;
-              }
-              .nombre-vertical {
-                writing-mode: vertical-rl;
-                transform: rotate(180deg);
-              }
-              .col-izquierda {
-                flex-shrink: 0;
-                width: 30%;
                 display: flex;
-                align-items: center;
                 justify-content: center;
-              }
-              .col-derecha {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-              }
-              .info-item {
-                margin-bottom: ${esHorizontal ? '2px' : '12px'};
-                padding: ${esHorizontal ? '2px 4px' : '10px'};
-                background: #f8f9fa;
-                border-left: ${esHorizontal ? '2px' : '4px'} solid #1E73BE;
-              }
-              .info-label {
-                font-size: ${config.fontSize.label};
-                color: #666;
-                font-weight: 600;
-                margin-bottom: 2px;
-                line-height: 1.1;
-              }
-              .info-value {
-                font-size: ${config.fontSize.value};
-                font-weight: bold;
-                color: #000;
-                line-height: 1.1;
-              }
-              .ingredientes-section {
-                margin-top: 12px;
-                padding: 12px;
-                background: #fff8e1;
-                border: 2px solid #FFC107;
-                border-radius: 8px;
-                flex: 1;
-              }
-              .ingredientes-titulo {
-                font-size: ${config.fontSize.label};
-                font-weight: bold;
-                color: #000;
-                margin-bottom: 8px;
-                text-align: center;
-                text-transform: uppercase;
-              }
-              .ingredientes-lista {
-                font-size: ${config.fontSize.ingredientes};
-                line-height: 1.4;
-              }
-              .ingrediente-item {
-                margin-bottom: 4px;
+                align-items: center;
+                min-height: 100vh;
               }
               @media print {
                 body {
                   print-color-adjust: exact;
                   -webkit-print-color-adjust: exact;
-                }
-                .etiqueta-horizontal,
-                .etiqueta-vertical {
-                  page-break-inside: avoid;
-                  border: 4px solid #000 !important;
-                  box-shadow: inset 0 0 0 1px #000 !important;
+                  min-height: auto;
+                  display: block;
                 }
               }
             </style>
@@ -378,7 +298,7 @@ export function EtiquetaReceta({
         </html>
       `, { width: 900, height: 700, printDelayMs: 250 });
     } catch (error) {
-      toast.error('La fenêtre d’impression n’a pas pu être ouverte.');
+      toast.error('La fenêtre d\'impression n\'a pas pu être ouverte.');
     }
   };
 
