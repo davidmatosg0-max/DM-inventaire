@@ -281,7 +281,8 @@ export function EtiquetaReceta({
                 display: flex;
                 flex-direction: row;
                 gap: 4px;
-                border: 3px solid #000;
+                border: 4px solid #000;
+                box-shadow: inset 0 0 0 1px #000;
               }
               .etiqueta-vertical {
                 width: ${config.ancho};
@@ -289,7 +290,8 @@ export function EtiquetaReceta({
                 padding: ${config.padding};
                 display: flex;
                 flex-direction: column;
-                border: 3px solid #000;
+                border: 4px solid #000;
+                box-shadow: inset 0 0 0 1px #000;
               }
               .nombre-receta {
                 font-size: ${config.fontSize.titulo};
@@ -363,6 +365,12 @@ export function EtiquetaReceta({
                 body {
                   print-color-adjust: exact;
                   -webkit-print-color-adjust: exact;
+                }
+                .etiqueta-horizontal,
+                .etiqueta-vertical {
+                  page-break-inside: avoid;
+                  border: 4px solid #000 !important;
+                  box-shadow: inset 0 0 0 1px #000 !important;
                 }
               }
             </style>
@@ -469,7 +477,8 @@ export function EtiquetaReceta({
                     fontSize: '12pt',
                     background: '#FFFFFF',
                     fontFamily: 'Georgia, "Times New Roman", serif',
-                    border: '2px solid #000000'
+                    border: '3px solid #000000',
+                    boxShadow: 'inset 0 0 0 1px #000000'
                   }}
                 >
                   {/* Título centrado */}
@@ -536,7 +545,8 @@ export function EtiquetaReceta({
                     fontSize: '12pt',
                     background: '#FFFFFF',
                     fontFamily: 'Georgia, "Times New Roman", serif',
-                    border: '2px solid #000000'
+                    border: '3px solid #000000',
+                    boxShadow: 'inset 0 0 0 1px #000000'
                   }}
                 >
                   {/* Título principal - INGREDIENTS estilo */}
