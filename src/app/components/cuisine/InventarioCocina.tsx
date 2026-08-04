@@ -1381,18 +1381,18 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
           resetearFormularioProducto();
         }
       }}>
-        <DialogContent className="max-w-2xl" aria-describedby="crear-producto-description">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="crear-producto-description">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <Plus className="w-5 h-5 text-[#4CAF50]" />
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Plus className="w-4 h-4 text-[#4CAF50]" />
               Ajouter un nouveau produit
             </DialogTitle>
             <DialogDescription id="crear-producto-description">
-              Créez un produit dans le catalogue de cuisine et ajoutez-le immédiatement à l'inventaire.
+              Créez un produit rapidement dans le catalogue de cuisine.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div className="md:col-span-2">
               <Label htmlFor="nuevoProductoNombre">Nom du produit *</Label>
               <Input
@@ -1400,6 +1400,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                 value={nuevoProductoForm.nombre}
                 onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, nombre: e.target.value })}
                 placeholder="Ex: Tomates cerises"
+                className="h-8 text-sm"
               />
             </div>
 
@@ -1410,6 +1411,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                 value={nuevoProductoForm.codigo}
                 onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, codigo: e.target.value })}
                 placeholder="Optionnel"
+                className="h-8 text-sm"
               />
             </div>
 
@@ -1420,7 +1422,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                   id="nuevoProductoCategoria"
                   value={nuevoProductoForm.categoria}
                   onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, categoria: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full h-8 px-2 border rounded-md text-sm"
                 >
                   {categoriasProductos.map((categoria) => (
                     <option key={categoria} value={categoria}>
@@ -1444,6 +1446,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                     value={nuevaCategoria}
                     onChange={(e) => setNuevaCategoria(e.target.value)}
                     placeholder="Nom de la catégorie"
+                    className="h-8 text-sm"
                   />
                   <Button type="button" onClick={agregarCategoriaProducto} className="bg-[#4CAF50] hover:bg-[#45a049] text-white">
                     Créer
@@ -1458,7 +1461,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                 id="nuevoProductoUnidad"
                 value={nuevoProductoForm.unidad}
                 onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, unidad: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full h-8 px-2 border rounded-md text-sm"
               >
                 <option value="kg">kg</option>
                 <option value="g">g</option>
@@ -1503,7 +1506,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                 id="nuevoProductoZona"
                 value={nuevoProductoForm.zona}
                 onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, zona: e.target.value as 'refrigerado' | 'congelado' | 'seco' | 'fresco' | '' })}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full h-8 px-2 border rounded-md text-sm"
               >
                 <option value="">Sélectionner</option>
                 <option value="refrigerado">Réfrigéré</option>
@@ -1522,8 +1525,8 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                   label="Icône alimentaire"
                   contextoNombre={`${nuevoProductoForm.nombre} ${nuevoProductoForm.categoria}`}
                   iconosRecomendados={sugerirIconos(`${nuevoProductoForm.nombre} ${nuevoProductoForm.categoria}`)}
-                  gridCols={6}
-                  maxHeight="max-h-48"
+                  gridCols={5}
+                  maxHeight="max-h-32"
                 />
               </div>
               <p className="mt-2 text-xs text-[#666666]">
@@ -1538,7 +1541,7 @@ export function InventarioCocina({ onProductoCreado }: InventarioCocinaProps) {
                 value={nuevoProductoForm.notas}
                 onChange={(e) => setNuevoProductoForm({ ...nuevoProductoForm, notas: e.target.value })}
                 placeholder="Informations supplémentaires..."
-                className="min-h-[90px]"
+                className="min-h-[50px] text-sm"
               />
             </div>
           </div>
