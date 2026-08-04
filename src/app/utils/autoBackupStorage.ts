@@ -47,8 +47,54 @@ const DEFAULT_CONFIG: AutoBackupConfig = {
   customFolder: false
 };
 
-// Variable global para almacenar el ID del intervalo
+// Variable global para almacenar el ID del temporizador
 let backupIntervalId: NodeJS.Timeout | null = null;
+let autoBackupConfigListenerInstalled = false;
+
+function persistirConfigAutoBackupSilenciosamente(config: AutoBackupConfig): void {
+  localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(config));
+}
+
+function actualizarConfigDespuesDeBackup(config: AutoBackupConfig, backupTimestamp: string): void {
+  const updatedConfig: AutoBackupConfig = {
+    ...config,
+    lastBackup: backupTimestamp,
+    nextBackup: calcularProximoBackup(config).toISOString(),
+  };
+
+  persistirConfigAutoBackupSilenciosamente(updatedConfig);
+  window.dispatchEvent(new CustomEvent('autoBackupConfigUpdated', { detail: updatedConfig }));
+}
+
+function detenerTemporizadorAutoBackup(): void {
+  if (backupIntervalId) {
+    clearTimeout(backupIntervalId);
+    backupIntervalId = null;
+  }
+}
+
+function programarSiguienteEjecucionAutoBackup(): void {
+  const config = obtenerConfigAutoBackup();
+
+  detenerTemporizadorAutoBackup();
+
+  if (!config.enabled) {
+    return;
+  }
+
+  const nextBackup = config.nextBackup ? new Date(config.nextBackup) : calcularProximoBackup(config);
+  const delay = Math.max(nextBackup.getTime() - Date.now(), 1000);
+
+  backupIntervalId = setTimeout(() => {
+    if (debeEjecutarBackup()) {
+      console.log('⏰ Es momento de ejecutar backup automático');
+      ejecutarBackupAutomatico();
+      return;
+    }
+
+    programarSiguienteEjecucionAutoBackup();
+  }, delay);
+}
 
 /**
  * Obtener la configuración de backup automático
@@ -78,7 +124,7 @@ export function guardarConfigAutoBackup(config: AutoBackupConfig): void {
   try {
     // Calcular el próximo backup
     config.nextBackup = calcularProximoBackup(config).toISOString();
-    localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(config));
+    persistirConfigAutoBackupSilenciosamente(config);
     
     console.log('💾 Configuration de sauvegarde mise à jour :', {
       enabled: config.enabled,
@@ -327,8 +373,7 @@ export function ejecutarBackupAutomatico(): boolean {
       
       // Actualizar solo la fecha del último backup en config (sin guardar el backup completo)
       try {
-        const updatedConfig = { ...config, lastBackup: tempBackup.timestamp };
-        localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(updatedConfig));
+        actualizarConfigDespuesDeBackup(config, tempBackup.timestamp);
       } catch (configError) {
         console.warn('⚠️ Impossible de mettre à jour la date de la dernière sauvegarde');
       }
@@ -349,6 +394,8 @@ export function ejecutarBackupAutomatico(): boolean {
       
       // Limpiar backups antiguos
       limpiarBackupsAntiguos();
+
+      actualizarConfigDespuesDeBackup(config, savedBackup.timestamp);
       
       console.log('✅ Sauvegarde automatique exécutée avec succès');
       console.log(`📅 Prochaine sauvegarde : ${config.nextBackup ? new Date(config.nextBackup).toLocaleString('fr-CA') : 'Non planifiée'}`);
@@ -369,6 +416,7 @@ export function ejecutarBackupAutomatico(): boolean {
       
       descargarBackup(tempBackup, config.filePrefix);
       console.log('✅ Sauvegarde téléchargée (l’enregistrement a échoué)');
+      actualizarConfigDespuesDeBackup(config, tempBackup.timestamp);
       
       return true;
     }
@@ -522,11 +570,14 @@ export function obtenerTiempoRestante(config: AutoBackupConfig): string {
 export function inicializarAutoBackup(): void {
   const config = obtenerConfigAutoBackup();
   
-  // Limpiar intervalo anterior si existe
-  if (backupIntervalId) {
-    clearInterval(backupIntervalId);
-    backupIntervalId = null;
-    console.log('🧹 Intervalo de backup anterior limpiado');
+  // Limpiar temporizador anterior si existe
+  detenerTemporizadorAutoBackup();
+
+  if (!autoBackupConfigListenerInstalled) {
+    window.addEventListener('autoBackupConfigUpdated', () => {
+      programarSiguienteEjecucionAutoBackup();
+    });
+    autoBackupConfigListenerInstalled = true;
   }
   
   if (!config.enabled) {
@@ -560,27 +611,9 @@ export function inicializarAutoBackup(): void {
   if (debeEjecutarBackup()) {
     console.log('⏰ Ejecutando backup pendiente...');
     ejecutarBackupAutomatico();
+  } else {
+    programarSiguienteEjecucionAutoBackup();
   }
-  
-  // Verificar cada minuto si es momento de hacer backup
-  backupIntervalId = setInterval(() => {
-    const currentConfig = obtenerConfigAutoBackup();
-    
-    // Verificar si el backup sigue habilitado
-    if (!currentConfig.enabled) {
-      console.log('⏸️ Backup automático desactivado, deteniendo verificaciones');
-      if (backupIntervalId) {
-        clearInterval(backupIntervalId);
-        backupIntervalId = null;
-      }
-      return;
-    }
-    
-    if (debeEjecutarBackup()) {
-      console.log('⏰ Es momento de ejecutar backup automático');
-      ejecutarBackupAutomatico();
-    }
-  }, 60000); // Cada minuto
   
   console.log('🔄 Sistema de backup automático inicializado');
   console.log(`📅 Próximo backup: ${config.nextBackup ? new Date(config.nextBackup).toLocaleString('fr-CA') : 'No programado'}`);
@@ -591,7 +624,7 @@ export function inicializarAutoBackup(): void {
  */
 export function detenerAutoBackup(): void {
   if (backupIntervalId) {
-    clearInterval(backupIntervalId);
+    clearTimeout(backupIntervalId);
     backupIntervalId = null;
     console.log('🛑 Sistema de backup automático detenido');
   }
