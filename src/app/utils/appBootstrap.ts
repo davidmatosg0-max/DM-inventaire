@@ -7,6 +7,7 @@ import { runDataMigrations } from './dataMigration';
 import {
   diagnosticarAutoBackup,
   ejecutarBackupAutomatico,
+  inicializarAutoBackup,
   limpiarTodosLosBackups,
   verificarTamañoBackups,
 } from './autoBackupStorage';
@@ -91,21 +92,14 @@ export async function runAppBootstrap() {
     const configBackup = localStorage.getItem('autoBackupConfig');
     if (configBackup) {
       try {
-        const config = JSON.parse(configBackup);
-        if (config.enabled) {
-          console.warn('⚠️ Les sauvegardes automatiques étaient activées, désactivation en cours...');
-          config.enabled = false;
-          localStorage.setItem('autoBackupConfig', JSON.stringify(config));
-          console.log('✅ Sauvegardes automatiques DÉSACTIVÉES de façon permanente');
-        }
+        JSON.parse(configBackup);
       } catch {
         console.warn('⚠️ Erreur lors de la vérification de la configuration des sauvegardes, suppression...');
         localStorage.removeItem('autoBackupConfig');
       }
     }
 
-    console.log('💡 IMPORTANT : les sauvegardes automatiques sont DÉSACTIVÉES par défaut');
-    console.log('💡 Pour créer des sauvegardes, utilisez manuellement le bouton « Télécharger la sauvegarde »');
+    console.log('💡 Configuration des sauvegardes automatiques conservée');
   } catch (cleanError) {
     console.error('⚠️ Erreur lors de la vérification des sauvegardes :', cleanError);
     try {
@@ -117,7 +111,8 @@ export async function runAppBootstrap() {
     }
   }
 
-  logger.info('⏸️ Sistema de backup automático desactivado (usa backups manuales)');
+  inicializarAutoBackup();
+  logger.info('✅ Sistema de backup automático inicializado');
 
   if (typeof window !== 'undefined') {
     (window as any).diagnosticarBackup = diagnosticarAutoBackup;

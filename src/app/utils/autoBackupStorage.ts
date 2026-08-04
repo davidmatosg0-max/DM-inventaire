@@ -14,8 +14,9 @@ export type BackupFrequency = 'daily' | 'weekly' | 'monthly' | 'manual';
 
 export interface AutoBackupConfig {
   enabled: boolean;
-  frequency: BackupFrequency;
-  time: string; // Formato HH:MM (24 horas)
+  intervalMinutes: number; // Intervalo de ejecución en minutos
+  frequency?: BackupFrequency; // Legacy: mantener compatibilidad con configuraciones antiguas
+  time?: string; // Legacy: mantener compatibilidad con configuraciones antiguas
   maxBackups: number; // Número máximo de backups a mantener
   lastBackup?: string; // ISO timestamp del último backup
   nextBackup?: string; // ISO timestamp del próximo backup
@@ -35,12 +36,12 @@ export interface StoredBackup {
 
 const AUTO_BACKUP_CONFIG_KEY = 'autoBackupConfig';
 const STORED_BACKUPS_KEY = 'storedBackups';
+const DEFAULT_INTERVAL_MINUTES = 60;
 
 // Configuración por defecto
 const DEFAULT_CONFIG: AutoBackupConfig = {
   enabled: false,
-  frequency: 'weekly',
-  time: '02:00', // 2 AM por defecto
+  intervalMinutes: DEFAULT_INTERVAL_MINUTES,
   maxBackups: 5,
   autoDownload: false,
   filePrefix: 'backup',
@@ -55,11 +56,46 @@ function persistirConfigAutoBackupSilenciosamente(config: AutoBackupConfig): voi
   localStorage.setItem(AUTO_BACKUP_CONFIG_KEY, JSON.stringify(config));
 }
 
-function actualizarConfigDespuesDeBackup(config: AutoBackupConfig, backupTimestamp: string): void {
-  const updatedConfig: AutoBackupConfig = {
+function obtenerIntervaloDesdeFrecuenciaLegacy(frequency?: BackupFrequency): number {
+  switch (frequency) {
+    case 'daily':
+      return 24 * 60;
+    case 'weekly':
+      return 7 * 24 * 60;
+    case 'monthly':
+      return 30 * 24 * 60;
+    default:
+      return DEFAULT_INTERVAL_MINUTES;
+  }
+}
+
+function normalizarIntervalo(minutes: unknown, fallback: number): number {
+  const parsed = typeof minutes === 'number' ? minutes : Number(minutes);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return Math.round(parsed);
+  }
+  return fallback;
+}
+
+function normalizarConfigAutoBackup(config: Partial<AutoBackupConfig> | null | undefined): AutoBackupConfig {
+  const legacyFallback = obtenerIntervaloDesdeFrecuenciaLegacy(config?.frequency);
+  const intervalMinutes = normalizarIntervalo(config?.intervalMinutes, legacyFallback);
+
+  return {
+    ...DEFAULT_CONFIG,
     ...config,
-    lastBackup: backupTimestamp,
-    nextBackup: calcularProximoBackup(config).toISOString(),
+    intervalMinutes
+  };
+}
+
+function actualizarConfigDespuesDeBackup(config: AutoBackupConfig, backupTimestamp: string): void {
+  const updatedConfigBase: AutoBackupConfig = {
+    ...config,
+    lastBackup: backupTimestamp
+  };
+  const updatedConfig: AutoBackupConfig = {
+    ...updatedConfigBase,
+    nextBackup: calcularProximoBackup(updatedConfigBase).toISOString(),
   };
 
   persistirConfigAutoBackupSilenciosamente(updatedConfig);
@@ -103,12 +139,8 @@ export function obtenerConfigAutoBackup(): AutoBackupConfig {
   try {
     const config = localStorage.getItem(AUTO_BACKUP_CONFIG_KEY);
     if (config) {
-      const parsedConfig = JSON.parse(config);
-      // Asegurar compatibilidad con configuraciones antiguas
-      return {
-        ...DEFAULT_CONFIG,
-        ...parsedConfig
-      };
+      const parsedConfig = JSON.parse(config) as Partial<AutoBackupConfig>;
+      return normalizarConfigAutoBackup(parsedConfig);
     }
     return DEFAULT_CONFIG;
   } catch (error) {
@@ -122,20 +154,20 @@ export function obtenerConfigAutoBackup(): AutoBackupConfig {
  */
 export function guardarConfigAutoBackup(config: AutoBackupConfig): void {
   try {
+    const normalizedConfig = normalizarConfigAutoBackup(config);
     // Calcular el próximo backup
-    config.nextBackup = calcularProximoBackup(config).toISOString();
-    persistirConfigAutoBackupSilenciosamente(config);
+    normalizedConfig.nextBackup = calcularProximoBackup(normalizedConfig).toISOString();
+    persistirConfigAutoBackupSilenciosamente(normalizedConfig);
     
     console.log('💾 Configuration de sauvegarde mise à jour :', {
-      enabled: config.enabled,
-      frequency: config.frequency,
-      time: config.time,
-      nextBackup: config.nextBackup
+      enabled: normalizedConfig.enabled,
+      intervalMinutes: normalizedConfig.intervalMinutes,
+      nextBackup: normalizedConfig.nextBackup
     });
     
     // ✅ NO LLAMAR inicializarAutoBackup aquí para evitar recursión
     // Solo dispatch el evento
-    window.dispatchEvent(new CustomEvent('autoBackupConfigUpdated', { detail: config }));
+    window.dispatchEvent(new CustomEvent('autoBackupConfigUpdated', { detail: normalizedConfig }));
   } catch (error) {
     console.error('Erreur lors de l’enregistrement de la configuration de sauvegarde automatique :', error);
   }
@@ -260,28 +292,11 @@ export function limpiarBackupsAntiguos(): void {
  * Calcular la fecha del próximo backup basado en la configuración
  */
 export function calcularProximoBackup(config: AutoBackupConfig): Date {
-  const now = new Date();
-  const [hours, minutes] = config.time.split(':').map(Number);
-  
-  const nextBackup = new Date();
-  nextBackup.setHours(hours, minutes, 0, 0);
-  
-  // Si la hora ya pasó hoy, programar para el siguiente período
-  if (nextBackup <= now) {
-    switch (config.frequency) {
-      case 'daily':
-        nextBackup.setDate(nextBackup.getDate() + 1);
-        break;
-      case 'weekly':
-        nextBackup.setDate(nextBackup.getDate() + 7);
-        break;
-      case 'monthly':
-        nextBackup.setMonth(nextBackup.getMonth() + 1);
-        break;
-    }
-  }
-  
-  return nextBackup;
+  const intervalMinutes = normalizarIntervalo(config.intervalMinutes, DEFAULT_INTERVAL_MINUTES);
+  const nowMs = Date.now();
+  const lastBackupMs = config.lastBackup ? new Date(config.lastBackup).getTime() : nowMs;
+  const baseMs = Number.isFinite(lastBackupMs) ? Math.max(lastBackupMs, nowMs) : nowMs;
+  return new Date(baseMs + (intervalMinutes * 60 * 1000));
 }
 
 /**
@@ -642,8 +657,7 @@ export function diagnosticarAutoBackup(): void {
   console.log('🔍 ==================== DIAGNÓSTICO DE BACKUP AUTOMÁTICO ====================');
   console.log('📊 Configuración actual:');
   console.log('  - Habilitado:', config.enabled);
-  console.log('  - Frecuencia:', config.frequency);
-  console.log('  - Hora programada:', config.time);
+  console.log('  - Intervalo (minutos):', config.intervalMinutes);
   console.log('  - Máximo de backups:', config.maxBackups);
   console.log('  - Auto-descarga:', config.autoDownload);
   console.log('  - Prefijo de archivo:', config.filePrefix);

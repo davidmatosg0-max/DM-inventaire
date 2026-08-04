@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, Clock, Calendar, Download, Trash2, Play, Settings2, ChevronDown, ChevronUp, FileText, FolderDown, PackageOpen, FolderOpen, Check, X, AlertCircle } from 'lucide-react';
+import { Zap, Clock, Download, Trash2, Play, Settings2, ChevronDown, ChevronUp, FileText, FolderDown, PackageOpen, FolderOpen, Check, X, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
@@ -19,8 +18,7 @@ import {
   limpiarBackupsAntiguos,
   descargarBackup,
   descargarTodosLosBackups,
-  type AutoBackupConfig as AutoBackupConfigType,
-  type BackupFrequency
+  type AutoBackupConfig as AutoBackupConfigType
 } from '../../utils/autoBackupStorage';
 import {
   soportaFileSystemAccess,
@@ -47,30 +45,31 @@ export function AutoBackupConfig() {
   }, []);
 
   const handleToggleEnabled = () => {
-    const newConfig = { ...config, enabled: !config.enabled };
+    const enabling = !config.enabled;
+    const newConfig = {
+      ...config,
+      enabled: enabling,
+      autoDownload: enabling ? true : config.autoDownload
+    };
     guardarConfigAutoBackup(newConfig);
     setConfig(newConfig);
     toast.success(
       newConfig.enabled ? 'Backup automatique activé ✅' : 'Backup automatique désactivé',
       {
         description: newConfig.enabled
-          ? `Prochain backup: ${obtenerTiempoRestante(newConfig)}`
+          ? `Prochain backup: ${obtenerTiempoRestante(newConfig)} · Auto-téléchargement activé`
           : 'Les backups automatiques sont désactivés'
       }
     );
   };
 
-  const handleFrequencyChange = (value: BackupFrequency) => {
-    const newConfig = { ...config, frequency: value };
-    guardarConfigAutoBackup(newConfig);
-    setConfig(newConfig);
-    toast.info(`Fréquence changée: ${getFrequencyLabel(value)}`);
-  };
-
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newConfig = { ...config, time: e.target.value };
-    guardarConfigAutoBackup(newConfig);
-    setConfig(newConfig);
+  const handleIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (value >= 1 && value <= 10080) {
+      const newConfig = { ...config, intervalMinutes: value };
+      guardarConfigAutoBackup(newConfig);
+      setConfig(newConfig);
+    }
   };
 
   const handleMaxBackupsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,16 +198,6 @@ export function AutoBackupConfig() {
     }
   };
 
-  const getFrequencyLabel = (freq: BackupFrequency): string => {
-    const labels = {
-      daily: 'Quotidien',
-      weekly: 'Hebdomadaire',
-      monthly: 'Mensuel',
-      manual: 'Manuel'
-    };
-    return labels[freq];
-  };
-
   const backupsAutomatiques = backups.filter(b => b.automatic);
   const backupsManuels = backups.filter(b => !b.automatic);
 
@@ -288,46 +277,25 @@ export function AutoBackupConfig() {
               )}
             </div>
 
-            {/* Frecuencia */}
+            {/* Intervalo */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-blue-500 rounded-lg">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <Label className="font-semibold text-gray-900">Fréquence</Label>
-                  <p className="text-xs text-gray-600">Définir l'intervalle de backup</p>
-                </div>
-              </div>
-              <Select value={config.frequency} onValueChange={handleFrequencyChange} disabled={!config.enabled}>
-                <SelectTrigger className="bg-white border-2 border-blue-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">📅 Quotidien</SelectItem>
-                  <SelectItem value="weekly">📆 Hebdomadaire</SelectItem>
-                  <SelectItem value="monthly">🗓️ Mensuel</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Hora */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-orange-500 rounded-lg">
                   <Clock className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <Label className="font-semibold text-gray-900">Heure d'Exécution</Label>
-                  <p className="text-xs text-gray-600">Choisir l'heure du backup</p>
+                  <Label className="font-semibold text-gray-900">Intervalle (minutes)</Label>
+                  <p className="text-xs text-gray-600">Exemple: 30 = backup toutes les 30 minutes</p>
                 </div>
               </div>
               <Input
-                type="time"
-                value={config.time}
-                onChange={handleTimeChange}
+                type="number"
+                min="1"
+                max="10080"
+                value={config.intervalMinutes}
+                onChange={handleIntervalChange}
                 disabled={!config.enabled}
-                className="bg-white border-2 border-orange-200"
+                className="bg-white border-2 border-blue-200"
               />
             </div>
 
@@ -511,8 +479,7 @@ export function AutoBackupConfig() {
                 <div className="text-sm">
                   <p className="font-semibold text-blue-900 mb-1">Planification Active</p>
                   <ul className="text-blue-800 space-y-1">
-                    <li>• Fréquence: {getFrequencyLabel(config.frequency)}</li>
-                    <li>• Heure: {config.time}</li>
+                    <li>• Intervalle: toutes les {config.intervalMinutes} minute(s)</li>
                     <li>• Prochain backup: {obtenerTiempoRestante(config)}</li>
                     {config.lastBackup && (
                       <li>• Dernier backup: {formatearFecha(config.lastBackup)}</li>
