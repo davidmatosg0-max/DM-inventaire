@@ -252,17 +252,99 @@ export function EtiquetaReceta({
     if (!contenidoEtiqueta) return;
 
     try {
-      // Clonar el elemento completo con todos sus estilos inline
-      const etiquetaClone = contenidoEtiqueta.cloneNode(true) as HTMLElement;
-      
-      // Convertir a HTML string
-      const contenidoHTML = etiquetaClone.outerHTML;
+      // Generar HTML con estilos embebidos para impresión exacta
+      const htmlEtiqueta = `
+        <div style="
+          width: ${config.ancho};
+          height: ${config.alto};
+          padding: ${config.padding};
+          font-size: 12pt;
+          background: #FFFFFF;
+          font-family: Georgia, 'Times New Roman', serif;
+          border: 3px solid #000000;
+          box-shadow: inset 0 0 0 1px #000000;
+          display: flex;
+          flex-direction: column;
+          margin: 0;
+          box-sizing: border-box;
+        ">
+          <div style="
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: ${config.fontSize.titulo};
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: #000000;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 8px;
+          ">
+            INGRÉDIENTS
+          </div>
+          
+          <div style="
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: ${config.fontSize.value};
+            color: #000000;
+            font-style: italic;
+          ">
+            ${receta.nombre}
+          </div>
+          
+          <div style="
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: ${config.fontSize.label};
+            line-height: 1.4;
+            color: #000000;
+          ">
+            <div><strong>LOT:</strong> ${loteGenerado}</div>
+            <div><strong>Date:</strong> ${formatearFechaCorta(fechaElab)}</div>
+            <div><strong>Poids:</strong> ${cantidadFinal} ${receta.productoElaborado.unidad} ${!esFormatoCompleto ? `× ${formatQuantity(receta.productoElaborado.pesoUnitario || 0)} kg` : ''}</div>
+          </div>
+          
+          <div style="border-top: 1px solid #000000; margin-bottom: 12px;"></div>
+          
+          <div style="
+            flex: 1;
+            text-align: justify;
+            font-size: ${config.fontSize.ingredientes};
+            line-height: ${config.lineHeight || '1.7'};
+            color: #000000;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+          ">
+            <p style="margin: 0;">
+              ${receta.ingredientes.map((ing, index) => 
+                `${ing.productoNombre} (${ing.cantidad} ${ing.unidad})${index < receta.ingredientes.length - 1 ? ', ' : '.'}`
+              ).join('')}
+            </p>
+          </div>
+          
+          <div style="
+            text-align: center;
+            margin-top: 12px;
+            font-size: ${config.fontSize.label};
+            color: #000000;
+            border-top: 1px solid #000000;
+            padding-top: 8px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+          ">
+            BON APPÉTIT
+          </div>
+        </div>
+      `;
 
       openAutoPrintPopup(`
         <!DOCTYPE html>
         <html>
           <head>
             <title>Étiquette - ${receta.nombre}</title>
+            <meta charset="UTF-8">
             <style>
               @page {
                 size: ${config.ancho} ${config.alto};
@@ -274,26 +356,31 @@ export function EtiquetaReceta({
                 padding: 0;
                 box-sizing: border-box;
               }
+              html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+              }
               body {
-                font-family: Georgia, "Times New Roman", serif;
                 background: white;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
               }
               @media print {
                 body {
                   print-color-adjust: exact;
                   -webkit-print-color-adjust: exact;
-                  min-height: auto;
-                  display: block;
+                  margin: 0;
+                  padding: 0;
+                }
+                * {
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
               }
             </style>
           </head>
           <body>
-            ${contenidoHTML}
+            ${htmlEtiqueta}
           </body>
         </html>
       `, { width: 900, height: 700, printDelayMs: 250 });
