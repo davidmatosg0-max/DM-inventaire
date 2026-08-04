@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
@@ -175,29 +175,29 @@ interface WorkspaceConversation {
 }
 
 const WORKSPACE_QUICK_EMOJIS = [
-  '🙂', '😊', '😄', '😉', '🤝', '🙌', '👏', '🙏',
-  '👍', '👌', '💪', '❤️', '💙', '💚', '🔥', '✨',
-  '🎉', '🚀', '🎯', '💡', '📌', '📅', '📞', '📝',
-  '📣', '📎', '📦', '🚚', '👀', '⚠️', '✅', '🏁',
+  'ðŸ™‚', 'ðŸ˜Š', 'ðŸ˜„', 'ðŸ˜‰', 'ðŸ¤', 'ðŸ™Œ', 'ðŸ‘', 'ðŸ™',
+  'ðŸ‘', 'ðŸ‘Œ', 'ðŸ’ª', 'â¤ï¸', 'ðŸ’™', 'ðŸ’š', 'ðŸ”¥', 'âœ¨',
+  'ðŸŽ‰', 'ðŸš€', 'ðŸŽ¯', 'ðŸ’¡', 'ðŸ“Œ', 'ðŸ“…', 'ðŸ“ž', 'ðŸ“',
+  'ðŸ“£', 'ðŸ“Ž', 'ðŸ“¦', 'ðŸšš', 'ðŸ‘€', 'âš ï¸', 'âœ…', 'ðŸ',
 ] as const;
 
 const WORKSPACE_QUICK_REACTIONS = [
-  { emoji: '✅', label: 'Validé' },
-  { emoji: '📌', label: 'À garder en vue' },
-  { emoji: '📅', label: 'À planifier' },
-  { emoji: '📞', label: 'À appeler' },
-  { emoji: '📦', label: 'Logistique' },
-  { emoji: '🚚', label: 'Livraison' },
-  { emoji: '💡', label: 'Idée' },
-  { emoji: '📝', label: 'Note' },
-  { emoji: '📣', label: 'Annonce' },
-  { emoji: '👀', label: 'À relire' },
-  { emoji: '⚠️', label: 'Attention' },
-  { emoji: '🔥', label: 'Prioritaire' },
-  { emoji: '🤝', label: 'Coordination' },
-  { emoji: '🎯', label: 'Objectif' },
-  { emoji: '🚀', label: 'Lancement' },
-  { emoji: '🙏', label: 'Merci' },
+  { emoji: 'âœ…', label: 'ValidÃ©' },
+  { emoji: 'ðŸ“Œ', label: 'Ã€ garder en vue' },
+  { emoji: 'ðŸ“…', label: 'Ã€ planifier' },
+  { emoji: 'ðŸ“ž', label: 'Ã€ appeler' },
+  { emoji: 'ðŸ“¦', label: 'Logistique' },
+  { emoji: 'ðŸšš', label: 'Livraison' },
+  { emoji: 'ðŸ’¡', label: 'IdÃ©e' },
+  { emoji: 'ðŸ“', label: 'Note' },
+  { emoji: 'ðŸ“£', label: 'Annonce' },
+  { emoji: 'ðŸ‘€', label: 'Ã€ relire' },
+  { emoji: 'âš ï¸', label: 'Attention' },
+  { emoji: 'ðŸ”¥', label: 'Prioritaire' },
+  { emoji: 'ðŸ¤', label: 'Coordination' },
+  { emoji: 'ðŸŽ¯', label: 'Objectif' },
+  { emoji: 'ðŸš€', label: 'Lancement' },
+  { emoji: 'ðŸ™', label: 'Merci' },
 ] as const;
 
 interface WorkspaceTeamFormState {
@@ -405,9 +405,9 @@ function buildMessagingAccessProfile(
 
   let restrictionNotice: string | undefined;
   if (!canCompose) {
-    restrictionNotice = 'Votre rôle dispose actuellement d’un accès en consultation.';
+    restrictionNotice = 'Votre rÃ´le dispose actuellement dâ€™un accÃ¨s en consultation.';
   } else if (!canUseGroupMessages) {
-    restrictionNotice = 'Les envois groupés sont réservés à la coordination et aux responsables autorisés.';
+    restrictionNotice = 'Les envois groupÃ©s sont rÃ©servÃ©s Ã  la coordination et aux responsables autorisÃ©s.';
   }
 
   return {
@@ -432,7 +432,7 @@ function parseStoredState<T>(rawValue: string | null, fallback: T, key: string):
   try {
     return JSON.parse(rawValue) as T;
   } catch (error) {
-    console.warn(`État persistant ignoré pour ${key}:`, error);
+    console.warn(`Ã‰tat persistant ignorÃ© pour ${key}:`, error);
     return fallback;
   }
 }
@@ -482,13 +482,13 @@ function writeMessagingUiState(userId: string, state: MessagingUiState): void {
 }
 
 export function CommunicationInterne() {
-  const sessionInfo = obtenerInfoUsuarioConPermisos();
+  const sessionInfo = useMemo(() => obtenerInfoUsuarioConPermisos(), []);
   const currentUserId = sessionInfo?.id || 'user-current';
   const currentUserName = sessionInfo
     ? [sessionInfo.nombre, sessionInfo.apellido].filter(Boolean).join(' ') || sessionInfo.username || 'Utilisateur'
     : 'Utilisateur';
   const currentUserRoleLabel = sessionInfo ? obtenerNombreRol(sessionInfo.rol) : 'Utilisateur';
-  const initialMessagingUiState = readMessagingUiState(currentUserId);
+  const initialMessagingUiState = useMemo(() => readMessagingUiState(currentUserId), [currentUserId]);
   const [messages, setMessages] = useState<ExtendedMessage[]>([]);
   const [departements, setDepartements] = useState<Departamento[]>([]);
   const [departementActuel, setDepartementActuel] = useState<string>('');
@@ -514,7 +514,6 @@ export function CommunicationInterne() {
   const [presenceEntries, setPresenceEntries] = useState<PresenceMessagerie[]>([]);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState('');
-  const [lastRealtimeRefresh, setLastRealtimeRefresh] = useState(new Date().toISOString());
   const [simpleQuickFilter, setSimpleQuickFilter] = useState<SimpleQuickFilter>(initialMessagingUiState.simpleQuickFilter);
   const [workspaceUsers, setWorkspaceUsers] = useState<Usuario[]>([]);
   const [teamChatMessages, setTeamChatMessages] = useState<TeamChatMessage[]>([]);
@@ -601,7 +600,7 @@ export function CommunicationInterne() {
     setSavedDrafts(obtenirBrouillonsMessagerie(departementActuel, currentUserId));
     setDepartmentTemplates(obtenirTemplatesMessagerie(departementActuel));
     setPresenceEntries(obtenirPresencesMessagerie());
-  }, [departementActuel, currentUserId, lastRealtimeRefresh]);
+  }, [departementActuel, currentUserId]);
 
   useEffect(() => {
     const storageHandler = (event: StorageEvent) => {
@@ -642,7 +641,6 @@ export function CommunicationInterne() {
         status,
       });
       setPresenceEntries(obtenirPresencesMessagerie());
-      setLastRealtimeRefresh(new Date().toISOString());
     };
 
     const handleVisibility = () => {
@@ -768,7 +766,6 @@ export function CommunicationInterne() {
     setDepartmentTemplates(nextDepartmentId ? obtenirTemplatesMessagerie(nextDepartmentId) : []);
     setPresenceEntries(obtenirPresencesMessagerie());
     chargerWorkspaceChat();
-    setLastRealtimeRefresh(new Date().toISOString());
     
     if (nextDepartmentId && !departementActuel) {
       setDepartementActuel(nextDepartmentId);
@@ -841,12 +838,12 @@ export function CommunicationInterne() {
 
   const handleEnvoyerMessage = () => {
     if (!accessProfile.canCompose) {
-      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas l’envoi de messages.');
+      toast.error(accessProfile.restrictionNotice || 'Votre rÃ´le ne permet pas lâ€™envoi de messages.');
       return;
     }
 
     if (formData.isGroupMessage && !accessProfile.canUseGroupMessages) {
-      toast.error('Les messages de groupe nécessitent un niveau d’autorisation supérieur.');
+      toast.error('Les messages de groupe nÃ©cessitent un niveau dâ€™autorisation supÃ©rieur.');
       return;
     }
 
@@ -887,7 +884,7 @@ export function CommunicationInterne() {
           important: false
         });
       });
-      toast.success(`Message envoyé à ${recipients.length} département(s)`);
+      toast.success(`Message envoyÃ© Ã  ${recipients.length} dÃ©partement(s)`);
     } else {
       envoyerMessage({
         type: formData.type,
@@ -904,7 +901,7 @@ export function CommunicationInterne() {
         dateEcheance: formData.dateEcheance || undefined,
         important: false
       });
-      toast.success('Message envoyé avec succès');
+      toast.success('Message envoyÃ© avec succÃ¨s');
     }
 
     if (activeDraftId) {
@@ -921,7 +918,7 @@ export function CommunicationInterne() {
 
   const handleRepondre = () => {
     if (!accessProfile.canCompose) {
-      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas l’envoi de réponses.');
+      toast.error(accessProfile.restrictionNotice || 'Votre rÃ´le ne permet pas lâ€™envoi de rÃ©ponses.');
       return;
     }
 
@@ -949,7 +946,7 @@ export function CommunicationInterne() {
     setVue('detail');
     setFormData({ ...formData, contenu: '' });
     setComposerAttachments([]);
-    toast.success('Réponse envoyée');
+    toast.success('RÃ©ponse envoyÃ©e');
   };
 
   const handleMarquerLu = (msg: ExtendedMessage) => {
@@ -960,24 +957,24 @@ export function CommunicationInterne() {
   const handleArchiver = (msg: ExtendedMessage) => {
     archiverMessage(msg.id);
     chargerDonnees();
-    toast.success('Message archivé');
+    toast.success('Message archivÃ©');
   };
 
   const handleMarquerImportant = (msg: ExtendedMessage) => {
     marquerImportant(msg.id, !msg.important);
     chargerDonnees();
-    toast.success(msg.important ? 'Retiré des importants' : 'Marqué comme important');
+    toast.success(msg.important ? 'RetirÃ© des importants' : 'MarquÃ© comme important');
   };
 
   const handleChangerStatut = (msg: ExtendedMessage, statut: StatutDemande) => {
     if (!accessProfile.canManageStatus) {
-      toast.error('La modification de statut est réservée aux rôles de coordination et de supervision.');
+      toast.error('La modification de statut est rÃ©servÃ©e aux rÃ´les de coordination et de supervision.');
       return;
     }
 
     modifierStatutDemande(msg.id, statut);
     chargerDonnees();
-    toast.success(`Statut modifié: ${statut}`);
+    toast.success(`Statut modifiÃ©: ${statut}`);
   };
 
   const handleSupprimer = (msg: ExtendedMessage) => {
@@ -986,11 +983,11 @@ export function CommunicationInterne() {
       return;
     }
 
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+    if (confirm('ÃŠtes-vous sÃ»r de vouloir supprimer ce message ?')) {
       supprimerMessage(msg.id);
       chargerDonnees();
       setVue('liste');
-      toast.success('Message supprimé');
+      toast.success('Message supprimÃ©');
     }
   };
 
@@ -1009,13 +1006,13 @@ export function CommunicationInterne() {
     const userIndex = newReactions[messageId][emoji].indexOf(currentUserId);
     
     if (userIndex > -1) {
-      // Quitar reacción
+      // Quitar reacciÃ³n
       newReactions[messageId][emoji].splice(userIndex, 1);
       if (newReactions[messageId][emoji].length === 0) {
         delete newReactions[messageId][emoji];
       }
     } else {
-      // Agregar reacción
+      // Agregar reacciÃ³n
       newReactions[messageId][emoji].push(currentUserId);
     }
     
@@ -1031,17 +1028,17 @@ export function CommunicationInterne() {
     
     setPinnedMessages(newPinned);
     localStorage.setItem('pinned-messages', JSON.stringify(newPinned));
-    toast.success(pinnedMessages.includes(messageId) ? 'Message détaché' : 'Message épinglé');
+    toast.success(pinnedMessages.includes(messageId) ? 'Message dÃ©tachÃ©' : 'Message Ã©pinglÃ©');
   };
 
   const handleCopyMessage = (content: string) => {
     copiarAlPortapapeles(content);
-    toast.success('Message copié dans le presse-papiers');
+    toast.success('Message copiÃ© dans le presse-papiers');
   };
 
   const handleCreatePoll = (poll: any) => {
     if (!accessProfile.canCompose) {
-      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas la création de sondages.');
+      toast.error(accessProfile.restrictionNotice || 'Votre rÃ´le ne permet pas la crÃ©ation de sondages.');
       return;
     }
 
@@ -1060,7 +1057,7 @@ export function CommunicationInterne() {
       expediteur: currentUserName || `Responsable ${deptActuel.nombre}`,
       expediteurId: currentUserId,
       sujet: formData.sujet,
-      contenu: `📊 Sondage: ${poll.question}`,
+      contenu: `ðŸ“Š Sondage: ${poll.question}`,
       piecesJointes: composerAttachments,
       important: false,
       poll: poll
@@ -1074,23 +1071,23 @@ export function CommunicationInterne() {
     setTemplateName('');
     setFormData(createEmptyFormData());
     
-    toast.success('Sondage créé et envoyé');
+    toast.success('Sondage crÃ©Ã© et envoyÃ©');
   };
 
   const handleEnvoyerMessageSimple = () => {
     if (!accessProfile.canCompose) {
-      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas l’envoi de messages.');
+      toast.error(accessProfile.restrictionNotice || 'Votre rÃ´le ne permet pas lâ€™envoi de messages.');
       return;
     }
 
     if (!selectedConversationId) {
-      toast.error('Sélectionnez une conversation avant d’envoyer un message.');
+      toast.error('SÃ©lectionnez une conversation avant dâ€™envoyer un message.');
       return;
     }
 
     const contenu = formData.contenu.trim();
     if (!contenu && composerAttachments.length === 0) {
-      toast.error('Ajoutez un message ou une pièce jointe avant l’envoi.');
+      toast.error('Ajoutez un message ou une piÃ¨ce jointe avant lâ€™envoi.');
       return;
     }
 
@@ -1134,7 +1131,7 @@ export function CommunicationInterne() {
       priorite: 'normale',
       dateEcheance: '',
     }));
-    toast.success(`Message envoyé à ${deptDest.nombre}`);
+    toast.success(`Message envoyÃ© Ã  ${deptDest.nombre}`);
   };
 
   const handleOpenReply = (msg: ExtendedMessage) => {
@@ -1179,7 +1176,7 @@ export function CommunicationInterne() {
     if (!files.length) return;
 
     if (!accessProfile.canUseAttachments) {
-      toast.error('Les pièces jointes ne sont pas disponibles pour ce rôle.');
+      toast.error('Les piÃ¨ces jointes ne sont pas disponibles pour ce rÃ´le.');
       return;
     }
 
@@ -1200,7 +1197,7 @@ export function CommunicationInterne() {
 
     if (nextAttachments.length > 0) {
       setComposerAttachments(previous => [...previous, ...nextAttachments]);
-      toast.success(`${nextAttachments.length} pièce(s) jointe(s) ajoutée(s)`);
+      toast.success(`${nextAttachments.length} piÃ¨ce(s) jointe(s) ajoutÃ©e(s)`);
     }
   };
 
@@ -1216,7 +1213,7 @@ export function CommunicationInterne() {
 
       if (attachmentToRemove && esReferenciaAdjuntoMessagerie(attachmentToRemove.url)) {
         void eliminarAdjuntoMessagerie(attachmentToRemove.url).catch((error) => {
-          console.error('Erreur lors de la suppression du contenu de la pièce jointe:', error);
+          console.error('Erreur lors de la suppression du contenu de la piÃ¨ce jointe:', error);
         });
       }
 
@@ -1231,7 +1228,7 @@ export function CommunicationInterne() {
     }
 
     if (!formData.sujet.trim() && !formData.contenu.trim() && composerAttachments.length === 0) {
-      toast.error('Ajoutez au moins un sujet, un contenu ou une pièce jointe avant de sauvegarder.');
+      toast.error('Ajoutez au moins un sujet, un contenu ou une piÃ¨ce jointe avant de sauvegarder.');
       return;
     }
 
@@ -1254,7 +1251,7 @@ export function CommunicationInterne() {
 
     setActiveDraftId(savedDraft.id);
     setSavedDrafts(obtenirBrouillonsMessagerie(departementActuel, currentUserId));
-    toast.success('Brouillon sauvegardé');
+    toast.success('Brouillon sauvegardÃ©');
   };
 
   const handleLoadDraft = (draft: MessageDraft) => {
@@ -1272,7 +1269,7 @@ export function CommunicationInterne() {
       dateEcheance: draft.dateEcheance || '',
     });
     setVue('nouveau');
-    toast.success('Brouillon chargé');
+    toast.success('Brouillon chargÃ©');
   };
 
   const handleDeleteDraft = (draftId: string) => {
@@ -1281,24 +1278,24 @@ export function CommunicationInterne() {
       setActiveDraftId(null);
     }
     setSavedDrafts(obtenirBrouillonsMessagerie(departementActuel, currentUserId));
-    toast.success('Brouillon supprimé');
+    toast.success('Brouillon supprimÃ©');
   };
 
   const handleSaveTemplate = () => {
     if (!departementActuel || !accessProfile.canManageTemplates) {
-      toast.error('Seuls les rôles autorisés peuvent enregistrer des modèles de département.');
+      toast.error('Seuls les rÃ´les autorisÃ©s peuvent enregistrer des modÃ¨les de dÃ©partement.');
       return;
     }
 
     if (!templateName.trim() || !formData.sujet.trim() || !formData.contenu.trim()) {
-      toast.error('Renseignez un nom de modèle, un sujet et un contenu.');
+      toast.error('Renseignez un nom de modÃ¨le, un sujet et un contenu.');
       return;
     }
 
     sauvegarderTemplateMessagerie({
       departementId: departementActuel,
       nom: templateName.trim(),
-      description: `${messageTypeMeta[formData.type].label} prêt à l’emploi`,
+      description: `${messageTypeMeta[formData.type].label} prÃªt Ã  lâ€™emploi`,
       type: formData.type,
       sujet: formData.sujet,
       contenu: formData.contenu,
@@ -1310,7 +1307,7 @@ export function CommunicationInterne() {
 
     setTemplateName('');
     setDepartmentTemplates(obtenirTemplatesMessagerie(departementActuel));
-    toast.success('Modèle enregistré pour ce département');
+    toast.success('ModÃ¨le enregistrÃ© pour ce dÃ©partement');
   };
 
   const handleApplyTemplate = (template: MessageTemplate) => {
@@ -1325,18 +1322,18 @@ export function CommunicationInterne() {
     }));
     incrementerUsageTemplateMessagerie(template.id);
     setDepartmentTemplates(obtenirTemplatesMessagerie(departementActuel));
-    toast.success(`Modèle « ${template.nom} » appliqué`);
+    toast.success(`ModÃ¨le Â« ${template.nom} Â» appliquÃ©`);
   };
 
   const handleDeleteTemplate = (templateId: string) => {
     if (!accessProfile.canManageTemplates) {
-      toast.error('Suppression réservée aux rôles autorisés.');
+      toast.error('Suppression rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
     supprimerTemplateMessagerie(templateId);
     setDepartmentTemplates(obtenirTemplatesMessagerie(departementActuel));
-    toast.success('Modèle supprimé');
+    toast.success('ModÃ¨le supprimÃ©');
   };
 
   const getIconeType = (type: TypeMessage) => {
@@ -1484,7 +1481,7 @@ export function CommunicationInterne() {
   const departmentPresence = presenceEntries.filter(entry => entry.departementId === departementActuel);
   const activePresenceCount = presenceEntries.filter(entry => entry.status === 'online').length;
   const permissionBadges = [
-    accessProfile.canCompose ? 'Écriture' : 'Lecture',
+    accessProfile.canCompose ? 'Ã‰criture' : 'Lecture',
     accessProfile.canUseGroupMessages ? 'Groupe' : 'Individuel',
     accessProfile.canManageStatus ? 'Suivi' : 'Consultation',
   ];
@@ -1517,12 +1514,12 @@ export function CommunicationInterne() {
   const canUseComposerMedia = Boolean(selectedConversationId || selectedWorkspaceKey || vue === 'nouveau' || vue === 'repondre');
   const ouvrirSelecteurAdjuntos = (accept?: string) => {
     if (!canUseComposerMedia) {
-      toast.error('Sélectionnez une conversation avant d’ajouter un contenu.');
+      toast.error('SÃ©lectionnez une conversation avant dâ€™ajouter un contenu.');
       return;
     }
 
     if (!accessProfile.canUseAttachments) {
-      toast.error('Les pièces jointes ne sont pas disponibles pour ce rôle.');
+      toast.error('Les piÃ¨ces jointes ne sont pas disponibles pour ce rÃ´le.');
       return;
     }
 
@@ -1555,7 +1552,7 @@ export function CommunicationInterne() {
     }
 
     if (!accessProfile.canCompose) {
-      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas de rédiger un message.');
+      toast.error(accessProfile.restrictionNotice || 'Votre rÃ´le ne permet pas de rÃ©diger un message.');
       return;
     }
 
@@ -1564,18 +1561,18 @@ export function CommunicationInterne() {
       contenu: previous.contenu.trim().length > 0 ? `${previous.contenu} ${value}` : value
     }));
   };
-  const handleInsertQuickEmoji = (emoji = '🙂') => {
-    handleInsertQuickText(emoji, 'Sélectionnez une conversation avant d’ajouter un emoji.');
+  const handleInsertQuickEmoji = (emoji = 'ðŸ™‚') => {
+    handleInsertQuickText(emoji, 'SÃ©lectionnez une conversation avant dâ€™ajouter un emoji.');
   };
   const handleInsertReaction = (emoji: string) => {
-    handleInsertQuickText(emoji, 'Sélectionnez une conversation avant d’ajouter une réaction.');
+    handleInsertQuickText(emoji, 'SÃ©lectionnez une conversation avant dâ€™ajouter une rÃ©action.');
   };
   const handleInsertLinkTemplate = () => {
-    handleInsertQuickText('https://', 'Sélectionnez une conversation avant d’ajouter un lien.');
+    handleInsertQuickText('https://', 'SÃ©lectionnez une conversation avant dâ€™ajouter un lien.');
   };
   const handleStartVideoRoom = () => {
     if (!selectedConversation || !departementCourant) {
-      toast.error('Sélectionnez une conversation avant de lancer une réunion.');
+      toast.error('SÃ©lectionnez une conversation avant de lancer une rÃ©union.');
       return;
     }
 
@@ -1585,7 +1582,7 @@ export function CommunicationInterne() {
       .replace(/[^a-z0-9-]/g, '-');
 
     window.open(`https://meet.jit.si/${roomId}`, '_blank', 'noopener,noreferrer');
-    toast.success(`Salon vidéo ouvert pour ${selectedConversation.department.nombre}`);
+    toast.success(`Salon vidÃ©o ouvert pour ${selectedConversation.department.nombre}`);
   };
   const toggleComposerMenu = (menu: 'media' | 'quick') => {
     setOpenComposerMenu(previous => previous === menu ? null : menu);
@@ -1598,31 +1595,31 @@ export function CommunicationInterne() {
   const messageTypeMeta: Record<TypeMessage, { label: string; description: string; accent: string; icon: React.ReactNode }> = {
     message: {
       label: 'Message',
-      description: 'Échange rapide entre équipes.',
+      description: 'Ã‰change rapide entre Ã©quipes.',
       accent: 'border-slate-200 bg-slate-50 text-slate-700',
       icon: <MessageSquare className="h-4 w-4" />,
     },
     demande: {
       label: 'Demande',
-      description: 'Suivi avec priorité et échéance.',
+      description: 'Suivi avec prioritÃ© et Ã©chÃ©ance.',
       accent: 'border-emerald-200 bg-emerald-50 text-emerald-700',
       icon: <FileText className="h-4 w-4" />,
     },
     document: {
       label: 'Document',
-      description: 'Partage d’un support ou d’une pièce jointe.',
+      description: 'Partage dâ€™un support ou dâ€™une piÃ¨ce jointe.',
       accent: 'border-blue-200 bg-blue-50 text-blue-700',
       icon: <Paperclip className="h-4 w-4" />,
     },
     alerte: {
       label: 'Alerte',
-      description: 'Signalement immédiat pour un sujet sensible.',
+      description: 'Signalement immÃ©diat pour un sujet sensible.',
       accent: 'border-rose-200 bg-rose-50 text-rose-700',
       icon: <AlertCircle className="h-4 w-4" />,
     },
     annonce: {
       label: 'Annonce',
-      description: 'Communication officielle à portée large.',
+      description: 'Communication officielle Ã  portÃ©e large.',
       accent: 'border-violet-200 bg-violet-50 text-violet-700',
       icon: <Bell className="h-4 w-4" />,
     },
@@ -1641,37 +1638,37 @@ export function CommunicationInterne() {
     {
       id: 'handoff',
       label: 'Passation',
-      description: 'Résumé clair d’un dossier à transmettre.',
+      description: 'RÃ©sumÃ© clair dâ€™un dossier Ã  transmettre.',
       type: 'message',
       sujet: 'Passation de dossier',
-      contenu: 'Bonjour,\n\nVoici le point de situation :\n- éléments finalisés\n- sujets en attente\n- prochaine action attendue\n\nMerci de me confirmer la prise en charge.',
+      contenu: 'Bonjour,\n\nVoici le point de situation :\n- Ã©lÃ©ments finalisÃ©s\n- sujets en attente\n- prochaine action attendue\n\nMerci de me confirmer la prise en charge.',
     },
     {
       id: 'incident',
       label: 'Incident',
-      description: 'Alerte concise avec niveau d’urgence.',
+      description: 'Alerte concise avec niveau dâ€™urgence.',
       type: 'alerte',
       sujet: 'Signalement prioritaire',
-      contenu: 'Bonjour,\n\nUn incident nécessite une attention immédiate.\n- impact observé\n- périmètre concerné\n- action attendue\n\nMerci de traiter ce point dès que possible.',
+      contenu: 'Bonjour,\n\nUn incident nÃ©cessite une attention immÃ©diate.\n- impact observÃ©\n- pÃ©rimÃ¨tre concernÃ©\n- action attendue\n\nMerci de traiter ce point dÃ¨s que possible.',
     },
     {
       id: 'volunteer-request',
       label: 'Volontaires',
-      description: 'Demande standardisée au recrutement.',
+      description: 'Demande standardisÃ©e au recrutement.',
       type: 'demande',
       typeDemande: 'demande_volontaire',
       priorite: 'haute',
-      sujet: 'Renfort bénévole demandé',
-      contenu: 'Bonjour,\n\nNous avons besoin d’un renfort bénévole pour couvrir une plage opérationnelle.\n- créneau souhaité\n- nombre de bénévoles\n- tâches prévues\n\nMerci de confirmer la disponibilité.',
+      sujet: 'Renfort bÃ©nÃ©vole demandÃ©',
+      contenu: 'Bonjour,\n\nNous avons besoin dâ€™un renfort bÃ©nÃ©vole pour couvrir une plage opÃ©rationnelle.\n- crÃ©neau souhaitÃ©\n- nombre de bÃ©nÃ©voles\n- tÃ¢ches prÃ©vues\n\nMerci de confirmer la disponibilitÃ©.',
     },
     {
       id: 'group-note',
       label: 'Info groupe',
-      description: 'Note simple pour plusieurs départements.',
+      description: 'Note simple pour plusieurs dÃ©partements.',
       type: 'annonce',
       isGroupMessage: true,
       sujet: 'Information de coordination',
-      contenu: 'Bonjour à toutes et à tous,\n\nMerci de prendre connaissance de cette information de coordination.\n- contexte\n- changement attendu\n- date d’application\n\nN’hésitez pas à répondre si une validation est nécessaire.',
+      contenu: 'Bonjour Ã  toutes et Ã  tous,\n\nMerci de prendre connaissance de cette information de coordination.\n- contexte\n- changement attendu\n- date dâ€™application\n\nNâ€™hÃ©sitez pas Ã  rÃ©pondre si une validation est nÃ©cessaire.',
     },
   ];
   const appliquerBrouillonRapide = (preset: typeof quickDraftPresets[number]) => {
@@ -1689,13 +1686,13 @@ export function CommunicationInterne() {
       typeDemande: preset.typeDemande || 'information',
       priorite: preset.priorite || 'normale',
     });
-    toast.success(`Brouillon « ${preset.label} » prêt à compléter`);
+    toast.success(`Brouillon Â« ${preset.label} Â» prÃªt Ã  complÃ©ter`);
   };
   const draftChecks = [
-    { label: 'Type défini', ready: Boolean(formData.type) },
+    { label: 'Type dÃ©fini', ready: Boolean(formData.type) },
     { label: 'Destinataire choisi', ready: selectedDestCount > 0 },
-    { label: 'Sujet renseigné', ready: formData.sujet.trim().length >= 4 },
-    { label: 'Message structuré', ready: formData.contenu.trim().length >= 30 },
+    { label: 'Sujet renseignÃ©', ready: formData.sujet.trim().length >= 4 },
+    { label: 'Message structurÃ©', ready: formData.contenu.trim().length >= 30 },
   ];
   const draftCompletion = Math.round((draftChecks.filter(check => check.ready).length / draftChecks.length) * 100);
   const workspaceShortcuts: Array<{
@@ -1707,14 +1704,14 @@ export function CommunicationInterne() {
   }> = [
     {
       id: 'liste',
-      label: 'Boîte de réception',
+      label: 'BoÃ®te de rÃ©ception',
       description: 'Traiter les messages et demandes en cours.',
       badge: `${messagesFiltres.length}`,
       icon: <Inbox className="h-4 w-4" />,
     },
     {
       id: 'nouveau',
-      label: 'Rédiger',
+      label: 'RÃ©diger',
       description: 'Composer un message clair et professionnel.',
       badge: selectedDestCount > 0 ? `${selectedDestCount}` : 'Nouveau',
       icon: <Edit2 className="h-4 w-4" />,
@@ -1722,7 +1719,7 @@ export function CommunicationInterne() {
     {
       id: 'statistiques',
       label: 'Pilotage',
-      description: 'Lire la charge, les urgences et la réactivité.',
+      description: 'Lire la charge, les urgences et la rÃ©activitÃ©.',
       badge: `${tauxLecture}%`,
       icon: <BarChart3 className="h-4 w-4" />,
     },
@@ -1737,14 +1734,14 @@ export function CommunicationInterne() {
     },
     {
       id: 'recus',
-      label: 'Reçus',
+      label: 'ReÃ§us',
       icon: <Inbox className="w-4 h-4" />,
       count: messages.filter(m => m.departementDestinataire === departementActuel && !m.archive).length,
       tone: 'from-blue-50 to-indigo-50 text-blue-700 border-blue-200'
     },
     {
       id: 'envoyes',
-      label: 'Envoyés',
+      label: 'EnvoyÃ©s',
       icon: <Send className="w-4 h-4" />,
       count: messages.filter(m => m.departementEmetteur === departementActuel && !m.archive).length,
       tone: 'from-emerald-50 to-green-50 text-emerald-700 border-emerald-200'
@@ -1772,7 +1769,7 @@ export function CommunicationInterne() {
     },
     {
       id: 'epingles',
-      label: 'Épinglés',
+      label: 'Ã‰pinglÃ©s',
       icon: <Pin className="w-4 h-4" />,
       count: epinglesCount,
       tone: 'from-fuchsia-50 to-pink-50 text-fuchsia-700 border-fuchsia-200'
@@ -1811,12 +1808,12 @@ export function CommunicationInterne() {
 
   const formatWorkspaceDate = (value?: string) => {
     if (!value) {
-      return 'Aucune activité';
+      return 'Aucune activitÃ©';
     }
 
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
-      return 'Aucune activité';
+      return 'Aucune activitÃ©';
     }
 
     return date.toLocaleString('fr-CA', {
@@ -1860,9 +1857,9 @@ export function CommunicationInterne() {
       const lastMessage = messagesForConversation[messagesForConversation.length - 1];
       const fallbackName = messagesForConversation.find((message) => message.senderUserId === userId)?.senderName
         || messagesForConversation.find((message) => message.senderUserId !== currentUserId)?.senderName
-        || 'Utilisateur archivé';
+        || 'Utilisateur archivÃ©';
       const subtitleParts = [
-        user ? getWorkspaceRoleLabel(userId) : 'Historique archivé',
+        user ? getWorkspaceRoleLabel(userId) : 'Historique archivÃ©',
         user?.email || '',
         user && user.activo === false ? 'Inactif' : '',
       ].filter(Boolean);
@@ -1872,7 +1869,7 @@ export function CommunicationInterne() {
         id: conversationId,
         type: 'direct',
         title: user ? getWorkspaceUserLabel(userId) : fallbackName,
-        subtitle: subtitleParts.join(' • '),
+        subtitle: subtitleParts.join(' â€¢ '),
         avatarSeed: `direct-${userId}`,
         avatarUserId: user?.activo === false ? undefined : userId,
         memberIds: [currentUserId, userId],
@@ -1907,7 +1904,7 @@ export function CommunicationInterne() {
         messages: messagesForConversation,
         unreadCount: getUnreadCountForConversation(messagesForConversation),
         lastActivity: lastMessage?.createdAt || team.createdAt,
-        accentLabel: 'Équipe',
+        accentLabel: 'Ã‰quipe',
       };
     })
     .sort((left, right) => {
@@ -1941,7 +1938,7 @@ export function CommunicationInterne() {
         id: channel.id,
         type: 'channel',
         title: `#${channel.name}`,
-        subtitle: channel.description || (linkedTeam ? `Équipe ${linkedTeam.name}` : `${memberIds.length} membre(s)`),
+        subtitle: channel.description || (linkedTeam ? `Ã‰quipe ${linkedTeam.name}` : `${memberIds.length} membre(s)`),
         avatarSeed: `channel-${channel.id}`,
         memberIds,
         messages: messagesForConversation,
@@ -2046,7 +2043,7 @@ export function CommunicationInterne() {
 
   const handleCreateWorkspaceTeam = () => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La gestion des équipes est réservée aux rôles autorisés.');
+      toast.error('La gestion des Ã©quipes est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
@@ -2057,13 +2054,13 @@ export function CommunicationInterne() {
 
   const handleEditWorkspaceTeam = (teamId: string) => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La modification des équipes est réservée aux rôles autorisés.');
+      toast.error('La modification des Ã©quipes est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
     const team = teamChatTeams.find((item) => item.id === teamId);
     if (!team) {
-      toast.error('Équipe introuvable.');
+      toast.error('Ã‰quipe introuvable.');
       return;
     }
 
@@ -2078,12 +2075,12 @@ export function CommunicationInterne() {
 
   const submitWorkspaceTeam = () => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La gestion des équipes est réservée aux rôles autorisés.');
+      toast.error('La gestion des Ã©quipes est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
     if (!workspaceTeamForm.name.trim()) {
-      toast.error('Saisissez un nom pour l’équipe.');
+      toast.error('Saisissez un nom pour lâ€™Ã©quipe.');
       return;
     }
 
@@ -2102,7 +2099,7 @@ export function CommunicationInterne() {
         });
 
     if (!savedTeam) {
-      toast.error('Impossible de sauvegarder l’équipe.');
+      toast.error('Impossible de sauvegarder lâ€™Ã©quipe.');
       return;
     }
 
@@ -2111,34 +2108,34 @@ export function CommunicationInterne() {
     setSelectedWorkspaceKey(`team:${savedTeam.id}`);
     setWorkspaceTeamForm(createEmptyWorkspaceTeamForm(currentUserId));
     closeWorkspaceDialog();
-    toast.success(workspaceEditingTeamId ? `Équipe « ${savedTeam.name} » mise à jour` : `Équipe « ${savedTeam.name} » créée`);
+    toast.success(workspaceEditingTeamId ? `Ã‰quipe Â« ${savedTeam.name} Â» mise Ã  jour` : `Ã‰quipe Â« ${savedTeam.name} Â» crÃ©Ã©e`);
   };
 
   const handleDeleteWorkspaceTeam = (teamId: string) => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La suppression des équipes est réservée aux rôles autorisés.');
+      toast.error('La suppression des Ã©quipes est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
     const team = teamChatTeams.find((item) => item.id === teamId);
     if (!team) {
-      toast.error('Équipe introuvable.');
+      toast.error('Ã‰quipe introuvable.');
       return;
     }
 
-    if (!window.confirm(`Supprimer l’équipe « ${team.name} » ainsi que ses canaux et messages liés ?`)) {
+    if (!window.confirm(`Supprimer lâ€™Ã©quipe Â« ${team.name} Â» ainsi que ses canaux et messages liÃ©s ?`)) {
       return;
     }
 
     supprimerTeamChatTeam(teamId);
     setSelectedWorkspaceKey('');
     chargerWorkspaceChat();
-    toast.success(`Équipe « ${team.name} » supprimée`);
+    toast.success(`Ã‰quipe Â« ${team.name} Â» supprimÃ©e`);
   };
 
   const handleCreateWorkspaceChannel = () => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La gestion des canaux est réservée aux rôles autorisés.');
+      toast.error('La gestion des canaux est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
@@ -2149,7 +2146,7 @@ export function CommunicationInterne() {
 
   const handleEditWorkspaceChannel = (channelId: string) => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La modification des canaux est réservée aux rôles autorisés.');
+      toast.error('La modification des canaux est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
@@ -2171,7 +2168,7 @@ export function CommunicationInterne() {
 
   const submitWorkspaceChannel = () => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La gestion des canaux est réservée aux rôles autorisés.');
+      toast.error('La gestion des canaux est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
@@ -2212,12 +2209,12 @@ export function CommunicationInterne() {
     setSelectedWorkspaceKey(`channel:${savedChannel.id}`);
     setWorkspaceChannelForm(createEmptyWorkspaceChannelForm(currentUserId));
     closeWorkspaceDialog();
-    toast.success(workspaceEditingChannelId ? `Canal « ${savedChannel.name} » mis à jour` : `Canal « ${savedChannel.name} » créé`);
+    toast.success(workspaceEditingChannelId ? `Canal Â« ${savedChannel.name} Â» mis Ã  jour` : `Canal Â« ${savedChannel.name} Â» crÃ©Ã©`);
   };
 
   const handleDeleteWorkspaceChannel = (channelId: string) => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La suppression des canaux est réservée aux rôles autorisés.');
+      toast.error('La suppression des canaux est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
@@ -2227,19 +2224,19 @@ export function CommunicationInterne() {
       return;
     }
 
-    if (!window.confirm(`Supprimer le canal « ${channel.name} » ainsi que ses messages et événements liés ?`)) {
+    if (!window.confirm(`Supprimer le canal Â« ${channel.name} Â» ainsi que ses messages et Ã©vÃ©nements liÃ©s ?`)) {
       return;
     }
 
     supprimerTeamChatChannel(channelId);
     setSelectedWorkspaceKey('');
     chargerWorkspaceChat();
-    toast.success(`Canal « ${channel.name} » supprimé`);
+    toast.success(`Canal Â« ${channel.name} Â» supprimÃ©`);
   };
 
   const handleScheduleWorkspaceEvent = (conversation?: WorkspaceConversation | null) => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La programmation d’événements est réservée aux rôles autorisés.');
+      toast.error('La programmation dâ€™Ã©vÃ©nements est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
@@ -2258,13 +2255,13 @@ export function CommunicationInterne() {
 
   const handleEditWorkspaceEvent = (eventId: string) => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La modification des événements est réservée aux rôles autorisés.');
+      toast.error('La modification des Ã©vÃ©nements est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
     const event = teamChatEvents.find((item) => item.id === eventId);
     if (!event) {
-      toast.error('Événement introuvable.');
+      toast.error('Ã‰vÃ©nement introuvable.');
       return;
     }
 
@@ -2298,17 +2295,17 @@ export function CommunicationInterne() {
 
   const submitWorkspaceEvent = () => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La programmation d’événements est réservée aux rôles autorisés.');
+      toast.error('La programmation dâ€™Ã©vÃ©nements est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
     if (!workspaceEventForm.title.trim()) {
-      toast.error('Saisissez un titre pour l’événement.');
+      toast.error('Saisissez un titre pour lâ€™Ã©vÃ©nement.');
       return;
     }
 
     if (!workspaceEventForm.startAt.trim() || Number.isNaN(new Date(workspaceEventForm.startAt).getTime())) {
-      toast.error('Date de début invalide.');
+      toast.error('Date de dÃ©but invalide.');
       return;
     }
 
@@ -2339,7 +2336,7 @@ export function CommunicationInterne() {
         });
 
     if (!savedEvent) {
-      toast.error('Impossible de sauvegarder l’événement.');
+      toast.error('Impossible de sauvegarder lâ€™Ã©vÃ©nement.');
       return;
     }
 
@@ -2348,34 +2345,34 @@ export function CommunicationInterne() {
     setSelectedCalendarEventId(savedEvent.id);
     setWorkspaceEventForm(createEmptyWorkspaceEventForm(currentUserId));
     closeWorkspaceDialog();
-    toast.success(workspaceEditingEventId ? `Événement « ${savedEvent.title} » mis à jour` : `Événement « ${savedEvent.title} » programmé`);
+    toast.success(workspaceEditingEventId ? `Ã‰vÃ©nement Â« ${savedEvent.title} Â» mis Ã  jour` : `Ã‰vÃ©nement Â« ${savedEvent.title} Â» programmÃ©`);
   };
 
   const handleDeleteWorkspaceEvent = (eventId: string) => {
     if (!accessProfile.canManageWorkspace) {
-      toast.error('La suppression des événements est réservée aux rôles autorisés.');
+      toast.error('La suppression des Ã©vÃ©nements est rÃ©servÃ©e aux rÃ´les autorisÃ©s.');
       return;
     }
 
     const event = teamChatEvents.find((item) => item.id === eventId);
     if (!event) {
-      toast.error('Événement introuvable.');
+      toast.error('Ã‰vÃ©nement introuvable.');
       return;
     }
 
-    if (!window.confirm(`Supprimer l’événement « ${event.title} » ?`)) {
+    if (!window.confirm(`Supprimer lâ€™Ã©vÃ©nement Â« ${event.title} Â» ?`)) {
       return;
     }
 
     supprimerTeamChatEvent(eventId);
     setSelectedCalendarEventId('');
     chargerWorkspaceChat();
-    toast.success(`Événement « ${event.title} » supprimé`);
+    toast.success(`Ã‰vÃ©nement Â« ${event.title} Â» supprimÃ©`);
   };
 
   const handleStartWorkspaceVideoRoom = (conversation?: WorkspaceConversation | null) => {
     if (!conversation) {
-      toast.error('Sélectionnez une conversation avant de lancer une réunion.');
+      toast.error('SÃ©lectionnez une conversation avant de lancer une rÃ©union.');
       return;
     }
 
@@ -2385,23 +2382,23 @@ export function CommunicationInterne() {
       .replace(/[^a-z0-9-]/g, '-');
 
     window.open(`https://meet.jit.si/${roomId}`, '_blank', 'noopener,noreferrer');
-    toast.success(`Salon vidéo ouvert pour ${conversation.title}`);
+    toast.success(`Salon vidÃ©o ouvert pour ${conversation.title}`);
   };
 
   const handleSendWorkspaceMessage = () => {
     if (!selectedWorkspace) {
-      toast.error('Sélectionnez une conversation avant d’envoyer un message.');
+      toast.error('SÃ©lectionnez une conversation avant dâ€™envoyer un message.');
       return;
     }
 
     if (!accessProfile.canCompose) {
-      toast.error(accessProfile.restrictionNotice || 'Votre rôle ne permet pas de rédiger un message.');
+      toast.error(accessProfile.restrictionNotice || 'Votre rÃ´le ne permet pas de rÃ©diger un message.');
       return;
     }
 
     const content = formData.contenu.trim();
     if (!content && composerAttachments.length === 0) {
-      toast.error('Saisissez un message ou ajoutez une pièce jointe.');
+      toast.error('Saisissez un message ou ajoutez une piÃ¨ce jointe.');
       return;
     }
 
@@ -2533,7 +2530,7 @@ export function CommunicationInterne() {
     const navigationItems = [
       { id: 'chat' as const, label: 'Chats', icon: <MessageSquare className="h-4 w-4" /> },
       { id: 'channels' as const, label: 'Canaux', icon: <Hash className="h-4 w-4" /> },
-      { id: 'people' as const, label: 'Équipes', icon: <Users className="h-4 w-4" /> },
+      { id: 'people' as const, label: 'Ã‰quipes', icon: <Users className="h-4 w-4" /> },
       { id: 'files' as const, label: 'Fichiers', icon: <FileText className="h-4 w-4" /> },
       { id: 'agenda' as const, label: 'Calendrier', icon: <Calendar className="h-4 w-4" /> },
       { id: 'alerts' as const, label: 'Alertes', icon: <Bell className="h-4 w-4" /> },
@@ -2545,21 +2542,21 @@ export function CommunicationInterne() {
     ), 0);
 
     const sectionDescriptions: Record<SimpleQuickFilter, string> = {
-      chat: 'Conversations directes avec les utilisateurs créés.',
-      channels: 'Canaux partagés par équipe ou par sujet.',
-      people: 'Espaces d’équipe pour coordonner plusieurs membres.',
-      files: 'Conversations contenant des fichiers ou médias.',
-      agenda: 'Réunions, points de passage et créneaux planifiés.',
-      alerts: 'Conversations avec messages non lus à traiter.',
+      chat: 'Conversations directes avec les utilisateurs crÃ©Ã©s.',
+      channels: 'Canaux partagÃ©s par Ã©quipe ou par sujet.',
+      people: 'Espaces dâ€™Ã©quipe pour coordonner plusieurs membres.',
+      files: 'Conversations contenant des fichiers ou mÃ©dias.',
+      agenda: 'RÃ©unions, points de passage et crÃ©neaux planifiÃ©s.',
+      alerts: 'Conversations avec messages non lus Ã  traiter.',
     };
 
     const emptyDescriptions: Record<SimpleQuickFilter, string> = {
-      chat: 'Aucun utilisateur actif n’est encore disponible pour lancer une discussion directe.',
-      channels: 'Créez un canal pour organiser un sujet, un projet ou une opération.',
-      people: 'Créez une équipe pour regrouper plusieurs utilisateurs et centraliser la discussion.',
-      files: 'Aucun échange avec pièce jointe n’a été trouvé pour ce filtre.',
-      agenda: 'Aucun événement programmé pour votre périmètre actuel.',
-      alerts: 'Aucune conversation prioritaire ou non lue n’est en attente.',
+      chat: 'Aucun utilisateur actif nâ€™est encore disponible pour lancer une discussion directe.',
+      channels: 'CrÃ©ez un canal pour organiser un sujet, un projet ou une opÃ©ration.',
+      people: 'CrÃ©ez une Ã©quipe pour regrouper plusieurs utilisateurs et centraliser la discussion.',
+      files: 'Aucun Ã©change avec piÃ¨ce jointe nâ€™a Ã©tÃ© trouvÃ© pour ce filtre.',
+      agenda: 'Aucun Ã©vÃ©nement programmÃ© pour votre pÃ©rimÃ¨tre actuel.',
+      alerts: 'Aucune conversation prioritaire ou non lue nâ€™est en attente.',
     };
 
     const directParticipantId = selectedWorkspace?.type === 'direct'
@@ -2631,7 +2628,7 @@ export function CommunicationInterne() {
               <div className="border-b border-[#e4e8f2] px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Espace d’équipe</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Espace dâ€™Ã©quipe</p>
                     <h2 className="mt-0.5 text-[26px] font-bold text-slate-950">{navigationItems.find((item) => item.id === simpleQuickFilter)?.label || 'Chats'}</h2>
                     <p className="text-[12px] text-slate-500">{sectionDescriptions[simpleQuickFilter]}</p>
                   </div>
@@ -2639,13 +2636,13 @@ export function CommunicationInterne() {
                     {simpleQuickFilter === 'people' && accessProfile.canManageWorkspace && (
                       <button type="button" onClick={handleCreateWorkspaceTeam} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                         <UserPlus className="h-4 w-4" />
-                        Créer équipe
+                        CrÃ©er Ã©quipe
                       </button>
                     )}
                     {simpleQuickFilter === 'channels' && accessProfile.canManageWorkspace && (
                       <button type="button" onClick={handleCreateWorkspaceChannel} className="inline-flex h-9 items-center gap-2 rounded-2xl border border-[#d7deec] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                         <Plus className="h-4 w-4" />
-                        Créer canal
+                        CrÃ©er canal
                       </button>
                     )}
                     {simpleQuickFilter === 'agenda' && accessProfile.canManageWorkspace && (
@@ -2662,10 +2659,10 @@ export function CommunicationInterne() {
                     {workspaceUsers.length} utilisateur(s)
                   </span>
                   <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
-                    {totalUnreadConversations} conversation(s) à lire
+                    {totalUnreadConversations} conversation(s) Ã  lire
                   </span>
                   <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
-                    {teamChatTeams.length} équipe(s)
+                    {teamChatTeams.length} Ã©quipe(s)
                   </span>
                   <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
                     {teamChatChannels.length} canal(aux)
@@ -2681,7 +2678,7 @@ export function CommunicationInterne() {
                     <Input
                       value={recherche}
                       onChange={(event) => setRecherche(event.target.value)}
-                      placeholder={simpleQuickFilter === 'agenda' ? 'Rechercher un événement' : 'Rechercher une conversation'}
+                      placeholder={simpleQuickFilter === 'agenda' ? 'Rechercher un Ã©vÃ©nement' : 'Rechercher une conversation'}
                       className="h-9 rounded-2xl border-[#e4e8f2] bg-white pl-10"
                     />
                   </div>
@@ -2696,7 +2693,7 @@ export function CommunicationInterne() {
                   visibleCalendarEvents.length === 0 ? (
                     <div className="flex h-full min-h-[240px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-5 text-center">
                       <Calendar className="h-9 w-9 text-slate-300" />
-                      <p className="mt-4 text-base font-semibold text-slate-900">Aucun événement programmé</p>
+                      <p className="mt-4 text-base font-semibold text-slate-900">Aucun Ã©vÃ©nement programmÃ©</p>
                       <p className="mt-2 max-w-xs text-sm text-slate-500">{emptyDescriptions.agenda}</p>
                     </div>
                   ) : (
@@ -2720,7 +2717,7 @@ export function CommunicationInterne() {
                                 {formatWorkspaceDate(event.startAt)}
                               </span>
                             </div>
-                            <p className="line-clamp-2 text-[12px] text-slate-600">{event.description || 'Réunion planifiée depuis l’espace de communication.'}</p>
+                            <p className="line-clamp-2 text-[12px] text-slate-600">{event.description || 'RÃ©union planifiÃ©e depuis lâ€™espace de communication.'}</p>
                             <p className="text-[11px] text-slate-500">{participantLabel || currentUserName}</p>
                           </button>
                         );
@@ -2802,24 +2799,24 @@ export function CommunicationInterne() {
                     <div className="border-b border-[#edf0f6] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] px-5 py-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Événement</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Ã‰vÃ©nement</p>
                           <h3 className="truncate text-[18px] font-bold text-slate-950">{selectedCalendarEvent.title}</h3>
-                          <p className="mt-0.5 text-[13px] text-slate-500">Début {formatWorkspaceDate(selectedCalendarEvent.startAt)}</p>
+                          <p className="mt-0.5 text-[13px] text-slate-500">DÃ©but {formatWorkspaceDate(selectedCalendarEvent.startAt)}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {accessProfile.canManageWorkspace && (
                             <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
-                              <button type="button" title="Modifier l’événement" onClick={() => handleEditWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceActionButtonClass}>
+                              <button type="button" title="Modifier lâ€™Ã©vÃ©nement" onClick={() => handleEditWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceActionButtonClass}>
                                 <Edit2 className="h-4 w-4" />
                               </button>
-                              <button type="button" title="Supprimer l’événement" onClick={() => handleDeleteWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceDangerButtonClass}>
+                              <button type="button" title="Supprimer lâ€™Ã©vÃ©nement" onClick={() => handleDeleteWorkspaceEvent(selectedCalendarEvent.id)} className={workspaceDangerButtonClass}>
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           )}
                           {accessProfile.canManageWorkspace && (
                             <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
-                              <button type="button" title="Programmer un nouvel événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
+                              <button type="button" title="Programmer un nouvel Ã©vÃ©nement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
                                 <Calendar className="h-4 w-4" />
                               </button>
                             </div>
@@ -2833,17 +2830,17 @@ export function CommunicationInterne() {
                         <p className="mt-2 text-sm text-slate-700">{selectedCalendarEvent.participantIds.map((participantId) => getWorkspaceUserLabel(participantId)).join(', ') || currentUserName}</p>
                       </div>
                       <div className="rounded-[22px] border border-slate-200 bg-white/85 p-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Détails</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{selectedCalendarEvent.description || 'Aucun détail complémentaire fourni pour cet événement.'}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">DÃ©tails</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{selectedCalendarEvent.description || 'Aucun dÃ©tail complÃ©mentaire fourni pour cet Ã©vÃ©nement.'}</p>
                       </div>
                       <div className="rounded-[22px] border border-slate-200 bg-white/85 p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Contexte</p>
                         <p className="mt-2 text-sm text-slate-700">
                           {selectedCalendarEvent.channelId
-                            ? `Canal lié : ${channelConversations.find((conversation) => conversation.id === selectedCalendarEvent.channelId)?.title || 'Canal supprimé'}`
+                            ? `Canal liÃ© : ${channelConversations.find((conversation) => conversation.id === selectedCalendarEvent.channelId)?.title || 'Canal supprimÃ©'}`
                             : selectedCalendarEvent.teamId
-                              ? `Équipe liée : ${teamConversations.find((conversation) => conversation.id === selectedCalendarEvent.teamId)?.title || 'Équipe supprimée'}`
-                              : 'Événement planifié hors conversation spécifique.'}
+                              ? `Ã‰quipe liÃ©e : ${teamConversations.find((conversation) => conversation.id === selectedCalendarEvent.teamId)?.title || 'Ã‰quipe supprimÃ©e'}`
+                              : 'Ã‰vÃ©nement planifiÃ© hors conversation spÃ©cifique.'}
                         </p>
                       </div>
                     </div>
@@ -2851,8 +2848,8 @@ export function CommunicationInterne() {
                 ) : (
                   <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
                     <Calendar className="h-10 w-10 text-slate-300" />
-                    <p className="mt-6 text-lg font-semibold text-slate-900">Sélectionnez un événement</p>
-                    <p className="mt-2 max-w-sm text-sm text-slate-500">Choisissez un événement à gauche ou utilisez le bouton Programmer pour en créer un.</p>
+                    <p className="mt-6 text-lg font-semibold text-slate-900">SÃ©lectionnez un Ã©vÃ©nement</p>
+                    <p className="mt-2 max-w-sm text-sm text-slate-500">Choisissez un Ã©vÃ©nement Ã  gauche ou utilisez le bouton Programmer pour en crÃ©er un.</p>
                   </div>
                 )
               ) : selectedWorkspace ? (
@@ -2890,7 +2887,7 @@ export function CommunicationInterne() {
                           <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
                             <button
                               type="button"
-                              title={selectedWorkspace.type === 'team' ? 'Modifier l’équipe' : 'Modifier le canal'}
+                              title={selectedWorkspace.type === 'team' ? 'Modifier lâ€™Ã©quipe' : 'Modifier le canal'}
                               onClick={() => selectedWorkspace.type === 'team' ? handleEditWorkspaceTeam(selectedWorkspace.id) : handleEditWorkspaceChannel(selectedWorkspace.id)}
                               className={workspaceActionButtonClass}
                             >
@@ -2898,7 +2895,7 @@ export function CommunicationInterne() {
                             </button>
                             <button
                               type="button"
-                              title={selectedWorkspace.type === 'team' ? 'Supprimer l’équipe' : 'Supprimer le canal'}
+                              title={selectedWorkspace.type === 'team' ? 'Supprimer lâ€™Ã©quipe' : 'Supprimer le canal'}
                               onClick={() => selectedWorkspace.type === 'team' ? handleDeleteWorkspaceTeam(selectedWorkspace.id) : handleDeleteWorkspaceChannel(selectedWorkspace.id)}
                               className={workspaceDangerButtonClass}
                             >
@@ -2908,11 +2905,11 @@ export function CommunicationInterne() {
                         )}
                         <div className="flex items-center rounded-full border border-[#e4e8f2] bg-white/95 p-1 shadow-sm">
                           {accessProfile.canManageWorkspace && (
-                            <button type="button" title="Programmer un événement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
+                            <button type="button" title="Programmer un Ã©vÃ©nement" onClick={() => handleScheduleWorkspaceEvent(selectedWorkspace)} className={workspaceActionButtonClass}>
                               <Calendar className="h-4 w-4" />
                             </button>
                           )}
-                          <button type="button" title="Lancer une réunion vidéo" onClick={() => handleStartWorkspaceVideoRoom(selectedWorkspace)} className={workspaceActionButtonClass}>
+                          <button type="button" title="Lancer une rÃ©union vidÃ©o" onClick={() => handleStartWorkspaceVideoRoom(selectedWorkspace)} className={workspaceActionButtonClass}>
                             <Video className="h-4 w-4" />
                           </button>
                         </div>
@@ -2927,7 +2924,7 @@ export function CommunicationInterne() {
                           Nouveau fil
                         </div>
                         <p className="mt-6 text-lg font-semibold text-slate-900">Aucun message dans cette conversation</p>
-                        <p className="mt-2 max-w-sm text-sm text-slate-500">Commencez l’échange avec {selectedWorkspace.title} ou planifiez un rendez-vous avec le bouton calendrier.</p>
+                        <p className="mt-2 max-w-sm text-sm text-slate-500">Commencez lâ€™Ã©change avec {selectedWorkspace.title} ou planifiez un rendez-vous avec le bouton calendrier.</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -3001,7 +2998,7 @@ export function CommunicationInterne() {
                           <TextareaSpellCheck
                             value={formData.contenu}
                             onChange={(event) => setFormData((previous) => ({ ...previous, contenu: event.target.value }))}
-                            placeholder={`Écrire à ${selectedWorkspace.title}`}
+                            placeholder={`Ã‰crire Ã  ${selectedWorkspace.title}`}
                             className="min-h-[86px] rounded-[22px] border-[#dbe3f2] bg-white px-4 py-3 text-[13px]"
                           />
                         </div>
@@ -3009,7 +3006,7 @@ export function CommunicationInterne() {
                         <div ref={composerActionsRef} className="relative flex items-center gap-2">
                           <button type="button" onClick={() => toggleComposerMenu('media')} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#dbe3f2] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                             <Paperclip className="h-4 w-4" />
-                            Médias
+                            MÃ©dias
                           </button>
                           <button type="button" onClick={() => toggleComposerMenu('quick')} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#dbe3f2] bg-white px-3 text-[12px] font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                             <Zap className="h-4 w-4" />
@@ -3028,7 +3025,7 @@ export function CommunicationInterne() {
                               </button>
                               <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
                                 <Video className="h-4 w-4" />
-                                Vidéos
+                                VidÃ©os
                               </button>
                               <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12px] text-slate-700 transition-colors hover:bg-slate-50">
                                 <Mic className="h-4 w-4" />
@@ -3042,7 +3039,7 @@ export function CommunicationInterne() {
                               <div>
                                 <div className="mb-2 flex items-center gap-2 px-1">
                                   <Smile className="h-4 w-4 text-slate-400" />
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Émojis</p>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Ã‰mojis</p>
                                 </div>
                                 <div className="grid grid-cols-8 gap-1.5">
                                   {WORKSPACE_QUICK_EMOJIS.map((emoji) => (
@@ -3051,7 +3048,7 @@ export function CommunicationInterne() {
                                       type="button"
                                       onClick={() => handleInsertQuickEmoji(emoji)}
                                       className="flex h-9 w-9 items-center justify-center rounded-xl text-[19px] transition-colors hover:bg-slate-100"
-                                      title={`Insérer ${emoji}`}
+                                      title={`InsÃ©rer ${emoji}`}
                                     >
                                       {emoji}
                                     </button>
@@ -3062,7 +3059,7 @@ export function CommunicationInterne() {
                               <div>
                                 <div className="mb-2 flex items-center gap-2 px-1">
                                   <ThumbsUp className="h-4 w-4 text-slate-400" />
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Raccourcis métier</p>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Raccourcis mÃ©tier</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-1.5">
                                   {WORKSPACE_QUICK_REACTIONS.map((item) => (
@@ -3098,8 +3095,8 @@ export function CommunicationInterne() {
               ) : (
                 <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
                   <MessageSquare className="h-10 w-10 text-slate-300" />
-                  <p className="mt-6 text-lg font-semibold text-slate-900">Sélectionnez une conversation</p>
-                  <p className="mt-2 max-w-sm text-sm text-slate-500">Choisissez un utilisateur, une équipe ou un canal à gauche pour commencer.</p>
+                  <p className="mt-6 text-lg font-semibold text-slate-900">SÃ©lectionnez une conversation</p>
+                  <p className="mt-2 max-w-sm text-sm text-slate-500">Choisissez un utilisateur, une Ã©quipe ou un canal Ã  gauche pour commencer.</p>
                 </div>
               )}
             </section>
@@ -3113,7 +3110,7 @@ export function CommunicationInterne() {
     const navigationItems = [
       { id: 'chat' as const, label: 'Chats', icon: <MessageSquare className="h-4 w-4" /> },
       { id: 'channels' as const, label: 'Canaux', icon: <Hash className="h-4 w-4" /> },
-      { id: 'people' as const, label: 'Équipes', icon: <Users className="h-4 w-4" /> },
+      { id: 'people' as const, label: 'Ã‰quipes', icon: <Users className="h-4 w-4" /> },
       { id: 'files' as const, label: 'Fichiers', icon: <FileText className="h-4 w-4" /> },
       { id: 'agenda' as const, label: 'Calendrier', icon: <Calendar className="h-4 w-4" /> },
       { id: 'alerts' as const, label: 'Alertes', icon: <Bell className="h-4 w-4" /> },
@@ -3123,14 +3120,14 @@ export function CommunicationInterne() {
     const selectedPresence = selectedConversation?.presence || null;
     const selectedAvatarSeed = `${selectedDepartment?.id || 'current'}-${selectedDepartment?.nombre || 'chat'}`;
     const totalUnreadConversations = simpleConversationThreads.filter(thread => thread.unreadCount > 0).length;
-    const currentDepartmentLabel = departementCourant?.nombre || 'Aucun département';
+    const currentDepartmentLabel = departementCourant?.nombre || 'Aucun dÃ©partement';
     const simpleEmptyStateDescription: Record<SimpleQuickFilter, string> = {
-      chat: 'Sélectionnez un département autorisé ou attendez un nouveau message.',
-      channels: 'Aucun échange non lu ne correspond au filtre actif.',
-      people: 'Aucun département en ligne n’est disponible pour le moment.',
-      files: 'Aucune conversation avec pièces jointes n’est disponible.',
-      agenda: 'Aucune conversation avec échéance ou demande active n’est disponible.',
-      alerts: 'Aucune alerte ou demande prioritaire n’est disponible.',
+      chat: 'SÃ©lectionnez un dÃ©partement autorisÃ© ou attendez un nouveau message.',
+      channels: 'Aucun Ã©change non lu ne correspond au filtre actif.',
+      people: 'Aucun dÃ©partement en ligne nâ€™est disponible pour le moment.',
+      files: 'Aucune conversation avec piÃ¨ces jointes nâ€™est disponible.',
+      agenda: 'Aucune conversation avec Ã©chÃ©ance ou demande active nâ€™est disponible.',
+      alerts: 'Aucune alerte ou demande prioritaire nâ€™est disponible.',
     };
 
     return (
@@ -3195,7 +3192,7 @@ export function CommunicationInterne() {
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Centre de messagerie</p>
                 <h2 className="mt-0.5 text-[26px] font-bold text-slate-950">Messages</h2>
-                <p className="text-[12px] text-slate-500">{navigationItems.find(item => item.id === simpleQuickFilter)?.label || 'Conversations'} par département</p>
+                <p className="text-[12px] text-slate-500">{navigationItems.find(item => item.id === simpleQuickFilter)?.label || 'Conversations'} par dÃ©partement</p>
               </div>
               <div className="flex flex-col gap-1.5">
                 <select
@@ -3225,7 +3222,7 @@ export function CommunicationInterne() {
                 {notificationsNonLues} notification(s)
               </span>
               <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700">
-                {messagesEnvoyesCount} envoyés
+                {messagesEnvoyesCount} envoyÃ©s
               </span>
             </div>
 
@@ -3338,7 +3335,7 @@ export function CommunicationInterne() {
                       <p className="mt-0.5 text-[13px] text-slate-500">
                         {selectedPresence?.status === 'online'
                           ? 'En ligne'
-                          : `Dernière activité ${formatPresenceLabel(selectedPresence?.lastSeen || new Date().toISOString())}`}
+                          : `DerniÃ¨re activitÃ© ${formatPresenceLabel(selectedPresence?.lastSeen || new Date().toISOString())}`}
                       </p>
                     </div>
                   </div>
@@ -3358,7 +3355,7 @@ export function CommunicationInterne() {
                       Aujourd'hui
                     </div>
                     <p className="mt-6 text-lg font-semibold text-slate-900">Aucun message dans cette conversation</p>
-                    <p className="mt-2 max-w-sm text-sm text-slate-500">Écris un premier message pour démarrer l’échange avec {selectedDepartment.nombre}.</p>
+                    <p className="mt-2 max-w-sm text-sm text-slate-500">Ã‰cris un premier message pour dÃ©marrer lâ€™Ã©change avec {selectedDepartment.nombre}.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -3391,7 +3388,7 @@ export function CommunicationInterne() {
                                   : 'rounded-[26px] rounded-bl-[10px] border border-white/80 bg-white text-slate-800'
                               }`}
                             >
-                              <p className="whitespace-pre-wrap text-[13px] leading-5">{message.contenu || 'Pièce jointe envoyée'}</p>
+                              <p className="whitespace-pre-wrap text-[13px] leading-5">{message.contenu || 'PiÃ¨ce jointe envoyÃ©e'}</p>
 
                               {attachmentCount > 0 && (
                                 <div className="mt-3 space-y-2">
@@ -3442,7 +3439,7 @@ export function CommunicationInterne() {
                     value={formData.contenu}
                     onChange={(event) => setFormData(previous => ({ ...previous, contenu: event.target.value }))}
                     rows={2}
-                    placeholder={selectedDepartment ? `Écrire à ${selectedDepartment.nombre}...` : 'Écrire un message...' }
+                    placeholder={selectedDepartment ? `Ã‰crire Ã  ${selectedDepartment.nombre}...` : 'Ã‰crire un message...' }
                     language="fr"
                     showSpellCheck={true}
                     disabled={!accessProfile.canCompose || !selectedConversationId}
@@ -3480,7 +3477,7 @@ export function CommunicationInterne() {
                           className="flex items-center gap-2 rounded-full border border-[#e4e8f2] bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Paperclip className="h-4 w-4" />
-                          Médias
+                          MÃ©dias
                           <MoreVertical className="h-4 w-4" />
                         </button>
 
@@ -3496,7 +3493,7 @@ export function CommunicationInterne() {
                             </button>
                             <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <Video className="h-4 w-4" />
-                              Vidéo
+                              VidÃ©o
                             </button>
                             <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <Mic className="h-4 w-4" />
@@ -3528,59 +3525,59 @@ export function CommunicationInterne() {
                               <Link2 className="h-4 w-4" />
                               Lien
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('✅'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">✅</span>
-                              Confirmé
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('âœ…'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">âœ…</span>
+                              ConfirmÃ©
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📌'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">📌</span>
-                              Priorité
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ“Œ'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">ðŸ“Œ</span>
+                              PrioritÃ©
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📅'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">📅</span>
-                              Planifié
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ“…'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">ðŸ“…</span>
+                              PlanifiÃ©
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📞'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">📞</span>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ“ž'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">ðŸ“ž</span>
                               Appel requis
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('📦'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">📦</span>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ“¦'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">ðŸ“¦</span>
                               Logistique
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('🚚'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">🚚</span>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸšš'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">ðŸšš</span>
                               Transport
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('⚠️'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">⚠️</span>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('âš ï¸'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">âš ï¸</span>
                               Urgent
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('👀'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">👀</span>
-                              À vérifier
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ‘€'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">ðŸ‘€</span>
+                              Ã€ vÃ©rifier
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('🙏'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                              <span className="text-base leading-none">🙏</span>
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ™'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                              <span className="text-base leading-none">ðŸ™</span>
                               Merci
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('👍'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ‘'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <ThumbsUp className="h-4 w-4" />
-                              Réaction positive
+                              RÃ©action positive
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('❤️'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('â¤ï¸'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <Heart className="h-4 w-4" />
-                              Réaction coeur
+                              RÃ©action coeur
                             </button>
-                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('😂'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                            <button type="button" onClick={() => { setOpenComposerMenu(null); handleInsertReaction('ðŸ˜‚'); }} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                               <Laugh className="h-4 w-4" />
-                              Réaction rire
+                              RÃ©action rire
                             </button>
                           </div>
                         )}
                       </div>
 
-                      <span className="text-xs text-slate-400">Sélection multiple sans limite imposée</span>
+                      <span className="text-xs text-slate-400">SÃ©lection multiple sans limite imposÃ©e</span>
                     </div>
 
                     <Button
@@ -3600,7 +3597,7 @@ export function CommunicationInterne() {
             <div className="flex h-full min-h-[480px] flex-col items-center justify-center rounded-[30px] border border-dashed border-slate-200 bg-white px-6 text-center">
               <MessageSquare className="h-10 w-10 text-slate-300" />
               <p className="mt-4 text-lg font-semibold text-slate-900">Choisissez une conversation</p>
-              <p className="mt-2 max-w-sm text-sm text-slate-500">Le fil de discussion apparaîtra ici avec un modèle simple et direct.</p>
+              <p className="mt-2 max-w-sm text-sm text-slate-500">Le fil de discussion apparaÃ®tra ici avec un modÃ¨le simple et direct.</p>
             </div>
           )}
         </section>
@@ -3623,14 +3620,14 @@ export function CommunicationInterne() {
             <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto" aria-describedby="workspace-chat-dialog-description">
               <DialogHeader>
                 <DialogTitle>
-                  {workspaceDialogMode === 'team' && (workspaceEditingTeamId ? 'Modifier l’équipe' : 'Créer une équipe')}
-                  {workspaceDialogMode === 'channel' && (workspaceEditingChannelId ? 'Modifier le canal' : 'Créer un canal')}
-                  {workspaceDialogMode === 'event' && (workspaceEditingEventId ? 'Modifier l’événement' : 'Programmer un événement')}
+                  {workspaceDialogMode === 'team' && (workspaceEditingTeamId ? 'Modifier lâ€™Ã©quipe' : 'CrÃ©er une Ã©quipe')}
+                  {workspaceDialogMode === 'channel' && (workspaceEditingChannelId ? 'Modifier le canal' : 'CrÃ©er un canal')}
+                  {workspaceDialogMode === 'event' && (workspaceEditingEventId ? 'Modifier lâ€™Ã©vÃ©nement' : 'Programmer un Ã©vÃ©nement')}
                 </DialogTitle>
                 <DialogDescription id="workspace-chat-dialog-description">
-                  {workspaceDialogMode === 'team' && (workspaceEditingTeamId ? 'Mettez à jour le périmètre et les membres de cette équipe.' : 'Regroupez des utilisateurs créés dans un espace commun de travail.')}
-                  {workspaceDialogMode === 'channel' && (workspaceEditingChannelId ? 'Ajustez le nom, les membres ou le rattachement de ce canal.' : 'Définissez un canal libre ou rattaché à une équipe existante.')}
-                  {workspaceDialogMode === 'event' && (workspaceEditingEventId ? 'Modifiez les participants, dates ou le contexte de cet événement.' : 'Planifiez une réunion ou un créneau depuis le calendrier du module.')}
+                  {workspaceDialogMode === 'team' && (workspaceEditingTeamId ? 'Mettez Ã  jour le pÃ©rimÃ¨tre et les membres de cette Ã©quipe.' : 'Regroupez des utilisateurs crÃ©Ã©s dans un espace commun de travail.')}
+                  {workspaceDialogMode === 'channel' && (workspaceEditingChannelId ? 'Ajustez le nom, les membres ou le rattachement de ce canal.' : 'DÃ©finissez un canal libre ou rattachÃ© Ã  une Ã©quipe existante.')}
+                  {workspaceDialogMode === 'event' && (workspaceEditingEventId ? 'Modifiez les participants, dates ou le contexte de cet Ã©vÃ©nement.' : 'Planifiez une rÃ©union ou un crÃ©neau depuis le calendrier du module.')}
                 </DialogDescription>
               </DialogHeader>
 
@@ -3650,7 +3647,7 @@ export function CommunicationInterne() {
                       <Input
                         value={workspaceTeamForm.description}
                         onChange={(event) => setWorkspaceTeamForm((previous) => ({ ...previous, description: event.target.value }))}
-                        placeholder="Mission, périmètre ou projet"
+                        placeholder="Mission, pÃ©rimÃ¨tre ou projet"
                       />
                     </div>
                   </div>
@@ -3658,7 +3655,7 @@ export function CommunicationInterne() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-slate-700">Membres</p>
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                        {workspaceTeamForm.memberIds.length} sélectionné(s)
+                        {workspaceTeamForm.memberIds.length} sÃ©lectionnÃ©(s)
                       </span>
                     </div>
                     <div className="grid gap-2 md:grid-cols-2">
@@ -3700,7 +3697,7 @@ export function CommunicationInterne() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <p className="text-sm font-semibold text-slate-700">Équipe liée</p>
+                      <p className="text-sm font-semibold text-slate-700">Ã‰quipe liÃ©e</p>
                       <select
                         value={workspaceChannelForm.teamId}
                         onChange={(event) => setWorkspaceChannelForm((previous) => ({
@@ -3712,7 +3709,7 @@ export function CommunicationInterne() {
                         }))}
                         className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
                       >
-                        <option value="">Aucune équipe liée</option>
+                        <option value="">Aucune Ã©quipe liÃ©e</option>
                         {teamChatTeams.map((team) => (
                           <option key={team.id} value={team.id}>{team.name}</option>
                         ))}
@@ -3729,14 +3726,14 @@ export function CommunicationInterne() {
                   </div>
                   {workspaceChannelForm.teamId ? (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                      Membres hérités de l’équipe : {workspaceChannelForm.memberIds.map((memberId) => getWorkspaceUserLabel(memberId)).join(', ')}
+                      Membres hÃ©ritÃ©s de lâ€™Ã©quipe : {workspaceChannelForm.memberIds.map((memberId) => getWorkspaceUserLabel(memberId)).join(', ')}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-slate-700">Membres du canal</p>
                         <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                          {workspaceChannelForm.memberIds.length} sélectionné(s)
+                          {workspaceChannelForm.memberIds.length} sÃ©lectionnÃ©(s)
                         </span>
                       </div>
                       <div className="grid gap-2 md:grid-cols-2">
@@ -3795,19 +3792,19 @@ export function CommunicationInterne() {
                         }}
                         className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
                       >
-                        <option value="">Aucun contexte spécifique</option>
+                        <option value="">Aucun contexte spÃ©cifique</option>
                         {teamChatTeams.map((team) => (
-                          <option key={team.id} value={team.id}>{`Équipe • ${team.name}`}</option>
+                          <option key={team.id} value={team.id}>{`Ã‰quipe â€¢ ${team.name}`}</option>
                         ))}
                         {teamChatChannels.map((channel) => (
-                          <option key={channel.id} value={channel.id}>{`Canal • #${channel.name}`}</option>
+                          <option key={channel.id} value={channel.id}>{`Canal â€¢ #${channel.name}`}</option>
                         ))}
                       </select>
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <p className="text-sm font-semibold text-slate-700">Début</p>
+                      <p className="text-sm font-semibold text-slate-700">DÃ©but</p>
                       <Input
                         type="datetime-local"
                         value={workspaceEventForm.startAt}
@@ -3824,7 +3821,7 @@ export function CommunicationInterne() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-slate-700">Détails</p>
+                    <p className="text-sm font-semibold text-slate-700">DÃ©tails</p>
                     <TextareaSpellCheck
                       value={workspaceEventForm.description}
                       onChange={(event) => setWorkspaceEventForm((previous) => ({ ...previous, description: event.target.value }))}
@@ -3836,7 +3833,7 @@ export function CommunicationInterne() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-slate-700">Participants</p>
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                        {workspaceEventForm.participantIds.length} sélectionné(s)
+                        {workspaceEventForm.participantIds.length} sÃ©lectionnÃ©(s)
                       </span>
                     </div>
                     <div className="grid gap-2 md:grid-cols-2">
@@ -3868,8 +3865,8 @@ export function CommunicationInterne() {
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeWorkspaceDialog}>Annuler</Button>
-                {workspaceDialogMode === 'team' && <Button type="button" onClick={submitWorkspaceTeam} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingTeamId ? 'Enregistrer' : 'Créer l’équipe'}</Button>}
-                {workspaceDialogMode === 'channel' && <Button type="button" onClick={submitWorkspaceChannel} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingChannelId ? 'Enregistrer' : 'Créer le canal'}</Button>}
+                {workspaceDialogMode === 'team' && <Button type="button" onClick={submitWorkspaceTeam} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingTeamId ? 'Enregistrer' : 'CrÃ©er lâ€™Ã©quipe'}</Button>}
+                {workspaceDialogMode === 'channel' && <Button type="button" onClick={submitWorkspaceChannel} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingChannelId ? 'Enregistrer' : 'CrÃ©er le canal'}</Button>}
                 {workspaceDialogMode === 'event' && <Button type="button" onClick={submitWorkspaceEvent} disabled={!accessProfile.canManageWorkspace}>{workspaceEditingEventId ? 'Enregistrer' : 'Programmer'}</Button>}
               </DialogFooter>
             </DialogContent>
@@ -3893,7 +3890,7 @@ export function CommunicationInterne() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Bureau actif</p>
-                        <h3 className="mt-1.5 text-xl font-bold text-slate-950">{departementCourant?.nombre || 'Département'}</h3>
+                        <h3 className="mt-1.5 text-xl font-bold text-slate-950">{departementCourant?.nombre || 'DÃ©partement'}</h3>
                         <p className="mt-1 text-xs text-slate-600">Vue rapide du flux en cours.</p>
                       </div>
                       <div className="rounded-xl bg-slate-100 px-2.5 py-1.5 text-right">
@@ -3904,7 +3901,7 @@ export function CommunicationInterne() {
 
                     <div className="mt-4 grid grid-cols-2 gap-2.5">
                       <div className="rounded-xl bg-slate-50 p-2.5">
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">À lire</p>
+                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Ã€ lire</p>
                         <p className="mt-1.5 text-xl font-bold text-slate-900">{nonLusCount}</p>
                       </div>
                       <div className="rounded-xl bg-emerald-50 p-2.5">
@@ -3915,7 +3912,7 @@ export function CommunicationInterne() {
 
                     <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-500">
                       <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
-                        {messagesEnvoyesCount} envoyés
+                        {messagesEnvoyesCount} envoyÃ©s
                       </span>
                       <span className="h-1 w-1 rounded-full bg-slate-300" />
                       <span>{archivesCount} archives</span>
@@ -3987,12 +3984,12 @@ export function CommunicationInterne() {
                   <div className="border-b border-slate-200/80 px-4 py-4 md:px-5">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Boîte de travail</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">BoÃ®te de travail</p>
                         <h3 className="mt-1 text-xl font-bold text-slate-950">
-                          {recherche ? 'Résultats de recherche' : 'Fil principal'}
+                          {recherche ? 'RÃ©sultats de recherche' : 'Fil principal'}
                         </h3>
                         <p className="mt-1 text-xs text-slate-600 md:text-sm">
-                          {messagesFiltres.length} élément(s){recherche ? ` pour "${recherche}"` : ' dans la vue active'}
+                          {messagesFiltres.length} Ã©lÃ©ment(s){recherche ? ` pour "${recherche}"` : ' dans la vue active'}
                         </p>
                       </div>
 
@@ -4018,9 +4015,9 @@ export function CommunicationInterne() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
                           <Inbox className="h-7 w-7 text-slate-400" />
                         </div>
-                        <h4 className="mt-4 text-lg font-semibold text-slate-950">Aucun message à afficher</h4>
+                        <h4 className="mt-4 text-lg font-semibold text-slate-950">Aucun message Ã  afficher</h4>
                         <p className="mt-2 max-w-md text-sm text-slate-600">
-                          Ajustez votre filtre, lancez une autre recherche ou créez un nouveau message depuis le panneau de gauche.
+                          Ajustez votre filtre, lancez une autre recherche ou crÃ©ez un nouveau message depuis le panneau de gauche.
                         </p>
                       </div>
                     ) : (
@@ -4032,10 +4029,10 @@ export function CommunicationInterne() {
                           const isUnread = !msg.lu && msg.departementDestinataire === departementActuel;
                           const compactMeta = [
                             msg.statut ? msg.statut.replace('_', ' ') : null,
-                            isPinned ? 'Épinglé' : null,
+                            isPinned ? 'Ã‰pinglÃ©' : null,
                             msg.important ? 'Important' : null,
                             msg.piecesJointes.length > 0 ? `${msg.piecesJointes.length} fichier(s)` : null,
-                            msg.reponses.length > 0 ? `${msg.reponses.length} réponse(s)` : null,
+                            msg.reponses.length > 0 ? `${msg.reponses.length} rÃ©ponse(s)` : null,
                             msg.poll ? 'Sondage' : null,
                           ].filter(Boolean);
                           const primaryMeta = compactMeta.slice(0, 2);
@@ -4069,7 +4066,7 @@ export function CommunicationInterne() {
                                       <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-1.5">
                                           <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">
-                                            {msg.departementEmetteur === departementActuel ? `À ${deptDest?.nombre || 'Département'}` : `De ${deptEmetteur?.nombre || 'Département'}`}
+                                            {msg.departementEmetteur === departementActuel ? `Ã€ ${deptDest?.nombre || 'DÃ©partement'}` : `De ${deptEmetteur?.nombre || 'DÃ©partement'}`}
                                           </span>
                                           {isUnread && (
                                             <span className="rounded-full border border-blue-200 bg-blue-100 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
@@ -4094,12 +4091,12 @@ export function CommunicationInterne() {
                                     <span className="font-semibold text-slate-700">{msg.expediteur}</span>
                                     <span className="h-1 w-1 rounded-full bg-slate-300" />
                                     <span>
-                                      {new Date(msg.dateCreation).toLocaleDateString('fr-CA')} à {new Date(msg.dateCreation).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+                                      {new Date(msg.dateCreation).toLocaleDateString('fr-CA')} Ã  {new Date(msg.dateCreation).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                     {msg.edited && (
                                       <>
                                         <span className="h-1 w-1 rounded-full bg-slate-300" />
-                                        <span>Modifié</span>
+                                        <span>ModifiÃ©</span>
                                       </>
                                     )}
                                     {primaryMeta.map((item, index) => (
@@ -4174,7 +4171,7 @@ export function CommunicationInterne() {
                       <div className="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(15,45,71,0.06),rgba(45,149,97,0.05))] px-6 py-6 md:px-8">
                         <Button variant="ghost" onClick={() => setVue('liste')} className="-ml-3 mb-4 rounded-full text-slate-600">
                           <ArrowLeft className="mr-2 h-4 w-4" />
-                          Retour à la liste
+                          Retour Ã  la liste
                         </Button>
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                           <div className="min-w-0">
@@ -4183,7 +4180,7 @@ export function CommunicationInterne() {
                                 {getIconeType(messageSelectionne.type)}
                               </span>
                               {pinnedMessages.includes(messageSelectionne.id) && (
-                                <span className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-xs font-semibold text-fuchsia-700">Épinglé</span>
+                                <span className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-xs font-semibold text-fuchsia-700">Ã‰pinglÃ©</span>
                               )}
                               {messageSelectionne.important && (
                                 <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Important</span>
@@ -4199,7 +4196,7 @@ export function CommunicationInterne() {
                               {messageSelectionne.edited && (
                                 <>
                                   <span className="h-1 w-1 rounded-full bg-slate-300" />
-                                  <span>Modifié</span>
+                                  <span>ModifiÃ©</span>
                                 </>
                               )}
                             </div>
@@ -4230,16 +4227,16 @@ export function CommunicationInterne() {
                                 >
                                   <option value="en_attente">En attente</option>
                                   <option value="en_cours">En cours</option>
-                                  <option value="completee">Complétée</option>
-                                  <option value="rejetee">Rejetée</option>
-                                  <option value="annulee">Annulée</option>
+                                  <option value="completee">ComplÃ©tÃ©e</option>
+                                  <option value="rejetee">RejetÃ©e</option>
+                                  <option value="annulee">AnnulÃ©e</option>
                                 </select>
                               )}
                             </div>
 
                             {messageSelectionne.dateEcheance && (
                               <p className="mt-3 text-sm text-slate-600">
-                                Échéance: {new Date(messageSelectionne.dateEcheance).toLocaleDateString('fr-CA')}
+                                Ã‰chÃ©ance: {new Date(messageSelectionne.dateEcheance).toLocaleDateString('fr-CA')}
                               </p>
                             )}
                           </div>
@@ -4254,7 +4251,7 @@ export function CommunicationInterne() {
                             <PollView
                               poll={messageSelectionne.poll}
                               onVote={() => {
-                                toast.success('Vote enregistré!');
+                                toast.success('Vote enregistrÃ©!');
                               }}
                               currentVotes={[]}
                               totalVotes={messageSelectionne.poll.options.reduce((acc: number, opt: any) => acc + opt.votes, 0)}
@@ -4270,7 +4267,7 @@ export function CommunicationInterne() {
                               className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-white"
                             >
                               <Smile className="h-4 w-4 text-slate-500" />
-                              Réagir
+                              RÃ©agir
                             </button>
                             <QuickReplyButton onClick={() => handleOpenReply(messageSelectionne)} />
                           </div>
@@ -4298,7 +4295,7 @@ export function CommunicationInterne() {
                         {messageSelectionne.piecesJointes.length > 0 && (
                           <div className="mt-6 border-t border-slate-200 pt-5">
                             <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                              Pièces jointes ({messageSelectionne.piecesJointes.length})
+                              PiÃ¨ces jointes ({messageSelectionne.piecesJointes.length})
                             </h4>
                             <div className="mt-4 grid gap-3 md:grid-cols-2">
                               {messageSelectionne.piecesJointes.map(piece => (
@@ -4324,7 +4321,7 @@ export function CommunicationInterne() {
                     {messageSelectionne.reponses.length > 0 && (
                       <div className="rounded-[32px] border border-white/70 bg-white/94 p-6 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
                         <div className="mb-5 flex items-center justify-between">
-                          <h3 className="text-xl font-semibold text-slate-950">Réponses ({messageSelectionne.reponses.length})</h3>
+                          <h3 className="text-xl font-semibold text-slate-950">RÃ©ponses ({messageSelectionne.reponses.length})</h3>
                           <Reply className="h-5 w-5 text-slate-400" />
                         </div>
 
@@ -4357,7 +4354,7 @@ export function CommunicationInterne() {
                       <div className="mt-4 space-y-3">
                         <Button onClick={() => handleOpenReply(messageSelectionne)} disabled={!accessProfile.canCompose} className="h-11 w-full rounded-2xl bg-slate-950 hover:bg-slate-800">
                           <Send className="mr-2 h-4 w-4" />
-                          Répondre
+                          RÃ©pondre
                         </Button>
                         <Button variant="outline" onClick={() => handleMarquerImportant(messageSelectionne)} className="h-11 w-full rounded-2xl border-slate-300 bg-white">
                           <Star className={`mr-2 h-4 w-4 ${messageSelectionne.important ? 'fill-yellow-400 text-yellow-400' : ''}`} />
@@ -4365,7 +4362,7 @@ export function CommunicationInterne() {
                         </Button>
                         <Button variant="outline" onClick={() => handleTogglePin(messageSelectionne.id)} className="h-11 w-full rounded-2xl border-slate-300 bg-white">
                           <Pin className={`mr-2 h-4 w-4 ${pinnedMessages.includes(messageSelectionne.id) ? 'fill-fuchsia-500 text-fuchsia-500' : ''}`} />
-                          {pinnedMessages.includes(messageSelectionne.id) ? 'Retirer l\'épingle' : 'Épingler'}
+                          {pinnedMessages.includes(messageSelectionne.id) ? 'Retirer l\'Ã©pingle' : 'Ã‰pingler'}
                         </Button>
                         <Button variant="outline" onClick={() => handleArchiver(messageSelectionne)} className="h-11 w-full rounded-2xl border-slate-300 bg-white">
                           <Archive className="mr-2 h-4 w-4" />
@@ -4379,10 +4376,10 @@ export function CommunicationInterne() {
                     </div>
 
                     <div className="rounded-[30px] border border-white/70 bg-white/94 p-5 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
-                      <h3 className="text-lg font-semibold text-slate-950">Résumé</h3>
+                      <h3 className="text-lg font-semibold text-slate-950">RÃ©sumÃ©</h3>
                       <div className="mt-4 space-y-3 text-sm text-slate-600">
                         <div className="flex items-center justify-between gap-3">
-                          <span>Expéditeur</span>
+                          <span>ExpÃ©diteur</span>
                           <span className="text-right font-semibold text-slate-800">{messageSelectionne.expediteur}</span>
                         </div>
                         <div className="flex items-center justify-between gap-3">
@@ -4390,11 +4387,11 @@ export function CommunicationInterne() {
                           <span className="text-right font-semibold text-slate-800">{departements.find(d => d.id === messageSelectionne.departementDestinataire)?.nombre}</span>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <span>Réponses</span>
+                          <span>RÃ©ponses</span>
                           <span className="font-semibold text-slate-800">{messageSelectionne.reponses.length}</span>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <span>Pièces jointes</span>
+                          <span>PiÃ¨ces jointes</span>
                           <span className="font-semibold text-slate-800">{messageSelectionne.piecesJointes.length}</span>
                         </div>
                       </div>
@@ -4410,9 +4407,9 @@ export function CommunicationInterne() {
                   <div className="rounded-[32px] border border-white/70 bg-white/94 p-6 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)] md:p-8">
                     <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Réponse assistée</p>
-                        <h2 className="mt-2 text-3xl font-bold text-slate-950">Répondre à {messageSelectionne.sujet}</h2>
-                        <p className="mt-1 text-sm text-slate-600">La reformulation et la correction restent actives pendant la rédaction.</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">RÃ©ponse assistÃ©e</p>
+                        <h2 className="mt-2 text-3xl font-bold text-slate-950">RÃ©pondre Ã  {messageSelectionne.sujet}</h2>
+                        <p className="mt-1 text-sm text-slate-600">La reformulation et la correction restent actives pendant la rÃ©daction.</p>
                       </div>
                       <Button variant="ghost" onClick={() => setVue('detail')} className="self-start rounded-full text-slate-600">
                         <X className="h-5 w-5" />
@@ -4421,7 +4418,7 @@ export function CommunicationInterne() {
 
                     <div className="mt-6 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-center justify-between gap-3">
-                        <label className="text-sm font-semibold text-slate-800">Votre réponse</label>
+                        <label className="text-sm font-semibold text-slate-800">Votre rÃ©ponse</label>
                         <span className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                           <Sparkles className="h-3.5 w-3.5" />
                           Correction active
@@ -4432,7 +4429,7 @@ export function CommunicationInterne() {
                           value={formData.contenu}
                           onChange={(e) => setFormData({ ...formData, contenu: e.target.value })}
                           rows={12}
-                          placeholder="Rédigez votre réponse..."
+                          placeholder="RÃ©digez votre rÃ©ponse..."
                           language="fr"
                           showSpellCheck={true}
                         />
@@ -4442,13 +4439,13 @@ export function CommunicationInterne() {
                     <div className="mt-6 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-sm font-semibold text-slate-800">Pièces jointes de réponse</p>
-                          <p className="mt-1 text-sm text-slate-600">Ajoutez un ou plusieurs fichiers locaux sans limite imposée par l’interface.</p>
+                          <p className="text-sm font-semibold text-slate-800">PiÃ¨ces jointes de rÃ©ponse</p>
+                          <p className="mt-1 text-sm text-slate-600">Ajoutez un ou plusieurs fichiers locaux sans limite imposÃ©e par lâ€™interface.</p>
                         </div>
                         <div className="relative" ref={composerActionsRef}>
                           <Button type="button" variant="outline" onClick={() => toggleComposerMenu('media')} className="rounded-2xl border-slate-300 bg-white" disabled={!accessProfile.canUseAttachments}>
                             <Paperclip className="mr-2 h-4 w-4" />
-                            Médias
+                            MÃ©dias
                           </Button>
                           {openComposerMenu === 'media' && (
                             <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[190px] flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(15,45,71,0.28)]">
@@ -4462,7 +4459,7 @@ export function CommunicationInterne() {
                               </button>
                               <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                 <Video className="h-4 w-4" />
-                                Vidéo
+                                VidÃ©o
                               </button>
                               <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                 <Mic className="h-4 w-4" />
@@ -4485,7 +4482,7 @@ export function CommunicationInterne() {
                       <div className="mt-4 space-y-3">
                         {composerAttachments.length === 0 ? (
                           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
-                            Aucune pièce jointe ajoutée pour cette réponse.
+                            Aucune piÃ¨ce jointe ajoutÃ©e pour cette rÃ©ponse.
                           </div>
                         ) : composerAttachments.map(attachment => (
                           <div key={attachment.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -4507,7 +4504,7 @@ export function CommunicationInterne() {
                       </Button>
                       <Button onClick={handleRepondre} disabled={!accessProfile.canCompose} className="h-11 rounded-2xl bg-slate-950 px-5 hover:bg-slate-800">
                         <Send className="mr-2 h-4 w-4" />
-                        Envoyer la réponse
+                        Envoyer la rÃ©ponse
                       </Button>
                     </div>
                   </div>
@@ -4543,10 +4540,10 @@ export function CommunicationInterne() {
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Composition</p>
                           <h2 className="mt-2 text-3xl font-bold text-slate-950">Nouveau message</h2>
-                          <p className="mt-1 text-sm text-slate-600">Un formulaire recentré sur l'essentiel pour écrire et envoyer plus vite.</p>
+                          <p className="mt-1 text-sm text-slate-600">Un formulaire recentrÃ© sur l'essentiel pour Ã©crire et envoyer plus vite.</p>
                           {activeDraftId && (
                             <span className="mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
-                              Brouillon synchronisé
+                              Brouillon synchronisÃ©
                             </span>
                           )}
                         </div>
@@ -4584,7 +4581,7 @@ export function CommunicationInterne() {
                         <div className="rounded-[28px] border border-[#d8e5f0] bg-[linear-gradient(135deg,rgba(26,77,122,0.06),rgba(45,149,97,0.08))] p-4">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">Départs rapides</p>
+                              <p className="text-sm font-semibold text-slate-900">DÃ©parts rapides</p>
                               <p className="mt-1 text-sm text-slate-600">Choisissez une base simple puis adaptez-la.</p>
                             </div>
                             <span className="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
@@ -4636,7 +4633,7 @@ export function CommunicationInterne() {
                                     {meta.label}
                                   </div>
                                   {formData.type === type && (
-                                    <p className="mt-2 text-xs leading-5 text-slate-300">Sélectionné</p>
+                                    <p className="mt-2 text-xs leading-5 text-slate-300">SÃ©lectionnÃ©</p>
                                   )}
                                 </button>
                               ))}
@@ -4671,7 +4668,7 @@ export function CommunicationInterne() {
                                 disabled={!accessProfile.canCompose}
                                 className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm"
                               >
-                                <option value="">Sélectionner un département</option>
+                                <option value="">SÃ©lectionner un dÃ©partement</option>
                                 {availableRecipients.map(dept => (
                                   <option key={dept.id} value={dept.id}>
                                     {dept.nombre} ({dept.codigo})
@@ -4683,8 +4680,8 @@ export function CommunicationInterne() {
                                 <div className="flex items-center justify-between border-b border-violet-100 px-4 py-3 text-xs font-semibold text-violet-700">
                                   <span>
                                     {formData.departementDestinataires.length > 0
-                                      ? `${formData.departementDestinataires.length} département(s) sélectionné(s)`
-                                      : 'Aucun département sélectionné'}
+                                      ? `${formData.departementDestinataires.length} dÃ©partement(s) sÃ©lectionnÃ©(s)`
+                                      : 'Aucun dÃ©partement sÃ©lectionnÃ©'}
                                   </span>
                                   <div className="flex items-center gap-3">
                                     <button
@@ -4696,7 +4693,7 @@ export function CommunicationInterne() {
                                       className="underline"
                                       disabled={!accessProfile.canUseGroupMessages}
                                     >
-                                      Tout sélectionner
+                                      Tout sÃ©lectionner
                                     </button>
                                     {formData.departementDestinataires.length > 0 && (
                                       <button
@@ -4756,7 +4753,7 @@ export function CommunicationInterne() {
                             </div>
 
                             <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
-                              <label className="mb-2 block text-sm font-semibold text-slate-800">Priorité</label>
+                              <label className="mb-2 block text-sm font-semibold text-slate-800">PrioritÃ©</label>
                               <select
                                 value={formData.priorite}
                                 onChange={(e) => setFormData({ ...formData, priorite: e.target.value as PrioriteDemande })}
@@ -4770,7 +4767,7 @@ export function CommunicationInterne() {
                             </div>
 
                             <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
-                              <label className="mb-2 block text-sm font-semibold text-slate-800">Date d'échéance</label>
+                              <label className="mb-2 block text-sm font-semibold text-slate-800">Date d'Ã©chÃ©ance</label>
                               <Input
                                 type="date"
                                 value={formData.dateEcheance}
@@ -4806,7 +4803,7 @@ export function CommunicationInterne() {
                               value={formData.contenu}
                               onChange={(e) => setFormData({ ...formData, contenu: e.target.value })}
                               rows={12}
-                              placeholder="Rédigez votre message ici..."
+                              placeholder="RÃ©digez votre message ici..."
                               language="fr"
                               showSpellCheck={true}
                               disabled={!accessProfile.canCompose}
@@ -4817,13 +4814,13 @@ export function CommunicationInterne() {
                         <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">Pièces jointes</p>
-                              <p className="mt-1 text-sm text-slate-600">Ajoutez seulement les fichiers nécessaires au message.</p>
+                              <p className="text-sm font-semibold text-slate-900">PiÃ¨ces jointes</p>
+                              <p className="mt-1 text-sm text-slate-600">Ajoutez seulement les fichiers nÃ©cessaires au message.</p>
                             </div>
                             <div className="relative" ref={composerActionsRef}>
                               <Button type="button" variant="outline" onClick={() => toggleComposerMenu('media')} className="rounded-2xl border-slate-300 bg-white" disabled={!accessProfile.canUseAttachments}>
                                 <Paperclip className="mr-2 h-4 w-4" />
-                                Médias
+                                MÃ©dias
                               </Button>
                               {openComposerMenu === 'media' && (
                                 <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[190px] flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(15,45,71,0.28)]">
@@ -4837,7 +4834,7 @@ export function CommunicationInterne() {
                                   </button>
                                   <button type="button" onClick={() => ouvrirOptionMedia('video/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                     <Video className="h-4 w-4" />
-                                    Vidéo
+                                    VidÃ©o
                                   </button>
                                   <button type="button" onClick={() => ouvrirOptionMedia('audio/*')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                     <Mic className="h-4 w-4" />
@@ -4860,7 +4857,7 @@ export function CommunicationInterne() {
                           <div className="mt-4 space-y-3">
                             {composerAttachments.length === 0 ? (
                               <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
-                                Aucune pièce jointe pour ce message.
+                                Aucune piÃ¨ce jointe pour ce message.
                               </div>
                             ) : composerAttachments.map(attachment => (
                               <div key={attachment.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -4870,7 +4867,7 @@ export function CommunicationInterne() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button type="button" onClick={() => handleDownloadAttachment(attachment)} className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100">
-                                    Télécharger
+                                    TÃ©lÃ©charger
                                   </button>
                                   <button type="button" onClick={() => handleRemoveAttachment(attachment.id)} className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100">
                                     Retirer
@@ -4884,32 +4881,32 @@ export function CommunicationInterne() {
                         <div className="flex flex-col gap-4 rounded-[28px] border border-violet-200 bg-violet-50 p-4 md:flex-row md:items-center md:justify-between">
                           <div>
                             <p className="text-sm font-semibold text-violet-900">Ajouter un sondage</p>
-                            <p className="mt-1 text-sm text-violet-700">Créez une consultation rapide sans quitter la composition.</p>
+                            <p className="mt-1 text-sm text-violet-700">CrÃ©ez une consultation rapide sans quitter la composition.</p>
                           </div>
                           <Button onClick={() => setShowPollCreator(true)} disabled={!accessProfile.canCompose} className="rounded-2xl bg-violet-700 hover:bg-violet-800">
                             <BarChart3 className="mr-2 h-4 w-4" />
-                            Ouvrir le créateur
+                            Ouvrir le crÃ©ateur
                           </Button>
                         </div>
 
                         <details className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
                           <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900">
-                            Brouillons, modèles et outils avancés
+                            Brouillons, modÃ¨les et outils avancÃ©s
                           </summary>
                           <p className="mt-2 text-sm text-slate-600">
-                            Ouvrez cette section seulement si vous avez besoin de reprendre un brouillon, d'appliquer un modèle ou de vérifier les derniers contrôles.
+                            Ouvrez cette section seulement si vous avez besoin de reprendre un brouillon, d'appliquer un modÃ¨le ou de vÃ©rifier les derniers contrÃ´les.
                           </p>
 
                           <div className="mt-4 grid gap-4 xl:grid-cols-2">
                             <div className="space-y-4">
                               <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Vérification rapide</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">VÃ©rification rapide</p>
                                 <div className="mt-3 space-y-2">
                                   {draftChecks.map(check => (
                                     <div key={check.label} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
                                       <span className="text-sm text-slate-700">{check.label}</span>
                                       <span className={`text-xs font-semibold uppercase tracking-[0.14em] ${check.ready ? 'text-emerald-700' : 'text-slate-500'}`}>
-                                        {check.ready ? 'OK' : 'À faire'}
+                                        {check.ready ? 'OK' : 'Ã€ faire'}
                                       </span>
                                     </div>
                                   ))}
@@ -4922,12 +4919,12 @@ export function CommunicationInterne() {
                                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Brouillons</p>
                                     <p className="mt-1 text-sm text-slate-600">{savedDrafts.length} disponible(s)</p>
                                   </div>
-                                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{draftCompletion}% prêt</span>
+                                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{draftCompletion}% prÃªt</span>
                                 </div>
                                 <div className="mt-3 space-y-3">
                                   {savedDrafts.length === 0 ? (
                                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                                      Aucun brouillon enregistré pour ce département.
+                                      Aucun brouillon enregistrÃ© pour ce dÃ©partement.
                                     </div>
                                   ) : savedDrafts.slice(0, 3).map(draft => (
                                     <div key={draft.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -4956,8 +4953,8 @@ export function CommunicationInterne() {
                               <div className="rounded-[24px] border border-slate-200 bg-white p-4">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Modèles</p>
-                                    <p className="mt-1 text-sm text-slate-600">Réutilisez un canevas existant</p>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">ModÃ¨les</p>
+                                    <p className="mt-1 text-sm text-slate-600">RÃ©utilisez un canevas existant</p>
                                   </div>
                                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{departmentTemplates.length}</span>
                                 </div>
@@ -4966,17 +4963,17 @@ export function CommunicationInterne() {
                                   <Input
                                     value={templateName}
                                     onChange={(e) => setTemplateName(e.target.value)}
-                                    placeholder="Nom du modèle"
+                                    placeholder="Nom du modÃ¨le"
                                     disabled={!accessProfile.canManageTemplates}
                                     className="h-11 rounded-2xl border-slate-300 bg-white"
                                   />
                                   <Button type="button" variant="outline" onClick={handleSaveTemplate} disabled={!accessProfile.canManageTemplates} className="h-11 w-full rounded-2xl border-slate-300 bg-white text-slate-700">
-                                    Enregistrer comme modèle
+                                    Enregistrer comme modÃ¨le
                                   </Button>
 
                                   {departmentTemplates.length === 0 ? (
                                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                                      Aucun modèle enregistré pour ce département.
+                                      Aucun modÃ¨le enregistrÃ© pour ce dÃ©partement.
                                     </div>
                                   ) : departmentTemplates.slice(0, 3).map(template => (
                                     <div key={template.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -5001,7 +4998,7 @@ export function CommunicationInterne() {
                               </div>
 
                               <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Présence</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">PrÃ©sence</p>
                                 <div className="mt-2 flex items-center justify-between gap-3 text-sm text-slate-600">
                                   <span>Collaborateurs actifs sur ce canal</span>
                                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{departmentPresence.length}</span>
@@ -5038,7 +5035,7 @@ export function CommunicationInterne() {
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Tableau d'analyse</p>
                         <h2 className="mt-2 text-3xl font-bold text-slate-950">Statistiques de {stats.departement}</h2>
-                        <p className="mt-1 text-sm text-slate-600">Une lecture plus professionnelle de la charge, de la réactivité et des demandes.</p>
+                        <p className="mt-1 text-sm text-slate-600">Une lecture plus professionnelle de la charge, de la rÃ©activitÃ© et des demandes.</p>
                       </div>
                       <Button variant="outline" onClick={() => setVue('liste')} className="rounded-full border-slate-300 bg-white text-slate-700">
                         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -5053,7 +5050,7 @@ export function CommunicationInterne() {
                         <Inbox className="h-8 w-8 text-[#1a4d7a]" />
                         <span className="text-3xl font-bold text-slate-950">{stats.totalMessagesRecus}</span>
                       </div>
-                      <p className="mt-3 text-sm text-slate-600">Messages reçus</p>
+                      <p className="mt-3 text-sm text-slate-600">Messages reÃ§us</p>
                     </div>
 
                     <div className="rounded-[30px] border border-white/70 bg-white/94 p-5 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
@@ -5061,7 +5058,7 @@ export function CommunicationInterne() {
                         <Send className="h-8 w-8 text-emerald-600" />
                         <span className="text-3xl font-bold text-slate-950">{stats.totalMessagesEnvoyes}</span>
                       </div>
-                      <p className="mt-3 text-sm text-slate-600">Messages envoyés</p>
+                      <p className="mt-3 text-sm text-slate-600">Messages envoyÃ©s</p>
                     </div>
 
                     <div className="rounded-[30px] border border-white/70 bg-white/94 p-5 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
@@ -5085,7 +5082,7 @@ export function CommunicationInterne() {
                     <div className="rounded-[32px] border border-white/70 bg-white/94 p-6 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
                       <div className="mb-5 flex items-center gap-3">
                         <Hash className="h-5 w-5 text-slate-400" />
-                        <h3 className="text-xl font-semibold text-slate-950">État des demandes</h3>
+                        <h3 className="text-xl font-semibold text-slate-950">Ã‰tat des demandes</h3>
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                         <div className="rounded-2xl bg-amber-50 p-4 text-center">
@@ -5098,11 +5095,11 @@ export function CommunicationInterne() {
                         </div>
                         <div className="rounded-2xl bg-emerald-50 p-4 text-center">
                           <div className="text-3xl font-bold text-emerald-700">{stats.demandesCompletees}</div>
-                          <div className="mt-1 text-sm text-emerald-900">Complétées</div>
+                          <div className="mt-1 text-sm text-emerald-900">ComplÃ©tÃ©es</div>
                         </div>
                         <div className="rounded-2xl bg-rose-50 p-4 text-center">
                           <div className="text-3xl font-bold text-rose-700">{stats.demandesRejetees}</div>
-                          <div className="mt-1 text-sm text-rose-900">Rejetées</div>
+                          <div className="mt-1 text-sm text-rose-900">RejetÃ©es</div>
                         </div>
                         <div className="rounded-2xl bg-orange-50 p-4 text-center">
                           <div className="text-3xl font-bold text-orange-700">{stats.demandesUrgentes}</div>
@@ -5115,10 +5112,10 @@ export function CommunicationInterne() {
                       <div className="rounded-[32px] border border-white/70 bg-white/94 p-6 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
                         <div className="flex items-center gap-3">
                           <Pin className="h-5 w-5 text-fuchsia-600" />
-                          <h3 className="text-xl font-semibold text-slate-950">Épinglés</h3>
+                          <h3 className="text-xl font-semibold text-slate-950">Ã‰pinglÃ©s</h3>
                         </div>
                         <div className="mt-5 text-4xl font-bold text-slate-950">{epinglesCount}</div>
-                        <p className="mt-2 text-sm text-slate-600">Messages mis en avant dans ce département.</p>
+                        <p className="mt-2 text-sm text-slate-600">Messages mis en avant dans ce dÃ©partement.</p>
                       </div>
 
                       <div className="rounded-[32px] border border-white/70 bg-white/94 p-6 shadow-[0_24px_60px_-44px_rgba(15,45,71,0.28)]">
@@ -5127,7 +5124,7 @@ export function CommunicationInterne() {
                           <h3 className="text-xl font-semibold text-slate-950">Lecture</h3>
                         </div>
                         <div className="mt-5 text-4xl font-bold text-slate-950">{tauxLecture}%</div>
-                        <p className="mt-2 text-sm text-slate-600">Taux estimé de lecture du département.</p>
+                        <p className="mt-2 text-sm text-slate-600">Taux estimÃ© de lecture du dÃ©partement.</p>
                       </div>
                     </div>
                   </div>

@@ -1987,7 +1987,7 @@ export function Comandas() {
         <ModuleControlSurface>
           <Tabs value={tabActual} onValueChange={setTabActual}>
             <ModuleControlSurfaceTabs>
-              <TabsList className="app-compact-tabs-grid w-full gap-1 bg-transparent p-0">
+              <TabsList className={`w-full gap-1 bg-transparent p-0 ${isCompactOrdersViewport ? 'flex flex-nowrap overflow-x-auto' : 'app-compact-tabs-grid'}`}>
                 <TabsTrigger value="comandas" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
                   <Package className="w-4 h-4" />
                   {t('orders.title')}
@@ -2003,37 +2003,60 @@ export function Comandas() {
           <TabsContent value="comandas" className="mt-0">
             <ModuleControlSurfaceBody className="space-y-2.5">
             {/* Búsqueda y filtros */}
-          <div className="app-compact-filters">
-            <div className="flex-1">
+          <div className={`app-compact-filters ${isCompactOrdersViewport ? 'flex-col sm:flex-row' : ''}`}>
+            <div className="w-full flex-1">
               <Input
                 placeholder={searchByNumberPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
+                className="w-full h-10"
               />
             </div>
-            <Select value={estadoFiltro} onValueChange={setEstadoFiltro}>
-              <SelectTrigger className="w-[180px] h-9 text-xs">
-                <SelectValue placeholder={t('orders.filterByStatus')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">{t('orders.allStatuses')}</SelectItem>
-                <SelectItem value="pendiente">{t('orders.pending')}</SelectItem>
-                <SelectItem value="confirmada">Acceptée</SelectItem>
-                <SelectItem value="en_preparacion">{t('orders.inPreparation')}</SelectItem>
-                <SelectItem value="completada">{t('orders.completed')}</SelectItem>
-                <SelectItem value="entregada">{t('orders.delivered')}</SelectItem>
-                <SelectItem value="anulada">{t('orders.cancelled')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className={`flex flex-wrap gap-2 ${isCompactOrdersViewport ? 'w-full' : ''}`}>
+              <Select value={estadoFiltro} onValueChange={setEstadoFiltro}>
+                <SelectTrigger className={`h-10 text-xs ${isCompactOrdersViewport ? 'w-full' : 'w-[180px]'}`}>
+                  <SelectValue placeholder={t('orders.filterByStatus')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">{t('orders.allStatuses')}</SelectItem>
+                  <SelectItem value="pendiente">{t('orders.pending')}</SelectItem>
+                  <SelectItem value="confirmada">Acceptée</SelectItem>
+                  <SelectItem value="en_preparacion">{t('orders.inPreparation')}</SelectItem>
+                  <SelectItem value="completada">{t('orders.completed')}</SelectItem>
+                  <SelectItem value="entregada">{t('orders.delivered')}</SelectItem>
+                  <SelectItem value="anulada">{t('orders.cancelled')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={() => setDialogListaDistribuidosOpen(true)}
+                disabled={comandasDistribuidasFiltradas.length === 0}
+                className={`h-10 whitespace-nowrap text-xs ${isCompactOrdersViewport ? 'flex-1' : ''}`}
+              >
+                <Package className="mr-2 h-4 w-4" />
+                Liste de distributions
+              </Button>
+            </div>
+          </div>
+
+          <div className={`flex flex-wrap gap-2 ${isCompactOrdersViewport ? 'pt-0.5' : ''}`}>
+            <Button
+              onClick={() => setEscanerQROpen(true)}
+              className="h-10 flex-1 bg-[#1E73BE] text-white hover:bg-[#1557A0] sm:flex-none"
+            >
+              <QrCode className="mr-2 h-4 w-4" />
+              Scanner QR
+            </Button>
             <Button
               variant="outline"
-              onClick={() => setDialogListaDistribuidosOpen(true)}
-              disabled={comandasDistribuidasFiltradas.length === 0}
-              className="whitespace-nowrap h-9 text-xs"
+              onClick={() => {
+                setConfirmacionNotificaciones(false);
+                setDialogNotificacionOpen(true);
+              }}
+              className="h-10 flex-1 sm:flex-none"
             >
-              <Package className="w-4 h-4 mr-2" />
-              Liste de distributions
+              <Bell className="mr-2 h-4 w-4" />
+              Notifications
             </Button>
           </div>
 
@@ -2098,8 +2121,7 @@ export function Comandas() {
                 </div>
               ) : (
                 <div
-                  className="grid gap-3 lg:gap-4"
-                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}
+                  className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 lg:gap-4"
                 >
                   {comandasAgrupadasPorEstado.map((grupo) => {
                     const EstadoIcon = grupo.icon;
@@ -2310,7 +2332,7 @@ export function Comandas() {
                                         {getEstadoBadge(comanda.estado)}
                                       </div>
 
-                                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                      <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                                         <div className="rounded-lg bg-[#f8fafc] px-2.5 py-2">
                                           <p className="text-[10px] uppercase tracking-wide text-[#64748b]">Rendez-vous</p>
                                           <p className="mt-0.5 font-medium text-[#1e293b]">
@@ -2344,7 +2366,7 @@ export function Comandas() {
                                         </div>
                                       )}
 
-                                      <div className="mt-3 flex flex-wrap gap-1.5">
+                                      <div className={`mt-3 grid gap-1.5 ${isCompactOrdersViewport ? 'grid-cols-1' : 'grid-cols-3'}`}>
                                         <Button
                                           variant="outline"
                                           size="sm"
@@ -2353,7 +2375,7 @@ export function Comandas() {
                                             setMostrarModeloComanda(true);
                                           }}
                                           title={t('orders.viewOrder')}
-                                          className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] hover:bg-[#f8fafc]"
+                                          className="h-8 w-full border-[#dbe4ee] bg-white px-2.5 text-[11px] hover:bg-[#f8fafc]"
                                         >
                                           <Eye className="mr-1.5 h-3.5 w-3.5" />
                                           Ouvrir
@@ -2363,7 +2385,7 @@ export function Comandas() {
                                           size="sm"
                                           onClick={() => handleAbrirImpresionCompacta(comanda)}
                                           title={t('orders.printOrder')}
-                                          className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#2E7D32] hover:bg-[#eef8ef] hover:text-[#2E7D32]"
+                                          className="h-8 w-full border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#2E7D32] hover:bg-[#eef8ef] hover:text-[#2E7D32]"
                                         >
                                           <Printer className="mr-1.5 h-3.5 w-3.5" />
                                           Imprimer
@@ -2376,7 +2398,7 @@ export function Comandas() {
                                             handleImprimirEtiquetaEstandarizada(comanda, organismo);
                                           }}
                                           title={t('orders.printLabelTitle')}
-                                          className="h-8 border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#1E73BE] hover:bg-[#edf5ff] hover:text-[#1E73BE]"
+                                          className="h-8 w-full border-[#dbe4ee] bg-white px-2.5 text-[11px] text-[#1E73BE] hover:bg-[#edf5ff] hover:text-[#1E73BE]"
                                         >
                                           <Tag className="mr-1.5 h-3.5 w-3.5" />
                                           Étiquette

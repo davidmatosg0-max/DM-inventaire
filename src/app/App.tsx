@@ -104,6 +104,7 @@ function AppContent() {
   const [mountedPages, setMountedPages] = useState<Set<string>>(new Set([currentPage]));
   const { isAuthenticated, isLoading, logout: logoutAuth } = useAuth();
   const { i18n } = useTranslation();
+  const wasAuthenticatedRef = useRef(false);
 
   // 🔔 Inicializar sistema de notificaciones de actualizaciones
   useUpdateNotifications();
@@ -135,6 +136,31 @@ function AppContent() {
       window.history.replaceState({}, '', url.toString());
     }
   }, [currentPage]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      wasAuthenticatedRef.current = false;
+      return;
+    }
+
+    if (!wasAuthenticatedRef.current) {
+      setCurrentPage('dashboard');
+
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('page') !== 'dashboard') {
+          url.searchParams.set('page', 'dashboard');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
+    }
+
+    wasAuthenticatedRef.current = true;
+  }, [isAuthenticated, isLoading]);
 
   useEffect(() => {
     if (!REMOVED_PAGE_IDS.has(currentPage)) {

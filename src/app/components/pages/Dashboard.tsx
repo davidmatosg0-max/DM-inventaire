@@ -19,8 +19,10 @@ import {
   obtenerProductosActivos, 
   type ProductoCreado 
 } from '../../utils/productStorage';
+import { obtenerUsuarioSesion } from '../../utils/sesionStorage';
 import type { Comanda } from '../../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+
 
 type MovimientoChartPoint = {
   id: string;
@@ -111,6 +113,8 @@ function construirSerieDashboard(movimientos: MovimientoExtendido[], stockActual
 export function Dashboard() {
   const { t } = useTranslation();
   const branding = useBranding();
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileEntryOpen, setMobileEntryOpen] = useState(false);
   const [stats, setStats] = useState({
     totalOrganismos: 0,
     organismosActivos: 0,
@@ -128,6 +132,13 @@ export function Dashboard() {
   const [movimientosPorDia, setMovimientosPorDia] = useState<MovimientoChartPoint[]>([]);
   const [organismosDisponibles, setOrganismosDisponibles] = useState<any[]>([]);
   const [activeDashboardTab, setActiveDashboardTab] = useState<'executive' | 'suivi' | 'prevision'>('executive');
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 640);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const cargarDatos = useCallback(() => {
     // Obtener datos de localStorage
@@ -236,6 +247,81 @@ export function Dashboard() {
   const tauxRisqueStock = totalProductos > 0 ? Math.round((stats.stockBajo / totalProductos) * 100) : 0;
   const valeurMoyenneProduit = totalProductos > 0 ? Math.round(stats.valorTotalInventario / totalProductos) : 0;
   const glassCardClassName = 'border-white/60 bg-white/80 shadow-lg backdrop-blur-xl';
+  const usuarioActual = obtenerUsuarioSesion();
+  const nombreUsuario = usuarioActual?.nombre || 'David';
+
+  if (isMobile) {
+    const productos = obtenerProductosActivos();
+    const grouped = productos.reduce((acc, producto) => {
+      const key = producto.categoria || producto.subcategoria || 'Autres';
+      acc.set(key, (acc.get(key) || 0) + Number(producto.stockActual || 0));
+      return acc;
+    }, new Map<string, number>());
+
+    const totalCategorias = Array.from(grouped.values()).reduce((sum, value) => sum + value, 0);
+    const colores = ['#2F6BFF', '#57C76E', '#FF8A34', '#9B5CF7'];
+    const topCategorias = Array.from(grouped.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([name, value], index) => ({
+        name,
+        value,
+        color: colores[index % colores.length],
+        pct: totalCategorias > 0 ? Math.max(8, Math.round((value / totalCategorias) * 100)) : 0,
+      }));
+
+    return (
+      <div className="space-y-3 pb-24">
+        <section className="rounded-[22px] bg-gradient-to-br from-[#153B7A] to-[#102E61] p-4 text-white shadow-[0_16px_34px_-20px_rgba(16,46,97,0.72)]">
+          <p className="text-[11px] text-white/80">Hola, {nombreUsuario}</p>
+          <h2 className="text-[18px] font-semibold tracking-tight text-white sm:text-[20px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Resumen de hoy</h2>
+          <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+            <div><div className="mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#2F6BFF]"><Package className="h-4 w-4" /></div><p className="text-sm font-bold">{formatLargeNumber(stockTotal)}</p><p className="text-[10px] text-white/75">stock</p></div>
+            <div><div className="mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#57C76E]"><Users className="h-4 w-4" /></div><p className="text-sm font-bold">{organismosActivos}</p><p className="text-[10px] text-white/75">orgas</p></div>
+            <div><div className="mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#FF8A34]"><ClipboardList className="h-4 w-4" /></div><p className="text-sm font-bold">{comandasPendientes}</p><p className="text-[10px] text-white/75">cmds</p></div>
+            <div><div className="mx-auto mb-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#9B5CF7]"><TrendingUp className="h-4 w-4" /></div><p className="text-sm font-bold">{tauxRisqueStock}%</p><p className="text-[10px] text-white/75">risque</p></div>
+          </div>
+        </section>
+
+        <section className="rounded-[20px] bg-white p-4 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.35)]">
+          <h3 className="mb-2 text-[17px] font-semibold text-[#17314F] sm:text-[18px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Acciones rápidas</h3>
+          <div className="grid grid-cols-4 gap-3">
+            <button onClick={() => setMobileEntryOpen(true)} className="flex flex-col items-center gap-1.5"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2F6BFF] text-white"><Package className="h-4 w-4" /></span><span className="text-[11px] font-medium text-[#20344f]">Entrada</span></button>
+            <button onClick={() => setActiveDashboardTab('executive')} className="flex flex-col items-center gap-1.5"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#57C76E] text-white"><Clock className="h-4 w-4" /></span><span className="text-[11px] font-medium text-[#20344f]">Suivi</span></button>
+            <button onClick={() => setActiveDashboardTab('suivi')} className="flex flex-col items-center gap-1.5"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FF8A34] text-white"><Users className="h-4 w-4" /></span><span className="text-[11px] font-medium text-[#20344f]">Orgas</span></button>
+            <button onClick={() => setActiveDashboardTab('prevision')} className="flex flex-col items-center gap-1.5"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#9B5CF7] text-white"><TrendingUp className="h-4 w-4" /></span><span className="text-[11px] font-medium text-[#20344f]">IA</span></button>
+          </div>
+        </section>
+
+        <section className="rounded-[20px] bg-white p-4 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.35)]">
+          <h3 className="mb-2 text-[17px] font-semibold text-[#17314F] sm:text-[18px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Inventario por categoría</h3>
+          <div className="space-y-3">
+            {topCategorias.length === 0 ? (
+              <p className="text-sm text-[#6b7280]">Aucune catégorie disponible.</p>
+            ) : (
+              topCategorias.map((item) => (
+                <div key={item.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between"><p className="truncate text-sm font-semibold text-[#1f3250]">{item.name}</p><p className="text-xs font-semibold" style={{ color: item.color }}>{formatLargeNumber(item.value)} kg</p></div>
+                  <div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full" style={{ width: item.pct + '%', backgroundColor: item.color }} /></div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[20px] bg-white p-4 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.35)]">
+          <h3 className="mb-2 text-[17px] font-semibold text-[#17314F] sm:text-[18px]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Alertas</h3>
+          <div className="space-y-2">
+            <div className="rounded-2xl border border-[#edf1f5] px-3 py-2.5"><p className="text-sm font-semibold text-[#1f3250]">{stats.stockBajo} produits en stock bas</p><p className="text-xs text-[#6b7280]">Révision recommandée</p></div>
+            <div className="rounded-2xl border border-[#edf1f5] px-3 py-2.5"><p className="text-sm font-semibold text-[#1f3250]">Projection 14 jours: {formatLargeNumber(projectionStock14Jours)} kg</p><p className="text-xs text-[#6b7280]">{joursAvantTension ? 'Tension en ' + joursAvantTension + ' jours' : 'Stock stable'}</p></div>
+            <div className="flex items-center gap-2 rounded-2xl border border-[#fee2e2] bg-[#fef2f2] px-3 py-2.5 text-[#b91c1c]"><AlertTriangle className="h-4 w-4" /><p className="text-xs font-semibold">Surveillance active des seuils critiques</p></div>
+          </div>
+        </section>
+
+        <EntradaDonAchat open={mobileEntryOpen} onOpenChange={setMobileEntryOpen} hideTrigger />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -256,7 +342,7 @@ export function Dashboard() {
         )}
       />
 
-      <ModuleStatsGrid defaultLayout="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-5">
+      <ModuleStatsGrid defaultLayout="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-5">
         <ModuleStatCard
           label={t('dashboard.totalInventory')}
           value={formatLargeNumber(stockTotal)}
@@ -310,16 +396,16 @@ export function Dashboard() {
       <Tabs value={activeDashboardTab} onValueChange={(value) => setActiveDashboardTab(value as 'executive' | 'suivi' | 'prevision')} className="overflow-visible">
         <ModuleControlSurface>
           <ModuleControlSurfaceTabs>
-            <TabsList className="app-compact-tabs-grid w-full max-w-5xl gap-1 bg-transparent p-0" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-              <TabsTrigger value="executive" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
+            <TabsList className="app-compact-tabs-grid flex w-full max-w-5xl gap-1 overflow-x-auto bg-transparent p-0 sm:grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <TabsTrigger value="executive" className="app-compact-tab-trigger flex min-w-[8.25rem] items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] sm:min-w-0">
                 <LayoutDashboard className="h-4 w-4" />
                 Vue executive
               </TabsTrigger>
-              <TabsTrigger value="suivi" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
+              <TabsTrigger value="suivi" className="app-compact-tab-trigger flex min-w-[8.25rem] items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] sm:min-w-0">
                 <Clock className="h-4 w-4" />
                 Suivi en temps réel
               </TabsTrigger>
-              <TabsTrigger value="prevision" className="app-compact-tab-trigger flex items-center gap-2 min-h-8 px-2 py-1.5 text-[11px]">
+              <TabsTrigger value="prevision" className="app-compact-tab-trigger flex min-w-[8.25rem] items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] sm:min-w-0">
                 <Sparkles className="h-4 w-4" />
                 Prévision & IA
               </TabsTrigger>
@@ -619,3 +705,6 @@ export function Dashboard() {
     </div>
   );
 }
+
+
+

@@ -1764,10 +1764,10 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       : formData.temperatura === 'congelado'
         ? 'Congelé'
         : 'À définir';
-    const comboboxTriggerClass = 'w-full min-h-[80px] h-auto justify-between items-start rounded-2xl border-2 border-slate-300 bg-white px-4 py-4 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.15),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:border-[#2d9561] hover:shadow-[0_6px_20px_-4px_rgba(45,149,97,0.25)] focus:border-[#2d9561] focus:ring-2 focus:ring-[#2d9561]/20';
-    const floatingPanelClass = 'rounded-[20px] border-2 border-slate-200 bg-white p-0 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35),0_0_1px_rgba(15,23,42,0.1)]';
-    const selectTriggerClass = 'mt-2 min-h-[56px] rounded-2xl border-2 border-slate-300 bg-white px-4 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.15),0_0_0_1px_rgba(255,255,255,0.8)_inset] hover:border-[#2d9561] hover:shadow-[0_6px_20px_-4px_rgba(45,149,97,0.25)] transition-all';
-    const selectContentClass = 'rounded-[20px] border-2 border-slate-200 bg-white shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35),0_0_1px_rgba(15,23,42,0.1)]';
+    const comboboxTriggerClass = 'w-full min-h-[50px] sm:min-h-[68px] h-auto justify-between items-start rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-2.5 py-2 sm:px-3.5 sm:py-2.5 text-[12px] shadow-[0_2px_10px_-6px_rgba(15,23,42,0.18)] transition-all hover:border-[#2d9561] focus:border-[#2d9561] focus:ring-2 focus:ring-[#2d9561]/15';
+    const floatingPanelClass = 'rounded-2xl border border-slate-200 bg-white p-0 shadow-[0_16px_34px_-24px_rgba(15,23,42,0.28)]';
+    const selectTriggerClass = 'mt-1 min-h-[40px] sm:min-h-[46px] rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-2.5 text-[12px] shadow-[0_2px_10px_-6px_rgba(15,23,42,0.18)] hover:border-[#2d9561] transition-all';
+    const selectContentClass = 'rounded-2xl border border-slate-200 bg-white shadow-[0_16px_34px_-24px_rgba(15,23,42,0.28)]';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -1784,9 +1784,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
         </DialogTrigger>
       )}
       
-      <DialogContent className="w-[min(98vw,1920px)] max-w-[1920px] max-h-[98dvh] overflow-hidden border-0 bg-gradient-to-br from-slate-50 via-white to-slate-50/50 p-0 shadow-[0_40px_100px_-50px_rgba(15,23,42,0.6),0_0_1px_rgba(15,23,42,0.1)]" aria-describedby="entry-form-description">
-        <div className="flex h-[98dvh] flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-50/30 via-white to-slate-50/30">
-          <DialogHeader className="relative overflow-hidden border-b-2 border-slate-200 bg-white px-3 py-1.5 pr-14 sm:px-4 sm:pr-16 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
+      <DialogContent className="dialog-mobile left-1/2 top-1/2 w-[calc(100vw-12px)] max-w-[calc(100vw-12px)] h-[calc(100dvh-12px)] max-h-[calc(100dvh-12px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden border-0 rounded-[18px] bg-gradient-to-br from-slate-50 via-white to-slate-50/50 p-0 shadow-[0_40px_100px_-50px_rgba(15,23,42,0.6),0_0_1px_rgba(15,23,42,0.1)] sm:w-[min(98vw,1920px)] sm:max-w-[1920px] sm:h-[98dvh] sm:max-h-[98dvh] sm:rounded-[24px]" aria-describedby="entry-form-description">
+       <div className="flex h-full flex-col overflow-hidden rounded-[18px] bg-gradient-to-br from-slate-50/30 via-white to-slate-50/30 sm:rounded-[24px]">
+         <DialogHeader className="relative overflow-hidden border-b-2 border-slate-200 bg-white px-3 py-2 pr-14 shadow-[0_1px_3px_rgba(15,23,42,0.08)] sm:px-4 sm:pr-16 sm:py-2.5">
             <div
               className="absolute inset-0"
               style={{
@@ -1799,23 +1799,23 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Package className="h-4 w-4" />
                 </div>
                 <div>
-                  <DialogTitle className="text-left text-base font-bold tracking-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  <DialogTitle className="text-left text-sm font-bold tracking-tight text-slate-900 sm:text-base" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                     Registrer Entrée
                   </DialogTitle>
-                  <DialogDescription id="entry-form-description" className="mt-0 max-w-2xl text-[0.75rem] leading-tight text-slate-600">
+                  <DialogDescription id="entry-form-description" className="mt-0 max-w-2xl text-[10px] leading-tight text-slate-600 sm:text-[11px]">
                     Sélectionnez le type, ajoutez les produits et finalisez.
                   </DialogDescription>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-1 lg:justify-end">
-                <div className="whitespace-nowrap rounded-full border border-slate-200 bg-white/85 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-[0.15em] text-slate-500">
+                <div className="whitespace-nowrap rounded-full border border-slate-200 bg-white/85 px-1.5 py-0.5 text-[8px] font-semibold uppercase leading-none tracking-[0.12em] text-slate-500">
                   Inventaire
                 </div>
-                <div className="whitespace-nowrap rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-[0.15em] text-[#2d9561]">
+                <div className="whitespace-nowrap rounded-full border border-[#2d9561]/20 bg-[#2d9561]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase leading-none tracking-[0.12em] text-[#2d9561]">
                   Guidée
                 </div>
-                <div className="whitespace-nowrap rounded-full border border-[#1a4d7a]/15 bg-[#1a4d7a]/10 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-[0.15em] text-[#1a4d7a]">
+                <div className="whitespace-nowrap rounded-full border border-[#1a4d7a]/15 bg-[#1a4d7a]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase leading-none tracking-[0.12em] text-[#1a4d7a]">
                   {progressionFormulaire}%
                 </div>
               </div>
@@ -1828,7 +1828,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               <div className="space-y-1.5">
           {/* SECTION 1: Type d'entrée - DINÁMICO desde configuración */}
           <div className="space-y-1.5 rounded-2xl border-2 border-slate-300 bg-gradient-to-br from-white to-slate-50/50 p-3 shadow-[0_8px_20px_-8px_rgba(15,23,42,0.2),0_0_1px_rgba(15,23,42,0.1)]">
-            <Label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            <Label className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               Type d'Entrée *
             </Label>
             
@@ -1844,9 +1844,9 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
               <div className={cn(
                 "grid gap-2",
                 programasActivos.length === 1 ? "grid-cols-1" :
-                programasActivos.length === 2 ? "grid-cols-2" :
-                programasActivos.length === 3 ? "grid-cols-3" :
-                "grid-cols-2 lg:grid-cols-3"
+                programasActivos.length === 2 ? "grid-cols-1 sm:grid-cols-2" :
+                programasActivos.length === 3 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" :
+                "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               )}>
                 {programasActivos.map((programa) => (
                   <button
@@ -1854,7 +1854,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     type="button"
                     onClick={() => handleFieldChange('tipoEntrada', programa.codigo.toLowerCase())}
                     className={cn(
-                      "rounded-xl border-2 px-2.5 py-2 transition-all hover:shadow-md text-left",
+                     "min-h-[56px] sm:min-h-[66px] rounded-xl border px-2 py-1.5 text-left transition-all hover:shadow-sm",
                       formData.tipoEntrada === programa.codigo.toLowerCase()
                         ? "border-current bg-opacity-10 shadow-md"
                         : "border-slate-200 bg-white hover:border-slate-300"
@@ -1865,13 +1865,13 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{programa.icono || '📦'}</span>
+                      <span className="text-sm">{programa.icono || '📦'}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="truncate text-xs font-semibold text-slate-900">{programa.nombre}</p>
-                        <p className="text-[10px] text-gray-500 truncate">{programa.descripcion}</p>
+                        <p className="truncate text-[10px] font-semibold text-slate-900">{programa.nombre}</p>
+                        <p className="text-[8px] text-gray-500 truncate">{programa.descripcion}</p>
                       </div>
                       {formData.tipoEntrada === programa.codigo.toLowerCase() && (
-                        <Check className="w-5 h-5 flex-shrink-0" style={{ color: programa.color }} />
+                        <Check className="w-4 h-4 flex-shrink-0" style={{ color: programa.color }} />
                       )}
                     </div>
                   </button>
@@ -1884,7 +1884,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
             <>
               {/* SECTION 2: Contact (Donateur/Fournisseur) */}
               <div className="space-y-2 rounded-[20px] border-2 border-slate-300 bg-gradient-to-br from-white to-slate-50/50 p-3 shadow-[0_8px_20px_-8px_rgba(15,23,42,0.2),0_0_1px_rgba(15,23,42,0.1)]">
-                <Label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                <Label className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   {formData.tipoEntrada === 'achat' ? '📦 Fournisseur *' : 
                    formData.tipoEntrada === 'prs' ? '🚚 Participant PRS *' :
                    formData.tipoEntrada === 'occ' ? '🔄 Donateur/Fournisseur *' : 
@@ -2758,7 +2758,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 </button>
 
                 {detallesOpcionalesAbiertos && (
-                  <div className="mt-1.5.5 space-y-1.5">
+                  <div className="mt-1.5 space-y-1.5">
                     <div>
                       <Label>Observations</Label>
                       <Textarea
@@ -3410,7 +3410,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 {(!formData.fechaCaducidad || formData.fechaCaducidad.trim() === '') && (
                   <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
                     <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <span className="text-lg">📅</span>
+                      <span className="text-base">📅</span>
                     </div>
                     <div>
                       <p className="font-semibold text-amber-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -3426,7 +3426,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                 {(!formData.lote || formData.lote.trim() === '' || formData.lote.trim() === 'LOT-') && (
                   <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="h-8 w-8 rounded-lg bg-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <span className="text-lg">🏷️</span>
+                      <span className="text-base">🏷️</span>
                     </div>
                     <div>
                       <p className="font-semibold text-orange-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -3479,3 +3479,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
     </Dialog>
   );
 }
+
+
+
+

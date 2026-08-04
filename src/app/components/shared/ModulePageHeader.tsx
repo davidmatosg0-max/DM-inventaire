@@ -94,14 +94,14 @@ export function ModulePageHeader({
             <div className="min-w-0">
               <div className="flex items-start gap-2 min-w-0">
                 <h1
-                  className="truncate text-[1.45rem] sm:text-[2rem] lg:text-[2.35rem] leading-tight"
+                  className="truncate text-[1.1rem] leading-tight sm:text-[1.45rem] md:text-[1.8rem] lg:text-[2.35rem]"
                   style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: accentColor }}
                 >
                   {title}
                 </h1>
                 <Sparkles className="mt-1 h-4 w-4 flex-shrink-0 animate-pulse sm:h-5 sm:w-5" style={{ color: secondaryColor }} />
               </div>
-              <p className={cn('max-w-3xl text-sm leading-6 text-[#5d7185] sm:text-[1rem]', compact ? 'mt-1.5' : 'mt-2')}>{subtitle}</p>
+              <p className={cn('max-w-3xl text-xs leading-5 text-[#5d7185] sm:text-sm sm:leading-6 md:text-[1rem]', compact ? 'mt-1.5' : 'mt-2')}>{subtitle}</p>
               {showContextChips ? (
                 <div className={cn('flex flex-wrap gap-2', compact ? 'mt-3' : 'mt-4')}>
                   <div className="rounded-full border border-white/85 bg-white/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-sm">

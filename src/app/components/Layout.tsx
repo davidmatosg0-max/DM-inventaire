@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo } from 'react';
+﻿import React, { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
 import { AdaptiveBrandLogo } from './shared/AdaptiveBrandLogo';
@@ -86,18 +86,19 @@ const MENU_PERMISSION_ALIASES: Record<string, string> = {
 
 export function Layout({ children, currentPage, onNavigate, onLogout, hideSidebar = false }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
   const [expandedMenus, setExpandedMenus] = React.useState<string[]>([]);
   const [showGuideComplete, setShowGuideComplete] = React.useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = React.useState(false);
   const mainStageRef = React.useRef<HTMLElement>(null);
   const appShellRef = React.useRef<HTMLDivElement>(null);
   
-  // Estados para botón draggable del Guide Complet
+  // Estados para boton draggable del Guide Complet
   const [isDragging, setIsDragging] = React.useState(false);
   const [position, setPosition] = React.useState({ x: 0, y: 0 });
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
   const buttonRef = React.useRef<HTMLButtonElement>(null);
-  const dragThreshold = 5; // Umbral mínimo de movimiento para considerar que es un drag
+  const dragThreshold = 5; // Umbral minimo de movimiento para considerar que es un drag
   const [totalDragDistance, setTotalDragDistance] = React.useState(0);
   const [entrepotQuickActionsDragging, setEntrepotQuickActionsDragging] = React.useState(false);
   const [entrepotQuickActionsPosition, setEntrepotQuickActionsPosition] = React.useState({ x: 0, y: 0 });
@@ -129,6 +130,17 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const useCommunicationFullscreenShell = currentPage === 'communication';
   const useCommunicationCompactSidebar = currentPage === 'communication';
   const shellTopOffset = `${topbarHeight}px`;
+
+  React.useEffect(() => {
+    const updateViewport = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
 
   React.useEffect(() => {
     const topbarNode = topbarRef.current;
@@ -167,9 +179,9 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     appShellRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [currentPage]);
   
-  // Funciones para drag del botón Guide Complet
+  // Funciones para drag del boton Guide Complet
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (e.button !== 0) return; // Solo botón izquierdo
+    if (e.button !== 0) return; // Solo boton izquierdo
     e.preventDefault();
     setIsDragging(true);
     setTotalDragDistance(0);
@@ -213,7 +225,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     const newX = e.clientX - dragStart.x;
     const newY = e.clientY - dragStart.y;
     
-    // Límites de la ventana con margen de 10px
+    // Limites de la ventana con margen de 10px
     const margin = 10;
     const maxX = window.innerWidth - (buttonRef.current?.offsetWidth || 56) - margin;
     const maxY = window.innerHeight - (buttonRef.current?.offsetHeight || 56) - margin;
@@ -242,7 +254,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     const newX = touch.clientX - dragStart.x;
     const newY = touch.clientY - dragStart.y;
     
-    // Límites de la ventana con margen de 10px
+    // Limites de la ventana con margen de 10px
     const margin = 10;
     const maxX = window.innerWidth - (buttonRef.current?.offsetWidth || 56) - margin;
     const maxY = window.innerHeight - (buttonRef.current?.offsetHeight || 56) - margin;
@@ -366,7 +378,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       document.addEventListener('touchmove', handleTouchMove, { passive: false });
       document.addEventListener('touchend', handleTouchEnd);
       
-      // Prevenir selección de texto durante el drag
+      // Prevenir seleccion de texto durante el drag
       document.body.style.userSelect = 'none';
       
       return () => {
@@ -410,7 +422,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       localStorage.removeItem('authTimestamp');
       sessionStorage.removeItem('isAuthenticated');
       
-      toast.success(t('auth.sessionClosed') || 'Sesión cerrada correctamente');
+      toast.success(t('auth.sessionClosed') || 'Sesion cerrada correctamente');
       setTimeout(() => {
         onLogout();
       }, 500);
@@ -489,6 +501,14 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
 
   const currentWorkspaceLabel = currentMenuItem?.label || t('nav.mainDashboard');
 
+  const mobileQuickItems = React.useMemo(() => [
+    { id: 'dashboard', label: t('nav.mainDashboard'), shortLabel: 'Accueil', icon: <LayoutDashboard className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'inventario', label: t('nav.inventory'), shortLabel: 'Stock', icon: <Package className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'comandas', label: t('nav.orders'), shortLabel: 'Cmds', icon: <ClipboardList className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'communication', label: t('nav.messaging'), shortLabel: 'Msgs', icon: <MessageSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'configuracion', label: t('nav.configuration'), shortLabel: 'Config', icon: <Settings className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+  ], [t]);
+
   const entrepotModulePageIds = React.useMemo(
     () => menuItems.find(item => item.id === 'entrepot')?.children?.map(child => child.id) ?? [],
     [menuItems]
@@ -536,7 +556,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
     return item;
   }, [esDesarrollador, menuItemDisponible]);
 
-  // Filtrar menú según permisos
+  // Filtrar menu segun permisos
   const menuItemsFiltrado = menuItems
     .map(filtrarMenuItem)
     .filter((item): item is MenuItem => item !== null);
@@ -704,7 +724,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             </div>
           </div>
 
-          {/* Primera fila: Menú, Logo/Nombre */}
+          {/* Primera fila: Menu, Logo/Nombre */}
           <div className="flex items-center justify-between gap-2 sm:gap-3.5">
             <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
               {!hideSidebar && (
@@ -712,23 +732,23 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                   onClick={() => setSidebarOpen(!sidebarOpen)}
                   className="lg:hidden p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 flex-shrink-0 backdrop-blur-sm"
                 >
-                  {sidebarOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
+                  {sidebarOpen ? <X className="h-[18px] w-[18px] text-white sm:h-5 sm:w-5" /> : <Menu className="h-[18px] w-[18px] text-white sm:h-5 sm:w-5" />}
                 </button>
               )}
-              {/* Botón Casa - Dashboard */}
+              {/* Boton Casa - Dashboard */}
               <button
                 onClick={() => onNavigate('departamentos')}
-                className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 flex-shrink-0 group"
+                className="hidden p-1.5 sm:flex sm:p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 flex-shrink-0 group"
                 title={t('common.departments')}
               >
-                <Home className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:rotate-12 transition-transform" />
+                <Home className="h-[18px] w-[18px] text-white transition-transform group-hover:rotate-12 sm:h-5 sm:w-5" />
               </button>
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 {branding.logo && (
                   <AdaptiveBrandLogo
                     src={branding.logo}
                     alt={t('common.logo')}
-                    wrapperClassName="h-7 w-7 flex-shrink-0 sm:h-9 sm:w-9"
+                    wrapperClassName="h-6 w-6 flex-shrink-0 sm:h-8 sm:w-8"
                     glowColor={branding.secondaryColor}
                     glowClassName="blur-md opacity-50"
                     containerClassName="relative z-10"
@@ -741,10 +761,10 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                 )}
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <h1 className="font-bold truncate text-sm sm:text-base md:text-xl lg:text-2xl text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    <h1 className="truncate text-[13px] font-bold text-white sm:text-[15px] md:text-lg lg:text-xl" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {nombreMostrar}
                     </h1>
-                    <Sparkles className="w-4 h-4 text-white/80 hidden sm:block" />
+                    <Sparkles className="hidden h-3.5 w-3.5 text-white/80 sm:block sm:h-4 sm:w-4" />
                   </div>
                   <div className="hidden md:flex items-center gap-2 mt-1.5 text-white/78">
                     <span className="rounded-full border border-white/16 bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] backdrop-blur-md" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700 }}>
@@ -756,11 +776,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               </div>
             </div>
             
-            {/* Segunda parte: Búsqueda, Notificaciones, Idioma, Usuario */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-              <GlobalSearch onNavigate={onNavigate} />
+            {/* Segunda parte: Busqueda, Notificaciones, Idioma, Usuario */}
+            <div className="flex items-center gap-1 sm:gap-2.5 flex-shrink-0">
+              <div className="hidden md:block"><GlobalSearch onNavigate={onNavigate} /></div>
               <CentroNotificaciones />
-              <LanguageSelector />
+              <div className="hidden sm:block"><LanguageSelector /></div>
               <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-white/16 bg-white/10 px-2.5 py-1.5 max-w-[220px] sm:max-w-[240px] shadow-[0_14px_28px_-24px_rgba(0,0,0,0.55)] backdrop-blur-md">
                 <div className="text-right">
                   <p className="text-xs sm:text-sm text-white font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -778,23 +798,23 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                   fallbackStyle={{ backgroundColor: branding.secondaryColor }}
                 />
               </div>
-              {/* Usuario móvil compacto */}
-              <div className="sm:hidden flex items-center gap-2 rounded-xl border border-white/16 bg-white/10 px-2 py-1 max-w-[150px] backdrop-blur-md">
+              {/* Usuario movil compacto */}
+              <div className="sm:hidden flex items-center gap-1.5 rounded-xl border border-white/16 bg-white/10 px-1.5 py-0.5 max-w-[132px] backdrop-blur-md">
                 <div className="text-right min-w-0">
                   <p
-                    className="text-[11px] text-white font-semibold truncate"
+                    className="text-[10px] text-white font-semibold truncate"
                     style={{ fontFamily: 'Montserrat, sans-serif' }}
                   >
                     {nombreCompleto}
                   </p>
-                  <p className="text-[10px] text-white/80 truncate">{rolTraducido}</p>
+                  <p className="text-[9px] text-white/80 truncate">{rolTraducido}</p>
                 </div>
                 <UserAvatar
                   userId={usuarioActual?.id}
                   displayName={nombreCompleto}
                   username={usuarioActual?.username}
                   photo={usuarioActual?.foto}
-                  className="w-8 h-8 rounded-full shadow-lg"
+                  className="h-7 w-7 rounded-full shadow-lg"
                   fallbackClassName="text-xs font-bold text-white"
                   fallbackStyle={{ backgroundColor: branding.secondaryColor }}
                 />
@@ -802,10 +822,10 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               {onLogout && (
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 flex-shrink-0 group"
+                  className="hidden p-1.5 sm:flex sm:p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-105 flex-shrink-0 group"
                   title={t('nav.logout')}
                 >
-                  <LogOut className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:rotate-12 transition-transform" />
+                  <LogOut className="h-[18px] w-[18px] text-white transition-transform group-hover:rotate-12 sm:h-5 sm:w-5" />
                 </button>
               )}
             </div>
@@ -899,7 +919,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
       {/* Main content */}
       <main
         ref={mainStageRef}
-        className={`app-main-stage box-border ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden ${useCommunicationFullscreenShell ? 'overflow-hidden' : 'overflow-y-auto'}`}
+        className={`app-main-stage box-border ${!hideSidebar ? (useCommunicationCompactSidebar ? 'lg:pl-[220px] xl:pl-[232px]' : 'lg:pl-[244px] xl:pl-[264px]') : ''} relative z-10 overflow-x-hidden ${useCommunicationFullscreenShell ? 'overflow-hidden' : 'overflow-y-auto'} pb-24 lg:pb-0`}
         style={useCommunicationFullscreenShell
           ? { top: shellTopOffset, height: `calc(100vh - ${shellTopOffset})` }
           : { paddingTop: shellTopOffset, height: '100vh' }}
@@ -909,11 +929,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
         </div>
       </main>
 
-      {/* Sistema de Alertas Automáticas */}
+      {/* Sistema de Alertas Automaticas */}
       <SystemAlerts />
       <AlertsSummary />
 
-      {/* Botón flotante para acceso de organismos - Modernizado */}
+      {/* Boton flotante para acceso de organismos - Modernizado */}
       {!hideCommunicationFloaters && (
         <button
           onClick={() => onNavigate('acceso-organismo')}
@@ -954,15 +974,15 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                 navigateToInventarioQuickAction('open-new-entry');
               }
             }}
-            className="h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105 shadow-2xl flex items-center justify-center"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 hover:scale-105"
             style={{
               background: 'linear-gradient(135deg, #1a4d7a 0%, #153d61 100%)',
               boxShadow: '0 10px 25px rgba(26, 77, 122, 0.35)'
             }}
-            title="Nouvelle entrée"
-            aria-label="Nouvelle entrée"
+            title="Nouvelle entree"
+            aria-label="Nouvelle entree"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-[18px] w-[18px]" />
           </button>
 
           <button
@@ -971,7 +991,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
                 navigateToInventarioQuickAction('open-scanner');
               }
             }}
-            className="h-12 w-12 rounded-full text-white transition-all duration-300 hover:scale-105 shadow-2xl flex items-center justify-center"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 hover:scale-105"
             style={{
               background: 'linear-gradient(135deg, #0f8f6f 0%, #0b6e56 100%)',
               boxShadow: '0 10px 25px rgba(15, 143, 111, 0.3)'
@@ -979,12 +999,48 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             title="Scanner QR"
             aria-label="Scanner QR"
           >
-            <QrCode className="h-5 w-5" />
+            <QrCode className="h-[18px] w-[18px]" />
           </button>
         </div>
       )}
 
-      {/* Botón flotante de Guide Complet - DRAGGABLE */}
+      {!hideCommunicationFloaters && isMobile && (
+        <div className="app-mobile-tabbar fixed inset-x-0 bottom-0 z-[55] border-t border-slate-200/80 bg-white/95 px-1.5 pb-[max(env(safe-area-inset-bottom),0.6rem)] pt-1.5 shadow-[0_-16px_40px_-24px_rgba(15,23,42,0.28)] backdrop-blur-xl lg:hidden">
+          <div className="mx-auto flex max-w-5xl items-stretch justify-between gap-1.5">
+            {mobileQuickItems.map((item) => {
+              const isActive = currentPage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onNavigate(item.id);
+                    setSidebarOpen(false);
+                  }}
+                  className={`app-mobile-tabbar__item flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-1.5 text-[9px] font-semibold transition-all ${
+                    isActive ? 'bg-[#1E73BE]/10 text-[#1E73BE]' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${isActive ? 'bg-[#1E73BE] text-white shadow-lg' : 'bg-slate-100 text-slate-600'}`}>
+                    {item.icon}
+                  </div>
+                  <span className="truncate text-[9px] leading-3.5">{item.shortLabel}</span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="app-mobile-tabbar__item app-mobile-tabbar__more flex min-w-[3rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-1.5 text-[9px] font-semibold text-slate-600 transition-all hover:bg-slate-100"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                <Menu className="h-[18px] w-[18px]" />
+              </div>
+              <span className="truncate text-[9px] leading-3.5">Menu</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Boton flotante de Guide Complet - DRAGGABLE */}
       {!hideCommunicationFloaters && (
         <button
           ref={buttonRef}
@@ -1011,7 +1067,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
             touchAction: 'none',
             WebkitTouchCallout: 'none'
           }}
-          title="📖 Guide Complet - Glissez pour déplacer"
+          title="Guide Complet - Glissez pour deplacer"
         >
           <BookOpen className={`w-6 h-6 sm:w-7 sm:h-7 transition-transform pointer-events-none ${
             isDragging ? '' : 'group-hover:rotate-12'
@@ -1024,10 +1080,12 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
         <GuideCompletModules onClose={() => setShowGuideComplete(false)} />
       )}
 
-      {/* Botón de instalación PWA flotante */}
+      {/* Boton de instalacion PWA flotante */}
       {!hideCommunicationFloaters && <PWAFloatingButton />}
 
       <ScrollToTopButton getScrollTarget={() => mainStageRef.current} />
     </div>
   );
 }
+
+

@@ -2965,8 +2965,7 @@ export function Inventario() {
         <ModuleControlSurface>
           <ModuleControlSurfaceTabs>
             <TabsList
-              className="app-compact-tabs-grid flex-shrink-0 gap-1 bg-transparent p-0"
-              style={isCompactInventoryViewport ? { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' } : undefined}
+              className={`flex-shrink-0 gap-1 bg-transparent p-0 ${isCompactInventoryViewport ? 'flex flex-nowrap overflow-x-auto' : 'app-compact-tabs-grid'}`}
             >
               <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="productos">{t('inventory.products')}</TabsTrigger>
               <TabsTrigger className="app-compact-tab-trigger min-h-8 px-2 py-1.5 text-[11px]" value="movimientos">{t('inventory.movements')}</TabsTrigger>
@@ -2983,129 +2982,183 @@ export function Inventario() {
           <ModuleControlSurface>
             <ModuleControlSurfaceBody className={showCompactProductsOverview ? 'space-y-2 pt-3 sm:pt-4' : 'space-y-3 pt-3 sm:pt-4'}>
               {/* Toolbar */}
-              <div className={`flex flex-col ${showCompactProductsOverview ? 'gap-1.5' : 'gap-2'} lg:flex-row lg:items-center lg:justify-between flex-shrink-0`}>
-                <div className="flex-1 flex flex-col gap-2 sm:flex-row">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
-                    <Input
-                      placeholder={t('inventory.searchPlaceholder', { defaultValue: t('inventory.searchByNameOrCode') })}
-                      value={inventoryFilters.searchTerm}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-10 h-9 text-xs"
-                    />
+              <div className={`flex flex-col ${showCompactProductsOverview ? 'gap-2' : 'gap-2'} lg:flex-row lg:items-center lg:justify-between flex-shrink-0`}>
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="relative flex-1 max-w-md">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
+                      <Input
+                        placeholder={t('inventory.searchPlaceholder', { defaultValue: t('inventory.searchByNameOrCode') })}
+                        value={inventoryFilters.searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-10 h-9 text-xs"
+                      />
+                    </div>
+
+                    <div className="relative flex-1 max-w-xs">
+                      <Package className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
+                      <Input
+                        placeholder={t('inventory.searchByLotNumber')}
+                        value={inventoryFilters.searchLote}
+                        onChange={(e) => handleLotChange(e.target.value)}
+                        className="pl-10 h-9 text-xs"
+                      />
+                    </div>
                   </div>
 
-                  <div className="relative flex-1 max-w-xs">
-                    <Package className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666666]" />
-                    <Input
-                      placeholder={t('inventory.searchByLotNumber')}
-                      value={inventoryFilters.searchLote}
-                      onChange={(e) => handleLotChange(e.target.value)}
-                      className="pl-10 h-9 text-xs"
-                    />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {!showCompactProductsOverview && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="gap-2 h-9 text-xs"
+                      >
+                        <Filter className="h-4 w-4" />
+                        {t('common.filter')}
+                      </Button>
+                    )}
+
+                    <Select value={inventoryFilters.sortBy} onValueChange={(value: string) => handleSortChange(value as 'nombre' | 'stock' | 'categoria' | 'valor')}>
+                      <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nombre">{t('inventory.productName')}</SelectItem>
+                        <SelectItem value="stock">{t('inventory.stock')}</SelectItem>
+                        <SelectItem value="categoria">Sous-catégorie</SelectItem>
+                        <SelectItem value="valor">{t('inventory.monetaryValue')}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="gap-2 h-9 text-xs"
-                  >
-                    <Filter className="h-4 w-4" />
-                    {t('common.filter')}
-                  </Button>
-
-                  <Select value={inventoryFilters.sortBy} onValueChange={(value: string) => handleSortChange(value as 'nombre' | 'stock' | 'categoria' | 'valor')}>
-                    <SelectTrigger className="w-[160px] h-9 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nombre">{t('inventory.productName')}</SelectItem>
-                      <SelectItem value="stock">{t('inventory.stock')}</SelectItem>
-                      <SelectItem value="categoria">Sous-catégorie</SelectItem>
-                      <SelectItem value="valor">{t('inventory.monetaryValue')}</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {!isCompactInventoryViewport && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setVistaMode(vistaMode === 'grid' ? 'list' : 'grid')}
-                      title={vistaMode === 'grid' ? t('inventory.viewList') : t('inventory.viewGrid')}
-                      className="h-9 w-9"
-                    >
-                      {vistaMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
-                    </Button>
-                  )}
-
-                  {puedeModificarProductos && (
+                <div className={`flex flex-wrap gap-2 ${showCompactProductsOverview ? 'justify-start' : 'justify-end'}`}>
+                  {showCompactProductsOverview ? (
                     <>
+                      {puedeModificarProductos && (
+                        <Button
+                          onClick={abrirAjoutStockExistant}
+                          className="h-10 flex-1 gap-2 bg-[#2d9561] px-3 text-white hover:bg-[#24794f] sm:flex-none"
+                          title="Ajouter au stock existant"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span className="text-[11px] font-semibold">Stock</span>
+                        </Button>
+                      )}
                       <Button
-                        onClick={abrirAjoutStockExistant}
-                        className="h-9 gap-2 bg-[#2d9561] px-3 text-white hover:bg-[#24794f]"
-                        title="Ajouter au stock existant"
+                        size="icon"
+                        onClick={() => openInventoryScanner('agregar_carrito_rapido')}
+                        variant="outline"
+                        className="h-10 w-10 border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50"
+                        title="Scanner QR et saisir la quantité pour le panier"
                       >
-                        <Plus className="h-4 w-4" />
-                        <span className="text-xs font-semibold">Ajouter au stock</span>
+                        <QrCode className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        onClick={() => setCarritoOpen(true)}
+                        variant="outline"
+                        className="relative h-10 w-10"
+                        title={t('inventory.cart')}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        {carrito.length > 0 && (
+                          <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-[#c23934]">
+                            {carrito.length}
+                          </Badge>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="h-10 flex-1 gap-2 px-3 text-xs sm:flex-none"
+                      >
+                        <Filter className="h-4 w-4" />
+                        <span className="text-[11px] font-semibold">Filtres</span>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {!isCompactInventoryViewport && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setVistaMode(vistaMode === 'grid' ? 'list' : 'grid')}
+                          title={vistaMode === 'grid' ? t('inventory.viewList') : t('inventory.viewGrid')}
+                          className="h-9 w-9"
+                        >
+                          {vistaMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
+                        </Button>
+                      )}
+
+                      {puedeModificarProductos && (
+                        <>
+                          <Button
+                            onClick={abrirAjoutStockExistant}
+                            className="h-9 gap-2 bg-[#2d9561] px-3 text-white hover:bg-[#24794f]"
+                            title="Ajouter au stock existant"
+                          >
+                            <Plus className="h-4 w-4" />
+                            <span className="text-xs font-semibold">Ajouter au stock</span>
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            onClick={() => abrirCorrectionStockExistant()}
+                            className="h-9 gap-2 border-[#c23934] px-3 text-[#c23934] hover:bg-red-50"
+                            title="Corriger la quantité réelle"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="text-xs font-semibold">Corriger quantité</span>
+                          </Button>
+                        </>
+                      )}
+
+                      <Button
+                        size="icon"
+                        onClick={() => setCompartirDialogOpen(true)}
+                        className="bg-[#2d9561] hover:bg-[#267a4f] h-9 w-9"
+                        title={t('inventory.shareProductList')}
+                      >
+                        <Share2 className="h-4 w-4" />
                       </Button>
 
                       <Button
+                        size="icon"
+                        onClick={() => setExportacionOpen(true)}
                         variant="outline"
-                        onClick={() => abrirCorrectionStockExistant()}
-                        className="h-9 gap-2 border-[#c23934] px-3 text-[#c23934] hover:bg-red-50"
-                        title="Corriger la quantité réelle"
+                        className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 h-9 w-9"
+                        title={t('common.export')}
                       >
-                        <Pencil className="h-4 w-4" />
-                        <span className="text-xs font-semibold">Corriger quantité</span>
+                        <Download className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        size="icon"
+                        onClick={() => openInventoryScanner('agregar_carrito_rapido')}
+                        variant="outline"
+                        className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50 h-9 w-9"
+                        title="Scanner QR et saisir la quantité pour le panier"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        size="icon"
+                        onClick={() => setCarritoOpen(true)}
+                        variant="outline"
+                        className="relative h-9 w-9"
+                        title={t('inventory.cart')}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        {carrito.length > 0 && (
+                          <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-[#c23934]">
+                            {carrito.length}
+                          </Badge>
+                        )}
                       </Button>
                     </>
                   )}
-
-                  <Button
-                    size="icon"
-                    onClick={() => setCompartirDialogOpen(true)}
-                    className="bg-[#2d9561] hover:bg-[#267a4f] h-9 w-9"
-                    title={t('inventory.shareProductList')}
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    size="icon"
-                    onClick={() => setExportacionOpen(true)}
-                    variant="outline"
-                    className="border-[#1a4d7a] text-[#1a4d7a] hover:bg-blue-50 h-9 w-9"
-                    title={t('common.export')}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    size="icon"
-                    onClick={() => openInventoryScanner('agregar_carrito_rapido')}
-                    variant="outline"
-                    className="border-[#9C27B0] text-[#9C27B0] hover:bg-purple-50 h-9 w-9"
-                    title="Scanner QR et saisir la quantité pour le panier"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    size="icon"
-                    onClick={() => setCarritoOpen(true)}
-                    variant="outline"
-                    className="relative h-9 w-9"
-                    title={t('inventory.cart')}
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    {carrito.length > 0 && (
-                      <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-[#c23934]">
-                        {carrito.length}
-                      </Badge>
-                    )}
-                  </Button>
                 </div>
               </div>
 
@@ -3202,6 +3255,46 @@ export function Inventario() {
                   </div>
                 </div>
 
+                <div className="sticky bottom-2 z-10 rounded-[20px] border border-[#E7EDF4] bg-white/90 p-2 shadow-[0_16px_30px_-24px_rgba(15,45,71,0.18)] backdrop-blur-sm">
+                 <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+                   <Button
+                     size="sm"
+                     onClick={() => openInventoryScanner('agregar_carrito_rapido')}
+                     className="h-9 shrink-0 rounded-full bg-[#9C27B0] px-3 text-[11px] font-semibold text-white hover:bg-[#7b1fa2]"
+                   >
+                     <QrCode className="mr-1.5 h-3.5 w-3.5" />
+                     Scanner
+                   </Button>
+                   <Button
+                     size="sm"
+                     variant="outline"
+                     onClick={() => abrirAjoutStockExistant()}
+                     className="h-9 shrink-0 rounded-full border-[#2d9561] px-3 text-[11px] font-semibold text-[#2d9561] hover:bg-green-50"
+                   >
+                     <Plus className="mr-1.5 h-3.5 w-3.5" />
+                     Stock
+                   </Button>
+                   <Button
+                     size="sm"
+                     variant="outline"
+                     onClick={() => setCarritoOpen(true)}
+                     className="h-9 shrink-0 rounded-full border-[#1a4d7a] px-3 text-[11px] font-semibold text-[#1a4d7a] hover:bg-blue-50"
+                   >
+                     <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                     Panier {carrito.length > 0 ? `(${carrito.length})` : ''}
+                   </Button>
+                   <Button
+                     size="sm"
+                     variant="outline"
+                     onClick={() => setShowFilters(!showFilters)}
+                     className="h-9 shrink-0 rounded-full border-[#c23934] px-3 text-[11px] font-semibold text-[#c23934] hover:bg-red-50"
+                   >
+                     <Filter className="mr-1.5 h-3.5 w-3.5" />
+                     Filtres
+                   </Button>
+                 </div>
+                </div>
+
                 {productosFiltrados.length === 0 ? (
                   <div className="rounded-[20px] border border-dashed border-[#D6D6D6] bg-[#FAFBFC]/92 px-3 py-3.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                     <Package className="mx-auto h-8 w-8 text-[#999999]" />
@@ -3255,10 +3348,10 @@ export function Inventario() {
                           const stockStatus = getStockStatus(producto);
 
                           return (
-                            <div key={producto.id} className="rounded-[18px] border border-white/80 bg-white/92 px-3 py-2 shadow-[0_12px_24px_-22px_rgba(15,45,71,0.16)]">
+                            <div key={producto.id} className="rounded-[20px] border border-[#E8EEF5] bg-white/95 px-3 py-2.5 shadow-[0_16px_30px_-26px_rgba(15,45,71,0.2)]">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold text-[#333333]" title={getInventoryProductName(producto)}>
+                                  <p className="truncate text-sm font-semibold text-[#13324f]" title={getInventoryProductName(producto)}>
                                     <span className="emoji-icon mr-1">{obtenerIconoProducto(producto)}</span>
                                     {getInventoryProductName(producto)}
                                   </p>
@@ -3270,7 +3363,7 @@ export function Inventario() {
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm font-bold text-[#1a4d7a]">{reserva.disponibleParaReservar}</p>
-                                  <p className="text-[10px] text-[#666666]">res.</p>
+                                  <p className="text-[10px] text-[#666666]">dispo.</p>
                                 </div>
                               </div>
                               <div className="mt-2 flex items-center justify-between gap-2">
@@ -3278,6 +3371,23 @@ export function Inventario() {
                                   {stockStatus.label}
                                 </Badge>
                                 <p className="text-[10px] text-[#666666]">Réservé: {reserva.totalReservado}</p>
+                              </div>
+                              <div className="mt-2.5 flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => agregarAlCarrito(producto.id, 1)}
+                                  className="h-8 flex-1 rounded-full bg-[#2d9561] px-3 text-[11px] font-semibold text-white hover:bg-[#24794f]"
+                                >
+                                  +1 {producto.unidad}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => abrirAjoutStockExistant()}
+                                  className="h-8 rounded-full border-[#1a4d7a] px-2.5 text-[11px] text-[#1a4d7a] hover:bg-blue-50"
+                                >
+                                  Stock
+                                </Button>
                               </div>
                             </div>
                           );
