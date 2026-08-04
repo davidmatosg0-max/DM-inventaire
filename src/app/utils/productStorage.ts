@@ -9,6 +9,7 @@ import {
   type TemperaturaProductoCanonica,
   type TemperaturaAlmacenamiento,
 } from './productTemperature';
+import { globalStorageCache } from './storageCache';
 
 export type ProductoCreado = {
   id: string;
@@ -56,6 +57,51 @@ type GuardarProductoOpciones = {
 };
 
 const STORAGE_KEY = 'banco_alimentos_productos';
+
+// ✅ PERFORMANCE: Flag para limpiar datos solo UNA VEZ al iniciar
+let _productosLimpiadosAlIniciar = false;
+
+function _limpiarProductosAlIniciar(): void {
+  if (_productosLimpiadosAlIniciar) return;
+  _productosLimpiadosAlIniciar = true;
+
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (!data) return;
+
+    const productos = JSON.parse(data);
+    const standardLocations = getCurrentStandardLocations();
+    
+    // Eliminar duplicados basándonos en el ID
+    const productosUnicos = productos.reduce((acc: ProductoCreado[], producto: ProductoCreado) => {
+      const existe = acc.find(p => p.id === producto.id);
+      if (!existe) {
+        acc.push(producto);
+      }
+      return acc;
+    }, []);
+    
+    const productosNormalizados = productosUnicos.map((producto: ProductoCreado) =>
+      aplicarTemperaturaProducto(normalizeStoredProduct(producto, standardLocations))
+    );
+
+    // Si se encontraron duplicados o faltaban campos de temperatura, guardar la versión limpia
+    if (JSON.stringify(productosNormalizados) !== JSON.stringify(productos)) {
+      if (productosUnicos.length !== productos.length) {
+        console.warn(`⚠️ Se encontraron ${productos.length - productosUnicos.length} productos duplicados. Limpiando...`);
+      }
+
+      globalStorageCache.write(STORAGE_KEY, productosNormalizados);
+      queueStorageSync(STORAGE_KEY);
+    } else {
+      // Si no hay cambios, solo cargar en caché
+      globalStorageCache.write(STORAGE_KEY, productosNormalizados);
+    }
+  } catch (error) {
+    console.error('Error al limpiar productos al iniciar:', error);
+  }
+}
+
 
 function normalizeProductNameToken(value?: string): string {
   return typeof value === 'string'
@@ -255,39 +301,21 @@ function generarCodigoProducto(
 }
 
 /**
- * Obtener todos los productos guardados
+ * Obtener todos los productos guardados (con caché en memoria)
  */
 export function obtenerProductos(): ProductoCreado[] {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return [];
-    const productos = JSON.parse(data);
-    const standardLocations = getCurrentStandardLocations();
-    
-    // Eliminar duplicados basándonos en el ID
-    const productosUnicos = productos.reduce((acc: ProductoCreado[], producto: ProductoCreado) => {
-      const existe = acc.find(p => p.id === producto.id);
-      if (!existe) {
-        acc.push(producto);
-      }
-      return acc;
-    }, []);
-    
-    const productosNormalizados = productosUnicos.map((producto: ProductoCreado) =>
-      aplicarTemperaturaProducto(normalizeStoredProduct(producto, standardLocations))
-    );
+    // ✅ PERFORMANCE: Limpiar datos solo en la primera carga
+    _limpiarProductosAlIniciar();
 
-    // Si se encontraron duplicados o faltaban campos de temperatura, guardar la versión limpia
-    if (JSON.stringify(productosNormalizados) !== JSON.stringify(productos)) {
-      if (productosUnicos.length !== productos.length) {
-        console.warn(`⚠️ Se encontraron ${productos.length - productosUnicos.length} productos duplicados. Limpiando...`);
-      }
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(productosNormalizados));
-      queueStorageSync(STORAGE_KEY);
+    // ✅ PERFORMANCE: Intentar obtener del caché primero (0-1ms después de primera carga)
+    const cached = globalStorageCache.read<ProductoCreado[] | null>(STORAGE_KEY);
+    if (cached !== null) {
+      return cached;
     }
-    
-    return productosNormalizados;
+
+    // Si no hay nada en caché/localStorage, retornar vacío
+    return [];
   } catch (error) {
     console.error('Error al obtener productos:', error);
     return [];
@@ -327,7 +355,8 @@ export function guardarProducto(
       if (productoCanonicoExistente) {
         const productoFusionado = fusionarProductoCanonico(productoCanonicoExistente, productoNormalizado, standardLocations);
         const productosActualizados = productos.map(p => p.id === productoCanonicoExistente.id ? productoFusionado : p);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(productosActualizados));
+        // ✅ PERFORMANCE: Usar caché en lugar de localStorage directo
+        globalStorageCache.write(STORAGE_KEY, productosActualizados);
         queueStorageSync(STORAGE_KEY);
         console.log('✅ Producto fusionado con existente en localStorage:', productoFusionado.nombre);
         return productoFusionado;
@@ -344,7 +373,8 @@ export function guardarProducto(
     }
     
     productos.push(productoNormalizado);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
+    // ✅ PERFORMANCE: Usar caché en lugar de localStorage directo
+    globalStorageCache.write(STORAGE_KEY, productos);
     queueStorageSync(STORAGE_KEY);
     console.log('✅ Producto guardado exitosamente en localStorage:', productoNormalizado.nombre);
     
@@ -385,7 +415,8 @@ export function actualizarProducto(id: string, productoActualizado: Partial<Prod
       }
 
       productos[index] = aplicarTemperaturaProducto(normalizeStoredProduct(productoFusionado as ProductoCreado, standardLocations));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
+      // ✅ PERFORMANCE: Usar caché en lugar de localStorage directo
+      globalStorageCache.write(STORAGE_KEY, productos);
       queueStorageSync(STORAGE_KEY);
       sincronizarProductoEnComandasYOfertas(productos[index]);
       
@@ -513,7 +544,8 @@ export function descontarStockProductosAtomico(items: ProductoCantidadOperacion[
       cambiosStock.push({ productoAnterior, productoActualizado });
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(productosActualizados));
+    // ✅ PERFORMANCE: Usar caché en lugar de localStorage directo
+    globalStorageCache.write(STORAGE_KEY, productosActualizados);
     queueStorageSync(STORAGE_KEY);
 
     cambiosStock.forEach(({ productoAnterior, productoActualizado }) => {
@@ -544,7 +576,8 @@ export function eliminarProducto(id: string): void {
     const productos = obtenerProductos();
     const productoAEliminar = productos.find(p => p.id === id);
     const productosFiltrados = productos.filter(p => p.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(productosFiltrados));
+    // ✅ PERFORMANCE: Usar caché en lugar de localStorage directo
+    globalStorageCache.write(STORAGE_KEY, productosFiltrados);
     queueStorageSync(STORAGE_KEY);
     
     // Registrar actividad
