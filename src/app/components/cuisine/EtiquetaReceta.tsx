@@ -252,6 +252,15 @@ export function EtiquetaReceta({
     if (!contenidoEtiqueta) return;
 
     try {
+      // Crear una copia del contenido para capturar los estilos correctamente
+      const etiquetaClone = contenidoEtiqueta.cloneNode(true) as HTMLElement;
+      
+      // Asegurar que el borde se aplica al contenedor
+      etiquetaClone.style.border = '4px solid #000';
+      etiquetaClone.style.boxShadow = 'inset 0 0 0 1px #000';
+      
+      const contenidoHTML = etiquetaClone.outerHTML;
+
       openAutoPrintPopup(`
         <!DOCTYPE html>
         <html>
@@ -261,6 +270,7 @@ export function EtiquetaReceta({
               @page {
                 size: ${config.ancho} ${config.alto};
                 margin: 0;
+                padding: 0;
               }
               * {
                 margin: 0;
@@ -273,25 +283,12 @@ export function EtiquetaReceta({
                 line-height: 1.3;
                 color: #000;
                 background: white;
+                margin: 0;
+                padding: 0;
               }
-              .etiqueta-horizontal {
-                width: ${config.ancho};
-                height: ${config.alto};
-                padding: ${config.padding};
-                display: flex;
-                flex-direction: row;
-                gap: 4px;
-                border: 4px solid #000;
-                box-shadow: inset 0 0 0 1px #000;
-              }
-              .etiqueta-vertical {
-                width: ${config.ancho};
-                height: ${config.alto};
-                padding: ${config.padding};
-                display: flex;
-                flex-direction: column;
-                border: 4px solid #000;
-                box-shadow: inset 0 0 0 1px #000;
+              [style*="width"][style*="height"] {
+                border: 4px solid #000 !important;
+                box-shadow: inset 0 0 0 1px #000 !important;
               }
               .nombre-receta {
                 font-size: ${config.fontSize.titulo};
@@ -376,7 +373,7 @@ export function EtiquetaReceta({
             </style>
           </head>
           <body>
-            ${contenidoEtiqueta.innerHTML}
+            ${contenidoHTML}
           </body>
         </html>
       `, { width: 900, height: 700, printDelayMs: 250 });
