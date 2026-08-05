@@ -666,6 +666,14 @@
       "coordination": "Coordinación",
       "administration": "Administración",
       "advanced": "Herramientas avanzadas"
+    },
+    "mobileShort": {
+      "home": "Inicio",
+      "stock": "Stock",
+      "orders": "Cmds",
+      "messages": "Msgs",
+      "settings": "Config",
+      "more": "Menú"
     }
   },
   "fab": {
@@ -711,7 +719,27 @@
     "quickSummary": "Resumen Rápido",
     "totalProducts": "Total Productos",
     "pendingOrders": "Comandas Pendientes",
-    "lowStock": "Stock Bajo"
+    "lowStock": "Stock Bajo",
+    "mobile": {
+      "greeting": "Hola, {{name}}",
+      "todaySummary": "Resumen de hoy",
+      "stockShort": "stock",
+      "organismsShort": "orgas",
+      "ordersShort": "cmds",
+      "riskShort": "riesgo",
+      "entryAction": "Entrada",
+      "monitorAction": "Seguim.",
+      "organismsAction": "Orgas",
+      "aiAction": "IA",
+      "noCategoryAvailable": "No hay categorías disponibles.",
+      "alertsTitle": "Alertas",
+      "lowStockLine": "{{count}} productos con stock bajo",
+      "reviewRecommended": "Revisión recomendada",
+      "projection14Days": "Proyección 14 días: {{value}} kg",
+      "tensionInDays": "Tensión en {{days}} días",
+      "stockStable": "Stock estable",
+      "activeCriticalWatch": "Monitoreo activo de umbrales críticos"
+    }
   },
   "inventory": {
     "title": "Gestión de Inventario",
@@ -1270,6 +1298,26 @@
     "maximumStock": "Stock Máximo",
     "stockAlert": "Alerta de Stock",
     "lowStock": "Stock Bajo",
+    "mobile": {
+      "greeting": "Hola, {{name}}",
+      "todaySummary": "Resumen de hoy",
+      "stockShort": "stock",
+      "organismsShort": "orgas",
+      "ordersShort": "cmds",
+      "riskShort": "riesgo",
+      "entryAction": "Entrada",
+      "monitorAction": "Seguim.",
+      "organismsAction": "Orgas",
+      "aiAction": "IA",
+      "noCategoryAvailable": "No hay categorías disponibles.",
+      "alertsTitle": "Alertas",
+      "lowStockLine": "{{count}} productos con stock bajo",
+      "reviewRecommended": "Revisión recomendada",
+      "projection14Days": "Proyección 14 días: {{value}} kg",
+      "tensionInDays": "Tensión en {{days}} días",
+      "stockStable": "Stock estable",
+      "activeCriticalWatch": "Monitoreo activo de umbrales críticos"
+    },
     "outOfStock": "Sin Stock",
     "inStock": "En Stock",
     "temperature": "Temperatura",

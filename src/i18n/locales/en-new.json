@@ -108,6 +108,36 @@
       "addNew": "Add New",
       "export": "Export",
       "refresh": "Refresh"
+    },
+    "mobile": {
+      "greeting": "Hi, {{name}}",
+      "todaySummary": "Today summary",
+      "stockShort": "stock",
+      "organismsShort": "orgs",
+      "ordersShort": "ords",
+      "riskShort": "risk",
+      "entryAction": "Entry",
+      "monitorAction": "Track",
+      "organismsAction": "Orgs",
+      "aiAction": "AI",
+      "noCategoryAvailable": "No category available.",
+      "alertsTitle": "Alerts",
+      "lowStockLine": "{{count}} low stock products",
+      "reviewRecommended": "Review recommended",
+      "projection14Days": "14-day projection: {{value}} kg",
+      "tensionInDays": "Tension in {{days}} days",
+      "stockStable": "Stock stable",
+      "activeCriticalWatch": "Active monitoring of critical thresholds"
+    }
+  },
+  "layout": {
+    "mobileShort": {
+      "home": "Home",
+      "stock": "Stock",
+      "orders": "Orders",
+      "messages": "Msgs",
+      "settings": "Config",
+      "more": "Menu"
     }
   },
   "settings": {

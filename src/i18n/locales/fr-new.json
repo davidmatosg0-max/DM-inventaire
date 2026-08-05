@@ -108,6 +108,36 @@
       "addNew": "Ajouter Nouveau",
       "export": "Exporter",
       "refresh": "Actualiser"
+    },
+    "mobile": {
+      "greeting": "Bonjour, {{name}}",
+      "todaySummary": "Résumé du jour",
+      "stockShort": "stock",
+      "organismsShort": "orgas",
+      "ordersShort": "cmds",
+      "riskShort": "risque",
+      "entryAction": "Entrée",
+      "monitorAction": "Suivi",
+      "organismsAction": "Orgas",
+      "aiAction": "IA",
+      "noCategoryAvailable": "Aucune catégorie disponible.",
+      "alertsTitle": "Alertes",
+      "lowStockLine": "{{count}} produits en stock bas",
+      "reviewRecommended": "Révision recommandée",
+      "projection14Days": "Projection 14 jours: {{value}} kg",
+      "tensionInDays": "Tension dans {{days}} jours",
+      "stockStable": "Stock stable",
+      "activeCriticalWatch": "Surveillance active des seuils critiques"
+    }
+  },
+  "layout": {
+    "mobileShort": {
+      "home": "Accueil",
+      "stock": "Stock",
+      "orders": "Cmds",
+      "messages": "Msgs",
+      "settings": "Config",
+      "more": "Menu"
     }
   },
   "settings": {

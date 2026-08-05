@@ -1,4 +1,4 @@
-﻿import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
 import { AdaptiveBrandLogo } from './shared/AdaptiveBrandLogo';
@@ -502,11 +502,11 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
   const currentWorkspaceLabel = currentMenuItem?.label || t('nav.mainDashboard');
 
   const mobileQuickItems = React.useMemo(() => [
-    { id: 'dashboard', label: t('nav.mainDashboard'), shortLabel: 'Accueil', icon: <LayoutDashboard className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
-    { id: 'inventario', label: t('nav.inventory'), shortLabel: 'Stock', icon: <Package className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
-    { id: 'comandas', label: t('nav.orders'), shortLabel: 'Cmds', icon: <ClipboardList className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
-    { id: 'communication', label: t('nav.messaging'), shortLabel: 'Msgs', icon: <MessageSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
-    { id: 'configuracion', label: t('nav.configuration'), shortLabel: 'Config', icon: <Settings className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'dashboard', label: t('nav.mainDashboard'), shortLabel: t('layout.mobileShort.home'), icon: <LayoutDashboard className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'inventario', label: t('nav.inventory'), shortLabel: t('layout.mobileShort.stock'), icon: <Package className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'comandas', label: t('nav.orders'), shortLabel: t('layout.mobileShort.orders'), icon: <ClipboardList className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'communication', label: t('nav.messaging'), shortLabel: t('layout.mobileShort.messages'), icon: <MessageSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
+    { id: 'configuracion', label: t('nav.configuration'), shortLabel: t('layout.mobileShort.settings'), icon: <Settings className="h-[18px] w-[18px] sm:h-5 sm:w-5" /> },
   ], [t]);
 
   const entrepotModulePageIds = React.useMemo(
@@ -1034,7 +1034,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout, hideSideba
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                 <Menu className="h-[18px] w-[18px]" />
               </div>
-              <span className="truncate text-[9px] leading-3.5">Menu</span>
+              <span className="truncate text-[9px] leading-3.5">{t('layout.mobileShort.more')}</span>
             </button>
           </div>
         </div>

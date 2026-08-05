@@ -108,6 +108,36 @@
       "addNew": "إضافة جديد",
       "export": "تصدير",
       "refresh": "تحديث"
+    },
+    "mobile": {
+      "greeting": "مرحباً، {{name}}",
+      "todaySummary": "ملخص اليوم",
+      "stockShort": "مخزون",
+      "organismsShort": "مؤسسات",
+      "ordersShort": "طلبات",
+      "riskShort": "مخاطر",
+      "entryAction": "إدخال",
+      "monitorAction": "متابعة",
+      "organismsAction": "مؤسسات",
+      "aiAction": "ذكاء",
+      "noCategoryAvailable": "لا توجد فئات متاحة.",
+      "alertsTitle": "تنبيهات",
+      "lowStockLine": "{{count}} منتجات بمخزون منخفض",
+      "reviewRecommended": "المراجعة موصى بها",
+      "projection14Days": "توقع 14 يوماً: {{value}} كجم",
+      "tensionInDays": "ضغط بعد {{days}} يوم",
+      "stockStable": "المخزون مستقر",
+      "activeCriticalWatch": "مراقبة نشطة للحدود الحرجة"
+    }
+  },
+  "layout": {
+    "mobileShort": {
+      "home": "الرئيسية",
+      "stock": "المخزون",
+      "orders": "الطلبات",
+      "messages": "رسائل",
+      "settings": "إعدادات",
+      "more": "المزيد"
     }
   },
   "settings": {

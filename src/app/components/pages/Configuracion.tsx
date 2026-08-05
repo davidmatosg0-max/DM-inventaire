@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../../hooks/useBranding';
 import { Settings, Plus, Edit, Trash2, DollarSign, Package, FolderTree, Save, Inbox, PackageSearch, Copy, Eye, ChevronDown, ChevronRight, EyeOff, Grid3x3, X, Download, Upload, RotateCcw, Database, Clock, TrendingDown, Percent, Calculator, BookmarkPlus, AlertTriangle, Mail, CheckCircle, AlertCircle, Send, Scale, MapPin, Map, LifeBuoy, HelpCircle, Info, Sparkles, Ruler, Activity } from 'lucide-react';
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { AdaptiveBrandLogo } from '../shared/AdaptiveBrandLogo';
+import { useIsMobile } from '../ui/use-mobile';
 import { copiarAlPortapapeles } from '../../utils/clipboard';
 import { mockProductos } from '../../data/mockData';
 import { ICONOS_NO_ALIMENTARIOS, ICONOS_PRINCIPALES, ICONOS_SECCIONES_ALIMENTARIAS, ICONOS_SUBCATEGORIAS, obtenerIconosRecomendadosPorFamilia } from '../../data/iconosAlimentos';
@@ -66,7 +67,7 @@ type Unidad = {
   tipo: 'peso' | 'volumen' | 'cantidad' | 'empaque';
   equivalencia?: string;
   pesoEstandar?: number; // Peso en kilogramos
-  icono?: string; // Emoji o ícono visual para la unidad
+  icono?: string; // Emoji o Ã­cono visual para la unidad
 };
 
 type Categoria = {
@@ -88,10 +89,10 @@ type Subcategoria = {
   cantidad?: number;
   peso?: number;
   pesoUnitario?: number; // Peso en kg de una unidad (ej: 0.15 kg para una manzana)
-  unidad?: string; // Unidad por defecto para productos de esta subcategoría
+  unidad?: string; // Unidad por defecto para productos de esta subcategorÃ­a
   unidadesPermitidas?: string[]; // IDs de unidades permitidas
   activa: boolean;
-  stockMinimo?: number; // Stock mínimo para alertas
+  stockMinimo?: number; // Stock mÃ­nimo para alertas
 };
 
 type ProgramaEntrada = {
@@ -126,16 +127,16 @@ type Producto = {
 };
 
 const unidadesIniciales: Unidad[] = [
-  { id: '1', nombre: 'Paleta', abreviatura: 'PLT', tipo: 'empaque', equivalencia: 'Variable según producto', pesoEstandar: 500, icono: '🏗️' },
-  { id: '2', nombre: 'Caja', abreviatura: 'CJA', tipo: 'empaque', equivalencia: 'Variable según producto', pesoEstandar: 10, icono: '📦' },
-  { id: '3', nombre: 'Unidad', abreviatura: 'UND', tipo: 'cantidad', equivalencia: '1 unidad', pesoEstandar: 0, icono: '1️⃣' },
-  { id: '4', nombre: 'Saco', abreviatura: 'SAC', tipo: 'empaque', equivalencia: 'Variable según producto', pesoEstandar: 25, icono: '💼' },
-  { id: '5', nombre: 'Bac Noir', abreviatura: 'BN', tipo: 'empaque', equivalencia: 'Variable según producto', pesoEstandar: 15, icono: '🗃️' },
-  { id: '6', nombre: 'Kilogramo', abreviatura: 'kg', tipo: 'peso', equivalencia: '1000 gramos', pesoEstandar: 1, icono: '⚖️' },
-  { id: '7', nombre: 'Litro', abreviatura: 'L', tipo: 'volumen', equivalencia: '1000 mililitros', pesoEstandar: 1, icono: '🧴' },
+  { id: '1', nombre: 'Paleta', abreviatura: 'PLT', tipo: 'empaque', equivalencia: 'Variable segÃºn producto', pesoEstandar: 500, icono: 'ðŸ—ï¸' },
+  { id: '2', nombre: 'Caja', abreviatura: 'CJA', tipo: 'empaque', equivalencia: 'Variable segÃºn producto', pesoEstandar: 10, icono: 'ðŸ“¦' },
+  { id: '3', nombre: 'Unidad', abreviatura: 'UND', tipo: 'cantidad', equivalencia: '1 unidad', pesoEstandar: 0, icono: '1ï¸âƒ£' },
+  { id: '4', nombre: 'Saco', abreviatura: 'SAC', tipo: 'empaque', equivalencia: 'Variable segÃºn producto', pesoEstandar: 25, icono: 'ðŸ’¼' },
+  { id: '5', nombre: 'Bac Noir', abreviatura: 'BN', tipo: 'empaque', equivalencia: 'Variable segÃºn producto', pesoEstandar: 15, icono: 'ðŸ—ƒï¸' },
+  { id: '6', nombre: 'Kilogramo', abreviatura: 'kg', tipo: 'peso', equivalencia: '1000 gramos', pesoEstandar: 1, icono: 'âš–ï¸' },
+  { id: '7', nombre: 'Litro', abreviatura: 'L', tipo: 'volumen', equivalencia: '1000 mililitros', pesoEstandar: 1, icono: 'ðŸ§´' },
 ];
 
-// Definición temporal para evitar errores (se eliminará en futuras actualizaciones)
+// DefiniciÃ³n temporal para evitar errores (se eliminarÃ¡ en futuras actualizaciones)
 type UnidadMedidaPRS = {
   id: string;
   nombre: string;
@@ -145,48 +146,48 @@ type UnidadMedidaPRS = {
 
 const unidadesMedidaPRS: UnidadMedidaPRS[] = [];
 
-// Categorías iniciales con ejemplos de subcategorías
+// CategorÃ­as iniciales con ejemplos de subcategorÃ­as
 const categoriasIniciales: Categoria[] = [
   {
     id: 'cat-1',
     nombre: 'Cereales y Granos',
     descripcion: 'Productos de cereales, arroz, pasta y otros granos',
-    icono: '🌾',
+    icono: 'ðŸŒ¾',
     color: '#FFC107',
     valorMonetario: 2,
     activa: true,
     subcategorias: [
-      { id: 'sub-1-1', nombre: 'Arroz', descripcion: 'Arroz blanco, integral y variedades', icono: '🍚', cantidad: 100, peso: 50, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3'], activa: true },
-      { id: 'sub-1-2', nombre: 'Pasta', descripcion: 'Espagueti, fideos y otros tipos de pasta', icono: '🍝', cantidad: 80, peso: 40, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '2'], activa: true },
-      { id: 'sub-1-3', nombre: 'Cereales de desayuno', descripcion: 'Cereales para desayuno variados', icono: '🥣', cantidad: 60, peso: 30, pesoUnitario: 0.5, unidad: 'CJA', unidadesPermitidas: ['2', '3'], activa: true }
+      { id: 'sub-1-1', nombre: 'Arroz', descripcion: 'Arroz blanco, integral y variedades', icono: 'ðŸš', cantidad: 100, peso: 50, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3'], activa: true },
+      { id: 'sub-1-2', nombre: 'Pasta', descripcion: 'Espagueti, fideos y otros tipos de pasta', icono: 'ðŸ', cantidad: 80, peso: 40, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '2'], activa: true },
+      { id: 'sub-1-3', nombre: 'Cereales de desayuno', descripcion: 'Cereales para desayuno variados', icono: 'ðŸ¥£', cantidad: 60, peso: 30, pesoUnitario: 0.5, unidad: 'CJA', unidadesPermitidas: ['2', '3'], activa: true }
     ]
   },
   {
     id: 'cat-2',
     nombre: 'Frutas y Verduras',
     descripcion: 'Frutas y vegetales frescos',
-    icono: '🥬',
+    icono: 'ðŸ¥¬',
     color: '#4CAF50',
     valorMonetario: 2,
     activa: true,
     subcategorias: [
-      { id: 'sub-2-1', nombre: 'Manzanas', descripcion: 'Manzanas frescas de diversas variedades', icono: '🍎', cantidad: 200, peso: 100, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3', '2'], activa: true },
-      { id: 'sub-2-2', nombre: 'Naranjas', descripcion: 'Naranjas frescas para consumo', icono: '🍊', cantidad: 150, peso: 75, pesoUnitario: 0.5, unidad: 'CJA', unidadesPermitidas: ['6', '3', '2'], activa: true },
-      { id: 'sub-2-3', nombre: 'Lechugas', descripcion: 'Lechugas y vegetales de hoja verde', icono: '🥬', cantidad: 50, peso: 25, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3'], activa: true }
+      { id: 'sub-2-1', nombre: 'Manzanas', descripcion: 'Manzanas frescas de diversas variedades', icono: 'ðŸŽ', cantidad: 200, peso: 100, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3', '2'], activa: true },
+      { id: 'sub-2-2', nombre: 'Naranjas', descripcion: 'Naranjas frescas para consumo', icono: 'ðŸŠ', cantidad: 150, peso: 75, pesoUnitario: 0.5, unidad: 'CJA', unidadesPermitidas: ['6', '3', '2'], activa: true },
+      { id: 'sub-2-3', nombre: 'Lechugas', descripcion: 'Lechugas y vegetales de hoja verde', icono: 'ðŸ¥¬', cantidad: 50, peso: 25, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3'], activa: true }
     ]
   },
   {
     id: 'cat-3',
-    nombre: 'Lácteos',
-    descripcion: 'Productos lácteos y derivados',
-    icono: '🥛',
+    nombre: 'LÃ¡cteos',
+    descripcion: 'Productos lÃ¡cteos y derivados',
+    icono: 'ðŸ¥›',
     color: '#1E73BE',
     valorMonetario: 3,
     activa: true,
     subcategorias: [
-      { id: 'sub-3-1', nombre: 'Leche', descripcion: 'Leche fresca y ultrapasteurizada', icono: '🥛', cantidad: 120, peso: 0, pesoUnitario: 1.0, unidad: 'L', unidadesPermitidas: ['7', '3'], activa: true },
-      { id: 'sub-3-2', nombre: 'Queso', descripcion: 'Quesos variados', icono: '🧀', cantidad: 0, peso: 30, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3'], activa: true },
-      { id: 'sub-3-3', nombre: 'Yogur', descripcion: 'Yogur natural y con sabores', icono: '🥤', cantidad: 90, peso: 0, pesoUnitario: 0.125, unidad: 'UND', unidadesPermitidas: ['7', '3'], activa: true }
+      { id: 'sub-3-1', nombre: 'Leche', descripcion: 'Leche fresca y ultrapasteurizada', icono: 'ðŸ¥›', cantidad: 120, peso: 0, pesoUnitario: 1.0, unidad: 'L', unidadesPermitidas: ['7', '3'], activa: true },
+      { id: 'sub-3-2', nombre: 'Queso', descripcion: 'Quesos variados', icono: 'ðŸ§€', cantidad: 0, peso: 30, pesoUnitario: 0.5, unidad: 'kg', unidadesPermitidas: ['6', '3'], activa: true },
+      { id: 'sub-3-3', nombre: 'Yogur', descripcion: 'Yogur natural y con sabores', icono: 'ðŸ¥¤', cantidad: 90, peso: 0, pesoUnitario: 0.125, unidad: 'UND', unidadesPermitidas: ['7', '3'], activa: true }
     ]
   }
 ];
@@ -212,7 +213,7 @@ const programasEntradaIniciales: ProgramaEntrada[] = [
     id: '3',
     nombre: 'CPN',
     codigo: 'CPN',
-    descripcion: 'Colecta Pública Nacional',
+    descripcion: 'Colecta PÃºblica Nacional',
     color: '#FFC107',
     activo: true
   },
@@ -221,13 +222,13 @@ const programasEntradaIniciales: ProgramaEntrada[] = [
 const categoriaDisplayLabels: Record<string, string> = {
   'Cereales y Granos': 'Cereales et grains',
   'Frutas y Verduras': 'Fruits et legumes',
-  'Lácteos': 'Produits laitiers',
+  'LÃ¡cteos': 'Produits laitiers',
 };
 
 const categoriaDisplayDescriptions: Record<string, string> = {
   'Productos de cereales, arroz, pasta y otros granos': 'Produits cerealiers, riz, pates et autres grains',
   'Frutas y vegetales frescos': 'Fruits et legumes frais',
-  'Productos lácteos y derivados': 'Produits laitiers et derives',
+  'Productos lÃ¡cteos y derivados': 'Produits laitiers et derives',
 };
 
 const subcategoriaDisplayLabels: Record<string, string> = {
@@ -256,7 +257,7 @@ const subcategoriaDisplayDescriptions: Record<string, string> = {
 
 const programaDisplayDescriptions: Record<string, string> = {
   'Donaciones recibidas de empresas y particulares': 'Dons recus des entreprises et des particuliers',
-  'Colecta Pública Nacional': 'Collecte publique nationale',
+  'Colecta PÃºblica Nacional': 'Collecte publique nationale',
 };
 
 const getCategoriaDisplayName = (value: string) => categoriaDisplayLabels[value] || value;
@@ -284,8 +285,8 @@ const camposCantidadesEjemplos: Array<{
 }> = [
   {
     key: 'benevoles',
-    label: 'Bénévoles',
-    description: 'Bénévoles visibles dans les départements et les fiches internes.',
+    label: 'BÃ©nÃ©voles',
+    description: 'BÃ©nÃ©voles visibles dans les dÃ©partements et les fiches internes.',
   },
   {
     key: 'donateurs',
@@ -300,22 +301,22 @@ const camposCantidadesEjemplos: Array<{
   {
     key: 'comptoir',
     label: 'Comptoir',
-    description: 'Contacts et profils de démonstration spécifiques au module Comptoir.',
+    description: 'Contacts et profils de dÃ©monstration spÃ©cifiques au module Comptoir.',
   },
   {
     key: 'contactosDepartamentos',
-    label: 'Contacts départements',
-    description: 'Contacts internes additionnels hors bénévoles, donateurs et fournisseurs.',
+    label: 'Contacts dÃ©partements',
+    description: 'Contacts internes additionnels hors bÃ©nÃ©voles, donateurs et fournisseurs.',
   },
   {
     key: 'chauffeurs',
     label: 'Chauffeurs',
-    description: 'Chauffeurs de démonstration pour le module transport.',
+    description: 'Chauffeurs de dÃ©monstration pour le module transport.',
   },
   {
     key: 'camiones',
     label: 'Camions',
-    description: 'Véhicules de démonstration créés pour le transport.',
+    description: 'VÃ©hicules de dÃ©monstration crÃ©Ã©s pour le transport.',
   },
   {
     key: 'organismos',
@@ -325,7 +326,7 @@ const camposCantidadesEjemplos: Array<{
   {
     key: 'organismosRecrutement',
     label: 'Organismes recrutement',
-    description: 'Organismes externes QA disponibles dans Recrutement > Organismes et dans les assignations bénévoles.',
+    description: 'Organismes externes QA disponibles dans Recrutement > Organismes et dans les assignations bÃ©nÃ©voles.',
   },
 ];
 
@@ -415,7 +416,7 @@ export function Configuracion() {
     () => cargarCantidadesEjemplosPersistidas()
   );
 
-  // Cargar unidades dinámicas
+  // Cargar unidades dinÃ¡micas
   useEffect(() => {
     const cargarUnidadesDinamicas = () => {
       const unidadesCargadas = obtenerUnidades();
@@ -440,12 +441,12 @@ export function Configuracion() {
   useEffect(() => {
     const productosGuardados = obtenerProductos();
     
-    // 🔧 MIGRACIÓN: Asegurar que los productos PRS tengan esPRS=true
+    // ðŸ”§ MIGRACIÃ“N: Asegurar que los productos PRS tengan esPRS=true
     let productosActualizados = false;
     const productosMigrados = productosGuardados.map(producto => {
       // Si el producto tiene 'PRS' en el nombre y no tiene esPRS definido o es false
       if ((producto.nombre.includes('PRS') || producto.categoria.includes('PRS') || producto.codigo === 'FL' || producto.codigo === 'PC' || producto.codigo === 'PL' || producto.codigo === 'PV' || producto.codigo === 'VS') && producto.esPRS !== true) {
-        console.log(`🔧 Migrando producto PRS: ${producto.nombre} (${producto.codigo})`);
+        console.log(`ðŸ”§ Migrando producto PRS: ${producto.nombre} (${producto.codigo})`);
         productosActualizados = true;
         return { ...producto, esPRS: true };
       }
@@ -454,7 +455,7 @@ export function Configuracion() {
     
     // Si hubo cambios, guardar en localStorage
     if (productosActualizados) {
-      console.log('✅ Productos PRS migrados correctamente');
+      console.log('âœ… Productos PRS migrados correctamente');
       localStorage.setItem('productosCreados', JSON.stringify(productosMigrados));
       setProductos(productosMigrados);
       window.dispatchEvent(new Event('productos-actualizados'));
@@ -464,14 +465,14 @@ export function Configuracion() {
     }
   }, []);
 
-  // Cargar categorías desde localStorage al montar el componente
+  // Cargar categorÃ­as desde localStorage al montar el componente
   useEffect(() => {
     const categoriasGuardadas = obtenerCategorias();
     setCategorias(categoriasGuardadas);
     
-    // 🔄 Escuchar evento de restauración de backup para recargar categorías
+    // ðŸ”„ Escuchar evento de restauraciÃ³n de backup para recargar categorÃ­as
     const handleBackupRestored = () => {
-      console.log('🔄 Backup restaurado - Recargando categorías...');
+      console.log('ðŸ”„ Backup restaurado - Recargando categorÃ­as...');
       const categoriasActualizadas = obtenerCategorias();
       setCategorias(categoriasActualizadas);
       toast.success(t('configuration.categoriesReloadedSuccess'));
@@ -503,18 +504,18 @@ export function Configuracion() {
     );
   }, [cantidadesEjemplos]);
 
-  // 💰 Migrar valores monetarios de productos existentes al cargar categorías
+  // ðŸ’° Migrar valores monetarios de productos existentes al cargar categorÃ­as
   useEffect(() => {
     if (categorias.length > 0 && productos.length > 0) {
-      // Verificar si algún producto no tiene valorUnitario
+      // Verificar si algÃºn producto no tiene valorUnitario
       const productosSinValor = productos.filter(p => !p.valorUnitario || p.valorUnitario === 0);
       
       if (productosSinValor.length > 0) {
-        console.log(`💰 Encontrados ${productosSinValor.length} productos sin valor monetario. Ejecutando migración...`);
+        console.log(`ðŸ’° Encontrados ${productosSinValor.length} productos sin valor monetario. Ejecutando migraciÃ³n...`);
         const resultado = migrarValoresMonetariosProductos();
         
         if (resultado.exitoso && resultado.productosActualizados > 0) {
-          // Recargar productos después de la migración
+          // Recargar productos despuÃ©s de la migraciÃ³n
           setProductos(obtenerProductos());
           toast.success(t('configuration.monetaryValuesUpdatedCount', { count: resultado.productosActualizados }), {
             duration: 3000
@@ -524,7 +525,7 @@ export function Configuracion() {
     }
   }, [categorias, productos]);
 
-  // Sincronizar categorías a localStorage cada vez que cambien
+  // Sincronizar categorÃ­as a localStorage cada vez que cambien
   useEffect(() => {
     if (categorias.length > 0) {
       guardarCategorias(categorias);
@@ -614,18 +615,18 @@ export function Configuracion() {
     }));
   };
 
-  // Filtrar categorías según disponibilidad del programa PRS
+  // Filtrar categorÃ­as segÃºn disponibilidad del programa PRS
   const categoriasVisibles = categorias.filter(categoria => {
     const esPRS = categoria.descripcion?.toLowerCase().includes('prs');
-    // Si la categoría es PRS, solo mostrarla si existe el programa PRS
+    // Si la categorÃ­a es PRS, solo mostrarla si existe el programa PRS
     if (esPRS) {
       return existeProgramaPRS;
     }
-    // Las categorías no-PRS siempre se muestran
+    // Las categorÃ­as no-PRS siempre se muestran
     return true;
   });
   
-  // Estados para diálogos
+  // Estados para diÃ¡logos
   const [unidadDialogOpen, setUnidadDialogOpen] = useState(false);
   const [categoriaDialogOpen, setCategoriaDialogOpen] = useState(false);
   const [subcategoriaDialogOpen, setSubcategoriaDialogOpen] = useState(false);
@@ -664,14 +665,14 @@ export function Configuracion() {
     descripcion: '',
     valorMonetario: 0,
     color: '#1E73BE',
-    icono: '📦',
+    icono: 'ðŸ“¦',
     activa: true
   });
 
   const [formSubcategoria, setFormSubcategoria] = useState({
     nombre: '',
     descripcion: '',
-    icono: '📦',
+    icono: 'ðŸ“¦',
     pesoUnitario: 0,
     unidad: '',
     activa: true,
@@ -684,7 +685,7 @@ export function Configuracion() {
     descripcion: '',
     color: '#1E73BE',
     activo: true,
-    icono: '📦'
+    icono: 'ðŸ“¦'
   });
 
   const [formProducto, setFormProducto] = useState({
@@ -693,7 +694,7 @@ export function Configuracion() {
     categoria: '',
     subcategoria: '',
     unidad: 'kg',
-    icono: '📦',
+    icono: 'ðŸ“¦',
     peso: 0,
     stockActual: 0,
     stockMinimo: 0,
@@ -706,7 +707,7 @@ export function Configuracion() {
   const [formVarianteSubcategoria, setFormVarianteSubcategoria] = useState({
     nombre: '',
     codigo: '',
-    icono: '📦',
+    icono: 'ðŸ“¦',
     pesoUnitario: '',
     valorPorKg: '',
     descripcion: '',
@@ -722,11 +723,13 @@ export function Configuracion() {
     varianteId: '',
     varianteNombre: '',
     unidad: 'kg',
-    icono: '📦',
+    icono: 'ðŸ“¦',
     peso: 0,
     pesoUnitario: 0,
     ubicacion: ''
   });
+  const isMobile = useIsMobile();
+  const [mobileCategoryActionsOpen, setMobileCategoryActionsOpen] = useState(false);
 
   const zonasUbicacionConfiguradas = useMemo(
     () => loadLocationZones(),
@@ -807,17 +810,17 @@ export function Configuracion() {
 
 
 
-  // Funciones para Categorías
+  // Funciones para CategorÃ­as
   const handleGuardarCategoria = () => {
     if (!formCategoria.nombre || !formCategoria.descripcion) {
       toast.error(t('configuration.completeAllFields'));
       return;
     }
 
-    // Generar icono automático si no hay uno definido
+    // Generar icono automÃ¡tico si no hay uno definido
     const iconoFinal = formCategoria.icono || generarIconoProducto(formCategoria.nombre);
     
-    // Convertir valorMonetario a número si es string
+    // Convertir valorMonetario a nÃºmero si es string
     const valorMonetarioNumerico = typeof formCategoria.valorMonetario === 'string' 
       ? parseInt(formCategoria.valorMonetario, 10) || 0 
       : formCategoria.valorMonetario;
@@ -829,7 +832,7 @@ export function Configuracion() {
           : c
       ));
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('categorias-actualizadas'));
       toast.success(t('configuration.categoryUpdated'));
     } else {
@@ -842,7 +845,7 @@ export function Configuracion() {
       };
       setCategorias([...categorias, nueva]);
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('categorias-actualizadas'));
       toast.success(t('configuration.categoryCreated'));
     }
@@ -873,7 +876,7 @@ export function Configuracion() {
       c.id === categoriaId ? { ...c, activa: !c.activa } : c
     ));
     
-    // Disparar evento de actualización
+    // Disparar evento de actualizaciÃ³n
     window.dispatchEvent(new Event('categorias-actualizadas'));
     toast.success(t('configuration.categoryStatusUpdated'));
   };
@@ -890,7 +893,7 @@ export function Configuracion() {
         : c
     ));
     
-    // Disparar evento de actualización
+    // Disparar evento de actualizaciÃ³n
     window.dispatchEvent(new Event('categorias-actualizadas'));
     toast.success(t('configuration.subcategoryStatusUpdated'));
   };
@@ -906,7 +909,7 @@ export function Configuracion() {
     if (!editandoCategoria) return;
     setCategorias(categorias.filter(c => c.id !== editandoCategoria.id));
     
-    // Disparar evento de actualización
+    // Disparar evento de actualizaciÃ³n
     window.dispatchEvent(new Event('categorias-actualizadas'));
     toast.success(t('configuration.categoryDeleted'));
     setDialogEliminarCategoria(false);
@@ -919,13 +922,13 @@ export function Configuracion() {
       descripcion: '',
       valorMonetario: 0,
       color: '#1E73BE',
-      icono: '📦',
+      icono: 'ðŸ“¦',
       activa: true
     });
     setEditandoCategoria(null);
   };
 
-  // Funciones para Subcategorías
+  // Funciones para SubcategorÃ­as
   const handleGuardarSubcategoria = () => {
     if (!formSubcategoria.nombre || !categoriaSeleccionada) {
       toast.error(t('configuration.completeAllFields'));
@@ -934,12 +937,12 @@ export function Configuracion() {
 
     const categoriaObj = categorias.find(c => c.id === categoriaSeleccionada);
     const iconoPersonalizadoSubcategoria = formSubcategoria.icono?.trim();
-    const iconoFinal = (iconoPersonalizadoSubcategoria && iconoPersonalizadoSubcategoria !== '📦' && iconoPersonalizadoSubcategoria !== '🏷️')
+    const iconoFinal = (iconoPersonalizadoSubcategoria && iconoPersonalizadoSubcategoria !== 'ðŸ“¦' && iconoPersonalizadoSubcategoria !== 'ðŸ·ï¸')
       ? iconoPersonalizadoSubcategoria
       : (categoriaObj?.icono || generarIconoProducto(formSubcategoria.nombre, categoriaObj?.nombre));
 
     if (editandoSubcategoria) {
-      // Editar subcategoría existente
+      // Editar subcategorÃ­a existente
       setCategorias(categorias.map(c => {
         if (c.id === categoriaSeleccionada) {
           return {
@@ -963,11 +966,11 @@ export function Configuracion() {
         return c;
       }));
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('categorias-actualizadas'));
       toast.success(t('configuration.subcategoryUpdated'));
     } else {
-      // Crear nueva subcategoría
+      // Crear nueva subcategorÃ­a
       setCategorias(categorias.map(c => {
         if (c.id === categoriaSeleccionada) {
           const nueva: Subcategoria = {
@@ -983,7 +986,7 @@ export function Configuracion() {
         return c;
       }));
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('categorias-actualizadas'));
       toast.success(t('configuration.subcategoryCreated'));
     }
@@ -998,7 +1001,7 @@ export function Configuracion() {
     setFormSubcategoria({
       nombre: subcategoria.nombre,
       descripcion: subcategoria.descripcion || '',
-      icono: subcategoria.icono || '📦',
+      icono: subcategoria.icono || 'ðŸ“¦',
       pesoUnitario: subcategoria.pesoUnitario || 0,
       unidad: subcategoria.unidad || '',
       activa: subcategoria.activa,
@@ -1025,7 +1028,7 @@ export function Configuracion() {
       return c;
     }));
     
-    // Disparar evento de actualización
+    // Disparar evento de actualizaciÃ³n
     window.dispatchEvent(new Event('categorias-actualizadas'));
     toast.success(t('configuration.subcategoryDeleted'));
     setDialogEliminarSubcategoria(false);
@@ -1037,7 +1040,7 @@ export function Configuracion() {
     setFormSubcategoria({
       nombre: '',
       descripcion: '',
-      icono: '📦',
+      icono: 'ðŸ“¦',
       pesoUnitario: 0,
       unidad: '',
       activa: true
@@ -1089,7 +1092,7 @@ export function Configuracion() {
       descripcion: programa.descripcion,
       color: programa.color,
       activo: programa.activo,
-      icono: programa.icono || '📦'
+      icono: programa.icono || 'ðŸ“¦'
     });
     setProgramaDialogOpen(true);
   };
@@ -1113,7 +1116,7 @@ export function Configuracion() {
       descripcion: '',
       color: '#1E73BE',
       activo: true,
-      icono: '📦'
+      icono: 'ðŸ“¦'
     });
     setEditandoPrograma(null);
   };
@@ -1128,7 +1131,7 @@ export function Configuracion() {
       varianteId: '',
       varianteNombre: '',
       unidad: 'kg',
-      icono: '📦',
+      icono: 'ðŸ“¦',
       peso: 0,
       pesoUnitario: 0,
       ubicacion: ''
@@ -1153,20 +1156,20 @@ export function Configuracion() {
       : null;
 
     if (formProductoPRS.ubicacion && !ubicacionNormalizada) {
-      toast.error('Seleccione un emplacement standard configuré dans le module Étiquettes');
+      toast.error('Seleccione un emplacement standard configurÃ© dans le module Ã‰tiquettes');
       return;
     }
 
-    // 💰 Calcular valor monetario basado en la categoría
+    // ðŸ’° Calcular valor monetario basado en la categorÃ­a
     const categoriaSeleccionada = categorias.find(c => c.nombre === formProductoPRS.categoria);
     const valorMonetarioBase = categoriaSeleccionada?.valorMonetario || 0;
     const valorUnitario = valorMonetarioBase * formProductoPRS.peso; // valor por kg * peso del producto
     const valorTotal = valorUnitario * 0; // Inicialmente 0 porque no hay stock
     
-    // 🔍 Debug: Mostrar información del cálculo
-    console.log('💰 Cálculo de valor monetario:');
-    console.log('  Categoría:', formProductoPRS.categoria);
-    console.log('  Valor monetario base de categoría:', valorMonetarioBase);
+    // ðŸ” Debug: Mostrar informaciÃ³n del cÃ¡lculo
+    console.log('ðŸ’° CÃ¡lculo de valor monetario:');
+    console.log('  CategorÃ­a:', formProductoPRS.categoria);
+    console.log('  Valor monetario base de categorÃ­a:', valorMonetarioBase);
     console.log('  Peso del producto:', formProductoPRS.peso, 'kg');
     console.log('  Valor unitario calculado:', valorUnitario);
     console.log('  Valor total inicial:', valorTotal);
@@ -1195,7 +1198,7 @@ export function Configuracion() {
       // Recargar productos desde localStorage
       setProductos(obtenerProductos());
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('productos-actualizados'));
       toast.success(t('configuration.prsUpdatedSuccess', { nombre: formProductoPRS.nombre }), {
         duration: 3000
@@ -1229,7 +1232,7 @@ export function Configuracion() {
       // Recargar productos desde localStorage
       setProductos(obtenerProductos());
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('productos-actualizados'));
       toast.success(t('configuration.prsCreatedSuccess', { nombre: formProductoPRS.nombre }), {
         duration: 3000
@@ -1265,7 +1268,7 @@ export function Configuracion() {
       toast.success(t('configuration.prsDeleteSuccess', { nombre }), { duration: 3000 });
       setProductos(obtenerProductos());
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('productos-actualizados'));
     }
   };
@@ -1279,7 +1282,7 @@ export function Configuracion() {
       categoria: producto.categoria,
       subcategoria: producto.subcategoria || '',
       unidad: producto.unidad || 'kg',
-      icono: producto.icono || '📦',
+      icono: producto.icono || 'ðŸ“¦',
       peso: producto.peso || 0,
       stockActual: producto.stockActual,
       stockMinimo: producto.stockMinimo,
@@ -1297,9 +1300,9 @@ export function Configuracion() {
       codigo: producto.codigo + '-VAR',
       nombre: producto.nombre + ' (Variante)',
       categoria: producto.categoria,
-      subcategoria: producto.subcategoria || '', // Heredar automáticamente la subcategoría del producto base
+      subcategoria: producto.subcategoria || '', // Heredar automÃ¡ticamente la subcategorÃ­a del producto base
       unidad: producto.unidad,
-      icono: '📦',
+      icono: 'ðŸ“¦',
       peso: 0,
       stockActual: 0,
       stockMinimo: producto.stockMinimo,
@@ -1313,7 +1316,7 @@ export function Configuracion() {
 
   const esIconoAutomatico = (icono?: string) => {
     const iconoNormalizado = icono?.trim();
-    return !iconoNormalizado || iconoNormalizado === '📦' || iconoNormalizado === '🏷️';
+    return !iconoNormalizado || iconoNormalizado === 'ðŸ“¦' || iconoNormalizado === 'ðŸ·ï¸';
   };
 
   const resolverIconoBaseVariante = (categoria: Categoria, subcategoria: Subcategoria) => {
@@ -1333,7 +1336,7 @@ export function Configuracion() {
 
   const handleCrearVarianteDesdeSubcategoria = (categoria: Categoria, subcategoria: Subcategoria) => {
     setSubcategoriaBase({ categoria, subcategoria });
-    setEditandoVariante(null); // Limpiar edición
+    setEditandoVariante(null); // Limpiar ediciÃ³n
     setFormVarianteSubcategoria({
       nombre: subcategoria.nombre || '',
       codigo: '',
@@ -1353,7 +1356,7 @@ export function Configuracion() {
     setFormVarianteSubcategoria({
       nombre: variante.nombre || '',
       codigo: variante.codigo || '',
-      icono: variante.icono || '📦',
+      icono: variante.icono || 'ðŸ“¦',
       pesoUnitario: variante.pesoUnitario?.toString() || '',
       valorPorKg: variante.valorPorKg?.toString() || '',
       descripcion: variante.descripcion || '',
@@ -1369,7 +1372,7 @@ export function Configuracion() {
       return;
     }
 
-    // Usar el nombre del formulario o generar uno automáticamente como fallback
+    // Usar el nombre del formulario o generar uno automÃ¡ticamente como fallback
     const categoriaObj = categorias.find(c => c.nombre === formProducto.categoria);
     const subcategoriaObj = categoriaObj?.subcategorias?.find(s => s.nombre === formProducto.subcategoria);
     const codigoFinal = formProducto.codigo || `${formProducto.categoria.substring(0, 3).toUpperCase()}-${formProducto.subcategoria.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
@@ -1379,11 +1382,11 @@ export function Configuracion() {
       : null;
 
     if (formProducto.ubicacion && !ubicacionNormalizada) {
-      toast.error('Seleccione un emplacement standard configuré dans le module Étiquettes');
+      toast.error('Seleccione un emplacement standard configurÃ© dans le module Ã‰tiquettes');
       return;
     }
     
-    // Generar icono automáticamente si no hay uno definido
+    // Generar icono automÃ¡ticamente si no hay uno definido
     const iconoAutomatico = generarIconoProducto(nombreFinal, formProducto.categoria, formProducto.subcategoria);
     const iconoGenerado = subcategoriaObj?.icono || categoriaObj?.icono || iconoAutomatico;
 
@@ -1415,7 +1418,7 @@ export function Configuracion() {
         p.id === editandoProducto.id ? productoActualizado : p
       ));
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('productos-actualizados'));
       
       toast.success(t('configuration.productUpdated'));
@@ -1447,7 +1450,7 @@ export function Configuracion() {
       // Actualizar en estado local
       setProductos(obtenerProductos());
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('productos-actualizados'));
       
       toast.success(t('configuration.productCreated'));
@@ -1463,13 +1466,13 @@ export function Configuracion() {
       return;
     }
 
-    // Usar el nombre del formulario o generar uno automáticamente como fallback
+    // Usar el nombre del formulario o generar uno automÃ¡ticamente como fallback
     const categoriaObj = categorias.find(c => c.nombre === formProducto.categoria);
     const subcategoriaObj = categoriaObj?.subcategorias?.find(s => s.nombre === formProducto.subcategoria);
     const codigoFinal = formProducto.codigo;
     const nombreFinal = formProducto.nombre.trim();
     
-    // Generar icono automáticamente si no hay uno definido
+    // Generar icono automÃ¡ticamente si no hay uno definido
     const iconoAutomatico = generarIconoProducto(nombreFinal, formProducto.categoria, formProducto.subcategoria);
     const iconoGenerado = subcategoriaObj?.icono || categoriaObj?.icono || iconoAutomatico;
 
@@ -1503,7 +1506,7 @@ export function Configuracion() {
     // Actualizar en estado local
     setProductos(obtenerProductos());
     
-    // Disparar evento de actualización
+    // Disparar evento de actualizaciÃ³n
     window.dispatchEvent(new Event('productos-actualizados'));
 
     toast.success(t('configuration.variantCreated'));
@@ -1526,11 +1529,11 @@ export function Configuracion() {
     const { categoria, subcategoria } = subcategoriaBase;
     const iconoBaseVariante = resolverIconoBaseVariante(categoria, subcategoria);
     const iconoPersonalizadoVariante = formVarianteSubcategoria.icono?.trim();
-    const iconoVarianteFinal = (iconoPersonalizadoVariante && iconoPersonalizadoVariante !== '📦' && iconoPersonalizadoVariante !== '🏷️')
+    const iconoVarianteFinal = (iconoPersonalizadoVariante && iconoPersonalizadoVariante !== 'ðŸ“¦' && iconoPersonalizadoVariante !== 'ðŸ·ï¸')
       ? iconoPersonalizadoVariante
       : iconoBaseVariante;
 
-    // Generar código automáticamente si no se proporcionó uno
+    // Generar cÃ³digo automÃ¡ticamente si no se proporcionÃ³ uno
     const codigoGenerado = formVarianteSubcategoria.codigo.trim() || 
       `${categoria.nombre.substring(0, 3).toUpperCase()}-${subcategoria.nombre.substring(0, 3).toUpperCase()}-VAR-${Date.now().toString().slice(-4)}`;
 
@@ -1576,7 +1579,7 @@ export function Configuracion() {
       });
       setProductos(obtenerProductos());
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('categorias-actualizadas'));
       toast.success(t('configuration.variantUpdatedSuccess'));
       setEditandoVariante(null);
@@ -1612,14 +1615,14 @@ export function Configuracion() {
       guardarCategorias(categoriasActualizadas);
       setCategorias(categoriasActualizadas);
       
-      // Disparar evento de actualización
+      // Disparar evento de actualizaciÃ³n
       window.dispatchEvent(new Event('categorias-actualizadas'));
       toast.success(t('configuration.variantCreatedSuccess'));
     }
     setFormVarianteSubcategoria({
       nombre: '',
       codigo: '',
-      icono: '📦',
+      icono: 'ðŸ“¦',
       pesoUnitario: '',
       valorPorKg: '',
       descripcion: '',
@@ -1630,7 +1633,7 @@ export function Configuracion() {
     setVarianteSubcategoriaDialogOpen(false);
   };
 
-  // Funciones para configuración de soporte
+  // Funciones para configuraciÃ³n de soporte
   const handleGuardarConfigSupport = () => {
     guardarConfigSupport(formSupport);
     setSupportConfig(formSupport);
@@ -1644,31 +1647,31 @@ export function Configuracion() {
   const handleProbarConfigSupport = () => {
     const { chatAide, support, reportBug } = formSupport;
     
-    let mensaje = `📋 ${t('configuration.supportCurrentConfiguration')}:\n\n`;
+    let mensaje = `ðŸ“‹ ${t('configuration.supportCurrentConfiguration')}:\n\n`;
     
     if (chatAide.enabled) {
-      mensaje += `💬 ${t('configuration.helpChatLabel')}: ${chatAide.type === 'email' ? '📧' : chatAide.type === 'url' ? '🔗' : '📞'} ${chatAide.value}\n\n`;
+      mensaje += `ðŸ’¬ ${t('configuration.helpChatLabel')}: ${chatAide.type === 'email' ? 'ðŸ“§' : chatAide.type === 'url' ? 'ðŸ”—' : 'ðŸ“ž'} ${chatAide.value}\n\n`;
     }
     
     if (support.enabled) {
-      mensaje += `📞 ${t('configuration.supportLabel')}:\n`;
+      mensaje += `ðŸ“ž ${t('configuration.supportLabel')}:\n`;
       if (support.email) {
-        mensaje += `   📧 ${t('configuration.mainEmailLabel')}: ${support.email}\n`;
+        mensaje += `   ðŸ“§ ${t('configuration.mainEmailLabel')}: ${support.email}\n`;
       }
       if (support.emailSecondaire) {
-        mensaje += `   📧 ${t('configuration.secondaryEmailLabel')}: ${support.emailSecondaire}\n`;
+        mensaje += `   ðŸ“§ ${t('configuration.secondaryEmailLabel')}: ${support.emailSecondaire}\n`;
       }
       if (support.phone) {
-        mensaje += `   ☎️ ${t('configuration.phoneLabel')}: ${support.phone}\n`;
+        mensaje += `   â˜Žï¸ ${t('configuration.phoneLabel')}: ${support.phone}\n`;
       }
       mensaje += '\n';
     }
     
     if (reportBug.enabled) {
-      mensaje += `🐛 ${t('configuration.reportProblemLabel')}:\n`;
-      mensaje += `   ${reportBug.type === 'email' ? '📧' : '🔗'} ${t('configuration.primaryContactLabel')}: ${reportBug.value}\n`;
+      mensaje += `ðŸ› ${t('configuration.reportProblemLabel')}:\n`;
+      mensaje += `   ${reportBug.type === 'email' ? 'ðŸ“§' : 'ðŸ”—'} ${t('configuration.primaryContactLabel')}: ${reportBug.value}\n`;
       if (reportBug.type === 'email' && reportBug.emailSecondaire) {
-        mensaje += `   📧 ${t('configuration.secondaryEmailLabel')}: ${reportBug.emailSecondaire}\n`;
+        mensaje += `   ðŸ“§ ${t('configuration.secondaryEmailLabel')}: ${reportBug.emailSecondaire}\n`;
       }
     }
     
@@ -1682,7 +1685,7 @@ export function Configuracion() {
       categoria: '',
       subcategoria: '',
       unidad: 'kg',
-      icono: '📦',
+      icono: 'ðŸ“¦',
       peso: 0,
       stockActual: 0,
       stockMinimo: 0,
@@ -1695,14 +1698,14 @@ export function Configuracion() {
     setProductoBase(null);
   };
 
-  // Función para generar producto rápidamente desde categoría y subcategoría
+  // FunciÃ³n para generar producto rÃ¡pidamente desde categorÃ­a y subcategorÃ­a
   const handleGenerarProductoRapido = (categoria: Categoria, subcategoria: Subcategoria) => {
-    // Usar el nombre de la subcategoría como nombre del producto
+    // Usar el nombre de la subcategorÃ­a como nombre del producto
     const nombre = subcategoria.nombre;
     const unidad = subcategoria.unidad || 'kg';
     const pesoUnitario = subcategoria.pesoUnitario;
     
-    // Verificar si ya existe un producto con las mismas características
+    // Verificar si ya existe un producto con las mismas caracterÃ­sticas
     const productoExistente = productos.find(
       p => p.nombre === nombre && 
            p.categoria === categoria.nombre && 
@@ -1712,7 +1715,7 @@ export function Configuracion() {
            p.activo === true
     );
     
-    // Si ya existe un producto con las mismas características, informar sin bloquear
+    // Si ya existe un producto con las mismas caracterÃ­sticas, informar sin bloquear
     if (productoExistente) {
       toast.info(t('configuration.productAlreadyExistsTitle', { nombre }), {
         description: t('configuration.productAlreadyExistsDescription', {
@@ -1725,10 +1728,10 @@ export function Configuracion() {
       return;
     }
     
-    // Auto-generar código único
+    // Auto-generar cÃ³digo Ãºnico
     const codigo = `${categoria.nombre.substring(0, 3).toUpperCase()}-${subcategoria.nombre.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
     
-    // Crear producto automáticamente con datos heredados de la subcategoría
+    // Crear producto automÃ¡ticamente con datos heredados de la subcategorÃ­a
     const nuevoProducto: ProductoCreado = {
         id: Date.now().toString(),
       codigo: codigo,
@@ -1736,7 +1739,7 @@ export function Configuracion() {
       categoria: categoria.nombre,
       subcategoria: subcategoria.nombre,
       unidad: subcategoria.unidad || 'kg',
-      icono: subcategoria.icono || categoria.icono || '📦',
+      icono: subcategoria.icono || categoria.icono || 'ðŸ“¦',
       peso: 0,
       pesoUnitario: subcategoria.pesoUnitario,
       stockActual: 0,
@@ -1752,7 +1755,7 @@ export function Configuracion() {
     guardarProducto(nuevoProducto, { estrategiaDeduplicacion: 'inventario-canonico' });
     setProductos(obtenerProductos());
     
-    // Disparar evento de actualización
+    // Disparar evento de actualizaciÃ³n
     window.dispatchEvent(new Event('productos-actualizados'));
     
     toast.success(t('configuration.productGeneratedAutoTitle', { nombre }), {
@@ -1764,7 +1767,7 @@ export function Configuracion() {
     });
   };
 
-  // Función para contar productos por subcategoría
+  // FunciÃ³n para contar productos por subcategorÃ­a
   const contarProductosPorSubcategoria = (categoriaNombre: string, subcategoriaNombre: string) => {
     return productos.filter(
       p => p.categoria === categoriaNombre && p.subcategoria === subcategoriaNombre
@@ -1823,10 +1826,10 @@ export function Configuracion() {
             boxShadow: '0 8px 32px 0 rgba(26, 77, 122, 0.2), 0 0 80px rgba(45, 149, 97, 0.1)'
           }}
         >
-          {/* Header con logo y título */}
+          {/* Header con logo y tÃ­tulo */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <div className="relative inline-block">
-              {/* Glow effect detrás del logo */}
+              {/* Glow effect detrÃ¡s del logo */}
               {branding.logo ? (
                 <AdaptiveBrandLogo
                   src={branding.logo}
@@ -1862,7 +1865,7 @@ export function Configuracion() {
             </div>
           </div>
 
-          {/* Título con diseño elegante */}
+          {/* TÃ­tulo con diseÃ±o elegante */}
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-3">
               <div className="relative group">
@@ -1890,7 +1893,7 @@ export function Configuracion() {
             </p>
           </div>
 
-      {/* Tabs con diseño moderno y elegante */}
+      {/* Tabs con diseÃ±o moderno y elegante */}
       <Tabs defaultValue="categorias" className="space-y-6">
         <ModuleControlSurface>
           <ModuleControlSurfaceTabs>
@@ -1994,990 +1997,9 @@ export function Configuracion() {
           </ModuleControlSurfaceTabs>
         </ModuleControlSurface>
 
-        {/* Tab: Categorías y Subcategorías */}
+        {/* Tab: CategorÃ­as y SubcategorÃ­as */}
         <TabsContent value="categorias" className="fade-in">
-          <div className="space-y-6">
-            <Card className="backdrop-blur-lg bg-white/80 border-2 border-white/60 shadow-2xl rounded-2xl overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#1a4d7a]/5 to-[#2d9561]/5 border-b border-gray-200/50 pb-4">
-                <CardTitle className="flex items-center gap-3 text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: '#1a4d7a' }}>
-                  <div className="p-2 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl shadow-lg">
-                    <FolderTree className="w-6 h-6 text-white" />
-                  </div>
-                  {t('configuration.productCategories')}
-                </CardTitle>
-                <div className="flex gap-3">
-                  <Dialog open={subcategoriaDialogOpen} onOpenChange={(open) => {
-                    setSubcategoriaDialogOpen(open);
-                    if (!open) {
-                      resetFormSubcategoria();
-                    } else if (!editandoSubcategoria) {
-                      // Al abrir para crear nueva subcategoría, copiar el ícono de la categoría seleccionada
-                      const categoriaObj = categorias.find(c => c.id === categoriaSeleccionada);
-                      if (categoriaObj?.icono) {
-                        setFormSubcategoria(prev => ({
-                          ...prev,
-                          icono: categoriaObj.icono
-                        }));
-                      }
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        className="bg-gradient-to-r from-[#2d9561] to-[#258a54] hover:from-[#258a54] hover:to-[#1f7547] text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl"
-                        style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t('configuration.newSubcategory')}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto scrollbar-thin" aria-describedby="subcategoria-form-description">
-                      <DialogHeader>
-                        <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                          {editandoSubcategoria ? t('configuration.editSubcategory') : t('configuration.newSubcategoryForm')}
-                        </DialogTitle>
-                        <DialogDescription id="subcategoria-form-description">
-                          {editandoSubcategoria ? t('configuration.editSubcategoryDescription') : t('configuration.newSubcategoryDescription')}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label>{t('configuration.parentCategory')}</Label>
-                          <Select 
-                            value={categoriaSeleccionada}
-                            disabled={editandoSubcategoria !== null}
-                            onValueChange={(catId) => {
-                              const categoriaPadre = categorias.find(c => c.id === catId);
-                              setCategoriaSeleccionada(catId);
-                              // Copiar automáticamente el icono de la categoría seleccionada
-                              if (!editandoSubcategoria && categoriaPadre) {
-                                setFormSubcategoria({
-                                  ...formSubcategoria,
-                                  icono: categoriaPadre.icono
-                                });
-                              }
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('configuration.selectCategory')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {categoriasVisibles.map(cat => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg">{cat.icono}</span>
-                                    <span>{cat.nombre}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{t('configuration.subcategoryName')}</Label>
-                          <Input
-                            placeholder={t('configuration.subcategoryNamePlaceholder')}
-                            value={formSubcategoria.nombre || ''}
-                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, nombre: e.target.value })}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label>{t('configuration.subcategoryDescription')}</Label>
-                          <Textarea
-                            placeholder={t('configuration.subcategoryDescriptionPlaceholder')}
-                            value={formSubcategoria.descripcion || ''}
-                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, descripcion: e.target.value })}
-                            rows={2}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            {t('configuration.unitWeight')} (kg)
-                            <span className="text-xs text-gray-500">({t('common.optional')})</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            placeholder={t('configuration.weightExamplePlaceholder')}
-                            value={formSubcategoria.pesoUnitario === 0 ? '' : formSubcategoria.pesoUnitario || ''}
-                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, pesoUnitario: e.target.value === '' ? 0 : Number.parseFloat(e.target.value) || 0 })}
-                          />
-                          {!formSubcategoria.pesoUnitario || formSubcategoria.pesoUnitario === 0 ? (
-                            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                              <div className="text-blue-500 text-lg">💡</div>
-                              <div className="flex-1">
-                                <p className="text-xs font-medium text-[#1E73BE]">
-                                  {t('configuration.autoMemorizationActive')}
-                                </p>
-                                <p className="text-xs text-[#666666]">
-                                  {t('configuration.autoWeightCalculationDescription')}
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-[#4CAF50] font-medium">
-                              ✓ {t('configuration.unitWeightDefined', { weight: formatQuantity(formSubcategoria.pesoUnitario || 0) })}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            📏 {t('common.unit')} *
-                          </Label>
-                          <Select
-                            value={formSubcategoria.unidad}
-                            onValueChange={(value) => setFormSubcategoria({ ...formSubcategoria, unidad: value })}
-                          >
-                            <SelectTrigger style={{ fontFamily: 'Roboto, sans-serif' }}>
-                              <SelectValue placeholder={t('configuration.selectUnit')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {unidadesDinamicas.map(unidad => (
-                                <SelectItem key={unidad.id} value={unidad.abreviatura}>
-                                  {unidad.icono && `${unidad.icono} `}{unidad.nombre} ({unidad.abreviatura})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-[#666666]">
-                            💡 {t('configuration.unitForSubcategory')}
-                          </p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            📊 {t('configuration.minimumStock')}
-                            <span className="text-xs text-gray-500">({t('common.optional')})</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            step="1"
-                            min="0"
-                            placeholder={t('configuration.minimumStockPlaceholder')}
-                            value={formSubcategoria.stockMinimo === 0 ? '' : formSubcategoria.stockMinimo || ''}
-                            onChange={(e) => setFormSubcategoria({ ...formSubcategoria, stockMinimo: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                          />
-                          <p className="text-xs text-gray-500">
-                            💡 {t('configuration.stockAlertBelow')}
-                          </p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>{t('configuration.icon')}</Label>
-                          {!editandoSubcategoria && categoriaSeleccionada && (
-                            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2">
-                              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-xl">
-                                {formSubcategoria.icono}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                  {t('configuration.iconAutoCopied')}
-                                </p>
-                                <p className="text-xs text-[#666666]">
-                                  {t('configuration.iconAutoCopiedDescription')}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          <div className="border rounded-lg max-h-80 overflow-y-auto p-3 bg-gray-50">
-                            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-2">
-                              <p className="text-xs font-semibold text-[#1E73BE] mb-2">✨ Icônes recommandées</p>
-                              <div className="grid grid-cols-8 gap-1">
-                                {obtenerIconosRecomendadosPorFamilia(`${formSubcategoria.nombre || ''} ${formSubcategoria.descripcion || ''} ${formCategoria.nombre || ''}`).slice(0, 16).map((icono) => (
-                                  <button
-                                    key={`rec-sub-${icono}`}
-                                    onClick={() => setFormSubcategoria({ ...formSubcategoria, icono })}
-                                    className={`text-lg p-1 rounded hover:bg-blue-100 ${
-                                      formSubcategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white'
-                                    }`}
-                                    type="button"
-                                  >
-                                    {icono}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="mb-4">
-                              <p className="text-xs font-semibold text-[#1a4d7a] mb-2">{t('configuration.foodIconsSection')}</p>
-                              {ICONOS_SECCIONES_ALIMENTARIAS.map((seccion) => (
-                                <div key={seccion.id} className="mb-2">
-                                  <p className="text-[10px] text-gray-500 mb-1">{t(seccion.labelKey)}</p>
-                                  <div className="grid grid-cols-8 gap-1">
-                                    {seccion.iconos.map((icono, index) => (
-                                      <button key={`${seccion.id}-${icono}-${index}`} onClick={() => setFormSubcategoria({ ...formSubcategoria, icono })} className={`text-lg p-1 rounded hover:bg-blue-100 ${formSubcategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`} type="button">{icono}</button>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            {/* Sección: No Alimentarios */}
-                            <div>
-                              <p className="text-xs font-semibold text-[#2d9561] mb-2">{t('configuration.nonFoodIconsSection')}</p>
-                              <div className="grid grid-cols-8 gap-1">
-                                {ICONOS_NO_ALIMENTARIOS.map((icono, index) => (
-                                  <button
-                                    key={`no-food-${icono}-${index}`}
-                                    onClick={() => setFormSubcategoria({ ...formSubcategoria, icono })}
-                                    className={`text-lg p-1 rounded hover:bg-green-100 ${
-                                      formSubcategoria.icono === icono ? 'bg-green-100 ring-2 ring-green-500' : ''
-                                    }`}
-                                    type="button"
-                                  >
-                                    {icono}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between p-4 border rounded-lg bg-[#F4F4F4]">
-                            <div>
-                              <Label className="text-base" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                {t('configuration.subcategoryActive')}
-                              </Label>
-                              <p className="text-sm text-[#666666] mt-1">
-                                {formSubcategoria.activa 
-                                  ? t('configuration.subcategoryIsActive')
-                                  : t('configuration.subcategoryIsInactive')}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setFormSubcategoria({ ...formSubcategoria, activa: !formSubcategoria.activa })}
-                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                formSubcategoria.activa ? 'bg-[#4CAF50]' : 'bg-gray-300'
-                              }`}
-                            >
-                              <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                  formSubcategoria.activa ? 'translate-x-6' : 'translate-x-1'
-                                }`}
-                              />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Gestión de Variantes - Solo mostrar al editar */}
-                        {editandoSubcategoria && categoriaSeleccionada && (
-                          <div className="pt-4 border-t">
-                            <GestionVariantes 
-                              subcategoria={editandoSubcategoria} 
-                              categoriaId={categoriaSeleccionada}
-                              onActualizar={() => {
-                                // Recargar categorías para reflejar cambios
-                                setCategorias(obtenerCategorias());
-                                
-                                // Disparar evento de actualización
-                                window.dispatchEvent(new Event('categorias-actualizadas'));
-                              }}
-                            />
-                          </div>
-                        )}
-
-                        <div className="flex justify-end gap-2 pt-4">
-                          <Button variant="outline" onClick={() => {
-                            setSubcategoriaDialogOpen(false);
-                            resetFormSubcategoria();
-                          }}>
-                            {t('common.cancel')}
-                          </Button>
-                          <Button onClick={handleGuardarSubcategoria} className="bg-[#4CAF50] hover:bg-[#45a049]">
-                            <Save className="w-4 h-4 mr-2" />
-                            {editandoSubcategoria ? t('common.update') : t('common.save')}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Dialog open={categoriaDialogOpen} onOpenChange={(open) => {
-                    setCategoriaDialogOpen(open);
-                    if (!open) resetFormCategoria();
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-[#1E73BE] hover:bg-[#1557A0]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t('configuration.newCategory')}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent aria-describedby="categoria-form-description">
-                      <DialogHeader>
-                        <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                          {editandoCategoria ? t('configuration.editCategory') : t('configuration.newCategory')}
-                        </DialogTitle>
-                        <DialogDescription id="categoria-form-description">
-                          {editandoCategoria ? t('configuration.editCategoryDescription') : t('configuration.newCategoryDescription')}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label>{t('configuration.categoryName')}</Label>
-                          <Input
-                            placeholder={t('configuration.categoryNamePlaceholder')}
-                            value={formCategoria.nombre || ''}
-                            onChange={(e) => setFormCategoria({ ...formCategoria, nombre: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{t('configuration.description')}</Label>
-                          <Textarea
-                            placeholder={t('configuration.descriptionPlaceholder')}
-                            value={formCategoria.descripcion || ''}
-                            onChange={(e) => setFormCategoria({ ...formCategoria, descripcion: e.target.value })}
-                          />
-                          {formCategoria.descripcion?.toLowerCase().includes('prs') && (
-                            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                              <p className="text-xs text-purple-800 flex items-start gap-2">
-                                <span className="text-base">🔒</span>
-                                <span>
-                                  <strong>{t('configuration.prsCategoryNoticeTitle')}</strong> {t('configuration.prsCategoryNoticeDescription')}
-                                </span>
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{t('configuration.baseMonetaryValue')}</Label>
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666666]" />
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              placeholder="0"
-                              value={formCategoria.valorMonetario === 0 ? '' : formCategoria.valorMonetario}
-                              onChange={(e) => {
-                                const finalValue = e.target.value.replace(/[^0-9]/g, '');
-
-                                if (finalValue === '') {
-                                  setFormCategoria({ ...formCategoria, valorMonetario: 0 });
-                                } else {
-                                  setFormCategoria({ ...formCategoria, valorMonetario: parseInt(finalValue, 10) || 0 });
-                                }
-                              }}
-                              className="pl-10"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>{t('configuration.icon')}</Label>
-                            <div className="border rounded-lg max-h-80 overflow-y-auto p-3 bg-gray-50">
-                              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-2">
-                                <p className="text-xs font-semibold text-[#1E73BE] mb-2">✨ Icônes recommandées</p>
-                                <div className="grid grid-cols-8 gap-1">
-                                  {obtenerIconosRecomendadosPorFamilia(`${formCategoria.nombre || ''} ${formCategoria.descripcion || ''}`).slice(0, 16).map((icono) => (
-                                    <button
-                                      key={`rec-cat-${icono}`}
-                                      onClick={() => setFormCategoria({ ...formCategoria, icono })}
-                                      className={`text-lg p-1 rounded hover:bg-blue-100 ${
-                                        formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white'
-                                      }`}
-                                      type="button"
-                                    >
-                                      {icono}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Sección: Alimentarios */}
-                              <div className="mb-4">
-                                <p className="text-xs font-semibold text-[#1a4d7a] mb-2">{t('configuration.foodIconsSection')}</p>
-                                
-                                {/* Cereales y Granos */}
-                                <div className="mb-2">
-                                  <p className="text-[10px] text-gray-500 mb-1">{t('configuration.cerealGrainsIcons')}</p>
-                                  <div className="grid grid-cols-8 gap-1">
-                                    {['🍚', '🍝', '🍞', '🥖', '🥣', '🥐', '🥯', '🥨', '🧇', '🥞', '🌾'].map(icono => (
-                                      <button key={icono} onClick={() => setFormCategoria({ ...formCategoria, icono })} className={`text-lg p-1 rounded hover:bg-blue-100 ${formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`} type="button">{icono}</button>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                {/* Frutas y Verduras */}
-                                <div className="mb-2">
-                                  <p className="text-[10px] text-gray-500 mb-1">{t('configuration.fruitsVegetablesIcons')}</p>
-                                  <div className="grid grid-cols-8 gap-1">
-                                    {['🍎', '🍊', '🍌', '🍇', '🍓', '🍋', '🍉', '🍍', '🥝', '🥭', '🍏', '🍐', '🥥', '🥬', '🥕', '🥔', '🌽', '🥦', '🍅', '🫑', '🥒', '🧅', '🧄', '🍆', '🥑', '🌶️', '🫛', '🍄'].map(icono => (
-                                      <button key={icono} onClick={() => setFormCategoria({ ...formCategoria, icono })} className={`text-lg p-1 rounded hover:bg-blue-100 ${formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`} type="button">{icono}</button>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                {/* Proteínas y Lácteos */}
-                                <div className="mb-2">
-                                  <p className="text-[10px] text-gray-500 mb-1">{t('configuration.proteinsDairyIcons')}</p>
-                                  <div className="grid grid-cols-8 gap-1">
-                                    {['🥩', '🍗', '🐟', '🍤', '🥚', '🍖', '🥓', '🌭', '🍔', '🥛', '🧀', '🧈', '🍦', '🧁'].map(icono => (
-                                      <button key={icono} onClick={() => setFormCategoria({ ...formCategoria, icono })} className={`text-lg p-1 rounded hover:bg-blue-100 ${formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`} type="button">{icono}</button>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                {/* Bebidas */}
-                                <div className="mb-2">
-                                  <p className="text-[10px] text-gray-500 mb-1">{t('configuration.beveragesIcons')}</p>
-                                  <div className="grid grid-cols-8 gap-1">
-                                    {['☕', '🧃', '🥤', '🍵', '🧋', '🍶', '🍾', '🍷', '🍺', '🍻', '🥂', '🍹', '🍸', '🧊'].map(icono => (
-                                      <button key={icono} onClick={() => setFormCategoria({ ...formCategoria, icono })} className={`text-lg p-1 rounded hover:bg-blue-100 ${formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`} type="button">{icono}</button>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                {/* Condimentos y Dulces */}
-                                <div className="mb-2">
-                                  <p className="text-[10px] text-gray-500 mb-1">{t('configuration.condimentsSweetsIcons')}</p>
-                                  <div className="grid grid-cols-8 gap-1">
-                                    {['🍯', '🧂', '🫙', '🥫', '🫒', '🌻', '🧴', '🍫', '🍬', '🍪', '🍩', '🍰', '🎂', '🥧', '🍮', '🍭', '🍡'].map(icono => (
-                                      <button key={icono} onClick={() => setFormCategoria({ ...formCategoria, icono })} className={`text-lg p-1 rounded hover:bg-blue-100 ${formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`} type="button">{icono}</button>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                {/* Comidas y Genéricos */}
-                                <div className="mb-2">
-                                  <p className="text-[10px] text-gray-500 mb-1">{t('configuration.mealsGenericIcons')}</p>
-                                  <div className="grid grid-cols-8 gap-1">
-                                    {['🥗', '🍲', '🌮', '🍕', '🍱', '🥜', '🍿', '📦', '🛒', '🍽️', '🥘', '🍴', '🫘'].map(icono => (
-                                      <button key={icono} onClick={() => setFormCategoria({ ...formCategoria, icono })} className={`text-lg p-1 rounded hover:bg-blue-100 ${formCategoria.icono === icono ? 'bg-blue-100 ring-2 ring-blue-500' : ''}`} type="button">{icono}</button>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Sección: No Alimentarios */}
-                              <div>
-                                <p className="text-xs font-semibold text-[#2d9561] mb-2">{t('configuration.nonFoodIconsSection')}</p>
-                                <div className="grid grid-cols-8 gap-1">
-                                  {['🧴', '🧼', '🪥', '🧻', '🪒', '💊', '🩹', '🧹', '🧺', '🪣', '🧽', '🍼', '👶', '🧸', '👕', '👖', '🧥', '👟', '🧦', '🎒', '📚', '📓', '✏️', '🖊️', '📏', '✂️', '🖍️', '🐕', '🐈', '🦴', '🎁', '💝', '🔋', '💡', '🏥', '🕯️', '🧰', '🌡️'].map(icono => (
-                                    <button
-                                      key={icono}
-                                      onClick={() => setFormCategoria({ ...formCategoria, icono })}
-                                      className={`text-lg p-1 rounded hover:bg-green-100 ${
-                                        formCategoria.icono === icono ? 'bg-green-100 ring-2 ring-green-500' : ''
-                                      }`}
-                                      type="button"
-                                    >
-                                      {icono}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>{t('configuration.identificationColor')}</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="color"
-                                value={formCategoria.color || '#1E73BE'}
-                                onChange={(e) => setFormCategoria({ ...formCategoria, color: e.target.value })}
-                                className="w-20 h-10"
-                              />
-                              <Input
-                                type="text"
-                                value={formCategoria.color || ''}
-                                onChange={(e) => setFormCategoria({ ...formCategoria, color: e.target.value })}
-                                placeholder="#1E73BE"
-                                className="flex-1"
-                              />
-                            </div>
-                            <div className="mt-3 p-4 border rounded-lg text-center">
-                              <div 
-                                className="w-16 h-16 mx-auto rounded-lg flex items-center justify-center"
-                                style={{ backgroundColor: formCategoria.color + '20', fontSize: '2rem' }}
-                              >
-                                {formCategoria.icono}
-                              </div>
-                              <p className="text-xs text-[#666666] mt-2">{t('configuration.preview')}</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-2 pt-4">
-                          <Button variant="outline" onClick={() => {
-                            setCategoriaDialogOpen(false);
-                            resetFormCategoria();
-                          }}>
-                            {t('common.cancel')}
-                          </Button>
-                          <Button onClick={handleGuardarCategoria} className="bg-[#4CAF50] hover:bg-[#45a049]">
-                            <Save className="w-4 h-4 mr-2" />
-                            {editandoCategoria ? t('common.update') : t('common.save')}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Alerta informativa sobre generación rápida */}
-                <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#1E73BE] rounded-lg flex items-center justify-center">
-                      <FolderTree className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-[#333333] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                        {t('configuration.hierarchicalSystemTitle')}
-                      </h4>
-                      <p className="text-sm text-[#666666] mb-3">
-                        {t('configuration.hierarchicalSystemDescription')}
-                      </p>
-                      <div className="space-y-3">
-                        {/* Nivel 1: Categorías */}
-                        <div className="flex items-start gap-2">
-                          <div className="flex-shrink-0 w-6 h-6 bg-[#1E73BE] rounded flex items-center justify-center text-white text-xs font-bold">
-                            1
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-[#1E73BE]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                              {t('configuration.level1Title')}
-                            </p>
-                            <p className="text-xs text-[#666666] mt-1">
-                              {t('configuration.level1Description')} <span className="font-medium">{t('configuration.level1Examples')}</span>
-                            </p>
-                            <p className="text-xs text-[#4CAF50] mt-1">
-                              {t('configuration.level1MonetaryNote')}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Nivel 2: Subcategorías */}
-                        <div className="flex items-start gap-2 pl-8">
-                          <div className="flex-shrink-0 w-6 h-6 bg-[#4CAF50] rounded flex items-center justify-center text-white text-xs font-bold">
-                            2
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-[#4CAF50]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                              {t('configuration.level2Title')}
-                            </p>
-                            <p className="text-xs text-[#666666] mt-1">
-                              {t('configuration.level2Description')} <span className="font-medium">{t('configuration.level1Examples')}</span> → <span className="font-medium">{t('configuration.level2Examples')}</span>
-                            </p>
-                            <p className="text-xs text-blue-600 mt-1">
-                              {t('configuration.level2WeightNote')}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Nivel 3: Variantes */}
-                        <div className="flex items-start gap-2 pl-16">
-                          <div className="flex-shrink-0 w-6 h-6 bg-[#9C27B0] rounded flex items-center justify-center text-white text-xs font-bold">
-                            3
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-[#9C27B0]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                              {t('configuration.level3Title')}
-                            </p>
-                            <p className="text-xs text-[#666666] mt-1">
-                              {t('configuration.level3Description')} <span className="font-medium">{t('configuration.level2Examples').split(', ')[0]}</span> → <span className="font-medium">{t('configuration.level3Examples')}</span>
-                            </p>
-                            <p className="text-xs text-purple-600 mt-1">
-                              {t('configuration.level3CharacteristicsNote')}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Ejemplo visual */}
-                      <div className="mt-3 p-2 bg-white rounded border border-gray-200">
-                        <p className="text-xs font-semibold text-[#333333] mb-1">
-                          {t('configuration.fullExampleTitle')}
-                        </p>
-                        <p className="text-xs text-[#666666] font-mono">
-                          {t('configuration.fullExampleText')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {!existeProgramaPRS && categorias.some(c => c.descripcion?.toLowerCase().includes('prs')) && (
-                  <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <Package className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-900 mb-1">
-                          {t('configuration.prsNotAvailableTitle')}
-                        </p>
-                        <p className="text-xs text-amber-700">
-                          {t('configuration.prsNotAvailableDescription')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  {categoriasVisibles.map(categoria => (
-                    <div key={categoria.id} className="backdrop-blur-lg bg-white/70 border-2 border-white/60 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
-                      {/* Categoría Principal */}
-                      <div 
-                        className="flex items-center justify-between p-5 bg-gradient-to-r from-gray-50/50 to-transparent cursor-pointer hover:from-gray-100/70 hover:to-transparent transition-all duration-300 group"
-                        onClick={() => toggleCategoria(categoria.id)}
-                      >
-                        <div className="flex items-center gap-4 flex-1">
-                          <Button variant="ghost" size="sm" className="p-0 h-auto hover:bg-transparent group-hover:scale-110 transition-transform">
-                            {categoriaExpandida === categoria.id ? (
-                              <ChevronDown className="w-6 h-6 text-[#1a4d7a]" />
-                            ) : (
-                              <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-[#1a4d7a] transition-colors" />
-                            )}
-                          </Button>
-                          <div 
-                            className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300"
-                            style={{ backgroundColor: categoria.color + '30', fontSize: '1.75rem' }}
-                          >
-                            {categoria.icono}
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-bold text-lg text-gray-800 mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                              {getCategoriaDisplayName(categoria.nombre)}
-                            </h4>
-                            <p className="text-sm text-gray-600">{getCategoriaDisplayDescription(categoria.descripcion)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          {categoria.descripcion?.toLowerCase().includes('prs') && (
-                            <Badge className="bg-gradient-to-r from-purple-500 to-purple-600 text-white text-xs px-3 py-1 rounded-full shadow-md">
-                              {t('configuration.prsBadge')}
-                            </Badge>
-                          )}
-                          {categoria.valorPorKg && (
-                            <Badge className="bg-gradient-to-r from-emerald-50 to-green-50 text-[#2d9561] border-2 border-[#2d9561]/30 px-3 py-1 rounded-full font-semibold shadow-sm">
-                              {t('configuration.valuePerKgBadge', { value: Math.round(categoria.valorPorKg) })}
-                            </Badge>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="hover:bg-blue-50 hover:text-[#1a4d7a] rounded-xl transition-all duration-200"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditarCategoria(categoria);
-                            }}
-                          >
-                            <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="hover:bg-red-50 hover:text-[#DC3545] rounded-xl transition-all duration-200"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSolicitarEliminarCategoria(categoria);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 hover:text-[#DC3545]" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Subcategorías */}
-                      {categoriaExpandida === categoria.id && (
-                        <div className="p-5 bg-gradient-to-br from-gray-50/30 to-transparent border-t-2 border-gray-100/50">
-                          {categoria.subcategorias.length > 0 ? (
-                            <div className="space-y-3">
-                              {categoria.subcategorias.map(sub => (
-                                <div key={sub.id} className="p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-gray-200/50 shadow-sm hover:shadow-md hover:border-[#2d9561]/30 transition-all duration-300">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-3 flex-1">
-                                      {sub.icono && (
-                                        <div 
-                                          className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
-                                          style={{ backgroundColor: categoria.color + '20', fontSize: '1.2rem' }}
-                                        >
-                                          {sub.icono}
-                                        </div>
-                                      )}
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="font-medium text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                            {getSubcategoriaDisplayName(sub.nombre)}
-                                          </span>
-                                          {(() => {
-                                            const cantidadProductos = contarProductosPorSubcategoria(categoria.nombre, sub.nombre);
-                                            return cantidadProductos > 0 ? (
-                                              <Badge className="bg-[#1E73BE] text-white text-xs">
-                                                <Package className="w-3 h-3 mr-1" />
-                                                {cantidadProductos} {cantidadProductos === 1 ? t('common.product') : t('configuration.products')}
-                                              </Badge>
-                                            ) : null;
-                                          })()}
-                                          {sub.activa ? (
-                                            <Badge className="bg-[#4CAF50] text-white text-xs">
-                                              <Eye className="w-3 h-3 mr-1" />
-                                              {t('configuration.active')}
-                                            </Badge>
-                                          ) : (
-                                            <Badge className="bg-gray-400 text-white text-xs">
-                                              <EyeOff className="w-3 h-3 mr-1" />
-                                              {t('configuration.inactive')}
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        {sub.descripcion && (
-                                          <p className="text-xs text-[#666666] mb-2">{getSubcategoriaDisplayDescription(sub.descripcion)}</p>
-                                        )}
-                                        <div className="flex flex-wrap gap-2 items-center">
-                                          {sub.unidad && (() => {
-                                            const unidadObj = unidadesDinamicas.find(u => u.abreviatura === sub.unidad);
-                                            return (
-                                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                                                {unidadObj?.icono || '📏'} {unidadObj?.nombre || sub.unidad}
-                                              </Badge>
-                                            );
-                                          })()}
-                                          {sub.pesoUnitario && sub.pesoUnitario > 0 && (
-                                            <Badge className="bg-blue-100 text-[#1E73BE] border-[#1E73BE] text-xs">
-                                              ⚖️ {formatQuantity(sub.pesoUnitario || 0)} kg/unidad
-                                            </Badge>
-                                          )}
-                                          {(!sub.pesoUnitario || sub.pesoUnitario === 0) && (
-                                            <Badge variant="outline" className="text-amber-600 border-amber-400 text-xs">
-                                              {t('configuration.autoMemorizable')}
-                                            </Badge>
-                                          )}
-                                          {(() => {
-                                            // Obtener el valor por kg efectivo (heredado o propio)
-                                            const valorPorKg = obtenerValorPorKg(categoria.nombre, sub.nombre);
-                                            const esHeredado = !sub.valorPorKg;
-                                            
-                                            if (valorPorKg) {
-                                              return (
-                                                <Badge className={esHeredado ? "bg-amber-100 text-amber-700 border-amber-300 text-xs" : "bg-blue-100 text-[#1E73BE] border-[#1E73BE] text-xs"}>
-                                                  {t('configuration.valuePerKgBadge', { value: formatMoney(valorPorKg) })} {esHeredado && t('configuration.inheritedBadge')}
-                                                </Badge>
-                                              );
-                                            }
-                                            return null;
-                                          })()}
-                                          {sub.stockMinimo && sub.stockMinimo > 0 && (
-                                            <Badge className="bg-orange-100 text-orange-700 border-orange-300 text-xs">
-                                              {t('configuration.minStockBadge', { value: sub.stockMinimo })}
-                                            </Badge>
-                                          )}
-                                          {sub.unidadesPermitidas && sub.unidadesPermitidas.length > 0 && (
-                                            <div className="flex items-center gap-1">
-                                              <span className="text-xs text-[#666666]">{t('configuration.allowedUnits')}:</span>
-                                              {sub.unidadesPermitidas.slice(0, 3).map(unidadId => {
-                                                const unidad = unidadesDinamicas.find(u => u.id === unidadId);
-                                                return unidad ? (
-                                                  <Badge key={unidadId} variant="outline" className="text-xs">
-                                                    {unidad.abreviatura}
-                                                  </Badge>
-                                                ) : null;
-                                              })}
-                                              {sub.unidadesPermitidas.length > 3 && (
-                                                <span className="text-xs text-[#666666]">+{sub.unidadesPermitidas.length - 3}</span>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleCrearVarianteDesdeSubcategoria(categoria, sub);
-                                        }}
-                                        className="bg-[#9C27B0] hover:bg-[#7B1FA2] text-white shadow-sm hover:shadow-md transition-all"
-                                        title={t('configuration.variantButton')}
-                                      >
-                                        <Plus className="w-4 h-4 mr-1" />
-                                        {t('configuration.variantButton')}
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleActivaSubcategoria(categoria.id, sub.id);
-                                        }}
-                                        title={sub.activa ? t('configuration.deactivate') : t('configuration.activate')}
-                                      >
-                                        {sub.activa ? <Eye className="w-4 h-4 text-[#4CAF50]" /> : <EyeOff className="w-4 h-4 text-gray-400" />}
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleEditarSubcategoria(categoria.id, sub)}
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleSolicitarEliminarSubcategoria(categoria, sub)}
-                                      >
-                                        <Trash2 className="w-4 h-4 text-[#DC3545]" />
-                                      </Button>
-                                    </div>
-                                  </div>
-
-                                  {/* Variantes de la subcategoría */}
-                                  {sub.variantes && sub.variantes.length > 0 && (
-                                    <div className="mt-3 pl-4 border-l-2 border-[#9C27B0] space-y-2">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-xs font-medium text-[#9C27B0]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                          {t('configuration.variantsCount', { count: sub.variantes.length })}
-                                        </span>
-                                      </div>
-                                      {sub.variantes.map((variante: any) => (
-                                        <div key={variante.id} className="p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3 flex-1">
-                                              <div 
-                                                className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
-                                                style={{ backgroundColor: '#9C27B020', fontSize: '1rem' }}
-                                              >
-                                                {variante.icono || '📦'}
-                                              </div>
-                                              <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                  <span className="font-medium text-sm text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                                    {variante.nombre}
-                                                  </span>
-                                                  {variante.codigo && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                      {variante.codigo}
-                                                    </Badge>
-                                                  )}
-                                                </div>
-                                                {variante.descripcion && (
-                                                  <p className="text-xs text-[#666666] mb-1">{variante.descripcion}</p>
-                                                )}
-                                                <div className="flex flex-wrap gap-2 items-center">
-                                                  {variante.unidad && (() => {
-                                                    const unidadObj = unidadesDinamicas.find(u => u.abreviatura === variante.unidad);
-                                                    return (
-                                                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                                                        {unidadObj?.icono || '📏'} {unidadObj?.nombre || variante.unidad}
-                                                      </Badge>
-                                                    );
-                                                  })()}
-                                                  {variante.pesoUnitario && variante.pesoUnitario > 0 && (
-                                                    <Badge className="bg-purple-100 text-[#9C27B0] border-[#9C27B0] text-xs">
-                                                      ⚖️ {formatQuantity(variante.pesoUnitario || 0)} kg/unidad
-                                                    </Badge>
-                                                  )}
-                                                  {(() => {
-                                                    // Obtener el valor por kg efectivo (heredado o propio)
-                                                    const valorPorKg = obtenerValorPorKg(categoria.nombre, sub.nombre, variante.id);
-                                                    const esHeredado = !variante.valorPorKg;
-                                                    
-                                                    if (valorPorKg) {
-                                                      return (
-                                                        <Badge className={esHeredado ? "bg-amber-100 text-amber-700 border-amber-300 text-xs" : "bg-blue-100 text-[#1E73BE] border-[#1E73BE] text-xs"}>
-                                                          {t('configuration.valuePerKgBadge', { value: Math.round(valorPorKg) })} {esHeredado && t('configuration.inheritedBadge')}
-                                                        </Badge>
-                                                      );
-                                                    }
-                                                    return null;
-                                                  })()}
-                                                  {variante.stockMinimo && variante.stockMinimo > 0 && (
-                                                    <Badge className="bg-orange-100 text-orange-700 border-orange-300 text-xs">
-                                                      {t('configuration.minStockBadge', { value: variante.stockMinimo })}
-                                                    </Badge>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            </div>
-                                            <div className="flex gap-1 ml-2">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEditarVariante(variante, categoria, sub)}
-                                                title={t('configuration.editProduct')}
-                                              >
-                                                <Edit className="w-3 h-3 text-[#9C27B0]" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                  if (window.confirm(t('configuration.confirmDeleteVariant'))) {
-                                                    const categoriasActualizadas = categorias.map(cat => {
-                                                      if (cat.id === categoria.id) {
-                                                        const subcategoriasActualizadas = cat.subcategorias.map(subcat => {
-                                                          if (subcat.id === sub.id) {
-                                                            const variantesActualizadas = (subcat.variantes || []).filter(v => v.id !== variante.id);
-                                                            return { ...subcat, variantes: variantesActualizadas };
-                                                          }
-                                                          return subcat;
-                                                        });
-                                                        return { ...cat, subcategorias: subcategoriasActualizadas };
-                                                      }
-                                                      return cat;
-                                                    });
-                                                    guardarCategorias(categoriasActualizadas);
-                                                    setCategorias(categoriasActualizadas);
-                                                    
-                                                    // Disparar evento de actualización
-                                                    window.dispatchEvent(new Event('categorias-actualizadas'));
-                                                    toast.success(t('configuration.variantDeletedSuccess'));
-                                                  }
-                                                }}
-                                                title={t('common.delete')}
-                                              >
-                                                <Trash2 className="w-3 h-3 text-[#DC3545]" />
-                                              </Button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8">
-                              <p className="text-sm text-[#999999] mb-3">{t('configuration.noSubcategoriesInCategory')}</p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setCategoriaSeleccionada(categoria.id);
-                                  setFormSubcategoria({
-                                    nombre: '',
-                                    descripcion: '',
-                                    icono: categoria.icono,
-                                    activa: true
-                                  });
-                                  setSubcategoriaDialogOpen(true);
-                                }}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                {t('configuration.addSubcategory')}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Programas de Entrada */}
-        <TabsContent value="programas" className="fade-in">
-          <Card className="backdrop-blur-lg bg-white/80 border-2 border-white/60 shadow-2xl rounded-2xl">
+            <Card className='backdrop-blur-lg bg-white/80 border-2 border-white/60 shadow-2xl rounded-2xl'>
             <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#1a4d7a]/5 to-[#2d9561]/5 border-b border-gray-200/50 pb-4">
               <CardTitle className="flex items-center gap-3 text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: '#1a4d7a' }}>
                 <div className="p-2 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl shadow-lg">
@@ -3038,7 +2060,7 @@ export function Configuracion() {
                         {/* Input para mostrar el icono seleccionado */}
                         <div className="flex items-center gap-2">
                           <div className="w-12 h-12 rounded-lg border-2 border-[#E0E0E0] flex items-center justify-center text-2xl bg-white">
-                            {formPrograma.icono || '📦'}
+                            {formPrograma.icono || 'ðŸ“¦'}
                           </div>
                           <Input
                             placeholder={t('configuration.enterEmoji')}
@@ -3054,7 +2076,7 @@ export function Configuracion() {
                           <p className="text-xs text-[#666666] mb-2 font-medium">{t('configuration.selectAnIcon')}</p>
                           <div className="grid grid-cols-8 gap-2">
                             {/* Iconos para programas de entrada */}
-                            {['📦', '🎁', '🛒', '🚚', '📋', '✅', '🏪', '🏭', '🌾', '🥫', '🍽️', '📊', '💼', '🏢', '🏬', '🎯', '📝', '📌', '🔖', '💰', '🤝', '👥', '🌟', '⭐', '✨', '🎉', '🎊', '📮', '📬', '📪', '📫', '🗂️', '📁'].map((icono, index) => (
+                            {['ðŸ“¦', 'ðŸŽ', 'ðŸ›’', 'ðŸšš', 'ðŸ“‹', 'âœ…', 'ðŸª', 'ðŸ­', 'ðŸŒ¾', 'ðŸ¥«', 'ðŸ½ï¸', 'ðŸ“Š', 'ðŸ’¼', 'ðŸ¢', 'ðŸ¬', 'ðŸŽ¯', 'ðŸ“', 'ðŸ“Œ', 'ðŸ”–', 'ðŸ’°', 'ðŸ¤', 'ðŸ‘¥', 'ðŸŒŸ', 'â­', 'âœ¨', 'ðŸŽ‰', 'ðŸŽŠ', 'ðŸ“®', 'ðŸ“¬', 'ðŸ“ª', 'ðŸ“«', 'ðŸ—‚ï¸', 'ðŸ“'].map((icono, index) => (
                               <button
                                 key={`${icono}-${index}`}
                                 type="button"
@@ -3128,7 +2150,7 @@ export function Configuracion() {
                           className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 text-2xl" 
                           style={{ backgroundColor: programa.color + '20' }}
                         >
-                          {programa.icono || '📦'}
+                          {programa.icono || 'ðŸ“¦'}
                         </div>
                         <div>
                           <h3 className="font-medium text-[#333333] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -3203,7 +2225,7 @@ export function Configuracion() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Estadísticas rápidas */}
+              {/* EstadÃ­sticas rÃ¡pidas */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-200 rounded-xl p-4">
                   <div className="flex items-center gap-3">
@@ -3285,7 +2307,7 @@ export function Configuracion() {
                               <span className="text-3xl">{producto.icono}</span>
                             </div>
 
-                            {/* Información del producto */}
+                            {/* InformaciÃ³n del producto */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="flex-1 min-w-0">
@@ -3298,24 +2320,24 @@ export function Configuracion() {
                                     </Badge>
                                   </div>
                                   <p className="text-sm text-[#666666]" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                                    📦 {t('common.code')}: <span className="font-semibold text-[#333333]">{producto.codigo}</span>
+                                    ðŸ“¦ {t('common.code')}: <span className="font-semibold text-[#333333]">{producto.codigo}</span>
                                   </p>
                                 </div>
                               </div>
 
-                              {/* Badges de información */}
+                              {/* Badges de informaciÃ³n */}
                               <div className="flex flex-wrap gap-2 mb-3">
                                 {producto.varianteNombre && (
                                   <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
-                                    ✨ {producto.varianteNombre}
+                                    âœ¨ {producto.varianteNombre}
                                   </Badge>
                                 )}
                                 <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                  ⚖️ {formatQuantity(Number(producto.peso) || 0)} kg / {producto.unidad}
+                                  âš–ï¸ {formatQuantity(Number(producto.peso) || 0)} kg / {producto.unidad}
                                 </Badge>
                                 {producto.pesoUnitario && producto.pesoUnitario > 0 && (
                                   <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
-                                    📏 {t('configuration.prsUnitWeight')}: {formatQuantity(Number(producto.pesoUnitario) || 0)} kg
+                                    ðŸ“ {t('configuration.prsUnitWeight')}: {formatQuantity(Number(producto.pesoUnitario) || 0)} kg
                                   </Badge>
                                 )}
                               </div>
@@ -3335,7 +2357,7 @@ export function Configuracion() {
                               </div>
                             </div>
 
-                            {/* Botones de acción */}
+                            {/* Botones de acciÃ³n */}
                             <div className="flex flex-col gap-2 shrink-0">
                               <Button
                                 variant="outline"
@@ -3350,7 +2372,7 @@ export function Configuracion() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  // Copiar información del producto al portapapeles
+                                  // Copiar informaciÃ³n del producto al portapapeles
                                   const info = t('configuration.prsCopyTemplate', {
                                     nombre: producto.nombre,
                                     codigo: producto.codigo,
@@ -3384,7 +2406,7 @@ export function Configuracion() {
                 )}
               </div>
 
-              {/* Información adicional */}
+              {/* InformaciÃ³n adicional */}
               <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <Info className="w-5 h-5 text-[#2196F3] shrink-0 mt-0.5" />
@@ -3426,7 +2448,7 @@ export function Configuracion() {
             </DialogHeader>
 
             <div className="space-y-6 py-4">
-              {/* Información sobre PRS */}
+              {/* InformaciÃ³n sobre PRS */}
               <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-3">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-[#E91E63] shrink-0 mt-0.5" />
@@ -3438,7 +2460,7 @@ export function Configuracion() {
 
               {/* Campos del formulario en grid */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Código */}
+                {/* CÃ³digo */}
                 <div className="space-y-2">
                   <Label>
                     {t('configuration.prsProductCodeLabel')} <span className="text-red-500">*</span>
@@ -3464,7 +2486,7 @@ export function Configuracion() {
                   />
                 </div>
 
-                {/* Categoría */}
+                {/* CategorÃ­a */}
                 <div className="space-y-2">
                   <Label>
                     {t('common.category')} <span className="text-red-500">*</span>
@@ -3475,7 +2497,7 @@ export function Configuracion() {
                       setFormProductoPRS({ 
                         ...formProductoPRS, 
                         categoria: value,
-                        subcategoria: '', // Reset subcategoría
+                        subcategoria: '', // Reset subcategorÃ­a
                         varianteId: '',
                         varianteNombre: ''
                       });
@@ -3497,7 +2519,7 @@ export function Configuracion() {
                   </Select>
                 </div>
 
-                {/* Subcategoría */}
+                {/* SubcategorÃ­a */}
                 <div className="space-y-2">
                   <Label>
                     {t('common.subcategory')} <span className="text-red-500">*</span>
@@ -3619,7 +2641,7 @@ export function Configuracion() {
                   <p className="text-xs text-[#666666]">
                     {t('configuration.prsWeightPerUnitHelp')}
                   </p>
-                  {/* Información del valor monetario calculado */}
+                  {/* InformaciÃ³n del valor monetario calculado */}
                   {formProductoPRS.categoria && formProductoPRS.peso > 0 && (() => {
                     const categoriaSeleccionada = categorias.find(c => c.nombre === formProductoPRS.categoria);
                     const valorMonetarioBase = categoriaSeleccionada?.valorMonetario || 0;
@@ -3628,7 +2650,7 @@ export function Configuracion() {
                     return valorMonetarioBase > 0 ? (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                         <p className="text-xs text-green-800 flex items-start gap-2">
-                          <span className="text-base">💰</span>
+                          <span className="text-base">ðŸ’°</span>
                           <span>
                             <strong>{t('common.monetaryValue')}:</strong> {t('configuration.prsMonetaryValuePerUnit', { valor: formatMoney(valorUnitario) })}
                             <br />
@@ -3662,14 +2684,14 @@ export function Configuracion() {
                 </div>
               </div>
 
-              {/* Icono y Ubicación */}
+              {/* Icono y UbicaciÃ³n */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Icono */}
                 <div className="space-y-2">
                   <Label>{t('common.icon')}</Label>
                   <div className="flex items-center gap-2">
                     <div className="w-12 h-12 rounded-lg border-2 border-pink-200 flex items-center justify-center text-2xl bg-pink-50">
-                      {formProductoPRS.icono || '📦'}
+                      {formProductoPRS.icono || 'ðŸ“¦'}
                     </div>
                     <Input
                       placeholder={t('configuration.enterEmoji')}
@@ -3684,7 +2706,7 @@ export function Configuracion() {
                   <div className="border-2 border-pink-200 rounded-lg p-3 bg-pink-50 max-h-32 overflow-y-auto">
                     <p className="text-xs text-[#666666] mb-2 font-medium">{t('configuration.selectIcon')}</p>
                     <div className="grid grid-cols-8 gap-2">
-                      {['🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍑', '🍒', '🍈', '🍏', '🥝', '🥭', '🍍', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🥒', '🥬', '🥦', '🍄', '🥜', '🌰', '🍞', '🥖', '🥨', '🥯', '🧀', '🥚', '🍖', '🍗', '🥩', '🍤', '🐟', '🥫', '🍝', '🍚', '🧈', '🥛', '🧃', '☕', '🧊', '📦', '🎁'].map((icono, index) => (
+                      {['ðŸŽ', 'ðŸŠ', 'ðŸ‹', 'ðŸŒ', 'ðŸ‰', 'ðŸ‡', 'ðŸ“', 'ðŸ‘', 'ðŸ’', 'ðŸˆ', 'ðŸ', 'ðŸ¥', 'ðŸ¥­', 'ðŸ', 'ðŸ¥¥', 'ðŸ¥‘', 'ðŸ†', 'ðŸ¥”', 'ðŸ¥•', 'ðŸŒ½', 'ðŸŒ¶ï¸', 'ðŸ¥’', 'ðŸ¥¬', 'ðŸ¥¦', 'ðŸ„', 'ðŸ¥œ', 'ðŸŒ°', 'ðŸž', 'ðŸ¥–', 'ðŸ¥¨', 'ðŸ¥¯', 'ðŸ§€', 'ðŸ¥š', 'ðŸ–', 'ðŸ—', 'ðŸ¥©', 'ðŸ¤', 'ðŸŸ', 'ðŸ¥«', 'ðŸ', 'ðŸš', 'ðŸ§ˆ', 'ðŸ¥›', 'ðŸ§ƒ', 'â˜•', 'ðŸ§Š', 'ðŸ“¦', 'ðŸŽ'].map((icono, index) => (
                         <button
                           key={index}
                           type="button"
@@ -3700,7 +2722,7 @@ export function Configuracion() {
                   </div>
                 </div>
 
-                {/* Ubicación */}
+                {/* UbicaciÃ³n */}
                 <div className="space-y-2">
                   <Label>{t('configuration.prsLocationLabel')}</Label>
                   <Select
@@ -3732,7 +2754,7 @@ export function Configuracion() {
                 </div>
               </div>
 
-              {/* Botones de acción */}
+              {/* Botones de acciÃ³n */}
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <Button
                   variant="outline"
@@ -3762,7 +2784,7 @@ export function Configuracion() {
           <BackupManager />
         </TabsContent>
 
-        {/* Tab: Unités */}
+        {/* Tab: UnitÃ©s */}
         <TabsContent value="unidades" className="fade-in">
           <GestionUnidades />
         </TabsContent>
@@ -3791,6 +2813,271 @@ export function Configuracion() {
 
         {esDesarrollador && (
           <TabsContent value="demos" className="fade-in">
+            {isMobile ? (
+            <div className="space-y-4 pb-28">
+              <div className="overflow-hidden rounded-[28px] border border-white/70 bg-[linear-gradient(180deg,#f5f8f3_0%,#ecf3ec_100%)] shadow-[0_18px_42px_-28px_rgba(15,45,71,0.32)]">
+                <div className="flex flex-col items-center gap-3 px-4 pt-4 text-center">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d6dfd8] bg-white shadow-sm">
+                    <AdaptiveBrandLogo className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-[22px] font-semibold tracking-tight text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      {t('configuration.productCategories')}
+                    </h2>
+                    <p className="mt-1 text-[12px] text-slate-500">{t('configuration.categoriesAndSubcategories')}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t border-white/70 bg-white/80 px-4 py-3 backdrop-blur-xl">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E73BE] text-white shadow-sm">i</span>
+                    {t('configuration.hierarchicalSystemTitle')}
+                  </div>
+                  <p className="mt-2 text-[12px] leading-5 text-slate-700">{t('configuration.hierarchicalSystemDescription')}</p>
+                  <div className="mt-3 rounded-[20px] border border-[#d8e5ef] bg-[#f4f8fc] px-3 py-3 text-[12px] text-slate-700 shadow-inner">
+                    <p className="font-semibold text-slate-800">{t('configuration.fullExampleTitle')}</p>
+                    <p className="mt-1">{t('configuration.fullExampleText')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {!existeProgramaPRS && categorias.some((categoria) => categoria.descripcion?.toLowerCase().includes('prs')) && (
+                <div className="rounded-[22px] border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                      <Package className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-amber-900">{t('configuration.prsNotAvailableTitle')}</p>
+                      <p className="mt-1 text-[12px] leading-5 text-amber-700">{t('configuration.prsNotAvailableDescription')}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-[24px] border border-white/80 bg-white/90 p-3 shadow-[0_16px_38px_-28px_rgba(15,45,71,0.28)] backdrop-blur-xl">
+                <div className="flex items-center gap-2">
+                  <PackageSearch className="h-4 w-4 text-slate-400" />
+                  <Input
+                    value={searchTermCategorias}
+                    onChange={(event) => setSearchTermCategorias(event.target.value)}
+                    placeholder={t('common.search')}
+                    className="h-10 rounded-2xl border-[#dce4ef] bg-white text-[13px]"
+                  />
+                  {searchTermCategorias && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTermCategorias('')}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-[#dce4ef] bg-white text-slate-500 shadow-sm"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">{categoriasVisibles.length} {t('configuration.categories')}</span>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">{categoriasVisibles.reduce((total, categoria) => total + (categoria.subcategorias?.length || 0), 0)} {t('configuration.subcategories')}</span>
+                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">{categoriasVisibles.filter((categoria) => categoria.activa).length} {t('configuration.active')}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {categoriasVisibles
+                  .filter((categoria) => {
+                    const term = searchTermCategorias.trim().toLowerCase();
+                    if (!term) {
+                      return true;
+                    }
+                    return (
+                      categoria.nombre.toLowerCase().includes(term) ||
+                      categoria.descripcion.toLowerCase().includes(term) ||
+                      categoria.subcategorias.some((subcategoria) => `${subcategoria.nombre} ${subcategoria.descripcion || ''}`.toLowerCase().includes(term))
+                    );
+                  })
+                  .map((categoria) => {
+                    const isExpanded = categoriaExpandida === categoria.id;
+                    const subcategoriesCount = categoria.subcategorias.length;
+                    const productCount = categoria.subcategorias.reduce((total, subcategoria) => total + contarProductosPorSubcategoria(categoria.nombre, subcategoria.nombre), 0);
+
+                    return (
+                      <div key={categoria.id} className="overflow-hidden rounded-[22px] border border-white/80 bg-white/90 shadow-[0_14px_34px_-26px_rgba(15,45,71,0.26)] backdrop-blur-xl">
+                        <button
+                          type="button"
+                          onClick={() => toggleCategoria(categoria.id)}
+                          className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-slate-50/90"
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[18px]" style={{ backgroundColor: `${categoria.color}20` }}>
+                            {categoria.icono}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="truncate text-[15px] font-semibold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                {getCategoriaDisplayName(categoria.nombre)}
+                              </h3>
+                              {categoria.descripcion?.toLowerCase().includes('prs') && (
+                                <Badge className="rounded-full bg-purple-600 px-2 py-0 text-[9px] font-semibold text-white shadow-sm">
+                                  {t('configuration.prsBadge')}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-500">{getCategoriaDisplayDescription(categoria.descripcion)}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                              <span>{subcategoriesCount} {t('configuration.subcategories')}</span>
+                              <span>â€¢</span>
+                              <span>{productCount} {t('common.product')}</span>
+                              {categoria.valorPorKg && (
+                                <>
+                                  <span>â€¢</span>
+                                  <span>{t('configuration.valuePerKgBadge', { value: Math.round(categoria.valorPorKg) })}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleEditarCategoria(categoria);
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8e0eb] bg-white text-slate-600 shadow-sm"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleSolicitarEliminarCategoria(categoria);
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#f3d4d8] bg-white text-rose-500 shadow-sm"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50/60 to-white px-3 py-3">
+                            {categoria.subcategorias.length === 0 ? (
+                              <div className="rounded-[18px] border border-dashed border-slate-200 bg-white px-4 py-4 text-center text-[12px] text-slate-500">
+                                {t('configuration.noSubcategoriesInCategory')}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {categoria.subcategorias.map((subcategoria) => {
+                                  const cantidadProductos = contarProductosPorSubcategoria(categoria.nombre, subcategoria.nombre);
+                                  return (
+                                    <div key={subcategoria.id} className="rounded-[18px] border border-[#e7edf4] bg-white px-3 py-3 shadow-sm">
+                                      <div className="flex items-start gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${categoria.color}18` }}>
+                                          <span className="text-[18px]">{subcategoria.icono || categoria.icono}</span>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                              <h4 className="truncate text-[14px] font-semibold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                                {getSubcategoriaDisplayName(subcategoria.nombre)}
+                                              </h4>
+                                              {subcategoria.descripcion && (
+                                                <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-slate-500">
+                                                  {getSubcategoriaDisplayDescription(subcategoria.descripcion)}
+                                                </p>
+                                              )}
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => handleEditarSubcategoria(categoria.id, subcategoria)}
+                                                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#d8e0eb] bg-white text-slate-600 shadow-sm"
+                                              >
+                                                <Edit className="h-3.5 w-3.5" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => handleSolicitarEliminarSubcategoria(categoria, subcategoria)}
+                                                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f3d4d8] bg-white text-rose-500 shadow-sm"
+                                              >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{subcategoria.activa ? t('configuration.active') : t('configuration.inactive')}</span>
+                                            {subcategoria.unidad && (
+                                              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{subcategoria.unidad}</span>
+                                            )}
+                                            {subcategoria.pesoUnitario && subcategoria.pesoUnitario > 0 && (
+                                              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[#1E73BE]">{formatQuantity(subcategoria.pesoUnitario)} kg</span>
+                                            )}
+                                            {cantidadProductos > 0 && (
+                                              <span className="rounded-full bg-[#1E73BE] px-2.5 py-1 text-white">{cantidadProductos} {cantidadProductos === 1 ? t('common.product') : t('configuration.products')}</span>
+                                            )}
+                                            {subcategoria.stockMinimo && subcategoria.stockMinimo > 0 && (
+                                              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">{t('configuration.minStockBadge', { value: subcategoria.stockMinimo })}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+
+              <div className="fixed bottom-5 right-4 z-30 flex flex-col items-end gap-2">
+                {mobileCategoryActionsOpen && (
+                  <div className="flex flex-col items-end gap-2 rounded-[22px] border border-white/80 bg-white/95 p-2 shadow-[0_18px_42px_-24px_rgba(15,45,71,0.36)] backdrop-blur-xl">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const categoryTarget = categoriaExpandida || categoriasVisibles[0]?.id || '';
+                        if (categoryTarget) {
+                          const categoryTargetObj = categorias.find((categoria) => categoria.id === categoryTarget);
+                          setCategoriaSeleccionada(categoryTarget);
+                          if (categoryTargetObj?.icono) {
+                            setFormSubcategoria((previous) => ({ ...previous, icono: categoryTargetObj.icono }));
+                          }
+                        }
+                        setMobileCategoryActionsOpen(false);
+                        setSubcategoriaDialogOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#d8e0eb] bg-white px-3 py-2 text-[12px] font-semibold text-slate-700 shadow-sm"
+                    >
+                      <Plus className="h-4 w-4 text-[#1E73BE]" />
+                      {t('configuration.newSubcategory')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileCategoryActionsOpen(false);
+                        setCategoriaDialogOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#d8e0eb] bg-white px-3 py-2 text-[12px] font-semibold text-slate-700 shadow-sm"
+                    >
+                      <Plus className="h-4 w-4 text-[#2d9561]" />
+                      {t('configuration.newCategory')}
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMobileCategoryActionsOpen((previous) => !previous)}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#1E73BE] to-[#2d9561] text-white shadow-[0_18px_36px_-18px_rgba(30,115,190,0.65)] transition-transform hover:scale-105"
+                >
+                  {mobileCategoryActionsOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
+                </button>
+              </div>
+            </div>
+          ) : (
             <div className="space-y-6">
               <Card className="backdrop-blur-lg bg-white/85 border-2 border-white/60 shadow-2xl rounded-2xl overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-[#1a4d7a]/5 to-[#2d9561]/5 border-b border-gray-200/50">
@@ -3804,7 +3091,7 @@ export function Configuracion() {
                 <CardContent className="space-y-6 p-6">
                   <div className="rounded-2xl border border-[#1a4d7a]/10 bg-gradient-to-br from-[#f8fbff] to-[#eef8f2] p-5">
                     <p className="text-sm text-gray-700 leading-relaxed" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      Charge un jeu de données réaliste pour bénévoles, donateurs, fournisseurs, organismes, chauffeurs, camions et contacts de démonstration par département. Tu peux maintenant définir manuellement la quantité à générer pour chaque catégorie, de 0 à 20 éléments. La suppression retire uniquement les enregistrements balisés QA-DEMO.
+                      Charge un jeu de donnÃ©es rÃ©aliste pour bÃ©nÃ©voles, donateurs, fournisseurs, organismes, chauffeurs, camions et contacts de dÃ©monstration par dÃ©partement. Tu peux maintenant dÃ©finir manuellement la quantitÃ© Ã  gÃ©nÃ©rer pour chaque catÃ©gorie, de 0 Ã  20 Ã©lÃ©ments. La suppression retire uniquement les enregistrements balisÃ©s QA-DEMO.
                     </p>
                   </div>
 
@@ -3833,18 +3120,18 @@ export function Configuracion() {
 
                   <div className="rounded-2xl border border-[#2d9561]/15 bg-[#f7fcf8] p-4">
                     <p className="text-xs text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      Le chargement réinitialise toujours le jeu QA-DEMO avant de regénérer les catégories selon les quantités indiquées.
+                      Le chargement rÃ©initialise toujours le jeu QA-DEMO avant de regÃ©nÃ©rer les catÃ©gories selon les quantitÃ©s indiquÃ©es.
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8 gap-4">
                     {[
-                      { label: 'Bénévoles', value: resumenEjemplos.benevoles },
+                      { label: 'BÃ©nÃ©voles', value: resumenEjemplos.benevoles },
                       { label: 'Donateurs', value: resumenEjemplos.donateurs },
                       { label: 'Fournisseurs', value: resumenEjemplos.fournisseurs },
                       { label: 'Comptoir', value: resumenEjemplos.comptoir },
-                      { label: 'Contacts départements', value: resumenEjemplos.contactosDepartamentos },
-                      { label: 'Départements couverts', value: resumenEjemplos.departamentosCubiertos },
+                      { label: 'Contacts dÃ©partements', value: resumenEjemplos.contactosDepartamentos },
+                      { label: 'DÃ©partements couverts', value: resumenEjemplos.departamentosCubiertos },
                       { label: 'Chauffeurs', value: resumenEjemplos.chauffeurs },
                       { label: 'Camions', value: resumenEjemplos.camiones },
                       { label: 'Organismes', value: resumenEjemplos.organismos },
@@ -3889,7 +3176,7 @@ export function Configuracion() {
                       style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
                     >
                       <RotateCcw className="w-4 h-4 mr-2" />
-                      Actualiser le résumé
+                      Actualiser le rÃ©sumÃ©
                     </Button>
                     <Button
                       onClick={() => ejecutarAccionEjemplos('limpiar')}
@@ -3905,8 +3192,9 @@ export function Configuracion() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        )}
+          )}
+        </TabsContent>
+          )}
 
         {/* Tab: Adresses et Quartiers */}
         {esDesarrollador && (
@@ -3915,13 +3203,13 @@ export function Configuracion() {
           </TabsContent>
         )}
 
-        {/* Tab: Journal d'Activités */}
+        {/* Tab: Journal d'ActivitÃ©s */}
         <TabsContent value="actividades" className="fade-in">
           <RegistroActividades />
         </TabsContent>
       </Tabs>
 
-      {/* Dialog Eliminar Categoría */}
+      {/* Dialog Eliminar CategorÃ­a */}
       <Dialog open={dialogEliminarCategoria} onOpenChange={setDialogEliminarCategoria}>
         <DialogContent className="max-w-md" aria-describedby="eliminar-categoria-description">
           <DialogHeader>
@@ -3961,7 +3249,7 @@ export function Configuracion() {
                 </div>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-[#856404] mb-2">⚠️ {t('common.warning')}:</p>
+                  <p className="text-sm font-medium text-[#856404] mb-2">âš ï¸ {t('common.warning')}:</p>
                   <ul className="text-sm text-[#856404] space-y-1 list-disc pl-5">
                     <li>{t('users.cannotUndo')}</li>
                     <li>{t('configuration.allSubcategoriesWillBeDeleted')}</li>
@@ -3991,7 +3279,7 @@ export function Configuracion() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Eliminar Subcategoría */}
+      {/* Dialog Eliminar SubcategorÃ­a */}
       <Dialog open={dialogEliminarSubcategoria} onOpenChange={setDialogEliminarSubcategoria}>
         <DialogContent className="max-w-md" aria-describedby="eliminar-subcategoria-description">
           <DialogHeader>
@@ -4035,7 +3323,7 @@ export function Configuracion() {
                 </div>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-[#856404] mb-2">⚠️ {t('common.warning')}:</p>
+                  <p className="text-sm font-medium text-[#856404] mb-2">âš ï¸ {t('common.warning')}:</p>
                   <ul className="text-sm text-[#856404] space-y-1 list-disc pl-5">
                     <li>{t('users.cannotUndo')}</li>
                     <li>{t('configuration.productsWillLoseSubcategory')}</li>
@@ -4084,10 +3372,10 @@ export function Configuracion() {
             {productoBase && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-[#1E73BE] mb-2">
-                  📦 {t('configuration.baseProduct')}:
+                  ðŸ“¦ {t('configuration.baseProduct')}:
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="text-2xl">{productoBase.icono || '📦'}</div>
+                  <div className="text-2xl">{productoBase.icono || 'ðŸ“¦'}</div>
                   <div>
                     <p className="font-medium text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                       {productoBase.nombre}
@@ -4100,7 +3388,7 @@ export function Configuracion() {
                         {productoBase.categoria} - {productoBase.subcategoria}
                       </span>
                       <Badge variant="outline" className="text-xs bg-[#4CAF50] text-white border-[#4CAF50]">
-                        📏 {productoBase.unidad}
+                        ðŸ“ {productoBase.unidad}
                       </Badge>
                     </div>
                   </div>
@@ -4108,7 +3396,7 @@ export function Configuracion() {
               </div>
             )}
 
-            {/* Código */}
+            {/* CÃ³digo */}
             <div className="space-y-2">
               <Label htmlFor="variantCodigo" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
                 {t('common.code')} *
@@ -4136,7 +3424,7 @@ export function Configuracion() {
               />
             </div>
 
-            {/* Categoría y Subcategoría */}
+            {/* CategorÃ­a y SubcategorÃ­a */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
@@ -4187,7 +3475,7 @@ export function Configuracion() {
             {/* Unidad */}
             <div className="space-y-2">
               <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
-                📏 {t('common.unit')} *
+                ðŸ“ {t('common.unit')} *
               </Label>
               <Select
                 value={formProducto.unidad}
@@ -4205,11 +3493,11 @@ export function Configuracion() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-purple-600 flex items-center gap-1">
-                ✏️ {t('configuration.variantUnitEditable')}
+                âœï¸ {t('configuration.variantUnitEditable')}
               </p>
               {productoBase && productoBase.unidad === formProducto.unidad && (
                 <p className="text-xs text-[#4CAF50] flex items-center gap-1">
-                  ✓ {t('configuration.copiedFromBase')}
+                  âœ“ {t('configuration.copiedFromBase')}
                 </p>
               )}
             </div>
@@ -4222,12 +3510,12 @@ export function Configuracion() {
               <Input
                 value={formProducto.icono}
                 onChange={(e) => setFormProducto({ ...formProducto, icono: e.target.value })}
-                placeholder="📦"
+                placeholder="ðŸ“¦"
                 className="text-2xl text-center"
               />
             </div>
 
-            {/* Stock y Ubicación */}
+            {/* Stock y UbicaciÃ³n */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}>
@@ -4305,7 +3593,7 @@ export function Configuracion() {
             </div>
           </div>
 
-          {/* Botones de acción */}
+          {/* Botones de acciÃ³n */}
           <div className="app-dialog-form-footer">
             <Button 
               variant="outline" 
@@ -4330,7 +3618,7 @@ export function Configuracion() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Crear Variante desde Subcategoría */}
+      {/* Dialog Crear Variante desde SubcategorÃ­a */}
       <Dialog open={varianteSubcategoriaDialogOpen} onOpenChange={(open) => {
         setVarianteSubcategoriaDialogOpen(open);
         if (!open) {
@@ -4342,7 +3630,7 @@ export function Configuracion() {
           <DialogHeader className="app-dialog-form-header">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9C27B0] to-[#7B1FA2] flex items-center justify-center text-white text-2xl">
-                ✨
+                âœ¨
               </div>
               <div>
                 <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }} className="text-xl">
@@ -4358,7 +3646,7 @@ export function Configuracion() {
           </DialogHeader>
 
           <div className="app-dialog-form-body space-y-6">
-            {/* Sección: Información Básica */}
+            {/* SecciÃ³n: InformaciÃ³n BÃ¡sica */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2">
                 <div className="w-1 h-5 bg-[#9C27B0] rounded-full"></div>
@@ -4382,10 +3670,10 @@ export function Configuracion() {
                   />
                 </div>
 
-                {/* Código */}
+                {/* CÃ³digo */}
                 <div className="space-y-2">
                   <Label className="text-sm flex items-center gap-1">
-                    <span className="text-[#666666]">📋</span> {t('configuration.skuCodeLabel')}
+                    <span className="text-[#666666]">ðŸ“‹</span> {t('configuration.skuCodeLabel')}
                     <span className="text-xs text-[#999999] font-normal">({t('common.optional').toLowerCase()})</span>
                   </Label>
                   <Input
@@ -4419,7 +3707,7 @@ export function Configuracion() {
               <div id="iconPickerVarianteConfig" className="hidden p-4 bg-[#F4F4F4] rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
                 <p className="text-xs text-[#666666] mb-3">{t('configuration.selectVariantIconHelp')}</p>
                 <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50 p-2">
-                  <p className="text-xs font-semibold text-[#7B1FA2] mb-2">✨ Icônes recommandées</p>
+                  <p className="text-xs font-semibold text-[#7B1FA2] mb-2">âœ¨ IcÃ´nes recommandÃ©es</p>
                   <div className="grid grid-cols-8 gap-1">
                     {obtenerIconosRecomendadosPorFamilia(`${formVarianteSubcategoria.nombre || ''} ${subcategoriaBase?.subcategoria?.nombre || ''} ${subcategoriaBase?.categoria?.nombre || ''}`).slice(0, 16).map((icono) => (
                       <button
@@ -4440,7 +3728,7 @@ export function Configuracion() {
                 </div>
                 
                 <div className="mb-4">
-                  <p className="text-xs font-semibold text-[#1a4d7a] mb-2">🍽️ {t('configuration.foodIconsSection')}</p>
+                  <p className="text-xs font-semibold text-[#1a4d7a] mb-2">ðŸ½ï¸ {t('configuration.foodIconsSection')}</p>
                   {ICONOS_SECCIONES_ALIMENTARIAS.map((seccion) => (
                     <div key={seccion.id} className="mb-2">
                       <p className="text-[10px] text-gray-500 mb-1">{t(seccion.labelKey)}</p>
@@ -4453,11 +3741,11 @@ export function Configuracion() {
                   ))}
                 </div>
                 
-                {/* Sección: No Alimentarios */}
+                {/* SecciÃ³n: No Alimentarios */}
                 <div>
-                  <p className="text-xs font-semibold text-[#2d9561] mb-2">🧴 {t('configuration.nonFoodIconsSection')}</p>
+                  <p className="text-xs font-semibold text-[#2d9561] mb-2">ðŸ§´ {t('configuration.nonFoodIconsSection')}</p>
                   <div className="grid grid-cols-8 gap-1">
-                    {['🧴', '🧼', '🪥', '🧻', '🪒', '💊', '🩹', '🧹', '🧺', '🪣', '🧽', '🍼', '👶', '🧸', '👕', '👖', '🧥', '👟', '🧦', '🎒', '📚', '📓', '✏️', '🖊️', '📏', '✂️', '🖍️', '🐕', '🐈', '🦴', '🎁', '💝', '🔋', '💡', '🏥', '🕯️', '🧰', '🌡️'].map(icono => (
+                    {['ðŸ§´', 'ðŸ§¼', 'ðŸª¥', 'ðŸ§»', 'ðŸª’', 'ðŸ’Š', 'ðŸ©¹', 'ðŸ§¹', 'ðŸ§º', 'ðŸª£', 'ðŸ§½', 'ðŸ¼', 'ðŸ‘¶', 'ðŸ§¸', 'ðŸ‘•', 'ðŸ‘–', 'ðŸ§¥', 'ðŸ‘Ÿ', 'ðŸ§¦', 'ðŸŽ’', 'ðŸ“š', 'ðŸ““', 'âœï¸', 'ðŸ–Šï¸', 'ðŸ“', 'âœ‚ï¸', 'ðŸ–ï¸', 'ðŸ•', 'ðŸˆ', 'ðŸ¦´', 'ðŸŽ', 'ðŸ’', 'ðŸ”‹', 'ðŸ’¡', 'ðŸ¥', 'ðŸ•¯ï¸', 'ðŸ§°', 'ðŸŒ¡ï¸'].map(icono => (
                       <button
                         key={icono}
                         type="button"
@@ -4477,7 +3765,7 @@ export function Configuracion() {
               </div>
             </div>
 
-            {/* Sección: Especificaciones Técnicas */}
+            {/* SecciÃ³n: Especificaciones TÃ©cnicas */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2">
                 <div className="w-1 h-5 bg-[#1E73BE] rounded-full"></div>
@@ -4490,7 +3778,7 @@ export function Configuracion() {
                 {/* Unidad */}
                 <div className="space-y-2">
                   <Label className="text-sm flex items-center gap-1">
-                    <span>📏</span> {t('common.unit')}
+                    <span>ðŸ“</span> {t('common.unit')}
                   </Label>
                   <Select 
                     value={formVarianteSubcategoria.unidad} 
@@ -4518,7 +3806,7 @@ export function Configuracion() {
                 {/* Peso Unitario */}
                 <div className="space-y-2">
                   <Label className="text-sm flex items-center gap-1">
-                    <span>⚖️</span> {t('configuration.unitWeight')} (kg)
+                    <span>âš–ï¸</span> {t('configuration.unitWeight')} (kg)
                   </Label>
                   <Input
                     type="number"
@@ -4537,7 +3825,7 @@ export function Configuracion() {
                 {/* Valor por Kg */}
                 <div className="space-y-2">
                   <Label className="text-sm flex items-center gap-1">
-                    <span>💰</span> {t('configuration.valuePerKg')} ($)
+                    <span>ðŸ’°</span> {t('configuration.valuePerKg')} ($)
                   </Label>
                   <Input
                     type="number"
@@ -4553,10 +3841,10 @@ export function Configuracion() {
                   </p>
                 </div>
 
-                {/* Stock Mínimo */}
+                {/* Stock MÃ­nimo */}
                 <div className="space-y-2">
                   <Label className="text-sm flex items-center gap-1">
-                    <span>📊</span> {t('configuration.minimumStock')}
+                    <span>ðŸ“Š</span> {t('configuration.minimumStock')}
                   </Label>
                   <Input
                     type="number"
@@ -4575,7 +3863,7 @@ export function Configuracion() {
               </div>
             </div>
 
-            {/* Sección: Información Adicional */}
+            {/* SecciÃ³n: InformaciÃ³n Adicional */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2">
                 <div className="w-1 h-5 bg-[#4CAF50] rounded-full"></div>
@@ -4586,7 +3874,7 @@ export function Configuracion() {
               
               <div className="space-y-2">
                 <Label className="text-sm flex items-center gap-1">
-                  <span>📝</span> {t('configuration.description')}
+                  <span>ðŸ“</span> {t('configuration.description')}
                   <span className="text-xs text-[#999999] font-normal">({t('common.optional').toLowerCase()})</span>
                 </Label>
                 <Input
@@ -4602,7 +3890,7 @@ export function Configuracion() {
             <div className="p-5 bg-gradient-to-br from-purple-50 via-white to-purple-50 rounded-xl border-2 border-[#9C27B0] border-opacity-20 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-medium text-[#9C27B0] uppercase tracking-wide" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  👁️ {t('configuration.preview')}
+                  ðŸ‘ï¸ {t('configuration.preview')}
                 </p>
                 <Badge variant="outline" className="text-xs bg-white">{t('configuration.liveBadge')}</Badge>
               </div>
@@ -4613,7 +3901,7 @@ export function Configuracion() {
                   {formVarianteSubcategoria.icono}
                 </div>
                 
-                {/* Información */}
+                {/* InformaciÃ³n */}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-semibold text-lg text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -4627,7 +3915,7 @@ export function Configuracion() {
                   </div>
                   
                   <p className="text-sm text-[#666666] mt-1 flex items-center gap-1">
-                    <span className="text-[#9C27B0]">↳</span>
+                    <span className="text-[#9C27B0]">â†³</span>
                     {subcategoriaBase?.subcategoria.nombre}
                   </p>
                   
@@ -4640,19 +3928,19 @@ export function Configuracion() {
                   <div className="flex items-center gap-4 mt-3 flex-wrap">
                     {formVarianteSubcategoria.unidad && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F4F4] rounded-lg">
-                        <span className="text-sm">📏</span>
+                        <span className="text-sm">ðŸ“</span>
                         <span className="text-sm font-medium">{formVarianteSubcategoria.unidad}</span>
                       </div>
                     )}
                     {formVarianteSubcategoria.pesoUnitario && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F4F4] rounded-lg">
-                        <span className="text-sm">⚖️</span>
+                        <span className="text-sm">âš–ï¸</span>
                         <span className="text-sm font-medium">{formatQuantity(Number(formVarianteSubcategoria.pesoUnitario) || 0)} kg</span>
                       </div>
                     )}
                     {formVarianteSubcategoria.valorPorKg && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F4F4] rounded-lg">
-                        <span className="text-sm">💰</span>
+                        <span className="text-sm">ðŸ’°</span>
                         <span className="text-sm font-medium">${formVarianteSubcategoria.valorPorKg}/kg</span>
                       </div>
                     )}
@@ -4675,7 +3963,7 @@ export function Configuracion() {
                   setFormVarianteSubcategoria({
                     nombre: '',
                     codigo: '',
-                    icono: '📦',
+                    icono: 'ðŸ“¦',
                     pesoUnitario: '',
                     valorPorKg: '',
                     descripcion: '',
@@ -4706,3 +3994,4 @@ export function Configuracion() {
     </div>
   );
 }
+
