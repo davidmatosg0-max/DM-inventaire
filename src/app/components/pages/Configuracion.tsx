@@ -1997,199 +1997,419 @@ export function Configuracion() {
           </ModuleControlSurfaceTabs>
         </ModuleControlSurface>
 
-        {/* Tab: CategorÃ­as y SubcategorÃ­as */}
+        {/* Tab: Catégories et Sous-catégories */}
         <TabsContent value="categorias" className="fade-in">
-            <Card className='backdrop-blur-lg bg-white/80 border-2 border-white/60 shadow-2xl rounded-2xl'>
-            <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-[#1a4d7a]/5 to-[#2d9561]/5 border-b border-gray-200/50 pb-4">
+          <Card className="backdrop-blur-lg bg-white/80 border-2 border-white/60 shadow-2xl rounded-2xl overflow-hidden">
+            <CardHeader className="flex flex-col gap-4 bg-gradient-to-r from-[#1a4d7a]/5 to-[#2d9561]/5 border-b border-gray-200/50 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-3 text-2xl" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: '#1a4d7a' }}>
                 <div className="p-2 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl shadow-lg">
-                  <Inbox className="w-6 h-6 text-white" />
+                  <FolderTree className="w-6 h-6 text-white" />
                 </div>
-                {t('configuration.entryPrograms')}
+                {t('configuration.categoriesAndSubcategories')}
               </CardTitle>
-              <Dialog open={programaDialogOpen} onOpenChange={(open) => {
-                setProgramaDialogOpen(open);
-                if (!open) resetFormPrograma();
-              }}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] hover:from-[#2d9561] hover:to-[#1a4d7a] text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl"
-                    style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t('configuration.newProgram')}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent aria-describedby="programa-form-description">
-                  <DialogHeader>
-                    <DialogTitle style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-                      {editandoPrograma ? t('configuration.editProgram') : t('configuration.newProgramForm')}
-                    </DialogTitle>
-                    <DialogDescription id="programa-form-description">
-                      {editandoPrograma ? t('configuration.modifyProgramData') : t('configuration.completeProgramInfo')}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label>{t('configuration.programName')}</Label>
-                      <Input
-                        placeholder={t('configuration.programNamePlaceholder')}
-                        value={formPrograma.nombre || ''}
-                        onChange={(e) => setFormPrograma({ ...formPrograma, nombre: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t('configuration.programCode')}</Label>
-                      <Input
-                        placeholder={t('configuration.programCodePlaceholder')}
-                        value={formPrograma.codigo || ''}
-                        onChange={(e) => setFormPrograma({ ...formPrograma, codigo: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t('configuration.description')}</Label>
-                      <Textarea
-                        placeholder={t('configuration.descriptionPlaceholder')}
-                        value={formPrograma.descripcion || ''}
-                        onChange={(e) => setFormPrograma({ ...formPrograma, descripcion: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t('configuration.icon')}</Label>
-                      <div className="space-y-3">
-                        {/* Input para mostrar el icono seleccionado */}
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-12 rounded-lg border-2 border-[#E0E0E0] flex items-center justify-center text-2xl bg-white">
-                            {formPrograma.icono || 'ðŸ“¦'}
-                          </div>
-                          <Input
-                            placeholder={t('configuration.enterEmoji')}
-                            value={formPrograma.icono || ''}
-                            onChange={(e) => setFormPrograma({ ...formPrograma, icono: e.target.value })}
-                            maxLength={2}
-                            className="flex-1"
-                          />
-                        </div>
-                        
-                        {/* Selector visual de iconos */}
-                        <div className="border-2 border-[#E0E0E0] rounded-lg p-3 bg-[#FAFAFA] max-h-48 overflow-y-auto">
-                          <p className="text-xs text-[#666666] mb-2 font-medium">{t('configuration.selectAnIcon')}</p>
-                          <div className="grid grid-cols-8 gap-2">
-                            {/* Iconos para programas de entrada */}
-                            {['ðŸ“¦', 'ðŸŽ', 'ðŸ›’', 'ðŸšš', 'ðŸ“‹', 'âœ…', 'ðŸª', 'ðŸ­', 'ðŸŒ¾', 'ðŸ¥«', 'ðŸ½ï¸', 'ðŸ“Š', 'ðŸ’¼', 'ðŸ¢', 'ðŸ¬', 'ðŸŽ¯', 'ðŸ“', 'ðŸ“Œ', 'ðŸ”–', 'ðŸ’°', 'ðŸ¤', 'ðŸ‘¥', 'ðŸŒŸ', 'â­', 'âœ¨', 'ðŸŽ‰', 'ðŸŽŠ', 'ðŸ“®', 'ðŸ“¬', 'ðŸ“ª', 'ðŸ“«', 'ðŸ—‚ï¸', 'ðŸ“'].map((icono, index) => (
-                              <button
-                                key={`${icono}-${index}`}
-                                type="button"
-                                onClick={() => setFormPrograma({ ...formPrograma, icono })}
-                                className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-2xl transition-all hover:border-[#1E73BE] hover:bg-white ${
-                                  formPrograma.icono === icono 
-                                    ? 'border-[#1E73BE] bg-blue-50' 
-                                    : 'border-[#E0E0E0] bg-white'
-                                }`}
-                              >
-                                {icono}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t('configuration.identificationColor')}</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={formPrograma.color || '#1E73BE'}
-                          onChange={(e) => setFormPrograma({ ...formPrograma, color: e.target.value })}
-                          className="w-20 h-10"
-                        />
-                        <Input
-                          type="text"
-                          value={formPrograma.color || ''}
-                          onChange={(e) => setFormPrograma({ ...formPrograma, color: e.target.value })}
-                          placeholder="#1E73BE"
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t('configuration.status')}</Label>
-                      <Select value={formPrograma.activo ? 'activo' : 'inactivo'} onValueChange={(value: any) => setFormPrograma({ ...formPrograma, activo: value === 'activo' })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="activo">{t('configuration.active')}</SelectItem>
-                          <SelectItem value="inactivo">{t('configuration.inactive')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button variant="outline" onClick={() => {
-                        setProgramaDialogOpen(false);
-                        resetFormPrograma();
-                      }}>
-                        {t('common.cancel')}
-                      </Button>
-                      <Button onClick={handleGuardarPrograma} className="bg-[#4CAF50] hover:bg-[#45a049]">
-                        <Save className="w-4 h-4 mr-2" />
-                        {editandoPrograma ? t('common.update') : t('common.save')}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => setCategoriaDialogOpen(true)}
+                  className="bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] hover:from-[#2d9561] hover:to-[#1a4d7a] text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl"
+                  style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('configuration.newCategory')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const categoryTarget = categoriaExpandida || categoriasVisibles[0]?.id || '';
+                    if (categoryTarget) {
+                      const categoryTargetObj = categorias.find((categoria) => categoria.id === categoryTarget);
+                      setCategoriaSeleccionada(categoryTarget);
+                      if (categoryTargetObj?.icono) {
+                        setFormSubcategoria((previous) => ({ ...previous, icono: categoryTargetObj.icono }));
+                      }
+                    }
+                    setSubcategoriaDialogOpen(true);
+                  }}
+                  className="rounded-xl border-[#1a4d7a]/20 text-[#1a4d7a] hover:bg-[#1a4d7a]/5"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('configuration.newSubcategory')}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {programasEntrada.map(programa => (
-                  <div key={programa.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-start gap-3">
-                        <div 
-                          className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 text-2xl" 
-                          style={{ backgroundColor: programa.color + '20' }}
-                        >
-                          {programa.icono || 'ðŸ“¦'}
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-[#333333] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                            {programa.nombre} ({programa.codigo})
-                          </h3>
-                          <p className="text-sm text-[#666666] mb-2">{getProgramaDisplayDescription(programa.descripcion)}</p>
-                          <div className="flex gap-2 items-center">
-                            <Badge className={programa.activo ? 'bg-[#4CAF50] hover:bg-[#4CAF50]' : 'bg-[#DC3545] hover:bg-[#DC3545]'}>
-                              {programa.activo ? t('configuration.active') : t('configuration.inactive')}
-                            </Badge>
-                            <span className="text-xs text-[#999999]">
-                              Tipo de entrada: <code className="bg-gray-100 px-2 py-0.5 rounded">{programa.codigo.toLowerCase()}</code>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditarPrograma(programa)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEliminarPrograma(programa.id)}
-                          className="text-[#DC3545] border-[#DC3545] hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex-1">
+                    <Input
+                      value={searchTermCategorias}
+                      onChange={(event) => setSearchTermCategorias(event.target.value)}
+                      placeholder={t('common.search')}
+                      className="h-10 rounded-2xl border-[#dce4ef] bg-white text-[13px]"
+                    />
                   </div>
-                ))}
+                  {searchTermCategorias && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setSearchTermCategorias('')}
+                      className="rounded-xl border-[#dce4ef] text-slate-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                    {categoriasVisibles.length} {t('configuration.categories')}
+                  </span>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                    {categoriasVisibles.reduce((total, categoria) => total + (categoria.subcategorias?.length || 0), 0)} {t('configuration.subcategories')}
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                    {categoriasVisibles.filter((categoria) => categoria.activa).length} {t('configuration.active')}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {categoriasVisibles
+                    .filter((categoria) => {
+                      const term = searchTermCategorias.trim().toLowerCase();
+                      if (!term) {
+                        return true;
+                      }
+                      return (
+                        categoria.nombre.toLowerCase().includes(term) ||
+                        categoria.descripcion.toLowerCase().includes(term) ||
+                        categoria.subcategorias.some((subcategoria) => `${subcategoria.nombre} ${subcategoria.descripcion || ''}`.toLowerCase().includes(term))
+                      );
+                    })
+                    .map((categoria) => {
+                      const isExpanded = categoriaExpandida === categoria.id;
+                      const subcategoriesCount = categoria.subcategorias.length;
+                      const productCount = categoria.subcategorias.reduce((total, subcategoria) => total + contarProductosPorSubcategoria(categoria.nombre, subcategoria.nombre), 0);
+
+                      return (
+                        <div key={categoria.id} className="overflow-hidden rounded-[22px] border border-white/80 bg-white/90 shadow-[0_14px_34px_-26px_rgba(15,45,71,0.26)] backdrop-blur-xl">
+                          <div className="flex w-full items-center gap-3 px-3 py-3 text-left">
+                            <button
+                              type="button"
+                              onClick={() => toggleCategoria(categoria.id)}
+                              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                            >
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[18px]" style={{ backgroundColor: `${categoria.color}20` }}>
+                                {categoria.icono}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="truncate text-[15px] font-semibold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                    {getCategoriaDisplayName(categoria.nombre)}
+                                  </h3>
+                                  {categoria.descripcion?.toLowerCase().includes('prs') && (
+                                    <Badge className="rounded-full bg-purple-600 px-2 py-0 text-[9px] font-semibold text-white shadow-sm">
+                                      {t('configuration.prsBadge')}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-500">{getCategoriaDisplayDescription(categoria.descripcion)}</p>
+                                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                  <span>{subcategoriesCount} {t('configuration.subcategories')}</span>
+                                  <span>•</span>
+                                  <span>{productCount} {t('common.product')}</span>
+                                </div>
+                              </div>
+                            </button>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditarCategoria(categoria)}
+                                className="h-9 w-9 rounded-full border-[#d8e0eb] bg-white p-0 text-slate-600 shadow-sm"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSolicitarEliminarCategoria(categoria)}
+                                className="h-9 w-9 rounded-full border-[#f3d4d8] bg-white p-0 text-rose-500 shadow-sm"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              {isExpanded ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
+                            </div>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50/60 to-white px-3 py-3">
+                              {categoria.subcategorias.length === 0 ? (
+                                <div className="rounded-[18px] border border-dashed border-slate-200 bg-white px-4 py-4 text-center text-[12px] text-slate-500">
+                                  {t('configuration.noSubcategoriesInCategory')}
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {categoria.subcategorias.map((subcategoria) => {
+                                    const cantidadProductos = contarProductosPorSubcategoria(categoria.nombre, subcategoria.nombre);
+                                    return (
+                                      <div key={subcategoria.id} className="rounded-[18px] border border-[#e7edf4] bg-white px-3 py-3 shadow-sm">
+                                        <div className="flex items-start gap-3">
+                                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${categoria.color}18` }}>
+                                            <span className="text-[18px]">{subcategoria.icono || categoria.icono}</span>
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <div className="flex items-start justify-between gap-2">
+                                              <div className="min-w-0">
+                                                <h4 className="truncate text-[14px] font-semibold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                                  {getSubcategoriaDisplayName(subcategoria.nombre)}
+                                                </h4>
+                                                {subcategoria.descripcion && (
+                                                  <p className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-slate-500">
+                                                    {getSubcategoriaDisplayDescription(subcategoria.descripcion)}
+                                                  </p>
+                                                )}
+                                              </div>
+                                              <div className="flex shrink-0 items-center gap-1">
+                                                <Button
+                                                  type="button"
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => handleEditarSubcategoria(categoria.id, subcategoria)}
+                                                  className="h-8 w-8 rounded-full border-[#d8e0eb] bg-white p-0 text-slate-600 shadow-sm"
+                                                >
+                                                  <Edit className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Button
+                                                  type="button"
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => handleSolicitarEliminarSubcategoria(categoria, subcategoria)}
+                                                  className="h-8 w-8 rounded-full border-[#f3d4d8] bg-white p-0 text-rose-500 shadow-sm"
+                                                >
+                                                  <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                              </div>
+                                            </div>
+
+                                            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{subcategoria.activa ? t('configuration.active') : t('configuration.inactive')}</span>
+                                              {subcategoria.unidad && (
+                                                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{subcategoria.unidad}</span>
+                                              )}
+                                              {subcategoria.pesoUnitario && subcategoria.pesoUnitario > 0 && (
+                                                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[#1E73BE]">{formatQuantity(subcategoria.pesoUnitario)} kg</span>
+                                              )}
+                                              {cantidadProductos > 0 && (
+                                                <span className="rounded-full bg-[#1E73BE] px-2.5 py-1 text-white">{cantidadProductos} {cantidadProductos === 1 ? t('common.product') : t('configuration.products')}</span>
+                                              )}
+                                              {subcategoria.stockMinimo && subcategoria.stockMinimo > 0 && (
+                                                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">{t('configuration.minStockBadge', { value: subcategoria.stockMinimo })}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab: Programmes d'entrée */}
+        <TabsContent value="programas" className="fade-in">
+          <Card className="backdrop-blur-lg bg-white/80 border-2 border-white/60 shadow-2xl rounded-2xl overflow-hidden">
+            <CardHeader className="flex flex-col gap-4 bg-gradient-to-r from-[#1a4d7a]/5 to-[#2d9561]/5 border-b border-gray-200/50 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-3 text-2xl mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: '#1a4d7a' }}>
+                  <div className="p-2 bg-gradient-to-br from-[#1a4d7a] to-[#2d9561] rounded-xl shadow-lg">
+                    <Inbox className="w-6 h-6 text-white" />
+                  </div>
+                  {t('configuration.entryPrograms')}
+                </CardTitle>
+                <p className="text-sm text-gray-600 ml-14" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                  Gérez les programmes d’entrée utilisés dans les opérations d’inventaire et de dons.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className="text-sm bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-full shadow-sm">
+                  {programasEntrada.filter((programa) => programa.activo).length} {t('configuration.active')}
+                </Badge>
+                <Button
+                  onClick={() => {
+                    resetFormPrograma();
+                    setProgramaDialogOpen(true);
+                  }}
+                  className="bg-gradient-to-r from-[#1a4d7a] to-[#2d9561] hover:from-[#2d9561] hover:to-[#1a4d7a] text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl"
+                  style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('configuration.newProgram')}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {programasEntrada.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl">
+                    <Inbox className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-[#333333] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                      Aucun programme d’entrée n’est encore défini.
+                    </h3>
+                    <p className="text-sm text-[#666666] mb-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                      Créez un programme pour organiser les entrées de stock, dons et collectes.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {programasEntrada.map((programa) => (
+                      <div key={programa.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl"
+                              style={{ backgroundColor: `${programa.color}20` }}
+                            >
+                              <span>{programa.icono || '📦'}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-lg font-semibold text-[#333333]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                  {programa.nombre}
+                                </h3>
+                                <Badge variant="outline" className="text-xs bg-slate-100 text-slate-700 border-slate-200">
+                                  {programa.codigo}
+                                </Badge>
+                                <Badge className={programa.activo ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}>
+                                  {programa.activo ? t('configuration.active') : t('configuration.inactive')}
+                                </Badge>
+                              </div>
+                              <p className="mt-1 text-sm text-[#666666]" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                                {programa.descripcion}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditarPrograma(programa)}
+                              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {t('common.edit')}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEliminarPrograma(programa.id)}
+                              className="border-red-300 text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" />
+                              {t('common.delete')}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Dialog open={programaDialogOpen} onOpenChange={(open) => {
+            setProgramaDialogOpen(open);
+            if (!open) {
+              resetFormPrograma();
+            }
+          }}>
+            <DialogContent className="max-w-md" aria-describedby="programa-dialog-description">
+              <DialogHeader>
+                <DialogTitle>{editandoPrograma ? t('configuration.editProgram') : t('configuration.newProgramForm')}</DialogTitle>
+                <DialogDescription id="programa-dialog-description">
+                  {editandoPrograma ? 'Modifiez le programme sélectionné.' : 'Ajoutez un nouveau programme d’entrée.'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="programa-nombre">Nom du programme</Label>
+                  <Input
+                    id="programa-nombre"
+                    value={formPrograma.nombre}
+                    onChange={(event) => setFormPrograma((previous) => ({ ...previous, nombre: event.target.value }))}
+                    placeholder={t('configuration.programNamePlaceholder')}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="programa-code">{t('common.code')}</Label>
+                  <Input
+                    id="programa-code"
+                    value={formPrograma.codigo}
+                    onChange={(event) => setFormPrograma((previous) => ({ ...previous, codigo: event.target.value.toUpperCase() }))}
+                    placeholder="ACH"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="programa-description">Description</Label>
+                  <Textarea
+                    id="programa-description"
+                    value={formPrograma.descripcion}
+                    onChange={(event) => setFormPrograma((previous) => ({ ...previous, descripcion: event.target.value }))}
+                    placeholder={t('configuration.programDescriptionPlaceholder')}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="programa-couleur">Couleur</Label>
+                    <Input
+                      id="programa-couleur"
+                      type="color"
+                      value={formPrograma.color}
+                      onChange={(event) => setFormPrograma((previous) => ({ ...previous, color: event.target.value }))}
+                      className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 p-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="programa-icon">Icône</Label>
+                    <Input
+                      id="programa-icon"
+                      value={formPrograma.icono}
+                      onChange={(event) => setFormPrograma((previous) => ({ ...previous, icono: event.target.value }))}
+                      placeholder="📦"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="programa-actif"
+                    type="checkbox"
+                    checked={formPrograma.activo}
+                    onChange={() => setFormPrograma((previous) => ({ ...previous, activo: !previous.activo }))}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  <Label htmlFor="programa-actif">{t('configuration.active')}</Label>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setProgramaDialogOpen(false)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button onClick={handleGuardarPrograma}>
+                    {editandoPrograma ? t('common.save') : t('common.create')}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Tab: Productos PRS */}
