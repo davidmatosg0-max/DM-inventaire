@@ -1774,12 +1774,12 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button 
-            size="icon"
-            className="bg-gradient-to-br from-[#2d9561] to-[#26855a] hover:from-[#267d50] hover:to-[#1f6b45] text-white shadow-lg hover:shadow-xl transition-all"
+            className="gap-2 px-4 py-2.5 h-auto font-semibold text-sm bg-gradient-to-r from-[#2d9561] to-[#26855a] text-white border-0 shadow-lg hover:shadow-2xl hover:from-[#267d50] hover:to-[#1f6b45] transition-all duration-300 rounded-lg"
             title="Registrer Entrée"
             aria-label="Registrer Entrée"
           >
             <Plus className="w-5 h-5" />
+            <span>Enregistrer Entrée</span>
           </Button>
         </DialogTrigger>
       )}
@@ -2515,7 +2515,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                     <Label className="text-xs font-semibold text-slate-700">Quantité *</Label>
                     <QuantityInput
                       value={formData.cantidad || ''}
-                      onChangeText={(value) => handleFieldChange('cantidad', parseQuantityText(value, false) || 0)}
+                      onChangeText={(value) => handleFieldChange('cantidad', parseQuantityText(value, true) || 0)}
                       onBlur={handleCantidadFieldContinue}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
@@ -2524,7 +2524,8 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                         }
                       }}
                       min={0}
-                      step={1}
+                      step={0.01}
+                      allowDecimal={true}
                       placeholder="0"
                       wrapperClassName="mt-1.5"
                       className="rounded-xl border-2 border-slate-200 bg-white text-sm h-9 focus:border-[#2d9561] transition-colors"
@@ -2581,7 +2582,7 @@ export function EntradaDonAchat({ open: controlledOpen, onOpenChange, hideTrigge
                   <Input
                     type="number"
                     min="0"
-                    step="1"
+                    step="0.01"
                     value={formData.peso ? formatQuantity(formData.peso) : ''}
                     onChange={(e) => handleFieldChange('peso', Number.parseFloat(e.target.value) || 0)}
                     placeholder="0"
