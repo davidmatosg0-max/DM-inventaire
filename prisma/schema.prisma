@@ -1,0 +1,347 @@
+// Prisma Schema for Banque Alimentaire / Gestion d'Inventaire DM
+// Database: PostgreSQL
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. USUARIOS Y ROLES (RBAC)
+// ==========================================
+
+model User {
+  id           String        @id @default(uuid())
+  nombre       String
+  email        String        @unique
+  passwordHash String?
+  rolId        String?
+  rol          Role?         @relation(fields: [rolId], references: [id])
+  activo       Boolean       @default(true)
+  avatar       String?
+  departamento String?
+  telefono     String?
+  fechaCreacion DateTime     @default(now())
+  fechaModificacion DateTime @updatedAt
+
+  actividades   ActivityLog[]
+  mensajesEnviados Message[] @relation("SentMessages")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  nombre      String   @unique
+  descripcion String?
+  permisos    String[]
+  usuarios    User[]
+
+  @@map("roles")
+}
+
+// ==========================================
+// 2. PRODUCTOS E INVENTARIO
+// ==========================================
+
+model Category {
+  id          String    @id @default(uuid())
+  nombre      String    @unique
+  descripcion String?
+  productos   Product[]
+
+  @@map("categories")
+}
+
+enum TemperaturaProducto {
+  AMBIENTE
+  REFRIGERADO
+  CONGELADO
+}
+
+model Product {
+  id                         String              @id @default(uuid())
+  codigo                     String              @unique
+  nombre                     String
+  categoriaId                String?
+  categoria                  Category?           @relation(fields: [categoriaId], references: [id])
+  categoriaNombre            String
+  subcategoria               String?
+  varianteId                 String?
+  varianteNombre             String?
+  unidad                     String              @default("kg")
+  icono                      String?             @default("Package")
+  peso                       Float               @default(0)
+  pesoUnitario               Float?
+  pesoRegistrado             Float?
+  stockActual                Float               @default(0)
+  stockMinimo                Float               @default(0)
+  ubicacion                  String?
+  lote                       String?
+  fechaVencimiento           DateTime?
+  esPRS                      Boolean             @default(false)
+  activo                     Boolean             @default(true)
+  temperatura                TemperaturaProducto @default(AMBIENTE)
+  temperaturaAlmacenamiento TemperaturaProducto @default(AMBIENTE)
+  temperaturaOriginalEntrada TemperaturaProducto @default(AMBIENTE)
+  productoOrigenId           String?
+  esConversion               Boolean             @default(false)
+  valorUnitario              Float?
+  valorTotal                 Float?
+  fechaCreacion              DateTime            @default(now())
+  fechaModificacion          DateTime            @updatedAt
+
+  movimientos                InventoryMovement[]
+  entradas                   InventoryEntry[]
+  itemsComanda               OrderItem[]
+
+  @@map("products")
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+  AJUSTE
+  TRANSFORMACION
+  DISTRIBUCION
+}
+
+model InventoryMovement {
+  id            String         @id @default(uuid())
+  productoId    String
+  producto      Product        @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  nombreProducto String
+  tipo          TipoMovimiento
+  cantidad      Float
+  unidad        String
+  referencia    String?
+  observaciones String?
+  usuario       String?
+  fecha         DateTime       @default(now())
+
+  @@map("inventory_movements")
+}
+
+model InventoryEntry {
+  id              String    @id @default(uuid())
+  productoId      String
+  producto        Product   @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  nombreProducto  String
+  cantidad        Float
+  unidad          String
+  proveedorODonante String?
+  tipoEntrada     String?   // 'donation', 'achat', 'costco', etc.
+  lote            String?
+  fechaVencimiento DateTime?
+  temperatura     TemperaturaProducto @default(AMBIENTE)
+  registradoPor   String?
+  fechaRegistrado DateTime  @default(now())
+
+  @@map("inventory_entries")
+}
+
+// ==========================================
+// 3. ORGANISMOS Y COMANDAS
+// ==========================================
+
+model Organisme {
+  id                String    @id @default(uuid())
+  nombre            String
+  tipo              String?
+  responsable       String?
+  email             String?   @unique
+  telefono          String?
+  direccion         String?
+  ciudad            String?
+  codigoPostal      String?
+  beneficiarios     Int       @default(0)
+  frecuenciaEntrega String?
+  diasEntrega       String[]
+  horarioEntrega    String?
+  observaciones     String?
+  activo            Boolean   @default(true)
+  claveAcceso       String?
+  fechaCreacion     DateTime  @default(now())
+  fechaModificacion DateTime  @updatedAt
+
+  comandas          Order[]
+
+  @@map("organismes")
+}
+
+enum EstadoComanda {
+  PENDIENTE
+  CONFIRMADA
+  EN_PREPARACION
+  COMPLETADA
+  ENTREGADA
+  ANULADA
+}
+
+enum ModalidadDistribucion {
+  STANDARD
+  COLLATION
+  GRUPO
+}
+
+model Order {
+  id                         String                @id @default(uuid())
+  numero                     String                @unique
+  modalidadDistribucion      ModalidadDistribucion @default(STANDARD)
+  organismoId                String
+  organismo                  Organisme             @relation(fields: [organismoId], references: [id], onDelete: Cascade)
+  nombreOrganismo            String
+  fecha                      DateTime              @default(now())
+  fechaEntrega               DateTime?
+  estado                     EstadoComanda         @default(PENDIENTE)
+  observaciones              String?
+  prioridad                  String?               @default("normal")
+  grupoDistribucionId        String?
+  grupoDistribucionEtiqueta  String?
+  grupoDistribucionAnclada   Boolean               @default(false)
+  fechaCaducidadGrupo        DateTime?
+  creadoPor                  String?
+  modificadoPor              String?
+  preparadoPor               String?
+  fechaCreacion              DateTime              @default(now())
+  fechaModificacion          DateTime              @updatedAt
+
+  items                      OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                         String              @id @default(uuid())
+  comandaId                  String
+  comanda                    Order               @relation(fields: [comandaId], references: [id], onDelete: Cascade)
+  productoId                 String
+  producto                   Product             @relation(fields: [productoId], references: [id])
+  nombreProducto             String
+  cantidad                   Float
+  cantidadPreparada          Float?
+  cantidadAceptada           Float?
+  unidad                     String
+  icono                      String?
+  observaciones              String?
+  peso                       Float?
+  valorUnitario              Float?
+  temperatura                TemperaturaProducto @default(AMBIENTE)
+  temperaturaOriginalEntrada TemperaturaProducto @default(AMBIENTE)
+
+  @@map("order_items")
+}
+
+// ==========================================
+// 4. TRANSPORTE Y RUTAS
+// ==========================================
+
+model Vehicule {
+  id           String   @id @default(uuid())
+  nombre       String
+  placa        String   @unique
+  capacidadKg  Float    @default(0)
+  estado       String   @default("disponible") // 'disponible', 'en_ruta', 'mantenimiento'
+  conductorId  String?
+  fechaCreacion DateTime @default(now())
+
+  @@map("vehicules")
+}
+
+model Driver {
+  id           String   @id @default(uuid())
+  nombre       String
+  licencia     String
+  telefono     String?
+  activo       Boolean  @default(true)
+  fechaCreacion DateTime @default(now())
+
+  @@map("drivers")
+}
+
+model Route {
+  id           String   @id @default(uuid())
+  nombre       String
+  vehiculoId   String?
+  conductorId  String?
+  estado       String   @default("planificada")
+  fechaSalida  DateTime?
+  fechaLlegada DateTime?
+  paradas      Json?    // Lista de paradas / organismos en la ruta
+  fechaCreacion DateTime @default(now())
+
+  @@map("routes")
+}
+
+// ==========================================
+// 5. VOLUNTARIOS Y RECLUTAMIENTO
+// ==========================================
+
+model Benevole {
+  id                 String   @id @default(uuid())
+  nombre             String
+  apellido           String
+  email              String   @unique
+  telefono           String?
+  disponibilidad     String[]
+  intereses          String[]
+  estado             String   @default("pendiente") // 'pendiente', 'activo', 'inactivo'
+  fechaSolicitud     DateTime @default(now())
+  notas              String?
+
+  @@map("benevoles")
+}
+
+// ==========================================
+// 6. MENSAJERÍA INTERNA
+// ==========================================
+
+model Message {
+  id          String   @id @default(uuid())
+  remitenteId String
+  remitente   User     @relation("SentMessages", fields: [remitenteId], references: [id])
+  destinatario String  // UserId o ID de Organismo
+  asunto      String?
+  contenido   String
+  leido       Boolean  @default(false)
+  adjuntos    Json?
+  fechaEnvio  DateTime @default(now())
+
+  @@map("messages")
+}
+
+// ==========================================
+// 7. REGISTRO DE AUDITORÍA Y ACTIVIDAD
+// ==========================================
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  usuarioId   String?
+  usuario     User?    @relation(fields: [usuarioId], references: [id])
+  nombreUsuario String?
+  accion      String
+  modulo      String
+  detalles    String?
+  ipAddress   String?
+  fecha       DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+// ==========================================
+// 8. SEGUIMIENTO DE MIGRACIÓN JSON -> POSTGRES
+// ==========================================
+
+model AppStorageMigration {
+  id             String   @id @default(uuid())
+  storageKey     String   @unique
+  registros      Int      @default(0)
+  estado         String   @default("completado")
+  fechaMigracion DateTime @default(now())
+
+  @@map("app_storage_migrations")
+}
