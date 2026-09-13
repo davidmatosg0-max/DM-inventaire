@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useEffect, useState, useRef, useMemo } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { HashRouter, useNavigate, useLocation } from 'react-router-dom';
 import '../i18n/config'; // Inicializar i18n
 // Última actualización: 17/03/2026 - Actualización nombre completo en actividades
 import { useTranslation } from 'react-i18next';
@@ -87,20 +88,29 @@ function obtenerModuloProtegido(pageId: string): string | null {
   return PAGE_PERMISSION_ALIASES[pageId] || pageId;
 }
 
-// Componente interno que usa el contexto de autenticación
+// Componente interno que usa el contexto de autenticación y react-router-dom
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState(() => {
-    if (typeof window === 'undefined') {
-      return 'dashboard';
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determinar la página actual basada en la ruta o en parámetros retrocompatibles (?page=...)
+  const currentPage = useMemo(() => {
+    const rawPath = location.pathname.replace(/^\/+/, '');
+    if (rawPath) {
+      return rawPath;
     }
 
-    const pageFromUrl = new URLSearchParams(window.location.search).get('page');
-    if (pageFromUrl) {
-      return pageFromUrl;
+    if (typeof window !== 'undefined') {
+      const pageFromUrl = new URLSearchParams(window.location.search).get('page');
+      if (pageFromUrl) {
+        return pageFromUrl;
+      }
+      return localStorage.getItem(CURRENT_PAGE_STORAGE_KEY) || 'dashboard';
     }
 
-    return localStorage.getItem(CURRENT_PAGE_STORAGE_KEY) || 'dashboard';
-  });
+    return 'dashboard';
+  }, [location.pathname, location.search]);
+
   const [mountedPages, setMountedPages] = useState<Set<string>>(new Set([currentPage]));
   const { isAuthenticated, isLoading, logout: logoutAuth } = useAuth();
   const { i18n } = useTranslation();
@@ -123,17 +133,25 @@ function AppContent() {
     }
   }, [i18n.language]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
+  // Función unificada para la navegación con react-router-dom
+  const handleNavigate = useCallback((newPage: string, options?: { replace?: boolean }) => {
+    const targetPath = '/' + newPage;
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: options?.replace ?? false });
     }
+  }, [navigate, location.pathname]);
 
-    localStorage.setItem(CURRENT_PAGE_STORAGE_KEY, currentPage);
+  // Redirigir la ruta raíz '/' o rutas heredadas (?page=...) al formato HashRouter (/#/pagina)
+  useEffect(() => {
+    const rawPath = location.pathname.replace(/^\/+/, '');
+    if (!rawPath) {
+      navigate('/' + currentPage, { replace: true });
+    }
+  }, [location.pathname, currentPage, navigate]);
 
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('page') !== currentPage) {
-      url.searchParams.set('page', currentPage);
-      window.history.replaceState({}, '', url.toString());
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CURRENT_PAGE_STORAGE_KEY, currentPage);
     }
   }, [currentPage]);
 
@@ -148,33 +166,19 @@ function AppContent() {
     }
 
     if (!wasAuthenticatedRef.current) {
-      setCurrentPage('dashboard');
-
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        if (url.searchParams.get('page') !== 'dashboard') {
-          url.searchParams.set('page', 'dashboard');
-          window.history.replaceState({}, '', url.toString());
-        }
-      }
+      handleNavigate('dashboard', { replace: true });
     }
 
     wasAuthenticatedRef.current = true;
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, handleNavigate]);
 
   useEffect(() => {
     if (!REMOVED_PAGE_IDS.has(currentPage)) {
       return;
     }
 
-    setCurrentPage('dashboard');
-
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('page', 'dashboard');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [currentPage]);
+    handleNavigate('dashboard', { replace: true });
+  }, [currentPage, handleNavigate]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -187,14 +191,8 @@ function AppContent() {
       return;
     }
 
-    setCurrentPage('dashboard');
-
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('page', 'dashboard');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [currentPage, isAuthenticated]);
+    handleNavigate('dashboard', { replace: true });
+  }, [currentPage, isAuthenticated, handleNavigate]);
 
   // Actualizar páginas montadas cuando se navega a una nueva
   useEffect(() => {
@@ -303,19 +301,19 @@ function AppContent() {
       pages.push(renderWithSuspense(<AccesoOrganismo />, 'acceso-organismo'));
     }
     if (mountedPages.has('departamentos')) {
-      pages.push(renderWithSuspense(<Departamentos onNavigate={setCurrentPage} />, 'departamentos'));
+      pages.push(renderWithSuspense(<Departamentos onNavigate={handleNavigate} />, 'departamentos'));
     }
     if (mountedPages.has('recrutement')) {
       pages.push(renderWithSuspense(<Recrutement />, 'recrutement'));
     }
     if (mountedPages.has('achat')) {
-      pages.push(renderWithSuspense(<AchatPage onNavigate={setCurrentPage} />, 'achat'));
+      pages.push(renderWithSuspense(<AchatPage onNavigate={handleNavigate} />, 'achat'));
     }
     if (mountedPages.has('liaison')) {
-      pages.push(renderWithSuspense(<EmailOrganismos onNavigate={setCurrentPage} />, 'liaison'));
+      pages.push(renderWithSuspense(<EmailOrganismos onNavigate={handleNavigate} />, 'liaison'));
     }
     if (mountedPages.has('email-organismos')) {
-      pages.push(renderWithSuspense(<EmailOrganismos onNavigate={setCurrentPage} />, 'email-organismos'));
+      pages.push(renderWithSuspense(<EmailOrganismos onNavigate={handleNavigate} />, 'email-organismos'));
     }
     if (mountedPages.has('contact')) {
       pages.push(renderWithSuspense(<Contact />, 'contact'));
@@ -324,13 +322,13 @@ function AppContent() {
       pages.push(renderWithSuspense(<CommunicationInterne />, 'communication'));
     }
     if (mountedPages.has('cuisine')) {
-      pages.push(renderWithSuspense(<CuisinePage onNavigate={setCurrentPage} />, 'cuisine'));
+      pages.push(renderWithSuspense(<CuisinePage onNavigate={handleNavigate} />, 'cuisine'));
     }
     if (mountedPages.has('donateurs-fournisseurs')) {
-      pages.push(renderWithSuspense(<GestionDonateursFournisseurs onNavigate={setCurrentPage} />, 'donateurs-fournisseurs'));
+      pages.push(renderWithSuspense(<GestionDonateursFournisseurs onNavigate={handleNavigate} />, 'donateurs-fournisseurs'));
     }
     if (mountedPages.has('contactos-almacen')) {
-      pages.push(renderWithSuspense(<ContactosAlmacenPage onNavigate={setCurrentPage} />, 'contactos-almacen'));
+      pages.push(renderWithSuspense(<ContactosAlmacenPage onNavigate={handleNavigate} />, 'contactos-almacen'));
     }
     if (mountedPages.has('dechets-compostage')) {
       pages.push(renderWithSuspense(<DechetsCompostage />, 'dechets-compostage'));
@@ -357,7 +355,7 @@ function AppContent() {
     return (
       <>
         <Suspense fallback={<PageLoadingState />}>
-          <Recrutement isPublicAccess={true} publicAccessMode={publicAccessMode} onNavigate={setCurrentPage} />
+          <Recrutement isPublicAccess={true} publicAccessMode={publicAccessMode} onNavigate={handleNavigate} />
         </Suspense>
         <Toaster position="top-right" />
       </>
@@ -371,10 +369,10 @@ function AppContent() {
         <Suspense fallback={<PageLoadingState />}>
           <Login 
             onLogin={() => {
-              setCurrentPage('dashboard');
+              handleNavigate('dashboard');
             }}
             onAccessPublic={(page) => {
-              setCurrentPage(page);
+              handleNavigate(page);
             }}
           />
         </Suspense>
@@ -387,7 +385,7 @@ function AppContent() {
     <BalanceProvider>
       <Layout 
         currentPage={currentPage} 
-        onNavigate={setCurrentPage}
+        onNavigate={handleNavigate}
         onLogout={() => {
           logoutAuth();
           cerrarSesionUsuario();
@@ -406,7 +404,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <HashRouter>
+        <AppContent />
+      </HashRouter>
     </AuthProvider>
   );
 }
