@@ -282,26 +282,35 @@ export async function restoreLocalStorage(backupString: string): Promise<boolean
 }
 
 /**
- * Exportar datos como archivo descargable
+ * Exportar datos como archivo descargable (soporta carpeta personalizada e historial de registro)
  */
-export function downloadBackup() {
+export async function downloadBackup(): Promise<{ success: boolean; usedCustomFolder: boolean }> {
   const backup = backupLocalStorage();
-  const blob = new Blob([backup], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const a = document.createElement('a');
-  a.href = url;
-  
-  // Nombre del archivo con fecha y hora
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
   const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-  a.download = `banco-alimentos-backup-${dateStr}-${timeStr}.json`;
-  
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const nombreArchivo = `banco-alimentos-backup-${dateStr}-${timeStr}.json`;
+
+  const { descargarArchivoConCarpetaPredefinida } = await import('./fileSystemAccess');
+  const { registrarBackup, obtenerConfigAutoBackup } = await import('./autoBackupStorage');
+
+  const config = obtenerConfigAutoBackup();
+  const backupSize = new Blob([backup]).size;
+
+  // Registrar en el historial de backups
+  registrarBackup({
+    id: `backup_${Date.now()}`,
+    timestamp: now.toISOString(),
+    data: backup,
+    size: backupSize,
+    automatic: false,
+    customFolder: config.customFolder,
+    folderName: config.folderName,
+    filename: nombreArchivo
+  });
+
+  // Intentar guardar en la carpeta personalizada o descarga del navegador
+  return await descargarArchivoConCarpetaPredefinida(nombreArchivo, backup);
 }
 
 /**

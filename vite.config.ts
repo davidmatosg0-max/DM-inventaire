@@ -122,6 +122,7 @@ export default defineConfig(({ mode }) => {
     },
     // Optimizaciones de servidor de desarrollo
     server: {
+      host: true,
       port: 5173,
       strictPort: false,
       open: false,

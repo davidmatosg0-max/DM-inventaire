@@ -157,20 +157,21 @@ export function AutoBackupConfig() {
     }
   };
 
-  const handleDownloadBackup = (backup: any) => {
+  const handleDownloadBackup = async (backup: any) => {
     try {
-      descargarBackup(backup, config.filePrefix);
+      const res = await descargarBackup(backup, config.filePrefix);
       
       // Mensaje personalizado según la configuración
-      if (config.customFolder && tieneCarpetaSeleccionada()) {
-        toast.success('Backup téléchargé dans le dossier personnalisé 📁', {
-          description: `Sauvegardé dans: ${config.folderName || 'dossier sélectionné'}`
+      if (res?.savedInCustomFolder || (config.customFolder && tieneCarpetaSeleccionada())) {
+        toast.success('Backup sauvegardé dans le dossier personnalisé 📁', {
+          description: `Sauvegardé dans: ${backup.folderName || config.folderName || 'dossier sélectionné'}`
         });
       } else {
         toast.success('Backup téléchargé 📥', {
           description: 'Le fichier a été téléchargé normalement'
         });
       }
+      setBackups(obtenerBackupsAlmacenados());
     } catch (error) {
       toast.error('Erreur lors du téléchargement');
     }
@@ -416,13 +417,13 @@ export function AutoBackupConfig() {
             </div>
           </div>
 
-          {/* Lista de Backups Automatiques */}
-          {backupsAutomatiques.length > 0 && (
+          {/* Lista de Backups */}
+          {backups.length > 0 && (
             <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Zap className="w-5 h-5 text-purple-500" />
-                  Backups Automatiques ({backupsAutomatiques.length})
+                  Historique des Backups Répertoriés ({backups.length})
                 </h4>
                 {backupsAutomatiques.length > config.maxBackups && (
                   <Button
@@ -437,22 +438,34 @@ export function AutoBackupConfig() {
                 )}
               </div>
               <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
-                {backupsAutomatiques.map((backup) => (
+                {backups.map((backup) => (
                   <div
                     key={backup.id}
                     className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{formatearFecha(backup.timestamp)}</p>
-                      <p className="text-xs text-gray-500">{formatearTamano(backup.size)}</p>
+                    <div className="flex-1 pr-2">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <p className="text-sm font-medium text-gray-900">{formatearFecha(backup.timestamp)}</p>
+                        {backup.customFolder && (
+                          <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] flex items-center gap-1">
+                            📁 {backup.folderName || 'Dossier personnalisé'}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {formatearTamano(backup.size)} {backup.filename ? `• ${backup.filename}` : ''}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-purple-100 text-purple-700 border-purple-300">Auto</Badge>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge className={backup.automatic ? "bg-purple-100 text-purple-700 border-purple-300" : "bg-blue-100 text-blue-700 border-blue-300"}>
+                        {backup.automatic ? 'Auto' : 'Manuel'}
+                      </Badge>
                       <Button
                         onClick={() => handleDownloadBackup(backup)}
                         size="sm"
                         variant="ghost"
                         className="text-blue-600 hover:bg-blue-50"
+                        title={backup.customFolder ? "Enregistrer dans le dossier personnalisé" : "Télécharger"}
                       >
                         <Download className="w-4 h-4" />
                       </Button>
@@ -461,6 +474,7 @@ export function AutoBackupConfig() {
                         size="sm"
                         variant="ghost"
                         className="text-red-600 hover:bg-red-50"
+                        title="Supprimer de l'historique"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

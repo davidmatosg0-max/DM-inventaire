@@ -273,29 +273,8 @@ export async function exportBackupToFile(backup: BackupData): Promise<void> {
   const jsonString = JSON.stringify(backup, null, 2);
   const filename = `backup_${backup.metadata.id}_${formatDateForFilename(backup.metadata.timestamp)}.json`;
   
-  // Intentar guardar en carpeta predefinida si está configurada
-  const { guardarArchivoEnCarpeta, tieneCarpetaSeleccionada, soportaFileSystemAccess } = await import('./fileSystemAccess');
-  const { obtenerConfigAutoBackup } = await import('./autoBackupStorage');
-  
-  const config = obtenerConfigAutoBackup();
-  
-  if (config.customFolder && soportaFileSystemAccess() && tieneCarpetaSeleccionada()) {
-    try {
-      const resultado = await guardarArchivoEnCarpeta(filename, jsonString);
-      if (resultado.success) {
-        console.log(`✅ Backup guardado en carpeta predefinida: ${filename}`);
-        return;
-      } else {
-        console.warn('⚠️ Impossible d’enregistrer dans le dossier prédéfini, utilisation du téléchargement standard');
-      }
-    } catch (error) {
-      console.warn('⚠️ Erreur lors de l’enregistrement dans le dossier prédéfini :', error);
-    }
-  }
-  
-  // Fallback: Descarga normal
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  saveAs(blob, filename);
+  const { descargarArchivoConCarpetaPredefinida } = await import('./fileSystemAccess');
+  await descargarArchivoConCarpetaPredefinida(filename, jsonString);
 }
 
 // ==================== CARGAR BACKUP ====================

@@ -23,6 +23,7 @@ export function soportaFileSystemAccess(): boolean {
  * Solicitar permiso para acceder a la carpeta
  */
 async function solicitarPermisoDirectorio(handle: any): Promise<boolean> {
+  if (!handle) return false;
   try {
     const permission = await handle.queryPermission({ mode: 'readwrite' });
     
@@ -31,8 +32,13 @@ async function solicitarPermisoDirectorio(handle: any): Promise<boolean> {
     }
     
     if (permission === 'prompt') {
-      const newPermission = await handle.requestPermission({ mode: 'readwrite' });
-      return newPermission === 'granted';
+      try {
+        const newPermission = await handle.requestPermission({ mode: 'readwrite' });
+        return newPermission === 'granted';
+      } catch (promptError) {
+        console.warn('⚠️ No se pudo solicitar permiso (requiere interacción de usuario):', promptError);
+        return false;
+      }
     }
     
     return false;
@@ -359,26 +365,16 @@ function limpiarHandleDeIndexedDB(): void {
 
 /**
  * Inicializar el sistema de archivos
- * Intenta recuperar la carpeta seleccionada previamente
+ * Intenta recuperar la carpeta seleccionada previamente desde IndexedDB
  */
 export async function inicializarFileSystem(): Promise<void> {
   try {
-    directoryHandle = await recuperarHandleDeIndexedDB();
-    
-    if (directoryHandle) {
-      // Verificar si aún tenemos permisos
-      const hasPermission = await solicitarPermisoDirectorio(directoryHandle);
-      
-      if (!hasPermission) {
-        console.log('⚠️ Permisos revocados para la carpeta guardada');
-        directoryHandle = null;
-        limpiarHandleDeIndexedDB();
-      } else {
-        console.log('✅ Carpeta de backup restaurada:', directoryHandle.name);
-      }
+    const handle = await recuperarHandleDeIndexedDB();
+    if (handle) {
+      directoryHandle = handle;
+      console.log('✅ Carpeta de backup restaurada desde IndexedDB:', handle.name);
     }
   } catch (error) {
     console.error('Error al inicializar sistema de archivos:', error);
-    directoryHandle = null;
   }
 }

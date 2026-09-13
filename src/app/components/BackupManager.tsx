@@ -10,7 +10,7 @@ export function BackupManager() {
   const [backupInfo, setBackupInfo] = useState<string>('');
   const [datosProtegidos, setDatosProtegidos] = useState<boolean>(sistemaConDatosReales());
 
-  const handleDownloadBackup = () => {
+  const handleDownloadBackup = async () => {
     try {
       // Mostrar información en consola antes de descargar
       console.log('');
@@ -21,12 +21,19 @@ export function BackupManager() {
       console.log('📦 Création du backup de TOUTES les données...');
       console.log('');
       
-      downloadBackup();
+      const res = await downloadBackup();
       
-      toast.success('✅ Backup complet téléchargé avec succès!', {
-        description: '📋 Consultez la console pour voir les statistiques détaillées. Conservez ce fichier en lieu sûr.',
-        duration: 6000
-      });
+      if (res?.usedCustomFolder) {
+        toast.success('✅ Backup enregistré dans le dossier personnalisé! 📁', {
+          description: 'Le backup a été répertorié et enregistré directement dans le dossier configuré.',
+          duration: 6000
+        });
+      } else {
+        toast.success('✅ Backup complet téléchargé avec succès!', {
+          description: '📋 Consultez la console pour voir les statistiques détaillées. Conservez ce fichier en lieu sûr.',
+          duration: 6000
+        });
+      }
       
       // Mostrar recordatorio después de la descarga
       setTimeout(() => {
